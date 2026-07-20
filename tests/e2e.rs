@@ -18,6 +18,10 @@ fn slimc() -> &'static str {
     env!("CARGO_BIN_EXE_slimc")
 }
 
+fn slim_bootstrap() -> &'static str {
+    env!("CARGO_BIN_EXE_slim-bootstrap")
+}
+
 fn write_source(directory: &Path, source: &str) -> PathBuf {
     let path = directory.join("program.slim");
     fs::write(&path, source).unwrap();
@@ -42,7 +46,7 @@ fn checks_builds_and_runs_native_program() {
         String::from_utf8_lossy(&check.stderr)
     );
 
-    let executable = directory.join("answer");
+    let executable = directory.join("nested/output/answer");
     let build = Command::new(slimc())
         .arg("build")
         .arg(&source)
@@ -161,4 +165,17 @@ fn passes_program_arguments_explicitly() {
     );
     assert_eq!(output.stdout, b"3\n");
     fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn self_hosted_compiler_reaches_a_fixed_point() {
+    let output = Command::new(slim_bootstrap()).output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let stdout = String::from_utf8(output.stdout).unwrap();
+    assert!(stdout.contains("bootstrap fixed point:"), "{stdout}");
+    assert!(stdout.contains("native smoke test passed"), "{stdout}");
 }

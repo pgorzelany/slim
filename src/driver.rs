@@ -238,6 +238,10 @@ impl NativeBuild {
     fn compile(&self, generated_c: &str, output: &Path) -> Result<ExitStatus, String> {
         let generated_path = self.path.join("program.c");
         write_file(&generated_path, generated_c.as_bytes())?;
+        if let Some(parent) = output.parent() {
+            fs::create_dir_all(parent)
+                .map_err(|error| format!("cannot create {}: {error}", parent.display()))?;
+        }
         let compiler = env::var_os("CC").unwrap_or_else(|| OsString::from("clang"));
         Command::new(&compiler)
             .arg("-std=c11")

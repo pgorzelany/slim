@@ -1,8 +1,8 @@
 # SLIM Language Design
 
-Status: Initial design direction  
+Status: Core 0 implementation and research direction
 Codename: **SLIM**  
-Last updated: 2026-07-20
+Last updated: 2026-07-21
 
 ## Vision
 
@@ -14,8 +14,11 @@ SLIM aims to combine systems-language performance and static safety with strong
 support for program analysis, deterministic concurrency, and mechanical
 simplification.
 
-This document records the current design choices and aspirations. It does not
-yet prescribe a concrete syntax, type system, compiler architecture, or runtime.
+This document records the durable design choices and research aspirations.
+Core 0 now has a concrete canonical syntax, type/effect/ownership checker,
+deterministic C backend, runtime, benchmark suite, and a restricted
+self-hosting compiler. Later sections distinguish implemented mechanisms from
+longer-term goals.
 
 ## Design Choices and Requirements
 

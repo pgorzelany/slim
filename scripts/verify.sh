@@ -8,6 +8,7 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run --quiet --bin slim-govern -- check
+cargo run --quiet --bin slim-bootstrap
 cargo run --release --quiet --bin slim-bench -- scaling --quick
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
@@ -21,4 +22,3 @@ clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
 test "$("$verify_dir/program")" = "4950"
 
 echo "verification: all gates passed"
-
