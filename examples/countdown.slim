@@ -1,0 +1,2 @@
+(module countdown (fn count ((n I64) (sum I64)) I64 (effects partial) (match (call i64.eq n 0) (true sum) (false (recur (call i64.sub n 1) (call i64.add sum n))))) (fn main () I64 (effects io partial) (let answer I64 (call count 10 0) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println "") 0)))))
+

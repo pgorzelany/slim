@@ -212,7 +212,7 @@ fn check_decisions(decisions: &BTreeMap<String, Decision>, errors: &mut Vec<Stri
                     decision.id
                 ));
             }
-            if !decision.ratings.iter().any(|rating| *rating == 2) {
+            if !decision.ratings.contains(&2) {
                 errors.push(format!("{} has no primary +2 benefit", decision.id));
             }
         }
@@ -310,10 +310,10 @@ fn visit_rs_files(dir: &Path, action: &mut impl FnMut(&Path, &str)) {
         let path = entry.path();
         if path.is_dir() {
             visit_rs_files(&path, action);
-        } else if path.extension().and_then(|value| value.to_str()) == Some("rs") {
-            if let Ok(text) = fs::read_to_string(&path) {
-                action(&path, &text);
-            }
+        } else if path.extension().and_then(|value| value.to_str()) == Some("rs")
+            && let Ok(text) = fs::read_to_string(&path)
+        {
+            action(&path, &text);
         }
     }
 }

@@ -1,4 +1,3 @@
 fn main() {
-    eprintln!("slimc: compiler bootstrap is being built");
-    std::process::exit(2);
+    std::process::exit(slim::driver::run(std::env::args_os()));
 }

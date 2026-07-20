@@ -1,0 +1,2 @@
+(module data (record Pair ((left I64) (right I64))) (variant Maybe ((None) (Some I64))) (fn choose ((value Maybe)) I64 (effects) (match value (None 0) (Some (number) number))) (fn main () I64 (effects io) (let pair Pair (make Pair (left 20) (right 22)) (let sum I64 (call i64.add (get pair left) (get pair right)) (let wrapped Maybe (case Maybe Some sum) (let answer I64 (call choose wrapped) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println "") 0))))))))
+

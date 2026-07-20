@@ -11,8 +11,8 @@ are insignificant, and `slimc fmt` emits the unique canonical layout.
 - Identifiers contain ASCII letters, digits, `_`, `-`, `.`, `/`, `?`, or `!`,
   and may not begin with a digit.
 - Integers are base-10 `I64` literals with an optional leading `-`.
-- Byte strings use double quotes and the escapes `\\`, `\"`, `\n`, `\r`, and
-  `\t`.
+- Byte strings use double quotes and the escapes `\\`, `\"`, `\n`, `\r`,
+  `\t`, and `\xNN` for an exact hexadecimal byte.
 - `;` starts a comment extending through the end of the line.
 
 ## Program grammar
@@ -61,4 +61,3 @@ I/O required by the compiler. Their concrete signatures are emitted by
 Every diagnostic has a stable code, severity, primary byte span, optional
 labels, notes, and fixes. Human and newline-delimited JSON renderings contain
 the same information. User input must not panic the compiler.
-
