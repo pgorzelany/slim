@@ -53,7 +53,7 @@ mod tests {
 
     #[test]
     fn canonical_format_is_idempotent() {
-        let source = " (module  x\n(fn main () I64 (effects) 0)) ; end\n";
+        let source = " (module  x\n(fn main ((args (Vec Bytes))) I64 (effects) 0)) ; end\n";
         let (tokens, errors) = lexer::lex(source);
         assert!(errors.is_empty());
         let (forms, errors) = sexpr::parse(&tokens, source.len());

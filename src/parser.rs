@@ -99,23 +99,37 @@ impl Lowerer {
                 ));
                 continue;
             };
-            if parts.len() != 2 {
+            if parts.len() != 2 && parts.len() != 3 {
                 self.diagnostics.push(Diagnostic::error(
                     "E0206",
-                    "parameter must contain exactly a name and type",
+                    "parameter must be (name Type) or (inout name Type)",
                     param.span,
                 ));
                 continue;
             }
-            let Some(param_name) = self.identifier(&parts[0], "parameter name") else {
+            let (mode, name_index, type_index) = if parts.len() == 3 {
+                if atom(&parts[0]) != Some("inout") {
+                    self.diagnostics.push(Diagnostic::error(
+                        "E0206",
+                        "three-part parameter must start with `inout`",
+                        parts[0].span,
+                    ));
+                    continue;
+                }
+                (ParamMode::Inout, 1, 2)
+            } else {
+                (ParamMode::Owned, 0, 1)
+            };
+            let Some(param_name) = self.identifier(&parts[name_index], "parameter name") else {
                 continue;
             };
-            let Some(ty) = self.ty(&parts[1]) else {
+            let Some(ty) = self.ty(&parts[type_index]) else {
                 continue;
             };
             params.push(Param {
                 name: param_name,
                 ty,
+                mode,
                 span: param.span,
             });
         }
@@ -673,8 +687,9 @@ mod tests {
 
     #[test]
     fn lowers_minimal_program() {
-        let (program, diagnostics) =
-            parse_source("(module hello (fn main () I64 (effects) (call i64.add 40 2)))");
+        let (program, diagnostics) = parse_source(
+            "(module hello (fn main ((args (Vec Bytes))) I64 (effects) (call i64.add 40 2)))",
+        );
         assert!(diagnostics.is_empty(), "{diagnostics:#?}");
         let program = program.unwrap();
         assert_eq!(program.name, "hello");
@@ -683,7 +698,8 @@ mod tests {
 
     #[test]
     fn reports_unknown_expression_and_continues() {
-        let (_, diagnostics) = parse_source("(module bad (fn main () I64 (effects) (plus 1 2)))");
+        let (_, diagnostics) =
+            parse_source("(module bad (fn main ((args (Vec Bytes))) I64 (effects) (plus 1 2)))");
         assert!(
             diagnostics
                 .iter()

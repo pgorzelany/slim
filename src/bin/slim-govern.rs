@@ -3,6 +3,8 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+use slim::sema::Builtin;
+
 const REQUIRED_HEADINGS: [&str; 5] = [
     "## Need",
     "## Alternatives",
@@ -235,6 +237,7 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
     };
     let mut names = BTreeSet::new();
     let mut roles = BTreeSet::new();
+    let mut builtin_names = BTreeSet::new();
     for (line_index, line) in text.lines().enumerate() {
         if line.is_empty() || line.starts_with('#') {
             continue;
@@ -266,6 +269,23 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
                 columns[3]
             )),
         }
+        if columns[0] == "builtin" {
+            builtin_names.insert(columns[1].to_owned());
+        }
+    }
+    let implemented: BTreeSet<_> = Builtin::all()
+        .iter()
+        .map(|builtin| builtin.name().to_owned())
+        .collect();
+    for missing in implemented.difference(&builtin_names) {
+        errors.push(format!(
+            "implemented built-in `{missing}` is missing from surface.tsv"
+        ));
+    }
+    for missing in builtin_names.difference(&implemented) {
+        errors.push(format!(
+            "surface built-in `{missing}` has no implementation"
+        ));
     }
 }
 

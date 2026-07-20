@@ -11,7 +11,7 @@ pub fn generate_c(program: &CheckedProgram) -> String {
         crate::VERSION
     )
     .unwrap();
-    output.push_str("#include \"slim_rt.h\"\n\n");
+    output.push_str("#include \"slim_rt.h\"\n#include <string.h>\n\n");
 
     for record in program.records.values() {
         writeln!(
@@ -57,9 +57,14 @@ pub fn generate_c(program: &CheckedProgram) -> String {
         }
     }
 
-    output.push_str("int main(void) {\n");
+    output.push_str("int main(int argc, char **argv) {\n");
     output.push_str("    slim_rt_init();\n");
-    output.push_str("    int64_t slim_exit_code = slim_fn_main();\n");
+    output.push_str("    SlimVec slim_args = slim_vec_new(sizeof(SlimBytes));\n");
+    output.push_str("    for (int slim_i = 0; slim_i < argc; ++slim_i) {\n");
+    output.push_str("        SlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\n");
+    output.push_str("        slim_vec_push(&slim_args, &slim_arg);\n");
+    output.push_str("    }\n");
+    output.push_str("    int64_t slim_exit_code = slim_fn_main(slim_args);\n");
     output.push_str("    if (slim_exit_code < 0 || slim_exit_code > 255) {\n");
     output.push_str("        slim_rt_trap(\"main result is outside 0..255\");\n");
     output.push_str("    }\n");
@@ -129,7 +134,17 @@ fn emit_function_prototype(output: &mut String, function: &Function) {
             if index > 0 {
                 output.push_str(", ");
             }
-            write!(output, "{} slim_arg_{index}", c_type(&param.ty)).unwrap();
+            write!(
+                output,
+                "{}{} slim_arg_{index}",
+                c_type(&param.ty),
+                if param.mode == ParamMode::Inout {
+                    " *"
+                } else {
+                    ""
+                }
+            )
+            .unwrap();
         }
     }
     output.push_str(");\n");
@@ -173,19 +188,36 @@ impl<'a> FunctionEmitter<'a> {
                 if index > 0 {
                     self.code.push_str(", ");
                 }
-                write!(self.code, "{} slim_arg_{index}", c_type(&param.ty)).unwrap();
+                write!(
+                    self.code,
+                    "{}{} slim_arg_{index}",
+                    c_type(&param.ty),
+                    if param.mode == ParamMode::Inout {
+                        " *"
+                    } else {
+                        ""
+                    }
+                )
+                .unwrap();
             }
         }
         self.code.push_str(") {\n");
         self.indent = 1;
 
         for (index, param) in self.function.params.iter().enumerate() {
-            let local = self.fresh_named(&param.name);
-            self.line(&format!(
-                "{} {} = slim_arg_{index};",
-                c_type(&param.ty),
+            let local = if param.mode == ParamMode::Inout {
+                self.line(&format!("(void)slim_arg_{index};"));
+                format!("(*slim_arg_{index})")
+            } else {
+                let local = self.fresh_named(&param.name);
+                self.line(&format!(
+                    "{} {} = slim_arg_{index};",
+                    c_type(&param.ty),
+                    local
+                ));
+                self.line(&format!("(void){local};"));
                 local
-            ));
+            };
             self.bindings.push((param.name.clone(), local.clone()));
             self.parameter_c_names.push(local);
         }
@@ -316,6 +348,32 @@ impl<'a> FunctionEmitter<'a> {
 
     fn emit_call(&mut self, name: &str, arguments: &[Expr], ty: &Type, destination: &str) {
         let builtin = Builtin::from_name(name);
+        if builtin.is_none() {
+            let modes = self
+                .program
+                .functions
+                .get(name)
+                .expect("checked function")
+                .param_modes
+                .clone();
+            let mut c_arguments = Vec::new();
+            for (argument, mode) in arguments.iter().zip(modes) {
+                if mode == ParamMode::Inout {
+                    let ExprKind::Name(source_name) = &argument.kind else {
+                        unreachable!("checked inout argument")
+                    };
+                    c_arguments.push(format!("&({})", self.binding(source_name)));
+                } else {
+                    c_arguments.push(self.evaluate(argument));
+                }
+            }
+            self.line(&format!(
+                "{destination} = {}({});",
+                c_function_name(name),
+                c_arguments.join(", ")
+            ));
+            return;
+        }
         if matches!(builtin, Some(Builtin::VecPush | Builtin::ArenaAdd)) {
             self.emit_mutating_growth_call(builtin.unwrap(), arguments, destination);
             return;
@@ -325,11 +383,7 @@ impl<'a> FunctionEmitter<'a> {
             .map(|argument| self.evaluate(argument))
             .collect();
         match builtin {
-            None => self.line(&format!(
-                "{destination} = {}({});",
-                c_function_name(name),
-                temporaries.join(", ")
-            )),
+            None => unreachable!(),
             Some(Builtin::I64Add) => self.assign_call(destination, "slim_i64_add", &temporaries),
             Some(Builtin::I64Sub) => self.assign_call(destination, "slim_i64_sub", &temporaries),
             Some(Builtin::I64Mul) => self.assign_call(destination, "slim_i64_mul", &temporaries),
@@ -353,6 +407,9 @@ impl<'a> FunctionEmitter<'a> {
             Some(Builtin::BytesGet) => {
                 self.assign_call(destination, "slim_bytes_get", &temporaries)
             }
+            Some(Builtin::BytesFreeze) => {
+                self.assign_call(destination, "slim_bytes_freeze", &temporaries)
+            }
             Some(Builtin::IoPrintI64) => {
                 self.assign_call(destination, "slim_print_i64", &temporaries)
             }
@@ -372,15 +429,32 @@ impl<'a> FunctionEmitter<'a> {
                     c_type(inner)
                 ));
             }
-            Some(Builtin::VecLen) => self.assign_call(destination, "slim_vec_len", &temporaries),
-            Some(Builtin::VecGet) => self.line(&format!(
-                "slim_vec_get(&{}, {}, &{destination});",
-                temporaries[0], temporaries[1]
-            )),
-            Some(Builtin::VecSet) => self.line(&format!(
-                "slim_vec_set(&{}, {}, &{}); {destination} = (SlimUnit){{0}};",
-                temporaries[0], temporaries[1], temporaries[2]
-            )),
+            Some(Builtin::VecLen) => self.line(&format!("{destination} = {}.len;", temporaries[0])),
+            Some(Builtin::VecGet) => {
+                let checked_index = self.fresh_temp();
+                self.line(&format!(
+                    "size_t {checked_index} = slim_vec_check_index(&{}, {});",
+                    temporaries[0], temporaries[1]
+                ));
+                self.line(&format!(
+                    "{destination} = (({} *){}.data)[{checked_index}];",
+                    c_type(ty),
+                    temporaries[0]
+                ));
+            }
+            Some(Builtin::VecSet) => {
+                let checked_index = self.fresh_temp();
+                self.line(&format!(
+                    "size_t {checked_index} = slim_vec_check_index(&{}, {});",
+                    temporaries[0], temporaries[1]
+                ));
+                self.line(&format!(
+                    "(({} *){}.data)[{checked_index}] = {}; {destination} = (SlimUnit){{0}};",
+                    c_type(&arguments[2].ty),
+                    temporaries[0],
+                    temporaries[2]
+                ));
+            }
             Some(Builtin::ArenaNew) => {
                 let Type::Arena(inner) = ty else {
                     unreachable!("checked arena.new has Arena result")
@@ -390,10 +464,18 @@ impl<'a> FunctionEmitter<'a> {
                     c_type(inner)
                 ));
             }
-            Some(Builtin::ArenaGet) => self.line(&format!(
-                "slim_vec_get(&{}, {}, &{destination});",
-                temporaries[0], temporaries[1]
-            )),
+            Some(Builtin::ArenaGet) => {
+                let checked_index = self.fresh_temp();
+                self.line(&format!(
+                    "size_t {checked_index} = slim_vec_check_index(&{}, {});",
+                    temporaries[0], temporaries[1]
+                ));
+                self.line(&format!(
+                    "{destination} = (({} *){}.data)[{checked_index}];",
+                    c_type(ty),
+                    temporaries[0]
+                ));
+            }
             Some(Builtin::VecPush | Builtin::ArenaAdd) => unreachable!(),
         }
     }
@@ -635,7 +717,8 @@ mod tests {
 
     #[test]
     fn emits_checked_arithmetic() {
-        let c = compile("(module x (fn main () I64 (effects) (call i64.add 40 2)))");
+        let c =
+            compile("(module x (fn main ((args (Vec Bytes))) I64 (effects) (call i64.add 40 2)))");
         assert!(c.contains("slim_i64_add"));
         assert!(c.contains("slim_fn_main"));
     }
@@ -643,7 +726,7 @@ mod tests {
     #[test]
     fn emits_tail_recurrence_as_jump() {
         let c = compile(
-            "(module x (fn countdown ((n I64)) I64 (effects partial) (match (call i64.eq n 0) (true 0) (false (recur (call i64.sub n 1))))) (fn main () I64 (effects partial) (call countdown 10)))",
+            "(module x (fn countdown ((n I64)) I64 (effects partial) (match (call i64.eq n 0) (true 0) (false (recur (call i64.sub n 1))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call countdown 10)))",
         );
         assert!(c.contains("goto slim_recur"));
     }

@@ -241,7 +241,8 @@ impl NativeBuild {
         let compiler = env::var_os("CC").unwrap_or_else(|| OsString::from("clang"));
         Command::new(&compiler)
             .arg("-std=c11")
-            .arg("-O2")
+            .arg("-O3")
+            .arg("-flto")
             .arg("-Wall")
             .arg("-Wextra")
             .arg("-Werror")
@@ -321,38 +322,7 @@ slimc fmt <source> [--check]\n  slimc runtime <directory>\n  slimc builtins\n",
 }
 
 fn print_builtins() {
-    const BUILTINS: &[Builtin] = &[
-        Builtin::I64Add,
-        Builtin::I64Sub,
-        Builtin::I64Mul,
-        Builtin::I64Div,
-        Builtin::I64Rem,
-        Builtin::I64Eq,
-        Builtin::I64Lt,
-        Builtin::I64Le,
-        Builtin::I64Gt,
-        Builtin::I64Ge,
-        Builtin::BoolNot,
-        Builtin::BoolAnd,
-        Builtin::BoolOr,
-        Builtin::U8ToI64,
-        Builtin::I64ToU8,
-        Builtin::BytesLen,
-        Builtin::BytesGet,
-        Builtin::IoPrintI64,
-        Builtin::IoPrintBytes,
-        Builtin::IoPrintln,
-        Builtin::IoReadFile,
-        Builtin::VecNew,
-        Builtin::VecLen,
-        Builtin::VecGet,
-        Builtin::VecPush,
-        Builtin::VecSet,
-        Builtin::ArenaNew,
-        Builtin::ArenaAdd,
-        Builtin::ArenaGet,
-    ];
-    for builtin in BUILTINS {
+    for builtin in Builtin::all() {
         println!("{}", builtin.name());
     }
 }

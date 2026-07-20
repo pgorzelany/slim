@@ -15,6 +15,7 @@ pub struct CheckedProgram {
 #[derive(Clone, Debug)]
 pub struct FunctionSignature {
     pub params: Vec<Type>,
+    pub param_modes: Vec<ParamMode>,
     pub return_type: Type,
     pub effects: BTreeSet<Effect>,
     pub span: Span,
@@ -87,6 +88,7 @@ impl Checker {
                                 .iter()
                                 .map(|param| param.ty.clone())
                                 .collect(),
+                            param_modes: function.params.iter().map(|param| param.mode).collect(),
                             return_type: function.return_type.clone(),
                             effects: function.effects.iter().copied().collect(),
                             span: function.span,
@@ -201,6 +203,7 @@ impl Checker {
                 env.bindings.push(Binding {
                     name: parameter.name.clone(),
                     ty: parameter.ty.clone(),
+                    movable: parameter.mode == ParamMode::Owned,
                     declared_at: parameter.span,
                     moved_at: None,
                 });
@@ -233,10 +236,18 @@ impl Checker {
             ));
             return;
         };
-        if !signature.params.is_empty() || signature.return_type != Type::I64 {
+        let argument_type = Type::Vec(Box::new(Type::Bytes));
+        if signature.params != [argument_type]
+            || signature.param_modes != [ParamMode::Owned]
+            || signature.return_type != Type::I64
+        {
             self.diagnostics.push(
-                Diagnostic::error("E0308", "`main` must have type () -> I64", signature.span)
-                    .note("write (fn main () I64 (effects ...) body)"),
+                Diagnostic::error(
+                    "E0308",
+                    "`main` must have type ((args (Vec Bytes))) -> I64",
+                    signature.span,
+                )
+                .note("write (fn main ((args (Vec Bytes))) I64 (effects ...) body)"),
             );
         }
     }
@@ -285,6 +296,7 @@ impl Checker {
                 env.bindings.push(Binding {
                     name: name.clone(),
                     ty: declared_type.clone(),
+                    movable: true,
                     declared_at: expr.span,
                     moved_at: None,
                 });
@@ -318,6 +330,18 @@ impl Checker {
                     ));
                 }
                 for (argument, parameter) in arguments.iter_mut().zip(context.params) {
+                    if parameter.mode == ParamMode::Inout
+                        && !matches!(&argument.kind, ExprKind::Name(name) if name == &parameter.name)
+                    {
+                        self.diagnostics.push(
+                            Diagnostic::error(
+                                "E0350",
+                                format!("recur must preserve inout binding `{}`", parameter.name),
+                                argument.span,
+                            )
+                            .note("an exclusive borrow cannot be rebound during recurrence"),
+                        );
+                    }
                     let argument_type = self.check_expr(
                         argument,
                         env,
@@ -421,6 +445,17 @@ impl Checker {
         }
         let ty = binding.ty.clone();
         if usage == Use::Move && !self.is_copy_type(&ty, &mut BTreeSet::new()) {
+            if !binding.movable {
+                self.diagnostics.push(
+                    Diagnostic::error(
+                        "E0347",
+                        format!("cannot move out of inout binding `{name}`"),
+                        span,
+                    )
+                    .label(binding.declared_at, "exclusive borrow declared here"),
+                );
+                return Type::Error;
+            }
             binding.moved_at = Some(span);
         }
         ty
@@ -463,15 +498,38 @@ impl Checker {
                 .label(signature.span, "function declared here"),
             );
         }
-        for (argument, parameter_type) in arguments.iter_mut().zip(&signature.params) {
-            let argument_type = self.check_expr(
-                argument,
-                env,
-                context,
-                Some(parameter_type),
-                Use::Move,
-                false,
-            );
+        let mut borrowed_names = BTreeSet::new();
+        for ((argument, parameter_type), mode) in arguments
+            .iter_mut()
+            .zip(&signature.params)
+            .zip(&signature.param_modes)
+        {
+            let usage = match mode {
+                ParamMode::Owned => Use::Move,
+                ParamMode::Inout => {
+                    let ExprKind::Name(name) = &argument.kind else {
+                        self.diagnostics.push(
+                            Diagnostic::error(
+                                "E0348",
+                                "inout argument must be a named unique binding",
+                                argument.span,
+                            )
+                            .note("bind the value with let before borrowing it"),
+                        );
+                        continue;
+                    };
+                    if !borrowed_names.insert(name.clone()) {
+                        self.diagnostics.push(Diagnostic::error(
+                            "E0349",
+                            format!("binding `{name}` is borrowed more than once in one call"),
+                            argument.span,
+                        ));
+                    }
+                    Use::Borrow
+                }
+            };
+            let argument_type =
+                self.check_expr(argument, env, context, Some(parameter_type), usage, false);
             self.expect_type(&argument_type, parameter_type, argument.span);
         }
         for effect in signature.effects {
@@ -534,6 +592,16 @@ impl Checker {
                     span,
                 );
                 Type::U8
+            }
+            Builtin::BytesFreeze => {
+                self.check_builtin_args(
+                    arguments,
+                    &[Type::Vec(Box::new(Type::U8))],
+                    env,
+                    context,
+                    span,
+                );
+                Type::Bytes
             }
             Builtin::IoPrintI64 => {
                 self.check_builtin_args(arguments, &[Type::I64], env, context, span);
@@ -1090,6 +1158,7 @@ impl Checker {
                         arm_env.bindings.push(Binding {
                             name: binding.clone(),
                             ty: ty.clone(),
+                            movable: true,
                             declared_at: arm.span,
                             moved_at: None,
                         });
@@ -1232,6 +1301,7 @@ impl Environment {
 struct Binding {
     name: String,
     ty: Type,
+    movable: bool,
     declared_at: Span,
     moved_at: Option<Span>,
 }
@@ -1268,6 +1338,7 @@ pub enum Builtin {
     I64ToU8,
     BytesLen,
     BytesGet,
+    BytesFreeze,
     IoPrintI64,
     IoPrintBytes,
     IoPrintln,
@@ -1302,6 +1373,7 @@ impl Builtin {
             "i64.to-u8" => Self::I64ToU8,
             "bytes.len" => Self::BytesLen,
             "bytes.get" => Self::BytesGet,
+            "bytes.freeze" => Self::BytesFreeze,
             "io.print-i64" => Self::IoPrintI64,
             "io.print-bytes" => Self::IoPrintBytes,
             "io.println" => Self::IoPrintln,
@@ -1337,6 +1409,7 @@ impl Builtin {
             Self::I64ToU8 => "i64.to-u8",
             Self::BytesLen => "bytes.len",
             Self::BytesGet => "bytes.get",
+            Self::BytesFreeze => "bytes.freeze",
             Self::IoPrintI64 => "io.print-i64",
             Self::IoPrintBytes => "io.print-bytes",
             Self::IoPrintln => "io.println",
@@ -1359,6 +1432,41 @@ impl Builtin {
             Self::VecNew | Self::VecPush | Self::ArenaNew | Self::ArenaAdd => &[Effect::Alloc],
             _ => &[],
         }
+    }
+
+    pub const fn all() -> &'static [Self] {
+        &[
+            Self::I64Add,
+            Self::I64Sub,
+            Self::I64Mul,
+            Self::I64Div,
+            Self::I64Rem,
+            Self::I64Eq,
+            Self::I64Lt,
+            Self::I64Le,
+            Self::I64Gt,
+            Self::I64Ge,
+            Self::BoolNot,
+            Self::BoolAnd,
+            Self::BoolOr,
+            Self::U8ToI64,
+            Self::I64ToU8,
+            Self::BytesLen,
+            Self::BytesGet,
+            Self::BytesFreeze,
+            Self::IoPrintI64,
+            Self::IoPrintBytes,
+            Self::IoPrintln,
+            Self::IoReadFile,
+            Self::VecNew,
+            Self::VecLen,
+            Self::VecGet,
+            Self::VecPush,
+            Self::VecSet,
+            Self::ArenaNew,
+            Self::ArenaAdd,
+            Self::ArenaGet,
+        ]
     }
 }
 
@@ -1388,7 +1496,7 @@ mod tests {
     #[test]
     fn checks_calls_and_effects() {
         let (program, diagnostics) = checked(
-            "(module hello (fn main () I64 (effects io) (let shown Unit (call io.print-i64 42) 0)))",
+            "(module hello (fn main ((args (Vec Bytes))) I64 (effects io) (let shown Unit (call io.print-i64 42) 0)))",
         );
         assert!(program.is_some(), "{diagnostics:#?}");
         assert!(diagnostics.is_empty(), "{diagnostics:#?}");
@@ -1397,7 +1505,7 @@ mod tests {
     #[test]
     fn rejects_missing_effect() {
         let (_, diagnostics) = checked(
-            "(module hello (fn main () I64 (effects) (let shown Unit (call io.print-i64 42) 0)))",
+            "(module hello (fn main ((args (Vec Bytes))) I64 (effects) (let shown Unit (call io.print-i64 42) 0)))",
         );
         assert!(
             diagnostics
@@ -1408,15 +1516,17 @@ mod tests {
 
     #[test]
     fn checks_exhaustive_boolean_match() {
-        let (program, diagnostics) =
-            checked("(module hello (fn main () I64 (effects) (match true (true 1) (false 0))))");
+        let (program, diagnostics) = checked(
+            "(module hello (fn main ((args (Vec Bytes))) I64 (effects) (match true (true 1) (false 0))))",
+        );
         assert!(program.is_some(), "{diagnostics:#?}");
     }
 
     #[test]
     fn rejects_non_exhaustive_match() {
-        let (_, diagnostics) =
-            checked("(module hello (fn main () I64 (effects) (match true (true 1))))");
+        let (_, diagnostics) = checked(
+            "(module hello (fn main ((args (Vec Bytes))) I64 (effects) (match true (true 1))))",
+        );
         assert!(
             diagnostics
                 .iter()
@@ -1427,12 +1537,40 @@ mod tests {
     #[test]
     fn rejects_use_after_move() {
         let (_, diagnostics) = checked(
-            "(module hello (fn consume ((x Bytes)) Unit (effects) unit) (fn main () I64 (effects) (let data Bytes \"x\" (let used Unit (call consume data) (let again Unit (call consume data) 0)))))",
+            "(module hello (fn consume ((x (Vec U8))) Unit (effects) unit) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let data (Vec U8) (call vec.new) (let used Unit (call consume data) (let again Unit (call consume data) 0)))))",
         );
         assert!(
             diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.code == "E0315")
+        );
+    }
+
+    #[test]
+    fn inout_borrows_without_moving() {
+        let (program, diagnostics) = checked(
+            "(module borrow (fn append ((inout values (Vec I64))) Unit (effects alloc) (call vec.push values 1)) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) (let done Unit (call append values) (call vec.len values)))))",
+        );
+        assert!(program.is_some(), "{diagnostics:#?}");
+    }
+
+    #[test]
+    fn inout_cannot_be_moved_or_aliased() {
+        let (_, move_diagnostics) = checked(
+            "(module move-borrow (fn take ((value (Vec I64))) Unit (effects) unit) (fn bad ((inout values (Vec I64))) Unit (effects) (call take values)) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) 0)))",
+        );
+        assert!(
+            move_diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "E0347")
+        );
+        let (_, alias_diagnostics) = checked(
+            "(module alias-borrow (fn pair ((inout left (Vec I64)) (inout right (Vec I64))) Unit (effects) unit) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) (let done Unit (call pair values values) 0))))",
+        );
+        assert!(
+            alias_diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "E0349")
         );
     }
 }

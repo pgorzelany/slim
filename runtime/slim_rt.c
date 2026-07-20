@@ -153,6 +153,13 @@ uint8_t slim_bytes_get(SlimBytes bytes, int64_t index) {
     return bytes.data[index];
 }
 
+SlimBytes slim_bytes_freeze(SlimVec bytes) {
+    if (bytes.element_size != sizeof(uint8_t)) {
+        slim_rt_trap("bytes.freeze requires a U8 vector");
+    }
+    return (SlimBytes){.data = bytes.data, .len = bytes.len};
+}
+
 SlimBytes slim_read_file(SlimBytes path) {
     if (memchr(path.data, 0, (size_t)path.len) != NULL) {
         slim_rt_trap("file path contains a zero byte");
@@ -222,14 +229,19 @@ int64_t slim_vec_len(SlimVec vector) {
     return vector.len;
 }
 
-static size_t slim_vec_offset(const SlimVec *vector, int64_t index) {
+size_t slim_vec_check_index(const SlimVec *vector, int64_t index) {
     if (index < 0 || index >= vector->len) {
         slim_rt_trap("vector index out of bounds");
     }
+    return (size_t)index;
+}
+
+static size_t slim_vec_offset(const SlimVec *vector, int64_t index) {
+    size_t checked_index = slim_vec_check_index(vector, index);
     if ((uint64_t)index > SIZE_MAX / vector->element_size) {
         slim_rt_trap("vector offset overflow");
     }
-    return (size_t)index * vector->element_size;
+    return checked_index * vector->element_size;
 }
 
 void slim_vec_get(const SlimVec *vector, int64_t index, void *output) {
@@ -263,4 +275,3 @@ SlimId slim_arena_add(SlimVec *arena, const void *value) {
     slim_vec_push(arena, value);
     return id;
 }
-

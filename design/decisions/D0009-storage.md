@@ -13,8 +13,8 @@ Score: 80
 
 ## Need
 
-The self-hosted compiler needs owned input, ordered collections, stable syntax
-identities, and phase-scoped allocation.
+The self-hosted compiler needs immutable region-backed input views, ordered
+owned collections, stable syntax identities, and phase-scoped allocation.
 
 ## Alternatives
 
@@ -27,10 +27,11 @@ Parameterized storage types require checked operations and drop insertion.
 
 ## Evidence
 
-The compiler can store all graph-like structures as arena values plus typed IDs.
+The compiler can copy immutable `Bytes` views safely because their backing root
+region outlives the program, while mutable vectors retain unique ownership. All
+graph-like structures can be stored as arena values plus typed IDs.
 
 ## Removal
 
 Remove a storage primitive if ordinary composition provides identical safety,
 layout, lifetime, and performance behavior.
-

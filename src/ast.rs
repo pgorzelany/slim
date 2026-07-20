@@ -28,7 +28,14 @@ pub struct Function {
 pub struct Param {
     pub name: String,
     pub ty: Type,
+    pub mode: ParamMode,
     pub span: Span,
+}
+
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ParamMode {
+    Owned,
+    Inout,
 }
 
 #[derive(Clone, Debug)]
@@ -92,7 +99,7 @@ impl Type {
     pub fn is_copy(&self) -> bool {
         matches!(
             self,
-            Self::Unit | Self::Bool | Self::U8 | Self::I64 | Self::Id(_)
+            Self::Unit | Self::Bool | Self::U8 | Self::I64 | Self::Bytes | Self::Id(_)
         )
     }
 }

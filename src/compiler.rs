@@ -66,7 +66,8 @@ mod tests {
     fn returns_multiple_sorted_diagnostics() {
         let source = Source::new(
             PathBuf::from("bad.slim"),
-            "(module bad (fn main () I64 (effects) (match true (true missing))))".to_owned(),
+            "(module bad (fn main ((args (Vec Bytes))) I64 (effects) (match true (true missing))))"
+                .to_owned(),
         );
         let compilation = compile(source);
         assert!(!compilation.succeeded());
@@ -77,5 +78,23 @@ mod tests {
                 .windows(2)
                 .all(|window| window[0].primary.start <= window[1].primary.start)
         );
+    }
+
+    #[test]
+    fn malformed_ascii_never_panics() {
+        let alphabet: &[u8] = b"()abcXYZ012-; \\\"\n";
+        let mut state = 0x5eed_u64;
+        for case in 0..2_000 {
+            let length = case % 257;
+            let mut text = String::with_capacity(length);
+            for _ in 0..length {
+                state = state.wrapping_mul(6364136223846793005).wrapping_add(1);
+                text.push(char::from(alphabet[(state as usize) % alphabet.len()]));
+            }
+            let result = std::panic::catch_unwind(|| {
+                compile(Source::new(PathBuf::from("mutated.slim"), text))
+            });
+            assert!(result.is_ok(), "compiler panicked for mutation {case}");
+        }
     }
 }

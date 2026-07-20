@@ -20,7 +20,8 @@ are insignificant, and `slimc fmt` emits the unique canonical layout.
 ```text
 program  = (module NAME item*)
 item     = function | record | variant
-function = (fn NAME ((NAME TYPE)*) TYPE (effects EFFECT*) EXPR)
+function = (fn NAME (parameter*) TYPE (effects EFFECT*) EXPR)
+parameter = (NAME TYPE) | (inout NAME TYPE)
 record   = (record NAME ((NAME TYPE)*))
 variant  = (variant NAME ((NAME TYPE*)*))
 type     = Unit | Bool | U8 | I64 | Bytes | NAME | (Vec TYPE)
@@ -31,12 +32,19 @@ The bootstrap expression forms are literals, names, `let`, `call`, `make`,
 `get`, `case`, `match`, `recur`, and `set`. Each maps directly to one AST form;
 there is no desugaring layer.
 
+Every executable defines exactly `(fn main ((args (Vec Bytes))) I64 ... )`.
+Element zero is the executable path and remaining values are process arguments.
+There is no implicit global argument accessor and no alternative entry-point
+signature.
+
 ## Semantics
 
 - Evaluation order is left-to-right.
 - Bindings are immutable unless declared as the target of `set` through unique
   lexical access.
 - Scalars and typed IDs are copyable. Owned aggregates move.
+- An `inout` parameter is a non-escaping exclusive lexical borrow. Calls pass a
+  named unique binding and cannot move it while the borrow is active.
 - Indexing is checked. Arithmetic overflow is a defined trap in checked builds
   and two's-complement wrapping only through explicitly named wrapping
   operations.
