@@ -1,0 +1,7 @@
+/target/
+/build/
+/benchmarks/results/raw/
+*.dSYM/
+*.profraw
+*.profdata
+

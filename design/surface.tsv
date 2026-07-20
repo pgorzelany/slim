@@ -1,0 +1,26 @@
+# category	name	semantic-role	decision
+syntax	module	compilation-unit	D0001
+syntax	fn	function-definition	D0002
+syntax	call	function-application	D0002
+syntax	let	lexical-binding	D0002
+syntax	record	product-data	D0003
+syntax	make	record-construction	D0003
+syntax	get	record-projection	D0003
+syntax	variant	sum-data	D0004
+syntax	case	variant-construction	D0004
+syntax	match	branching	D0005
+syntax	recur	repetition	D0006
+syntax	set	unique-mutation	D0007
+type	Bool	boolean-value	D0008
+type	I64	signed-integer	D0008
+type	U8	byte-value	D0008
+type	Unit	unit-value	D0008
+type	Bytes	owned-bytes	D0009
+type	Vec	owned-sequence	D0009
+type	Arena	typed-region	D0009
+type	Id	typed-arena-identity	D0009
+effect	alloc	memory-allocation	D0010
+effect	io	external-io	D0010
+effect	partial	unproven-termination	D0010
+backend	c11	portable-reference-codegen	D0011
+

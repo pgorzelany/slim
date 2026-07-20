@@ -1,0 +1,26 @@
+[package]
+name = "slim"
+version = "0.0.1"
+edition = "2024"
+description = "The SLIM language bootstrap compiler"
+license = "Apache-2.0 OR MIT"
+publish = false
+
+[lib]
+name = "slim"
+path = "src/lib.rs"
+
+[[bin]]
+name = "slimc"
+path = "src/main.rs"
+
+[[bin]]
+name = "slim-govern"
+path = "src/bin/slim-govern.rs"
+
+[profile.release]
+codegen-units = 1
+lto = "thin"
+panic = "abort"
+strip = "symbols"
+
