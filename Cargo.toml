@@ -18,9 +18,12 @@ path = "src/main.rs"
 name = "slim-govern"
 path = "src/bin/slim-govern.rs"
 
+[[bin]]
+name = "slim-bench"
+path = "src/bin/slim-bench.rs"
+
 [profile.release]
 codegen-units = 1
 lto = "thin"
 panic = "abort"
 strip = "symbols"
-

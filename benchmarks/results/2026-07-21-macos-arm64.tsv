@@ -1,0 +1,21 @@
+# rustc 1.96.0; Apple clang 21.0.0; Apple Silicon macOS
+# challenge	language	compile_ms	runtime_us	binary_bytes
+gcd_fib	slim	404.350	1292	34208
+gcd_fib	c	61.809	1283	33432
+gcd_fib	rust	95.889	1535	466256
+sieve	slim	110.481	7439	34264
+sieve	c	68.606	2067	33560
+sieve	rust	122.323	2516	465864
+bfs	slim	110.226	2115	34264
+bfs	c	61.612	1455	33512
+bfs	rust	113.573	1756	466552
+matrix	slim	113.295	3760	34264
+matrix	c	68.319	2001	33512
+matrix	rust	127.377	2459	466296
+merge_sort	slim	154.840	2377	34320
+merge_sort	c	85.271	2232	33552
+merge_sort	rust	153.346	2320	466368
+bytefreq	slim	113.477	8511	34432
+bytefreq	c	65.824	5261	33816
+bytefreq	rust	133.269	5940	469280
+
