@@ -1,0 +1,185 @@
+(module selfhost
+  (fn span_equal_chars ((source Bytes) (start I64) (text Bytes) (index I64) (length I64)) Bool (effects partial)
+    (let done Bool (call i64.eq index length)
+      (match done
+        (true true)
+        (false
+          (let source_index I64 (call i64.add start index)
+            (let source_byte U8 (call bytes.get source source_index)
+              (let text_byte U8 (call bytes.get text index)
+                (let source_code I64 (call u8.to-i64 source_byte)
+                  (let text_code I64 (call u8.to-i64 text_byte)
+                    (let same Bool (call i64.eq source_code text_code)
+                      (match same
+                        (true
+                          (let next I64 (call i64.add index 1)
+                            (recur source start text next length)))
+                        (false false))))))))))))
+
+  (fn span_equal ((source Bytes) (start I64) (end I64) (text Bytes)) Bool (effects partial)
+    (let span_length I64 (call i64.sub end start)
+      (let text_length I64 (call bytes.len text)
+        (let same_length Bool (call i64.eq span_length text_length)
+          (match same_length
+            (true (call span_equal_chars source start text 0 span_length))
+            (false false))))))
+
+  (fn spans_equal_chars ((source Bytes) (left_start I64) (right_start I64) (index I64) (length I64)) Bool (effects partial)
+    (let done Bool (call i64.eq index length)
+      (match done
+        (true true)
+        (false
+          (let left_index I64 (call i64.add left_start index)
+            (let right_index I64 (call i64.add right_start index)
+              (let left_byte U8 (call bytes.get source left_index)
+                (let right_byte U8 (call bytes.get source right_index)
+                  (let left_code I64 (call u8.to-i64 left_byte)
+                    (let right_code I64 (call u8.to-i64 right_byte)
+                      (let same Bool (call i64.eq left_code right_code)
+                        (match same
+                          (true
+                            (let next I64 (call i64.add index 1)
+                              (recur source left_start right_start next length)))
+                          (false false)))))))))))))
+
+  (fn spans_equal ((source Bytes) (left_start I64) (left_end I64) (right_start I64) (right_end I64)) Bool (effects partial)
+    (let left_length I64 (call i64.sub left_end left_start)
+      (let right_length I64 (call i64.sub right_end right_start)
+        (let same_length Bool (call i64.eq left_length right_length)
+          (match same_length
+            (true (call spans_equal_chars source left_start right_start 0 left_length))
+            (false false))))))
+
+  (fn is_delimiter ((code I64)) Bool (effects)
+    (let whitespace Bool (call i64.le code 32)
+      (let left Bool (call i64.eq code 40)
+        (let right Bool (call i64.eq code 41)
+          (let comment Bool (call i64.eq code 59)
+            (let quote Bool (call i64.eq code 34)
+              (let any_paren Bool (call bool.or left right)
+                (let any_control Bool (call bool.or whitespace comment)
+                  (let any_delimiter Bool (call bool.or any_paren any_control)
+                    (call bool.or any_delimiter quote))))))))))
+
+  (fn scan_atom ((input Bytes) (index I64) (length I64)) I64 (effects partial)
+    (let done Bool (call i64.ge index length)
+      (match done
+        (true index)
+        (false
+          (let byte U8 (call bytes.get input index)
+            (let code I64 (call u8.to-i64 byte)
+              (let delimiter Bool (call is_delimiter code)
+                (match delimiter
+                  (true index)
+                  (false
+                    (let next I64 (call i64.add index 1)
+                      (recur input next length)))))))))))
+
+  (fn scan_string ((input Bytes) (index I64) (length I64)) I64 (effects partial)
+    (let done Bool (call i64.ge index length)
+      (match done
+        (true index)
+        (false
+          (let byte U8 (call bytes.get input index)
+            (let code I64 (call u8.to-i64 byte)
+              (let escape Bool (call i64.eq code 92)
+                (match escape
+                  (true
+                    (let next I64 (call i64.add index 2)
+                      (recur input next length)))
+                  (false
+                    (let quote Bool (call i64.eq code 34)
+                      (match quote
+                        (true (call i64.add index 1))
+                        (false
+                          (let next I64 (call i64.add index 1)
+                            (recur input next length))))))))))))))
+
+  (fn scan_comment ((input Bytes) (index I64) (length I64)) I64 (effects partial)
+    (let done Bool (call i64.ge index length)
+      (match done
+        (true index)
+        (false
+          (let byte U8 (call bytes.get input index)
+            (let code I64 (call u8.to-i64 byte)
+              (let newline Bool (call i64.eq code 10)
+                (match newline
+                  (true (call i64.add index 1))
+                  (false
+                    (let next I64 (call i64.add index 1)
+                      (recur input next length)))))))))))
+
+  (fn push_token ((inout kinds (Vec I64)) (inout starts (Vec I64)) (inout ends (Vec I64)) (kind I64) (start I64) (end I64)) Unit (effects alloc)
+    (let kind_pushed Unit (call vec.push kinds kind)
+      (let start_pushed Unit (call vec.push starts start)
+        (call vec.push ends end))))
+
+  (fn lex ((input Bytes) (index I64) (inout kinds (Vec I64)) (inout starts (Vec I64)) (inout ends (Vec I64))) Unit (effects alloc partial)
+    (let length I64 (call bytes.len input)
+      (let done Bool (call i64.ge index length)
+        (match done
+          (true unit)
+          (false
+            (let byte U8 (call bytes.get input index)
+              (let code I64 (call u8.to-i64 byte)
+                (let whitespace Bool (call i64.le code 32)
+                  (match whitespace
+                    (true
+                      (let next I64 (call i64.add index 1)
+                        (recur input next kinds starts ends)))
+                    (false
+                      (let comment Bool (call i64.eq code 59)
+                        (match comment
+                          (true
+                            (let content_start I64 (call i64.add index 1)
+                              (let next I64 (call scan_comment input content_start length)
+                                (recur input next kinds starts ends))))
+                          (false
+                            (let left Bool (call i64.eq code 40)
+                              (match left
+                                (true
+                                  (let next I64 (call i64.add index 1)
+                                    (let pushed Unit (call push_token kinds starts ends 0 index next)
+                                      (recur input next kinds starts ends))))
+                                (false
+                                  (let right Bool (call i64.eq code 41)
+                                    (match right
+                                      (true
+                                        (let next I64 (call i64.add index 1)
+                                          (let pushed Unit (call push_token kinds starts ends 1 index next)
+                                            (recur input next kinds starts ends))))
+                                      (false
+                                        (let quote Bool (call i64.eq code 34)
+                                          (match quote
+                                            (true
+                                              (let content_start I64 (call i64.add index 1)
+                                                (let next I64 (call scan_string input content_start length)
+                                                  (let pushed Unit (call push_token kinds starts ends 3 index next)
+                                                    (recur input next kinds starts ends)))))
+                                            (false
+                                              (let next I64 (call scan_atom input index length)
+                                                (let pushed Unit (call push_token kinds starts ends 2 index next)
+                                                  (recur input next kinds starts ends)))))))))))))))))))))))))
+
+  (fn main ((args (Vec Bytes))) I64 (effects alloc io partial)
+    (let arg_count I64 (call vec.len args)
+      (let enough Bool (call i64.ge arg_count 2)
+      (match enough
+        (true
+          (let path Bytes (call vec.get args 1)
+            (let input Bytes (call io.read-file path)
+              (let empty_span Bool (call span_equal input 0 0 "")
+                (let empty_spans Bool (call spans_equal input 0 0 0 0)
+                  (let probes Bool (call bool.and empty_span empty_spans)
+                    (match probes
+                      (true
+                        (let kinds (Vec I64) (call vec.new)
+                          (let starts (Vec I64) (call vec.new)
+                            (let ends (Vec I64) (call vec.new)
+                              (let tokenized Unit (call lex input 0 kinds starts ends)
+                                (let token_count I64 (call vec.len kinds)
+                                  (let shown Unit (call io.print-i64 token_count)
+                                    (let newline Unit (call io.println "") 0))))))))
+                      (false 70))))))))
+        (false (let usage Unit (call io.println "usage: slimc SOURCE") 64))))))
+)
