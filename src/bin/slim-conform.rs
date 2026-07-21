@@ -1002,12 +1002,184 @@ fn run_selfhost_project_fixture(fixture: &Fixture, compiler: &Path) -> Result<()
             }
             Ok(())
         }
-        "cache-corruption" | "incremental" => Err(format!(
+        "incremental" => run_selfhost_incremental_fixture(fixture, compiler),
+        "cache-corruption" => Err(format!(
             "{}: {} cannot claim parity before the self-hosted session exists",
             fixture.id, fixture.mode
         )),
         _ => unreachable!("project manifest mode validated"),
     }
+}
+
+fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
+    let directory = temporary_directory("selfhost-project-incremental")?;
+    let initial_directory = directory.join("initial");
+    let updated_directory = directory.join("updated");
+    let source_directory = fixture
+        .path
+        .parent()
+        .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?;
+    copy_tree(source_directory, &initial_directory)?;
+    copy_tree(source_directory, &updated_directory)?;
+    let manifest_name = fixture
+        .path
+        .file_name()
+        .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?;
+    let initial_manifest = initial_directory.join(manifest_name);
+    let updated_manifest = updated_directory.join(manifest_name);
+    require_selfhost_session_work(
+        fixture,
+        compiler,
+        &initial_manifest,
+        &initial_manifest,
+        b"0 0 0 0\n",
+        "no-change update",
+    )?;
+    let updated_module = updated_directory.join("math.slim");
+    let before = fs::read_to_string(&updated_module).map_err(|error| error.to_string())?;
+    let after = before.replacen("value 1", "value 2", 1);
+    if before == after {
+        return Err(format!(
+            "{}: incremental fixture lacks `value 1` edit marker",
+            fixture.id
+        ));
+    }
+    fs::write(&updated_module, after).map_err(|error| error.to_string())?;
+
+    require_selfhost_session_work(
+        fixture,
+        compiler,
+        &initial_manifest,
+        &updated_manifest,
+        b"1 1 1 1\n",
+        "private implementation edit",
+    )?;
+
+    let invalid_directory = directory.join("invalid");
+    copy_tree(source_directory, &invalid_directory)?;
+    let invalid_manifest = invalid_directory.join(manifest_name);
+    let invalid_module = invalid_directory.join("math.slim");
+    let before = fs::read_to_string(&invalid_module).map_err(|error| error.to_string())?;
+    let after = before.replacen("(fn answer ", "(fn broken ", 1);
+    if before == after {
+        return Err(format!(
+            "{}: incremental fixture lacks recovery edit marker",
+            fixture.id
+        ));
+    }
+    fs::write(&invalid_module, after).map_err(|error| error.to_string())?;
+    require_selfhost_recovery(
+        fixture,
+        compiler,
+        &initial_manifest,
+        &invalid_manifest,
+        &updated_manifest,
+        b"E0414@math@116:122\n1 1 1 1\n",
+    )?;
+
+    let initial_app = initial_directory.join("app.slim");
+    let updated_app = updated_directory.join("app.slim");
+    for app in [&initial_app, &updated_app] {
+        let before = fs::read_to_string(app).map_err(|error| error.to_string())?;
+        let after = before.replacen("(effects io)", "(effects io partial)", 1);
+        if before == after {
+            return Err(format!(
+                "{}: incremental fixture lacks app effect marker",
+                fixture.id
+            ));
+        }
+        fs::write(app, after).map_err(|error| error.to_string())?;
+    }
+    let before = fs::read_to_string(&updated_module).map_err(|error| error.to_string())?;
+    let after = before.replacen("(effects)", "(effects partial)", 1);
+    if before == after {
+        return Err(format!(
+            "{}: incremental fixture lacks interface effect marker",
+            fixture.id
+        ));
+    }
+    fs::write(&updated_module, after).map_err(|error| error.to_string())?;
+    require_selfhost_session_work(
+        fixture,
+        compiler,
+        &initial_manifest,
+        &updated_manifest,
+        b"1 1 2 2\n",
+        "exported interface edit",
+    )?;
+
+    let result = {
+        let first = bootstrap::run_compiler(compiler, &updated_manifest)
+            .map_err(|error| format!("{}: updated self-host emit failed: {error}", fixture.id))?;
+        let second = bootstrap::run_compiler(compiler, &updated_manifest).map_err(|error| {
+            format!(
+                "{}: repeated updated self-host emit failed: {error}",
+                fixture.id
+            )
+        })?;
+        if first == second {
+            Ok(())
+        } else {
+            Err(format!(
+                "{}: incremental target differs from its deterministic clean oracle",
+                fixture.id
+            ))
+        }
+    };
+    let _ = fs::remove_dir_all(directory);
+    result
+}
+
+fn require_selfhost_recovery(
+    fixture: &Fixture,
+    compiler: &Path,
+    initial: &Path,
+    invalid: &Path,
+    recovered: &Path,
+    expected: &[u8],
+) -> Result<(), String> {
+    let output = Command::new(compiler)
+        .arg("session")
+        .arg(initial)
+        .arg(invalid)
+        .arg(recovered)
+        .output()
+        .map_err(|error| {
+            format!(
+                "{}: cannot run self-hosted transactional session: {error}",
+                fixture.id
+            )
+        })?;
+    if output.status.code() == Some(0) && output.stderr.is_empty() && output.stdout == expected {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: self-hosted session replaced its last-good state: {} / {:?} / {:?}",
+        fixture.id, output.status, output.stdout, output.stderr
+    ))
+}
+
+fn require_selfhost_session_work(
+    fixture: &Fixture,
+    compiler: &Path,
+    initial: &Path,
+    updated: &Path,
+    expected: &[u8],
+    scenario: &str,
+) -> Result<(), String> {
+    let output = Command::new(compiler)
+        .arg("session")
+        .arg(initial)
+        .arg(updated)
+        .output()
+        .map_err(|error| format!("{}: cannot run self-hosted session: {error}", fixture.id))?;
+    if output.status.code() == Some(0) && output.stderr.is_empty() && output.stdout == expected {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: self-hosted session did not report exact {scenario} work: {} / {:?} / {:?}",
+        fixture.id, output.status, output.stdout, output.stderr
+    ))
 }
 
 fn require_success(fixture: &Fixture, compilation: &compiler::Compilation) -> Result<(), String> {

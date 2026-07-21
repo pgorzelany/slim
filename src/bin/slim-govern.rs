@@ -534,6 +534,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("driver", "driver.slim"),
         ("ir", "ir.slim"),
         ("project", "project.slim"),
+        ("query", "query.slim"),
+        ("session", "session.slim"),
         ("syntax", "syntax.slim"),
         ("text", "text.slim"),
     ] {
@@ -596,6 +598,39 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if project_source.contains("(fn report_private_modules") {
         errors
             .push("self-host project checker retains the superseded rereading resolver".to_owned());
+    }
+
+    let query_path = directory.join("query.slim");
+    let Ok(query) = fs::read_to_string(&query_path) else {
+        return;
+    };
+    for required in [
+        "(record Snapshot",
+        "(record Work",
+        "(record Dependency",
+        "(record State",
+        "(fn build_dependencies",
+        "(fn build_state",
+        "(fn build_snapshots",
+        "(fn measure_update",
+    ] {
+        if !query.contains(required) {
+            errors.push(format!(
+                "self-host query engine is missing typed capability `{required}`"
+            ));
+        }
+    }
+
+    let session_path = directory.join("session.slim");
+    let Ok(session) = fs::read_to_string(&session_path) else {
+        return;
+    };
+    for required in ["(fn state_for_path", "(fn run_recovery"] {
+        if !session.contains(required) {
+            errors.push(format!(
+                "self-host session is missing transactional capability `{required}`"
+            ));
+        }
     }
 }
 

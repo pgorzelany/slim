@@ -375,19 +375,18 @@ milestone.
   resolution, formatting, relocation, emission, visibility, cycle/schema
   diagnostics, and canonical path-free public interfaces.
 - The D0023 completion audit expanded the external corpus from 35 to 52
-  fixtures. All 52 pass stage 0; 50 currently have exact self-host parity and
-  two explicitly expose the remaining incremental-session and persistent-cache
-  work. Manifest ordering,
+  fixtures. All 52 pass stage 0; 51 currently have exact self-host parity and
+  one explicitly exposes the remaining persistent-cache work. Manifest ordering,
   uniqueness, confinement, entry, imports, module identity, resolution, and
   public-interface closure are now implemented in SLIM and covered by
   differential parity. The larger denominator replaces the earlier claim that
   only session/cache work remained.
-- The self-hosted compiler is now an explicit eight-module acyclic project:
+- The self-hosted compiler is now an explicit ten-module acyclic project:
   checking, C generation, project handling, syntax/token utilities, byte-text
-  emission, typed IR, coordination, and the executable driver have separate
-  SLIM ownership boundaries. The former roughly 149 KB compiler module is a
-  roughly 3.6 KB coordinator; every extraction preserved differential behavior
-  and a stage-2/stage-3 fixed point.
+  emission, typed IR, query snapshots, incremental sessions, coordination, and
+  the executable driver have separate SLIM ownership boundaries. The former
+  roughly 149 KB compiler module is a roughly 3.6 KB coordinator; every
+  extraction preserved differential behavior and a stage-2/stage-3 fixed point.
 - The first typed-query slice adds an explicit `ir` module with structured
   declaration kinds and declaration records. The checker now reads and lexes a
   standalone source exactly once, constructs one `Vec ir/Declaration`, and
@@ -401,6 +400,15 @@ milestone.
   over an explicit unique byte vector. Missing modules now produce stable
   `E0409` diagnostics in SLIM, empty files remain distinguishable from failure,
   and failed reads preserve the caller's vector atomically.
+- The first self-hosted session builds stable module/kind/name declaration
+  snapshots with separate body and interface spans, derives exact qualified
+  declaration edges from the typed project, compares two project states in one
+  process, and reports exact parse/lower/check/generate work. Conformance proves
+  zero work for no change, one declaration for a private body edit, and the
+  exact two-declaration reverse closure for an exported interface edit; the
+  result matches a repeated clean self-host oracle. Invalid updates are checked
+  without constructing a replacement state, and recovery conformance proves
+  that work is measured from the retained last-good snapshot.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.

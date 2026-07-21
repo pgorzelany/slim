@@ -7,7 +7,7 @@ project-format	format	conformance/projects/basic/slim.project	parity	-	project:f
 project-relocate	relocate	conformance/projects/basic/slim.project	parity	-	project:relocation
 project-cache	cache-corruption	conformance/projects/basic/slim.project	stage0-only(project-cache)	-	project:cache-corruption
 project-jobs	jobs	conformance/projects/basic/slim.project	parity	-	project:jobs
-project-incremental	incremental	conformance/projects/basic/slim.project	stage0-only(project-incremental)	-	project:incremental
+project-incremental	incremental	conformance/projects/basic/slim.project	parity	-	project:incremental
 project-private	check-fail	conformance/projects/private/slim.project	parity	E0415@app@56:77	project:visibility,project:diagnostics
 project-cycle	check-fail	conformance/projects/cycle/slim.project	parity	E0413@-@29:30	project:cycles,project:diagnostics
 project-version	check-fail	conformance/projects/malformed/slim.project	parity	E0402@-@9:10	project:manifest-version,project:diagnostics
