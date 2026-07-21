@@ -59,6 +59,13 @@ the native self-hosted compiler with exact stable codes and primary spans; the
 multi-error fixture proves deterministic recovery rather than first-error-only
 fallback.
 
+After the project gate passed, manifest-relative loading, qualified-name
+flattening, canonical public interfaces, visibility checks, cycle/schema
+diagnostics, relocation stability, and deterministic module assembly moved
+into SLIM. The bootstrap now compiles the compiler as the explicit
+`selfhost/slim.project` project, satisfying the rule that the source split
+happens only after the compiler can consume the same project model itself.
+
 ## Removal
 
 Remove the Rust ceiling only if SLIM-first implementation prevents a required

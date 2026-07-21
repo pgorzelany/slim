@@ -260,7 +260,7 @@ Acceptance:
   counts, no worker waits, canonical result merging, and a serial oracle.
   Worker-count tests compare valid output and invalid diagnostics. Measurements
   did not justify enabling parallelism by default.
-- The standalone corpus contains 11 explicitly classified project fixtures,
+- The standalone corpus contains 12 explicitly classified project fixtures,
   including native execution, exact diagnostics, formatting, relocation across
   clean compiler processes, cache corruption, incremental work, and job-count
   variance. Self-host support is explicitly `stage0-only(projects)`.
@@ -364,8 +364,13 @@ Acceptance:
   recovery, scalar/effect checking, Boolean exhaustiveness, and move/`inout`
   state. All 14 standalone diagnostic fixtures, including deterministic
   multi-diagnostic recovery, have exact code-and-primary-span parity.
-- The differential corpus now has 23 exact parity fixtures; only the 11
-  project/session fixtures remain explicitly deferred.
+- The differential corpus now has 33 exact parity fixtures. The SLIM compiler
+  resolves, formats, checks, relocates, and emits the project corpus, including
+  exact visibility, cycle, and schema diagnostics and canonical path-free
+  public interfaces; only the two session/cache fixtures remain deferred.
+- The compiler bootstraps from the explicit two-module
+  `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
+  Rust source bundler or stage-0 fallback.
 - Governance classifies every Rust source file and rejects production growth
   beyond its recorded byte ceiling.
 

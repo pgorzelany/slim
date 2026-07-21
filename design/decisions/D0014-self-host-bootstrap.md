@@ -31,9 +31,11 @@ performs two compiler generations and three small native builds.
 
 ## Evidence
 
-slim-bootstrap compiles selfhost/slimc.slim with stage 0, uses the resulting
-native compiler for two successive generations, requires byte-identical C at
-the fixed point, and runs a program compiled by the self-hosted stage.
+slim-bootstrap compiles `selfhost/slim.project` with stage 0, uses the resulting
+native compiler to compile that same two-module SLIM project for two successive
+generations, requires byte-identical C at the fixed point, and runs a program
+compiled by the self-hosted stage. The project contains a compiler library and
+a minimal entry driver; no Rust source bundler participates in later stages.
 
 ## Removal
 

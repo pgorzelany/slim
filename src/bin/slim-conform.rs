@@ -60,6 +60,7 @@ fn run() -> Result<(), String> {
         .join(", ");
     let parity_count = fixtures
         .iter()
+        .chain(project_fixtures.iter())
         .filter(|fixture| fixture.selfhost == "parity")
         .count();
     println!(
@@ -85,12 +86,17 @@ fn run() -> Result<(), String> {
             }
         }
         for fixture in &project_fixtures {
-            let reason = fixture
-                .selfhost
-                .strip_prefix("stage0-only(")
-                .and_then(|value| value.strip_suffix(')'))
-                .expect("project manifest classification was validated");
-            *deferred.entry(reason.to_owned()).or_default() += 1;
+            if fixture.selfhost == "parity" {
+                run_selfhost_project_fixture(fixture, &report.compiler)?;
+                parity_run += 1;
+            } else {
+                let reason = fixture
+                    .selfhost
+                    .strip_prefix("stage0-only(")
+                    .and_then(|value| value.strip_suffix(')'))
+                    .expect("project manifest classification was validated");
+                *deferred.entry(reason.to_owned()).or_default() += 1;
+            }
         }
         if parity_run != parity_count {
             return Err(format!(
@@ -135,6 +141,7 @@ fn load_project_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
             "cache-corruption",
             "jobs",
             "incremental",
+            "interfaces",
         ],
         true,
     )
@@ -144,7 +151,7 @@ fn load_fixture_manifest(
     root: &Path,
     relative_path: &str,
     allowed_modes: &[&str],
-    projects: bool,
+    _projects: bool,
 ) -> Result<Vec<Fixture>, String> {
     let path = root.join(relative_path);
     let text = fs::read_to_string(&path)
@@ -179,13 +186,6 @@ fn load_fixture_manifest(
         {
             return Err(format!(
                 "{}:{} must classify selfhost as parity or stage0-only(reason)",
-                path.display(),
-                line_index + 1
-            ));
-        }
-        if projects && columns[3] != "stage0-only(projects)" {
-            return Err(format!(
-                "{}:{} project selfhost must be exactly stage0-only(projects)",
                 path.display(),
                 line_index + 1
             ));
@@ -424,6 +424,19 @@ fn run_project_fixture(fixture: &Fixture) -> Result<(), String> {
             if first.emit_c() != second.emit_c() || first.interfaces != second.interfaces {
                 return Err(format!(
                     "{}: repeated project artifacts are not byte deterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "interfaces" => {
+            let first = project::compile_with_jobs(source.clone(), 1);
+            let second = project::compile_with_jobs(source, 1);
+            require_project_success(fixture, &first)?;
+            require_project_success(fixture, &second)?;
+            if first.interfaces != second.interfaces {
+                return Err(format!(
+                    "{}: repeated project interfaces are not byte deterministic",
                     fixture.id
                 ));
             }
@@ -775,6 +788,231 @@ fn run_selfhost_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String
             String::from_utf8_lossy(&output.stderr)
         )),
         _ => unreachable!("unsupported parity modes rejected above"),
+    }
+}
+
+fn run_selfhost_project_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
+    let run_check = || {
+        Command::new(compiler)
+            .arg("check")
+            .arg(&fixture.path)
+            .output()
+            .map_err(|error| {
+                format!(
+                    "{}: cannot run self-hosted project check: {error}",
+                    fixture.id
+                )
+            })
+    };
+    match fixture.mode.as_str() {
+        "check-pass" => {
+            let first = run_check()?;
+            let second = run_check()?;
+            if !first.status.success()
+                || !second.status.success()
+                || !first.stdout.is_empty()
+                || !first.stderr.is_empty()
+                || second.stdout != first.stdout
+                || second.stderr != first.stderr
+            {
+                return Err(format!(
+                    "{}: self-hosted project check was not clean and deterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "check-fail" => {
+            let first = run_check()?;
+            let second = run_check()?;
+            if first.status.code() != Some(1)
+                || second.status.code() != Some(1)
+                || !first.stderr.is_empty()
+                || second.stdout != first.stdout
+            {
+                return Err(format!(
+                    "{}: self-hosted project rejection was not deterministic",
+                    fixture.id
+                ));
+            }
+            let actual = String::from_utf8_lossy(&first.stdout)
+                .lines()
+                .collect::<Vec<_>>()
+                .join(",");
+            if actual != fixture.expectation {
+                return Err(format!(
+                    "{}: self-hosted project diagnostics differ\nexpected: {}\nactual:   {actual}",
+                    fixture.id, fixture.expectation
+                ));
+            }
+            Ok(())
+        }
+        "format" => {
+            let source = read_source(&fixture.path)?;
+            let expected = compiler::format_source(&source)
+                .map_err(|diagnostics| format!("{}: {diagnostics:#?}", fixture.id))?;
+            let run = || {
+                Command::new(compiler)
+                    .arg("fmt")
+                    .arg(&fixture.path)
+                    .output()
+                    .map_err(|error| {
+                        format!(
+                            "{}: cannot run self-hosted project formatter: {error}",
+                            fixture.id
+                        )
+                    })
+            };
+            let first = run()?;
+            let second = run()?;
+            if !first.status.success()
+                || !second.status.success()
+                || !first.stderr.is_empty()
+                || first.stdout != expected.as_bytes()
+                || second.stdout != first.stdout
+            {
+                return Err(format!(
+                    "{}: self-hosted project format differs or is nondeterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "interfaces" => {
+            let compilation = project::compile(read_source(&fixture.path)?);
+            require_project_success(fixture, &compilation)?;
+            let expected = compilation
+                .interfaces
+                .values()
+                .map(|artifact| artifact.bytes.as_str())
+                .collect::<String>();
+            let run = || {
+                Command::new(compiler)
+                    .arg("interfaces")
+                    .arg(&fixture.path)
+                    .output()
+                    .map_err(|error| {
+                        format!(
+                            "{}: cannot run self-hosted interface emitter: {error}",
+                            fixture.id
+                        )
+                    })
+            };
+            let first = run()?;
+            let second = run()?;
+            if !first.status.success()
+                || !second.status.success()
+                || !first.stderr.is_empty()
+                || first.stdout != expected.as_bytes()
+                || second.stdout != first.stdout
+            {
+                return Err(format!(
+                    "{}: self-hosted public interfaces differ or are nondeterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "run" | "emit" => {
+            let first = bootstrap::run_compiler(compiler, &fixture.path).map_err(|error| {
+                format!("{}: self-host project emit failed: {error}", fixture.id)
+            })?;
+            let second = bootstrap::run_compiler(compiler, &fixture.path).map_err(|error| {
+                format!(
+                    "{}: repeated self-host project emit failed: {error}",
+                    fixture.id
+                )
+            })?;
+            if first != second {
+                return Err(format!(
+                    "{}: self-host project C is not byte deterministic",
+                    fixture.id
+                ));
+            }
+            let generated = std::str::from_utf8(&first)
+                .map_err(|error| format!("{}: project emitted non-UTF-8 C: {error}", fixture.id))?;
+            let output = compile_and_run(fixture, generated)?;
+            if fixture.mode == "run" {
+                check_process_expectation(fixture, &output)
+            } else if output.status.success() {
+                Ok(())
+            } else {
+                Err(format!(
+                    "{}: self-host project C failed at runtime with {}",
+                    fixture.id, output.status
+                ))
+            }
+        }
+        "relocate" => {
+            let directory = temporary_directory("selfhost-project-relocate")?;
+            copy_tree(
+                fixture
+                    .path
+                    .parent()
+                    .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+                &directory,
+            )?;
+            let relocated = directory.join(
+                fixture
+                    .path
+                    .file_name()
+                    .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+            );
+            let original = bootstrap::run_compiler(compiler, &fixture.path).map_err(|error| {
+                format!("{}: original self-host emit failed: {error}", fixture.id)
+            });
+            let moved = bootstrap::run_compiler(compiler, &relocated).map_err(|error| {
+                format!("{}: relocated self-host emit failed: {error}", fixture.id)
+            });
+            let result = original.and_then(|original| {
+                let moved = moved?;
+                if original == moved {
+                    Ok(())
+                } else {
+                    Err(format!(
+                        "{}: relocation changed self-hosted project C",
+                        fixture.id
+                    ))
+                }
+            });
+            let _ = fs::remove_dir_all(directory);
+            result
+        }
+        "jobs" => {
+            let mut outputs = Vec::new();
+            for jobs in [1, 2, 4] {
+                let output = Command::new(compiler)
+                    .arg(&fixture.path)
+                    .arg("--jobs")
+                    .arg(jobs.to_string())
+                    .output()
+                    .map_err(|error| {
+                        format!(
+                            "{}: cannot run self-host with {jobs} jobs: {error}",
+                            fixture.id
+                        )
+                    })?;
+                if !output.status.success() || !output.stderr.is_empty() {
+                    return Err(format!(
+                        "{}: self-host project failed with {jobs} jobs",
+                        fixture.id
+                    ));
+                }
+                outputs.push(output.stdout);
+            }
+            if outputs.windows(2).any(|pair| pair[0] != pair[1]) {
+                return Err(format!(
+                    "{}: requested job count changed self-hosted project C",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "cache-corruption" | "incremental" => Err(format!(
+            "{}: {} cannot claim parity before the self-hosted session exists",
+            fixture.id, fixture.mode
+        )),
+        _ => unreachable!("project manifest mode validated"),
     }
 }
 

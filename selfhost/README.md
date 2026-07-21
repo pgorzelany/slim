@@ -1,10 +1,11 @@
 # Self-host bootstrap
 
-slimc.slim is the compiler implementation written in canonical SLIM Core.
-Stage 0 compiles it to the stage-1 executable. Stage 1 emits the C used to build
-stage 2, and stage 2 emits the C for stage 3. The bootstrap succeeds only when
-the stage-2 and stage-3 C files are byte-for-byte identical and a program
-compiled by the self-hosted compiler runs successfully.
+`slim.project` is the self-hosting input. It contains the compiler library in
+`slimc.slim` and the minimal entry function in `driver.slim`. Stage 0 compiles
+the project to the stage-1 executable. Stage 1 emits the C used to build stage
+2, and stage 2 emits the C for stage 3. The bootstrap succeeds only when the
+stage-2 and stage-3 C files are byte-for-byte identical and a program compiled
+by the self-hosted compiler runs successfully.
 
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
@@ -15,7 +16,12 @@ standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
 Its lexer dogfoods this support with a `Token` record and a single `Vec Token`.
 The checker diagnoses malformed forms, scalar/effect errors, non-exhaustive or
 duplicate Boolean arms, use-after-move, and invalid `inout`/`recur` ownership.
-Stage 0 remains the complete Core oracle while project support is ported.
+The compiler also resolves canonical project manifests, reads explicit
+manifest-relative modules, lowers qualified references into one deterministic
+translation unit, and checks the current project visibility/cycle/schema
+diagnostics. It also emits canonical path-free public interface artifacts.
+Stage 0 remains the complete Core oracle while incremental sessions and
+validated persistent caches are ported.
 
 New compiler capability is implemented in this SLIM compiler by default. The
 production Rust ceilings in `design/rust-budget.tsv` prevent unnoticed stage-0

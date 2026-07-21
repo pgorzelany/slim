@@ -3,7 +3,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::process::Command;
 
-use crate::compiler;
+use crate::project;
 use crate::span::Source;
 
 pub const RUNTIME_C: &str = include_str!("../runtime/slim_rt.c");
@@ -17,16 +17,16 @@ pub struct BootstrapReport {
 }
 
 pub fn bootstrap(root: &Path) -> Result<BootstrapReport, String> {
-    let source_path = root.join("selfhost/slimc.slim");
+    let source_path = root.join("selfhost/slim.project");
     let source_text = fs::read_to_string(&source_path)
         .map_err(|error| format!("cannot read {}: {error}", source_path.display()))?;
     let source = Source::new(&source_path, source_text);
-    let compilation = compiler::compile(source.clone());
+    let compilation = project::compile(source.clone());
     if !compilation.succeeded() {
         let diagnostics = compilation
             .diagnostics
             .iter()
-            .map(|diagnostic| diagnostic.render_human(&source))
+            .map(project::ProjectDiagnostic::render_human)
             .collect::<String>();
         return Err(format!(
             "stage 0 rejected the self-hosted compiler\n{diagnostics}"
