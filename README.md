@@ -47,10 +47,13 @@ For the executable Core oracle and incremental measurements:
 ## Current boundary
 
 Stage 0 implements Core 0 and provides the reference diagnostics. The
-self-hosted compiler is a genuine deterministic compiler, not a wrapper. It
-now implements records and variants and stores lexer tokens as SLIM records;
-new compiler capabilities default to SLIM under an enforced production-Rust
-budget.
+self-hosted compiler is a genuine deterministic compiler, not a wrapper. Core
+0.3 is frozen with all 52 conformance fixtures at self-host parity. Its twelve
+SLIM modules implement structured syntax and typed declarations, standalone
+and project checking, deterministic C generation, declaration-level query
+invalidation, transactional last-good sessions, a bounded validated persistent
+cache, and deterministic bounded scheduling. New compiler capabilities default
+to SLIM under an enforced production-Rust budget.
 Core 0.1 also has declaration-local in-memory incremental compilation with
 stable syntax/interface fingerprints and dependency-aware invalidation; its
 architecture and measured remaining whole-file costs are documented in
@@ -59,6 +62,9 @@ Core 0.2 adds explicit deterministic projects, qualified cross-module
 references, canonical public interfaces, safe persistent cache recovery,
 declaration-level project reuse, and an opt-in deterministic worker path. The
 measured worker path is currently slower than serial and is not enabled by
-default. Language-level concurrency, automatic program parallelization,
-whole-program quality grading, and general optimal reduction remain designed
-goals rather than implemented claims.
+default. Core 0.3's self-host scheduler likewise plans bounded dependency
+batches but executes them serially because Core has no concurrency runtime.
+Language-level concurrency, automatic program parallelization, whole-program
+quality grading, and general optimal reduction remain designed goals rather
+than implemented claims. The 0.3 freeze evidence and remaining performance gap
+are recorded in [benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).

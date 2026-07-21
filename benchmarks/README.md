@@ -54,3 +54,7 @@ whole-project operations. A fully valid persistent cache performs zero
 declaration frontend/code-generation work, but many small cache-file reads can
 cost more wall time than a clean check at these sizes. See
 `results/2026-07-21-project.tsv` for the reproducible evidence.
+
+The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
+release gate, bootstrap size, conformance denominator, self-host clean/cache/
+session process timings, and explicit claims that remain out of scope.

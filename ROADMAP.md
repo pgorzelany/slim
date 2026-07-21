@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 0.3 active
-Current milestone: Core 0.3 SLIM-first self-hosting
+Status: Core 0.3 complete
+Current milestone: Core 0.4 lifetime and region planning
 Last updated: 2026-07-21
 
 ## Direction
@@ -360,7 +360,7 @@ parity is claimed so that every accepted project rule, not only the original
 project fixtures, is tested. No Core syntax or primitive is added by this
 milestone.
 
-### Core 0.3 first-slice evidence
+### Core 0.3 completion evidence
 
 - The self-hosted compiler emits records, variants, `make`, `get`, `case`,
   variant `match`, and `set`.
@@ -427,6 +427,17 @@ milestone.
   Rust source bundler or stage-0 fallback.
 - Governance classifies every Rust source file and rejects production growth
   beyond its recorded byte ceiling.
+- The final combined gate passes formatting, warning-free Clippy, 61 Rust
+  tests, governance, 52-fixture differential conformance with zero deferrals,
+  the 592,704-byte stage-2/stage-3 fixed point, frontend and incremental work
+  assertions, project scheduling/cache assertions, and ASan/UBSan native
+  execution.
+- On the recorded Apple M1 Max machine, the stage-2 compiler's median process
+  time is 2.147 ms for the basic project, 322.838 ms for its own twelve-module
+  project, and 7.796 ms for a validated warm self-cache hit (21 samples after
+  warmup). This is evidence of the completed architecture, not attainment of
+  the long-term millisecond-at-large-scale compilation goal. Full conditions
+  and existing scaling results are recorded under `benchmarks/results/`.
 
 ## Later milestones
 

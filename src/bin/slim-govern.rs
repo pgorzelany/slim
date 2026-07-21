@@ -102,7 +102,7 @@ fn check_ledger_coverage(
     let Ok(ledger) = fs::read_to_string(ledger_path) else {
         return;
     };
-    let manifest = match fs::read_to_string(&manifest_path) {
+    let manifest = match fs::read_to_string(manifest_path) {
         Ok(manifest) => manifest,
         Err(error) => {
             errors.push(format!("cannot read {}: {error}", manifest_path.display()));
