@@ -17,7 +17,8 @@ tests, and comparable SLIM/C/Rust benchmark programs.
 
 The accepted canonical Core and compiler commands are documented in
 [docs/CORE.md](docs/CORE.md). Design goals and known theoretical limits are
-recorded in [DESIGN.md](DESIGN.md).
+recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
+their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 
 ## Verify everything
 

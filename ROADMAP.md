@@ -1,0 +1,150 @@
+# SLIM Roadmap
+
+Status: active
+Current milestone: Core 0.1 Foundations
+Last updated: 2026-07-21
+
+## Direction
+
+SLIM grows by strengthening guarantees and implementation capability before
+expanding language surface. Compiler infrastructure, ordinary libraries, and
+analysis are preferred over new primitives. Every durable architecture or
+language decision remains subject to design/FEATURE_POLICY.md.
+
+The long-term sequence is:
+
+1. Core 0 conformance and executable semantics.
+2. Declaration-local incremental compilation.
+3. Deterministic multi-module projects.
+4. Compile-time lifetime and region planning.
+5. Full self-hosted compiler parity.
+6. Typed optimization and predictable native code generation.
+7. Deterministic structured concurrency.
+8. Bounded computation, quality grading, and semantic reduction.
+9. AI-native tooling and ecosystem hardening.
+
+## Core 0.1 Foundations
+
+Core 0.1 adds no language syntax. It establishes the evidence and compiler
+architecture needed to change the language safely.
+
+### Deliverable 1: executable conformance corpus
+
+- Store standalone source fixtures outside Rust unit tests.
+- Cover every accepted item, expression, type, effect, ownership rule, and
+  built-in.
+- Check stable diagnostic codes and primary byte spans.
+- Check runtime output, exit status, and defined traps.
+- Check canonical formatting and deterministic C generation.
+- Exercise malformed-input recovery and multiple diagnostics.
+- Fail when the accepted surface ledger has no corresponding coverage tag.
+
+Acceptance:
+
+- The corpus is runnable through one dependency-free command.
+- Adding an accepted built-in without a conformance tag fails governance.
+- All expected diagnostics compare code and exact primary span.
+
+### Deliverable 2: stage differential gate
+
+- Run applicable fixtures through stage 0 and the self-hosted compiler.
+- Compare acceptance, native output, exit status, and determinism.
+- Classify unsupported self-host capabilities explicitly in the manifest.
+- Reject an unexplained acceptance or runtime divergence.
+- Preserve the existing byte-identical compiler bootstrap proof.
+
+Acceptance:
+
+- Every fixture is marked parity or stage0-only with a reason.
+- A parity fixture cannot silently fall back to stage 0.
+- The differential report lists tested and intentionally deferred behavior.
+
+### Deliverable 3: declaration identities and fingerprints
+
+- Identify declarations by module, declaration kind, and declared name.
+- Compute a stable syntax fingerprint from normalized semantic structure.
+- Compute a separate public-interface fingerprint.
+- Build explicit call and named-type dependency edges.
+- Reject duplicate identities with existing compiler diagnostics.
+- Keep fingerprints independent of whitespace and source offsets.
+
+Acceptance:
+
+- Whitespace-only edits preserve both fingerprints.
+- Body-only edits change syntax but preserve interface fingerprints.
+- Signature and data-layout edits change interface fingerprints.
+- Graph output is deterministic across processes.
+
+### Deliverable 4: real incremental compilation session
+
+- Retain parsed, lowered, checked, and generated results in memory.
+- Reuse unchanged declarations rather than merely calculating an invalidation
+  set before performing a full compilation.
+- Recheck a syntax-changed declaration.
+- Recheck reverse transitive dependents only when its interface changes.
+- Invalidate callers for call-signature changes and type users for layout
+  changes.
+- Reassemble deterministic program output from cached and fresh fragments.
+- Rebase or regenerate diagnostic spans correctly after source movement.
+- Recover safely from invalid edits and cache corruption.
+
+Acceptance:
+
+- A private body edit in a large valid program rechecks and regenerates exactly
+  one declaration.
+- A signature change rechecks only the declaration and transitive dependents.
+- An unrelated declaration retains its semantic and generated cache entries.
+- Incremental output equals a clean compilation byte for byte.
+- Existing diagnostics and ownership/effect guarantees remain identical.
+
+### Deliverable 5: empirical incremental benchmarks
+
+- Generate geometrically increasing declaration graphs.
+- Measure cold compilation, no-change update, private body edit, leaf
+  interface edit, and central interface edit.
+- Record declarations parsed, lowered, checked, and generated.
+- Report wall time separately from work counts.
+- Preserve the existing approximately linear clean-build gate.
+
+Acceptance:
+
+- No-change updates perform zero declaration checks and code generations.
+- Private body edit work remains constant as unrelated declarations grow.
+- Interface-edit work is proportional to the affected dependency closure.
+- Recorded results and reproduction commands are committed.
+
+## Non-goals for Core 0.1
+
+- New syntax, aliases, sugar, implicit conversions, or inference rules.
+- Imports, packages, generics, traits, macros, async syntax, or FFI.
+- Arbitrary threads, locks, channels, or automatic parallel execution.
+- A new native backend.
+- General equivalence checking or an optimizing reducer.
+- Replacing the root-region runtime before lifetime planning is specified.
+
+## Later milestones
+
+### Core 0.2: deterministic projects
+
+Add one explicit import/export model, interface artifacts, reproducible project
+manifests, parallel checking of independent modules, and project-level
+incremental caches.
+
+### Core 0.3: lifetime and region planning
+
+Add escape and liveness analysis, stack promotion, compiler-inserted narrow
+regions, deterministic resource destruction, and typed allocation failure.
+Add explicit region surface only if inference evidence demonstrates a need.
+
+### Core 0.4: self-host parity
+
+Bring the SLIM compiler to complete Core conformance, diagnostic, formatter,
+project, and incremental parity. Retain Rust stage 0 as an independent oracle
+until reproducibility and differential evidence justify freezing it.
+
+### Core 1 research
+
+Develop typed optimization, bounded and total profiles, structured
+deterministic concurrency, quality metrics, bounded equivalence, and
+cost-directed reduction. Each research result must pass the same feature gates
+before entering the language.
