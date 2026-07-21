@@ -359,8 +359,13 @@ Acceptance:
   variant `match`, and `set`.
 - Its lexer uses a copy-safe `Token` record and one `Vec Token` in place of
   three parallel vectors.
-- Storage operations and canonical formatting are also implemented in SLIM;
-  the differential corpus now has nine exact parity fixtures.
+- Storage operations and canonical formatting are also implemented in SLIM.
+- The self-hosted checker now owns structured diagnostic values, malformed-form
+  recovery, scalar/effect checking, Boolean exhaustiveness, and move/`inout`
+  state. All 14 standalone diagnostic fixtures, including deterministic
+  multi-diagnostic recovery, have exact code-and-primary-span parity.
+- The differential corpus now has 23 exact parity fixtures; only the 11
+  project/session fixtures remain explicitly deferred.
 - Governance classifies every Rust source file and rejects production growth
   beyond its recorded byte ceiling.
 

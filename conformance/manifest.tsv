@@ -6,19 +6,19 @@ recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:r
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
 format	format	conformance/tool/format.slim	parity	-	tool:format
 emit	emit	conformance/pass/scalars.slim	parity	-	backend:c11,tool:emit-deterministic
-missing-effect	check-fail	conformance/fail/missing_effect.slim	stage0-only(diagnostics)	E0343@83:105	diagnostic:E0343,effect:enforcement
-missing-alloc	check-fail	conformance/fail/missing_alloc.slim	stage0-only(diagnostics)	E0343@94:108	diagnostic:E0343,effect:alloc-enforcement
-missing-partial	check-fail	conformance/fail/missing_partial.slim	stage0-only(diagnostics)	E0343@151:167	diagnostic:E0343,effect:partial-enforcement
-use-after-move	check-fail	conformance/fail/use_after_move.slim	stage0-only(diagnostics)	E0315@223:229	diagnostic:E0315,ownership:move
-move-from-inout	check-fail	conformance/fail/move_from_inout.slim	stage0-only(diagnostics)	E0347@167:173	diagnostic:E0347,ownership:inout-no-move
-inout-temporary	check-fail	conformance/fail/inout_temporary.slim	stage0-only(diagnostics)	E0348@176:190	diagnostic:E0348,ownership:named-inout
-inout-alias	check-fail	conformance/fail/inout_alias.slim	stage0-only(diagnostics)	E0349@213:219	diagnostic:E0349,ownership:no-alias
-recur-rebind	check-fail	conformance/fail/recur_rebind.slim	stage0-only(diagnostics)	E0350@114:119,E0350@120:124	diagnostic:E0350,ownership:recur-preserves-inout
-nonexhaustive	check-fail	conformance/fail/nonexhaustive.slim	stage0-only(diagnostics)	E0336@66:87	diagnostic:E0336,match:exhaustive
-type-mismatch	check-fail	conformance/fail/type_mismatch.slim	stage0-only(diagnostics)	E0344@61:65	diagnostic:E0344,type:strong
-unknown-form	check-fail	conformance/fail/unknown_form.slim	stage0-only(diagnostics)	E0221@61:67	diagnostic:E0221,recovery:parser
-qualified-reference	check-fail	conformance/fail/qualified_reference.slim	stage0-only(project-resolution)	E0228@74:79	diagnostic:E0228,syntax:qualified-reference
-unterminated	check-fail	conformance/fail/unterminated.slim	stage0-only(diagnostics)	E0102@0:68	diagnostic:E0102,recovery:malformed
-multiple	check-fail	conformance/fail/multiple.slim	stage0-only(diagnostics)	E0336@67:119,E0314@91:98,E0335@106:118,E0344@112:117	recovery:multiple-diagnostics
+missing-effect	check-fail	conformance/fail/missing_effect.slim	parity	E0343@83:105	diagnostic:E0343,effect:enforcement
+missing-alloc	check-fail	conformance/fail/missing_alloc.slim	parity	E0343@94:108	diagnostic:E0343,effect:alloc-enforcement
+missing-partial	check-fail	conformance/fail/missing_partial.slim	parity	E0343@151:167	diagnostic:E0343,effect:partial-enforcement
+use-after-move	check-fail	conformance/fail/use_after_move.slim	parity	E0315@223:229	diagnostic:E0315,ownership:move
+move-from-inout	check-fail	conformance/fail/move_from_inout.slim	parity	E0347@167:173	diagnostic:E0347,ownership:inout-no-move
+inout-temporary	check-fail	conformance/fail/inout_temporary.slim	parity	E0348@176:190	diagnostic:E0348,ownership:named-inout
+inout-alias	check-fail	conformance/fail/inout_alias.slim	parity	E0349@213:219	diagnostic:E0349,ownership:no-alias
+recur-rebind	check-fail	conformance/fail/recur_rebind.slim	parity	E0350@114:119,E0350@120:124	diagnostic:E0350,ownership:recur-preserves-inout
+nonexhaustive	check-fail	conformance/fail/nonexhaustive.slim	parity	E0336@66:87	diagnostic:E0336,match:exhaustive
+type-mismatch	check-fail	conformance/fail/type_mismatch.slim	parity	E0344@61:65	diagnostic:E0344,type:strong
+unknown-form	check-fail	conformance/fail/unknown_form.slim	parity	E0221@61:67	diagnostic:E0221,recovery:parser
+qualified-reference	check-fail	conformance/fail/qualified_reference.slim	parity	E0228@74:79	diagnostic:E0228,syntax:qualified-reference
+unterminated	check-fail	conformance/fail/unterminated.slim	parity	E0102@0:68	diagnostic:E0102,recovery:malformed
+multiple	check-fail	conformance/fail/multiple.slim	parity	E0336@67:119,E0314@91:98,E0335@106:118,E0344@112:117	recovery:multiple-diagnostics
 overflow	trap	conformance/runtime/overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 addition overflow\n	runtime:overflow-trap
 bounds	trap	conformance/runtime/bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: vector index out of bounds\n	runtime:bounds-trap

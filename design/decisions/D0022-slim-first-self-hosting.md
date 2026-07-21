@@ -51,6 +51,14 @@ the compiler directly uses the record feature. The corresponding conformance
 fixtures pass through the self-hosted compiler, and stage 2 and stage 3
 generated C remain byte-identical.
 
+The next slice implements the standalone checker in SLIM: structured
+diagnostic identities, malformed-input recovery, scalar and effect checks,
+Boolean exhaustiveness, move state, exclusive-borrow rules, and tail-recurrence
+binding preservation. Every standalone diagnostic fixture now runs through
+the native self-hosted compiler with exact stable codes and primary spans; the
+multi-error fixture proves deterministic recovery rather than first-error-only
+fallback.
+
 ## Removal
 
 Remove the Rust ceiling only if SLIM-first implementation prevents a required

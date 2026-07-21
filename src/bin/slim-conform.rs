@@ -673,10 +673,41 @@ fn copy_tree(source: &Path, destination: &Path) -> Result<(), String> {
 
 fn run_selfhost_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
     if fixture.mode == "check-fail" {
-        return Err(format!(
-            "{}: mode {} cannot claim self-host parity because the restricted compiler does not implement it",
-            fixture.id, fixture.mode
-        ));
+        let run = || {
+            Command::new(compiler)
+                .arg("check")
+                .arg(&fixture.path)
+                .output()
+                .map_err(|error| format!("{}: cannot run self-hosted checker: {error}", fixture.id))
+        };
+        let first = run()?;
+        let second = run()?;
+        if first.status.code() != Some(1) || second.status.code() != Some(1) {
+            return Err(format!(
+                "{}: self-hosted checker did not reject deterministically: {} / {}",
+                fixture.id, first.status, second.status
+            ));
+        }
+        if !first.stderr.is_empty() || !second.stderr.is_empty() {
+            return Err(format!(
+                "{}: self-hosted checker wrote unexpected unstructured diagnostics",
+                fixture.id
+            ));
+        }
+        let identity = |bytes: &[u8]| {
+            String::from_utf8_lossy(bytes)
+                .lines()
+                .collect::<Vec<_>>()
+                .join(",")
+        };
+        let actual = identity(&first.stdout);
+        if actual != fixture.expectation || second.stdout != first.stdout {
+            return Err(format!(
+                "{}: self-hosted diagnostics differ\nexpected: {}\nactual:   {actual}",
+                fixture.id, fixture.expectation
+            ));
+        }
+        return Ok(());
     }
     if fixture.mode == "format" {
         let source = read_source(&fixture.path)?;

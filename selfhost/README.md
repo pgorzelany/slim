@@ -9,12 +9,13 @@ compiled by the self-hosted compiler runs successfully.
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
 
-The self-hosted path accepts the subset needed to compile itself plus the first
-Core 0.3 parity slice: records, variants, `make`, `get`, `case`, variant
-`match`, `set`, vector update, arenas, and canonical formatting. Its lexer
-dogfoods this support with a `Token` record and a single `Vec Token`. Stage 0
-remains the complete Core 0 implementation and the diagnostic reference
-compiler.
+The self-hosted path accepts the subset needed to compile itself plus the Core
+standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
+`set`, vector update, arenas, canonical formatting, and structured checking.
+Its lexer dogfoods this support with a `Token` record and a single `Vec Token`.
+The checker diagnoses malformed forms, scalar/effect errors, non-exhaustive or
+duplicate Boolean arms, use-after-move, and invalid `inout`/`recur` ownership.
+Stage 0 remains the complete Core oracle while project support is ported.
 
 New compiler capability is implemented in this SLIM compiler by default. The
 production Rust ceilings in `design/rust-budget.tsv` prevent unnoticed stage-0
