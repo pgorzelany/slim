@@ -375,12 +375,13 @@ milestone.
   resolution, formatting, relocation, emission, visibility, cycle/schema
   diagnostics, and canonical path-free public interfaces.
 - The D0023 completion audit expanded the external corpus from 35 to 51
-  fixtures. All 51 pass stage 0; 40 currently have exact self-host parity and
-  11 explicitly expose the remaining loading, resolution, public-interface,
+  fixtures. All 51 pass stage 0; 48 currently have exact self-host parity and
+  three explicitly expose the remaining fallible filesystem transport,
   incremental-session, and persistent-cache work. Manifest ordering,
-  uniqueness, confinement, entry, and import rules are now implemented in
-  SLIM and covered by differential parity. The larger denominator replaces the
-  earlier claim that only session/cache work remained.
+  uniqueness, confinement, entry, imports, module identity, resolution, and
+  public-interface closure are now implemented in SLIM and covered by
+  differential parity. The larger denominator replaces the earlier claim that
+  only session/cache work remained.
 - The self-hosted compiler is now an explicit eight-module acyclic project:
   checking, C generation, project handling, syntax/token utilities, byte-text
   emission, typed IR, coordination, and the executable driver have separate
@@ -392,6 +393,10 @@ milestone.
   standalone source exactly once, constructs one `Vec ir/Declaration`, and
   reuses that index across its top-level semantic passes. Governance rejects a
   return to per-phase file reads or lexing.
+- Project checking now builds one typed `LoadedModule` index and one shared
+  token arena. Identity, exports, entry-point rules, qualified-call resolution,
+  and interface closure consume that index; the seven newly covered resolution
+  and loading rules no longer reread module files in separate semantic passes.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.

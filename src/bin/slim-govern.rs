@@ -582,12 +582,20 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn find_invalid_path",
         "(fn find_unknown_import",
         "(call report_manifest_rules",
+        "(record LoadedModule",
+        "(fn load_project_modules",
+        "(fn report_loaded_project",
+        "(fn report_private_type_leaks",
     ] {
         if !project_source.contains(required) {
             errors.push(format!(
                 "self-host project checker is missing manifest capability `{required}`"
             ));
         }
+    }
+    if project_source.contains("(fn report_private_modules") {
+        errors
+            .push("self-host project checker retains the superseded rereading resolver".to_owned());
     }
 }
 
