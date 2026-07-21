@@ -572,6 +572,23 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if !check.contains("(Vec ir/Declaration)") {
         errors.push("self-host checker does not consume structured declarations".to_owned());
     }
+
+    let project_path = directory.join("project.slim");
+    let Ok(project_source) = fs::read_to_string(&project_path) else {
+        return;
+    };
+    for required in [
+        "(fn report_manifest_rules",
+        "(fn find_invalid_path",
+        "(fn find_unknown_import",
+        "(call report_manifest_rules",
+    ] {
+        if !project_source.contains(required) {
+            errors.push(format!(
+                "self-host project checker is missing manifest capability `{required}`"
+            ));
+        }
+    }
 }
 
 fn visit_rs_files(dir: &Path, action: &mut impl FnMut(&Path, &str)) {

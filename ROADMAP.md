@@ -375,16 +375,18 @@ milestone.
   resolution, formatting, relocation, emission, visibility, cycle/schema
   diagnostics, and canonical path-free public interfaces.
 - The D0023 completion audit expanded the external corpus from 35 to 51
-  fixtures. All 51 pass stage 0; 33 currently have exact self-host parity and
-  18 explicitly expose the remaining manifest, loading, resolution, public
-  interface, incremental-session, and persistent-cache work. The larger
-  denominator replaces the earlier claim that only session/cache work remained.
-- The self-hosted compiler is now an explicit seven-module acyclic project:
+  fixtures. All 51 pass stage 0; 40 currently have exact self-host parity and
+  11 explicitly expose the remaining loading, resolution, public-interface,
+  incremental-session, and persistent-cache work. Manifest ordering,
+  uniqueness, confinement, entry, and import rules are now implemented in
+  SLIM and covered by differential parity. The larger denominator replaces the
+  earlier claim that only session/cache work remained.
+- The self-hosted compiler is now an explicit eight-module acyclic project:
   checking, C generation, project handling, syntax/token utilities, byte-text
-  emission, coordination, and the executable driver have separate SLIM
-  ownership boundaries. The former roughly 149 KB compiler module is a roughly
-  3.6 KB coordinator; every extraction preserved differential behavior and a
-  stage-2/stage-3 fixed point.
+  emission, typed IR, coordination, and the executable driver have separate
+  SLIM ownership boundaries. The former roughly 149 KB compiler module is a
+  roughly 3.6 KB coordinator; every extraction preserved differential behavior
+  and a stage-2/stage-3 fixed point.
 - The first typed-query slice adds an explicit `ir` module with structured
   declaration kinds and declaration records. The checker now reads and lexes a
   standalone source exactly once, constructs one `Vec ir/Declaration`, and
