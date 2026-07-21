@@ -3,6 +3,7 @@ use std::fmt::Write as _;
 
 use crate::ast::{Effect, Item, ParamMode, Type};
 use crate::incremental::Fingerprint;
+use crate::sexpr::{SExpr, SExprKind};
 
 use super::{LoadedProject, ProjectDiagnostic};
 
@@ -11,6 +12,157 @@ pub struct InterfaceArtifact {
     pub module: String,
     pub bytes: String,
     pub fingerprint: Fingerprint,
+}
+
+pub fn validate_artifact(module: &str, bytes: &str) -> bool {
+    let (tokens, lex_diagnostics) = crate::lexer::lex(bytes);
+    let (forms, parse_diagnostics) = crate::sexpr::parse(&tokens, bytes.len());
+    if !lex_diagnostics.is_empty()
+        || !parse_diagnostics.is_empty()
+        || forms.len() != 1
+        || crate::formatter::format_forms(&forms) != bytes
+    {
+        return false;
+    }
+    let Some(elements) = list(&forms[0]) else {
+        return false;
+    };
+    if elements.len() < 3
+        || atom(&elements[0]) != Some("interface")
+        || atom(&elements[1]) != Some("1")
+        || atom(&elements[2]) != Some(module)
+    {
+        return false;
+    }
+    let mut previous = None;
+    for declaration in &elements[3..] {
+        let Some(parts) = list(declaration) else {
+            return false;
+        };
+        let Some(name) = parts.get(1).and_then(atom) else {
+            return false;
+        };
+        if !valid_name(name) || previous.is_some_and(|prior| prior >= name) {
+            return false;
+        }
+        previous = Some(name);
+        match parts.first().and_then(atom) {
+            Some("record") if validate_record(parts) => {}
+            Some("variant") if validate_variant(parts) => {}
+            Some("fn") if validate_function(parts) => {}
+            _ => return false,
+        }
+    }
+    true
+}
+
+fn validate_record(parts: &[SExpr]) -> bool {
+    parts.len() == 3
+        && parts.get(2).and_then(list).is_some_and(|fields| {
+            unique_named_forms(fields, |field| {
+                list(field).is_some_and(|parts| {
+                    parts.len() == 2
+                        && parts.first().and_then(atom).is_some_and(valid_name)
+                        && validate_type(&parts[1])
+                })
+            })
+        })
+}
+
+fn validate_variant(parts: &[SExpr]) -> bool {
+    parts.len() == 3
+        && parts.get(2).and_then(list).is_some_and(|cases| {
+            unique_named_forms(cases, |case| {
+                list(case).is_some_and(|parts| {
+                    !parts.is_empty()
+                        && parts.first().and_then(atom).is_some_and(valid_name)
+                        && parts[1..].iter().all(validate_type)
+                })
+            })
+        })
+}
+
+fn validate_function(parts: &[SExpr]) -> bool {
+    if parts.len() != 5 || !validate_type(&parts[3]) {
+        return false;
+    }
+    let parameters_valid = parts.get(2).and_then(list).is_some_and(|parameters| {
+        parameters.iter().all(|parameter| {
+            list(parameter).is_some_and(|parts| {
+                parts.len() == 2
+                    && matches!(parts.first().and_then(atom), Some("owned" | "inout"))
+                    && validate_type(&parts[1])
+            })
+        })
+    });
+    let effects_valid = parts.get(4).and_then(list).is_some_and(|effects| {
+        effects.first().and_then(atom) == Some("effects")
+            && effects[1..]
+                .iter()
+                .map(atom)
+                .collect::<Option<Vec<_>>>()
+                .is_some_and(|actual| {
+                    ["alloc", "io", "partial"]
+                        .into_iter()
+                        .filter(|effect| actual.contains(effect))
+                        .collect::<Vec<_>>()
+                        == actual
+                })
+    });
+    parameters_valid && effects_valid
+}
+
+fn validate_type(ty: &SExpr) -> bool {
+    if let Some(name) = atom(ty) {
+        return matches!(name, "Unit" | "Bool" | "U8" | "I64" | "Bytes")
+            || name.split_once('/').is_some_and(|(module, declaration)| {
+                valid_name(module)
+                    && valid_name(declaration)
+                    && !declaration.contains('/')
+                    && !module.contains('/')
+            });
+    }
+    list(ty).is_some_and(|parts| {
+        parts.len() == 2
+            && matches!(parts.first().and_then(atom), Some("Vec" | "Arena" | "Id"))
+            && validate_type(&parts[1])
+    })
+}
+
+fn unique_named_forms(forms: &[SExpr], validate: impl Fn(&SExpr) -> bool) -> bool {
+    let mut names = BTreeSet::new();
+    forms.iter().all(|form| {
+        validate(form)
+            && list(form)
+                .and_then(|parts| parts.first())
+                .and_then(atom)
+                .is_some_and(|name| names.insert(name))
+    })
+}
+
+fn valid_name(value: &str) -> bool {
+    let mut bytes = value.bytes();
+    let Some(first) = bytes.next() else {
+        return false;
+    };
+    (first.is_ascii_alphabetic() || first == b'_')
+        && bytes.all(|byte| {
+            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.' | b'?' | b'!')
+        })
+}
+
+fn list(form: &SExpr) -> Option<&[SExpr]> {
+    match &form.kind {
+        SExprKind::List(elements) => Some(elements),
+        _ => None,
+    }
+}
+
+fn atom(form: &SExpr) -> Option<&str> {
+    match &form.kind {
+        SExprKind::Atom(value) => Some(value),
+        _ => None,
+    }
 }
 
 pub fn build(
@@ -337,5 +489,24 @@ mod tests {
                 .unwrap();
         assert_eq!(first, build(&loaded).unwrap());
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn strict_reader_rejects_unknown_noncanonical_and_malformed_artifacts() {
+        assert!(validate_artifact(
+            "math",
+            "(interface 1 math (fn answer ((owned I64)) I64 (effects)))\n"
+        ));
+        assert!(!validate_artifact("math", "(interface 2 math)\n"));
+        assert!(!validate_artifact("math", "(interface 1 other)\n"));
+        assert!(!validate_artifact("math", "(interface 1 math )\n"));
+        assert!(!validate_artifact(
+            "math",
+            "(interface 1 math (fn answer ((borrowed I64)) I64 (effects)))\n"
+        ));
+        assert!(!validate_artifact(
+            "math",
+            "(interface 1 math (fn answer () I64 (effects io alloc)))\n"
+        ));
     }
 }

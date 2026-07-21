@@ -9,9 +9,11 @@ use crate::diagnostic::Diagnostic;
 use crate::sema::CheckedProgram;
 use crate::span::Source;
 
+pub mod cache;
 pub mod interface;
 pub mod manifest;
 pub mod resolver;
+pub mod session;
 
 use manifest::{ModuleSpec, ProjectManifest};
 
@@ -96,7 +98,7 @@ pub struct ProjectCompilation {
 
 impl ProjectCompilation {
     pub fn succeeded(&self) -> bool {
-        self.checked.is_some() && self.diagnostics.is_empty()
+        self.generated_c.is_some() && self.diagnostics.is_empty()
     }
 
     pub fn emit_c(&self) -> Option<&str> {
@@ -158,6 +160,13 @@ impl LoadedProject {
 }
 
 pub fn load(manifest_source: Source) -> Result<LoadedProject, Vec<ProjectDiagnostic>> {
+    load_with(manifest_source, |_, source| compiler::lower_source(source))
+}
+
+fn load_with(
+    manifest_source: Source,
+    mut lower: impl FnMut(&ModuleSpec, &Source) -> (Option<Program>, Vec<Diagnostic>),
+) -> Result<LoadedProject, Vec<ProjectDiagnostic>> {
     let manifest = match manifest::parse(&manifest_source) {
         Ok(manifest) => manifest,
         Err(diagnostics) => {
@@ -269,7 +278,7 @@ pub fn load(manifest_source: Source) -> Result<LoadedProject, Vec<ProjectDiagnos
             }
         };
         let source = Source::new(&canonical, text);
-        let (program, module_diagnostics) = compiler::lower_source(&source);
+        let (program, module_diagnostics) = lower(spec, &source);
         diagnostics.extend(module_diagnostics.into_iter().map(|diagnostic| {
             ProjectDiagnostic::local(
                 Some(spec.identity.value.clone()),
@@ -319,6 +328,38 @@ pub fn load(manifest_source: Source) -> Result<LoadedProject, Vec<ProjectDiagnos
 }
 
 pub fn compile(manifest_source: Source) -> ProjectCompilation {
+    compile_with_jobs(manifest_source, 1)
+}
+
+pub fn compile_cached_with_jobs(manifest_source: Source, jobs: usize) -> ProjectCompilation {
+    let cache_directory = manifest_source
+        .path()
+        .parent()
+        .unwrap_or_else(|| std::path::Path::new("."))
+        .join(".slim-cache/v1");
+    if let Some(warm) = session::load_persistent(&manifest_source, &cache_directory) {
+        let generated_c = warm.emit_c().map(str::to_owned);
+        return ProjectCompilation {
+            source: warm.source,
+            checked: warm.checked,
+            diagnostics: warm.diagnostics,
+            interfaces: warm.interfaces,
+            entry: warm.entry,
+            generated_c,
+        };
+    }
+    compile_clean(manifest_source, jobs, Some(cache_directory))
+}
+
+pub fn compile_with_jobs(manifest_source: Source, jobs: usize) -> ProjectCompilation {
+    compile_clean(manifest_source, jobs, None)
+}
+
+fn compile_clean(
+    manifest_source: Source,
+    jobs: usize,
+    cache_directory: Option<PathBuf>,
+) -> ProjectCompilation {
     let source = manifest_source.clone();
     let loaded = match load(manifest_source) {
         Ok(loaded) => loaded,
@@ -346,6 +387,7 @@ pub fn compile(manifest_source: Source) -> ProjectCompilation {
             };
         }
     };
+    let module_order: Vec<_> = loaded.topological_layers().into_iter().flatten().collect();
     let resolved = match resolver::resolve(&loaded) {
         Ok(resolved) => resolved,
         Err(diagnostics) => {
@@ -360,11 +402,25 @@ pub fn compile(manifest_source: Source) -> ProjectCompilation {
         }
     };
     let entry = resolved.entry.clone();
-    let (checked, mut diagnostics) = resolver::check(resolved);
+    let (checked, mut diagnostics) = resolver::check_with_jobs(resolved, jobs);
     sort_diagnostics(&mut diagnostics);
-    let generated_c = checked
+    let module_fragments = checked.as_ref().map(|checked| {
+        module_order
+            .iter()
+            .map(|module| {
+                (
+                    module.clone(),
+                    codegen::generate_project_module_fragment(checked, module),
+                )
+            })
+            .collect::<BTreeMap<_, _>>()
+    });
+    let generated_c = module_fragments
         .as_ref()
-        .map(|checked| codegen::generate_c_for_entry(checked, &entry));
+        .map(|fragments| codegen::assemble_project_c(fragments, &module_order, &entry));
+    if let (Some(directory), Some(fragments)) = (cache_directory, module_fragments.as_ref()) {
+        session::persist_cache(&directory, &loaded, &interfaces, fragments);
+    }
     ProjectCompilation {
         source,
         checked,

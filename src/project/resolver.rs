@@ -14,7 +14,7 @@ enum DeclarationClass {
 }
 
 #[derive(Clone, Debug)]
-struct ModuleLocation {
+pub(super) struct ModuleLocation {
     module: String,
     source: Source,
     base: usize,
@@ -23,9 +23,11 @@ struct ModuleLocation {
 
 #[derive(Clone, Debug)]
 pub struct ResolvedProject {
-    pub program: Program,
-    pub entry: String,
-    locations: Vec<ModuleLocation>,
+    pub(super) program: Program,
+    pub(super) entry: String,
+    pub(super) locations: Vec<ModuleLocation>,
+    layers: Vec<Vec<String>>,
+    module_declarations: BTreeMap<String, BTreeSet<String>>,
 }
 
 pub fn resolve(project: &LoadedProject) -> Result<ResolvedProject, Vec<ProjectDiagnostic>> {
@@ -127,17 +129,26 @@ pub fn resolve(project: &LoadedProject) -> Result<ResolvedProject, Vec<ProjectDi
         return Err(diagnostics);
     }
 
+    let layers = project.topological_layers();
     let mut items = Vec::new();
-    for layer in project.topological_layers() {
+    let mut module_declarations = BTreeMap::new();
+    for layer in &layers {
         for module in layer {
             let location = locations
                 .iter()
-                .find(|location| location.module == module)
+                .find(|location| &location.module == module)
                 .expect("module location exists");
-            for mut item in resolved_by_module
-                .remove(&module)
-                .expect("resolved module exists")
-            {
+            let module_items = resolved_by_module
+                .remove(module)
+                .expect("resolved module exists");
+            module_declarations.insert(
+                module.clone(),
+                module_items
+                    .iter()
+                    .map(|item| resolved_item_name(item).to_owned())
+                    .collect(),
+            );
+            for mut item in module_items {
                 shift_item(&mut item, location.base as isize);
                 items.push(item);
             }
@@ -151,15 +162,95 @@ pub fn resolve(project: &LoadedProject) -> Result<ResolvedProject, Vec<ProjectDi
         },
         entry: format!("{}/main", project.manifest.entry.value),
         locations,
+        layers,
+        module_declarations,
     })
 }
 
 pub fn check(resolved: ResolvedProject) -> (Option<CheckedProgram>, Vec<ProjectDiagnostic>) {
-    let (checked, diagnostics) = sema::check_with_entry(resolved.program, &resolved.entry);
-    let diagnostics = diagnostics
+    check_with_jobs(resolved, 1)
+}
+
+pub fn check_with_jobs(
+    resolved: ResolvedProject,
+    jobs: usize,
+) -> (Option<CheckedProgram>, Vec<ProjectDiagnostic>) {
+    let hardware = std::thread::available_parallelism()
+        .map(usize::from)
+        .unwrap_or(1);
+    let jobs = jobs.max(1).min(hardware);
+    let ResolvedProject {
+        mut program,
+        entry,
+        locations,
+        layers,
+        module_declarations,
+    } = resolved;
+    let empty = BTreeSet::new();
+    let (_, entry_diagnostics) = sema::check_selected_with_entry(program.clone(), &empty, &entry);
+    if !entry_diagnostics.is_empty() {
+        let mut diagnostics = entry_diagnostics
+            .into_iter()
+            .map(|diagnostic| locate_diagnostic(&locations, diagnostic))
+            .collect::<Vec<_>>();
+        sort_project_diagnostics(&mut diagnostics);
+        return (None, diagnostics);
+    }
+
+    let mut all_diagnostics = Vec::new();
+    for layer in &layers {
+        for batch in layer.chunks(jobs) {
+            let results = std::thread::scope(|scope| {
+                let handles = batch
+                    .iter()
+                    .map(|module| {
+                        let selected = module_declarations[module].clone();
+                        let candidate = program.clone();
+                        scope.spawn(move || {
+                            let result = sema::check_selected_without_entry(candidate, &selected);
+                            (selected, result)
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                handles
+                    .into_iter()
+                    .map(|handle| handle.join().expect("project checker worker panicked"))
+                    .collect::<Vec<_>>()
+            });
+            for (selected, (checked, diagnostics)) in results {
+                all_diagnostics.extend(diagnostics);
+                let Some(checked) = checked else {
+                    continue;
+                };
+                let replacements: BTreeMap<_, _> = checked
+                    .program
+                    .items
+                    .into_iter()
+                    .filter(|item| selected.contains(resolved_item_name(item)))
+                    .map(|item| (resolved_item_name(&item).to_owned(), item))
+                    .collect();
+                for item in &mut program.items {
+                    if let Some(replacement) = replacements.get(resolved_item_name(item)) {
+                        *item = replacement.clone();
+                    }
+                }
+            }
+        }
+    }
+    if !all_diagnostics.is_empty() {
+        let mut diagnostics = all_diagnostics
+            .into_iter()
+            .map(|diagnostic| locate_diagnostic(&locations, diagnostic))
+            .collect::<Vec<_>>();
+        sort_project_diagnostics(&mut diagnostics);
+        return (None, diagnostics);
+    }
+    let (checked, diagnostics) = sema::check_selected_with_entry(program, &empty, &entry);
+    let mut diagnostics = diagnostics
         .into_iter()
-        .map(|diagnostic| locate_diagnostic(&resolved.locations, diagnostic))
-        .collect();
+        .map(|diagnostic| locate_diagnostic(&locations, diagnostic))
+        .collect::<Vec<_>>();
+    sort_project_diagnostics(&mut diagnostics);
     (checked, diagnostics)
 }
 
@@ -545,7 +636,15 @@ fn global_name(module: &str, name: &str) -> String {
     format!("{module}/{name}")
 }
 
-fn locate_diagnostic(
+fn resolved_item_name(item: &Item) -> &str {
+    match item {
+        Item::Function(function) => &function.name,
+        Item::Record(record) => &record.name,
+        Item::Variant(variant) => &variant.name,
+    }
+}
+
+pub(super) fn locate_diagnostic(
     locations: &[ModuleLocation],
     mut diagnostic: Diagnostic,
 ) -> ProjectDiagnostic {
@@ -592,7 +691,7 @@ fn rebase_span(span: &mut Span, base: usize) {
     span.end = span.end.saturating_sub(base);
 }
 
-fn sort_project_diagnostics(diagnostics: &mut [ProjectDiagnostic]) {
+pub(super) fn sort_project_diagnostics(diagnostics: &mut [ProjectDiagnostic]) {
     diagnostics.sort_by(|left, right| {
         left.module
             .cmp(&right.module)
@@ -713,6 +812,49 @@ mod tests {
         loaded
     }
 
+    fn wide_project(app_body: &str) -> LoadedProject {
+        let root = std::env::temp_dir().join(format!(
+            "slim-resolver-wide-test-{}-{}",
+            std::process::id(),
+            NEXT_PROJECT.fetch_add(1, Ordering::Relaxed)
+        ));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir(&root).unwrap();
+        fs::write(
+            root.join("app.slim"),
+            format!("(module app (fn main ((args (Vec Bytes))) I64 (effects) {app_body}))"),
+        )
+        .unwrap();
+        for (module, value) in [("a", 1), ("b", 2), ("c", 3)] {
+            fs::write(
+                root.join(format!("{module}.slim")),
+                format!("(module {module} (fn value () I64 (effects) {value}))"),
+            )
+            .unwrap();
+        }
+        let loaded = super::super::load(Source::new(
+            root.join("slim.project"),
+            "(project 1 (entry app) (module a \"a.slim\" (imports) (exports value)) (module app \"app.slim\" (imports a b c) (exports)) (module b \"b.slim\" (imports) (exports value)) (module c \"c.slim\" (imports) (exports value)))"
+                .to_owned(),
+        ))
+        .unwrap();
+        fs::remove_dir_all(root).unwrap();
+        loaded
+    }
+
+    fn diagnostic_identity(diagnostics: &[ProjectDiagnostic]) -> Vec<(String, usize, String)> {
+        diagnostics
+            .iter()
+            .map(|diagnostic| {
+                (
+                    diagnostic.module.clone().unwrap_or_default(),
+                    diagnostic.diagnostic.primary.start,
+                    diagnostic.diagnostic.code.to_owned(),
+                )
+            })
+            .collect()
+    }
+
     #[test]
     fn resolves_exported_qualified_call_and_checks_core_semantics() {
         let loaded = loaded_project("(call math/answer 40)", "answer");
@@ -746,5 +888,33 @@ mod tests {
             arity.related[0].source.path().file_name().unwrap(),
             "math.slim"
         );
+    }
+
+    #[test]
+    fn worker_counts_match_serial_oracle_for_output_and_errors() {
+        let valid = wide_project(
+            "(call i64.add (call a/value) (call i64.add (call b/value) (call c/value)))",
+        );
+        let mut generated = Vec::new();
+        for jobs in [1, 2, 4, usize::MAX] {
+            let resolved = resolve(&valid).unwrap();
+            let entry = resolved.entry.clone();
+            let (checked, diagnostics) = check_with_jobs(resolved, jobs);
+            assert!(diagnostics.is_empty(), "jobs={jobs}: {diagnostics:#?}");
+            generated.push(crate::codegen::generate_c_for_entry(
+                &checked.unwrap(),
+                &entry,
+            ));
+        }
+        assert!(generated.windows(2).all(|pair| pair[0] == pair[1]));
+
+        let invalid = wide_project("(call i64.add (call a/value) true)");
+        let mut identities = Vec::new();
+        for jobs in [1, 2, 4, usize::MAX] {
+            let (_, diagnostics) = check_with_jobs(resolve(&invalid).unwrap(), jobs);
+            assert!(!diagnostics.is_empty());
+            identities.push(diagnostic_identity(&diagnostics));
+        }
+        assert!(identities.windows(2).all(|pair| pair[0] == pair[1]));
     }
 }

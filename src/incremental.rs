@@ -142,6 +142,133 @@ pub struct WorkStats {
 }
 
 #[derive(Clone, Debug)]
+pub(crate) struct LoweredDeclarationState {
+    pub id: DeclarationId,
+    pub syntax: Fingerprint,
+}
+
+#[derive(Clone, Debug, Default)]
+pub(crate) struct ModuleLoweringSession {
+    module: Option<String>,
+    declarations: BTreeMap<DeclarationId, CachedLoweredDeclaration>,
+}
+
+#[derive(Clone, Debug)]
+struct CachedLoweredDeclaration {
+    syntax: Fingerprint,
+    layout: Fingerprint,
+    item: Item,
+}
+
+impl ModuleLoweringSession {
+    pub fn update(
+        &mut self,
+        source: &Source,
+    ) -> (
+        Option<Program>,
+        Vec<Diagnostic>,
+        Vec<LoweredDeclarationState>,
+        WorkStats,
+    ) {
+        let indexed = match index_program(source) {
+            Ok(indexed) => indexed,
+            Err(()) => {
+                let (program, diagnostics) = compiler::lower_source(source);
+                let count = program.as_ref().map_or(0, |program| program.items.len());
+                return (
+                    program,
+                    diagnostics,
+                    Vec::new(),
+                    WorkStats {
+                        parsed: count,
+                        lowered: count,
+                        fallback_clean: true,
+                        ..WorkStats::default()
+                    },
+                );
+            }
+        };
+        let same_module = self.module.as_deref() == Some(indexed.module.as_str());
+        let mut stats = WorkStats::default();
+        let mut items = Vec::with_capacity(indexed.declarations.len());
+        let mut states = Vec::with_capacity(indexed.declarations.len());
+        let mut next = BTreeMap::new();
+        let mut seen_names = BTreeSet::new();
+        let mut diagnostics = Vec::new();
+        for declaration in &indexed.declarations {
+            if !seen_names.insert(declaration.id.name.clone()) {
+                let (program, diagnostics) = compiler::lower_source(source);
+                let count = program.as_ref().map_or(0, |program| program.items.len());
+                return (
+                    program,
+                    diagnostics,
+                    Vec::new(),
+                    WorkStats {
+                        parsed: count,
+                        lowered: count,
+                        fallback_clean: true,
+                        ..WorkStats::default()
+                    },
+                );
+            }
+            let old = same_module
+                .then(|| self.declarations.get(&declaration.id))
+                .flatten();
+            let item = if let Some(old) = old
+                .filter(|old| old.syntax == declaration.syntax && old.layout == declaration.layout)
+            {
+                let mut item = old.item.clone();
+                let delta = declaration.span.start as isize - item_span(&item).start as isize;
+                shift_item(&mut item, delta);
+                stats.reused += 1;
+                item
+            } else {
+                match lower_indexed(&indexed.tokens, declaration, source.text.len()) {
+                    Ok(item) => {
+                        stats.parsed += 1;
+                        stats.lowered += 1;
+                        item
+                    }
+                    Err(mut errors) => {
+                        diagnostics.append(&mut errors);
+                        continue;
+                    }
+                }
+            };
+            states.push(LoweredDeclarationState {
+                id: declaration.id.clone(),
+                syntax: declaration.syntax,
+            });
+            next.insert(
+                declaration.id.clone(),
+                CachedLoweredDeclaration {
+                    syntax: declaration.syntax,
+                    layout: declaration.layout,
+                    item: item.clone(),
+                },
+            );
+            items.push(item);
+        }
+        if !diagnostics.is_empty() {
+            diagnostics.sort_by_key(|diagnostic| (diagnostic.primary.start, diagnostic.code));
+            return (None, diagnostics, states, stats);
+        }
+        self.module = Some(indexed.module.clone());
+        self.declarations = next;
+        (
+            Some(Program {
+                name: indexed.module,
+                items,
+                span: indexed.span,
+            }),
+            diagnostics,
+            states,
+            stats,
+        )
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct DeclarationState {
     pub id: DeclarationId,
     pub syntax: Fingerprint,
@@ -600,7 +727,12 @@ fn token_fingerprint(tokens: &[Token]) -> Fingerprint {
     Fingerprint(hash.finish())
 }
 
-fn interface_fingerprint(item: &Item) -> Fingerprint {
+pub(crate) fn normalized_source_fingerprint(source: &Source) -> Option<Fingerprint> {
+    let (tokens, diagnostics) = lexer::lex(&source.text);
+    diagnostics.is_empty().then(|| token_fingerprint(&tokens))
+}
+
+pub(crate) fn interface_fingerprint(item: &Item) -> Fingerprint {
     let mut hash = StableHash::new();
     match item {
         Item::Function(function) => {
@@ -697,7 +829,7 @@ fn fingerprint_bytes(bytes: &[u8]) -> Fingerprint {
     Fingerprint(hash.finish())
 }
 
-fn item_id(module: &str, item: &Item) -> DeclarationId {
+pub(crate) fn item_id(module: &str, item: &Item) -> DeclarationId {
     match item {
         Item::Function(function) => DeclarationId {
             module: module.to_owned(),
@@ -717,7 +849,7 @@ fn item_id(module: &str, item: &Item) -> DeclarationId {
     }
 }
 
-fn item_span(item: &Item) -> Span {
+pub(crate) fn item_span(item: &Item) -> Span {
     match item {
         Item::Function(function) => function.span,
         Item::Record(record) => record.span,
@@ -725,7 +857,7 @@ fn item_span(item: &Item) -> Span {
     }
 }
 
-fn collect_item_dependencies(item: &Item, names: &mut BTreeSet<String>) {
+pub(crate) fn collect_item_dependencies(item: &Item, names: &mut BTreeSet<String>) {
     match item {
         Item::Function(function) => {
             for parameter in &function.params {
@@ -824,7 +956,7 @@ fn collect_expr_dependencies(expr: &Expr, names: &mut BTreeSet<String>) {
     }
 }
 
-fn shift_item(item: &mut Item, delta: isize) {
+pub(crate) fn shift_item(item: &mut Item, delta: isize) {
     match item {
         Item::Function(function) => {
             shift_span(&mut function.span, delta);

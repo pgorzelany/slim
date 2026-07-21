@@ -52,16 +52,18 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
     match command.as_str() {
         "check" => {
             let path = required_path(&mut args, "source file")?;
+            let jobs = parse_jobs(&mut args)?;
             args.finish()?;
-            let compilation = compile_path(&path)?;
+            let compilation = compile_path(&path, jobs)?;
             render_input_diagnostics(&compilation, message_format);
             Ok(if compilation.succeeded() { 0 } else { 1 })
         }
         "emit-c" => {
             let source_path = required_path(&mut args, "source file")?;
+            let jobs = parse_jobs(&mut args)?;
             let output = parse_output(&mut args)?;
             args.finish()?;
-            let compilation = compile_path(&source_path)?;
+            let compilation = compile_path(&source_path, jobs)?;
             render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
@@ -71,10 +73,11 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
         }
         "build" => {
             let source_path = required_path(&mut args, "source file")?;
+            let jobs = parse_jobs(&mut args)?;
             let output =
                 parse_optional_output(&mut args)?.unwrap_or_else(|| default_output(&source_path));
             args.finish()?;
-            let compilation = compile_path(&source_path)?;
+            let compilation = compile_path(&source_path, jobs)?;
             render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
@@ -88,6 +91,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
         }
         "run" => {
             let source_path = required_path(&mut args, "source file")?;
+            let jobs = parse_jobs(&mut args)?;
             let program_arguments = if args.peek_string().as_deref() == Some("--") {
                 args.next();
                 args.remaining()
@@ -95,7 +99,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
                 args.finish()?;
                 Vec::new()
             };
-            let compilation = compile_path(&source_path)?;
+            let compilation = compile_path(&source_path, jobs)?;
             render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
@@ -138,13 +142,14 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
         }
         "interfaces" => {
             let path = required_path(&mut args, "project manifest")?;
+            let jobs = parse_jobs(&mut args)?;
             let output = parse_output(&mut args)?;
             args.finish()?;
             let source = read_source(&path)?;
             if !project::is_manifest_source(&source) {
                 return Err("interfaces requires an explicit (project ...) manifest".to_owned());
             }
-            let compilation = project::compile(source);
+            let compilation = project::compile_cached_with_jobs(source, jobs.unwrap_or(1));
             render_project_diagnostics(&compilation, message_format);
             if !compilation.succeeded() {
                 return Ok(1);
@@ -206,11 +211,18 @@ impl InputCompilation {
     }
 }
 
-fn compile_path(path: &Path) -> Result<InputCompilation, String> {
+fn compile_path(path: &Path, jobs: Option<usize>) -> Result<InputCompilation, String> {
     let source = read_source(path)?;
     if project::is_manifest_source(&source) {
-        Ok(InputCompilation::Project(project::compile(source)))
+        Ok(InputCompilation::Project(
+            project::compile_cached_with_jobs(source, jobs.unwrap_or(1)),
+        ))
     } else {
+        if jobs.is_some() {
+            return Err(
+                "--jobs is available only for an explicit (project ...) manifest".to_owned(),
+            );
+        }
         Ok(InputCompilation::Module(compiler::compile(source)))
     }
 }
@@ -250,6 +262,22 @@ fn render_diagnostic_list(source: &Source, diagnostics: &[Diagnostic], format: M
 
 fn parse_output(args: &mut Arguments) -> Result<PathBuf, String> {
     parse_optional_output(args)?.ok_or_else(|| "missing required `-o <output>`".to_owned())
+}
+
+fn parse_jobs(args: &mut Arguments) -> Result<Option<usize>, String> {
+    if args.peek_string().as_deref() != Some("--jobs") {
+        return Ok(None);
+    }
+    args.next();
+    let value = args
+        .next_string()
+        .ok_or_else(|| "missing required positive integer after `--jobs`".to_owned())?;
+    let jobs = value
+        .parse::<usize>()
+        .ok()
+        .filter(|jobs| *jobs > 0)
+        .ok_or_else(|| format!("invalid job count `{value}`; expected a positive integer"))?;
+    Ok(Some(jobs))
 }
 
 fn parse_optional_output(args: &mut Arguments) -> Result<Option<PathBuf>, String> {
@@ -380,10 +408,10 @@ impl Arguments {
 fn print_usage() {
     println!(
         "SLIM compiler {}\n\n\
-usage:\n  slimc [--message-format=human|json] check <source>\n  \
-slimc [--message-format=human|json] emit-c <source> -o <file>\n  \
-slimc [--message-format=human|json] build <source> [-o <binary>]\n  \
-slimc [--message-format=human|json] run <source> [-- arguments...]\n  \
+usage:\n  slimc [--message-format=human|json] check <source> [--jobs N]\n  \
+slimc [--message-format=human|json] emit-c <source> [--jobs N] -o <file>\n  \
+slimc [--message-format=human|json] build <source> [--jobs N] [-o <binary>]\n  \
+slimc [--message-format=human|json] run <source> [--jobs N] [-- arguments...]\n  \
 slimc fmt <source> [--check]\n  slimc interfaces <project> -o <directory>\n  \
 slimc runtime <directory>\n  slimc builtins\n",
         crate::VERSION

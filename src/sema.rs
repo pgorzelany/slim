@@ -59,15 +59,32 @@ pub fn check_with_entry(
 }
 
 pub fn check_selected_with_entry(
-    mut program: Program,
+    program: Program,
     selected: &BTreeSet<String>,
     entry: &str,
+) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+    check_selected_internal(program, selected, Some(entry))
+}
+
+pub(crate) fn check_selected_without_entry(
+    program: Program,
+    selected: &BTreeSet<String>,
+) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+    check_selected_internal(program, selected, None)
+}
+
+fn check_selected_internal(
+    mut program: Program,
+    selected: &BTreeSet<String>,
+    entry: Option<&str>,
 ) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
     let mut checker = Checker::new();
     checker.collect(&program);
     checker.validate_declared_types(selected);
     checker.check_functions(&mut program, selected);
-    checker.check_entry(&program, entry);
+    if let Some(entry) = entry {
+        checker.check_entry(&program, entry);
+    }
     if checker
         .diagnostics
         .iter()

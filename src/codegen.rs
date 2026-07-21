@@ -18,6 +18,101 @@ pub fn generate_c_for_entry(program: &CheckedProgram, entry: &str) -> String {
     generate_c_from_fragments_for_entry(program, &fragments, entry)
 }
 
+pub(crate) fn generate_project_module_fragment(program: &CheckedProgram, module: &str) -> String {
+    let prefix = format!("{module}/");
+    let fragments = program
+        .program
+        .items
+        .iter()
+        .filter(|item| item_name(item).starts_with(&prefix))
+        .map(|item| (item_name(item).to_owned(), generate_item_c(program, item)))
+        .collect();
+    assemble_project_module_fragment(program, module, &fragments)
+}
+
+pub(crate) fn assemble_project_module_fragment(
+    program: &CheckedProgram,
+    module: &str,
+    fragments: &BTreeMap<String, String>,
+) -> String {
+    let prefix = format!("{module}/");
+    let selected: Vec<_> = program
+        .program
+        .items
+        .iter()
+        .filter(|item| item_name(item).starts_with(&prefix))
+        .collect();
+    let mut output = String::new();
+    for item in &selected {
+        match item {
+            Item::Record(record) => {
+                writeln!(
+                    output,
+                    "typedef struct {} {};",
+                    c_type_name(&record.name),
+                    c_type_name(&record.name)
+                )
+                .unwrap();
+            }
+            Item::Variant(variant) => {
+                writeln!(
+                    output,
+                    "typedef struct {} {};",
+                    c_type_name(&variant.name),
+                    c_type_name(&variant.name)
+                )
+                .unwrap();
+            }
+            Item::Function(_) => {}
+        }
+    }
+    if selected
+        .iter()
+        .any(|item| matches!(item, Item::Record(_) | Item::Variant(_)))
+    {
+        output.push('\n');
+    }
+    for item in &selected {
+        if matches!(item, Item::Record(_) | Item::Variant(_)) {
+            output.push_str(fragment(fragments, item_name(item)));
+        }
+    }
+    for item in &selected {
+        if let Item::Function(function) = item {
+            emit_function_prototype(&mut output, function);
+        }
+    }
+    if selected
+        .iter()
+        .any(|item| matches!(item, Item::Function(_)))
+    {
+        output.push('\n');
+    }
+    for item in &selected {
+        if matches!(item, Item::Function(_)) {
+            output.push_str(fragment(fragments, item_name(item)));
+        }
+    }
+    output
+}
+
+pub(crate) fn assemble_project_c(
+    fragments: &BTreeMap<String, String>,
+    modules: &[String],
+    entry: &str,
+) -> String {
+    let mut output = generated_header();
+    for module in modules {
+        output.push_str(
+            fragments
+                .get(module)
+                .unwrap_or_else(|| panic!("missing generated module fragment for {module}")),
+        );
+    }
+    emit_main_wrapper(&mut output, entry);
+    output
+}
+
 pub(crate) fn generate_c_from_fragments(
     program: &CheckedProgram,
     fragments: &BTreeMap<String, String>,
@@ -30,14 +125,7 @@ pub(crate) fn generate_c_from_fragments_for_entry(
     fragments: &BTreeMap<String, String>,
     entry: &str,
 ) -> String {
-    let mut output = String::new();
-    writeln!(
-        output,
-        "/* generated deterministically by slimc {} */",
-        crate::VERSION
-    )
-    .unwrap();
-    output.push_str("#include \"slim_rt.h\"\n#include <string.h>\n\n");
+    let mut output = generated_header();
 
     for record in program.records.values() {
         writeln!(
@@ -82,6 +170,23 @@ pub(crate) fn generate_c_from_fragments_for_entry(
         }
     }
 
+    emit_main_wrapper(&mut output, entry);
+    output
+}
+
+fn generated_header() -> String {
+    let mut output = String::new();
+    writeln!(
+        output,
+        "/* generated deterministically by slimc {} */",
+        crate::VERSION
+    )
+    .unwrap();
+    output.push_str("#include \"slim_rt.h\"\n#include <string.h>\n\n");
+    output
+}
+
+fn emit_main_wrapper(output: &mut String, entry: &str) {
     output.push_str("int main(int argc, char **argv) {\n");
     output.push_str("    slim_rt_init();\n");
     output.push_str("    SlimVec slim_args = slim_vec_new(sizeof(SlimBytes));\n");
@@ -101,7 +206,6 @@ pub(crate) fn generate_c_from_fragments_for_entry(
     output.push_str("    slim_rt_shutdown();\n");
     output.push_str("    return (int)slim_exit_code;\n");
     output.push_str("}\n");
-    output
 }
 
 pub(crate) fn generate_item_c(program: &CheckedProgram, item: &Item) -> String {
