@@ -309,7 +309,7 @@ impl Lowerer {
                 "U8" => Type::U8,
                 "I64" => Type::I64,
                 "Bytes" => Type::Bytes,
-                _ if valid_identifier(name) => Type::Named(name.clone()),
+                _ if valid_reference(name) => Type::Named(name.clone()),
                 _ => {
                     self.diagnostics.push(Diagnostic::error(
                         "E0212",
@@ -363,7 +363,7 @@ impl Lowerer {
             SExprKind::Atom(value) if value == "false" => ExprKind::Bool(false),
             SExprKind::Atom(value) => match value.parse::<i64>() {
                 Ok(value) => ExprKind::I64(value),
-                Err(_) if valid_identifier(value) => ExprKind::Name(value.clone()),
+                Err(_) if valid_unqualified_identifier(value) => ExprKind::Name(value.clone()),
                 Err(_) => {
                     self.diagnostics.push(Diagnostic::error(
                         "E0215",
@@ -419,7 +419,7 @@ impl Lowerer {
                     ));
                     return ExprKind::Error;
                 }
-                let Some(function) = self.identifier(&elements[1], "called function") else {
+                let Some(function) = self.reference(&elements[1], "called function") else {
                     return ExprKind::Error;
                 };
                 ExprKind::Call {
@@ -450,7 +450,7 @@ impl Lowerer {
                     ));
                     return ExprKind::Error;
                 }
-                let Some(record) = self.identifier(&elements[1], "record type") else {
+                let Some(record) = self.reference(&elements[1], "record type") else {
                     return ExprKind::Error;
                 };
                 let mut fields = Vec::new();
@@ -499,7 +499,7 @@ impl Lowerer {
                     ));
                     return ExprKind::Error;
                 }
-                let Some(variant) = self.identifier(&elements[1], "variant type") else {
+                let Some(variant) = self.reference(&elements[1], "variant type") else {
                     return ExprKind::Error;
                 };
                 let Some(case) = self.identifier(&elements[2], "variant case") else {
@@ -649,7 +649,28 @@ impl Lowerer {
             ));
             return None;
         };
-        if !valid_identifier(value) {
+        if !valid_unqualified_identifier(value) {
+            self.diagnostics.push(Diagnostic::error(
+                "E0228",
+                format!("invalid {role} `{value}`"),
+                form.span,
+            ));
+            None
+        } else {
+            Some(value.to_owned())
+        }
+    }
+
+    fn reference(&mut self, form: &SExpr, role: &str) -> Option<String> {
+        let Some(value) = atom(form) else {
+            self.diagnostics.push(Diagnostic::error(
+                "E0228",
+                format!("{role} must be an identifier"),
+                form.span,
+            ));
+            return None;
+        };
+        if !valid_reference(value) {
             self.diagnostics.push(Diagnostic::error(
                 "E0228",
                 format!("invalid {role} `{value}`"),
@@ -669,15 +690,27 @@ fn atom(form: &SExpr) -> Option<&str> {
     }
 }
 
-fn valid_identifier(value: &str) -> bool {
+fn valid_unqualified_identifier(value: &str) -> bool {
     let mut bytes = value.bytes();
     let Some(first) = bytes.next() else {
         return false;
     };
     (first.is_ascii_alphabetic() || first == b'_')
         && bytes.all(|byte| {
-            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.' | b'/' | b'?' | b'!')
+            byte.is_ascii_alphanumeric() || matches!(byte, b'_' | b'-' | b'.' | b'?' | b'!')
         })
+}
+
+fn valid_reference(value: &str) -> bool {
+    if valid_unqualified_identifier(value) {
+        return true;
+    }
+    let Some((module, name)) = value.split_once('/') else {
+        return false;
+    };
+    !name.contains('/')
+        && valid_unqualified_identifier(module)
+        && valid_unqualified_identifier(name)
 }
 
 #[cfg(test)]
@@ -714,6 +747,32 @@ mod tests {
             diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.code == "E0221")
+        );
+    }
+
+    #[test]
+    fn reserves_slash_for_exactly_one_qualified_reference() {
+        let (_, declaration_errors) =
+            parse_source("(module bad/name (fn main ((args (Vec Bytes))) I64 (effects) 0))");
+        assert!(
+            declaration_errors
+                .iter()
+                .any(|diagnostic| diagnostic.code == "E0228")
+        );
+
+        let (program, reference_errors) = parse_source(
+            "(module local (fn main ((args (Vec Bytes))) I64 (effects) (call other/value 0)))",
+        );
+        assert!(reference_errors.is_empty(), "{reference_errors:#?}");
+        assert!(program.is_some());
+
+        let (_, nested_errors) = parse_source(
+            "(module local (fn main ((args (Vec Bytes))) I64 (effects) (call a/b/c 0)))",
+        );
+        assert!(
+            nested_errors
+                .iter()
+                .any(|diagnostic| diagnostic.code == "E0228")
         );
     }
 }

@@ -30,21 +30,44 @@ pub fn check(program: Program) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
             Item::Record(_) | Item::Variant(_) => None,
         })
         .collect();
-    check_selected(program, &selected)
+    check_selected_with_entry(program, &selected, "main")
 }
 
 /// Checks only the selected function bodies while rebuilding and validating
 /// the complete declaration environment. Unselected functions must already
 /// contain checked expression types from a previous successful compilation.
 pub fn check_selected(
+    program: Program,
+    selected: &BTreeSet<String>,
+) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+    check_selected_with_entry(program, selected, "main")
+}
+
+pub fn check_with_entry(
+    program: Program,
+    entry: &str,
+) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+    let selected = program
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::Function(function) => Some(function.name.clone()),
+            Item::Record(_) | Item::Variant(_) => None,
+        })
+        .collect();
+    check_selected_with_entry(program, &selected, entry)
+}
+
+pub fn check_selected_with_entry(
     mut program: Program,
     selected: &BTreeSet<String>,
+    entry: &str,
 ) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
     let mut checker = Checker::new();
     checker.collect(&program);
     checker.validate_declared_types(selected);
     checker.check_functions(&mut program, selected);
-    checker.check_entry(&program);
+    checker.check_entry(&program, entry);
     if checker
         .diagnostics
         .iter()
@@ -257,11 +280,11 @@ impl Checker {
         }
     }
 
-    fn check_entry(&mut self, program: &Program) {
-        let Some(signature) = self.functions.get("main") else {
+    fn check_entry(&mut self, program: &Program, entry: &str) {
+        let Some(signature) = self.functions.get(entry) else {
             self.diagnostics.push(Diagnostic::error(
                 "E0307",
-                "module requires `main`",
+                format!("module requires entry function `{entry}`"),
                 program.span,
             ));
             return;

@@ -179,3 +179,71 @@ fn self_hosted_compiler_reaches_a_fixed_point() {
     assert!(stdout.contains("bootstrap fixed point:"), "{stdout}");
     assert!(stdout.contains("native smoke test passed"), "{stdout}");
 }
+
+#[test]
+fn checks_builds_and_emits_interfaces_for_explicit_project() {
+    let directory = temporary_directory("project");
+    fs::write(
+        directory.join("app.slim"),
+        "(module app (fn main ((args (Vec Bytes))) I64 (effects io) (let answer I64 (call math/answer 40) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println \"\") 0)))))\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.join("math.slim"),
+        "(module math (fn answer ((value I64)) I64 (effects) (call i64.add value 2)))\n",
+    )
+    .unwrap();
+    let manifest = directory.join("slim.project");
+    fs::write(
+        &manifest,
+        "(project 1 (entry app) (module app \"app.slim\" (imports math) (exports)) (module math \"math.slim\" (imports) (exports answer)))\n",
+    )
+    .unwrap();
+
+    let check = Command::new(slimc())
+        .arg("check")
+        .arg(&manifest)
+        .output()
+        .unwrap();
+    assert!(
+        check.status.success(),
+        "{}",
+        String::from_utf8_lossy(&check.stderr)
+    );
+
+    let executable = directory.join("answer");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(&manifest)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let run = Command::new(&executable).output().unwrap();
+    assert!(run.status.success());
+    assert_eq!(run.stdout, b"42\n");
+
+    let interfaces = directory.join("interfaces");
+    let emitted = Command::new(slimc())
+        .arg("interfaces")
+        .arg(&manifest)
+        .arg("-o")
+        .arg(&interfaces)
+        .output()
+        .unwrap();
+    assert!(
+        emitted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&emitted.stderr)
+    );
+    assert_eq!(
+        fs::read_to_string(interfaces.join("math.sli")).unwrap(),
+        "(interface 1 math (fn answer ((owned I64)) I64 (effects)))\n"
+    );
+    fs::remove_dir_all(directory).unwrap();
+}

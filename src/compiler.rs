@@ -1,3 +1,4 @@
+use crate::ast::Program;
 use crate::codegen;
 use crate::diagnostic::Diagnostic;
 use crate::formatter;
@@ -25,11 +26,7 @@ impl Compilation {
 }
 
 pub fn compile(source: Source) -> Compilation {
-    let (tokens, mut diagnostics) = lexer::lex(&source.text);
-    let (forms, parse_diagnostics) = sexpr::parse(&tokens, source.text.len());
-    diagnostics.extend(parse_diagnostics);
-    let (program, lower_diagnostics) = parser::lower(&forms);
-    diagnostics.extend(lower_diagnostics);
+    let (program, mut diagnostics) = lower_source(&source);
     let checked = if let Some(program) = program {
         let (checked, check_diagnostics) = sema::check(program);
         diagnostics.extend(check_diagnostics);
@@ -43,6 +40,16 @@ pub fn compile(source: Source) -> Compilation {
         checked,
         diagnostics,
     }
+}
+
+pub fn lower_source(source: &Source) -> (Option<Program>, Vec<Diagnostic>) {
+    let (tokens, mut diagnostics) = lexer::lex(&source.text);
+    let (forms, parse_diagnostics) = sexpr::parse(&tokens, source.text.len());
+    diagnostics.extend(parse_diagnostics);
+    let (program, lower_diagnostics) = parser::lower(&forms);
+    diagnostics.extend(lower_diagnostics);
+    diagnostics.sort_by_key(|diagnostic| (diagnostic.primary.start, diagnostic.code));
+    (program, diagnostics)
 }
 
 pub fn format_source(source: &Source) -> Result<String, Vec<Diagnostic>> {

@@ -8,6 +8,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::compiler::{self, Compilation};
 use crate::diagnostic::Diagnostic;
+use crate::project::{self, ProjectCompilation};
 use crate::sema::Builtin;
 use crate::span::Source;
 
@@ -53,7 +54,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
             let path = required_path(&mut args, "source file")?;
             args.finish()?;
             let compilation = compile_path(&path)?;
-            render_diagnostics(&compilation, message_format);
+            render_input_diagnostics(&compilation, message_format);
             Ok(if compilation.succeeded() { 0 } else { 1 })
         }
         "emit-c" => {
@@ -61,7 +62,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
             let output = parse_output(&mut args)?;
             args.finish()?;
             let compilation = compile_path(&source_path)?;
-            render_diagnostics(&compilation, message_format);
+            render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
             };
@@ -74,7 +75,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
                 parse_optional_output(&mut args)?.unwrap_or_else(|| default_output(&source_path));
             args.finish()?;
             let compilation = compile_path(&source_path)?;
-            render_diagnostics(&compilation, message_format);
+            render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
             };
@@ -95,7 +96,7 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
                 Vec::new()
             };
             let compilation = compile_path(&source_path)?;
-            render_diagnostics(&compilation, message_format);
+            render_input_diagnostics(&compilation, message_format);
             let Some(c) = compilation.emit_c() else {
                 return Ok(1);
             };
@@ -135,6 +136,29 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
                 }
             }
         }
+        "interfaces" => {
+            let path = required_path(&mut args, "project manifest")?;
+            let output = parse_output(&mut args)?;
+            args.finish()?;
+            let source = read_source(&path)?;
+            if !project::is_manifest_source(&source) {
+                return Err("interfaces requires an explicit (project ...) manifest".to_owned());
+            }
+            let compilation = project::compile(source);
+            render_project_diagnostics(&compilation, message_format);
+            if !compilation.succeeded() {
+                return Ok(1);
+            }
+            fs::create_dir_all(&output)
+                .map_err(|error| format!("cannot create {}: {error}", output.display()))?;
+            for (module, artifact) in &compilation.interfaces {
+                write_file(
+                    &output.join(format!("{module}.sli")),
+                    artifact.bytes.as_bytes(),
+                )?;
+            }
+            Ok(0)
+        }
         "runtime" => {
             let directory = required_path(&mut args, "output directory")?;
             args.finish()?;
@@ -161,8 +185,34 @@ fn run_inner(arguments: Vec<OsString>) -> Result<i32, String> {
     }
 }
 
-fn compile_path(path: &Path) -> Result<Compilation, String> {
-    Ok(compiler::compile(read_source(path)?))
+enum InputCompilation {
+    Module(Compilation),
+    Project(ProjectCompilation),
+}
+
+impl InputCompilation {
+    fn succeeded(&self) -> bool {
+        match self {
+            Self::Module(compilation) => compilation.succeeded(),
+            Self::Project(compilation) => compilation.succeeded(),
+        }
+    }
+
+    fn emit_c(&self) -> Option<String> {
+        match self {
+            Self::Module(compilation) => compilation.emit_c(),
+            Self::Project(compilation) => compilation.emit_c().map(str::to_owned),
+        }
+    }
+}
+
+fn compile_path(path: &Path) -> Result<InputCompilation, String> {
+    let source = read_source(path)?;
+    if project::is_manifest_source(&source) {
+        Ok(InputCompilation::Project(project::compile(source)))
+    } else {
+        Ok(InputCompilation::Module(compiler::compile(source)))
+    }
 }
 
 fn read_source(path: &Path) -> Result<Source, String> {
@@ -171,8 +221,22 @@ fn read_source(path: &Path) -> Result<Source, String> {
     Ok(Source::new(path, text))
 }
 
-fn render_diagnostics(compilation: &Compilation, format: MessageFormat) {
-    render_diagnostic_list(&compilation.source, &compilation.diagnostics, format);
+fn render_input_diagnostics(compilation: &InputCompilation, format: MessageFormat) {
+    match compilation {
+        InputCompilation::Module(compilation) => {
+            render_diagnostic_list(&compilation.source, &compilation.diagnostics, format)
+        }
+        InputCompilation::Project(compilation) => render_project_diagnostics(compilation, format),
+    }
+}
+
+fn render_project_diagnostics(compilation: &ProjectCompilation, format: MessageFormat) {
+    for diagnostic in &compilation.diagnostics {
+        match format {
+            MessageFormat::Human => eprint!("{}", diagnostic.render_human()),
+            MessageFormat::Json => eprintln!("{}", diagnostic.render_json()),
+        }
+    }
 }
 
 fn render_diagnostic_list(source: &Source, diagnostics: &[Diagnostic], format: MessageFormat) {
@@ -320,7 +384,8 @@ usage:\n  slimc [--message-format=human|json] check <source>\n  \
 slimc [--message-format=human|json] emit-c <source> -o <file>\n  \
 slimc [--message-format=human|json] build <source> [-o <binary>]\n  \
 slimc [--message-format=human|json] run <source> [-- arguments...]\n  \
-slimc fmt <source> [--check]\n  slimc runtime <directory>\n  slimc builtins\n",
+slimc fmt <source> [--check]\n  slimc interfaces <project> -o <directory>\n  \
+slimc runtime <directory>\n  slimc builtins\n",
         crate::VERSION
     );
 }

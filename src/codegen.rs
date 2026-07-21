@@ -5,18 +5,30 @@ use crate::ast::*;
 use crate::sema::{Builtin, CheckedProgram};
 
 pub fn generate_c(program: &CheckedProgram) -> String {
+    generate_c_for_entry(program, "main")
+}
+
+pub fn generate_c_for_entry(program: &CheckedProgram, entry: &str) -> String {
     let fragments = program
         .program
         .items
         .iter()
         .map(|item| (item_name(item).to_owned(), generate_item_c(program, item)))
         .collect();
-    generate_c_from_fragments(program, &fragments)
+    generate_c_from_fragments_for_entry(program, &fragments, entry)
 }
 
 pub(crate) fn generate_c_from_fragments(
     program: &CheckedProgram,
     fragments: &BTreeMap<String, String>,
+) -> String {
+    generate_c_from_fragments_for_entry(program, fragments, "main")
+}
+
+pub(crate) fn generate_c_from_fragments_for_entry(
+    program: &CheckedProgram,
+    fragments: &BTreeMap<String, String>,
+    entry: &str,
 ) -> String {
     let mut output = String::new();
     writeln!(
@@ -77,7 +89,12 @@ pub(crate) fn generate_c_from_fragments(
     output.push_str("        SlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\n");
     output.push_str("        slim_vec_push(&slim_args, &slim_arg);\n");
     output.push_str("    }\n");
-    output.push_str("    int64_t slim_exit_code = slim_fn_main(slim_args);\n");
+    writeln!(
+        output,
+        "    int64_t slim_exit_code = {}(slim_args);",
+        c_function_name(entry)
+    )
+    .unwrap();
     output.push_str("    if (slim_exit_code < 0 || slim_exit_code > 255) {\n");
     output.push_str("        slim_rt_trap(\"main result is outside 0..255\");\n");
     output.push_str("    }\n");

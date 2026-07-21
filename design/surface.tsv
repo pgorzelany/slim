@@ -12,6 +12,7 @@ syntax	match	branching	D0005
 syntax	recur	repetition	D0006
 syntax	set	unique-mutation	D0007
 syntax	inout	exclusive-borrow-parameter	D0007
+syntax	qualified-reference	cross-module-declaration-reference	D0018
 type	Bool	boolean-value	D0008
 type	I64	signed-integer	D0008
 type	U8	byte-value	D0008

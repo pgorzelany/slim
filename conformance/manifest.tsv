@@ -17,6 +17,7 @@ recur-rebind	check-fail	conformance/fail/recur_rebind.slim	stage0-only(diagnosti
 nonexhaustive	check-fail	conformance/fail/nonexhaustive.slim	stage0-only(diagnostics)	E0336@66:87	diagnostic:E0336,match:exhaustive
 type-mismatch	check-fail	conformance/fail/type_mismatch.slim	stage0-only(diagnostics)	E0344@61:65	diagnostic:E0344,type:strong
 unknown-form	check-fail	conformance/fail/unknown_form.slim	stage0-only(diagnostics)	E0221@61:67	diagnostic:E0221,recovery:parser
+qualified-reference	check-fail	conformance/fail/qualified_reference.slim	stage0-only(project-resolution)	E0228@74:79	diagnostic:E0228,syntax:qualified-reference
 unterminated	check-fail	conformance/fail/unterminated.slim	stage0-only(diagnostics)	E0102@0:68	diagnostic:E0102,recovery:malformed
 multiple	check-fail	conformance/fail/multiple.slim	stage0-only(diagnostics)	E0336@67:119,E0314@91:98,E0335@106:118,E0344@112:117	recovery:multiple-diagnostics
 overflow	trap	conformance/runtime/overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 addition overflow\n	runtime:overflow-trap
