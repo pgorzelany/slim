@@ -385,6 +385,11 @@ milestone.
   ownership boundaries. The former roughly 149 KB compiler module is a roughly
   3.6 KB coordinator; every extraction preserved differential behavior and a
   stage-2/stage-3 fixed point.
+- The first typed-query slice adds an explicit `ir` module with structured
+  declaration kinds and declaration records. The checker now reads and lexes a
+  standalone source exactly once, constructs one `Vec ir/Declaration`, and
+  reuses that index across its top-level semantic passes. Governance rejects a
+  return to per-phase file reads or lexing.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.

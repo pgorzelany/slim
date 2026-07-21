@@ -11,6 +11,12 @@ by the self-hosted compiler runs successfully.
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
 
+The `ir` module begins the D0023 typed-query migration. Syntax indexing creates
+one structured declaration vector per standalone check. All top-level checker
+passes share that vector, and governance requires exactly one file read and one
+lex operation in the self-host checker. Expression typing and checked query
+state continue to move into this representation incrementally.
+
 The self-hosted path accepts the subset needed to compile itself plus the Core
 standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
 `set`, vector update, arenas, canonical formatting, and structured checking.

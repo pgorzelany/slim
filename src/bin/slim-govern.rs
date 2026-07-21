@@ -74,6 +74,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_dependencies(&root.join("Cargo.toml"), &mut errors);
     check_rust_safety(&root.join("src"), &mut errors);
     check_rust_budget(root, &mut errors);
+    check_selfhost_architecture(root, &mut errors);
     errors
 }
 
@@ -513,6 +514,63 @@ fn check_rust_budget(root: &Path, errors: &mut Vec<String>) {
     });
     for missing in budget.keys().filter(|path| !seen.contains(*path)) {
         errors.push(format!("Rust budget path does not exist: {missing}"));
+    }
+}
+
+fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
+    let directory = root.join("selfhost");
+    let project_path = directory.join("slim.project");
+    let project = match fs::read_to_string(&project_path) {
+        Ok(project) => project,
+        Err(error) => {
+            errors.push(format!("cannot read {}: {error}", project_path.display()));
+            return;
+        }
+    };
+    for (module, file) in [
+        ("check", "check.slim"),
+        ("codegen", "codegen.slim"),
+        ("compiler", "slimc.slim"),
+        ("driver", "driver.slim"),
+        ("ir", "ir.slim"),
+        ("project", "project.slim"),
+        ("syntax", "syntax.slim"),
+        ("text", "text.slim"),
+    ] {
+        let path = directory.join(file);
+        if !path.is_file() {
+            errors.push(format!("self-host module `{module}` is missing {file}"));
+        }
+        let clause = format!("(module {module} \"{file}\"");
+        if !project.contains(&clause) {
+            errors.push(format!(
+                "selfhost/slim.project does not explicitly declare `{module}` from `{file}`"
+            ));
+        }
+    }
+
+    let check_path = directory.join("check.slim");
+    let Ok(check) = fs::read_to_string(&check_path) else {
+        return;
+    };
+    for (operation, count) in [
+        (
+            "(call io.read-file",
+            check.matches("(call io.read-file").count(),
+        ),
+        (
+            "(call syntax/lex",
+            check.matches("(call syntax/lex").count(),
+        ),
+    ] {
+        if count != 1 {
+            errors.push(format!(
+                "self-host checker must perform `{operation}` exactly once, found {count}"
+            ));
+        }
+    }
+    if !check.contains("(Vec ir/Declaration)") {
+        errors.push("self-host checker does not consume structured declarations".to_owned());
     }
 }
 
