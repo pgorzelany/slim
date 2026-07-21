@@ -21,3 +21,10 @@ Run the stage-0 corpus with:
 Run the stage differential gate with:
 
     cargo run --bin slim-conform -- differential
+
+`projects/manifest.tsv` is the independent Core 0.2 inventory. Its fixtures
+exercise project checking, native execution, exact project diagnostics,
+relocation, cache corruption, incremental reuse, and worker-count variance.
+Every row is explicitly `stage0-only(projects)` until the SLIM self-hosted
+compiler implements projects; the differential runner reports that capability
+gap and never silently substitutes stage 0.

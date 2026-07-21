@@ -1,0 +1,1 @@
+(project 1 (entry app) (module app "app.slim" (imports math) (exports)) (module math "math.slim" (imports) (exports)))

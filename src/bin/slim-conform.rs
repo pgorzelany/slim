@@ -8,6 +8,8 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use slim::bootstrap;
 use slim::compiler;
+use slim::project;
+use slim::project::session::ProjectSession;
 use slim::span::Source;
 
 const RUNTIME_C: &str = include_str!("../../runtime/slim_rt.c");
@@ -37,11 +39,19 @@ fn run() -> Result<(), String> {
     }
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let fixtures = load_manifest(&root)?;
+    let project_fixtures = load_project_manifest(&root)?;
     check_coverage(&root, &fixtures)?;
+    check_project_coverage(&project_fixtures)?;
     let mut counts = BTreeMap::<String, usize>::new();
     for fixture in &fixtures {
         run_stage0_fixture(fixture)?;
         *counts.entry(fixture.mode.clone()).or_default() += 1;
+    }
+    for fixture in &project_fixtures {
+        run_project_fixture(fixture)?;
+        *counts
+            .entry(format!("project-{}", fixture.mode))
+            .or_default() += 1;
     }
     let summary = counts
         .iter()
@@ -54,7 +64,7 @@ fn run() -> Result<(), String> {
         .count();
     println!(
         "conformance: {} stage-0 fixtures passed ({summary}); {parity_count} marked for self-host parity",
-        fixtures.len(),
+        fixtures.len() + project_fixtures.len(),
     );
 
     if command == "differential" {
@@ -74,6 +84,14 @@ fn run() -> Result<(), String> {
                 *deferred.entry(reason.to_owned()).or_default() += 1;
             }
         }
+        for fixture in &project_fixtures {
+            let reason = fixture
+                .selfhost
+                .strip_prefix("stage0-only(")
+                .and_then(|value| value.strip_suffix(')'))
+                .expect("project manifest classification was validated");
+            *deferred.entry(reason.to_owned()).or_default() += 1;
+        }
         if parity_run != parity_count {
             return Err(format!(
                 "self-host differential silently skipped fixtures: expected {parity_count}, ran {parity_run}"
@@ -87,7 +105,7 @@ fn run() -> Result<(), String> {
         println!(
             "differential: {parity_run} parity fixtures passed through {}; {} stage-0-only fixtures deferred ({deferred_summary}); bootstrap fixed at {} C bytes",
             report.compiler.display(),
-            fixtures.len() - parity_run,
+            fixtures.len() + project_fixtures.len() - parity_run,
             report.fixed_c_bytes,
         );
     }
@@ -95,7 +113,39 @@ fn run() -> Result<(), String> {
 }
 
 fn load_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
-    let path = root.join("conformance/manifest.tsv");
+    load_fixture_manifest(
+        root,
+        "conformance/manifest.tsv",
+        &["check-pass", "check-fail", "run", "trap", "format", "emit"],
+        false,
+    )
+}
+
+fn load_project_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
+    load_fixture_manifest(
+        root,
+        "conformance/projects/manifest.tsv",
+        &[
+            "check-pass",
+            "check-fail",
+            "run",
+            "emit",
+            "relocate",
+            "cache-corruption",
+            "jobs",
+            "incremental",
+        ],
+        true,
+    )
+}
+
+fn load_fixture_manifest(
+    root: &Path,
+    relative_path: &str,
+    allowed_modes: &[&str],
+    projects: bool,
+) -> Result<Vec<Fixture>, String> {
+    let path = root.join(relative_path);
     let text = fs::read_to_string(&path)
         .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
     let mut fixtures = Vec::new();
@@ -115,10 +165,7 @@ fn load_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
         if !ids.insert(columns[0].to_owned()) {
             return Err(format!("duplicate fixture id {}", columns[0]));
         }
-        if !matches!(
-            columns[1],
-            "check-pass" | "check-fail" | "run" | "trap" | "format" | "emit"
-        ) {
+        if !allowed_modes.contains(&columns[1]) {
             return Err(format!(
                 "{}:{} has unknown mode {}",
                 path.display(),
@@ -131,6 +178,13 @@ fn load_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
         {
             return Err(format!(
                 "{}:{} must classify selfhost as parity or stage0-only(reason)",
+                path.display(),
+                line_index + 1
+            ));
+        }
+        if projects && columns[3] != "stage0-only(projects)" {
+            return Err(format!(
+                "{}:{} project selfhost must be exactly stage0-only(projects)",
                 path.display(),
                 line_index + 1
             ));
@@ -161,6 +215,38 @@ fn load_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
         return Err("conformance manifest contains no fixtures".to_owned());
     }
     Ok(fixtures)
+}
+
+fn check_project_coverage(fixtures: &[Fixture]) -> Result<(), String> {
+    let required: BTreeSet<_> = [
+        "project:cache-corruption",
+        "project:determinism",
+        "project:diagnostics",
+        "project:incremental",
+        "project:interfaces",
+        "project:jobs",
+        "project:manifest",
+        "project:relocation",
+        "project:runtime",
+        "project:selfhost-classification",
+        "project:visibility",
+    ]
+    .into_iter()
+    .map(str::to_owned)
+    .collect();
+    let covered: BTreeSet<_> = fixtures
+        .iter()
+        .flat_map(|fixture| fixture.coverage.iter().cloned())
+        .collect();
+    let missing: Vec<_> = required.difference(&covered).cloned().collect();
+    if missing.is_empty() {
+        Ok(())
+    } else {
+        Err(format!(
+            "project conformance coverage is missing: {}",
+            missing.join(", ")
+        ))
+    }
 }
 
 fn check_coverage(root: &Path, fixtures: &[Fixture]) -> Result<(), String> {
@@ -288,6 +374,285 @@ fn run_stage0_fixture(fixture: &Fixture) -> Result<(), String> {
         }
         _ => unreachable!("manifest mode validated"),
     }
+}
+
+fn run_project_fixture(fixture: &Fixture) -> Result<(), String> {
+    let source = read_source(&fixture.path)?;
+    match fixture.mode.as_str() {
+        "check-pass" => require_project_success(fixture, &project::compile(source)),
+        "check-fail" => {
+            let compilation = project::compile(source);
+            if compilation.succeeded() {
+                return Err(format!(
+                    "{}: expected project rejection, but check passed",
+                    fixture.id
+                ));
+            }
+            let actual = project_diagnostic_identity(&compilation.diagnostics);
+            if fixture.expectation == "TODO" {
+                return Err(format!(
+                    "{}: replace TODO diagnostic expectation with {actual}",
+                    fixture.id
+                ));
+            }
+            if actual != fixture.expectation {
+                return Err(format!(
+                    "{}: project diagnostics differ\nexpected: {}\nactual:   {actual}",
+                    fixture.id, fixture.expectation
+                ));
+            }
+            Ok(())
+        }
+        "run" => {
+            let compilation = project::compile(source);
+            require_project_success(fixture, &compilation)?;
+            let output = compile_and_run(
+                fixture,
+                compilation
+                    .emit_c()
+                    .ok_or_else(|| format!("{}: project emitted no C", fixture.id))?,
+            )?;
+            check_process_expectation(fixture, &output)
+        }
+        "emit" => {
+            let first = project::compile_with_jobs(source.clone(), 1);
+            let second = project::compile_with_jobs(source, 1);
+            require_project_success(fixture, &first)?;
+            require_project_success(fixture, &second)?;
+            if first.emit_c() != second.emit_c() || first.interfaces != second.interfaces {
+                return Err(format!(
+                    "{}: repeated project artifacts are not byte deterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "relocate" => run_relocation_fixture(fixture),
+        "cache-corruption" => run_cache_corruption_fixture(fixture),
+        "jobs" => run_jobs_fixture(fixture),
+        "incremental" => run_incremental_fixture(fixture),
+        _ => unreachable!("project manifest mode validated"),
+    }
+}
+
+fn run_relocation_fixture(fixture: &Fixture) -> Result<(), String> {
+    let directory = temporary_directory("project-relocate")?;
+    copy_tree(
+        fixture
+            .path
+            .parent()
+            .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+        &directory,
+    )?;
+    let relocated_path = directory.join(
+        fixture
+            .path
+            .file_name()
+            .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+    );
+    let original = project::compile(read_source(&fixture.path)?);
+    let relocated = project::compile(read_source(&relocated_path)?);
+    let result = require_project_success(fixture, &original).and_then(|()| {
+        require_project_success(fixture, &relocated)?;
+        if original.emit_c() != relocated.emit_c() || original.interfaces != relocated.interfaces {
+            return Err(format!(
+                "{}: relocation changed project artifacts",
+                fixture.id
+            ));
+        }
+        Ok(())
+    });
+    let _ = fs::remove_dir_all(directory);
+    result
+}
+
+fn run_cache_corruption_fixture(fixture: &Fixture) -> Result<(), String> {
+    let directory = temporary_directory("project-cache")?;
+    copy_tree(
+        fixture
+            .path
+            .parent()
+            .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+        &directory,
+    )?;
+    let manifest = directory.join(
+        fixture
+            .path
+            .file_name()
+            .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+    );
+    let first = project::compile_cached_with_jobs(read_source(&manifest)?, 1);
+    require_project_success(fixture, &first)?;
+    let warm = project::compile_cached_with_jobs(read_source(&manifest)?, 1);
+    require_project_success(fixture, &warm)?;
+    if first.emit_c() != warm.emit_c() || first.interfaces != warm.interfaces {
+        return Err(format!("{}: warm cache changed artifacts", fixture.id));
+    }
+    let cache_directory = directory.join(".slim-cache/v1");
+    for entry in fs::read_dir(&cache_directory)
+        .map_err(|error| format!("{}: cannot read cache: {error}", fixture.id))?
+    {
+        let path = entry.map_err(|error| error.to_string())?.path();
+        if path.is_file() {
+            let mut bytes = fs::read(&path).map_err(|error| error.to_string())?;
+            bytes.truncate(bytes.len() / 2);
+            fs::write(&path, bytes).map_err(|error| error.to_string())?;
+        }
+    }
+    let recovered = project::compile_cached_with_jobs(read_source(&manifest)?, 1);
+    let result = require_project_success(fixture, &recovered).and_then(|()| {
+        if first.emit_c() != recovered.emit_c() || first.interfaces != recovered.interfaces {
+            return Err(format!(
+                "{}: corruption recovery changed artifacts",
+                fixture.id
+            ));
+        }
+        Ok(())
+    });
+    let _ = fs::remove_dir_all(directory);
+    result
+}
+
+fn run_jobs_fixture(fixture: &Fixture) -> Result<(), String> {
+    let mut outputs = Vec::new();
+    for jobs in [1, 2, 4, usize::MAX] {
+        let compilation = project::compile_with_jobs(read_source(&fixture.path)?, jobs);
+        require_project_success(fixture, &compilation)?;
+        outputs.push((
+            compilation.emit_c().map(str::to_owned),
+            compilation.interfaces,
+        ));
+    }
+    if outputs.windows(2).any(|pair| pair[0] != pair[1]) {
+        return Err(format!(
+            "{}: worker count changed project artifacts",
+            fixture.id
+        ));
+    }
+    Ok(())
+}
+
+fn run_incremental_fixture(fixture: &Fixture) -> Result<(), String> {
+    let directory = temporary_directory("project-incremental")?;
+    copy_tree(
+        fixture
+            .path
+            .parent()
+            .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+        &directory,
+    )?;
+    let manifest = directory.join(
+        fixture
+            .path
+            .file_name()
+            .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+    );
+    let mut session = ProjectSession::new();
+    let initial = session.update(read_source(&manifest)?);
+    if !initial.succeeded() {
+        return Err(format!("{}: initial incremental check failed", fixture.id));
+    }
+    let module = directory.join("math.slim");
+    let before = fs::read_to_string(&module).map_err(|error| error.to_string())?;
+    let after = before.replacen("value 1", "value 2", 1);
+    if before == after {
+        return Err(format!(
+            "{}: incremental fixture lacks `value 1` edit marker",
+            fixture.id
+        ));
+    }
+    fs::write(&module, after).map_err(|error| error.to_string())?;
+    let updated = session.update(read_source(&manifest)?);
+    let clean = project::compile(read_source(&manifest)?);
+    let result = if !updated.succeeded() || !clean.succeeded() {
+        Err(format!("{}: incremental edit failed", fixture.id))
+    } else if updated.stats.declarations_parsed != 1
+        || updated.stats.declarations_lowered != 1
+        || updated.stats.declarations_checked != 1
+        || updated.stats.declarations_generated != 1
+        || updated.emit_c() != clean.emit_c()
+    {
+        Err(format!(
+            "{}: private edit did not reuse the exact expected work: {:?}",
+            fixture.id, updated.stats
+        ))
+    } else {
+        Ok(())
+    };
+    let _ = fs::remove_dir_all(directory);
+    result
+}
+
+fn read_source(path: &Path) -> Result<Source, String> {
+    let text = fs::read_to_string(path)
+        .map_err(|error| format!("cannot read {}: {error}", path.display()))?;
+    Ok(Source::new(path, text))
+}
+
+fn require_project_success(
+    fixture: &Fixture,
+    compilation: &project::ProjectCompilation,
+) -> Result<(), String> {
+    if compilation.succeeded() {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: unexpected project diagnostics\n{}",
+        fixture.id,
+        project_diagnostic_identity(&compilation.diagnostics)
+    ))
+}
+
+fn project_diagnostic_identity(diagnostics: &[project::ProjectDiagnostic]) -> String {
+    diagnostics
+        .iter()
+        .map(|diagnostic| {
+            format!(
+                "{}@{}@{}:{}",
+                diagnostic.diagnostic.code,
+                diagnostic.module.as_deref().unwrap_or("-"),
+                diagnostic.diagnostic.primary.start,
+                diagnostic.diagnostic.primary.end
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(",")
+}
+
+fn temporary_directory(role: &str) -> Result<PathBuf, String> {
+    let nonce = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_err(|error| format!("system clock error: {error}"))?
+        .as_nanos();
+    let path = env::temp_dir().join(format!("slim-{role}-{}-{nonce}", std::process::id()));
+    fs::create_dir(&path).map_err(|error| format!("cannot create {}: {error}", path.display()))?;
+    Ok(path)
+}
+
+fn copy_tree(source: &Path, destination: &Path) -> Result<(), String> {
+    fs::create_dir_all(destination)
+        .map_err(|error| format!("cannot create {}: {error}", destination.display()))?;
+    for entry in fs::read_dir(source)
+        .map_err(|error| format!("cannot read {}: {error}", source.display()))?
+    {
+        let entry = entry.map_err(|error| error.to_string())?;
+        if entry.file_name() == ".slim-cache" {
+            continue;
+        }
+        let target = destination.join(entry.file_name());
+        if entry.path().is_dir() {
+            copy_tree(&entry.path(), &target)?;
+        } else {
+            fs::copy(entry.path(), &target).map_err(|error| {
+                format!(
+                    "cannot copy {} to {}: {error}",
+                    entry.path().display(),
+                    target.display()
+                )
+            })?;
+        }
+    }
+    Ok(())
 }
 
 fn run_selfhost_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
@@ -513,5 +878,7 @@ mod tests {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let fixtures = load_manifest(&root).unwrap();
         check_coverage(&root, &fixtures).unwrap();
+        let projects = load_project_manifest(&root).unwrap();
+        check_project_coverage(&projects).unwrap();
     }
 }
