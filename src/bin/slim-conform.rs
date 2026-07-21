@@ -41,7 +41,7 @@ fn run() -> Result<(), String> {
     let fixtures = load_manifest(&root)?;
     let project_fixtures = load_project_manifest(&root)?;
     check_coverage(&root, &fixtures)?;
-    check_project_coverage(&project_fixtures)?;
+    check_project_coverage(&root, &project_fixtures)?;
     let mut counts = BTreeMap::<String, usize>::new();
     for fixture in &fixtures {
         run_stage0_fixture(fixture)?;
@@ -218,24 +218,18 @@ fn load_fixture_manifest(
     Ok(fixtures)
 }
 
-fn check_project_coverage(fixtures: &[Fixture]) -> Result<(), String> {
-    let required: BTreeSet<_> = [
-        "project:cache-corruption",
-        "project:determinism",
-        "project:diagnostics",
-        "project:format",
-        "project:incremental",
-        "project:interfaces",
-        "project:jobs",
-        "project:manifest",
-        "project:relocation",
-        "project:runtime",
-        "project:selfhost-classification",
-        "project:visibility",
-    ]
-    .into_iter()
-    .map(str::to_owned)
-    .collect();
+fn check_project_coverage(root: &Path, fixtures: &[Fixture]) -> Result<(), String> {
+    let ledger_path = root.join("design/project-semantics.tsv");
+    let ledger = fs::read_to_string(&ledger_path)
+        .map_err(|error| format!("cannot read {}: {error}", ledger_path.display()))?;
+    let required: BTreeSet<_> = ledger
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter_map(|line| {
+            let columns = line.split('\t').collect::<Vec<_>>();
+            (columns.len() == 4).then(|| format!("{}:{}", columns[0], columns[1]))
+        })
+        .collect();
     let covered: BTreeSet<_> = fixtures
         .iter()
         .flat_map(|fixture| fixture.coverage.iter().cloned())
@@ -1203,6 +1197,6 @@ mod tests {
         let fixtures = load_manifest(&root).unwrap();
         check_coverage(&root, &fixtures).unwrap();
         let projects = load_project_manifest(&root).unwrap();
-        check_project_coverage(&projects).unwrap();
+        check_project_coverage(&root, &projects).unwrap();
     }
 }

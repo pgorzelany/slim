@@ -25,6 +25,5 @@ Run the stage differential gate with:
 `projects/manifest.tsv` is the independent Core 0.2 inventory. Its fixtures
 exercise project checking, native execution, exact project diagnostics,
 relocation, cache corruption, incremental reuse, and worker-count variance.
-Every row is explicitly `stage0-only(projects)` until the SLIM self-hosted
-compiler implements projects; the differential runner reports that capability
-gap and never silently substitutes stage 0.
+Project rows follow the same explicit `parity` or `stage0-only(reason)` rule;
+the differential runner never silently substitutes stage 0.

@@ -18,10 +18,12 @@ The checker diagnoses malformed forms, scalar/effect errors, non-exhaustive or
 duplicate Boolean arms, use-after-move, and invalid `inout`/`recur` ownership.
 The compiler also resolves canonical project manifests, reads explicit
 manifest-relative modules, lowers qualified references into one deterministic
-translation unit, and checks the current project visibility/cycle/schema
-diagnostics. It also emits canonical path-free public interface artifacts.
-Stage 0 remains the complete Core oracle while incremental sessions and
-validated persistent caches are ported.
+translation unit, and checks the original project visibility/cycle/schema
+corpus. It emits canonical path-free public interface artifacts. D0023 expands
+the differential corpus to the complete accepted project ledger; stage 0
+remains the oracle for the explicitly classified manifest, loading,
+resolution, interface, incremental-session, and cache cases while those
+capabilities move into SLIM.
 
 New compiler capability is implemented in this SLIM compiler by default. The
 production Rust ceilings in `design/rust-budget.tsv` prevent unnoticed stage-0

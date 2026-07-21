@@ -353,6 +353,13 @@ Acceptance:
 - Production Rust remains within `design/rust-budget.tsv`; increases require a
   separate accepted architecture decision.
 
+The completion architecture is fixed by D0023. The self-hosted compiler is
+migrated from repeated token-position interpretation to one modular, typed,
+declaration-oriented query pipeline. The external corpus is expanded before
+parity is claimed so that every accepted project rule, not only the original
+project fixtures, is tested. No Core syntax or primitive is added by this
+milestone.
+
 ### Core 0.3 first-slice evidence
 
 - The self-hosted compiler emits records, variants, `make`, `get`, `case`,
@@ -364,10 +371,14 @@ Acceptance:
   recovery, scalar/effect checking, Boolean exhaustiveness, and move/`inout`
   state. All 14 standalone diagnostic fixtures, including deterministic
   multi-diagnostic recovery, have exact code-and-primary-span parity.
-- The differential corpus now has 33 exact parity fixtures. The SLIM compiler
-  resolves, formats, checks, relocates, and emits the project corpus, including
-  exact visibility, cycle, and schema diagnostics and canonical path-free
-  public interfaces; only the two session/cache fixtures remain deferred.
+- The first project corpus reached 33 exact parity fixtures, including project
+  resolution, formatting, relocation, emission, visibility, cycle/schema
+  diagnostics, and canonical path-free public interfaces.
+- The D0023 completion audit expanded the external corpus from 35 to 51
+  fixtures. All 51 pass stage 0; 33 currently have exact self-host parity and
+  18 explicitly expose the remaining manifest, loading, resolution, public
+  interface, incremental-session, and persistent-cache work. The larger
+  denominator replaces the earlier claim that only session/cache work remained.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.

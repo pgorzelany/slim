@@ -51,6 +51,7 @@ fn check_repository(root: &Path) -> Vec<String> {
         "DESIGN.md",
         "docs/CORE.md",
         "design/FEATURE_POLICY.md",
+        "design/project-semantics.tsv",
         "design/rust-budget.tsv",
         "design/surface.tsv",
     ];
@@ -63,6 +64,12 @@ fn check_repository(root: &Path) -> Vec<String> {
     let decisions = load_decisions(&root.join("design/decisions"), &mut errors);
     check_decisions(&decisions, &mut errors);
     check_surface(&root.join("design/surface.tsv"), &decisions, &mut errors);
+    check_semantic_ledger(
+        &root.join("design/project-semantics.tsv"),
+        "project-semantics.tsv",
+        &decisions,
+        &mut errors,
+    );
     check_conformance_coverage(root, &mut errors);
     check_dependencies(&root.join("Cargo.toml"), &mut errors);
     check_rust_safety(&root.join("src"), &mut errors);
@@ -71,9 +78,27 @@ fn check_repository(root: &Path) -> Vec<String> {
 }
 
 fn check_conformance_coverage(root: &Path, errors: &mut Vec<String>) {
-    let surface_path = root.join("design/surface.tsv");
-    let manifest_path = root.join("conformance/manifest.tsv");
-    let Ok(surface) = fs::read_to_string(&surface_path) else {
+    check_ledger_coverage(
+        &root.join("design/surface.tsv"),
+        &root.join("conformance/manifest.tsv"),
+        "accepted surface",
+        errors,
+    );
+    check_ledger_coverage(
+        &root.join("design/project-semantics.tsv"),
+        &root.join("conformance/projects/manifest.tsv"),
+        "accepted project behavior",
+        errors,
+    );
+}
+
+fn check_ledger_coverage(
+    ledger_path: &Path,
+    manifest_path: &Path,
+    description: &str,
+    errors: &mut Vec<String>,
+) {
+    let Ok(ledger) = fs::read_to_string(ledger_path) else {
         return;
     };
     let manifest = match fs::read_to_string(&manifest_path) {
@@ -83,7 +108,7 @@ fn check_conformance_coverage(root: &Path, errors: &mut Vec<String>) {
             return;
         }
     };
-    let required: BTreeSet<_> = surface
+    let required: BTreeSet<_> = ledger
         .lines()
         .filter(|line| !line.is_empty() && !line.starts_with('#'))
         .filter_map(|line| {
@@ -100,7 +125,7 @@ fn check_conformance_coverage(root: &Path, errors: &mut Vec<String>) {
         .collect();
     for missing in required.difference(&covered) {
         errors.push(format!(
-            "accepted surface `{missing}` has no conformance coverage tag"
+            "{description} `{missing}` has no conformance coverage tag"
         ));
     }
 }
@@ -324,6 +349,55 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
         errors.push(format!(
             "surface built-in `{missing}` has no implementation"
         ));
+    }
+}
+
+fn check_semantic_ledger(
+    path: &Path,
+    display_name: &str,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    let text = match fs::read_to_string(path) {
+        Ok(text) => text,
+        Err(error) => {
+            errors.push(format!("cannot read {}: {error}", path.display()));
+            return;
+        }
+    };
+    let mut names = BTreeSet::new();
+    let mut roles = BTreeSet::new();
+    for (line_index, line) in text.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        if columns.len() != 4 {
+            errors.push(format!(
+                "{display_name}:{} must have four columns",
+                line_index + 1
+            ));
+            continue;
+        }
+        let category_name = format!("{}:{}", columns[0], columns[1]);
+        if !names.insert(category_name.clone()) {
+            errors.push(format!("duplicate {display_name} name {category_name}"));
+        }
+        let category_role = format!("{}:{}", columns[0], columns[2]);
+        if !roles.insert(category_role.clone()) {
+            errors.push(format!("duplicate {display_name} role {category_role}"));
+        }
+        match decisions.get(columns[3]) {
+            Some(decision) if decision.status == "accepted" => {}
+            Some(_) => errors.push(format!(
+                "{display_name} {category_name} cites unaccepted {}",
+                columns[3]
+            )),
+            None => errors.push(format!(
+                "{display_name} {category_name} cites missing {}",
+                columns[3]
+            )),
+        }
     }
 }
 
