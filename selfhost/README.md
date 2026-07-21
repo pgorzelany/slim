@@ -1,7 +1,8 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. It contains the compiler library in
-`slimc.slim` and the minimal entry function in `driver.slim`. Stage 0 compiles
+`slim.project` is the self-hosting input. It contains explicit modules for
+syntax/token utilities, byte-text emission, checking, project handling, C
+generation, coordination, and the minimal executable driver. Stage 0 compiles
 the project to the stage-1 executable. Stage 1 emits the C used to build stage
 2, and stage 2 emits the C for stage 3. The bootstrap succeeds only when the
 stage-2 and stage-3 C files are byte-for-byte identical and a program compiled

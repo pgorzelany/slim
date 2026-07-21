@@ -379,6 +379,12 @@ milestone.
   18 explicitly expose the remaining manifest, loading, resolution, public
   interface, incremental-session, and persistent-cache work. The larger
   denominator replaces the earlier claim that only session/cache work remained.
+- The self-hosted compiler is now an explicit seven-module acyclic project:
+  checking, C generation, project handling, syntax/token utilities, byte-text
+  emission, coordination, and the executable driver have separate SLIM
+  ownership boundaries. The former roughly 149 KB compiler module is a roughly
+  3.6 KB coordinator; every extraction preserved differential behavior and a
+  stage-2/stage-3 fixed point.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.
