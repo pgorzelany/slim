@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 0.1 complete
-Next milestone: Core 0.2 Deterministic Projects
+Status: Core 0.2 active
+Current milestone: Core 0.2 Deterministic Projects
 Last updated: 2026-07-21
 
 ## Direction
@@ -141,13 +141,115 @@ Acceptance:
 - `scripts/verify.sh` enforces all of the above together with governance,
   clean-build scaling, Clippy, tests, and sanitized native execution.
 
+## Core 0.2: deterministic projects
+
+Core 0.2 adds one qualified-reference rule and otherwise puts project structure
+in a canonical manifest. The accepted model is specified in
+`docs/PROJECTS.md`; D0017 through D0021 record its weighted choices and costs.
+
+### Deliverable 1: canonical project resolution
+
+- Parse one strict versioned project-manifest grammar.
+- Resolve only explicit, confined, manifest-relative module paths.
+- Validate module identity, direct imports, exports, entry point, and an
+  acyclic graph.
+- Resolve imported calls and named types only through `module/name`.
+- Preserve file identity and exact byte spans in deterministic diagnostics.
+
+Acceptance:
+
+- Relocating a project does not change semantic identities or compiler output.
+- Filesystem enumeration, environment, and manifest clause order cannot affect
+  discovery.
+- Missing files, duplicate IDs/paths, path escapes, cycles, visibility errors,
+  and malformed manifests have stable codes and exact spans.
+- Standalone and project inputs share the existing check/build/run/emit-c/fmt
+  workflow; no ambient manifest discovery or alternate import syntax exists.
+
+### Deliverable 2: canonical public interfaces
+
+- Emit schema-1 text artifacts containing only exported type layouts and
+  function signatures, modes, and effects.
+- Fully qualify every named type and sort unordered semantic sets.
+- Reject private or inaccessible types leaked through an export.
+- Fingerprint exact canonical bytes without paths, timestamps, host data, or
+  scheduling data.
+
+Acceptance:
+
+- Identical public interfaces produce byte-identical artifacts across clean
+  processes and different absolute project locations.
+- A private body edit preserves interface bytes and fingerprint.
+- Every public signature or layout edit changes the interface fingerprint.
+- Unknown schema versions and malformed artifacts are rejected, never guessed.
+
+### Deliverable 3: genuine project incremental reuse
+
+- Extend declaration IDs and call/type edges across modules.
+- Retain per-declaration parsed, lowered, checked, interface, and generated
+  results in a reusable project session.
+- Persist validated module evidence keyed by source and dependency interfaces.
+- Validate bounded cache fields and checksums and atomically replace entries.
+- Rebuild safely after truncation, mutation, version mismatch, or identity
+  mismatch.
+
+Acceptance:
+
+- A private implementation edit rechecks and regenerates exactly its changed
+  declaration/module while consumers remain reused.
+- An exported-interface edit invalidates exactly the reverse transitive module
+  and declaration closure.
+- Warm in-memory and persistent-cache output and diagnostics equal a clean
+  compilation byte for byte.
+- Cache corruption can never make an invalid project pass.
+
+### Deliverable 4: bounded deterministic parallel checking
+
+- Compute stable topological layers and check independent modules with owned
+  worker state and immutable completed interfaces.
+- Bound workers by requested jobs, hardware, and layer width.
+- Prohibit worker-to-worker waits and shared mutable checker state.
+- Merge all results in module-identity order and retain `--jobs 1` as oracle.
+
+Acceptance:
+
+- Worker-count and scheduling variance leave diagnostics, interfaces, caches,
+  work counts, C, and native behavior byte-identical.
+- Stress tests terminate under repeated wide and deep graphs.
+- Default parallelism is enabled only when repeated measurements beat serial
+  execution outside the recorded noise band.
+
+### Deliverable 5: project conformance and performance evidence
+
+- Add standalone positive, negative, runtime, relocation, determinism,
+  malformed-input, and corruption fixtures.
+- Classify self-host project capabilities explicitly with no silent stage-0
+  fallback.
+- Benchmark geometric wide/deep project graphs, clean and warm builds, private
+  and interface edits, invalidation closure, worker counts, and remaining
+  whole-project overhead.
+- Integrate every project gate into `scripts/verify.sh`.
+
+Acceptance:
+
+- Governance maps each implemented project surface entry to conformance.
+- Recorded work counts prove reuse instead of invalidation followed by clean
+  recompilation.
+- Clean project work remains approximately linear.
+- Reproduction commands, machine context, timings, and honest limitations are
+  committed.
+
+## Non-goals for Core 0.2
+
+- Package registries, downloads, semantic version solving, or lockfiles.
+- Import aliases, globs, selective symbol imports, re-exports, or implicit
+  preludes.
+- Cyclic modules, recursive interfaces, build scripts, or include files.
+- Stable native ABIs, dynamic linking, foreign functions, or separate native
+  object linking.
+- Language-level concurrency or automatic parallel execution of SLIM code.
+
 ## Later milestones
-
-### Core 0.2: deterministic projects
-
-Add one explicit import/export model, interface artifacts, reproducible project
-manifests, parallel checking of independent modules, and project-level
-incremental caches.
 
 ### Core 0.3: lifetime and region planning
 
