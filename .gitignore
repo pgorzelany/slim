@@ -1,7 +1,7 @@
 /target/
 /build/
 /benchmarks/results/raw/
+.slim-cache/
 *.dSYM/
 *.profraw
 *.profdata
-

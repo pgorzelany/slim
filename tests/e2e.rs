@@ -203,6 +203,8 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
     let check = Command::new(slimc())
         .arg("check")
         .arg(&manifest)
+        .arg("--jobs")
+        .arg("2")
         .output()
         .unwrap();
     assert!(
@@ -245,5 +247,48 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
         fs::read_to_string(interfaces.join("math.sli")).unwrap(),
         "(interface 1 math (fn answer ((owned I64)) I64 (effects)))\n"
     );
+
+    let relocated = temporary_directory("project-relocated");
+    for file in ["app.slim", "math.slim", "slim.project"] {
+        fs::copy(directory.join(file), relocated.join(file)).unwrap();
+    }
+    let relocated_manifest = relocated.join("slim.project");
+    let original_c = directory.join("original.c");
+    let relocated_c = relocated.join("relocated.c");
+    for (project, output) in [
+        (&manifest, &original_c),
+        (&relocated_manifest, &relocated_c),
+    ] {
+        let emitted = Command::new(slimc())
+            .arg("emit-c")
+            .arg(project)
+            .arg("-o")
+            .arg(output)
+            .output()
+            .unwrap();
+        assert!(
+            emitted.status.success(),
+            "{}",
+            String::from_utf8_lossy(&emitted.stderr)
+        );
+    }
+    assert_eq!(
+        fs::read(original_c).unwrap(),
+        fs::read(relocated_c).unwrap()
+    );
+    let relocated_interfaces = relocated.join("interfaces");
+    let emitted = Command::new(slimc())
+        .arg("interfaces")
+        .arg(&relocated_manifest)
+        .arg("-o")
+        .arg(&relocated_interfaces)
+        .output()
+        .unwrap();
+    assert!(emitted.status.success());
+    assert_eq!(
+        fs::read(interfaces.join("math.sli")).unwrap(),
+        fs::read(relocated_interfaces.join("math.sli")).unwrap()
+    );
+    fs::remove_dir_all(relocated).unwrap();
     fs::remove_dir_all(directory).unwrap();
 }

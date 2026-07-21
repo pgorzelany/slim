@@ -15,6 +15,11 @@ tests, and comparable SLIM/C/Rust benchmark programs.
     cargo run --bin slimc -- run examples/hello.slim
     cargo run --bin slimc -- emit-c examples/hello.slim -o /tmp/hello.c
 
+For an explicit multi-module project:
+
+    cargo run --bin slimc -- run conformance/projects/basic/slim.project
+    cargo run --bin slimc -- interfaces conformance/projects/basic/slim.project -o /tmp/slim-interfaces
+
 The accepted canonical Core and compiler commands are documented in
 [docs/CORE.md](docs/CORE.md). Design goals and known theoretical limits are
 recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
@@ -37,6 +42,7 @@ For the executable Core oracle and incremental measurements:
 
     cargo run --bin slim-conform -- differential
     cargo run --release --bin slim-bench -- incremental
+    cargo run --release --bin slim-bench -- project
 
 ## Current boundary
 
@@ -47,6 +53,10 @@ Core 0.1 also has declaration-local in-memory incremental compilation with
 stable syntax/interface fingerprints and dependency-aware invalidation; its
 architecture and measured remaining whole-file costs are documented in
 [docs/INCREMENTAL.md](docs/INCREMENTAL.md).
-Concurrency, automatic parallelization, whole-program quality grading, and
-general optimal reduction remain designed goals rather than implemented
-claims.
+Core 0.2 adds explicit deterministic projects, qualified cross-module
+references, canonical public interfaces, safe persistent cache recovery,
+declaration-level project reuse, and an opt-in deterministic worker path. The
+measured worker path is currently slower than serial and is not enabled by
+default. Language-level concurrency, automatic program parallelization,
+whole-program quality grading, and general optimal reduction remain designed
+goals rather than implemented claims.

@@ -1,6 +1,6 @@
 # SLIM deterministic projects
 
-Status: accepted Core 0.2 design; implementation in progress
+Status: implemented in Core 0.2
 
 Core 0.2 combines existing Core modules into one executable without adding a
 second module form or source-level import/export declarations. One explicit
@@ -81,18 +81,21 @@ Existing compiler operations accept either a `(module ...)` source or a
 file extensions and directory search do not.
 
 ```text
-slimc check PATH
-slimc emit-c PATH -o FILE
-slimc build PATH [-o FILE]
-slimc run PATH [-- ARGS...]
+slimc check PATH [--jobs N]
+slimc emit-c PATH [--jobs N] -o FILE
+slimc build PATH [--jobs N] [-o FILE]
+slimc run PATH [--jobs N] [-- ARGS...]
 slimc fmt PATH [--check]
-slimc interfaces MANIFEST -o DIRECTORY
+slimc interfaces MANIFEST [--jobs N] -o DIRECTORY
 ```
 
 `interfaces` is the only additional operation. It materializes the same
 canonical interface bytes used by checking and caching; it is not another way
 to compile. Project operations accept `--jobs N`; `--jobs 1` is the serial
-oracle. The compiler never searches upward for a manifest.
+oracle and remains the default. CLI project operations use `.slim-cache/v1`
+beside the manifest; the library's `compile`/`compile_with_jobs` entry points
+remain cache-free clean oracles. The compiler never searches upward for a
+manifest.
 
 ## Canonical interface artifact
 
@@ -141,13 +144,17 @@ stores an absolute path or trusts modification time.
 
 Persistent entries use a length-prefixed binary format with the magic
 `SLIMCACHE\0`, a big-endian schema number, bounded UTF-8 fields, bounded byte
-fields, sorted dependency pairs, and a trailing stable checksum over all prior
-bytes. The file name is the hexadecimal stable fingerprint of the module
-identity. Readers reject truncation, excess bytes, invalid UTF-8, duplicate or
-unsorted dependencies, length overflow, version mismatch, identity mismatch,
-and checksum mismatch. A rejected entry is ignored and rebuilt from source; it
-can never make an invalid program pass. Cache writes use a temporary file and
-atomic rename after successful checking.
+fields, a bounded declaration count, sorted dependency pairs, and a trailing
+stable checksum over all prior bytes. Source evidence combines the normalized
+token fingerprint with module identity, entry role, and exports; dependency
+interface fingerprints independently cover imports. Generated output is a
+self-contained module C fragment assembled in topological order. The file name
+is the hexadecimal stable fingerprint of the module identity. Readers reject
+truncation, excess bytes, invalid UTF-8, malformed or noncanonical interfaces,
+duplicate or unsorted dependencies, length overflow, version mismatch,
+identity mismatch, and checksum mismatch. A rejected entry is ignored and
+rebuilt from source; it can never make an invalid program pass. Cache writes
+use a temporary file and atomic rename after successful checking.
 
 The default cache directory is `.slim-cache/v1` beside the manifest. Cache
 contents affect work performed, never diagnostics, interfaces, generated C, or
@@ -169,6 +176,29 @@ for one worker and every tested higher worker count. Parallel checking becomes
 the default only if repeated geometric benchmarks show a benefit outside the
 recorded noise band; otherwise the implementation remains available and the
 default stays serial.
+
+The committed geometric measurements did not justify a parallel default.
+Across the tested wide and deep graphs through 129 declarations, two and four
+workers were slower than the serial oracle because each owned worker currently
+rebuilds declaration lookup state. The worker path remains useful correctness
+infrastructure and opt-in experimentation; it is not presented as a speedup.
+
+## Measured implementation boundary
+
+`ProjectSession` genuinely retains declaration-level lowered and checked ASTs,
+dependency edges, fingerprints, and C fragments. A no-change update performs
+zero declaration parse/lower/check/generation work. A private body edit does
+one of each. A public layout edit checks the deterministic reverse module
+closure. Failed edits leave the last good state untouched, and every successful
+incremental output is compared with a clean compilation.
+
+The remaining latency is not constant: every update still reads all module
+files, lexically indexes them, rebuilds global lookup/graph structures, and
+assembles the translation unit. Persistent reuse is currently an all-valid
+fast path; one missing or rejected entry causes a safe clean rebuild rather
+than partial cross-process reconstruction. The committed project benchmark
+records these costs explicitly in
+`benchmarks/results/2026-07-21-project.tsv`.
 
 ## Stable project diagnostics
 

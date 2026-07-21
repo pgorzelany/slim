@@ -130,6 +130,7 @@ fn load_project_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
             "check-fail",
             "run",
             "emit",
+            "format",
             "relocate",
             "cache-corruption",
             "jobs",
@@ -222,6 +223,7 @@ fn check_project_coverage(fixtures: &[Fixture]) -> Result<(), String> {
         "project:cache-corruption",
         "project:determinism",
         "project:diagnostics",
+        "project:format",
         "project:incremental",
         "project:interfaces",
         "project:jobs",
@@ -422,6 +424,20 @@ fn run_project_fixture(fixture: &Fixture) -> Result<(), String> {
             if first.emit_c() != second.emit_c() || first.interfaces != second.interfaces {
                 return Err(format!(
                     "{}: repeated project artifacts are not byte deterministic",
+                    fixture.id
+                ));
+            }
+            Ok(())
+        }
+        "format" => {
+            let first = compiler::format_source(&source)
+                .map_err(|diagnostics| format!("{}: {diagnostics:#?}", fixture.id))?;
+            let formatted = Source::new(&fixture.path, first.clone());
+            let second = compiler::format_source(&formatted)
+                .map_err(|diagnostics| format!("{}: {diagnostics:#?}", fixture.id))?;
+            if first != second || project::manifest::parse(&formatted).is_err() {
+                return Err(format!(
+                    "{}: project manifest formatting is not canonical and valid",
                     fixture.id
                 ));
             }

@@ -412,7 +412,7 @@ usage:\n  slimc [--message-format=human|json] check <source> [--jobs N]\n  \
 slimc [--message-format=human|json] emit-c <source> [--jobs N] -o <file>\n  \
 slimc [--message-format=human|json] build <source> [--jobs N] [-o <binary>]\n  \
 slimc [--message-format=human|json] run <source> [--jobs N] [-- arguments...]\n  \
-slimc fmt <source> [--check]\n  slimc interfaces <project> -o <directory>\n  \
+slimc fmt <source> [--check]\n  slimc interfaces <project> [--jobs N] -o <directory>\n  \
 slimc runtime <directory>\n  slimc builtins\n",
         crate::VERSION
     );

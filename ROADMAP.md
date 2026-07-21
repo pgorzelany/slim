@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 0.2 active
-Current milestone: Core 0.2 Deterministic Projects
+Status: Core 0.2 complete
+Current milestone: Core 0.2 Deterministic Projects (complete)
 Last updated: 2026-07-21
 
 ## Direction
@@ -238,6 +238,41 @@ Acceptance:
 - Clean project work remains approximately linear.
 - Reproduction commands, machine context, timings, and honest limitations are
   committed.
+
+### Core 0.2 completion evidence
+
+- One explicit schema-1 manifest owns confined paths, direct imports, exports,
+  and the sole entry module. `module/name` is the only cross-module reference
+  form; no aliases, globs, ambient discovery, re-exports, or source-level
+  import/export syntax were added.
+- Canonical schema-1 interfaces are path-free and body-free. The strict reader
+  rejects unknown versions, malformed structure, noncanonical ordering, and
+  invalid modes/effects/types.
+- `ProjectSession` performs real declaration reuse. Tests and conformance prove
+  zero parse/lower/check/generation work on no-change updates, exactly one of
+  each for private-body edits, reverse-closure invalidation for public layouts,
+  clean-output equality, and last-good recovery after invalid edits.
+- Schema-1 `SLIMCACHE` entries are bounded, checksummed, versioned, identity
+  checked, atomically replaced, and exhaustively tested at every truncation and
+  every single-byte mutation. Default CLI cache hits reproduce clean interfaces
+  and modular C; any miss or rejected entry safely takes the clean path.
+- The worker path uses owned state, topological layers, bounded hardware/job
+  counts, no worker waits, canonical result merging, and a serial oracle.
+  Worker-count tests compare valid output and invalid diagnostics. Measurements
+  did not justify enabling parallelism by default.
+- The standalone corpus contains 11 explicitly classified project fixtures,
+  including native execution, exact diagnostics, formatting, relocation across
+  clean compiler processes, cache corruption, incremental work, and job-count
+  variance. Self-host support is explicitly `stage0-only(projects)`.
+- The committed geometric benchmark covers wide/deep graphs through 65 modules
+  and 129 declarations, every requested work count, persistent hits, closure
+  size, and one/two/four-worker medians. Clean serial work is linear in recorded
+  declaration counts. Remaining whole-project indexing/assembly and cache-file
+  overhead are documented rather than claimed solved.
+- `scripts/verify.sh` enforces formatting, dependency-free/unsafe-free
+  governance, all tests, Core and project conformance, stage differential and
+  the 112,008-byte self-host fixed point, standalone/project scaling, and
+  sanitized native execution.
 
 ## Non-goals for Core 0.2
 

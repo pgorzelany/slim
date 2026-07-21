@@ -11,6 +11,7 @@ cargo build --release --bins
 target/release/slim-bench compare
 target/release/slim-bench scaling
 target/release/slim-bench incremental
+target/release/slim-bench project
 ```
 
 SLIM compilation time includes the frontend, deterministic C emission, and an
@@ -33,3 +34,23 @@ interface edits, and central interface edits. It asserts exact declaration
 parse/lower/check/generation counts before printing timing results, so a full
 recompilation cannot masquerade as incremental work. Committed measurements
 live in `benchmarks/results/`.
+
+The `project` command generates geometric wide and deep import graphs. It
+measures clean, no-change, private-body, public-interface, and persistent-warm
+updates plus clean checks at one, two, and four requested workers. Every row
+records module and declaration parse/lower/check/generation/reuse counts,
+invalidation closure, persistent hits, requested jobs, and maximum layer
+width. Assertions reject unexpected work or worker-dependent artifacts before
+printing results.
+
+The current project measurements are intentionally unflattering where the
+architecture is unfinished. At 129 declarations, clean serial checks took
+2.9--4.1 ms, while two/four-worker checks took 7.3--9.4 ms because workers
+clone and rebuild declaration lookup state. Parallelism therefore remains
+opt-in and serial remains the default. No-change and private-edit wall time
+still grows with project size because source reads, lexical indexing,
+environment reconstruction, graph rebuilding, and output assembly remain
+whole-project operations. A fully valid persistent cache performs zero
+declaration frontend/code-generation work, but many small cache-file reads can
+cost more wall time than a clean check at these sizes. See
+`results/2026-07-21-project.tsv` for the reproducible evidence.

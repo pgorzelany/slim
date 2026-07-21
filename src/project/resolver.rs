@@ -186,6 +186,15 @@ pub fn check_with_jobs(
         layers,
         module_declarations,
     } = resolved;
+    if jobs == 1 {
+        let (checked, diagnostics) = sema::check_with_entry(program, &entry);
+        let mut diagnostics = diagnostics
+            .into_iter()
+            .map(|diagnostic| locate_diagnostic(&locations, diagnostic))
+            .collect::<Vec<_>>();
+        sort_project_diagnostics(&mut diagnostics);
+        return (checked, diagnostics);
+    }
     let empty = BTreeSet::new();
     let (_, entry_diagnostics) = sema::check_selected_with_entry(program.clone(), &empty, &entry);
     if !entry_diagnostics.is_empty() {

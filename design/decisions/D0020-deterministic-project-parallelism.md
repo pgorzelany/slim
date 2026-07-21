@@ -33,10 +33,12 @@ evidence rather than assumption.
 
 ## Evidence
 
-Stress tests must vary worker counts and injected completion order while
-comparing diagnostics, interfaces, work counts, generated C, and native output.
-Benchmarks must report serial and parallel medians and may claim a benefit only
-outside the recorded noise band.
+Tests and the standalone project corpus vary worker counts while comparing
+diagnostics, interfaces, generated C, and native output. The geometric
+benchmark reports serial and parallel medians through 129 declarations. On the
+recorded 10-core machine, two and four workers were slower for every largest
+wide/deep case (7.3--9.4 ms versus 2.9--4.1 ms serial), so Core 0.2 keeps the
+default at one worker and makes no speedup claim.
 
 ## Removal
 

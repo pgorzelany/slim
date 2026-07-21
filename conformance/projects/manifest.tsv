@@ -2,6 +2,7 @@
 project-check	check-pass	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:manifest,project:interfaces,project:selfhost-classification,syntax:qualified-reference
 project-run	run	conformance/projects/basic/slim.project	stage0-only(projects)	exit=0;stdout=41\n;stderr=	project:runtime
 project-emit	emit	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:determinism
+project-format	format	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:format
 project-relocate	relocate	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:relocation
 project-cache	cache-corruption	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:cache-corruption
 project-jobs	jobs	conformance/projects/basic/slim.project	stage0-only(projects)	-	project:jobs

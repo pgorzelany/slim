@@ -22,14 +22,7 @@ pub struct FunctionSignature {
 }
 
 pub fn check(program: Program) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
-    let selected = program
-        .items
-        .iter()
-        .filter_map(|item| match item {
-            Item::Function(function) => Some(function.name.clone()),
-            Item::Record(_) | Item::Variant(_) => None,
-        })
-        .collect();
+    let selected = all_declaration_names(&program);
     check_selected_with_entry(program, &selected, "main")
 }
 
@@ -47,15 +40,20 @@ pub fn check_with_entry(
     program: Program,
     entry: &str,
 ) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
-    let selected = program
+    let selected = all_declaration_names(&program);
+    check_selected_with_entry(program, &selected, entry)
+}
+
+fn all_declaration_names(program: &Program) -> BTreeSet<String> {
+    program
         .items
         .iter()
-        .filter_map(|item| match item {
-            Item::Function(function) => Some(function.name.clone()),
-            Item::Record(_) | Item::Variant(_) => None,
+        .map(|item| match item {
+            Item::Function(function) => function.name.clone(),
+            Item::Record(record) => record.name.clone(),
+            Item::Variant(variant) => variant.name.clone(),
         })
-        .collect();
-    check_selected_with_entry(program, &selected, entry)
+        .collect()
 }
 
 pub fn check_selected_with_entry(
@@ -1601,6 +1599,18 @@ mod tests {
             diagnostics
                 .iter()
                 .any(|diagnostic| diagnostic.code == "E0336")
+        );
+    }
+
+    #[test]
+    fn clean_check_validates_data_declarations() {
+        let (_, diagnostics) = checked(
+            "(module data (record Pair ((value I64) (value Bool))) (fn main ((args (Vec Bytes))) I64 (effects) 0))",
+        );
+        assert!(
+            diagnostics
+                .iter()
+                .any(|diagnostic| diagnostic.code == "E0302")
         );
     }
 
