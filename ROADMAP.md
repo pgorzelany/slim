@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 0.2 complete
-Current milestone: Core 0.2 Deterministic Projects (complete)
+Status: Core 0.3 active
+Current milestone: Core 0.3 SLIM-first self-hosting
 Last updated: 2026-07-21
 
 ## Direction
@@ -16,8 +16,8 @@ The long-term sequence is:
 1. Core 0 conformance and executable semantics.
 2. Declaration-local incremental compilation.
 3. Deterministic multi-module projects.
-4. Compile-time lifetime and region planning.
-5. Full self-hosted compiler parity.
+4. Full self-hosted compiler parity.
+5. Compile-time lifetime and region planning, informed by self-host evidence.
 6. Typed optimization and predictable native code generation.
 7. Deterministic structured concurrency.
 8. Bounded computation, quality grading, and semantic reduction.
@@ -284,19 +284,94 @@ Acceptance:
   object linking.
 - Language-level concurrency or automatic parallel execution of SLIM code.
 
+## Core 0.3: SLIM-first self-hosting
+
+Core 0.3 changes the implementation default, not the language surface. New
+compiler capability belongs in SLIM. Rust stage 0 remains a frozen bootstrap
+seed and differential oracle, with production byte ceilings enforced by
+governance under D0022.
+
+### Deliverable 1: structured data parity
+
+- Emit records, variants, construction, projection, mutation, and exhaustive
+  variant matching from the SLIM compiler.
+- Replace parallel compiler arrays with named SLIM records as each capability
+  becomes available.
+- Promote conformance rows only after native behavior passes through the
+  self-hosted compiler without fallback.
+
+Acceptance:
+
+- The compiler lexer stores one `Vec Token`, not synchronized kind/start/end
+  vectors.
+- The data fixture is classified `parity` and produces the exact expected
+  native result.
+- Stage 2 and stage 3 generated C remain byte-identical.
+
+### Deliverable 2: complete storage and frontend parity
+
+- Implement the remaining arena and vector-update calls in SLIM. (complete)
+- Replace token-stream assumptions with structured syntax, type, effect, and
+  ownership data implemented in SLIM.
+- Produce stable structured diagnostics and recover from malformed input.
+
+Acceptance:
+
+- Storage and every current diagnostic fixture move from explicit deferral to
+  differential parity.
+- No invalid input panics either compiler.
+- Diagnostic code, primary span, labels, notes, and fixes agree exactly.
+
+### Deliverable 3: formatter and project parity
+
+- Implement canonical formatting, manifest resolution, qualified references,
+  public interfaces, and deterministic module assembly in SLIM.
+- Keep the compiler in one module until it can compile project manifests; do
+  not introduce a second temporary module system or Rust source bundler.
+- Split the compiler into explicit SLIM modules only after that gate passes.
+
+Acceptance:
+
+- The self-hosted compiler compiles the project corpus with byte-identical
+  observable artifacts and deterministic worker-count-independent results.
+- The compiler builds itself as a multi-module SLIM project.
+- Project capability never silently invokes stage 0.
+
+### Deliverable 4: incremental self-hosting
+
+- Implement declaration identities, fingerprints, dependencies, sessions, and
+  validated caches in SLIM.
+- Preserve clean/incremental equality and exact invalidation bounds.
+- Freeze Rust production implementation once all conformance rows reach parity.
+
+Acceptance:
+
+- The SLIM compiler meets the existing standalone and project incremental work
+  bounds.
+- Bootstrap, differential conformance, governance, scaling, and sanitizer gates
+  pass together.
+- Production Rust remains within `design/rust-budget.tsv`; increases require a
+  separate accepted architecture decision.
+
+### Core 0.3 first-slice evidence
+
+- The self-hosted compiler emits records, variants, `make`, `get`, `case`,
+  variant `match`, and `set`.
+- Its lexer uses a copy-safe `Token` record and one `Vec Token` in place of
+  three parallel vectors.
+- Storage operations and canonical formatting are also implemented in SLIM;
+  the differential corpus now has nine exact parity fixtures.
+- Governance classifies every Rust source file and rejects production growth
+  beyond its recorded byte ceiling.
+
 ## Later milestones
 
-### Core 0.3: lifetime and region planning
+### Core 0.4: lifetime and region planning
 
-Add escape and liveness analysis, stack promotion, compiler-inserted narrow
-regions, deterministic resource destruction, and typed allocation failure.
-Add explicit region surface only if inference evidence demonstrates a need.
-
-### Core 0.4: self-host parity
-
-Bring the SLIM compiler to complete Core conformance, diagnostic, formatter,
-project, and incremental parity. Retain Rust stage 0 as an independent oracle
-until reproducibility and differential evidence justify freezing it.
+Use evidence from implementing the complete compiler in SLIM to add escape and
+liveness analysis, stack promotion, compiler-inserted narrow regions,
+deterministic resource destruction, and typed allocation failure. Add explicit
+region surface only if inference evidence demonstrates a need.
 
 ### Core 1 research
 

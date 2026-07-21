@@ -9,10 +9,17 @@ compiled by the self-hosted compiler runs successfully.
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
 
-The self-hosted path intentionally accepts the subset needed to compile itself:
-functions, scalar and byte/vector types, explicit let, calls, Boolean match,
-and tail recur. Stage 0 remains the complete Core 0 implementation, including
-records and variants, and is the diagnostic reference compiler.
+The self-hosted path accepts the subset needed to compile itself plus the first
+Core 0.3 parity slice: records, variants, `make`, `get`, `case`, variant
+`match`, `set`, vector update, arenas, and canonical formatting. Its lexer
+dogfoods this support with a `Token` record and a single `Vec Token`. Stage 0
+remains the complete Core 0 implementation and the diagnostic reference
+compiler.
+
+New compiler capability is implemented in this SLIM compiler by default. The
+production Rust ceilings in `design/rust-budget.tsv` prevent unnoticed stage-0
+growth while still allowing Rust bootstrap, conformance, benchmark, and
+governance infrastructure.
 
 Run the complete proof with:
 

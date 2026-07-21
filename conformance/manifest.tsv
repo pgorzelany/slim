@@ -1,10 +1,10 @@
 # id	mode	source	selfhost	expectation	coverage
 scalars	run	conformance/pass/scalars.slim	parity	exit=0;stdout=42\n;stderr=	syntax:module,syntax:fn,syntax:call,syntax:let,type:Bool,type:I64,type:U8,type:Unit,effect:io,entry:main-args,builtin:i64.add,builtin:i64.sub,builtin:i64.mul,builtin:i64.div,builtin:i64.rem,builtin:i64.eq,builtin:i64.lt,builtin:i64.le,builtin:i64.gt,builtin:i64.ge,builtin:bool.not,builtin:bool.and,builtin:bool.or,builtin:u8.to-i64,builtin:i64.to-u8,builtin:io.print-i64,builtin:io.println
-storage	run	conformance/pass/storage.slim	stage0-only(arena-and-vec-set)	exit=0;stdout=OK\n;stderr=	type:Bytes,type:Vec,type:Arena,type:Id,effect:alloc,builtin:bytes.len,builtin:bytes.get,builtin:bytes.freeze,builtin:io.print-bytes,builtin:io.read-file,builtin:vec.new,builtin:vec.len,builtin:vec.get,builtin:vec.push,builtin:vec.set,builtin:arena.new,builtin:arena.add,builtin:arena.get,runtime:allocation
-data	run	conformance/pass/data.slim	stage0-only(records-and-variants)	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
+storage	run	conformance/pass/storage.slim	parity	exit=0;stdout=OK\n;stderr=	type:Bytes,type:Vec,type:Arena,type:Id,effect:alloc,builtin:bytes.len,builtin:bytes.get,builtin:bytes.freeze,builtin:io.print-bytes,builtin:io.read-file,builtin:vec.new,builtin:vec.len,builtin:vec.get,builtin:vec.push,builtin:vec.set,builtin:arena.new,builtin:arena.add,builtin:arena.get,runtime:allocation
+data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
-format	format	conformance/tool/format.slim	stage0-only(formatter)	-	tool:format
+format	format	conformance/tool/format.slim	parity	-	tool:format
 emit	emit	conformance/pass/scalars.slim	parity	-	backend:c11,tool:emit-deterministic
 missing-effect	check-fail	conformance/fail/missing_effect.slim	stage0-only(diagnostics)	E0343@83:105	diagnostic:E0343,effect:enforcement
 missing-alloc	check-fail	conformance/fail/missing_alloc.slim	stage0-only(diagnostics)	E0343@94:108	diagnostic:E0343,effect:alloc-enforcement

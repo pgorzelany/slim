@@ -47,8 +47,10 @@ For the executable Core oracle and incremental measurements:
 ## Current boundary
 
 Stage 0 implements Core 0 and provides the reference diagnostics. The
-self-hosted compiler is a genuine deterministic compiler, not a wrapper, but
-currently implements the function/vector subset required to compile itself.
+self-hosted compiler is a genuine deterministic compiler, not a wrapper. It
+now implements records and variants and stores lexer tokens as SLIM records;
+new compiler capabilities default to SLIM under an enforced production-Rust
+budget.
 Core 0.1 also has declaration-local in-memory incremental compilation with
 stable syntax/interface fingerprints and dependency-aware invalidation; its
 architecture and measured remaining whole-file costs are documented in

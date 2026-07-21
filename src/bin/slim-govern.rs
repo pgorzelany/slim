@@ -51,6 +51,7 @@ fn check_repository(root: &Path) -> Vec<String> {
         "DESIGN.md",
         "docs/CORE.md",
         "design/FEATURE_POLICY.md",
+        "design/rust-budget.tsv",
         "design/surface.tsv",
     ];
     for path in required {
@@ -65,6 +66,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_conformance_coverage(root, &mut errors);
     check_dependencies(&root.join("Cargo.toml"), &mut errors);
     check_rust_safety(&root.join("src"), &mut errors);
+    check_rust_budget(root, &mut errors);
     errors
 }
 
@@ -358,6 +360,88 @@ fn check_rust_safety(dir: &Path, errors: &mut Vec<String>) {
     });
 }
 
+fn check_rust_budget(root: &Path, errors: &mut Vec<String>) {
+    let path = root.join("design/rust-budget.tsv");
+    let text = match fs::read_to_string(&path) {
+        Ok(text) => text,
+        Err(error) => {
+            errors.push(format!("cannot read {}: {error}", path.display()));
+            return;
+        }
+    };
+    let mut budget = BTreeMap::<String, (String, Option<usize>)>::new();
+    for (line_index, line) in text.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        if columns.len() != 3 {
+            errors.push(format!(
+                "rust-budget.tsv:{} must have three tab-separated columns",
+                line_index + 1
+            ));
+            continue;
+        }
+        let maximum = match columns[1] {
+            "production" => match columns[2].parse::<usize>() {
+                Ok(maximum) => Some(maximum),
+                Err(_) => {
+                    errors.push(format!(
+                        "rust-budget.tsv:{} production maximum must be bytes",
+                        line_index + 1
+                    ));
+                    continue;
+                }
+            },
+            "infrastructure" if columns[2] == "-" => None,
+            "infrastructure" => {
+                errors.push(format!(
+                    "rust-budget.tsv:{} infrastructure maximum must be -",
+                    line_index + 1
+                ));
+                continue;
+            }
+            role => {
+                errors.push(format!(
+                    "rust-budget.tsv:{} unknown Rust role {role}",
+                    line_index + 1
+                ));
+                continue;
+            }
+        };
+        if budget
+            .insert(columns[0].to_owned(), (columns[1].to_owned(), maximum))
+            .is_some()
+        {
+            errors.push(format!("duplicate Rust budget path {}", columns[0]));
+        }
+    }
+
+    let mut seen = BTreeSet::new();
+    visit_rs_files(&root.join("src"), &mut |path, source| {
+        let relative = path
+            .strip_prefix(root)
+            .unwrap_or(path)
+            .to_string_lossy()
+            .replace('\\', "/");
+        seen.insert(relative.clone());
+        match budget.get(&relative) {
+            Some((role, Some(maximum))) if source.len() > *maximum => errors.push(format!(
+                "production Rust budget exceeded for {relative}: {} > {maximum} bytes; implement capability in SLIM or accept a new architecture decision",
+                source.len()
+            )),
+            Some((role, None)) if role == "infrastructure" => {}
+            Some(_) => {}
+            None => errors.push(format!(
+                "unclassified Rust source {relative}; add it to rust-budget.tsv"
+            )),
+        }
+    });
+    for missing in budget.keys().filter(|path| !seen.contains(*path)) {
+        errors.push(format!("Rust budget path does not exist: {missing}"));
+    }
+}
+
 fn visit_rs_files(dir: &Path, action: &mut impl FnMut(&Path, &str)) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
@@ -383,5 +467,27 @@ mod tests {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let errors = check_repository(&root);
         assert!(errors.is_empty(), "{}", errors.join("\n"));
+    }
+
+    #[test]
+    fn production_rust_growth_fails_governance() {
+        let root = std::env::temp_dir().join(format!("slim-govern-budget-{}", std::process::id()));
+        let _ = fs::remove_dir_all(&root);
+        fs::create_dir_all(root.join("src")).unwrap();
+        fs::create_dir_all(root.join("design")).unwrap();
+        fs::write(root.join("src/feature.rs"), "fn feature() {}\n").unwrap();
+        fs::write(
+            root.join("design/rust-budget.tsv"),
+            "src/feature.rs\tproduction\t1\n",
+        )
+        .unwrap();
+        let mut errors = Vec::new();
+        check_rust_budget(&root, &mut errors);
+        assert!(
+            errors
+                .iter()
+                .any(|error| error.contains("production Rust budget exceeded"))
+        );
+        fs::remove_dir_all(root).unwrap();
     }
 }

@@ -672,11 +672,50 @@ fn copy_tree(source: &Path, destination: &Path) -> Result<(), String> {
 }
 
 fn run_selfhost_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
-    if matches!(fixture.mode.as_str(), "check-fail" | "format") {
+    if fixture.mode == "check-fail" {
         return Err(format!(
             "{}: mode {} cannot claim self-host parity because the restricted compiler does not implement it",
             fixture.id, fixture.mode
         ));
+    }
+    if fixture.mode == "format" {
+        let source = read_source(&fixture.path)?;
+        let expected = compiler::format_source(&source)
+            .map_err(|diagnostics| diagnostic_error(fixture, &diagnostics))?;
+        let run = || {
+            Command::new(compiler)
+                .arg("fmt")
+                .arg(&fixture.path)
+                .output()
+                .map_err(|error| {
+                    format!("{}: cannot run self-hosted formatter: {error}", fixture.id)
+                })
+        };
+        let first = run()?;
+        let second = run()?;
+        if !first.status.success() || !second.status.success() {
+            return Err(format!(
+                "{}: self-hosted formatter failed with {} / {}\n{}{}",
+                fixture.id,
+                first.status,
+                second.status,
+                String::from_utf8_lossy(&first.stderr),
+                String::from_utf8_lossy(&second.stderr)
+            ));
+        }
+        if !first.stderr.is_empty() || !second.stderr.is_empty() {
+            return Err(format!(
+                "{}: self-hosted formatter wrote unexpected diagnostics",
+                fixture.id
+            ));
+        }
+        if first.stdout != expected.as_bytes() || second.stdout != first.stdout {
+            return Err(format!(
+                "{}: self-hosted canonical format differs from stage 0",
+                fixture.id
+            ));
+        }
+        return Ok(());
     }
     let first = bootstrap::run_compiler(compiler, &fixture.path)
         .map_err(|error| format!("{}: self-host compilation failed: {error}", fixture.id))?;
