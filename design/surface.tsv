@@ -46,7 +46,7 @@ builtin	bytes.freeze	freeze-owned-byte-vector	D0013
 builtin	io.print-i64	write-integer	D0010
 builtin	io.print-bytes	write-bytes	D0010
 builtin	io.println	write-line	D0010
-builtin	io.read-file	read-file	D0010
+builtin	io.read-file	total-file-read	D0024
 builtin	vec.new	create-owned-vector	D0009
 builtin	vec.len	vector-length	D0009
 builtin	vec.get	checked-vector-access	D0009

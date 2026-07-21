@@ -41,7 +41,7 @@ SlimBytes slim_bytes_static(const uint8_t *data, int64_t len);
 int64_t slim_bytes_len(SlimBytes bytes);
 uint8_t slim_bytes_get(SlimBytes bytes, int64_t index);
 SlimBytes slim_bytes_freeze(SlimVec bytes);
-SlimBytes slim_read_file(SlimBytes path);
+bool slim_read_file(SlimBytes path, SlimVec *output);
 
 SlimUnit slim_print_i64(int64_t value);
 SlimUnit slim_print_bytes(SlimBytes value);

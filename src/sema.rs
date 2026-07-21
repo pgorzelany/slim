@@ -679,10 +679,7 @@ impl Checker {
                 self.check_borrowing_args(arguments, &[Type::Bytes], env, context, span);
                 Type::Unit
             }
-            Builtin::IoReadFile => {
-                self.check_borrowing_args(arguments, &[Type::Bytes], env, context, span);
-                Type::Bytes
-            }
+            Builtin::IoReadFile => self.check_read_file(arguments, span, env, context),
             Builtin::VecNew => {
                 self.check_builtin_args(arguments, &[], env, context, span);
                 match expected {
@@ -896,6 +893,46 @@ impl Checker {
             other => self.expected_diagnostic("Vec", &other, arguments[0].span),
         }
         Type::Unit
+    }
+
+    fn check_read_file(
+        &mut self,
+        arguments: &mut [Expr],
+        span: Span,
+        env: &mut Environment,
+        context: &FunctionContext<'_>,
+    ) -> Type {
+        if arguments.len() != 2 {
+            self.wrong_builtin_arity("io.read-file", 2, arguments.len(), span);
+            return Type::Bool;
+        }
+        if !matches!(arguments[1].kind, ExprKind::Name(_)) {
+            self.diagnostics.push(
+                Diagnostic::error(
+                    "E0346",
+                    "reading a file requires a named unique output vector",
+                    arguments[1].span,
+                )
+                .note("bind a Vec U8 with let before reading into it"),
+            );
+        }
+        let path_type = self.check_expr(
+            &mut arguments[0],
+            env,
+            context,
+            Some(&Type::Bytes),
+            Use::Borrow,
+            false,
+        );
+        self.expect_type(&path_type, &Type::Bytes, arguments[0].span);
+        let output_type =
+            self.check_expr(&mut arguments[1], env, context, None, Use::Borrow, false);
+        self.expect_type(
+            &output_type,
+            &Type::Vec(Box::new(Type::U8)),
+            arguments[1].span,
+        );
+        Type::Bool
     }
 
     fn check_arena_add(

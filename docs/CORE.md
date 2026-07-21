@@ -53,8 +53,10 @@ signature.
 - `match` must cover every variant or both Boolean values.
 - A tail-position `recur` transfers control to the current function entry and
   does not grow the stack.
-- Resource failure is returned as a variant value; it is never undefined
-  behavior.
+- Resource failure is returned as an explicit typed value; it is never
+  undefined behavior. `io.read-file` has the single total signature
+  `(Bytes, inout (Vec U8)) -> Bool`: success appends the complete file, while
+  failure returns `false` and leaves the output unchanged.
 
 ## Built-in calls
 

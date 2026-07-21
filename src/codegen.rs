@@ -539,6 +539,17 @@ impl<'a> FunctionEmitter<'a> {
             self.emit_mutating_growth_call(builtin.unwrap(), arguments, destination);
             return;
         }
+        if matches!(builtin, Some(Builtin::IoReadFile)) {
+            let path = self.evaluate(&arguments[0]);
+            let ExprKind::Name(output) = &arguments[1].kind else {
+                unreachable!("checked io.read-file output")
+            };
+            let output = self.binding(output);
+            self.line(&format!(
+                "{destination} = slim_read_file({path}, &({output}));"
+            ));
+            return;
+        }
         let temporaries: Vec<_> = arguments
             .iter()
             .map(|argument| self.evaluate(argument))
@@ -578,9 +589,7 @@ impl<'a> FunctionEmitter<'a> {
                 self.assign_call(destination, "slim_print_bytes", &temporaries)
             }
             Some(Builtin::IoPrintln) => self.assign_call(destination, "slim_println", &temporaries),
-            Some(Builtin::IoReadFile) => {
-                self.assign_call(destination, "slim_read_file", &temporaries)
-            }
+            Some(Builtin::IoReadFile) => unreachable!("emitted before ordinary built-ins"),
             Some(Builtin::VecNew) => {
                 let Type::Vec(inner) = ty else {
                     unreachable!("checked vec.new has Vec result")

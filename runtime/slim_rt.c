@@ -160,40 +160,50 @@ SlimBytes slim_bytes_freeze(SlimVec bytes) {
     return (SlimBytes){.data = bytes.data, .len = bytes.len};
 }
 
-SlimBytes slim_read_file(SlimBytes path) {
+bool slim_read_file(SlimBytes path, SlimVec *output) {
+    if (output->element_size != sizeof(uint8_t)) {
+        slim_rt_trap("io.read-file requires a U8 vector");
+    }
     if (memchr(path.data, 0, (size_t)path.len) != NULL) {
-        slim_rt_trap("file path contains a zero byte");
+        return false;
     }
     char *path_string = slim_rt_alloc((size_t)path.len + 1);
     memcpy(path_string, path.data, (size_t)path.len);
     path_string[path.len] = 0;
     FILE *file = fopen(path_string, "rb");
     if (file == NULL) {
-        slim_rt_trap("cannot open input file");
+        return false;
     }
     if (fseek(file, 0, SEEK_END) != 0) {
         fclose(file);
-        slim_rt_trap("cannot seek input file");
+        return false;
     }
     long length = ftell(file);
-    if (length < 0 || (uintmax_t)length > (uintmax_t)INT64_MAX) {
+    if (length < 0 || (uintmax_t)length > (uintmax_t)(INT64_MAX - output->len)) {
         fclose(file);
-        slim_rt_trap("input file is too large");
+        return false;
     }
     if (fseek(file, 0, SEEK_SET) != 0) {
         fclose(file);
-        slim_rt_trap("cannot rewind input file");
+        return false;
     }
-    uint8_t *data = slim_rt_alloc((size_t)length);
-    size_t read = fread(data, 1, (size_t)length, file);
+    int64_t required = output->len + (int64_t)length;
+    if (required > output->capacity) {
+        size_t old_size = (size_t)output->capacity;
+        size_t new_size = (size_t)required;
+        output->data = slim_rt_realloc(output->data, old_size, new_size);
+        output->capacity = required;
+    }
+    size_t read = fread(output->data + output->len, 1, (size_t)length, file);
     if (read != (size_t)length || ferror(file)) {
         fclose(file);
-        slim_rt_trap("cannot read input file");
+        return false;
     }
     if (fclose(file) != 0) {
-        slim_rt_trap("cannot close input file");
+        return false;
     }
-    return (SlimBytes){.data = data, .len = (int64_t)length};
+    output->len = required;
+    return true;
 }
 
 SlimUnit slim_print_i64(int64_t value) {

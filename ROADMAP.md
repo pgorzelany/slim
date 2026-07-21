@@ -374,10 +374,10 @@ milestone.
 - The first project corpus reached 33 exact parity fixtures, including project
   resolution, formatting, relocation, emission, visibility, cycle/schema
   diagnostics, and canonical path-free public interfaces.
-- The D0023 completion audit expanded the external corpus from 35 to 51
-  fixtures. All 51 pass stage 0; 48 currently have exact self-host parity and
-  three explicitly expose the remaining fallible filesystem transport,
-  incremental-session, and persistent-cache work. Manifest ordering,
+- The D0023 completion audit expanded the external corpus from 35 to 52
+  fixtures. All 52 pass stage 0; 50 currently have exact self-host parity and
+  two explicitly expose the remaining incremental-session and persistent-cache
+  work. Manifest ordering,
   uniqueness, confinement, entry, imports, module identity, resolution, and
   public-interface closure are now implemented in SLIM and covered by
   differential parity. The larger denominator replaces the earlier claim that
@@ -397,6 +397,10 @@ milestone.
   token arena. Identity, exports, entry-point rules, qualified-call resolution,
   and interface closure consume that index; the seven newly covered resolution
   and loading rules no longer reread module files in separate semantic passes.
+- D0024 replaces trapping file input with one total `io.read-file` operation
+  over an explicit unique byte vector. Missing modules now produce stable
+  `E0409` diagnostics in SLIM, empty files remain distinguishable from failure,
+  and failed reads preserve the caller's vector atomically.
 - The compiler bootstraps from the explicit two-module
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.

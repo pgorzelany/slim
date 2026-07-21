@@ -12,7 +12,7 @@ project-private	check-fail	conformance/projects/private/slim.project	parity	E041
 project-cycle	check-fail	conformance/projects/cycle/slim.project	parity	E0413@-@29:30	project:cycles,project:diagnostics
 project-version	check-fail	conformance/projects/malformed/slim.project	parity	E0402@-@9:10	project:manifest-version,project:diagnostics
 project-path-escape	check-fail	conformance/projects/rules/path-escape.project	parity	E0407@-@77:88	project:path-confinement,project:diagnostics
-project-missing-source	check-fail	conformance/projects/rules/missing-source.project	stage0-only(project-loading)	E0409@app@35:49	project:diagnostics
+project-missing-source	check-fail	conformance/projects/rules/missing-source.project	parity	E0409@app@35:49	project:diagnostics
 project-module-mismatch	check-fail	conformance/projects/rules/module-mismatch.project	parity	E0410@app@31:34	project:source-identity,project:diagnostics
 project-unknown-import	check-fail	conformance/projects/rules/unknown-import.project	parity	E0411@-@55:62	project:imports,project:diagnostics
 project-self-import	check-fail	conformance/projects/rules/self-import.project	parity	E0412@-@55:58	project:imports,project:diagnostics

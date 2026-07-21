@@ -5,7 +5,7 @@ src/bin/slim-bootstrap.rs	infrastructure	-
 src/bin/slim-conform.rs	infrastructure	-
 src/bin/slim-govern.rs	infrastructure	-
 src/bootstrap.rs	infrastructure	-
-src/codegen.rs	production	31706
+src/codegen.rs	production	32112
 src/compiler.rs	production	3450
 src/diagnostic.rs	production	5934
 src/driver.rs	production	14647
@@ -21,6 +21,6 @@ src/project/manifest.rs	production	15228
 src/project/mod.rs	production	19922
 src/project/resolver.rs	production	29785
 src/project/session.rs	production	34276
-src/sema.rs	production	59908
+src/sema.rs	production	61099
 src/sexpr.rs	production	3558
 src/span.rs	production	1601
