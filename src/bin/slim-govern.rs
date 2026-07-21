@@ -528,6 +528,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     };
     for (module, file) in [
+        ("cache", "cache.slim"),
         ("check", "check.slim"),
         ("codegen", "codegen.slim"),
         ("compiler", "slimc.slim"),
@@ -535,6 +536,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("ir", "ir.slim"),
         ("project", "project.slim"),
         ("query", "query.slim"),
+        ("scheduler", "scheduler.slim"),
         ("session", "session.slim"),
         ("syntax", "syntax.slim"),
         ("text", "text.slim"),
@@ -621,6 +623,27 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     }
 
+    let cache_path = directory.join("cache.slim");
+    let Ok(cache) = fs::read_to_string(&cache_path) else {
+        return;
+    };
+    for required in [
+        "(record Key",
+        "(record Number",
+        "(record Probe",
+        "(fn read_bounded_u64",
+        "(fn weighted_checksum",
+        "(fn project_key",
+        "(fn encode",
+        "(fn probe",
+    ] {
+        if !cache.contains(required) {
+            errors.push(format!(
+                "self-host cache is missing bounded capability `{required}`"
+            ));
+        }
+    }
+
     let session_path = directory.join("session.slim");
     let Ok(session) = fs::read_to_string(&session_path) else {
         return;
@@ -629,6 +652,27 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         if !session.contains(required) {
             errors.push(format!(
                 "self-host session is missing transactional capability `{required}`"
+            ));
+        }
+    }
+
+    let scheduler_path = directory.join("scheduler.slim");
+    let Ok(scheduler) = fs::read_to_string(&scheduler_path) else {
+        return;
+    };
+    for required in [
+        "(record Task",
+        "(record Batch",
+        "(record Schedule",
+        "(fn collect_ready",
+        "(fn append_batches",
+        "(fn schedule_layers",
+        "(fn bounded_workers",
+        "(fn plan",
+    ] {
+        if !scheduler.contains(required) {
+            errors.push(format!(
+                "self-host scheduler is missing bounded capability `{required}`"
             ));
         }
     }

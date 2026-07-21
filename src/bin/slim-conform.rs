@@ -974,7 +974,7 @@ fn run_selfhost_project_fixture(fixture: &Fixture, compiler: &Path) -> Result<()
         }
         "jobs" => {
             let mut outputs = Vec::new();
-            for jobs in [1, 2, 4] {
+            for jobs in [1, 2, 4, usize::MAX] {
                 let output = Command::new(compiler)
                     .arg(&fixture.path)
                     .arg("--jobs")
@@ -1000,15 +1000,214 @@ fn run_selfhost_project_fixture(fixture: &Fixture, compiler: &Path) -> Result<()
                     fixture.id
                 ));
             }
+            let invalid = fixture
+                .path
+                .parent()
+                .and_then(Path::parent)
+                .ok_or_else(|| format!("{}: cannot locate project rules", fixture.id))?
+                .join("rules/unknown-import.project");
+            let mut diagnostics = Vec::new();
+            for jobs in [1, 2, 4, usize::MAX] {
+                let output = Command::new(compiler)
+                    .arg(&invalid)
+                    .arg("--jobs")
+                    .arg(jobs.to_string())
+                    .output()
+                    .map_err(|error| {
+                        format!(
+                            "{}: cannot run invalid self-host project with {jobs} jobs: {error}",
+                            fixture.id
+                        )
+                    })?;
+                diagnostics.push((output.status.code(), output.stdout, output.stderr));
+            }
+            if diagnostics.windows(2).any(|pair| pair[0] != pair[1]) {
+                return Err(format!(
+                    "{}: requested job count changed self-hosted diagnostics",
+                    fixture.id
+                ));
+            }
             Ok(())
         }
         "incremental" => run_selfhost_incremental_fixture(fixture, compiler),
-        "cache-corruption" => Err(format!(
-            "{}: {} cannot claim parity before the self-hosted session exists",
-            fixture.id, fixture.mode
-        )),
+        "cache-corruption" => run_selfhost_cache_fixture(fixture, compiler),
         _ => unreachable!("project manifest mode validated"),
     }
+}
+
+fn run_selfhost_cache_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
+    let directory = temporary_directory("selfhost-project-cache")?;
+    copy_tree(
+        fixture
+            .path
+            .parent()
+            .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+        &directory,
+    )?;
+    let manifest = directory.join(
+        fixture
+            .path
+            .file_name()
+            .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+    );
+    let cache = directory.join("cache.bin");
+    let missing = directory.join("missing-cache.bin");
+    let clean = bootstrap::run_compiler(compiler, &manifest)
+        .map_err(|error| format!("{}: clean cache oracle failed: {error}", fixture.id))?;
+
+    let miss = run_selfhost_cache(compiler, &manifest, &missing, fixture)?;
+    if miss.first() != Some(&b'M') || miss.len() <= 1 {
+        return Err(format!(
+            "{}: cold self-host cache did not report a bounded miss",
+            fixture.id
+        ));
+    }
+    let entry = miss[1..].to_vec();
+    fs::write(&cache, &entry).map_err(|error| error.to_string())?;
+    require_selfhost_cache_hit(fixture, compiler, &manifest, &cache, &clean)?;
+
+    let key_length = read_cache_u64(&entry, 11)?;
+    let artifact_length = read_cache_u64(&entry, 19)?;
+    let artifact_start = 27_usize
+        .checked_add(key_length)
+        .ok_or_else(|| format!("{}: cache key length overflow", fixture.id))?;
+    let checksum_start = artifact_start
+        .checked_add(artifact_length)
+        .ok_or_else(|| format!("{}: cache artifact length overflow", fixture.id))?;
+    if checksum_start.checked_add(8) != Some(entry.len()) {
+        return Err(format!(
+            "{}: self-host emitted a noncanonical cache frame",
+            fixture.id
+        ));
+    }
+
+    let mut truncations = vec![0, 1, 9, 10, 11, 18, 19, 26, 27, entry.len() / 2];
+    truncations.extend([
+        entry.len().saturating_sub(9),
+        entry.len().saturating_sub(8),
+        entry.len().saturating_sub(1),
+    ]);
+    truncations.sort_unstable();
+    truncations.dedup();
+    for length in truncations {
+        require_selfhost_cache_rebuild(
+            fixture,
+            compiler,
+            &manifest,
+            &cache,
+            &entry[..length],
+            &entry,
+        )?;
+    }
+
+    let mut mutation_offsets = vec![0, 9, 10, 11, 18, 19, 26, 27];
+    mutation_offsets.extend([
+        artifact_start.saturating_sub(1),
+        artifact_start,
+        checksum_start.saturating_sub(1),
+        checksum_start,
+        entry.len() - 1,
+    ]);
+    mutation_offsets.sort_unstable();
+    mutation_offsets.dedup();
+    for offset in mutation_offsets {
+        let mut corrupted = entry.clone();
+        corrupted[offset] ^= 1;
+        require_selfhost_cache_rebuild(fixture, compiler, &manifest, &cache, &corrupted, &entry)?;
+    }
+
+    let module = directory.join("math.slim");
+    let before = fs::read_to_string(&module).map_err(|error| error.to_string())?;
+    let after = before.replacen("value 1", "value 2", 1);
+    if before == after {
+        return Err(format!(
+            "{}: cache fixture lacks source identity marker",
+            fixture.id
+        ));
+    }
+    fs::write(&module, after).map_err(|error| error.to_string())?;
+    fs::write(&cache, &entry).map_err(|error| error.to_string())?;
+    let stale = run_selfhost_cache(compiler, &manifest, &cache, fixture)?;
+    if stale.first() != Some(&b'M') || stale[1..] == entry {
+        return Err(format!(
+            "{}: stale self-host cache identity was accepted",
+            fixture.id
+        ));
+    }
+    let updated_entry = &stale[1..];
+    fs::write(&cache, updated_entry).map_err(|error| error.to_string())?;
+    let updated_clean = bootstrap::run_compiler(compiler, &manifest)
+        .map_err(|error| format!("{}: updated cache oracle failed: {error}", fixture.id))?;
+    let result = require_selfhost_cache_hit(fixture, compiler, &manifest, &cache, &updated_clean);
+    let _ = fs::remove_dir_all(directory);
+    result
+}
+
+fn run_selfhost_cache(
+    compiler: &Path,
+    manifest: &Path,
+    cache: &Path,
+    fixture: &Fixture,
+) -> Result<Vec<u8>, String> {
+    let output = Command::new(compiler)
+        .arg("cache")
+        .arg(manifest)
+        .arg(cache)
+        .output()
+        .map_err(|error| format!("{}: cannot run self-hosted cache: {error}", fixture.id))?;
+    if output.status.code() == Some(0) && output.stderr.is_empty() {
+        return Ok(output.stdout);
+    }
+    Err(format!(
+        "{}: self-hosted cache failed: {} / {:?}",
+        fixture.id, output.status, output.stderr
+    ))
+}
+
+fn require_selfhost_cache_hit(
+    fixture: &Fixture,
+    compiler: &Path,
+    manifest: &Path,
+    cache: &Path,
+    clean: &[u8],
+) -> Result<(), String> {
+    let hit = run_selfhost_cache(compiler, manifest, cache, fixture)?;
+    if hit.first() == Some(&b'H') && hit[1..] == *clean {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: warm self-host cache did not reproduce clean C",
+        fixture.id
+    ))
+}
+
+fn require_selfhost_cache_rebuild(
+    fixture: &Fixture,
+    compiler: &Path,
+    manifest: &Path,
+    cache: &Path,
+    corrupted: &[u8],
+    canonical: &[u8],
+) -> Result<(), String> {
+    fs::write(cache, corrupted).map_err(|error| error.to_string())?;
+    let rebuilt = run_selfhost_cache(compiler, manifest, cache, fixture)?;
+    if rebuilt.first() == Some(&b'M') && rebuilt[1..] == *canonical {
+        return Ok(());
+    }
+    Err(format!(
+        "{}: corrupted self-host cache did not rebuild deterministically",
+        fixture.id
+    ))
+}
+
+fn read_cache_u64(bytes: &[u8], offset: usize) -> Result<usize, String> {
+    let field: [u8; 8] = bytes
+        .get(offset..offset + 8)
+        .ok_or_else(|| "self-host cache integer is truncated".to_owned())?
+        .try_into()
+        .map_err(|_| "self-host cache integer has the wrong width".to_owned())?;
+    usize::try_from(u64::from_be_bytes(field))
+        .map_err(|_| "self-host cache integer exceeds host size".to_owned())
 }
 
 fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {

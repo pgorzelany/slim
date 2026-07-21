@@ -375,16 +375,16 @@ milestone.
   resolution, formatting, relocation, emission, visibility, cycle/schema
   diagnostics, and canonical path-free public interfaces.
 - The D0023 completion audit expanded the external corpus from 35 to 52
-  fixtures. All 52 pass stage 0; 51 currently have exact self-host parity and
-  one explicitly exposes the remaining persistent-cache work. Manifest ordering,
+  fixtures. All 52 pass stage 0 and have exact self-host parity. Manifest ordering,
   uniqueness, confinement, entry, imports, module identity, resolution, and
   public-interface closure are now implemented in SLIM and covered by
   differential parity. The larger denominator replaces the earlier claim that
   only session/cache work remained.
-- The self-hosted compiler is now an explicit ten-module acyclic project:
+- The self-hosted compiler is now an explicit twelve-module acyclic project:
   checking, C generation, project handling, syntax/token utilities, byte-text
-  emission, typed IR, query snapshots, incremental sessions, coordination, and
-  the executable driver have separate SLIM ownership boundaries. The former
+  emission, typed IR, query snapshots, incremental sessions, persistent cache,
+  deterministic scheduling, coordination, and the executable driver have
+  separate SLIM ownership boundaries. The former
   roughly 149 KB compiler module is a roughly 3.6 KB coordinator; every
   extraction preserved differential behavior and a stage-2/stage-3 fixed point.
 - The first typed-query slice adds an explicit `ir` module with structured
@@ -409,7 +409,20 @@ milestone.
   result matches a repeated clean self-host oracle. Invalid updates are checked
   without constructing a replacement state, and recovery conformance proves
   that work is measured from the retained last-good snapshot.
-- The compiler bootstraps from the explicit two-module
+- A schema-1 self-host cache stores an exact path-independent project input key
+  and generated C behind bounded 64 MiB fields, exact-length decoding, and a
+  mutation-sensitive checksum. Valid hits skip project checking and generation;
+  missing, stale, truncated, structurally mutated, payload-mutated, and
+  checksum-mutated entries rebuild through the clean SLIM path. Rust performs
+  only the filesystem write/read orchestration required by D0023.
+- The SLIM scheduler computes stable Kahn layers from explicit imports, exposes
+  only prior-layer modules while selecting a batch, bounds requested width by
+  module count and a four-worker implementation ceiling, and terminates with an
+  invalid schedule on no progress. Core still launches no threads: each owned
+  batch executes through the serial oracle and merges in manifest identity
+  order. Widths one, two, four, and saturated input produce byte-identical C
+  and diagnostics; the compiler's own bootstrap uses this path.
+- The compiler bootstraps from the explicit
   `selfhost/slim.project`; stage 2 and stage 3 remain byte-identical without a
   Rust source bundler or stage-0 fallback.
 - Governance classifies every Rust source file and rejects production growth
