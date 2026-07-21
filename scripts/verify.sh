@@ -8,8 +8,9 @@ cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run --quiet --bin slim-govern -- check
-cargo run --quiet --bin slim-bootstrap
+cargo run --quiet --bin slim-conform -- differential
 cargo run --release --quiet --bin slim-bench -- scaling --quick
+cargo run --release --quiet --bin slim-bench -- incremental --quick
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
 trap 'rm -rf "$verify_dir"' EXIT HUP INT TERM

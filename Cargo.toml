@@ -26,6 +26,10 @@ path = "src/bin/slim-bench.rs"
 name = "slim-bootstrap"
 path = "src/bin/slim-bootstrap.rs"
 
+[[bin]]
+name = "slim-conform"
+path = "src/bin/slim-conform.rs"
+
 [profile.release]
 codegen-units = 1
 lto = "thin"

@@ -31,9 +31,11 @@ specified diagnostic changes.
 
 ## Evidence
 
-The runner will validate syntax, types, ownership, effects, built-ins, runtime
-behavior, exact diagnostic code and primary span, formatting, deterministic
-generation, and declared self-host capability.
+The dependency-free `slim-conform` runner validates syntax, types, ownership,
+effects, built-ins, runtime behavior, exact diagnostic code and primary span,
+multiple-error recovery, formatting, deterministic generation, and declared
+self-host capability. Governance rejects accepted surface entries without a
+manifest coverage tag.
 
 ## Removal
 

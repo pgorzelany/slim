@@ -1,9 +1,23 @@
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use crate::ast::*;
 use crate::sema::{Builtin, CheckedProgram};
 
 pub fn generate_c(program: &CheckedProgram) -> String {
+    let fragments = program
+        .program
+        .items
+        .iter()
+        .map(|item| (item_name(item).to_owned(), generate_item_c(program, item)))
+        .collect();
+    generate_c_from_fragments(program, &fragments)
+}
+
+pub(crate) fn generate_c_from_fragments(
+    program: &CheckedProgram,
+    fragments: &BTreeMap<String, String>,
+) -> String {
     let mut output = String::new();
     writeln!(
         output,
@@ -37,8 +51,8 @@ pub fn generate_c(program: &CheckedProgram) -> String {
 
     for item in &program.program.items {
         match item {
-            Item::Record(record) => emit_record(&mut output, record),
-            Item::Variant(variant) => emit_variant(&mut output, variant),
+            Item::Record(record) => output.push_str(fragment(fragments, &record.name)),
+            Item::Variant(variant) => output.push_str(fragment(fragments, &variant.name)),
             Item::Function(_) => {}
         }
     }
@@ -52,8 +66,7 @@ pub fn generate_c(program: &CheckedProgram) -> String {
 
     for item in &program.program.items {
         if let Item::Function(function) = item {
-            let mut emitter = FunctionEmitter::new(program, function);
-            emitter.emit_function(&mut output);
+            output.push_str(fragment(fragments, &function.name));
         }
     }
 
@@ -72,6 +85,33 @@ pub fn generate_c(program: &CheckedProgram) -> String {
     output.push_str("    return (int)slim_exit_code;\n");
     output.push_str("}\n");
     output
+}
+
+pub(crate) fn generate_item_c(program: &CheckedProgram, item: &Item) -> String {
+    let mut output = String::new();
+    match item {
+        Item::Record(record) => emit_record(&mut output, record),
+        Item::Variant(variant) => emit_variant(&mut output, variant),
+        Item::Function(function) => {
+            let mut emitter = FunctionEmitter::new(program, function);
+            emitter.emit_function(&mut output);
+        }
+    }
+    output
+}
+
+fn item_name(item: &Item) -> &str {
+    match item {
+        Item::Function(function) => &function.name,
+        Item::Record(record) => &record.name,
+        Item::Variant(variant) => &variant.name,
+    }
+}
+
+fn fragment<'a>(fragments: &'a BTreeMap<String, String>, name: &str) -> &'a str {
+    fragments
+        .get(name)
+        .unwrap_or_else(|| panic!("missing generated declaration fragment for {name}"))
 }
 
 fn emit_record(output: &mut String, record: &Record) {

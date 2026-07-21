@@ -33,8 +33,11 @@ reassembly.
 
 ## Evidence
 
-Tests and benchmarks must count actual parsed, lowered, checked, generated, and
-reused declarations. Incremental output must equal clean output byte for byte.
+Tests count actual parsed, lowered, checked, generated, and reused declarations
+and compare incremental output with clean output byte for byte. The geometric
+benchmark in `benchmarks/results/2026-07-21-incremental.tsv` records cold,
+no-change, body, leaf-interface, and central-interface updates through 8,001
+declarations, including the remaining whole-file wall-time costs.
 
 ## Removal
 

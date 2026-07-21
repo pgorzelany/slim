@@ -27,6 +27,16 @@ pub fn lower(forms: &[SExpr]) -> (Option<Program>, Vec<Diagnostic>) {
     (program, lowerer.diagnostics)
 }
 
+/// Lowers one declaration whose surrounding module has already been indexed.
+/// This is the declaration-local entry point used by the incremental session.
+pub fn lower_item(form: &SExpr) -> (Option<Item>, Vec<Diagnostic>) {
+    let mut lowerer = Lowerer {
+        diagnostics: Vec::new(),
+    };
+    let item = lowerer.item(form);
+    (item, lowerer.diagnostics)
+}
+
 struct Lowerer {
     diagnostics: Vec<Diagnostic>,
 }

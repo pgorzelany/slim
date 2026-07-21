@@ -1,0 +1,22 @@
+# Apple Silicon macOS; cargo run --release --bin slim-bench -- incremental
+declarations	scenario	update_us	parsed	lowered	checked	generated	reused
+1001	cold	10403	1001	1001	1001	1001	0
+1001	no-change	7016	0	0	0	0	1001
+1001	body	7052	1	1	1	1	1000
+1001	leaf-interface	7070	1	1	2	2	999
+1001	central-interface	8576	1	1	501	501	500
+2001	cold	19590	2001	2001	2001	2001	0
+2001	no-change	14862	0	0	0	0	2001
+2001	body	14959	1	1	1	1	2000
+2001	leaf-interface	15350	1	1	2	2	1999
+2001	central-interface	19506	1	1	1001	1001	1000
+4001	cold	41210	4001	4001	4001	4001	0
+4001	no-change	31724	0	0	0	0	4001
+4001	body	32601	1	1	1	1	4000
+4001	leaf-interface	32550	1	1	2	2	3999
+4001	central-interface	39678	1	1	2001	2001	2000
+8001	cold	85768	8001	8001	8001	8001	0
+8001	no-change	65410	0	0	0	0	8001
+8001	body	66411	1	1	1	1	8000
+8001	leaf-interface	66320	1	1	2	2	7999
+8001	central-interface	83371	1	1	4001	4001	4000

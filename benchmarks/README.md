@@ -10,6 +10,7 @@ Run:
 cargo build --release --bins
 target/release/slim-bench compare
 target/release/slim-bench scaling
+target/release/slim-bench incremental
 ```
 
 SLIM compilation time includes the frontend, deterministic C emission, and an
@@ -26,3 +27,9 @@ These programs are regression evidence, not proof of general language parity.
 A benchmark gap is fixed in analysis or code generation; it does not justify
 unsafe semantics or benchmark-specific syntax.
 
+The incremental command generates declaration chains at geometric sizes and
+measures cold compilation, no-change updates, private body edits, leaf
+interface edits, and central interface edits. It asserts exact declaration
+parse/lower/check/generation counts before printing timing results, so a full
+recompilation cannot masquerade as incremental work. Committed measurements
+live in `benchmarks/results/`.

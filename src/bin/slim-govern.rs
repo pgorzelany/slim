@@ -62,9 +62,45 @@ fn check_repository(root: &Path) -> Vec<String> {
     let decisions = load_decisions(&root.join("design/decisions"), &mut errors);
     check_decisions(&decisions, &mut errors);
     check_surface(&root.join("design/surface.tsv"), &decisions, &mut errors);
+    check_conformance_coverage(root, &mut errors);
     check_dependencies(&root.join("Cargo.toml"), &mut errors);
     check_rust_safety(&root.join("src"), &mut errors);
     errors
+}
+
+fn check_conformance_coverage(root: &Path, errors: &mut Vec<String>) {
+    let surface_path = root.join("design/surface.tsv");
+    let manifest_path = root.join("conformance/manifest.tsv");
+    let Ok(surface) = fs::read_to_string(&surface_path) else {
+        return;
+    };
+    let manifest = match fs::read_to_string(&manifest_path) {
+        Ok(manifest) => manifest,
+        Err(error) => {
+            errors.push(format!("cannot read {}: {error}", manifest_path.display()));
+            return;
+        }
+    };
+    let required: BTreeSet<_> = surface
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter_map(|line| {
+            let columns: Vec<_> = line.split('\t').collect();
+            (columns.len() == 4).then(|| format!("{}:{}", columns[0], columns[1]))
+        })
+        .collect();
+    let covered: BTreeSet<_> = manifest
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter_map(|line| line.split('\t').nth(5))
+        .flat_map(|tags| tags.split(','))
+        .map(str::to_owned)
+        .collect();
+    for missing in required.difference(&covered) {
+        errors.push(format!(
+            "accepted surface `{missing}` has no conformance coverage tag"
+        ));
+    }
 }
 
 fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Decision> {

@@ -1,0 +1,13 @@
+(module recur
+  (fn sum ((next I64) (limit I64) (total I64)) I64 (effects partial)
+    (let done Bool (call i64.gt next limit)
+      (match done
+        (true total)
+        (false
+          (let following I64 (call i64.add next 1)
+            (let accumulated I64 (call i64.add total next)
+              (recur following limit accumulated)))))))
+  (fn main ((args (Vec Bytes))) I64 (effects io partial)
+    (let answer I64 (call sum 1 10 0)
+      (let shown Unit (call io.print-i64 answer)
+        (let newline Unit (call io.println "") 0)))))

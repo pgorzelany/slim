@@ -5,6 +5,7 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use slim::compiler;
+use slim::incremental::{IncrementalSession, WorkStats};
 use slim::span::Source;
 
 fn main() {
@@ -13,9 +14,10 @@ fn main() {
         .unwrap_or_else(|| "scaling".to_owned());
     match command.as_str() {
         "scaling" => run_scaling(),
+        "incremental" => run_incremental(),
         "compare" => run_comparison(),
         _ => {
-            eprintln!("usage: slim-bench <scaling [--quick] | compare>");
+            eprintln!("usage: slim-bench <scaling [--quick] | incremental [--quick] | compare>");
             std::process::exit(64);
         }
     }
@@ -170,6 +172,111 @@ fn run_comparison() {
     }
 }
 
+fn run_incremental() {
+    let quick = std::env::args().any(|argument| argument == "--quick");
+    let sizes: &[usize] = if quick {
+        &[250, 500, 1_000, 2_000]
+    } else {
+        &[1_000, 2_000, 4_000, 8_000]
+    };
+    let samples = if quick { 3 } else { 5 };
+    println!("declarations\tscenario\tupdate_us\tparsed\tlowered\tchecked\tgenerated\treused");
+    for size in sizes {
+        let declaration_count = size + 1;
+        let central = size / 2;
+        for scenario in [
+            "cold",
+            "no-change",
+            "body",
+            "leaf-interface",
+            "central-interface",
+        ] {
+            let mut times = Vec::with_capacity(samples);
+            let mut observed = None;
+            for _ in 0..samples {
+                let base = generated_incremental_project(*size, 1, None);
+                let mut session = IncrementalSession::new();
+                if scenario != "cold" {
+                    let initial = session.update(Source::new("incremental.slim", base.clone()));
+                    assert!(initial.succeeded(), "generated project must check");
+                }
+                let edited = match scenario {
+                    "cold" | "no-change" => base,
+                    "body" => generated_incremental_project(*size, 1_000, None),
+                    "leaf-interface" => generated_incremental_project(*size, 1, Some(size - 1)),
+                    "central-interface" => generated_incremental_project(*size, 1, Some(central)),
+                    _ => unreachable!(),
+                };
+                let start = Instant::now();
+                let update = session.update(Source::new("incremental.slim", edited));
+                let elapsed = start.elapsed();
+                assert!(
+                    update.succeeded(),
+                    "incremental benchmark update must check"
+                );
+                black_box(update.emit_c());
+                validate_incremental_work(
+                    scenario,
+                    *size,
+                    central,
+                    declaration_count,
+                    &update.stats,
+                );
+                if let Some(previous) = &observed {
+                    assert_eq!(previous, &update.stats, "work counts must be deterministic");
+                } else {
+                    observed = Some(update.stats.clone());
+                }
+                times.push(elapsed);
+            }
+            times.sort();
+            let elapsed = times[samples / 2];
+            let work = observed.expect("at least one sample");
+            println!(
+                "{declaration_count}\t{scenario}\t{}\t{}\t{}\t{}\t{}\t{}",
+                elapsed.as_micros(),
+                work.parsed,
+                work.lowered,
+                work.checked,
+                work.generated,
+                work.reused
+            );
+        }
+    }
+}
+
+fn validate_incremental_work(
+    scenario: &str,
+    functions: usize,
+    central: usize,
+    declarations: usize,
+    work: &WorkStats,
+) {
+    let expected = match scenario {
+        "cold" => (declarations, declarations, declarations, declarations, 0),
+        "no-change" => (0, 0, 0, 0, declarations),
+        "body" => (1, 1, 1, 1, declarations - 1),
+        "leaf-interface" => (1, 1, 2, 2, declarations - 2),
+        "central-interface" => {
+            let closure = functions - central + 1;
+            (1, 1, closure, closure, declarations - closure)
+        }
+        _ => unreachable!(),
+    };
+    assert_eq!(
+        (
+            work.parsed,
+            work.lowered,
+            work.checked,
+            work.generated,
+            work.reused
+        ),
+        expected,
+        "unexpected work for {scenario}"
+    );
+    assert!(!work.fallback_clean, "benchmark must use incremental path");
+}
+
 fn timed_command(command: &mut Command) -> Duration {
     let start = Instant::now();
     let output = command.output().expect("benchmark compiler command");
@@ -252,5 +359,38 @@ fn generated_project(declarations: usize) -> String {
         source.push_str(")) ");
     }
     source.push_str("(fn main ((args (Vec Bytes))) I64 (effects) (call function-0 0)))\n");
+    source
+}
+
+fn generated_incremental_project(
+    functions: usize,
+    leaf_addend: i64,
+    inout_function: Option<usize>,
+) -> String {
+    assert!(functions > 0);
+    let mut source = String::with_capacity(functions * 96);
+    source.push_str("(module incremental ");
+    for index in 0..functions {
+        source.push_str("(fn function-");
+        source.push_str(&index.to_string());
+        if inout_function == Some(index) {
+            source.push_str(" ((inout value I64)) I64 (effects) ");
+        } else {
+            source.push_str(" ((value I64)) I64 (effects) ");
+        }
+        if index == 0 {
+            source.push_str("(call i64.add value ");
+            source.push_str(&leaf_addend.to_string());
+            source.push_str(")) ");
+        } else {
+            source.push_str("(call function-");
+            source.push_str(&(index - 1).to_string());
+            source.push_str(" value)) ");
+        }
+    }
+    source
+        .push_str("(fn main ((args (Vec Bytes))) I64 (effects) (let value I64 40 (call function-");
+    source.push_str(&(functions - 1).to_string());
+    source.push_str(" value))))\n");
     source
 }

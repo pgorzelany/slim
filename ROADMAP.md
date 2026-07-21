@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: active
-Current milestone: Core 0.1 Foundations
+Status: Core 0.1 complete
+Next milestone: Core 0.2 Deterministic Projects
 Last updated: 2026-07-21
 
 ## Direction
@@ -121,6 +121,25 @@ Acceptance:
 - A new native backend.
 - General equivalence checking or an optimizing reducer.
 - Replacing the root-region runtime before lifetime planning is specified.
+
+## Core 0.1 completion evidence
+
+- `slim-conform differential` runs 22 reference fixtures, sends every declared
+  parity fixture through the genuine self-hosted compiler, and reports every
+  deferred capability with its manifest reason.
+- The bootstrap remains byte-identical at stage 2 and stage 3 (112,008 emitted
+  C bytes at completion).
+- Stable declaration IDs, syntax/interface fingerprints, and deterministic
+  call/type dependency edges are implemented by `IncrementalSession`.
+- Tests prove private-body and interface-closure invalidation, data-layout
+  invalidation, clean/incremental byte equality, source-span rebasing, and
+  last-good-cache recovery after invalid edits.
+- The committed incremental benchmark records exact declaration work for all
+  five scenarios through 8,001 declarations. Whole-file indexing and output
+  assembly remain visible wall-time costs, documented in
+  `docs/INCREMENTAL.md`, rather than being presented as solved.
+- `scripts/verify.sh` enforces all of the above together with governance,
+  clean-build scaling, Clippy, tests, and sanitized native execution.
 
 ## Later milestones
 

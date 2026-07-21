@@ -21,11 +21,29 @@ pub struct FunctionSignature {
     pub span: Span,
 }
 
-pub fn check(mut program: Program) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+pub fn check(program: Program) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
+    let selected = program
+        .items
+        .iter()
+        .filter_map(|item| match item {
+            Item::Function(function) => Some(function.name.clone()),
+            Item::Record(_) | Item::Variant(_) => None,
+        })
+        .collect();
+    check_selected(program, &selected)
+}
+
+/// Checks only the selected function bodies while rebuilding and validating
+/// the complete declaration environment. Unselected functions must already
+/// contain checked expression types from a previous successful compilation.
+pub fn check_selected(
+    mut program: Program,
+    selected: &BTreeSet<String>,
+) -> (Option<CheckedProgram>, Vec<Diagnostic>) {
     let mut checker = Checker::new();
     checker.collect(&program);
-    checker.validate_declared_types();
-    checker.check_functions(&mut program);
+    checker.validate_declared_types(selected);
+    checker.check_functions(&mut program, selected);
     checker.check_entry(&program);
     if checker
         .diagnostics
@@ -105,9 +123,12 @@ impl Checker {
         }
     }
 
-    fn validate_declared_types(&mut self) {
+    fn validate_declared_types(&mut self, selected: &BTreeSet<String>) {
         let records: Vec<_> = self.records.values().cloned().collect();
         for record in records {
+            if !selected.contains(&record.name) {
+                continue;
+            }
             let mut fields = BTreeMap::<String, Span>::new();
             for field in &record.fields {
                 if let Some(previous) = fields.insert(field.name.clone(), field.span) {
@@ -125,6 +146,9 @@ impl Checker {
         }
         let variants: Vec<_> = self.variants.values().cloned().collect();
         for variant in variants {
+            if !selected.contains(&variant.name) {
+                continue;
+            }
             let mut cases = BTreeMap::<String, Span>::new();
             for case in &variant.cases {
                 if let Some(previous) = cases.insert(case.name.clone(), case.span) {
@@ -148,6 +172,9 @@ impl Checker {
             .map(|(name, signature)| (name.clone(), signature.clone()))
             .collect();
         for (name, signature) in functions {
+            if !selected.contains(&name) {
+                continue;
+            }
             for ty in &signature.params {
                 self.validate_type(ty, signature.span);
             }
@@ -180,11 +207,14 @@ impl Checker {
         }
     }
 
-    fn check_functions(&mut self, program: &mut Program) {
+    fn check_functions(&mut self, program: &mut Program, selected: &BTreeSet<String>) {
         for item in &mut program.items {
             let Item::Function(function) = item else {
                 continue;
             };
+            if !selected.contains(&function.name) {
+                continue;
+            }
             let mut env = Environment::default();
             let mut parameter_names = BTreeMap::new();
             for parameter in &function.params {

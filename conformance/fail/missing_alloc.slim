@@ -1,0 +1,4 @@
+(module missing-alloc
+  (fn main ((args (Vec Bytes))) I64 (effects)
+    (let values (Vec I64) (call vec.new)
+      0)))

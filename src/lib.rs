@@ -1,11 +1,13 @@
 //! SLIM stage-0 compiler library.
 
 pub mod ast;
+pub mod bootstrap;
 pub mod codegen;
 pub mod compiler;
 pub mod diagnostic;
 pub mod driver;
 pub mod formatter;
+pub mod incremental;
 pub mod lexer;
 pub mod parser;
 pub mod sema;
