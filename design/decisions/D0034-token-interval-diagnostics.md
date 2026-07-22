@@ -63,3 +63,6 @@ Replace token intervals only with a representation that preserves exact
 standalone and module-local ranges, remains independent of project loading,
 uses linear bounded storage, and passes the same bootstrap, conformance, and
 compile-time gates.
+
+D0035 defines the finalized checked issue stream and migrates missing-effect
+diagnostics as the first interval-producing legacy family.

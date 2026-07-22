@@ -46,10 +46,12 @@ module identity. Consumers must not mutate retained token links incompatibly.
 
 Structured issues now retain inclusive token intervals under D0034, so the
 prepared origin table can preserve both point and whole-expression ranges.
-Legacy effect, exhaustiveness, and ownership diagnostics are still emitted
-directly by their passes. Their spans are exact in standalone compilation, but
-completing project projection for every diagnostic requires moving those
-remaining reports into the same structured issue channel.
+D0035 gives the checked artifact a finalized issue stream and migrates
+missing-effect diagnostics into it. Legacy exhaustiveness and ownership
+diagnostics are still emitted directly by their passes. Their spans are exact
+in standalone compilation, but completing project projection for every
+diagnostic requires moving those remaining reports into the same structured
+issue channel.
 
 ## Evidence
 

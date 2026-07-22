@@ -888,6 +888,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     };
     for required in [
         "(record Issue ((code Bytes) (start I64) (end I64)))",
+        "(record Checked ((status I64) (view View) (issues (Vec Issue))))",
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end))",
     ] {
@@ -906,6 +907,12 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
                 "self-host checker is missing interval diagnostic consumer `{required}`"
             ));
         }
+    }
+    if !check.contains("(call typing/append_issue \"E0343\" missing closing issues)") {
+        errors.push("self-host checker does not retain missing-effect issues".to_owned());
+    }
+    if check.contains("(call report_diagnostic \"E0343\"") {
+        errors.push("self-host checker directly prints missing-effect issues".to_owned());
     }
 
     let project_path = directory.join("project.slim");
@@ -942,6 +949,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
                 "self-host project checker is missing interval projection `{required}`"
             ));
         }
+    }
+    if !project_source.contains("(get checked issues)") {
+        errors.push("self-host project checker does not consume finalized issues".to_owned());
     }
     for superseded in [
         "(fn report_private_modules",

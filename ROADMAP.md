@@ -664,10 +664,18 @@ host. A first recursive legacy-collector design was rejected after increasing
 that check beyond 40 seconds; migration will continue only through smaller
 measured slices.
 
+The fifth slice establishes D0035's finalized issue stream on `Checked`.
+Analyzer issues and later semantic issues now cross one explicit phase boundary,
+and prepared projects consume that final stream rather than the analyzer's
+snapshot. Missing-effect `E0343` is the first migrated legacy family;
+`project-effect-error` pins its exact `E0343@app@72:94` source range. The
+self-check remains about 0.22 seconds and the corpus now contains 87 fixtures.
+
 This is not yet a completed milestone. Code generation and memory planning
-still rediscover some semantic facts from tokens, and legacy effect,
-exhaustiveness, and ownership reports have not yet joined the structured project source-projection
-channel. Core 1D acceptance requires bounded expression-fact and name/member
+still rediscover some semantic facts from tokens. Allocation, partial, and I/O
+effect failures now use structured project source projection, while legacy
+exhaustiveness and ownership reports have not yet joined that channel. Core 1D
+acceptance requires bounded expression-fact and name/member
 lookup, removal of redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
 same-host regression budgets, allocation-failure and sanitizer coverage, and

@@ -77,14 +77,27 @@ seconds. The experiment was reverted rather than accepting a compiler
 performance regression. The representation remains; collectors will migrate in
 smaller slices with source-shape measurements before each checkpoint.
 
+## Finalized issue stream and first migrated family
+
+D0035 makes `Checked.issues` the completed diagnostic stream. It starts with
+the analyzer snapshot and is extended by later phases without rebuilding the
+typed view. This avoids both the ownership bug in mutating an extracted vector
+and the measured view-reconstruction performance cliff.
+
+Missing-effect `E0343` is the first migrated family. The non-recursive effect
+coordinator appends the complete call interval; standalone output is unchanged
+and `project-effect-error` pins `E0343@app@72:94`. Self-validation remained
+about 0.22 seconds. The byte-identical seed is 1,651,963 C bytes, and the corpus
+now passes 87 fixtures plus 2,000 malformed mutations.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy effect, exhaustiveness, and ownership diagnostics still need to move
-  into the structured issue channel so every project semantic diagnostic uses
-  the same projection.
+- Legacy exhaustiveness and ownership diagnostics still need to move into the
+  structured issue channel so every project semantic diagnostic uses the same
+  projection.
 - Code generation and memory planning still rediscover some facts from token
   structure instead of consuming dense typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,
