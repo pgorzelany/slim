@@ -843,6 +843,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("session", "session.slim"),
         ("syntax", "syntax.slim"),
         ("text", "text.slim"),
+        ("typing", "typing.slim"),
         ("validate", "validate.slim"),
     ] {
         let path = directory.join(file);
@@ -891,7 +892,14 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn find_unknown_import",
         "(call report_manifest_rules",
         "(record LoadedModule",
+        "(record Origin",
+        "(record PreparedProject",
         "(fn load_project_modules",
+        "(fn flatten_loaded_project",
+        "(fn prepare_project_path",
+        "(fn prepare_loaded_project",
+        "(fn generate_prepared_project",
+        "(fn report_project_issue",
         "(fn report_loaded_project",
         "(fn report_private_type_leaks",
     ] {
@@ -901,9 +909,18 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    if project_source.contains("(fn report_private_modules") {
-        errors
-            .push("self-host project checker retains the superseded rereading resolver".to_owned());
+    for superseded in [
+        "(fn report_private_modules",
+        "(fn append_project_modules",
+        "(fn flatten_project",
+        "(fn check_flattened_project",
+        "(fn generate_project_path",
+    ] {
+        if project_source.contains(superseded) {
+            errors.push(format!(
+                "self-host project checker retains superseded pipeline `{superseded}`"
+            ));
+        }
     }
 
     let query_path = directory.join("query.slim");
@@ -940,6 +957,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn project_key",
         "(fn encode",
         "(fn probe",
+        "(call project/prepare_project_path",
+        "(call project/generate_prepared_project",
     ] {
         if !cache.contains(required) {
             errors.push(format!(

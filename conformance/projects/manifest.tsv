@@ -27,3 +27,4 @@ project-private-type-leak	check-fail	conformance/projects/rules/private-type-lea
 project-unimported-reference	check-fail	conformance/projects/rules/unimported-reference.project	parity	E0416@app@56:76	project:direct-import,project:diagnostics
 project-self-qualified	check-fail	conformance/projects/rules/self-qualified-reference.project	parity	E0417@app@87:104	project:local-qualification,project:diagnostics
 project-wrong-kind	check-fail	conformance/projects/rules/wrong-kind-reference.project	parity	E0415@app@56:77	project:visibility,project:diagnostics
+project-type-error	check-fail	conformance/projects/type-error/slim.project	parity	E0344@app@56:60	project:diagnostics,type:expression

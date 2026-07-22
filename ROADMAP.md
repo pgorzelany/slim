@@ -636,7 +636,7 @@ order. The first slice is implemented in SLIM: it validates all declared type
 forms and nested expressions, exact call and recursive-transfer signatures,
 record and variant members, assignments, matches, and the executable boundary.
 Standalone checking and flattened project checking use the same analyzer. The
-stronger boundary passes 85 external fixtures, 2,000 deterministic malformed
+stronger boundary passes 86 external fixtures, 2,000 deterministic malformed
 mutations, all matched challenge programs, and a byte-identical self-host
 bootstrap.
 
@@ -650,12 +650,17 @@ declarations and deeply nested lexical bindings respectively. The measurements
 and honest boundary are recorded in
 `benchmarks/results/2026-07-23-core-1d-progress.md`.
 
+The third slice introduces D0033's prepared project artifact. Project checking,
+scheduling, ordinary emission, and persistent-cache misses now share one loaded,
+flattened, lexed, and checked representation. One origin record per flattened
+token projects structured type issues back to the source module and exact local
+byte span; `project-type-error` pins `E0344@app@56:60`.
+
 This is not yet a completed milestone. Code generation and memory planning
-still rediscover some semantic facts from tokens; project type diagnostics need
-module/original-span source mapping; and project emission does not yet retain
-the checked flattened artifact. Core 1D acceptance
-requires one reusable checked artifact per input, bounded expression-fact and
-name/member lookup, removal of redundant ordinary-generation analysis, exact
-project diagnostic projection, adversarial deep/wide tests, geometric scaling
-and same-host regression budgets, allocation-failure and sanitizer coverage,
-and the complete release/bootstrap gate.
+still rediscover some semantic facts from tokens, and legacy effect and
+ownership reports have not yet joined the structured project source-projection
+channel. Core 1D acceptance requires bounded expression-fact and name/member
+lookup, removal of redundant ordinary-generation analysis, complete project
+diagnostic projection, adversarial deep/wide tests, geometric scaling and
+same-host regression budgets, allocation-failure and sanitizer coverage, and
+the complete release/bootstrap gate.

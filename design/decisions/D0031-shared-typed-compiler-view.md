@@ -48,9 +48,9 @@ or structurally bounded so deeply nested programs remain approximately linear.
 Consumers need staged migration, during which differential tests must prevent
 the old and new paths from disagreeing.
 
-Project flattening currently loses original module coordinates, so Core 1D
-must add a source map before project type diagnostics can be called robust.
-The first self-host measurement exposed repeated whole-program call resolution
+Project flattening originally lost module coordinates; D0033 now retains one
+origin per flattened token and projects structured type issues back to exact
+module-local spans. The first self-host measurement exposed repeated whole-program call resolution
 in legacy effect and ownership passes. Reusing declaration links removed those
 scans and improved the recorded self-host project check from 3.91 seconds to a
 0.20-second median. Member queries and project-artifact reuse remain acceptance
@@ -67,16 +67,17 @@ matched challenge programs, 2,000 malformed mutations, and the self-hosting
 compiler pass the stronger checker. The portable C seed reproduces at a
 byte-identical fixed point.
 
-Standalone compilation now retains one checked artifact through ordinary C
-emission and reads and lexes the source once. Geometric user-call-heavy and
+Standalone and project compilation now retain one checked artifact through
+ordinary C emission and read and lex each input once. Project cache misses emit
+from the same checked artifact. Geometric user-call-heavy and
 deeply nested binding workloads have permanent 1.25 exponent budgets; the first
 full results are 0.916 and 0.980. The dated progress report preserves inputs,
 host context, commands, and limitations.
 
-Core 1D acceptance additionally requires one read/lex/check artifact per input,
-dense or otherwise bounded fact lookup for downstream consumers, exact project
-source mapping, geometric scaling evidence, and removal of redundant semantic
-rediscovery from ordinary code generation.
+Core 1D acceptance additionally requires dense or otherwise bounded fact lookup
+for downstream consumers, geometric scaling evidence, and removal of redundant
+semantic rediscovery from ordinary code generation. Remaining effect and
+ownership diagnostics must join the structured source-projection channel.
 
 ## Removal
 

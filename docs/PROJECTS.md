@@ -216,6 +216,13 @@ Cache corruption recovered by rebuilding may be reported as stable warning
 `(module identity, file-relative primary start, code)` and is independent of
 filesystem enumeration and worker completion order.
 
+Project checking prepares one in-memory artifact containing the validated
+manifest, flattened source, lexical tokens, typed facts, and one original-source
+origin per flattened token. Scheduling, ordinary C emission, and persistent
+cache misses consume that same checked artifact. Structured type diagnostics
+are projected back to module-local byte spans; the remaining legacy effect and
+ownership reporters are being migrated to the same structured channel.
+
 ## Non-goals
 
 - Packages, registries, dependency downloading, version solving, or lockfiles.

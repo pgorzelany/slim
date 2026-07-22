@@ -51,12 +51,24 @@ cargo run --release --quiet --bin slim-bench -- performance
 cargo run --quiet --bin slim-conform -- check
 ```
 
+## Rejected dense-index experiment
+
+A first dense `expression token -> fact` vector was implemented and then
+reverted. The existing compiler took more than 13 seconds to check the modified
+self-host project, compared with about 0.21 seconds after the candidate was
+removed. The candidate had not yet been bootstrapped, so this measures a
+source-shape performance cliff in the current compiler rather than the runtime
+cost of constructing the proposed index. It is not evidence against dense
+lookup in principle; it is evidence that this particular change cannot land
+without profiling, a geometric fixture, and a same-host regression result.
+
 ## Remaining Core 1D blockers
 
-- Project compilation still reloads, reflattens, relexes, and rechecks between
-  validation and emission instead of retaining one project artifact.
-- Flattened project type diagnostics still need exact module and original-byte
-  source-map projection.
+- Project checking, scheduling, ordinary emission, and cache misses now share
+  one prepared artifact. Each flattened token retains its module and original
+  byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
+- Legacy effect and ownership diagnostics still need to move into the structured
+  issue channel so every project semantic diagnostic uses the same projection.
 - Code generation and memory planning still rediscover some facts from token
   structure instead of consuming dense typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,
