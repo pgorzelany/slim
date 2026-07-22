@@ -202,6 +202,7 @@ fn check_performance_architecture(
 
     for required in [
         "check-exponent/generated-declarations",
+        "check-exponent/generated-nested-bindings",
         "emit-exponent/generated-declarations",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
@@ -274,6 +275,7 @@ fn check_performance_architecture(
         "enforce_scaling_series(\"incremental-exponent\"",
         "enforce_scaling_series(\"project-emit-exponent\"",
         "performance_budget(\"native-runtime-ratio\"",
+        "performance_budget(\"check-exponent\", \"generated-nested-bindings\")",
         "fn agent_manifest()",
     ] {
         if !benchmark.contains(required) {

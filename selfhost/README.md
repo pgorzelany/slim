@@ -19,8 +19,10 @@ passes share that vector, and governance requires exactly one file read and one
 lex operation in the self-host checker. D0031 adds the `typing` module: it
 derives linked lexical bindings, validates all declared and nested expression
 types, and records structured type facts and issues. The checker consumes that
-view now; code generation, project source mapping, and the remaining semantic
-passes must share it before Core 1D is frozen.
+view now, standalone emission retains the checked artifact, and effect and
+ownership call resolution reuse its declaration links. Project artifact reuse,
+source mapping, and remaining code-generation/memory queries must share it
+before Core 1D is frozen.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

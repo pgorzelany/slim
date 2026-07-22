@@ -32,7 +32,12 @@ unsafe semantics or benchmark-specific syntax.
 
 `performance` is the canonical compiler-speed gate. It checks ordinary
 checking and deterministic C emission over geometric declaration counts,
-including both scaling exponents and the same-host emit/check ratio. Its
+including both scaling exponents and the same-host emit/check ratio. Every
+generated declaration after the first calls a user function, so repeated
+whole-program call resolution cannot hide behind a built-in-only workload. A
+second geometric series checks deeply nested lexical bindings that repeatedly
+reference an outer parameter, guarding both scope lookup and compiler stack
+behavior. Its
 versioned limits are in `performance-budgets.tsv`; relaxing a limit requires
 the D0030 decision process. The standard verification script runs the quick
 performance and matched-challenge gates on every release.

@@ -640,10 +640,20 @@ stronger boundary passes 85 external fixtures, 2,000 deterministic malformed
 mutations, all matched challenge programs, and a byte-identical self-host
 bootstrap.
 
+The second slice retains a checked typed artifact through standalone emission,
+tags lexical uses with scoped type links, and reuses declaration links in the
+effect and ownership passes. Removing three repeated whole-program call
+resolution scans reduced the 468,568-byte self-host project check from a
+3.91-second median to 0.20 seconds on the recorded host. Permanent full-series
+measurements produce 0.916 and 0.980 check-scaling exponents for user-call-heavy
+declarations and deeply nested lexical bindings respectively. The measurements
+and honest boundary are recorded in
+`benchmarks/results/2026-07-23-core-1d-progress.md`.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens; project type diagnostics need
-module/original-span source mapping; and the first full self-host project check
-is materially slower than the Core 1C feedback target. Core 1D acceptance
+module/original-span source mapping; and project emission does not yet retain
+the checked flattened artifact. Core 1D acceptance
 requires one reusable checked artifact per input, bounded expression-fact and
 name/member lookup, removal of redundant ordinary-generation analysis, exact
 project diagnostic projection, adversarial deep/wide tests, geometric scaling

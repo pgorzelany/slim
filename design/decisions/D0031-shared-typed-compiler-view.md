@@ -50,9 +50,11 @@ the old and new paths from disagreeing.
 
 Project flattening currently loses original module coordinates, so Core 1D
 must add a source map before project type diagnostics can be called robust.
-The first self-host measurement also shows that the correct full-project check
-is slower than the Core 1C target; scaling and same-host budgets therefore block
-milestone completion until the lexical and member lookups are indexed.
+The first self-host measurement exposed repeated whole-program call resolution
+in legacy effect and ownership passes. Reusing declaration links removed those
+scans and improved the recorded self-host project check from 3.91 seconds to a
+0.20-second median. Member queries and project-artifact reuse remain acceptance
+work.
 
 ## Evidence
 
@@ -64,6 +66,12 @@ stable diagnostic codes and byte spans. The complete standalone corpus, twelve
 matched challenge programs, 2,000 malformed mutations, and the self-hosting
 compiler pass the stronger checker. The portable C seed reproduces at a
 byte-identical fixed point.
+
+Standalone compilation now retains one checked artifact through ordinary C
+emission and reads and lexes the source once. Geometric user-call-heavy and
+deeply nested binding workloads have permanent 1.25 exponent budgets; the first
+full results are 0.916 and 0.980. The dated progress report preserves inputs,
+host context, commands, and limitations.
 
 Core 1D acceptance additionally requires one read/lex/check artifact per input,
 dense or otherwise bounded fact lookup for downstream consumers, exact project

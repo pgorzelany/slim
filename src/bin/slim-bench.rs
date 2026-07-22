@@ -129,6 +129,57 @@ fn run_performance() {
         );
         std::process::exit(1);
     }
+
+    let nested_sizes: &[usize] = if quick {
+        &[125, 250, 500, 1_000]
+    } else {
+        &[250, 500, 1_000, 2_000]
+    };
+    println!("nested_bindings\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
+    let mut first_nested = None;
+    let mut last_nested = None;
+    for size in nested_sizes {
+        let source = generated_nested_program(*size);
+        let path = directory.path.join(format!("nested-{size}.slim"));
+        fs::write(&path, &source).expect("write nested scaling source");
+        require_clean_output(
+            compiler_output(&compiler, "check", &path),
+            "nested scaling warmup",
+        );
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("check").arg(&path),
+                "SLIM nested check",
+            );
+            require_clean_output(output, "nested scaling check");
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_nested.is_none() {
+            first_nested = Some((*size, elapsed));
+        }
+        last_nested = Some((*size, elapsed));
+    }
+    let (first_size, first_time) = first_nested.expect("nested series has a first sample");
+    let (last_size, last_time) = last_nested.expect("nested series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("check-exponent", "generated-nested-bindings");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: nested check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} bindings"
+        );
+        std::process::exit(1);
+    }
 }
 
 fn run_reduction() {
@@ -849,11 +900,31 @@ fn generated_program(declarations: usize) -> String {
     for index in 0..declarations {
         source.push_str("(fn function-");
         source.push_str(&index.to_string());
-        source.push_str(" ((value I64)) I64 (effects) (call i64.add value ");
-        source.push_str(&index.to_string());
-        source.push_str(")) ");
+        if index == 0 {
+            source.push_str(" ((value I64)) I64 (effects) (call i64.add value 0)) ");
+        } else {
+            source.push_str(" ((value I64)) I64 (effects) (call function-0 value)) ");
+        }
     }
     source.push_str("(fn main ((args (Vec Bytes))) I64 (effects) (call function-0 0)))\n");
+    source
+}
+
+fn generated_nested_program(bindings: usize) -> String {
+    let mut source = String::with_capacity(bindings * 58);
+    source.push_str(
+        "(module nested (fn identity ((value I64)) I64 (effects) value) (fn deep ((seed I64)) I64 (effects) ",
+    );
+    for index in 0..bindings {
+        source.push_str("(let value-");
+        source.push_str(&index.to_string());
+        source.push_str(" I64 (call identity seed) ");
+    }
+    source.push_str("seed");
+    for _ in 0..bindings {
+        source.push(')');
+    }
+    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call deep 0)))\n");
     source
 }
 
