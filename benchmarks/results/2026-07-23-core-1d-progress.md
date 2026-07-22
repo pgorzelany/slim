@@ -98,6 +98,20 @@ self-check. Final seed size and corpus totals are recorded after the release
 gate: a byte-identical 1,653,846-byte C seed, 89 fixtures, and 2,000 malformed
 mutations.
 
+## Checked emission links
+
+D0036 removes declaration relinking from `codegen/emit_program`. Standalone and
+project compilation already retain the exact token stream linked during type
+analysis, so the backend now consumes that checked evidence directly. The
+fixed-point seed shrank from 1,653,846 to 1,653,599 C bytes.
+
+A same-host quick series did not show a clean latency signal. The 2,000
+declaration median moved from 32.279 ms to 31.987 ms, the 1,000 declaration
+point improved from 22.132 ms to 16.344 ms, and smaller points varied in both
+directions. This is recorded as one proven linear pass removed, not as a stable
+percentage speedup. Permanent exponent and emit/check-ratio budgets remain the
+performance authority.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share

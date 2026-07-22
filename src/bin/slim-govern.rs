@@ -966,6 +966,14 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if !project_source.contains("(get checked issues)") {
         errors.push("self-host project checker does not consume finalized issues".to_owned());
     }
+
+    let codegen_path = directory.join("codegen.slim");
+    let Ok(codegen) = fs::read_to_string(&codegen_path) else {
+        return;
+    };
+    if codegen.contains("link_declaration_names") {
+        errors.push("self-host code generation redundantly rebuilds declaration links".to_owned());
+    }
     for superseded in [
         "(fn report_private_modules",
         "(fn append_project_modules",

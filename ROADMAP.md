@@ -673,13 +673,19 @@ their exact module-local source ranges. The self-check remains about 0.22
 seconds, the byte-identical seed is 1,653,846 C bytes, and the corpus contains
 89 fixtures plus 2,000 malformed mutations.
 
+The sixth slice adopts D0036's checked-emission precondition. Ordinary code
+generation consumes declaration links retained on the checked token stream and
+no longer rebuilds them. The fixed-point seed shrank by 247 C bytes. A quick
+before/after series was noisy, so no runtime or latency improvement is claimed;
+the durable result is removal of one unconditional whole-token analysis pass.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
 source projection, while legacy exhaustiveness, recursive-inout, and move
 reports have not yet joined that channel. Core 1D
-acceptance requires bounded expression-fact and name/member
-lookup, removal of redundant ordinary-generation analysis, complete project
+acceptance requires bounded expression-fact and name/member lookup, removal of
+the remaining redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
 same-host regression budgets, allocation-failure and sanitizer coverage, and
 the complete release/bootstrap gate.
