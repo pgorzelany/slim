@@ -448,6 +448,15 @@ liveness analysis, stack promotion, compiler-inserted narrow regions,
 deterministic resource destruction, and typed allocation failure. Add explicit
 region surface only if inference evidence demonstrates a need.
 
+Core 0.4 adds no source surface by default. D0025 selects bounded function
+summaries and compiler-chosen nested regions: immutable `Bytes` remains a
+copyable view whose backing region is proved, while vectors, arenas, and
+aggregates containing them retain unique ownership. The implementation order is
+the external lifetime corpus, typed plans, escape/liveness analysis,
+deterministic region destruction, separately justified typed allocation
+failure, incremental integration, and a self-hosted fixed-point freeze. The
+working specification and baseline census are in `docs/MEMORY.md`.
+
 ### Core 1 research
 
 Develop typed optimization, bounded and total profiles, structured
