@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 0.4 and toolchain cutover complete
-Current milestone: Core 1 research
+Status: Core 1A direct typed reduction complete
+Current milestone: Core 1B bounded semantics research
 Last updated: 2026-07-22
 
 ## Direction
@@ -444,7 +444,7 @@ milestone.
 Status: complete
 
 D0027 makes the checked-in deterministic C11 seed the only bootstrap trust
-artifact and the fourteen-module SLIM project the sole active semantic
+artifact and the sixteen-module SLIM project the sole active semantic
 compiler. A clean bootstrap uses no Cargo or `rustc`, reproduces successive C
 generations byte for byte, and exposes the SLIM compiler through the root
 `slimc` launcher. Rust remains only in three bootstrap-independent programs for
@@ -452,13 +452,13 @@ conformance orchestration, governance, and benchmark measurement.
 
 Acceptance evidence:
 
-- all 59 standalone and project fixtures execute through SLIM with no semantic
+- all 61 standalone and project fixtures execute through SLIM with no semantic
   fallback;
 - 2,000 deterministic malformed-input mutations reject without a compiler
   trap;
 - process-level check scaling stays within the 1.25 exponent gate;
-- the generated seed is 991,869 bytes with SHA-256
-  `7f63ea972068670a92e981d2132d44c64b01b6fd87e2de6f6913e57f22b71fdb`;
+- the generated seed is 1,141,206 bytes with SHA-256
+  `aeef245413e5766d86ca84efdcea63f3b29694728c4b9a4cf774ce387bfe5572`;
 - governance rejects active Rust semantic modules, production Rust budget
   entries, Cargo semantic targets, and Rust-dependent production launchers;
 - sanitizer and deterministic allocation-failure gates cover both the compiler
@@ -502,3 +502,51 @@ Develop typed optimization, bounded and total profiles, structured
 deterministic concurrency, quality metrics, bounded equivalence, and
 cost-directed reduction. Each research result must pass the same feature gates
 before entering the language.
+
+### Core 1A: direct typed reduction
+
+Status: complete
+
+D0028 keeps canonical parsed SLIM as the compiler's sole program
+representation. The self-hosted `analysis` module attaches stable, bounded
+type, ownership, scope, use, last-use, and dependency facts to that tree. The
+`reduce` module applies a deliberately small set of individually justified
+total rewrites directly to checked expressions. There is no `.sil` or `.slir`
+input language, parser, formatter, serializer, or parallel type system.
+
+The public research tools are `slimc analyze SOURCE` and
+`slimc reduce SOURCE`. Reduced output is ordinary canonical SLIM, is
+idempotent, and is accepted by the normal compiler. Analysis is a
+versioned report rather than executable input. Reduction is limited to eight
+closure passes and unused-binding searches inspect at most 64 tokens; analysis
+stores at most 64 binding facts per function. Exceeding a bound produces a
+conservative result rather than unbounded work.
+
+Acceptance evidence:
+
+- original and reduced fixtures have identical exit status, stdout, stderr,
+  defined traps, and deterministic allocation-failure behavior;
+- observable calls, allocation, I/O, checked traps, aggregate moves, mutation,
+  and exclusive borrows are neither discarded nor reordered;
+- exact normal forms, repeated-output determinism, idempotence, malformed-input
+  diagnostics, and deep fallback are covered end to end;
+- geometric 250/500/1,000/2,000-declaration measurements keep both tools below
+  the 1.25 scaling-exponent gate without changing the ordinary check path;
+- all 61 conformance fixtures and 2,000 malformed-input mutations pass,
+  including 100 direct `reduce`/`analyze` probes; and
+- the sixteen-module compiler reproduces the 1,141,206-byte portable seed at a
+  byte-identical fixed point.
+
+The frozen measurements and reproduction commands are recorded in
+`benchmarks/results/2026-07-22-core-1a.md`.
+
+### Core 1B: bounded semantics and quality evidence
+
+Status: next
+
+Define useful explicitly bounded program classes, observational equivalence
+budgets, and quality metrics before expanding the reducer. Separate metrics
+that can be proved (state-space cardinality, effect surface, ownership and
+dependency structure, bounded worst-case cost) from heuristic scores. Any new
+rewrite must carry its own termination, totality, behavior-preservation, and
+compile-cost evidence; no new source feature is implied.

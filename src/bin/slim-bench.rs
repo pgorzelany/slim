@@ -11,12 +11,13 @@ fn main() {
         .unwrap_or_else(|| "scaling".to_owned());
     match command.as_str() {
         "scaling" => run_scaling(),
+        "reduction" => run_reduction(),
         "incremental" => run_incremental(),
         "project" => run_project(),
         "compare" => run_comparison(),
         _ => {
             eprintln!(
-                "usage: slim-bench <scaling [--quick] | incremental [--quick] | project [--quick] | compare>"
+                "usage: slim-bench <scaling [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare>"
             );
             std::process::exit(64);
         }
@@ -100,6 +101,91 @@ fn run_scaling() {
             "scaling gate: process-level check exponent {exponent:.3} exceeds 1.25 between {first_size} and {last_size} declarations"
         );
         std::process::exit(1);
+    }
+}
+
+fn run_reduction() {
+    let quick = has_quick_flag();
+    let sizes: &[usize] = if quick {
+        &[250, 500, 1_000, 2_000]
+    } else {
+        &[1_000, 2_000, 4_000, 8_000]
+    };
+    let samples = if quick { 5 } else { 9 };
+    let compiler = selfhost_compiler();
+    let directory = TemporaryDirectory::new("reduction");
+    println!("declarations\tbytes\treduce_us\tanalyze_us\treduced_bytes\tanalysis_bytes");
+    let mut first = None;
+    let mut last = None;
+    for size in sizes {
+        let source = generated_program(*size);
+        let path = directory.path.join(format!("generated-{size}.slim"));
+        fs::write(&path, &source).expect("write reduction source");
+
+        let warm_reduced = require_transform_output(
+            compiler_output(&compiler, "reduce", &path),
+            "reduction warmup",
+        );
+        let warm_analysis = require_transform_output(
+            compiler_output(&compiler, "analyze", &path),
+            "analysis warmup",
+        );
+        let mut reduce_times = Vec::with_capacity(samples);
+        let mut analyze_times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("reduce").arg(&path),
+                "SLIM reduction",
+            );
+            let reduced = require_transform_output(output, "reduction scaling");
+            assert_eq!(reduced, warm_reduced, "reduction must be deterministic");
+            black_box(&reduced);
+            reduce_times.push(elapsed);
+
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("analyze").arg(&path),
+                "SLIM semantic analysis",
+            );
+            let analysis = require_transform_output(output, "analysis scaling");
+            assert_eq!(analysis, warm_analysis, "analysis must be deterministic");
+            black_box(&analysis);
+            analyze_times.push(elapsed);
+        }
+        reduce_times.sort();
+        analyze_times.sort();
+        let reduce = reduce_times[samples / 2];
+        let analyze = analyze_times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{}\t{}\t{}",
+            source.len(),
+            reduce.as_micros(),
+            analyze.as_micros(),
+            warm_reduced.len(),
+            warm_analysis.len()
+        );
+        if first.is_none() {
+            first = Some((*size, reduce, analyze));
+        }
+        last = Some((*size, reduce, analyze));
+    }
+
+    let (first_size, first_reduce, first_analyze) =
+        first.expect("reduction benchmark has a first sample");
+    let (last_size, last_reduce, last_analyze) =
+        last.expect("reduction benchmark has a last sample");
+    for (role, first_time, last_time) in [
+        ("reduction", first_reduce, last_reduce),
+        ("analysis", first_analyze, last_analyze),
+    ] {
+        let size_ratio = last_size as f64 / first_size as f64;
+        let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+        let exponent = time_ratio.ln() / size_ratio.ln();
+        if exponent > 1.25 {
+            eprintln!(
+                "{role} scaling gate: process-level exponent {exponent:.3} exceeds 1.25 between {first_size} and {last_size} declarations"
+            );
+            std::process::exit(1);
+        }
     }
 }
 
@@ -345,6 +431,13 @@ fn require_clean_output(output: Output, role: &str) {
     if !output.status.success() || !output.stdout.is_empty() || !output.stderr.is_empty() {
         fail_output(role, &output);
     }
+}
+
+fn require_transform_output(output: Output, role: &str) -> Vec<u8> {
+    if !output.status.success() || output.stdout.is_empty() || !output.stderr.is_empty() {
+        fail_output(role, &output);
+    }
+    output.stdout
 }
 
 fn fail_output(role: &str, output: &Output) -> ! {

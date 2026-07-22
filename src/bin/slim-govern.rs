@@ -75,6 +75,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_toolchain_cutover(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
     check_memory_architecture(root, &mut errors);
+    check_direct_reduction(root, &mut errors);
     errors
 }
 
@@ -616,6 +617,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     };
     for (module, file) in [
+        ("analysis", "analysis.slim"),
         ("cache", "cache.slim"),
         ("check", "check.slim"),
         ("codegen", "codegen.slim"),
@@ -625,6 +627,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("memory", "memory.slim"),
         ("project", "project.slim"),
         ("query", "query.slim"),
+        ("reduce", "reduce.slim"),
         ("scheduler", "scheduler.slim"),
         ("session", "session.slim"),
         ("syntax", "syntax.slim"),
@@ -808,6 +811,101 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
     }
 }
 
+fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
+    for required in [
+        "design/decisions/D0028-direct-typed-reduction.md",
+        "docs/REDUCTION.md",
+        "selfhost/analysis.slim",
+        "selfhost/reduce.slim",
+        "conformance/pass/reduction.slim",
+        "conformance/tool/reduction.expected.slim",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "Core 1A direct-reduction artifact is missing {required}"
+            ));
+        }
+    }
+
+    let decision =
+        fs::read_to_string(root.join("design/decisions/D0028-direct-typed-reduction.md"))
+            .unwrap_or_default();
+    for required in ["Status: accepted", "Primitive: none"] {
+        if !decision.contains(required) {
+            errors.push(format!(
+                "Core 1A direct reduction requires D0028 field `{required}`"
+            ));
+        }
+    }
+
+    let reduction = fs::read_to_string(root.join("selfhost/reduce.slim")).unwrap_or_default();
+    for required in [
+        "(fn emit_expression",
+        "(fn normalize_from",
+        "(fn normalize",
+        "(fn emit_normal_form",
+        "(call normalize_from canonical canonical 7)",
+    ] {
+        if !reduction.contains(required) {
+            errors.push(format!(
+                "Core 1A reducer is missing direct-tree capability or exact pass bound `{required}`"
+            ));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    for required in [
+        "(record BindingFact",
+        "(fn find_binding",
+        "(fn record_use",
+        "(fn dependency_count",
+        "(fact-limit 64)",
+    ] {
+        if !analysis.contains(required) {
+            errors.push(format!(
+                "Core 1A semantic analysis is missing bounded fact `{required}`"
+            ));
+        }
+    }
+
+    let compiler = fs::read_to_string(root.join("selfhost/slimc.slim")).unwrap_or_default();
+    for command in ["\"reduce\"", "\"analyze\""] {
+        if !compiler.contains(command) {
+            errors.push(format!(
+                "self-hosted compiler does not expose Core 1A command {command}"
+            ));
+        }
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for forbidden in ["reduce/", "analysis/"] {
+        if codegen.contains(forbidden) {
+            errors.push(format!(
+                "optional Core 1A tooling leaked into ordinary C generation through `{forbidden}`"
+            ));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0028") {
+        errors.push("D0028 has Primitive: none and must not add Core surface".to_owned());
+    }
+
+    for directory in ["selfhost", "conformance", "examples", "docs", "design"] {
+        visit_files(&root.join(directory), &mut |path| {
+            if matches!(
+                path.extension().and_then(|extension| extension.to_str()),
+                Some("sil" | "slir")
+            ) {
+                errors.push(format!(
+                    "separately parsed IR files are forbidden by D0028: {}",
+                    path.display()
+                ));
+            }
+        });
+    }
+}
+
 fn visit_rs_files(dir: &Path, action: &mut impl FnMut(&Path, &str)) {
     let Ok(entries) = fs::read_dir(dir) else {
         return;
@@ -820,6 +918,20 @@ fn visit_rs_files(dir: &Path, action: &mut impl FnMut(&Path, &str)) {
             && let Ok(text) = fs::read_to_string(&path)
         {
             action(&path, &text);
+        }
+    }
+}
+
+fn visit_files(dir: &Path, action: &mut impl FnMut(&Path)) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            visit_files(&path, action);
+        } else {
+            action(&path);
         }
     }
 }

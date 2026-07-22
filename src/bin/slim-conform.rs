@@ -79,7 +79,7 @@ fn run() -> Result<(), String> {
         .map_err(|error| format!("cannot inspect bootstrap seed: {error}"))?
         .len();
     println!(
-        "conformance: {fixture_count} fixtures and 2000 deterministic malformed-input mutations passed through the SLIM compiler ({summary}); no semantic fallback; bootstrap seed is {fixed_bytes} C bytes",
+        "conformance: {fixture_count} fixtures and 2000 deterministic malformed-input mutations passed through the SLIM compiler, including 100 reduce/analyze probes ({summary}); no semantic fallback; bootstrap seed is {fixed_bytes} C bytes",
     );
     Ok(())
 }
@@ -103,7 +103,7 @@ fn check_malformed_input_robustness(compiler: &Path) -> Result<(), String> {
     let result = (|| {
         for (case, source) in CURATED.iter().enumerate() {
             fs::write(&path, source).map_err(|error| error.to_string())?;
-            for command in [Some("check"), None] {
+            for command in [Some("check"), Some("reduce"), Some("analyze"), None] {
                 let mut process = Command::new(compiler);
                 if let Some(command) = command {
                     process.arg(command);
@@ -135,23 +135,34 @@ fn check_malformed_input_robustness(compiler: &Path) -> Result<(), String> {
                 source.push(ALPHABET[(state as usize) % ALPHABET.len()]);
             }
             fs::write(&path, &source).map_err(|error| error.to_string())?;
-            let output = Command::new(compiler)
-                .arg("check")
-                .arg(&path)
-                .output()
-                .map_err(|error| format!("cannot run malformed-input mutation {case}: {error}"))?;
-            let status = output.status.code();
-            if !matches!(status, Some(0 | 1)) || !output.stderr.is_empty() {
-                return Err(format!(
-                    "malformed-input mutation {case} trapped: {} / {:?} / {:?} / {:?}",
-                    output.status, source, output.stdout, output.stderr
-                ));
-            }
-            if status == Some(1) && !output.stdout.starts_with(b"E") {
-                return Err(format!(
-                    "malformed-input mutation {case} lacks a stable diagnostic identity: {:?}",
-                    output.stdout
-                ));
+            let commands: &[&str] = if case % 20 == 0 {
+                &["check", "reduce", "analyze"]
+            } else {
+                &["check"]
+            };
+            for command in commands {
+                let output = Command::new(compiler)
+                    .arg(command)
+                    .arg(&path)
+                    .output()
+                    .map_err(|error| {
+                        format!(
+                            "cannot run malformed-input mutation {case} with {command}: {error}"
+                        )
+                    })?;
+                let status = output.status.code();
+                if !matches!(status, Some(0 | 1)) || !output.stderr.is_empty() {
+                    return Err(format!(
+                        "malformed-input mutation {case} trapped in {command}: {} / {:?} / {:?} / {:?}",
+                        output.status, source, output.stdout, output.stderr
+                    ));
+                }
+                if status == Some(1) && !output.stdout.starts_with(b"E") {
+                    return Err(format!(
+                        "malformed-input mutation {case} lacks a stable {command} diagnostic identity: {:?}",
+                        output.stdout
+                    ));
+                }
             }
         }
         Ok(())

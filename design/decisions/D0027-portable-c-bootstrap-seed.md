@@ -64,13 +64,13 @@ measurement when it contains no language decision.
 
 ## Evidence
 
-All 59 accepted standalone and project fixtures have exact self-host parity,
+All 61 accepted standalone and project fixtures have exact self-host parity,
 and 2,000 deterministic malformed-input mutations reject without a compiler
-trap. The Core 0.4 freeze produced identical 829,446-byte stage-2 and stage-3 C. The
-cutover compiler, including deterministic nested-call lowering discovered by
-the primary-path migration, currently produces identical 991,869-byte
-successive generations with SHA-256
-`7f63ea972068670a92e981d2132d44c64b01b6fd87e2de6f6913e57f22b71fdb`.
+trap. The Core 0.4 freeze produced identical 829,446-byte stage-2 and stage-3
+C. The current Core 1A compiler, including direct reduction and semantic
+analysis, produces identical 1,141,206-byte successive generations with
+SHA-256
+`aeef245413e5766d86ca84efdcea63f3b29694728c4b9a4cf774ce387bfe5572`.
 The self-hosted project already implements standalone and project checking,
 formatting, interfaces, cache and incremental sessions, deterministic job
 planning, C emission, lifetime planning, and typed allocation failure. D0014

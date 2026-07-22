@@ -16,6 +16,8 @@ only through Git history.
     ./slimc check examples/hello.slim
     ./slimc run examples/hello.slim
     ./slimc emit-c examples/hello.slim -o /tmp/hello.c
+    ./slimc reduce conformance/pass/reduction.slim
+    ./slimc analyze examples/vector_sum.slim
 
 For an explicit multi-module project:
 
@@ -32,9 +34,10 @@ their acceptance gates are in [ROADMAP.md](ROADMAP.md).
     ./scripts/verify.sh
 
 This runs formatting, Clippy, unit and integration tests, feature-governance
-checks, the self-host fixed-point proof, frontend scaling checks, and a
-sanitized compiler and native execution tests. It also runs every conformance
-fixture through the production SLIM compiler and checks incremental work bounds.
+checks, the self-host fixed-point proof, frontend and direct-reduction scaling
+checks, and sanitized compiler and native execution tests. It also runs every
+conformance fixture through the production SLIM compiler, checks reduction
+idempotence and behavior preservation, and checks incremental work bounds.
 
 For the bootstrap proof alone:
 
@@ -50,9 +53,9 @@ For the executable Core oracle and incremental measurements:
 
 The self-hosted compiler is a genuine deterministic compiler, not a wrapper.
 The checked-in C11 seed builds it without Rust and reproduces the compiler C
-byte for byte. Core 0.4 is frozen with all 59 standalone and project fixtures
+byte for byte. Core 1A is frozen with all 61 standalone and project fixtures
 running through the SLIM compiler with no semantic fallback.
-Its fourteen SLIM modules implement structured syntax, bounded malformed-input
+Its sixteen SLIM modules implement structured syntax, bounded malformed-input
 validation, and typed declarations,
 standalone and project checking, deterministic C generation,
 declaration-level query invalidation, transactional last-good sessions, a
@@ -78,6 +81,10 @@ measured worker path is currently slower than serial and is not enabled by
 default. Core 0.3's self-host scheduler likewise plans bounded dependency
 batches but executes them serially because Core has no concurrency runtime.
 Language-level concurrency, automatic program parallelization, whole-program
-quality grading, and general optimal reduction remain designed goals rather
-than implemented claims. The 0.3 freeze evidence and remaining performance gap
-are recorded in [benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).
+quality grading, bounded equivalence, and globally optimal reduction remain
+designed goals rather than implemented claims. Core 1A adds a small direct
+reducer and bounded semantic facts without new source syntax or a separate IR
+language; its contract is documented in
+[docs/REDUCTION.md](docs/REDUCTION.md). The 0.3 freeze evidence and remaining
+performance gap are recorded in
+[benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).

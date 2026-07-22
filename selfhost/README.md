@@ -1,9 +1,10 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. It contains explicit modules for
+`slim.project` is the self-hosting input. Its sixteen explicit modules cover
 syntax/token utilities, byte-text emission, checking, typed memory planning,
-project handling, C generation, coordination, and the minimal executable
-driver. The checked-in portable C11 seed compiles the project to the next
+bounded semantic analysis, direct reduction, project handling, C generation,
+coordination, and the minimal executable driver. The checked-in portable C11
+seed compiles the project to the next
 executable, which emits one further generation. The bootstrap succeeds only
 when the seed reproduces from this project, the successive generated C files
 are byte-for-byte identical, and a program compiled by the resulting SLIM
@@ -24,6 +25,13 @@ plans. The checker executes it from the structured declaration vector, while
 the backend uses its function summary to select caller or child regions. The
 generated ABI also propagates D0026's typed allocation-effect status and
 destroys child regions at the single function exit.
+
+The `analysis` and `reduce` modules implement D0028 without a second program
+representation. Analysis derives at most 64 binding facts per function from
+stable canonical token indices. Reduction traverses the checked SLIM tree
+directly, uses at most eight closure passes and 64-token dead-binding scans,
+and emits canonical SLIM. These opt-in tools are not part of ordinary C
+generation.
 
 The self-hosted path accepts the subset needed to compile itself plus the Core
 standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
@@ -46,6 +54,11 @@ orchestration; it does not decide language behavior.
 Run the complete proof with:
 
     ./bootstrap.sh
+
+Inspect the Core 1A tools with:
+
+    ./slimc analyze examples/vector_sum.slim
+    ./slimc reduce conformance/pass/reduction.slim
 
 Generated compiler and C files are placed in `build/toolchain/`, which is
 ignored by Git.

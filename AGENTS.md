@@ -34,6 +34,21 @@ These rules apply to every change in this repository.
 - Benchmark before and after any compiler, runtime, or generated-code change
   intended to affect performance.
 
+## Reduction and representation constraints
+
+- Canonical parsed SLIM is the compiler's sole accepted program
+  representation. Do not add a `.sil`, `.slir`, or other separately parsed IR
+  without a new accepted decision proving that derived views are insufficient.
+- Attach semantic facts to stable SLIM nodes or derive an ephemeral bounded
+  view. Do not duplicate parsing, typing, ownership, or effects.
+- Every direct rewrite needs a local totality and behavior-preservation
+  argument. It must preserve evaluation order and may not hide or discard an
+  observable effect, trap, allocation failure, move, mutation, or borrow.
+- Reduction must terminate, be deterministic and idempotent, and retain a
+  conservative result when a stated analysis bound is exceeded.
+- A new rewrite is a feature: weigh it through `design/FEATURE_POLICY.md`, add
+  positive and non-applicability tests, and measure direct-reduction scaling.
+
 ## Change requirements
 
 - Implement new production compiler capabilities in `selfhost/` SLIM by
@@ -46,8 +61,9 @@ These rules apply to every change in this repository.
   execute through the production SLIM compiler.
 - Preserve deterministic formatting, diagnostics, and generated C.
 - Add positive, negative, and diagnostic tests for behavior changes.
-- Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, and `cargo test`
-  before committing.
+- Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, `cargo test`,
+  and `cargo run --release --bin slim-bench -- reduction --quick` before
+  committing a compiler change.
 - Do not add a dependency without an accepted architecture decision.
 - If a requested change conflicts with a hard gate, record the conflict rather
   than bypassing the gate.

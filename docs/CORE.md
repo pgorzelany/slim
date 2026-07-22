@@ -76,3 +76,12 @@ I/O required by the compiler. Their concrete signatures are emitted by
 Every diagnostic has a stable code, severity, primary byte span, optional
 labels, notes, and fixes. Human and newline-delimited JSON renderings contain
 the same information. User input must not panic the compiler.
+
+## Tooling boundary
+
+`slimc analyze` and `slimc reduce` are compiler tools, not Core language
+features. Analysis emits a versioned non-executable report. Reduction emits
+ordinary canonical `.slim` source and cannot change which forms the compiler
+accepts. Canonical SLIM remains the only compilable representation; derived
+facts and control-flow views have no independent syntax or parser. The bounded
+Core 1A contract is specified in `docs/REDUCTION.md`.

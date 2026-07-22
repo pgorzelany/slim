@@ -11,6 +11,7 @@ cargo test
 cargo run --quiet --bin slim-govern -- check
 cargo run --quiet --bin slim-conform -- check
 cargo run --release --quiet --bin slim-bench -- scaling --quick
+cargo run --release --quiet --bin slim-bench -- reduction --quick
 cargo run --release --quiet --bin slim-bench -- incremental --quick
 cargo run --release --quiet --bin slim-bench -- project --quick
 

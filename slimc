@@ -21,6 +21,8 @@ slim_usage() {
     echo "  slimc [--message-format=human|json] emit-c SOURCE [--jobs N] -o FILE"
     echo "  slimc [--message-format=human|json] build SOURCE [--jobs N] [-o FILE]"
     echo "  slimc [--message-format=human|json] run SOURCE [--jobs N] [-- ARGS...]"
+    echo "  slimc [--message-format=human|json] reduce SOURCE"
+    echo "  slimc [--message-format=human|json] analyze SOURCE"
     echo "  slimc fmt SOURCE [--check]"
     echo "  slimc interfaces PROJECT [--jobs N] -o DIRECTORY"
     echo "  slimc runtime DIRECTORY"
@@ -144,6 +146,17 @@ case "$slim_command" in
         fi
         slim_render_diagnostics "$slim_tmp/diagnostics" "$slim_source"
         exit "$slim_status"
+        ;;
+    reduce|analyze)
+        test "$#" -eq 1 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        if "$slim_compiler" "$slim_command" "$slim_source" > "$slim_tmp/transformed"; then
+            cat "$slim_tmp/transformed"
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/transformed" "$slim_source"
+            exit "$slim_status"
+        fi
         ;;
     fmt)
         test "$#" -ge 1 || { slim_usage >&2; exit 64; }
