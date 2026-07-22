@@ -221,9 +221,10 @@ manifest, flattened source, lexical tokens, typed facts, and one original-source
 origin per flattened token. Scheduling, ordinary C emission, and persistent
 cache misses consume that same checked artifact. Structured issues retain an
 inclusive token interval, allowing point and whole-expression ranges to project
-back to module-local byte spans. Missing-effect diagnostics already use the
-finalized checked issue stream. The remaining legacy exhaustiveness and
-ownership reporters are being migrated to the same structured channel.
+back to module-local byte spans. Missing-effect and exclusive-inout-call
+diagnostics already use the finalized checked issue stream. The remaining
+legacy exhaustiveness, recursive-inout, and move reporters are being migrated
+to the same structured channel.
 
 ## Non-goals
 

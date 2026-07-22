@@ -1,0 +1,1 @@
+(module app (fn pair ((inout left (Vec I64)) (inout right (Vec I64))) Unit (effects) unit) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) (let used Unit (call pair values values) 0))))

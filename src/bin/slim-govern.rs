@@ -908,11 +908,24 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    if !check.contains("(call typing/append_issue \"E0343\" missing closing issues)") {
-        errors.push("self-host checker does not retain missing-effect issues".to_owned());
+    for required in [
+        "(call append_form_issue \"E0343\" missing tokens issues)",
+        "(call append_form_issue \"E0348\" temporary tokens issues)",
+        "(call append_token_issue \"E0349\" duplicate issues)",
+    ] {
+        if !check.contains(required) {
+            errors.push(format!(
+                "self-host checker is missing finalized semantic issue `{required}`"
+            ));
+        }
     }
-    if check.contains("(call report_diagnostic \"E0343\"") {
-        errors.push("self-host checker directly prints missing-effect issues".to_owned());
+    for code in ["E0343", "E0348", "E0349"] {
+        let direct = format!("(call report_diagnostic \"{code}\"");
+        if check.contains(&direct) {
+            errors.push(format!(
+                "self-host checker directly prints finalized issue {code}"
+            ));
+        }
     }
 
     let project_path = directory.join("project.slim");

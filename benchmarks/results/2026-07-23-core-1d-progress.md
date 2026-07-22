@@ -87,17 +87,25 @@ and the measured view-reconstruction performance cliff.
 Missing-effect `E0343` is the first migrated family. The non-recursive effect
 coordinator appends the complete call interval; standalone output is unchanged
 and `project-effect-error` pins `E0343@app@72:94`. Self-validation remained
-about 0.22 seconds. The byte-identical seed is 1,651,963 C bytes, and the corpus
-now passes 87 fixtures plus 2,000 malformed mutations.
+about 0.22 seconds.
+
+The same bounded pattern then migrated temporary-inout `E0348` and
+aliased-inout `E0349`. Their project fixtures pin `E0348@app@164:178` and
+`E0349@app@211:217` while standalone output stays unchanged. Inline issue
+construction initially crossed the source-shape cliff; extracting small
+whole-form and one-token leaf helpers restored the approximately 0.22-second
+self-check. Final seed size and corpus totals are recorded after the release
+gate: a byte-identical 1,653,846-byte C seed, 89 fixtures, and 2,000 malformed
+mutations.
 
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy exhaustiveness and ownership diagnostics still need to move into the
-  structured issue channel so every project semantic diagnostic uses the same
-  projection.
+- Legacy exhaustiveness, recursive-inout, and move diagnostics still need to
+  move into the structured issue channel so every project semantic diagnostic
+  uses the same projection.
 - Code generation and memory planning still rediscover some facts from token
   structure instead of consuming dense typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,

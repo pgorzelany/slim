@@ -1,0 +1,5 @@
+(module app
+  (fn inspect ((inout values (Vec I64))) I64 (effects)
+    (call vec.len values))
+  (fn main ((args (Vec Bytes))) I64 (effects alloc)
+    (call inspect (call vec.new))))

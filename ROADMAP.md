@@ -667,14 +667,17 @@ measured slices.
 The fifth slice establishes D0035's finalized issue stream on `Checked`.
 Analyzer issues and later semantic issues now cross one explicit phase boundary,
 and prepared projects consume that final stream rather than the analyzer's
-snapshot. Missing-effect `E0343` is the first migrated legacy family;
-`project-effect-error` pins its exact `E0343@app@72:94` source range. The
-self-check remains about 0.22 seconds and the corpus now contains 87 fixtures.
+snapshot. Missing-effect `E0343`, temporary-inout `E0348`, and aliased-inout
+`E0349` are the first migrated legacy families. Three project fixtures pin
+their exact module-local source ranges. The self-check remains about 0.22
+seconds, the byte-identical seed is 1,653,846 C bytes, and the corpus contains
+89 fixtures plus 2,000 malformed mutations.
 
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
-effect failures now use structured project source projection, while legacy
-exhaustiveness and ownership reports have not yet joined that channel. Core 1D
+effect failures and exclusive-borrow call rules now use structured project
+source projection, while legacy exhaustiveness, recursive-inout, and move
+reports have not yet joined that channel. Core 1D
 acceptance requires bounded expression-fact and name/member
 lookup, removal of redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and

@@ -45,22 +45,25 @@ for the initial issues. The issue elements are small and errors normally stop
 later semantic passes. Consumers must read diagnostics from `Checked.issues`,
 not from the analyzer snapshot in `View.issues`.
 
-The first migrated family is missing-effect `E0343`. It appends one inclusive
-call interval in the non-recursive pass coordinator. Recursive ownership
-collectors remain direct until they can migrate without threading an additional
-mutable vector through their hot recursive shapes.
+The first migrated families are missing-effect `E0343`, temporary-inout
+`E0348`, and aliased-inout `E0349`. Small leaf helpers append a whole-form or
+one-token interval, keeping construction out of boundary-sized coordinator
+functions. Recursive ownership collectors remain direct until they can migrate
+without threading an additional mutable vector through their hot recursive
+shapes.
 
 ## Evidence
 
-`project-effect-error` pins `E0343@app@72:94`, while all three standalone
-missing-effect fixtures retain their exact prior output. The self-host check
-remains about 0.22 seconds on the recorded host. The compiler reaches a
-byte-identical 1,651,963-byte C fixed point, and all 87 conformance fixtures plus
-2,000 deterministic malformed-input mutations pass.
+`project-effect-error` pins `E0343@app@72:94`, `project-inout-temporary` pins
+`E0348@app@164:178`, and `project-inout-alias` pins `E0349@app@211:217`.
+Their standalone fixtures retain exact prior output. The self-host check remains
+about 0.22 seconds on the recorded host. The compiler reaches a byte-identical
+1,653,846-byte C fixed point, and all 89 conformance fixtures plus 2,000
+deterministic malformed-input mutations pass.
 
 Governance requires `Checked.issues`, project consumption of that field, and
-structured `E0343` production. It rejects restoration of direct `E0343`
-printing.
+structured `E0343`, `E0348`, and `E0349` production. It rejects restoration of
+direct printing for those codes.
 
 ## Removal
 
