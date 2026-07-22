@@ -10,10 +10,11 @@ cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run --quiet --bin slim-govern -- check
 cargo run --quiet --bin slim-conform -- check
-cargo run --release --quiet --bin slim-bench -- scaling --quick
+cargo run --release --quiet --bin slim-bench -- performance --quick
 cargo run --release --quiet --bin slim-bench -- reduction --quick
 cargo run --release --quiet --bin slim-bench -- incremental --quick
 cargo run --release --quiet --bin slim-bench -- project --quick
+cargo run --release --quiet --bin slim-bench -- compare --quick
 cargo run --release --quiet --bin slim-bench -- agent
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)

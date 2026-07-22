@@ -1,0 +1,25 @@
+# schema=1
+# metric	workload	limit	unit	decision
+check-exponent	generated-declarations	1.25	exponent	D0030
+emit-exponent	generated-declarations	1.25	exponent	D0030
+emit-check-ratio	generated-2000	4.00	ratio	D0030
+incremental-exponent	wide-no-change	1.25	exponent	D0030
+incremental-exponent	wide-private-body	1.25	exponent	D0030
+incremental-exponent	wide-public-interface	1.25	exponent	D0030
+incremental-exponent	deep-no-change	1.25	exponent	D0030
+incremental-exponent	deep-private-body	1.25	exponent	D0030
+incremental-exponent	deep-public-interface	1.25	exponent	D0030
+project-emit-exponent	wide	1.25	exponent	D0030
+project-emit-exponent	deep	1.25	exponent	D0030
+native-runtime-ratio	gcd_fib	1.75	slim-over-c	D0030
+native-runtime-ratio	sieve	7.00	slim-over-c	D0030
+native-runtime-ratio	bfs	3.00	slim-over-c	D0030
+native-runtime-ratio	matrix	9.00	slim-over-c	D0030
+native-runtime-ratio	merge_sort	4.00	slim-over-c	D0030
+native-runtime-ratio	bytefreq	13.00	slim-over-c	D0030
+native-runtime-ratio	binary_search	4.00	slim-over-c	D0030
+native-runtime-ratio	prefix_sum	4.00	slim-over-c	D0030
+native-runtime-ratio	records	8.00	slim-over-c	D0030
+native-runtime-ratio	variants	8.00	slim-over-c	D0030
+native-runtime-ratio	arena_sum	4.00	slim-over-c	D0030
+native-runtime-ratio	knapsack	4.00	slim-over-c	D0030

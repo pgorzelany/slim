@@ -1,3 +1,4 @@
+use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::hint::black_box;
 use std::path::{Path, PathBuf};
@@ -8,9 +9,9 @@ use std::time::{Duration, Instant};
 fn main() {
     let command = std::env::args()
         .nth(1)
-        .unwrap_or_else(|| "scaling".to_owned());
+        .unwrap_or_else(|| "performance".to_owned());
     match command.as_str() {
-        "scaling" => run_scaling(),
+        "performance" => run_performance(),
         "reduction" => run_reduction(),
         "incremental" => run_incremental(),
         "project" => run_project(),
@@ -18,7 +19,7 @@ fn main() {
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <scaling [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -41,7 +42,7 @@ fn selfhost_compiler() -> PathBuf {
     compiler
 }
 
-fn run_scaling() {
+fn run_performance() {
     let quick = has_quick_flag();
     let sizes: &[usize] = if quick {
         &[250, 500, 1_000, 2_000]
@@ -51,9 +52,12 @@ fn run_scaling() {
     let samples = if quick { 5 } else { 9 };
     let compiler = selfhost_compiler();
     let directory = TemporaryDirectory::new("scaling");
-    println!("declarations\tbytes\tcheck_us\temit_us\tcheck_ns_per_byte");
+    println!(
+        "declarations\tsource_bytes\tgenerated_bytes\tcheck_us\temit_us\tcheck_ns_per_byte\temit_ns_per_byte\temit_check_ratio"
+    );
     let mut first = None;
     let mut last = None;
+    let mut two_thousand_ratio = None;
     for size in sizes {
         let source = generated_program(*size);
         let path = directory.path.join(format!("generated-{size}.slim"));
@@ -61,6 +65,7 @@ fn run_scaling() {
         require_clean_output(compiler_output(&compiler, "check", &path), "scaling warmup");
         let mut check_times = Vec::with_capacity(samples);
         let mut emit_times = Vec::with_capacity(samples);
+        let mut generated_bytes = 0;
         for _ in 0..samples {
             let (elapsed, output) = timed_output(
                 Command::new(&compiler).arg("check").arg(&path),
@@ -73,6 +78,7 @@ fn run_scaling() {
             if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
                 fail_output("scaling emit", &output);
             }
+            generated_bytes = output.stdout.len();
             black_box(&output.stdout);
             emit_times.push(elapsed);
         }
@@ -80,26 +86,46 @@ fn run_scaling() {
         emit_times.sort();
         let check = check_times[samples / 2];
         let emit = emit_times[samples / 2];
-        let per_byte = check.as_nanos() as f64 / source.len() as f64;
+        let check_per_byte = check.as_nanos() as f64 / source.len() as f64;
+        let emit_per_byte = emit.as_nanos() as f64 / source.len() as f64;
+        let emit_check_ratio = emit.as_nanos() as f64 / check.as_nanos() as f64;
         println!(
-            "{size}\t{}\t{}\t{}\t{per_byte:.2}",
+            "{size}\t{}\t{generated_bytes}\t{}\t{}\t{check_per_byte:.2}\t{emit_per_byte:.2}\t{emit_check_ratio:.3}",
             source.len(),
             check.as_micros(),
             emit.as_micros()
         );
-        if first.is_none() {
-            first = Some((*size, check));
+        if *size == 2_000 {
+            two_thousand_ratio = Some(emit_check_ratio);
         }
-        last = Some((*size, check));
+        if first.is_none() {
+            first = Some((*size, check, emit));
+        }
+        last = Some((*size, check, emit));
     }
-    let (first_size, first_time) = first.expect("scaling benchmark has a first sample");
-    let (last_size, last_time) = last.expect("scaling benchmark has a last sample");
+    let (first_size, first_check, first_emit) =
+        first.expect("performance benchmark has a first sample");
+    let (last_size, last_check, last_emit) = last.expect("performance benchmark has a last sample");
     let size_ratio = last_size as f64 / first_size as f64;
-    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
-    let exponent = time_ratio.ln() / size_ratio.ln();
-    if exponent > 1.25 {
+    for (metric, first_time, last_time) in [
+        ("check-exponent", first_check, last_check),
+        ("emit-exponent", first_emit, last_emit),
+    ] {
+        let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+        let exponent = time_ratio.ln() / size_ratio.ln();
+        let limit = performance_budget(metric, "generated-declarations");
+        if exponent > limit {
+            eprintln!(
+                "performance gate: {metric} {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} declarations"
+            );
+            std::process::exit(1);
+        }
+    }
+    let ratio = two_thousand_ratio.expect("performance series must include 2,000 declarations");
+    let ratio_limit = performance_budget("emit-check-ratio", "generated-2000");
+    if ratio > ratio_limit {
         eprintln!(
-            "scaling gate: process-level check exponent {exponent:.3} exceeds 1.25 between {first_size} and {last_size} declarations"
+            "performance gate: 2,000-declaration emit/check ratio {ratio:.3} exceeds {ratio_limit:.3}"
         );
         std::process::exit(1);
     }
@@ -218,6 +244,7 @@ fn run_incremental() {
     let compiler = selfhost_compiler();
     println!("graph\tmodules\tscenario\tsession_us\twork");
     for graph in [ProjectGraph::Wide, ProjectGraph::Deep] {
+        let mut series = BTreeMap::new();
         for modules in sizes {
             for scenario in [
                 IncrementalScenario::NoChange,
@@ -252,6 +279,7 @@ fn run_incremental() {
                     times.push(elapsed);
                 }
                 times.sort();
+                let median = times[samples / 2];
                 let work = String::from_utf8(oracle.expect("incremental sample"))
                     .expect("session work is UTF-8");
                 println!(
@@ -259,11 +287,13 @@ fn run_incremental() {
                     graph.name(),
                     modules + 1,
                     scenario.name(),
-                    times[samples / 2].as_micros(),
+                    median.as_micros(),
                     work.trim()
                 );
+                update_series(&mut series, scenario.name(), *modules, median);
             }
         }
+        enforce_scaling_series("incremental-exponent", graph.name(), &series);
     }
 }
 
@@ -274,6 +304,7 @@ fn run_project() {
     let compiler = selfhost_compiler();
     println!("graph\tmodules\tjobs\temit_us\tgenerated_bytes");
     for graph in [ProjectGraph::Wide, ProjectGraph::Deep] {
+        let mut serial_series = BTreeMap::new();
         for modules in sizes {
             let project = GeneratedProject::new(graph, *modules, "project");
             let mut deterministic = None;
@@ -311,32 +342,71 @@ fn run_project() {
                     deterministic = Some(generated.clone());
                 }
                 times.sort();
+                let median = times[samples / 2];
                 println!(
                     "{}\t{}\t{jobs}\t{}\t{}",
                     graph.name(),
                     modules + 1,
-                    times[samples / 2].as_micros(),
+                    median.as_micros(),
                     generated.len()
                 );
+                if jobs == 1 {
+                    update_series(&mut serial_series, "serial", *modules, median);
+                }
             }
+        }
+        enforce_scaling_series("project-emit-exponent", graph.name(), &serial_series);
+    }
+}
+
+fn update_series(
+    series: &mut BTreeMap<String, (usize, Duration, usize, Duration)>,
+    name: &str,
+    size: usize,
+    elapsed: Duration,
+) {
+    series
+        .entry(name.to_owned())
+        .and_modify(|sample| {
+            sample.2 = size;
+            sample.3 = elapsed;
+        })
+        .or_insert((size, elapsed, size, elapsed));
+}
+
+fn enforce_scaling_series(
+    metric: &str,
+    prefix: &str,
+    series: &BTreeMap<String, (usize, Duration, usize, Duration)>,
+) {
+    for (name, (first_size, first_time, last_size, last_time)) in series {
+        let size_ratio = *last_size as f64 / *first_size as f64;
+        let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+        let exponent = time_ratio.ln() / size_ratio.ln();
+        let workload = if name == "serial" {
+            prefix.to_owned()
+        } else {
+            format!("{prefix}-{name}")
+        };
+        let limit = performance_budget(metric, &workload);
+        if exponent > limit {
+            eprintln!(
+                "performance gate: {metric}/{workload} exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} generated modules"
+            );
+            std::process::exit(1);
         }
     }
 }
 
 fn run_comparison() {
+    let quick = has_quick_flag();
     let root = repository_root();
     let compiler = root.join("slimc");
     let build = ComparisonBuild::new();
-    let challenges = [
-        "gcd_fib",
-        "sieve",
-        "bfs",
-        "matrix",
-        "merge_sort",
-        "bytefreq",
-    ];
+    let challenges = challenge_manifest();
+    let samples = if quick { 5 } else { 15 };
     println!("challenge\tlanguage\tcompile_ms\truntime_us\tbinary_bytes");
-    for challenge in challenges {
+    for challenge in &challenges {
         let directory = root.join("benchmarks/challenges").join(challenge);
         let slim_output = build.path.join(format!("{challenge}-slim"));
         let c_output = build.path.join(format!("{challenge}-c"));
@@ -390,12 +460,23 @@ fn run_comparison() {
             std::process::exit(1);
         }
 
-        for (language, executable, compile_time) in [
-            ("slim", &slim_output, slim_compile),
-            ("c", &c_output, c_compile),
-            ("rust", &rust_output, rust_compile),
+        let c_runtime = median_runtime(&c_output, &arguments, samples);
+        let rust_runtime = median_runtime(&rust_output, &arguments, samples);
+        let slim_runtime = median_runtime(&slim_output, &arguments, samples);
+        let runtime_ratio = slim_runtime.as_nanos() as f64 / c_runtime.as_nanos() as f64;
+        let runtime_limit = performance_budget("native-runtime-ratio", challenge);
+        if runtime_ratio > runtime_limit {
+            eprintln!(
+                "performance gate: {challenge} SLIM/C runtime ratio {runtime_ratio:.3} exceeds {runtime_limit:.3}"
+            );
+            std::process::exit(1);
+        }
+
+        for (language, executable, compile_time, runtime) in [
+            ("slim", &slim_output, slim_compile, slim_runtime),
+            ("c", &c_output, c_compile, c_runtime),
+            ("rust", &rust_output, rust_compile, rust_runtime),
         ] {
-            let runtime = median_runtime(executable, &arguments, 15);
             let binary_size = fs::metadata(executable)
                 .expect("benchmark binary metadata")
                 .len();
@@ -408,48 +489,150 @@ fn run_comparison() {
     }
 }
 
+fn challenge_manifest() -> Vec<String> {
+    let path = repository_root().join("benchmarks/challenges/manifest.tsv");
+    let contents = fs::read_to_string(path).expect("read challenge manifest");
+    let mut challenges = Vec::new();
+    let mut seen = BTreeSet::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            2,
+            "challenge manifest line {} must have two columns",
+            line_number + 1
+        );
+        assert!(
+            seen.insert(columns[0].to_owned()),
+            "duplicate challenge {}",
+            columns[0]
+        );
+        challenges.push(columns[0].to_owned());
+    }
+    assert!(
+        !challenges.is_empty(),
+        "challenge manifest must not be empty"
+    );
+    challenges
+}
+
+fn performance_budget(metric: &str, workload: &str) -> f64 {
+    let path = repository_root().join("benchmarks/performance-budgets.tsv");
+    let contents = fs::read_to_string(path).expect("read performance budgets");
+    let mut budgets = BTreeMap::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            5,
+            "performance budget line {} must have five columns",
+            line_number + 1
+        );
+        let key = (columns[0].to_owned(), columns[1].to_owned());
+        let value = columns[2]
+            .parse::<f64>()
+            .unwrap_or_else(|_| panic!("invalid performance limit on line {}", line_number + 1));
+        assert!(
+            budgets.insert(key, value).is_none(),
+            "duplicate performance budget"
+        );
+    }
+    budgets
+        .get(&(metric.to_owned(), workload.to_owned()))
+        .copied()
+        .unwrap_or_else(|| panic!("missing performance budget {metric}/{workload}"))
+}
+
 fn run_agent() {
     let root = repository_root();
     let build = TemporaryDirectory::new("agent");
     println!(
-        "language\tbroken_bytes\tfixed_bytes\tbroken_lexical_tokens\tfixed_lexical_tokens\tbroken_model_token_proxy\tfixed_model_token_proxy\tremoved_bytes\tinserted_bytes\tdiagnostic_bytes\tbroken_accepted\tfixed_accepted\tbroken_feedback_us\tfixed_feedback_us\tsafety_outcome"
+        "case\tlanguage\tbroken_bytes\tfixed_bytes\tbroken_lexical_tokens\tfixed_lexical_tokens\tbroken_model_token_proxy\tfixed_model_token_proxy\tremoved_bytes\tinserted_bytes\tdiagnostic_bytes\tbroken_accepted\tfixed_accepted\tbroken_feedback_us\tfixed_feedback_us\tsafety_outcome"
     );
-    for (language, extension) in [("slim", "slim"), ("c", "c"), ("rust", "rs")] {
-        let directory = root.join("benchmarks/agent").join(language);
-        let broken_path = directory.join(format!("broken.{extension}"));
-        let fixed_path = directory.join(format!("fixed.{extension}"));
-        let broken = fs::read(&broken_path).expect("read broken agent fixture");
-        let fixed = fs::read(&fixed_path).expect("read fixed agent fixture");
-        let (removed_bytes, inserted_bytes) = changed_span(&broken, &fixed);
-        let (broken_feedback, broken_output) =
-            median_agent_feedback(&root, language, &broken_path, &build.path, "broken");
-        let (fixed_feedback, fixed_output) =
-            median_agent_feedback(&root, language, &fixed_path, &build.path, "fixed");
-        if broken_output.status.success() || !fixed_output.status.success() {
-            eprintln!(
-                "agent fixture invariant failed for {language}: broken={} fixed={}\nbroken stdout:\n{}\nbroken stderr:\n{}\nfixed stdout:\n{}\nfixed stderr:\n{}",
-                broken_output.status,
-                fixed_output.status,
-                String::from_utf8_lossy(&broken_output.stdout),
-                String::from_utf8_lossy(&broken_output.stderr),
-                String::from_utf8_lossy(&fixed_output.stdout),
-                String::from_utf8_lossy(&fixed_output.stderr),
+    for (case, safety_outcome) in agent_manifest() {
+        for (language, extension) in [("slim", "slim"), ("c", "c"), ("rust", "rs")] {
+            let directory = root
+                .join("benchmarks/agent/cases")
+                .join(&case)
+                .join(language);
+            let broken_path = directory.join(format!("broken.{extension}"));
+            let fixed_path = directory.join(format!("fixed.{extension}"));
+            let broken = fs::read(&broken_path).expect("read broken agent fixture");
+            let fixed = fs::read(&fixed_path).expect("read fixed agent fixture");
+            let (removed_bytes, inserted_bytes) = changed_span(&broken, &fixed);
+            let (broken_feedback, broken_output) = median_agent_feedback(
+                &root,
+                language,
+                &broken_path,
+                &build.path,
+                &format!("{case}-broken"),
             );
-            std::process::exit(1);
+            let (fixed_feedback, fixed_output) = median_agent_feedback(
+                &root,
+                language,
+                &fixed_path,
+                &build.path,
+                &format!("{case}-fixed"),
+            );
+            if broken_output.status.success() || !fixed_output.status.success() {
+                eprintln!(
+                    "agent fixture invariant failed for {case}/{language}: broken={} fixed={}\nbroken stdout:\n{}\nbroken stderr:\n{}\nfixed stdout:\n{}\nfixed stderr:\n{}",
+                    broken_output.status,
+                    fixed_output.status,
+                    String::from_utf8_lossy(&broken_output.stdout),
+                    String::from_utf8_lossy(&broken_output.stderr),
+                    String::from_utf8_lossy(&fixed_output.stdout),
+                    String::from_utf8_lossy(&fixed_output.stderr),
+                );
+                std::process::exit(1);
+            }
+            let diagnostic_bytes = broken_output.stdout.len() + broken_output.stderr.len();
+            println!(
+                "{case}\t{language}\t{}\t{}\t{}\t{}\t{}\t{}\t{removed_bytes}\t{inserted_bytes}\t{diagnostic_bytes}\tfalse\ttrue\t{}\t{}\t{safety_outcome}",
+                broken.len(),
+                fixed.len(),
+                neutral_lexical_tokens(&broken),
+                neutral_lexical_tokens(&fixed),
+                broken.len().div_ceil(4),
+                fixed.len().div_ceil(4),
+                broken_feedback.as_micros(),
+                fixed_feedback.as_micros(),
+            );
         }
-        let diagnostic_bytes = broken_output.stdout.len() + broken_output.stderr.len();
-        println!(
-            "{language}\t{}\t{}\t{}\t{}\t{}\t{}\t{removed_bytes}\t{inserted_bytes}\t{diagnostic_bytes}\tfalse\ttrue\t{}\t{}\tunknown-operation-rejected",
-            broken.len(),
-            fixed.len(),
-            neutral_lexical_tokens(&broken),
-            neutral_lexical_tokens(&fixed),
-            broken.len().div_ceil(4),
-            fixed.len().div_ceil(4),
-            broken_feedback.as_micros(),
-            fixed_feedback.as_micros(),
-        );
     }
+}
+
+fn agent_manifest() -> Vec<(String, String)> {
+    let path = repository_root().join("benchmarks/agent/manifest.tsv");
+    let contents = fs::read_to_string(path).expect("read agent manifest");
+    let mut cases = Vec::new();
+    let mut seen = BTreeSet::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            2,
+            "agent manifest line {} must have two columns",
+            line_number + 1
+        );
+        assert!(
+            seen.insert(columns[0]),
+            "duplicate agent case {}",
+            columns[0]
+        );
+        cases.push((columns[0].to_owned(), columns[1].to_owned()));
+    }
+    assert!(!cases.is_empty(), "agent manifest must not be empty");
+    cases
 }
 
 fn median_agent_feedback(

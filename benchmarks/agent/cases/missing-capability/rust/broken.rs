@@ -1,0 +1,1 @@
+fn main() { let _ = std::io::stdout().write_all(b"ok\n"); }

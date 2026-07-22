@@ -1,0 +1,25 @@
+# graph	modules	scenario	session-us	parsed	lowered	checked	generated
+wide	9	no-change	3167	0	0	0	0
+wide	9	private-body	2942	1	1	1	1
+wide	9	public-interface	2997	1	1	1	1
+wide	17	no-change	3625	0	0	0	0
+wide	17	private-body	3681	1	1	1	1
+wide	17	public-interface	4127	1	1	1	1
+wide	33	no-change	5607	0	0	0	0
+wide	33	private-body	6272	1	1	1	1
+wide	33	public-interface	5859	1	1	1	1
+wide	65	no-change	8452	0	0	0	0
+wide	65	private-body	8020	1	1	1	1
+wide	65	public-interface	8461	1	1	1	1
+deep	9	no-change	3243	0	0	0	0
+deep	9	private-body	3099	1	1	1	1
+deep	9	public-interface	2988	1	1	1	1
+deep	17	no-change	4431	0	0	0	0
+deep	17	private-body	3636	1	1	1	1
+deep	17	public-interface	4226	1	1	1	1
+deep	33	no-change	5456	0	0	0	0
+deep	33	private-body	5935	1	1	1	1
+deep	33	public-interface	5465	1	1	1	1
+deep	65	no-change	8663	0	0	0	0
+deep	65	private-body	8359	1	1	1	1
+deep	65	public-interface	8301	1	1	1	1

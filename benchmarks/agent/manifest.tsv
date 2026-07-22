@@ -1,0 +1,7 @@
+# schema=1
+# case	safety-outcome
+unknown-operation	unknown-operation-rejected
+type-mismatch	type-mismatch-rejected
+missing-capability	missing-capability-rejected
+nonexhaustive	nonexhaustive-match-rejected
+unterminated	unterminated-input-rejected

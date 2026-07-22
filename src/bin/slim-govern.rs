@@ -77,7 +77,211 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
+    check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_performance_architecture(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    for relative in [
+        "docs/PERFORMANCE.md",
+        "design/decisions/D0030-durable-performance-evidence.md",
+        "benchmarks/performance-budgets.tsv",
+        "benchmarks/challenges/manifest.tsv",
+        "benchmarks/agent/manifest.tsv",
+    ] {
+        if !root.join(relative).is_file() {
+            errors.push(format!("performance architecture is missing {relative}"));
+        }
+    }
+
+    let budget_path = root.join("benchmarks/performance-budgets.tsv");
+    let mut budgets = BTreeSet::new();
+    if let Ok(text) = fs::read_to_string(&budget_path) {
+        for (line_index, line) in text.lines().enumerate() {
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let columns: Vec<_> = line.split('\t').collect();
+            if columns.len() != 5 {
+                errors.push(format!(
+                    "performance-budgets.tsv:{} must have five columns",
+                    line_index + 1
+                ));
+                continue;
+            }
+            let key = format!("{}/{}", columns[0], columns[1]);
+            if !budgets.insert(key.clone()) {
+                errors.push(format!("duplicate performance budget {key}"));
+            }
+            match columns[2].parse::<f64>() {
+                Ok(limit) if limit.is_finite() && limit > 0.0 => {}
+                _ => errors.push(format!(
+                    "performance-budgets.tsv:{} has an invalid positive limit",
+                    line_index + 1
+                )),
+            }
+            match decisions.get(columns[4]) {
+                Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+                Some(_) => errors.push(format!(
+                    "performance budget {key} requires an accepted decision scoring at least 60"
+                )),
+                None => errors.push(format!(
+                    "performance budget {key} cites missing {}",
+                    columns[4]
+                )),
+            }
+        }
+    }
+
+    let manifest_path = root.join("benchmarks/challenges/manifest.tsv");
+    let mut challenges = BTreeSet::new();
+    let mut challenge_features = BTreeSet::new();
+    if let Ok(text) = fs::read_to_string(&manifest_path) {
+        for (line_index, line) in text.lines().enumerate() {
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let columns: Vec<_> = line.split('\t').collect();
+            if columns.len() != 2 {
+                errors.push(format!(
+                    "challenges/manifest.tsv:{} must have two columns",
+                    line_index + 1
+                ));
+                continue;
+            }
+            let challenge = columns[0];
+            challenge_features.extend(columns[1].split(',').map(str::to_owned));
+            if !challenges.insert(challenge.to_owned()) {
+                errors.push(format!("duplicate challenge {challenge}"));
+            }
+            for file in ["program.slim", "program.c", "program.rs"] {
+                if !root
+                    .join("benchmarks/challenges")
+                    .join(challenge)
+                    .join(file)
+                    .is_file()
+                {
+                    errors.push(format!("challenge {challenge} is missing {file}"));
+                }
+            }
+            if !budgets.contains(&format!("native-runtime-ratio/{challenge}")) {
+                errors.push(format!(
+                    "challenge {challenge} has no native runtime performance budget"
+                ));
+            }
+        }
+    }
+    if challenges.len() < 12 {
+        errors.push(format!(
+            "durable challenge corpus must retain at least 12 workloads, found {}",
+            challenges.len()
+        ));
+    }
+    for feature in [
+        "scalar",
+        "vector",
+        "record",
+        "variant",
+        "arena",
+        "mutation",
+        "recursion",
+        "checked-arithmetic",
+        "bytes",
+        "graph",
+    ] {
+        if !challenge_features.contains(feature) {
+            errors.push(format!(
+                "durable challenge corpus is missing `{feature}` coverage"
+            ));
+        }
+    }
+
+    for required in [
+        "check-exponent/generated-declarations",
+        "emit-exponent/generated-declarations",
+        "emit-check-ratio/generated-2000",
+        "incremental-exponent/wide-no-change",
+        "incremental-exponent/wide-private-body",
+        "incremental-exponent/wide-public-interface",
+        "incremental-exponent/deep-no-change",
+        "incremental-exponent/deep-private-body",
+        "incremental-exponent/deep-public-interface",
+        "project-emit-exponent/wide",
+        "project-emit-exponent/deep",
+    ] {
+        if !budgets.contains(required) {
+            errors.push(format!("required performance budget {required} is missing"));
+        }
+    }
+
+    let agent_path = root.join("benchmarks/agent/manifest.tsv");
+    let mut agent_cases = BTreeSet::new();
+    if let Ok(text) = fs::read_to_string(&agent_path) {
+        for (line_index, line) in text.lines().enumerate() {
+            if line.is_empty() || line.starts_with('#') {
+                continue;
+            }
+            let columns: Vec<_> = line.split('\t').collect();
+            if columns.len() != 2 {
+                errors.push(format!(
+                    "agent/manifest.tsv:{} must have two columns",
+                    line_index + 1
+                ));
+                continue;
+            }
+            let case = columns[0];
+            if !agent_cases.insert(case.to_owned()) {
+                errors.push(format!("duplicate agent case {case}"));
+            }
+            for (language, extension) in [("slim", "slim"), ("c", "c"), ("rust", "rs")] {
+                for role in ["broken", "fixed"] {
+                    let relative =
+                        format!("benchmarks/agent/cases/{case}/{language}/{role}.{extension}");
+                    if !root.join(&relative).is_file() {
+                        errors.push(format!("agent case {case} is missing {relative}"));
+                    }
+                }
+            }
+        }
+    }
+    if agent_cases.len() < 5 {
+        errors.push(format!(
+            "durable agent corpus must retain at least 5 cases, found {}",
+            agent_cases.len()
+        ));
+    }
+
+    let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    for command in [
+        "performance --quick",
+        "compare --quick",
+        "slim-bench -- agent",
+    ] {
+        if !verify.contains(command) {
+            errors.push(format!("release verification is missing `{command}`"));
+        }
+    }
+    let bootstrap = fs::read_to_string(root.join("bootstrap.sh")).unwrap_or_default();
+    if !bootstrap.contains("slimc.next") || !bootstrap.contains("mv -f") {
+        errors.push("bootstrap compiler installation must remain atomic".to_owned());
+    }
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "enforce_scaling_series(\"incremental-exponent\"",
+        "enforce_scaling_series(\"project-emit-exponent\"",
+        "performance_budget(\"native-runtime-ratio\"",
+        "fn agent_manifest()",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!(
+                "performance benchmark implementation is missing `{required}`"
+            ));
+        }
+    }
 }
 
 fn check_toolchain_cutover(root: &Path, errors: &mut Vec<String>) {
@@ -927,12 +1131,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "conformance/evidence/edit.patch",
         "conformance/evidence/edit-malformed.patch",
         "conformance/fail/tool_patch.slim",
-        "benchmarks/agent/slim/broken.slim",
-        "benchmarks/agent/slim/fixed.slim",
-        "benchmarks/agent/c/broken.c",
-        "benchmarks/agent/c/fixed.c",
-        "benchmarks/agent/rust/broken.rs",
-        "benchmarks/agent/rust/fixed.rs",
+        "benchmarks/agent/manifest.tsv",
     ] {
         if !root.join(required).is_file() {
             errors.push(format!("Core 1B evidence artifact is missing {required}"));
@@ -1054,7 +1253,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "broken_model_token_proxy",
         "fn neutral_lexical_tokens",
         "fn changed_span",
-        "unknown-operation-rejected",
+        "fn agent_manifest",
     ] {
         if !benchmark.contains(required) {
             errors.push(format!("Core 1B agent benchmark is missing `{required}`"));

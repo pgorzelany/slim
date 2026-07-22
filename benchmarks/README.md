@@ -8,8 +8,8 @@ Run:
 
 ```text
 cargo build --release --bins
+target/release/slim-bench performance
 target/release/slim-bench compare
-target/release/slim-bench scaling
 target/release/slim-bench incremental
 target/release/slim-bench project
 target/release/slim-bench reduction
@@ -30,42 +30,37 @@ These programs are regression evidence, not proof of general language parity.
 A benchmark gap is fixed in analysis or code generation; it does not justify
 unsafe semantics or benchmark-specific syntax.
 
-The incremental command generates declaration chains at geometric sizes and
-measures cold compilation, no-change updates, private body edits, leaf
-interface edits, and central interface edits. It asserts exact declaration
-parse/lower/check/generation counts before printing timing results, so a full
-recompilation cannot masquerade as incremental work. Committed measurements
-live in `benchmarks/results/`.
+`performance` is the canonical compiler-speed gate. It checks ordinary
+checking and deterministic C emission over geometric declaration counts,
+including both scaling exponents and the same-host emit/check ratio. Its
+versioned limits are in `performance-budgets.tsv`; relaxing a limit requires
+the D0030 decision process. The standard verification script runs the quick
+performance and matched-challenge gates on every release.
 
-The `project` command generates geometric wide and deep import graphs. It
-measures clean, no-change, private-body, public-interface, and persistent-warm
-updates plus clean checks at one, two, and four requested workers. Every row
-records module and declaration parse/lower/check/generation/reuse counts,
-invalidation closure, persistent hits, requested jobs, and maximum layer
-width. Assertions reject unexpected work or worker-dependent artifacts before
-printing results.
+The incremental command generates wide and deep module graphs at geometric
+sizes and measures no-change, private-body, and public-interface sessions. It
+asserts exact parse/lower/check/generation work and enforces independent
+scaling budgets, so a full recompilation cannot masquerade as incremental
+work. Committed measurements live in `benchmarks/results/`.
 
-The current project measurements are intentionally unflattering where the
-architecture is unfinished. At 129 declarations, clean serial checks took
-2.9--4.1 ms, while two/four-worker checks took 7.3--9.4 ms because workers
-clone and rebuild declaration lookup state. Parallelism therefore remains
-opt-in and serial remains the default. No-change and private-edit wall time
-still grows with project size because source reads, lexical indexing,
-environment reconstruction, graph rebuilding, and output assembly remain
-whole-project operations. A fully valid persistent cache performs zero
-declaration frontend/code-generation work, but many small cache-file reads can
-cost more wall time than a clean check at these sizes. See
-`results/2026-07-21-project.tsv` for the reproducible evidence.
+The `project` command generates geometric wide and deep import graphs and
+measures deterministic C emission at one, two, and four requested workers.
+Repeated runs and every worker count must produce identical bytes. Serial
+wide/deep emission has its own scaling budget. Workers remain opt-in because
+these small graphs still show no stable parallel speedup; the compiler does
+not claim concurrency that its runtime cannot yet provide.
 
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/
 session process timings, and explicit claims that remain out of scope.
 
-The `agent` command uses one matched unknown-operation repair in SLIM, C11, and
-Rust. It reports source bytes, a language-neutral ASCII lexical-token count, a
-clearly labelled `ceil(bytes / 4)` model-token proxy, the common-prefix/suffix
-edit span, diagnostic bytes, before/after acceptance, and median process-level
-compiler feedback. Every broken fixture must be rejected and every fixed
-fixture accepted before a row is printed. These static measurements can test
-token economy and edit locality; they are not an LLM generation or repair
-success rate. Native runtime and binary-size comparisons remain in `compare`.
+The `agent` command reads a permanent manifest of matched repairs in SLIM,
+C11, and Rust. Core 1C covers unknown operations, type mismatches, missing
+capabilities, non-exhaustive matches, and unterminated input. It reports source
+bytes, a language-neutral ASCII lexical-token count, a clearly labelled
+`ceil(bytes / 4)` model-token proxy, the common-prefix/suffix edit span,
+diagnostic bytes, before/after acceptance, and median process-level compiler
+feedback. Every broken fixture must be rejected and every fixed fixture
+accepted before a row is printed. These static measurements can test token
+economy and edit locality; they are not an LLM generation or repair success
+rate. Native runtime and binary-size comparisons remain in `compare`.

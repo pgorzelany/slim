@@ -1,0 +1,2 @@
+#include <stdint.h>
+int main(void) { int64_t value = 1; return (int)value; }

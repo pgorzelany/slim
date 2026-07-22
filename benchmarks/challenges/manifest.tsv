@@ -1,0 +1,14 @@
+# schema=1
+# challenge	features
+gcd_fib	scalar,recursion
+sieve	vector,mutation
+bfs	graph,vector,mutation
+matrix	nested-loop,checked-arithmetic
+merge_sort	vector,recursion,mutation
+bytefreq	bytes,file-io,vector,mutation
+binary_search	vector,search,recursion
+prefix_sum	vector,mutation,checked-arithmetic
+records	record,value-state,recursion
+variants	variant,finite-state,exhaustive-match
+arena_sum	arena,typed-id,allocation
+knapsack	vector,dynamic-programming,mutation

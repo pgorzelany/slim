@@ -33,6 +33,14 @@ These rules apply to every change in this repository.
 - Never weaken a safety rule to improve a benchmark.
 - Benchmark before and after any compiler, runtime, or generated-code change
   intended to affect performance.
+- Performance fixtures, metric definitions, and regression gates are durable
+  product infrastructure. Do not remove a passing gate after an optimization.
+- A performance budget may be tightened directly. Relaxing one requires an
+  accepted decision scoring at least +60, a measured cause, quantified impact,
+  and a containment or compensation plan.
+- Keep absolute dated measurements for tracking, but gate portable builds with
+  deterministic work, geometric exponents, and same-host ratios rather than
+  pretending timings from unlike machines are interchangeable.
 
 ## Reduction and representation constraints
 
@@ -81,9 +89,11 @@ These rules apply to every change in this repository.
 - Preserve deterministic formatting, diagnostics, and generated C.
 - Add positive, negative, and diagnostic tests for behavior changes.
 - Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, `cargo test`,
-  `cargo run --release --bin slim-bench -- reduction --quick`, and
-  `cargo run --release --bin slim-bench -- agent` before committing a compiler
-  or agent-tool change.
+  `cargo run --release --bin slim-bench -- performance --quick`,
+  `cargo run --release --bin slim-bench -- reduction --quick`,
+  `cargo run --release --bin slim-bench -- compare --quick`, and
+  `cargo run --release --bin slim-bench -- agent` before committing a compiler,
+  runtime, benchmark, or agent-tool change.
 - Do not add a dependency without an accepted architecture decision.
 - If a requested change conflicts with a hard gate, record the conflict rather
   than bypassing the gate.

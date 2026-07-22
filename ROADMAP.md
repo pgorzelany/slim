@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1B measurable programs and AI ergonomics complete
-Current milestone: Core 1B complete; next research milestone not selected
+Status: Core 1C real programs and fast compiler loop complete
+Current milestone: choose Core 1D from measured diagnostic and runtime gaps
 Last updated: 2026-07-22
 
 ## Direction
@@ -578,3 +578,50 @@ Acceptance evidence:
 
 Frozen measurements, reproduction commands, and negative results are recorded
 in `benchmarks/results/2026-07-22-core-1b.md`.
+
+### Core 1C: real programs and a fast compiler loop
+
+Status: complete
+
+D0030 makes compiler and generated-program performance tests permanent release
+infrastructure. Core 1C extends the matched challenge and agent corpora, stores
+versioned budgets, and makes any budget relaxation require a scored architecture
+decision with quantified evidence. Portable gates use exact work,
+determinism, geometric exponents, and same-host ratios; dated results retain
+absolute medians for longitudinal tracking.
+
+The first measured targets are repeated declaration lookup in standalone C
+generation, declaration-name rescanning during project flattening, whole-input
+incremental reconstruction, and output assembly. Production changes remain in
+SLIM and add no syntax, type, effect, built-in, runtime ABI, dependency, or
+second program representation. The compiler may build a bounded derived name
+index from checked canonical source; the index is not executable or trusted
+across compilations.
+
+Acceptance requires both check and C-emission scaling exponents at or below
+1.25, a fivefold improvement over Core 1B's recorded 2,000-declaration emission
+time on the baseline host, an emit/check ratio no greater than four, exact
+incremental work with materially lower large-edit wall time, matched challenge
+outputs, independently guarded native runtime ratios, the full release gate,
+and a byte-identical self-host fixed point.
+
+Acceptance evidence:
+
+- full 1,000/2,000/4,000/8,000 declaration runs measure check and C-emission
+  exponents of 0.91 and 0.94, below the permanent 1.25 limits;
+- 2,000-declaration emission is 8.9 times faster than the frozen Core 1B
+  result, and the full 8,000-declaration process falls from 4.17 s to 0.13 s;
+- peak resident memory on that same 8,000-declaration input falls from 33.52
+  MB to 32.70 MB;
+- 65-module wide and deep sessions take roughly 8--9 ms while retaining exact
+  zero-declaration no-change work and one-declaration private/interface work;
+- twelve manifest-driven SLIM/C/Rust challenges produce identical output and
+  pass independent native-runtime budgets; five matched agent repair cases
+  enforce rejection before repair and acceptance afterward;
+- governance prevents removal of the corpus minima, coverage dimensions,
+  release commands, required budgets, or atomic bootstrap installation; and
+- the complete release gate passes and the 1,388,660-byte self-host seed
+  reproduces byte for byte.
+
+Frozen measurements, profiler findings, reproduction commands, and negative
+results are recorded in `benchmarks/results/2026-07-22-core-1c.md`.

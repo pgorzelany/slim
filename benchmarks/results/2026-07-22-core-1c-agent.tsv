@@ -1,0 +1,16 @@
+# case	language	broken-bytes	fixed-bytes	broken-lexical	fixed-lexical	broken-proxy	fixed-proxy	removed	inserted	diagnostic-bytes	broken-accepted	fixed-accepted	broken-us	fixed-us	outcome
+unknown-operation	slim	132	138	44	47	33	35	7	13	51	false	true	14639	13095	unknown-operation-rejected
+unknown-operation	c	90	82	29	27	23	21	14	6	308	false	true	24193	23655	unknown-operation-rejected
+unknown-operation	rust	88	80	33	31	22	20	14	6	373	false	true	37028	30798	unknown-operation-rejected
+type-mismatch	slim	70	67	24	24	18	17	4	1	50	false	true	15021	15119	type-mismatch-rejected
+type-mismatch	c	81	77	25	25	21	20	5	1	297	false	true	25591	25264	type-mismatch-rejected
+type-mismatch	rust	71	68	26	26	18	17	4	1	384	false	true	32498	29864	type-mismatch-rejected
+missing-capability	slim	109	112	36	37	28	28	0	3	51	false	true	13041	13746	missing-capability-rejected
+missing-capability	c	42	61	15	22	11	16	0	19	259	false	true	24986	28319	missing-capability-rejected
+missing-capability	rust	60	80	25	34	15	20	0	20	885	false	true	36937	31411	missing-capability-rejected
+nonexhaustive	slim	88	98	31	35	22	25	0	10	50	false	true	13724	14264	nonexhaustive-match-rejected
+nonexhaustive	c	144	173	43	52	36	44	1	30	731	false	true	24001	23453	nonexhaustive-match-rejected
+nonexhaustive	rust	79	91	29	34	20	23	0	12	752	false	true	31999	30915	nonexhaustive-match-rejected
+unterminated	slim	68	69	23	24	17	18	0	1	49	false	true	13853	14615	unterminated-input-rejected
+unterminated	c	27	29	9	10	7	8	0	2	224	false	true	23654	22767	unterminated-input-rejected
+unterminated	rust	35	37	16	17	9	10	0	2	193	false	true	24501	30980	unterminated-input-rejected

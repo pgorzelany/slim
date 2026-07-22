@@ -49,15 +49,17 @@ For the bootstrap proof alone:
 For the executable Core oracle and incremental measurements:
 
     cargo run --bin slim-conform -- differential
+    cargo run --release --bin slim-bench -- performance
     cargo run --release --bin slim-bench -- incremental
     cargo run --release --bin slim-bench -- project
+    cargo run --release --bin slim-bench -- compare
     cargo run --release --bin slim-bench -- agent
 
 ## Current boundary
 
 The self-hosted compiler is a genuine deterministic compiler, not a wrapper.
 The checked-in C11 seed builds it without Rust and reproduces the compiler C
-byte for byte. Core 1B is frozen with all 62 standalone and project fixtures
+byte for byte. Core 1C is frozen with all 62 standalone and project fixtures
 running through the SLIM compiler with no semantic fallback.
 Its twenty SLIM modules implement structured syntax, bounded malformed-input
 validation, and typed declarations,
@@ -95,3 +97,9 @@ documented in [docs/QUALITY.md](docs/QUALITY.md), alongside the Core 1A contract
 in [docs/REDUCTION.md](docs/REDUCTION.md). The 0.3 freeze evidence and remaining
 performance gap are recorded in
 [benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).
+Core 1C adds permanent compiler, incremental, project, and per-workload native
+performance budgets; twelve matched real-program challenges; and five matched
+agent repair cases. It replaces repeated declaration scans with a derived
+compiler-local name index without adding language or runtime surface. Full
+measurements and remaining diagnostic/runtime gaps are in
+[benchmarks/results/2026-07-22-core-1c.md](benchmarks/results/2026-07-22-core-1c.md).

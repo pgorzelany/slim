@@ -60,7 +60,8 @@ fi
 
 slim_output="$slim_root/build/toolchain"
 mkdir -p "$slim_output"
-cp "$slim_work/generation-1" "$slim_output/slimc"
+cp "$slim_work/generation-1" "$slim_output/slimc.next"
+mv -f "$slim_output/slimc.next" "$slim_output/slimc"
 cp "$slim_work/generation-2.c" "$slim_output/slimc.c"
 cp "$slim_runtime_c" "$slim_output/slim_rt.c"
 cp "$slim_runtime_h" "$slim_output/slim_rt.h"
