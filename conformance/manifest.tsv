@@ -7,6 +7,7 @@ data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:rec
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
 lifetimes	run	conformance/pass/lifetimes.slim	parity	exit=0;stdout=OK\n;stderr=	ownership:lifetime,ownership:aggregate-move,ownership:frozen-view,runtime:region
+nested-calls	run	conformance/pass/nested_calls.slim	parity	exit=0;stdout=0\n;stderr=	semantics:left-to-right,backend:nested-call-lowering
 format	format	conformance/tool/format.slim	parity	-	tool:format
 emit	emit	conformance/pass/scalars.slim	parity	-	backend:c11,tool:emit-deterministic
 missing-effect	check-fail	conformance/fail/missing_effect.slim	parity	E0343@83:105	diagnostic:E0343,effect:enforcement

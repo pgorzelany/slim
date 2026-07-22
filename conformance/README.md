@@ -12,21 +12,22 @@ exit status, stdout, and stderr with explicit escapes.
 `allocation-fail` runs the native artifact with deterministic failure at its
 second allocation and verifies the typed allocation-effect boundary exactly.
 
-The selfhost column is either parity or stage0-only(reason). A parity row must
-compile and behave equivalently through the self-hosted compiler when the
-differential gate is enabled. Capability differences are data in this manifest;
-the runner does not silently fall back to stage 0.
+The legacy selfhost column must be `parity`. It is retained as a machine-checked
+assertion that every row belongs to the production SLIM path; the runner rejects
+any fallback classification.
 
-Run the stage-0 corpus with:
+Run the production SLIM corpus with:
 
     cargo run --bin slim-conform -- check
 
-Run the stage differential gate with:
+The runner is orchestration only: every fixture is checked by the compiler
+built from `bootstrap/slimc-seed.c`. It rejects any non-`parity`
+classification. Reproduce the compiler independently with:
 
-    cargo run --bin slim-conform -- differential
+    ./bootstrap.sh
 
 `projects/manifest.tsv` is the independent Core 0.2 inventory. Its fixtures
 exercise project checking, native execution, exact project diagnostics,
 relocation, cache corruption, incremental reuse, and worker-count variance.
-Project rows follow the same explicit `parity` or `stage0-only(reason)` rule;
-the differential runner never silently substitutes stage 0.
+Project rows currently require `parity`; the runner never silently substitutes
+the former Rust compiler.

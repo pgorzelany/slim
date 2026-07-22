@@ -3,11 +3,11 @@
 `slim.project` is the self-hosting input. It contains explicit modules for
 syntax/token utilities, byte-text emission, checking, typed memory planning,
 project handling, C generation, coordination, and the minimal executable
-driver. Stage 0 compiles
-the project to the stage-1 executable. Stage 1 emits the C used to build stage
-2, and stage 2 emits the C for stage 3. The bootstrap succeeds only when the
-stage-2 and stage-3 C files are byte-for-byte identical and a program compiled
-by the self-hosted compiler runs successfully.
+driver. The checked-in portable C11 seed compiles the project to the next
+executable, which emits one further generation. The bootstrap succeeds only
+when the seed reproduces from this project, the successive generated C files
+are byte-for-byte identical, and a program compiled by the resulting SLIM
+compiler runs successfully. No Rust compiler participates.
 
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
@@ -34,20 +34,18 @@ duplicate Boolean arms, use-after-move, and invalid `inout`/`recur` ownership.
 The compiler also resolves canonical project manifests, reads explicit
 manifest-relative modules, lowers qualified references into one deterministic
 translation unit, and checks the original project visibility/cycle/schema
-corpus. It emits canonical path-free public interface artifacts. D0023 expands
-the differential corpus to the complete accepted project ledger; stage 0
-remains the oracle for the explicitly classified manifest, loading,
-resolution, interface, incremental-session, and cache cases while those
-capabilities move into SLIM.
+corpus. It emits canonical path-free public interface artifacts. The complete
+accepted project ledger, including manifest loading, resolution, interfaces,
+incremental sessions, and corruption-safe caches, now runs through this
+compiler with no semantic fallback.
 
-New compiler capability is implemented in this SLIM compiler by default. The
-production Rust ceilings in `design/rust-budget.tsv` prevent unnoticed stage-0
-growth while still allowing Rust bootstrap, conformance, benchmark, and
-governance infrastructure.
+New compiler capability is implemented in this SLIM compiler. Rust remains
+only as bootstrap-independent conformance, benchmark, and governance
+orchestration; it does not decide language behavior.
 
 Run the complete proof with:
 
-    cargo run --bin slim-bootstrap
+    ./bootstrap.sh
 
-Generated stages and C files are placed in build/selfhost/, which is ignored by
-Git.
+Generated compiler and C files are placed in `build/toolchain/`, which is
+ignored by Git.

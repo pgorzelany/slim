@@ -14,12 +14,12 @@ fn temporary_directory(name: &str) -> PathBuf {
     path
 }
 
-fn slimc() -> &'static str {
-    env!("CARGO_BIN_EXE_slimc")
+fn slimc() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("slimc")
 }
 
-fn slim_bootstrap() -> &'static str {
-    env!("CARGO_BIN_EXE_slim-bootstrap")
+fn slim_bootstrap() -> PathBuf {
+    PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("bootstrap.sh")
 }
 
 fn write_source(directory: &Path, source: &str) -> PathBuf {
@@ -212,8 +212,14 @@ fn self_hosted_compiler_reaches_a_fixed_point() {
         String::from_utf8_lossy(&output.stderr)
     );
     let stdout = String::from_utf8(output.stdout).unwrap();
-    assert!(stdout.contains("bootstrap fixed point:"), "{stdout}");
-    assert!(stdout.contains("native smoke test passed"), "{stdout}");
+    assert!(
+        stdout.contains("bootstrap: fixed point verified at ") && stdout.contains(" C bytes"),
+        "{stdout}"
+    );
+    assert!(
+        stdout.contains("bootstrap: compiler available at build/toolchain/slimc"),
+        "{stdout}"
+    );
 }
 
 #[test]

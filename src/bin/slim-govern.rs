@@ -3,8 +3,6 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use slim::sema::Builtin;
-
 const REQUIRED_HEADINGS: [&str; 5] = [
     "## Need",
     "## Alternatives",
@@ -74,9 +72,90 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_dependencies(&root.join("Cargo.toml"), &mut errors);
     check_rust_safety(&root.join("src"), &mut errors);
     check_rust_budget(root, &mut errors);
+    check_toolchain_cutover(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
     check_memory_architecture(root, &mut errors);
     errors
+}
+
+fn check_toolchain_cutover(root: &Path, errors: &mut Vec<String>) {
+    let required = [
+        "bootstrap/slimc-seed.c",
+        "bootstrap/slimc-seed.sha256",
+        "bootstrap.sh",
+        "scripts/refresh-bootstrap-seed.sh",
+        "selfhost/slim.project",
+        "slimc",
+    ];
+    for path in required {
+        if !root.join(path).is_file() {
+            errors.push(format!("toolchain cutover artifact is missing {path}"));
+        }
+    }
+
+    let forbidden_rust = [
+        "src/ast.rs",
+        "src/bin/slim-bootstrap.rs",
+        "src/bootstrap.rs",
+        "src/codegen.rs",
+        "src/compiler.rs",
+        "src/diagnostic.rs",
+        "src/driver.rs",
+        "src/formatter.rs",
+        "src/incremental.rs",
+        "src/lexer.rs",
+        "src/lib.rs",
+        "src/main.rs",
+        "src/parser.rs",
+        "src/project/cache.rs",
+        "src/project/interface.rs",
+        "src/project/manifest.rs",
+        "src/project/mod.rs",
+        "src/project/resolver.rs",
+        "src/project/session.rs",
+        "src/sema.rs",
+        "src/sexpr.rs",
+        "src/span.rs",
+    ];
+    for path in forbidden_rust {
+        if root.join(path).exists() {
+            errors.push(format!(
+                "active Rust semantic compiler path was reintroduced: {path}"
+            ));
+        }
+    }
+
+    let budget = fs::read_to_string(root.join("design/rust-budget.tsv")).unwrap_or_default();
+    if budget.lines().any(|line| line.contains("\tproduction\t")) {
+        errors.push("toolchain cutover forbids production Rust budget entries".to_owned());
+    }
+
+    let cargo = fs::read_to_string(root.join("Cargo.toml")).unwrap_or_default();
+    for forbidden in ["name = \"slimc\"", "name = \"slim-bootstrap\"", "[lib]"] {
+        if cargo.contains(forbidden) {
+            errors.push(format!(
+                "Cargo manifest reintroduces a semantic compiler target `{forbidden}`"
+            ));
+        }
+    }
+
+    for script in ["bootstrap.sh", "slimc", "scripts/refresh-bootstrap-seed.sh"] {
+        let source = fs::read_to_string(root.join(script)).unwrap_or_default();
+        for forbidden in ["cargo", "rustc"] {
+            if source.contains(forbidden) {
+                errors.push(format!(
+                    "production toolchain script {script} depends on forbidden `{forbidden}`"
+                ));
+            }
+        }
+    }
+
+    let decision =
+        fs::read_to_string(root.join("design/decisions/D0027-portable-c-bootstrap-seed.md"))
+            .unwrap_or_default();
+    if !decision.contains("Status: accepted") {
+        errors.push("toolchain cutover requires accepted decision D0027".to_owned());
+    }
 }
 
 fn check_conformance_coverage(root: &Path, errors: &mut Vec<String>) {
@@ -338,19 +417,27 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
             builtin_names.insert(columns[1].to_owned());
         }
     }
-    let implemented: BTreeSet<_> = Builtin::all()
-        .iter()
-        .map(|builtin| builtin.name().to_owned())
-        .collect();
-    for missing in implemented.difference(&builtin_names) {
-        errors.push(format!(
-            "implemented built-in `{missing}` is missing from surface.tsv"
-        ));
+    let Some(root) = path.parent().and_then(Path::parent) else {
+        errors.push("cannot resolve repository root from surface.tsv".to_owned());
+        return;
+    };
+    let mut implementation = String::new();
+    for relative in [
+        "selfhost/check.slim",
+        "selfhost/codegen.slim",
+        "selfhost/memory.slim",
+    ] {
+        match fs::read_to_string(root.join(relative)) {
+            Ok(source) => implementation.push_str(&source),
+            Err(error) => errors.push(format!("cannot read {relative}: {error}")),
+        }
     }
-    for missing in builtin_names.difference(&implemented) {
-        errors.push(format!(
-            "surface built-in `{missing}` has no implementation"
-        ));
+    for builtin in builtin_names {
+        if !implementation.contains(&format!("\"{builtin}\"")) {
+            errors.push(format!(
+                "surface built-in `{builtin}` has no named SLIM implementation"
+            ));
+        }
     }
 }
 
@@ -542,6 +629,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("session", "session.slim"),
         ("syntax", "syntax.slim"),
         ("text", "text.slim"),
+        ("validate", "validate.slim"),
     ] {
         let path = directory.join(file);
         if !path.is_file() {

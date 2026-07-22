@@ -50,7 +50,7 @@ history for forensic comparison.
 
 ## Costs
 
-The repository carries an approximately 830-kilobyte generated C seed plus its
+The repository carries an approximately 1-megabyte generated C seed plus its
 SHA-256 digest and provenance. Review applies to the SLIM source and generator;
 the seed is verified mechanically. A clean bootstrap requires a C11 compiler.
 Removing Rust semantics requires test and benchmark infrastructure to invoke
@@ -59,15 +59,18 @@ the native SLIM compiler instead of linking compiler modules directly.
 The loss of a permanently maintained independent implementation increases the
 importance of external conformance expectations, arbitrary-input tests, fixed
 point comparison, deterministic regeneration, and testing with more than one C
-toolchain where available. Rust may remain temporarily for orchestration,
-governance, and measurement when it contains no language decision.
+toolchain where available. Rust may remain for orchestration, governance, and
+measurement when it contains no language decision.
 
 ## Evidence
 
-All 58 accepted standalone and project fixtures have exact self-host parity.
-The Core 0.4 compiler produces identical 829,446-byte stage-2 and stage-3 C
-with SHA-256
-`ff2fe5b5503c34734c50a4fcf8aa490e5af010a29a83886db590737a0f3f84f2`.
+All 59 accepted standalone and project fixtures have exact self-host parity,
+and 2,000 deterministic malformed-input mutations reject without a compiler
+trap. The Core 0.4 freeze produced identical 829,446-byte stage-2 and stage-3 C. The
+cutover compiler, including deterministic nested-call lowering discovered by
+the primary-path migration, currently produces identical 991,869-byte
+successive generations with SHA-256
+`7f63ea972068670a92e981d2132d44c64b01b6fd87e2de6f6913e57f22b71fdb`.
 The self-hosted project already implements standalone and project checking,
 formatting, interfaces, cache and incremental sessions, deterministic job
 planning, C emission, lifetime planning, and typed allocation failure. D0014

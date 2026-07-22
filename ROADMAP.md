@@ -1,6 +1,6 @@
 # SLIM Roadmap
 
-Status: Core 0.4 complete
+Status: Core 0.4 and toolchain cutover complete
 Current milestone: Core 1 research
 Last updated: 2026-07-22
 
@@ -286,10 +286,10 @@ Acceptance:
 
 ## Core 0.3: SLIM-first self-hosting
 
-Core 0.3 changes the implementation default, not the language surface. New
-compiler capability belongs in SLIM. Rust stage 0 remains a frozen bootstrap
-seed and differential oracle, with production byte ceilings enforced by
-governance under D0022.
+Core 0.3 changed the implementation default, not the language surface. New
+compiler capability belongs in SLIM. During that milestone Rust stage 0
+remained a frozen bootstrap seed and differential oracle under D0022; D0027
+subsequently removed it from the active tree.
 
 ### Deliverable 1: structured data parity
 
@@ -438,6 +438,31 @@ milestone.
   warmup). This is evidence of the completed architecture, not attainment of
   the long-term millisecond-at-large-scale compilation goal. Full conditions
   and existing scaling results are recorded under `benchmarks/results/`.
+
+## Toolchain cutover
+
+Status: complete
+
+D0027 makes the checked-in deterministic C11 seed the only bootstrap trust
+artifact and the fourteen-module SLIM project the sole active semantic
+compiler. A clean bootstrap uses no Cargo or `rustc`, reproduces successive C
+generations byte for byte, and exposes the SLIM compiler through the root
+`slimc` launcher. Rust remains only in three bootstrap-independent programs for
+conformance orchestration, governance, and benchmark measurement.
+
+Acceptance evidence:
+
+- all 59 standalone and project fixtures execute through SLIM with no semantic
+  fallback;
+- 2,000 deterministic malformed-input mutations reject without a compiler
+  trap;
+- process-level check scaling stays within the 1.25 exponent gate;
+- the generated seed is 991,869 bytes with SHA-256
+  `7f63ea972068670a92e981d2132d44c64b01b6fd87e2de6f6913e57f22b71fdb`;
+- governance rejects active Rust semantic modules, production Rust budget
+  entries, Cargo semantic targets, and Rust-dependent production launchers;
+- sanitizer and deterministic allocation-failure gates cover both the compiler
+  seed and generated native programs.
 
 ## Later milestones
 

@@ -2,17 +2,9 @@
 name = "slim"
 version = "0.0.1"
 edition = "2024"
-description = "The SLIM language bootstrap compiler"
+description = "Bootstrap-independent verification and benchmark tools for SLIM"
 license = "Apache-2.0 OR MIT"
 publish = false
-
-[lib]
-name = "slim"
-path = "src/lib.rs"
-
-[[bin]]
-name = "slimc"
-path = "src/main.rs"
 
 [[bin]]
 name = "slim-govern"
@@ -21,10 +13,6 @@ path = "src/bin/slim-govern.rs"
 [[bin]]
 name = "slim-bench"
 path = "src/bin/slim-bench.rs"
-
-[[bin]]
-name = "slim-bootstrap"
-path = "src/bin/slim-bootstrap.rs"
 
 [[bin]]
 name = "slim-conform"

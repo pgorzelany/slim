@@ -37,17 +37,17 @@ These rules apply to every change in this repository.
 ## Change requirements
 
 - Implement new production compiler capabilities in `selfhost/` SLIM by
-  default. Rust is the bootstrap oracle and infrastructure boundary, not the
-  default feature implementation language.
-- Do not exceed a production ceiling in `design/rust-budget.tsv` without a
-  separate accepted architecture decision explaining why SLIM cannot yet
-  preserve the required property.
-- Never claim self-host support through a stage-0 fallback. Promote a
-  conformance row to `parity` only after the self-host differential gate runs
-  it successfully.
+  default. The portable C seed and SLIM sources are the production compiler;
+  Rust is limited to bootstrap-independent verification and measurement.
+- Do not add production Rust semantics or a second compiler path. Any proposed
+  exception requires a separate accepted architecture decision and must not
+  bypass the D0027 cutover gate.
+- Never claim support through a semantic fallback. Every conformance row must
+  execute through the production SLIM compiler.
 - Preserve deterministic formatting, diagnostics, and generated C.
 - Add positive, negative, and diagnostic tests for behavior changes.
-- Run `cargo run --bin slim-govern -- check` and `cargo test` before committing.
+- Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, and `cargo test`
+  before committing.
 - Do not add a dependency without an accepted architecture decision.
 - If a requested change conflicts with a hard gate, record the conflict rather
   than bypassing the gate.
