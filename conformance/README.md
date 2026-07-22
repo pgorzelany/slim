@@ -5,9 +5,12 @@ tab-separated fields:
 
     id  mode  source  selfhost  expectation  coverage-tags
 
-Modes are check-pass, check-fail, run, trap, format, and emit. Diagnostic
+Modes are check-pass, check-fail, run, trap, allocation-fail, format, and emit. Diagnostic
 expectations list exact CODE@START:END entries. Runtime expectations encode
 exit status, stdout, and stderr with explicit escapes.
+
+`allocation-fail` runs the native artifact with deterministic failure at its
+second allocation and verifies the typed allocation-effect boundary exactly.
 
 The selfhost column is either parity or stage0-only(reason). A parity row must
 compile and behave equivalently through the self-hosted compiler when the

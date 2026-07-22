@@ -85,7 +85,43 @@ fn emits_c_deterministically() {
             .unwrap();
         assert!(status.success());
     }
-    assert_eq!(fs::read(first).unwrap(), fs::read(second).unwrap());
+    assert_eq!(fs::read(first).unwrap(), fs::read(&second).unwrap());
+    let generated = fs::read_to_string(&second).unwrap();
+    assert!(generated.contains("slim_i64_add"));
+    assert!(generated.contains("slim_fn_main"));
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn propagates_typed_allocation_failure() {
+    let directory = temporary_directory("allocation-failure");
+    let source = write_source(
+        &directory,
+        "(module allocation-failure (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) (let pushed Unit (call vec.push values 42) 0))))\n",
+    );
+    let executable = directory.join("program");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let failed = Command::new(&executable)
+        .env("SLIM_ALLOC_FAIL_AT", "2")
+        .output()
+        .unwrap();
+    assert_eq!(failed.status.code(), Some(71));
+    assert!(failed.stdout.is_empty());
+    assert_eq!(
+        failed.stderr,
+        b"SLIM allocation failure: exhausted at allocation 2\n"
+    );
     fs::remove_dir_all(directory).unwrap();
 }
 

@@ -57,6 +57,11 @@ signature.
   undefined behavior. `io.read-file` has the single total signature
   `(Bytes, inout (Vec U8)) -> Bool`: success appends the complete file, while
   failure returns `false` and leaves the output unchanged.
+- Allocation exhaustion is the typed failure outcome of the existing `alloc`
+  effect. Generated code propagates it immediately, destroys active regions,
+  and handles it once at the executable boundary with exit code 71. Core 0.4
+  exposes no trapping or `try-` allocation alias and no invalid value sentinel;
+  local recovery is not yet source surface.
 
 ## Built-in calls
 

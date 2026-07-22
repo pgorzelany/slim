@@ -1,6 +1,7 @@
 # id	mode	source	selfhost	expectation	coverage
 scalars	run	conformance/pass/scalars.slim	parity	exit=0;stdout=42\n;stderr=	syntax:module,syntax:fn,syntax:call,syntax:let,type:Bool,type:I64,type:U8,type:Unit,effect:io,entry:main-args,builtin:i64.add,builtin:i64.sub,builtin:i64.mul,builtin:i64.div,builtin:i64.rem,builtin:i64.eq,builtin:i64.lt,builtin:i64.le,builtin:i64.gt,builtin:i64.ge,builtin:bool.not,builtin:bool.and,builtin:bool.or,builtin:u8.to-i64,builtin:i64.to-u8,builtin:io.print-i64,builtin:io.println
 storage	run	conformance/pass/storage.slim	parity	exit=0;stdout=OK\n;stderr=	type:Bytes,type:Vec,type:Arena,type:Id,effect:alloc,builtin:bytes.len,builtin:bytes.get,builtin:bytes.freeze,builtin:io.print-bytes,builtin:io.read-file,builtin:vec.new,builtin:vec.len,builtin:vec.get,builtin:vec.push,builtin:vec.set,builtin:arena.new,builtin:arena.add,builtin:arena.get,runtime:allocation
+allocation-failure	allocation-fail	conformance/pass/storage.slim	parity	exit=71;stdout=;stderr=SLIM allocation failure: exhausted at allocation 2\n	runtime:allocation-failure,runtime:region-destruction
 file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.read-file
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
@@ -16,6 +17,7 @@ aggregate-use-after-move	check-fail	conformance/fail/aggregate_use_after_move.sl
 frozen-source-use	check-fail	conformance/fail/frozen_source_use.slim	parity	E0315@264:270	ownership:frozen-view,ownership:lifetime
 variant-use-after-move	check-fail	conformance/fail/variant_use_after_move.slim	parity	E0315@377:382	ownership:aggregate-move,ownership:lifetime
 move-from-inout	check-fail	conformance/fail/move_from_inout.slim	parity	E0347@167:173	diagnostic:E0347,ownership:inout-no-move
+inout-return	check-fail	conformance/fail/inout_return.slim	parity	E0347@79:85	ownership:inout-no-escape,ownership:lifetime
 inout-temporary	check-fail	conformance/fail/inout_temporary.slim	parity	E0348@176:190	diagnostic:E0348,ownership:named-inout
 inout-alias	check-fail	conformance/fail/inout_alias.slim	parity	E0349@213:219	diagnostic:E0349,ownership:no-alias
 recur-rebind	check-fail	conformance/fail/recur_rebind.slim	parity	E0350@114:119,E0350@120:124	diagnostic:E0350,ownership:recur-preserves-inout

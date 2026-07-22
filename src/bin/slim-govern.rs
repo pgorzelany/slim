@@ -75,6 +75,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_rust_safety(&root.join("src"), &mut errors);
     check_rust_budget(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
+    check_memory_architecture(root, &mut errors);
     errors
 }
 
@@ -534,6 +535,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("compiler", "slimc.slim"),
         ("driver", "driver.slim"),
         ("ir", "ir.slim"),
+        ("memory", "memory.slim"),
         ("project", "project.slim"),
         ("query", "query.slim"),
         ("scheduler", "scheduler.slim"),
@@ -673,6 +675,46 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         if !scheduler.contains(required) {
             errors.push(format!(
                 "self-host scheduler is missing bounded capability `{required}`"
+            ));
+        }
+    }
+}
+
+fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
+    let sources = [
+        root.join("runtime/slim_rt.h"),
+        root.join("runtime/slim_rt.c"),
+        root.join("selfhost/memory.slim"),
+        root.join("selfhost/codegen.slim"),
+    ];
+    let joined = sources
+        .iter()
+        .filter_map(|path| fs::read_to_string(path).ok())
+        .collect::<String>();
+    for required in [
+        "SlimRegion",
+        "SlimAllocStatus",
+        "(record AllocationPlan",
+        "(record DestructionPlan",
+        "(record FunctionPlan",
+        "(fn function_uses_local_region",
+        "slim_region_destroy(&slim_function_region)",
+        "slim_allocation_failed",
+    ] {
+        if !joined.contains(required) {
+            errors.push(format!(
+                "Core 0.4 memory architecture is missing `{required}`"
+            ));
+        }
+    }
+    for forbidden in [
+        "slim_allocations",
+        "slim_find_allocation",
+        "slim_rt_trap(\"out of memory\")",
+    ] {
+        if joined.contains(forbidden) {
+            errors.push(format!(
+                "Core 0.4 memory architecture retains forbidden `{forbidden}`"
             ));
         }
     }

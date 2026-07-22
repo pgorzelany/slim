@@ -1,8 +1,9 @@
 # Self-host bootstrap
 
 `slim.project` is the self-hosting input. It contains explicit modules for
-syntax/token utilities, byte-text emission, checking, project handling, C
-generation, coordination, and the minimal executable driver. Stage 0 compiles
+syntax/token utilities, byte-text emission, checking, typed memory planning,
+project handling, C generation, coordination, and the minimal executable
+driver. Stage 0 compiles
 the project to the stage-1 executable. Stage 1 emits the C used to build stage
 2, and stage 2 emits the C for stage 3. The bootstrap succeeds only when the
 stage-2 and stage-3 C files are byte-for-byte identical and a program compiled
@@ -16,6 +17,13 @@ one structured declaration vector per standalone check. All top-level checker
 passes share that vector, and governance requires exactly one file read and one
 lex operation in the self-host checker. Expression typing and checked query
 state continue to move into this representation incrementally.
+
+The `memory` module owns recursive storage classification, bounded value
+liveness and escape summaries, allocation-site plans, and reverse destruction
+plans. The checker executes it from the structured declaration vector, while
+the backend uses its function summary to select caller or child regions. The
+generated ABI also propagates D0026's typed allocation-effect status and
+destroys child regions at the single function exit.
 
 The self-hosted path accepts the subset needed to compile itself plus the Core
 standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,

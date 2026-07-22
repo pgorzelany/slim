@@ -6,81 +6,166 @@
 #include <stdlib.h>
 #include <string.h>
 
-typedef struct SlimAllocation {
-    void *pointer;
+struct SlimAllocation {
     struct SlimAllocation *next;
-} SlimAllocation;
+    struct SlimAllocation *previous;
+    SlimRegion *region;
+    size_t size;
+    max_align_t alignment;
+    uint8_t data[];
+};
 
-static SlimAllocation *slim_allocations = NULL;
+static _Thread_local SlimRegion *slim_root_region = NULL;
+static _Thread_local SlimRegion *slim_active_region = NULL;
 
-void slim_rt_init(void) {
-    if (slim_allocations != NULL) {
-        slim_rt_trap("runtime initialized twice");
+void slim_region_init(SlimRegion *region, SlimRegion *parent) {
+    if (region == NULL) {
+        slim_rt_trap("cannot initialize a null region");
+    }
+    region->newest = NULL;
+    region->parent = parent;
+    region->status = parent == NULL ? NULL : parent->status;
+    slim_active_region = region;
+}
+
+void slim_region_destroy(SlimRegion *region) {
+    if (region == NULL) {
+        return;
+    }
+    SlimAllocation *allocation = region->newest;
+    region->newest = NULL;
+    while (allocation != NULL) {
+        SlimAllocation *next = allocation->next;
+        free(allocation);
+        allocation = next;
+    }
+    if (slim_active_region == region) {
+        slim_active_region = region->parent;
     }
 }
 
+void slim_alloc_status_init(SlimAllocStatus *status) {
+    *status = (SlimAllocStatus){.code = SLIM_ALLOC_OK};
+    const char *setting = getenv("SLIM_ALLOC_FAIL_AT");
+    if (setting == NULL || setting[0] == 0) {
+        return;
+    }
+    errno = 0;
+    char *end = NULL;
+    unsigned long long ordinal = strtoull(setting, &end, 10);
+    if (errno == 0 && end != setting && *end == 0 && ordinal > 0) {
+        status->fail_at = (uint64_t)ordinal;
+    }
+}
+
+bool slim_region_failed(const SlimRegion *region) {
+    return region->status->code != SLIM_ALLOC_OK;
+}
+
+void slim_alloc_report(const SlimAllocStatus *status) {
+    fprintf(stderr,
+            "SLIM allocation failure: exhausted at allocation %" PRIu64 "\n",
+            status->failure_at);
+}
+
+void slim_rt_init(SlimRegion *root, SlimAllocStatus *status) {
+    if (slim_root_region != NULL) {
+        slim_rt_trap("runtime initialized twice");
+    }
+    slim_region_init(root, NULL);
+    root->status = status;
+    slim_root_region = root;
+}
+
 void slim_rt_shutdown(void) {
-    SlimAllocation *allocation = slim_allocations;
-    slim_allocations = NULL;
-    while (allocation != NULL) {
-        SlimAllocation *next = allocation->next;
-        free(allocation->pointer);
-        free(allocation);
-        allocation = next;
+    if (slim_root_region != NULL) {
+        SlimRegion *root = slim_root_region;
+        slim_root_region = NULL;
+        slim_region_destroy(root);
     }
 }
 
 _Noreturn void slim_rt_trap(const char *message) {
     fprintf(stderr, "SLIM runtime trap: %s\n", message);
-    slim_rt_shutdown();
+    while (slim_active_region != NULL) {
+        slim_region_destroy(slim_active_region);
+    }
+    slim_root_region = NULL;
     exit(70);
 }
 
-static SlimAllocation *slim_find_allocation(void *pointer) {
-    for (SlimAllocation *item = slim_allocations; item != NULL; item = item->next) {
-        if (item->pointer == pointer) {
-            return item;
-        }
-    }
-    return NULL;
+static SlimAllocation *slim_allocation_from_data(void *pointer) {
+    return (SlimAllocation *)((uint8_t *)pointer - offsetof(SlimAllocation, data));
 }
 
-void *slim_rt_alloc(size_t size) {
+void *slim_rt_alloc(SlimRegion *region, size_t size) {
+    if (region == NULL) {
+        slim_rt_trap("allocation requires a region");
+    }
+    SlimAllocStatus *status = region->status;
+    if (status == NULL) {
+        slim_rt_trap("allocation region has no status");
+    }
+    if (status->code != SLIM_ALLOC_OK) {
+        return NULL;
+    }
+    status->attempts += 1;
+    if (status->attempts == 0 || status->attempts == status->fail_at) {
+        status->code = SLIM_ALLOC_EXHAUSTED;
+        status->failure_at = status->attempts;
+        return NULL;
+    }
     if (size == 0) {
         size = 1;
     }
-    void *pointer = calloc(1, size);
-    SlimAllocation *record = malloc(sizeof(SlimAllocation));
-    if (pointer == NULL || record == NULL) {
-        free(pointer);
-        free(record);
-        slim_rt_trap("out of memory");
+    if (size > SIZE_MAX - offsetof(SlimAllocation, data)) {
+        slim_rt_trap("allocation size overflow");
     }
-    record->pointer = pointer;
-    record->next = slim_allocations;
-    slim_allocations = record;
-    return pointer;
+    SlimAllocation *allocation = calloc(1, offsetof(SlimAllocation, data) + size);
+    if (allocation == NULL) {
+        status->code = SLIM_ALLOC_EXHAUSTED;
+        status->failure_at = status->attempts;
+        return NULL;
+    }
+    allocation->next = region->newest;
+    allocation->previous = NULL;
+    allocation->region = region;
+    allocation->size = size;
+    if (region->newest != NULL) {
+        region->newest->previous = allocation;
+    }
+    region->newest = allocation;
+    return allocation->data;
 }
 
-void *slim_rt_realloc(void *pointer, size_t old_size, size_t new_size) {
+void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t new_size) {
     if (pointer == NULL) {
-        return slim_rt_alloc(new_size);
+        return slim_rt_alloc(region, new_size);
     }
-    SlimAllocation *record = slim_find_allocation(pointer);
-    if (record == NULL) {
-        slim_rt_trap("attempted to resize unmanaged memory");
+    SlimAllocation *allocation = slim_allocation_from_data(pointer);
+    if (allocation->region != region) {
+        slim_rt_trap("attempted to resize memory through the wrong region");
     }
-    if (new_size == 0) {
-        new_size = 1;
+    if (old_size > allocation->size) {
+        slim_rt_trap("attempted to resize memory with an invalid old size");
     }
-    void *new_pointer = realloc(pointer, new_size);
+    void *new_pointer = slim_rt_alloc(region, new_size);
     if (new_pointer == NULL) {
-        slim_rt_trap("out of memory");
+        return NULL;
     }
-    if (new_size > old_size) {
-        memset((uint8_t *)new_pointer + old_size, 0, new_size - old_size);
+    size_t copied = old_size < new_size ? old_size : new_size;
+    if (copied > 0) {
+        memcpy(new_pointer, pointer, copied);
     }
-    record->pointer = new_pointer;
+    if (allocation->previous != NULL) {
+        allocation->previous->next = allocation->next;
+    } else {
+        region->newest = allocation->next;
+    }
+    if (allocation->next != NULL) {
+        allocation->next->previous = allocation->previous;
+    }
+    free(allocation);
     return new_pointer;
 }
 
@@ -167,10 +252,17 @@ bool slim_read_file(SlimBytes path, SlimVec *output) {
     if (memchr(path.data, 0, (size_t)path.len) != NULL) {
         return false;
     }
-    char *path_string = slim_rt_alloc((size_t)path.len + 1);
+    SlimRegion scratch;
+    slim_region_init(&scratch, output->region);
+    char *path_string = slim_rt_alloc(&scratch, (size_t)path.len + 1);
+    if (path_string == NULL) {
+        slim_region_destroy(&scratch);
+        return false;
+    }
     memcpy(path_string, path.data, (size_t)path.len);
     path_string[path.len] = 0;
     FILE *file = fopen(path_string, "rb");
+    slim_region_destroy(&scratch);
     if (file == NULL) {
         return false;
     }
@@ -191,7 +283,12 @@ bool slim_read_file(SlimBytes path, SlimVec *output) {
     if (required > output->capacity) {
         size_t old_size = (size_t)output->capacity;
         size_t new_size = (size_t)required;
-        output->data = slim_rt_realloc(output->data, old_size, new_size);
+        uint8_t *resized = slim_rt_realloc(output->region, output->data, old_size, new_size);
+        if (resized == NULL) {
+            fclose(file);
+            return false;
+        }
+        output->data = resized;
         output->capacity = required;
     }
     size_t read = fread(output->data + output->len, 1, (size_t)length, file);
@@ -228,11 +325,20 @@ SlimUnit slim_println(SlimBytes value) {
     return (SlimUnit){0};
 }
 
-SlimVec slim_vec_new(size_t element_size) {
+SlimVec slim_vec_new(size_t element_size, SlimRegion *region) {
     if (element_size == 0) {
         slim_rt_trap("zero-sized vector element");
     }
-    return (SlimVec){.data = NULL, .len = 0, .capacity = 0, .element_size = element_size};
+    if (region == NULL) {
+        slim_rt_trap("vector requires a region");
+    }
+    return (SlimVec){
+        .data = NULL,
+        .len = 0,
+        .capacity = 0,
+        .element_size = element_size,
+        .region = region,
+    };
 }
 
 int64_t slim_vec_len(SlimVec vector) {
@@ -258,7 +364,7 @@ void slim_vec_get(const SlimVec *vector, int64_t index, void *output) {
     memcpy(output, vector->data + slim_vec_offset(vector, index), vector->element_size);
 }
 
-void slim_vec_push(SlimVec *vector, const void *value) {
+bool slim_vec_push(SlimVec *vector, const void *value) {
     if (vector->len == vector->capacity) {
         int64_t new_capacity = vector->capacity == 0 ? 8 : vector->capacity * 2;
         if (new_capacity < vector->capacity ||
@@ -267,21 +373,29 @@ void slim_vec_push(SlimVec *vector, const void *value) {
         }
         size_t old_size = (size_t)vector->capacity * vector->element_size;
         size_t new_size = (size_t)new_capacity * vector->element_size;
-        vector->data = slim_rt_realloc(vector->data, old_size, new_size);
+        uint8_t *resized = slim_rt_realloc(vector->region, vector->data, old_size, new_size);
+        if (resized == NULL) {
+            return false;
+        }
+        vector->data = resized;
         vector->capacity = new_capacity;
     }
     memcpy(vector->data + (size_t)vector->len * vector->element_size,
            value,
            vector->element_size);
     vector->len += 1;
+    return true;
 }
 
 void slim_vec_set(SlimVec *vector, int64_t index, const void *value) {
     memcpy(vector->data + slim_vec_offset(vector, index), value, vector->element_size);
 }
 
-SlimId slim_arena_add(SlimVec *arena, const void *value) {
+bool slim_arena_add(SlimVec *arena, const void *value, SlimId *output) {
     SlimId id = arena->len;
-    slim_vec_push(arena, value);
-    return id;
+    if (!slim_vec_push(arena, value)) {
+        return false;
+    }
+    *output = id;
+    return true;
 }

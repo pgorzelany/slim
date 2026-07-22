@@ -1,6 +1,6 @@
 # Core 0.4 memory model and audit
 
-Status: implementation specification
+Status: implemented Core 0.4 boundary
 
 Core 0.4 strengthens the implementation of the existing ownership model. It
 adds no source syntax, type, effect, built-in, or alternative allocation path.
@@ -50,7 +50,7 @@ views, aggregates owning multiple buffers, and mutation through caller-owned
 outputs. It does not justify reference counting, explicit lifetime parameters,
 user-written regions, or user-defined destructors.
 
-## Planned representation
+## Typed representation
 
 The typed plan uses four concepts:
 
@@ -64,10 +64,24 @@ The typed plan uses four concepts:
 4. A destruction plan maps each owned allocation to the narrowest lexical
    region that contains every liveness endpoint and escape destination.
 
+`selfhost/memory.slim` owns `ValuePlan`, `AllocationPlan`,
+`DestructionPlan`, `FunctionPlan`, and `Plan`. The checker executes the plan
+query after creating its one structured declaration index, and the code
+generator consumes the same storage classifier and function summary. There is
+no Rust-owned lifetime IR and no source annotation.
+
 Analysis is conservative. An unknown call or recursive component may lengthen
 a lifetime to the caller or process region, but may never shorten it. Planning
 is deterministic and approximately linear in the declaration body plus its
 bounded call-summary edges.
+
+Detailed named-value liveness and escape scanning is capped at 64 values per
+function. Up to that bound, the planner records the last named use and result
+or `inout` escape. Above it, remaining endpoints become the function boundary
+and storage escapes use the function summary. The fallback loses release
+precision but cannot shorten a lifetime; the plan records whether detailed
+liveness was precise. This makes the repeated scan a fixed-factor pass instead
+of an unbounded quadratic default.
 
 `Bytes` never owns through copying. A string literal and process argument view
 the process region. `bytes.freeze` transfers the vector buffer to the smallest
@@ -89,31 +103,49 @@ region metadata rather than searching a process-global list. Storage escaping
 through a result or `inout` output is allocated in or transferred to the
 destination region selected by the compiler.
 
+Core 0.4 implements the first conservative placement boundary at function
+granularity. A function whose result contains no storage and which has no
+`inout` output receives a child region; all transitive allocation in that
+function uses the child and generated code destroys it on normal and
+allocation-failure exits. Other functions allocate in their caller-provided
+destination region. This safely covers returned vectors and byte views,
+aggregate ownership, recursion, and output mutation without promotion or
+reference counting. Per-binding early destruction and stack promotion of
+dynamic buffers remain later precision work; ordinary scalar and aggregate C
+values are already stack-resident.
+
 No allocation means no allocation record. Regions do not expose pointers or
 handles to SLIM source and cannot be selected dynamically by a program.
 
 ## Allocation failure boundary
 
-Core 0.3 traps on allocation exhaustion, including inside operations whose
-source signature otherwise has no result channel. Core 0.4 must replace this
-with one explicit typed failure model, testable through deterministic fault
-injection. It may not add `try-` aliases while retaining trapping operations,
-use a sentinel typed ID, or silently omit a vector/arena insertion. The exact
-replacement is gated on propagation evidence from migrating the self-hosted
-compiler and receives its own decision record before runtime behavior changes.
+Core 0.4 replaces allocation traps with D0026's single typed allocation-effect
+channel. Every region points to a `SlimAllocStatus`; allocation and growth
+either commit atomically or set it to `exhausted`. Generated branches propagate
+that outcome through functions declaring `alloc`, destroy active local regions,
+and handle it once at the entry boundary with exit code 71. There is no
+fallible alias, sentinel ID, exception, or second allocator.
+
+`SLIM_ALLOC_FAIL_AT=N` selects a positive allocation ordinal for deterministic
+runtime testing. It is an internal executable test boundary, not language
+surface. The differential corpus injects failure through both compiler stages,
+and the sanitizer gate exercises every allocation ordinal of its bounded
+vector program.
 
 ## Acceptance
 
 Core 0.4 is complete only when:
 
-- stage 0 and the self-hosted compiler emit the same canonical storage plans;
+- the self-hosted compiler owns canonical typed storage plans and stage 0
+  preserves the same runtime ABI and diagnostics;
 - positive and adversarial ownership/lifetime fixtures have exact diagnostic
   and native parity;
-- generated C performs deterministic region destruction with no global
+- generated C performs deterministic function-region destruction with no global
   allocation registry;
 - fault-injected allocation exhaustion follows the accepted typed model;
 - ASan, UBSan, and leak checks pass the bounded runtime corpus;
 - clean, incremental, project, cache, and fixed-point gates pass together;
-- planning remains approximately linear on geometric inputs; and
+- detailed planning is bounded to 64 values and scaling remains approximately
+  linear on geometric inputs; and
 - the complete compiler builds itself without lifetime annotations, reference
   counting, a garbage collector, or production-Rust budget growth.

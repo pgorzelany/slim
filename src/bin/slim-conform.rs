@@ -122,7 +122,15 @@ fn load_manifest(root: &Path) -> Result<Vec<Fixture>, String> {
     load_fixture_manifest(
         root,
         "conformance/manifest.tsv",
-        &["check-pass", "check-fail", "run", "trap", "format", "emit"],
+        &[
+            "check-pass",
+            "check-fail",
+            "run",
+            "trap",
+            "allocation-fail",
+            "format",
+            "emit",
+        ],
         false,
     )
 }
@@ -266,11 +274,14 @@ fn check_coverage(root: &Path, fixtures: &[Fixture]) -> Result<(), String> {
             "ownership:exclusive-borrow",
             "ownership:move",
             "ownership:no-alias",
+            "ownership:inout-no-escape",
             "recovery:malformed",
             "recovery:parser",
             "runtime:allocation",
+            "runtime:allocation-failure",
             "runtime:bounds-trap",
             "runtime:overflow-trap",
+            "runtime:region-destruction",
             "tool:emit-deterministic",
             "tool:format",
             "type:strong",
@@ -359,7 +370,7 @@ fn run_stage0_fixture(fixture: &Fixture) -> Result<(), String> {
             }
             Ok(())
         }
-        "run" | "trap" => {
+        "run" | "trap" | "allocation-fail" => {
             let compilation = compiler::compile(source);
             require_success(fixture, &compilation)?;
             let generated = compilation
@@ -773,7 +784,7 @@ fn run_selfhost_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String
         .map_err(|error| format!("{}: self-host emitted non-UTF-8 C: {error}", fixture.id))?;
     let output = compile_and_run(fixture, generated)?;
     match fixture.mode.as_str() {
-        "run" | "trap" => check_process_expectation(fixture, &output),
+        "run" | "trap" | "allocation-fail" => check_process_expectation(fixture, &output),
         "check-pass" | "emit" if output.status.success() => Ok(()),
         "check-pass" | "emit" => Err(format!(
             "{}: self-host output compiled but failed at runtime with {}\n{}",
@@ -1462,9 +1473,12 @@ fn compile_and_run_in(
             String::from_utf8_lossy(&build.stderr)
         ));
     }
-    Command::new(&executable)
-        .arg(&fixture.path)
-        .output()
+    let mut run = Command::new(&executable);
+    run.arg(&fixture.path);
+    if fixture.mode == "allocation-fail" {
+        run.env("SLIM_ALLOC_FAIL_AT", "2");
+    }
+    run.output()
         .map_err(|error| format!("{}: cannot run native output: {error}", fixture.id))
 }
 

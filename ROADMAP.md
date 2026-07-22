@@ -1,8 +1,8 @@
 # SLIM Roadmap
 
-Status: Core 0.3 complete
-Current milestone: Core 0.4 lifetime and region planning
-Last updated: 2026-07-21
+Status: Core 0.4 complete
+Current milestone: Core 1 research
+Last updated: 2026-07-22
 
 ## Direction
 
@@ -443,6 +443,8 @@ milestone.
 
 ### Core 0.4: lifetime and region planning
 
+Status: complete
+
 Use evidence from implementing the complete compiler in SLIM to add escape and
 liveness analysis, stack promotion, compiler-inserted narrow regions,
 deterministic resource destruction, and typed allocation failure. Add explicit
@@ -456,6 +458,18 @@ the external lifetime corpus, typed plans, escape/liveness analysis,
 deterministic region destruction, separately justified typed allocation
 failure, incremental integration, and a self-hosted fixed-point freeze. The
 working specification and baseline census are in `docs/MEMORY.md`.
+
+The frozen implementation adds a thirteenth self-host module with typed value,
+allocation, and destruction plans; bounds detailed per-function analysis to 64
+values with a conservative fallback; stack-places region descriptors and
+ordinary values; selects nested function regions; destroys dynamic blocks in
+reverse order without a global allocation registry; and propagates allocation
+exhaustion through D0026's typed `alloc`-effect channel. It adds no source
+surface. Dynamic buffers remain region allocated, and per-binding earlier
+release is future precision work rather than a hidden Core 0.4 claim.
+
+The freeze evidence is recorded in
+`benchmarks/results/2026-07-22-core-04.md`.
 
 ### Core 1 research
 

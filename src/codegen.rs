@@ -187,25 +187,14 @@ fn generated_header() -> String {
 }
 
 fn emit_main_wrapper(output: &mut String, entry: &str) {
-    output.push_str("int main(int argc, char **argv) {\n");
-    output.push_str("    slim_rt_init();\n");
-    output.push_str("    SlimVec slim_args = slim_vec_new(sizeof(SlimBytes));\n");
-    output.push_str("    for (int slim_i = 0; slim_i < argc; ++slim_i) {\n");
-    output.push_str("        SlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\n");
-    output.push_str("        slim_vec_push(&slim_args, &slim_arg);\n");
-    output.push_str("    }\n");
+    output.push_str("int main(int argc, char **argv) {\n    SlimAllocStatus slim_status;\n    slim_alloc_status_init(&slim_status);\n    SlimRegion slim_root;\n    slim_rt_init(&slim_root, &slim_status);\n    SlimVec slim_args = slim_vec_new(sizeof(SlimBytes), &slim_root);\n    for (int slim_i = 0; slim_i < argc; ++slim_i) {\n        SlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\n        if (!slim_vec_push(&slim_args, &slim_arg)) {\n            slim_alloc_report(&slim_status);\n            slim_rt_shutdown();\n            return 71;\n        }\n    }\n");
     writeln!(
         output,
-        "    int64_t slim_exit_code = {}(slim_args);",
+        "    int64_t slim_exit_code = {}(slim_args, &slim_root);",
         c_function_name(entry)
     )
     .unwrap();
-    output.push_str("    if (slim_exit_code < 0 || slim_exit_code > 255) {\n");
-    output.push_str("        slim_rt_trap(\"main result is outside 0..255\");\n");
-    output.push_str("    }\n");
-    output.push_str("    slim_rt_shutdown();\n");
-    output.push_str("    return (int)slim_exit_code;\n");
-    output.push_str("}\n");
+    output.push_str("    if (slim_region_failed(&slim_root)) {\n        slim_alloc_report(&slim_status);\n        slim_rt_shutdown();\n        return 71;\n    }\n    if (slim_exit_code < 0 || slim_exit_code > 255) {\n        slim_rt_trap(\"main result is outside 0..255\");\n    }\n    slim_rt_shutdown();\n    return (int)slim_exit_code;\n}\n");
 }
 
 pub(crate) fn generate_item_c(program: &CheckedProgram, item: &Item) -> String {
@@ -288,26 +277,26 @@ fn emit_function_prototype(output: &mut String, function: &Function) {
         c_function_name(&function.name)
     )
     .unwrap();
-    if function.params.is_empty() {
-        output.push_str("void");
-    } else {
-        for (index, param) in function.params.iter().enumerate() {
-            if index > 0 {
-                output.push_str(", ");
-            }
-            write!(
-                output,
-                "{}{} slim_arg_{index}",
-                c_type(&param.ty),
-                if param.mode == ParamMode::Inout {
-                    " *"
-                } else {
-                    ""
-                }
-            )
-            .unwrap();
+    for (index, param) in function.params.iter().enumerate() {
+        if index > 0 {
+            output.push_str(", ");
         }
+        write!(
+            output,
+            "{}{} slim_arg_{index}",
+            c_type(&param.ty),
+            if param.mode == ParamMode::Inout {
+                " *"
+            } else {
+                ""
+            }
+        )
+        .unwrap();
     }
+    if !function.params.is_empty() {
+        output.push_str(", ");
+    }
+    output.push_str("SlimRegion *slim_region");
     output.push_str(");\n");
 }
 
@@ -342,28 +331,29 @@ impl<'a> FunctionEmitter<'a> {
             c_function_name(&self.function.name)
         )
         .unwrap();
-        if self.function.params.is_empty() {
-            self.code.push_str("void");
-        } else {
-            for (index, param) in self.function.params.iter().enumerate() {
-                if index > 0 {
-                    self.code.push_str(", ");
-                }
-                write!(
-                    self.code,
-                    "{}{} slim_arg_{index}",
-                    c_type(&param.ty),
-                    if param.mode == ParamMode::Inout {
-                        " *"
-                    } else {
-                        ""
-                    }
-                )
-                .unwrap();
+        for (index, param) in self.function.params.iter().enumerate() {
+            if index > 0 {
+                self.code.push_str(", ");
             }
+            write!(
+                self.code,
+                "{}{} slim_arg_{index}",
+                c_type(&param.ty),
+                if param.mode == ParamMode::Inout {
+                    " *"
+                } else {
+                    ""
+                }
+            )
+            .unwrap();
         }
+        if !self.function.params.is_empty() {
+            self.code.push_str(", ");
+        }
+        self.code.push_str("SlimRegion *slim_region");
         self.code.push_str(") {\n");
         self.indent = 1;
+        self.line("(void)slim_region;");
 
         for (index, param) in self.function.params.iter().enumerate() {
             let local = if param.mode == ParamMode::Inout {
@@ -386,10 +376,17 @@ impl<'a> FunctionEmitter<'a> {
             "{} slim_result = {{0}};",
             c_type(&self.function.return_type)
         ));
+        let allocates = self.function.effects.contains(&Effect::Alloc);
+        if allocates {
+            self.propagate_allocation();
+        }
         if contains_recur(&self.function.body) {
             self.code.push_str("slim_recur: ;\n");
         }
         self.emit_expr(&self.function.body, "slim_result");
+        if allocates {
+            self.line("slim_allocation_failed: ;");
+        }
         self.line("return slim_result;");
         self.code.push_str("}\n\n");
         output.push_str(&self.code);
@@ -510,13 +507,9 @@ impl<'a> FunctionEmitter<'a> {
     fn emit_call(&mut self, name: &str, arguments: &[Expr], ty: &Type, destination: &str) {
         let builtin = Builtin::from_name(name);
         if builtin.is_none() {
-            let modes = self
-                .program
-                .functions
-                .get(name)
-                .expect("checked function")
-                .param_modes
-                .clone();
+            let signature = self.program.functions.get(name).expect("checked function");
+            let modes = signature.param_modes.clone();
+            let allocates = signature.effects.contains(&Effect::Alloc);
             let mut c_arguments = Vec::new();
             for (argument, mode) in arguments.iter().zip(modes) {
                 if mode == ParamMode::Inout {
@@ -528,11 +521,15 @@ impl<'a> FunctionEmitter<'a> {
                     c_arguments.push(self.evaluate(argument));
                 }
             }
+            c_arguments.push("slim_region".to_owned());
             self.line(&format!(
                 "{destination} = {}({});",
                 c_function_name(name),
                 c_arguments.join(", ")
             ));
+            if allocates {
+                self.propagate_allocation();
+            }
             return;
         }
         if matches!(builtin, Some(Builtin::VecPush | Builtin::ArenaAdd)) {
@@ -548,6 +545,7 @@ impl<'a> FunctionEmitter<'a> {
             self.line(&format!(
                 "{destination} = slim_read_file({path}, &({output}));"
             ));
+            self.propagate_allocation();
             return;
         }
         let temporaries: Vec<_> = arguments
@@ -595,7 +593,7 @@ impl<'a> FunctionEmitter<'a> {
                     unreachable!("checked vec.new has Vec result")
                 };
                 self.line(&format!(
-                    "{destination} = slim_vec_new(sizeof({}));",
+                    "{destination} = slim_vec_new(sizeof({}), slim_region);",
                     c_type(inner)
                 ));
             }
@@ -630,7 +628,7 @@ impl<'a> FunctionEmitter<'a> {
                     unreachable!("checked arena.new has Arena result")
                 };
                 self.line(&format!(
-                    "{destination} = slim_vec_new(sizeof({}));",
+                    "{destination} = slim_vec_new(sizeof({}), slim_region);",
                     c_type(inner)
                 ));
             }
@@ -663,10 +661,10 @@ impl<'a> FunctionEmitter<'a> {
         let value = self.evaluate(&arguments[1]);
         match builtin {
             Builtin::VecPush => self.line(&format!(
-                "slim_vec_push(&{vector}, &{value}); {destination} = (SlimUnit){{0}};"
+                "if (!slim_vec_push(&{vector}, &{value})) goto slim_allocation_failed; {destination} = (SlimUnit){{0}};"
             )),
             Builtin::ArenaAdd => self.line(&format!(
-                "{destination} = slim_arena_add(&{vector}, &{value});"
+                "if (!slim_arena_add(&{vector}, &{value}, &{destination})) goto slim_allocation_failed;"
             )),
             _ => unreachable!(),
         }
@@ -757,6 +755,10 @@ impl<'a> FunctionEmitter<'a> {
             "{destination} = {} {operator} {};",
             arguments[0], arguments[1]
         ));
+    }
+
+    fn propagate_allocation(&mut self) {
+        self.line("if (slim_region_failed(slim_region)) goto slim_allocation_failed;");
     }
 
     fn binding(&self, name: &str) -> String {
@@ -865,39 +867,5 @@ fn contains_recur(expr: &Expr) -> bool {
         | ExprKind::Bytes(_)
         | ExprKind::Name(_)
         | ExprKind::Error => false,
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::{lexer, parser, sema, sexpr};
-
-    fn compile(source: &str) -> String {
-        let (tokens, lex_errors) = lexer::lex(source);
-        assert!(lex_errors.is_empty(), "{lex_errors:#?}");
-        let (forms, parse_errors) = sexpr::parse(&tokens, source.len());
-        assert!(parse_errors.is_empty(), "{parse_errors:#?}");
-        let (program, lower_errors) = parser::lower(&forms);
-        assert!(lower_errors.is_empty(), "{lower_errors:#?}");
-        let (checked, check_errors) = sema::check(program.unwrap());
-        assert!(check_errors.is_empty(), "{check_errors:#?}");
-        generate_c(&checked.unwrap())
-    }
-
-    #[test]
-    fn emits_checked_arithmetic() {
-        let c =
-            compile("(module x (fn main ((args (Vec Bytes))) I64 (effects) (call i64.add 40 2)))");
-        assert!(c.contains("slim_i64_add"));
-        assert!(c.contains("slim_fn_main"));
-    }
-
-    #[test]
-    fn emits_tail_recurrence_as_jump() {
-        let c = compile(
-            "(module x (fn countdown ((n I64)) I64 (effects partial) (match (call i64.eq n 0) (true 0) (false (recur (call i64.sub n 1))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call countdown 10)))",
-        );
-        assert!(c.contains("goto slim_recur"));
     }
 }

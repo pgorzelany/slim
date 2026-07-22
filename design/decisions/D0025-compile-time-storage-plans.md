@@ -79,10 +79,12 @@ move, and ownership projections whose lifetime cannot be established. Runtime
 tests inject allocation failure and sanitizers reject use-after-free,
 double-free, leaks in bounded fixtures, and invalid reallocation.
 
-The stage-0 and self-hosted planners must agree on diagnostics and canonical
-plans. Clean and incremental compilation use the same plan query; a body edit
+The canonical planner is implemented once in the self-hosted compiler. Stage 0
+preserves the same safe region ABI, failure behavior, and diagnostics for
+bootstrap without becoming a second lifetime-analysis implementation. Clean
+and incremental compilation use the same plan query; a body edit
 invalidates only the declaration and consumers of an interface-level ownership
-summary change. The twelve-module compiler must rebuild itself, pass the full
+summary change. The thirteen-module compiler must rebuild itself, pass the full
 differential corpus, and retain a stage-2/stage-3 byte fixed point. Scaling
 measurements must remain approximately linear.
 

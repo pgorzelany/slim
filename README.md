@@ -48,12 +48,20 @@ For the executable Core oracle and incremental measurements:
 
 Stage 0 implements Core 0 and provides the reference diagnostics. The
 self-hosted compiler is a genuine deterministic compiler, not a wrapper. Core
-0.3 is frozen with all 52 conformance fixtures at self-host parity. Its twelve
-SLIM modules implement structured syntax and typed declarations, standalone
-and project checking, deterministic C generation, declaration-level query
-invalidation, transactional last-good sessions, a bounded validated persistent
-cache, and deterministic bounded scheduling. New compiler capabilities default
-to SLIM under an enforced production-Rust budget.
+0.4 is frozen with all 58 standalone and project fixtures at self-host parity.
+Its thirteen SLIM modules implement structured syntax and typed declarations,
+standalone and project checking, deterministic C generation,
+declaration-level query invalidation, transactional last-good sessions, a
+bounded validated persistent cache, deterministic bounded scheduling, and a
+SLIM-owned bounded lifetime planner. Core 0.4 adds compiler-selected function
+regions, self-describing region allocations with deterministic reverse
+destruction, and a typed allocation-effect failure channel. It adds no source
+syntax, allocator alias, reference counting, or garbage collector. Detailed
+per-binding planning is capped at 64 values and conservatively falls back to a
+function boundary; dynamic-buffer stack promotion and earlier lexical release
+remain future precision work.
+New compiler capabilities default to SLIM under an enforced production-Rust
+budget.
 Core 0.1 also has declaration-local in-memory incremental compilation with
 stable syntax/interface fingerprints and dependency-aware invalidation; its
 architecture and measured remaining whole-file costs are documented in

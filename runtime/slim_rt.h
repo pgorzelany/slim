@@ -14,21 +14,47 @@ typedef struct {
     int64_t len;
 } SlimBytes;
 
+typedef struct SlimAllocation SlimAllocation;
+
+typedef enum {
+    SLIM_ALLOC_OK = 0,
+    SLIM_ALLOC_EXHAUSTED = 1,
+} SlimAllocCode;
+
+typedef struct {
+    SlimAllocCode code;
+    uint64_t attempts;
+    uint64_t failure_at;
+    uint64_t fail_at;
+} SlimAllocStatus;
+
+typedef struct SlimRegion {
+    SlimAllocation *newest;
+    struct SlimRegion *parent;
+    SlimAllocStatus *status;
+} SlimRegion;
+
 typedef struct {
     uint8_t *data;
     int64_t len;
     int64_t capacity;
     size_t element_size;
+    SlimRegion *region;
 } SlimVec;
 
 typedef int64_t SlimId;
 
-void slim_rt_init(void);
+void slim_alloc_status_init(SlimAllocStatus *status);
+bool slim_region_failed(const SlimRegion *region);
+void slim_alloc_report(const SlimAllocStatus *status);
+void slim_rt_init(SlimRegion *root, SlimAllocStatus *status);
 void slim_rt_shutdown(void);
 _Noreturn void slim_rt_trap(const char *message);
 
-void *slim_rt_alloc(size_t size);
-void *slim_rt_realloc(void *pointer, size_t old_size, size_t new_size);
+void slim_region_init(SlimRegion *region, SlimRegion *parent);
+void slim_region_destroy(SlimRegion *region);
+void *slim_rt_alloc(SlimRegion *region, size_t size);
+void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t new_size);
 
 int64_t slim_i64_add(int64_t left, int64_t right);
 int64_t slim_i64_sub(int64_t left, int64_t right);
@@ -47,12 +73,12 @@ SlimUnit slim_print_i64(int64_t value);
 SlimUnit slim_print_bytes(SlimBytes value);
 SlimUnit slim_println(SlimBytes value);
 
-SlimVec slim_vec_new(size_t element_size);
+SlimVec slim_vec_new(size_t element_size, SlimRegion *region);
 int64_t slim_vec_len(SlimVec vector);
 size_t slim_vec_check_index(const SlimVec *vector, int64_t index);
 void slim_vec_get(const SlimVec *vector, int64_t index, void *output);
-void slim_vec_push(SlimVec *vector, const void *value);
+bool slim_vec_push(SlimVec *vector, const void *value);
 void slim_vec_set(SlimVec *vector, int64_t index, const void *value);
-SlimId slim_arena_add(SlimVec *arena, const void *value);
+bool slim_arena_add(SlimVec *arena, const void *value, SlimId *output);
 
 #endif
