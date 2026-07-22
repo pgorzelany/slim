@@ -1,0 +1,262 @@
+#!/bin/sh
+set -eu
+
+slim_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+slim_compiler="$slim_root/build/toolchain/slimc"
+slim_cc=${CC:-cc}
+slim_message_format=human
+
+if ! test -x "$slim_compiler"; then
+    "$slim_root/bootstrap.sh" >&2
+fi
+
+slim_tmp=$(mktemp -d "${TMPDIR:-/tmp}/slimc.XXXXXX")
+trap 'rm -rf "$slim_tmp"' EXIT HUP INT TERM
+
+slim_usage() {
+    echo "SLIM compiler 0.0.1 (self-hosted)"
+    echo
+    echo "usage:"
+    echo "  slimc [--message-format=human|json] check SOURCE [--jobs N]"
+    echo "  slimc [--message-format=human|json] emit-c SOURCE [--jobs N] -o FILE"
+    echo "  slimc [--message-format=human|json] build SOURCE [--jobs N] [-o FILE]"
+    echo "  slimc [--message-format=human|json] run SOURCE [--jobs N] [-- ARGS...]"
+    echo "  slimc fmt SOURCE [--check]"
+    echo "  slimc interfaces PROJECT [--jobs N] -o DIRECTORY"
+    echo "  slimc runtime DIRECTORY"
+    echo "  slimc builtins"
+}
+
+slim_render_diagnostics() {
+    slim_diagnostics=$1
+    slim_source=$2
+    if test "$slim_message_format" = human; then
+        while IFS= read -r slim_identity; do
+            test -n "$slim_identity" || continue
+            echo "error[$slim_identity]: rejected by the SLIM compiler" >&2
+        done < "$slim_diagnostics"
+    else
+        awk -v default_file="$slim_source" '
+            function escape(value) {
+                gsub(/\\/, "\\\\", value)
+                gsub(/\"/, "\\\"", value)
+                return value
+            }
+            NF {
+                code = $0
+                sub(/@.*/, "", code)
+                location = $0
+                sub(/^[^@]*@/, "", location)
+                file = default_file
+                if (location ~ /@/) {
+                    file = location
+                    sub(/@.*/, "", file)
+                    sub(/^[^@]*@/, "", location)
+                }
+                start = location
+                sub(/:.*/, "", start)
+                end = location
+                sub(/^[^:]*:/, "", end)
+                printf "{\"code\":\"%s\",\"severity\":\"error\",\"message\":\"rejected by the SLIM compiler\",\"file\":\"%s\",\"span\":{\"start\":%s,\"end\":%s,\"line\":0,\"column\":0},\"labels\":[],\"notes\":[],\"fixes\":[]}\n", escape(code), escape(file), start, end
+            }
+        ' "$slim_diagnostics" >&2
+    fi
+}
+
+slim_compile_c() {
+    slim_c_source=$1
+    slim_output=$2
+    mkdir -p "$(dirname -- "$slim_output")"
+    "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+        -I "$slim_root/runtime" "$slim_c_source" \
+        "$slim_root/runtime/slim_rt.c" -o "$slim_output"
+}
+
+slim_emit() {
+    slim_source=$1
+    slim_generated=$2
+    slim_jobs=$3
+    if test -n "$slim_jobs"; then
+        if "$slim_compiler" "$slim_source" --jobs "$slim_jobs" > "$slim_generated"; then
+            return 0
+        else
+            slim_status=$?
+        fi
+    else
+        if "$slim_compiler" "$slim_source" > "$slim_generated"; then
+            return 0
+        else
+            slim_status=$?
+        fi
+    fi
+    slim_render_diagnostics "$slim_generated" "$slim_source"
+    return "$slim_status"
+}
+
+while test "$#" -gt 0; do
+    case "$1" in
+        --message-format=human)
+            slim_message_format=human
+            shift
+            ;;
+        --message-format=json)
+            slim_message_format=json
+            shift
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if test "$#" -eq 0; then
+    slim_usage
+    exit 64
+fi
+
+slim_command=$1
+shift
+
+case "$slim_command" in
+    help|--help)
+        slim_usage
+        ;;
+    version|--version)
+        echo "slimc 0.0.1 (self-hosted)"
+        ;;
+    builtins)
+        awk -F '\t' '$1 == "builtin" { print $2 }' "$slim_root/design/surface.tsv"
+        ;;
+    runtime)
+        test "$#" -eq 1 || { slim_usage >&2; exit 64; }
+        mkdir -p "$1"
+        cp "$slim_root/runtime/slim_rt.c" "$1/slim_rt.c"
+        cp "$slim_root/runtime/slim_rt.h" "$1/slim_rt.h"
+        ;;
+    check)
+        test "$#" -ge 1 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        shift
+        if "$slim_compiler" check "$slim_source" "$@" > "$slim_tmp/diagnostics"; then
+            exit 0
+        else
+            slim_status=$?
+        fi
+        slim_render_diagnostics "$slim_tmp/diagnostics" "$slim_source"
+        exit "$slim_status"
+        ;;
+    fmt)
+        test "$#" -ge 1 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        shift
+        slim_check=false
+        if test "$#" -eq 1 && test "$1" = --check; then
+            slim_check=true
+            shift
+        fi
+        test "$#" -eq 0 || { slim_usage >&2; exit 64; }
+        if "$slim_compiler" fmt "$slim_source" > "$slim_tmp/formatted"; then
+            :
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/formatted" "$slim_source"
+            exit "$slim_status"
+        fi
+        if test "$slim_check" = true; then
+            if ! cmp -s "$slim_source" "$slim_tmp/formatted"; then
+                echo "$slim_source is not canonically formatted" >&2
+                exit 1
+            fi
+        else
+            cp "$slim_tmp/formatted" "$slim_source"
+        fi
+        ;;
+    interfaces)
+        test "$#" -ge 3 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        shift
+        slim_output=
+        while test "$#" -gt 0; do
+            case "$1" in
+                --jobs)
+                    test "$#" -ge 2 || { slim_usage >&2; exit 64; }
+                    shift 2
+                    ;;
+                -o)
+                    test "$#" -ge 2 || { slim_usage >&2; exit 64; }
+                    slim_output=$2
+                    shift 2
+                    ;;
+                *)
+                    slim_usage >&2
+                    exit 64
+                    ;;
+            esac
+        done
+        test -n "$slim_output" || { slim_usage >&2; exit 64; }
+        if "$slim_compiler" interfaces "$slim_source" > "$slim_tmp/interfaces"; then
+            :
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/interfaces" "$slim_source"
+            exit "$slim_status"
+        fi
+        mkdir -p "$slim_output"
+        while IFS= read -r slim_interface; do
+            test -n "$slim_interface" || continue
+            slim_module=$(printf '%s\n' "$slim_interface" | awk '{ value=$3; sub(/\).*/, "", value); print value }')
+            printf '%s\n' "$slim_interface" > "$slim_output/$slim_module.sli"
+        done < "$slim_tmp/interfaces"
+        ;;
+    emit-c|build|run)
+        test "$#" -ge 1 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        shift
+        slim_jobs=
+        slim_output=
+        while test "$#" -gt 0; do
+            case "$1" in
+                --jobs)
+                    test "$#" -ge 2 || { slim_usage >&2; exit 64; }
+                    slim_jobs=$2
+                    shift 2
+                    ;;
+                -o)
+                    test "$slim_command" != run || { slim_usage >&2; exit 64; }
+                    test "$#" -ge 2 || { slim_usage >&2; exit 64; }
+                    slim_output=$2
+                    shift 2
+                    ;;
+                --)
+                    test "$slim_command" = run || { slim_usage >&2; exit 64; }
+                    shift
+                    break
+                    ;;
+                *)
+                    slim_usage >&2
+                    exit 64
+                    ;;
+            esac
+        done
+        slim_emit "$slim_source" "$slim_tmp/program.c" "$slim_jobs" || exit $?
+        if test "$slim_command" = emit-c; then
+            test -n "$slim_output" || { slim_usage >&2; exit 64; }
+            mkdir -p "$(dirname -- "$slim_output")"
+            cp "$slim_tmp/program.c" "$slim_output"
+        elif test "$slim_command" = build; then
+            if test -z "$slim_output"; then
+                slim_output=${slim_source%.*}
+            fi
+            slim_compile_c "$slim_tmp/program.c" "$slim_output"
+        else
+            slim_compile_c "$slim_tmp/program.c" "$slim_tmp/program"
+            "$slim_tmp/program" "$@"
+        fi
+        ;;
+    cache|session)
+        "$slim_compiler" "$slim_command" "$@"
+        ;;
+    *)
+        "$slim_compiler" "$slim_command" "$@"
+        ;;
+esac
