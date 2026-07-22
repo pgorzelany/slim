@@ -37,6 +37,11 @@ Element zero is the executable path and remaining values are process arguments.
 There is no implicit global argument accessor and no alternative entry-point
 signature.
 
+Every type position must contain one scalar type, one declared record or
+variant name, or exactly one of `(Vec TYPE)`, `(Arena TYPE)`, and `(Id TYPE)`.
+Unknown names, function names used as types, malformed constructors, and extra
+type arguments are rejected before code generation.
+
 ## Semantics
 
 - Evaluation order is left-to-right.
@@ -50,7 +55,16 @@ signature.
   operations.
 - Pure functions declare `(effects)`. Allocation, I/O, and unproven termination
   require `alloc`, `io`, and `partial` respectively.
-- `match` must cover every variant or both Boolean values.
+- Record construction names every declared field exactly once and in declaration
+  order. Field projection must name a field of the value's record type.
+- Variant construction names one declared case and supplies exactly its payload
+  types. A variant `match` contains every case exactly once and in declaration
+  order; each arm binds exactly the declared payload.
+- A Boolean `match` contains `true` and `false` exactly once. Boolean arm order
+  is irrelevant because `Bool` has no user-declared source order.
+- Every nested expression is checked against its expected type. Calls and
+  `recur` require exact arity and argument types; `set` preserves the binding's
+  declared type; all match arms agree on the enclosing expected type.
 - A tail-position `recur` transfers control to the current function entry and
   does not grow the stack.
 - Resource failure is returned as an explicit typed value; it is never

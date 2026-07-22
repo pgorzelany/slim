@@ -1,7 +1,7 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. Its twenty explicit modules cover
-syntax/token utilities, byte-text emission, checking, typed memory planning,
+`slim.project` is the self-hosting input. Its twenty-one explicit modules cover
+syntax/token utilities, byte-text emission, typing, checking, typed memory planning,
 bounded semantic analysis, direct reduction, project handling, C generation,
 coordination, and the minimal executable driver. The checked-in portable C11
 seed compiles the project to the next
@@ -16,8 +16,11 @@ a privileged bootstrap dialect.
 The `ir` module begins the D0023 typed-query migration. Syntax indexing creates
 one structured declaration vector per standalone check. All top-level checker
 passes share that vector, and governance requires exactly one file read and one
-lex operation in the self-host checker. Expression typing and checked query
-state continue to move into this representation incrementally.
+lex operation in the self-host checker. D0031 adds the `typing` module: it
+derives linked lexical bindings, validates all declared and nested expression
+types, and records structured type facts and issues. The checker consumes that
+view now; code generation, project source mapping, and the remaining semantic
+passes must share it before Core 1D is frozen.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

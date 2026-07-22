@@ -21,11 +21,16 @@ Tuples and classes duplicate product representation or add unrelated behavior.
 
 ## Costs
 
-Records add layout, construction, and projection rules.
+Records add layout, construction, and projection rules. D0032 requires every
+construction to name each field exactly once in declaration order, avoiding
+equivalent source orderings and repeated member lookup.
 
 ## Evidence
 
 One named-field representation covers compiler data and challenge structures.
+The self-host compiler validates construction with a paired linear walk and
+pins missing, duplicate, unknown, out-of-order, and mistyped fields in the
+external conformance corpus.
 
 ## Removal
 

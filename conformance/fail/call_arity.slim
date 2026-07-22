@@ -1,0 +1,5 @@
+(module call-arity
+  (fn add ((left I64) (right I64)) I64 (effects)
+    (call i64.add left right))
+  (fn main ((args (Vec Bytes))) I64 (effects)
+    (call add 1)))

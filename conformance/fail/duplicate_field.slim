@@ -1,0 +1,5 @@
+(module duplicate-field
+  (record Pair ((left I64) (right I64)))
+  (fn main ((args (Vec Bytes))) I64 (effects)
+    (let pair Pair (make Pair (left 1) (left 2))
+      (get pair left))))

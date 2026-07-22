@@ -23,12 +23,15 @@ explicit or less safe.
 
 ## Costs
 
-Variants require tag layout and exhaustiveness metadata.
+Variants require tag layout and exhaustiveness metadata. D0032 requires match
+arms exactly once in declaration order, making exhaustiveness and payload
+validation a paired linear walk.
 
 ## Evidence
 
 The same construct represents compiler trees, errors, optional values, and
-state machines.
+state machines. External fixtures pin unknown, duplicate, out-of-order,
+non-exhaustive, wrong-arity, and mistyped cases.
 
 ## Removal
 

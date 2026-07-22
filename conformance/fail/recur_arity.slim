@@ -1,0 +1,5 @@
+(module recur-arity
+  (fn loop ((value I64)) I64 (effects partial)
+    (recur))
+  (fn main ((args (Vec Bytes))) I64 (effects partial)
+    (call loop 0)))

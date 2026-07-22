@@ -1,0 +1,4 @@
+(module variant-payload-type
+  (variant Maybe ((None) (Some I64)))
+  (fn main ((args (Vec Bytes))) I64 (effects)
+    (let value Maybe (case Maybe Some false) 0)))

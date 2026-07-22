@@ -1,0 +1,7 @@
+(module nonexhaustive-variant
+  (variant Maybe ((None) (Some I64)))
+  (fn unwrap ((value Maybe)) I64 (effects)
+    (match value
+      (None 0)))
+  (fn main ((args (Vec Bytes))) I64 (effects)
+    (call unwrap (case Maybe None))))

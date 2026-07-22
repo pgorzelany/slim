@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1B implementation and research direction
+Status: Core 1D implementation and research direction
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-22
 
@@ -16,7 +16,7 @@ support for program analysis, deterministic concurrency, and mechanical
 simplification.
 
 This document records the durable design choices and research aspirations.
-Core 0 now has a concrete canonical syntax, type/effect/ownership checker,
+Core now has a concrete canonical syntax, type/effect/ownership checker,
 deterministic C backend, runtime, benchmark suite, and a restricted
 self-hosting compiler. Later sections distinguish implemented mechanisms from
 longer-term goals.
@@ -96,6 +96,12 @@ may therefore need distinct fast-development and optimized-build modes.
   through good diagnostics.
 - Types should help represent domain rules so invalid states are not
   representable.
+
+Core 1D is replacing shallow and repeated token interpretation with one typed
+compiler view. The implemented slice validates every declared type and nested
+expression, while records and variant matches use one declared-order form.
+Code-generation reuse, project source maps, and measured bounded lookup remain
+acceptance work rather than completed claims.
 
 ### 8. Programs should be measurable
 

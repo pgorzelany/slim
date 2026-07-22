@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1C real programs and fast compiler loop complete
-Current milestone: choose Core 1D from measured diagnostic and runtime gaps
+Status: Core 1D shared typed compiler view in progress
+Current milestone: unify checking and generation on bounded typed facts
 Last updated: 2026-07-22
 
 ## Direction
@@ -625,3 +625,27 @@ Acceptance evidence:
 
 Frozen measurements, profiler findings, reproduction commands, and negative
 results are recorded in `benchmarks/results/2026-07-22-core-1c.md`.
+
+### Core 1D: complete typed compiler view
+
+Status: in progress
+
+D0031 makes one derived typed view authoritative for expression semantics, and
+D0032 gives record construction and variant matching one canonical declared
+order. The first slice is implemented in SLIM: it validates all declared type
+forms and nested expressions, exact call and recursive-transfer signatures,
+record and variant members, assignments, matches, and the executable boundary.
+Standalone checking and flattened project checking use the same analyzer. The
+stronger boundary passes 85 external fixtures, 2,000 deterministic malformed
+mutations, all matched challenge programs, and a byte-identical self-host
+bootstrap.
+
+This is not yet a completed milestone. Code generation and memory planning
+still rediscover some semantic facts from tokens; project type diagnostics need
+module/original-span source mapping; and the first full self-host project check
+is materially slower than the Core 1C feedback target. Core 1D acceptance
+requires one reusable checked artifact per input, bounded expression-fact and
+name/member lookup, removal of redundant ordinary-generation analysis, exact
+project diagnostic projection, adversarial deep/wide tests, geometric scaling
+and same-host regression budgets, allocation-failure and sanitizer coverage,
+and the complete release/bootstrap gate.
