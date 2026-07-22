@@ -219,9 +219,10 @@ filesystem enumeration and worker completion order.
 Project checking prepares one in-memory artifact containing the validated
 manifest, flattened source, lexical tokens, typed facts, and one original-source
 origin per flattened token. Scheduling, ordinary C emission, and persistent
-cache misses consume that same checked artifact. Structured type diagnostics
-are projected back to module-local byte spans; the remaining legacy effect and
-ownership reporters are being migrated to the same structured channel.
+cache misses consume that same checked artifact. Structured issues retain an
+inclusive token interval, allowing point and whole-expression ranges to project
+back to module-local byte spans. The remaining legacy effect, exhaustiveness,
+and ownership reporters are being migrated to the same structured channel.
 
 ## Non-goals
 

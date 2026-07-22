@@ -49,8 +49,9 @@ Consumers need staged migration, during which differential tests must prevent
 the old and new paths from disagreeing.
 
 Project flattening originally lost module coordinates; D0033 now retains one
-origin per flattened token and projects structured type issues back to exact
-module-local spans. The first self-host measurement exposed repeated whole-program call resolution
+origin per flattened token, while D0034 gives each issue an inclusive token
+interval that projects point and range diagnostics back to exact module-local
+spans. The first self-host measurement exposed repeated whole-program call resolution
 in legacy effect and ownership passes. Reusing declaration links removed those
 scans and improved the recorded self-host project check from 3.91 seconds to a
 0.20-second median. Member queries and project-artifact reuse remain acceptance

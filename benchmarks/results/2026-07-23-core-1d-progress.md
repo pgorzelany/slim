@@ -62,13 +62,29 @@ cost of constructing the proposed index. It is not evidence against dense
 lookup in principle; it is evidence that this particular change cannot land
 without profiling, a geometric fixture, and a same-host regression result.
 
+## Token-interval diagnostic checkpoint
+
+D0034 replaces the structured issue's single token with inclusive start and
+end token indices. Standalone and prepared-project reporters consume the same
+interval, while one-token type issues set both endpoints identically. The
+self-host check remained about 0.22 seconds and the compiler bootstrapped to a
+byte-identical 1,652,703-byte C seed.
+
+An attempted all-at-once migration of the effect, recursive-borrow, and move
+walkers threaded another mutable issue vector through their recursive call
+graphs. Even after removing the move portion, self-validation exceeded 40
+seconds. The experiment was reverted rather than accepting a compiler
+performance regression. The representation remains; collectors will migrate in
+smaller slices with source-shape measurements before each checkpoint.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy effect and ownership diagnostics still need to move into the structured
-  issue channel so every project semantic diagnostic uses the same projection.
+- Legacy effect, exhaustiveness, and ownership diagnostics still need to move
+  into the structured issue channel so every project semantic diagnostic uses
+  the same projection.
 - Code generation and memory planning still rediscover some facts from token
   structure instead of consuming dense typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,

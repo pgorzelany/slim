@@ -656,9 +656,17 @@ flattened, lexed, and checked representation. One origin record per flattened
 token projects structured type issues back to the source module and exact local
 byte span; `project-type-error` pins `E0344@app@56:60`.
 
+The fourth slice adopts D0034's token-interval issue model. One-token type
+issues and whole-expression diagnostics now have the same compact structured
+representation, and both standalone and project reporters render from its two
+endpoints. The compiler remains at a 0.22-second self-check on the recorded
+host. A first recursive legacy-collector design was rejected after increasing
+that check beyond 40 seconds; migration will continue only through smaller
+measured slices.
+
 This is not yet a completed milestone. Code generation and memory planning
-still rediscover some semantic facts from tokens, and legacy effect and
-ownership reports have not yet joined the structured project source-projection
+still rediscover some semantic facts from tokens, and legacy effect,
+exhaustiveness, and ownership reports have not yet joined the structured project source-projection
 channel. Core 1D acceptance requires bounded expression-fact and name/member
 lookup, removal of redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and

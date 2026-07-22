@@ -44,10 +44,12 @@ facts simultaneously. All are linear in project size. The origin table stores
 one small record per flattened token; synthetic wrapper tokens use a sentinel
 module identity. Consumers must not mutate retained token links incompatibly.
 
-Legacy effect and ownership diagnostics are still emitted directly by their
-passes. Their spans are exact in standalone compilation, but completing project
-projection for every diagnostic requires moving those remaining reports into
-the same structured issue channel.
+Structured issues now retain inclusive token intervals under D0034, so the
+prepared origin table can preserve both point and whole-expression ranges.
+Legacy effect, exhaustiveness, and ownership diagnostics are still emitted
+directly by their passes. Their spans are exact in standalone compilation, but
+completing project projection for every diagnostic requires moving those
+remaining reports into the same structured issue channel.
 
 ## Evidence
 

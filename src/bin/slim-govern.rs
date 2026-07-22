@@ -882,6 +882,32 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("self-host checker does not consume structured declarations".to_owned());
     }
 
+    let typing_path = directory.join("typing.slim");
+    let Ok(typing) = fs::read_to_string(&typing_path) else {
+        return;
+    };
+    for required in [
+        "(record Issue ((code Bytes) (start I64) (end I64)))",
+        "(fn append_issue",
+        "(make Issue (code code) (start start) (end end))",
+    ] {
+        if !typing.contains(required) {
+            errors.push(format!(
+                "self-host typed issue channel is missing interval capability `{required}`"
+            ));
+        }
+    }
+    if typing.contains("(record Issue ((code Bytes) (token I64)))") {
+        errors.push("self-host typed issue channel regressed to point-only spans".to_owned());
+    }
+    for required in ["(fn report_issue", "(get issue start)", "(get issue end)"] {
+        if !check.contains(required) {
+            errors.push(format!(
+                "self-host checker is missing interval diagnostic consumer `{required}`"
+            ));
+        }
+    }
+
     let project_path = directory.join("project.slim");
     let Ok(project_source) = fs::read_to_string(&project_path) else {
         return;
@@ -900,12 +926,20 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn prepare_loaded_project",
         "(fn generate_prepared_project",
         "(fn report_project_issue",
+        "(fn report_project_issues",
         "(fn report_loaded_project",
         "(fn report_private_type_leaks",
     ] {
         if !project_source.contains(required) {
             errors.push(format!(
                 "self-host project checker is missing manifest capability `{required}`"
+            ));
+        }
+    }
+    for required in ["(get issue start)", "(get issue end)"] {
+        if !project_source.contains(required) {
+            errors.push(format!(
+                "self-host project checker is missing interval projection `{required}`"
             ));
         }
     }
