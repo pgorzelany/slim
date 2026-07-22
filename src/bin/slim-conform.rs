@@ -79,7 +79,7 @@ fn run() -> Result<(), String> {
         .map_err(|error| format!("cannot inspect bootstrap seed: {error}"))?
         .len();
     println!(
-        "conformance: {fixture_count} fixtures and 2000 deterministic malformed-input mutations passed through the SLIM compiler, including 100 reduce/analyze probes ({summary}); no semantic fallback; bootstrap seed is {fixed_bytes} C bytes",
+        "conformance: {fixture_count} fixtures and 2000 deterministic malformed-input mutations passed through the SLIM compiler, including 100 bounded-tool probes per command ({summary}); no semantic fallback; bootstrap seed is {fixed_bytes} C bytes",
     );
     Ok(())
 }
@@ -122,6 +122,25 @@ fn check_malformed_input_robustness(compiler: &Path) -> Result<(), String> {
                     ));
                 }
             }
+            for command in ["prove-reduction", "verify-reduction", "equivalent", "edit"] {
+                let mut process = Command::new(compiler);
+                process.arg(command).arg(&path);
+                if command != "prove-reduction" {
+                    process.arg(&path);
+                }
+                let output = process.output().map_err(|error| {
+                    format!("cannot run malformed-input case {case} with {command}: {error}")
+                })?;
+                if output.status.code() != Some(1)
+                    || !output.stderr.is_empty()
+                    || !output.stdout.starts_with(b"E")
+                {
+                    return Err(format!(
+                        "malformed-input case {case} escaped {command} rejection: {} / {:?} / {:?}",
+                        output.status, output.stdout, output.stderr
+                    ));
+                }
+            }
         }
 
         let mut state = 0x5eed_u64;
@@ -136,20 +155,27 @@ fn check_malformed_input_robustness(compiler: &Path) -> Result<(), String> {
             }
             fs::write(&path, &source).map_err(|error| error.to_string())?;
             let commands: &[&str] = if case % 20 == 0 {
-                &["check", "reduce", "analyze"]
+                &[
+                    "check",
+                    "reduce",
+                    "analyze",
+                    "prove-reduction",
+                    "verify-reduction",
+                    "equivalent",
+                    "edit",
+                ]
             } else {
                 &["check"]
             };
             for command in commands {
-                let output = Command::new(compiler)
-                    .arg(command)
-                    .arg(&path)
-                    .output()
-                    .map_err(|error| {
-                        format!(
-                            "cannot run malformed-input mutation {case} with {command}: {error}"
-                        )
-                    })?;
+                let mut process = Command::new(compiler);
+                process.arg(command).arg(&path);
+                if matches!(*command, "verify-reduction" | "equivalent" | "edit") {
+                    process.arg(&path);
+                }
+                let output = process.output().map_err(|error| {
+                    format!("cannot run malformed-input mutation {case} with {command}: {error}")
+                })?;
                 let status = output.status.code();
                 if !matches!(status, Some(0 | 1)) || !output.stderr.is_empty() {
                     return Err(format!(

@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1A direct typed reduction complete
-Current milestone: Core 1B bounded semantics research
+Status: Core 1B measurable programs and AI ergonomics complete
+Current milestone: Core 1B complete; next research milestone not selected
 Last updated: 2026-07-22
 
 ## Direction
@@ -542,11 +542,39 @@ The frozen measurements and reproduction commands are recorded in
 
 ### Core 1B: bounded semantics and quality evidence
 
-Status: next
+Status: complete
 
-Define useful explicitly bounded program classes, observational equivalence
-budgets, and quality metrics before expanding the reducer. Separate metrics
-that can be proved (state-space cardinality, effect surface, ownership and
-dependency structure, bounded worst-case cost) from heuristic scores. Any new
-rewrite must carry its own termination, totality, behavior-preservation, and
-compile-cost evidence; no new source feature is implied.
+D0029 adds no source-language feature. Analysis version 2 classifies exact,
+bounded, and unknown facts for structural/effect/failure surface, representable
+primitive state cardinality, ownership pressure, direct dependencies,
+reduction opportunity, and a deliberately conservative totality result. It
+does not infer application invariants, reachable-state ratios, asymptotic cost,
+or one universal goodness score.
+
+`prove-reduction` records at most 64 stable source-node rule justifications;
+`verify-reduction` independently recomputes the unique eight-pass normal form.
+`equivalent` is exact only for checked pure Boolean `subject` functions with at
+most eight inputs and 256 expression tokens, returning the first canonical
+counterexample on disagreement. `edit` consumes one versioned, non-executable,
+64-token replacement addressed by canonical token identity, and the launcher
+publishes it only after the normal checker accepts the candidate.
+
+Acceptance evidence:
+
+- the production implementation is four new SLIM modules—`quality`, `proof`,
+  `equivalence`, and `edit`—with no Core surface or runtime ABI addition;
+- exact/unknown state models, conservative totality, ownership pressure,
+  proof determinism/replay, equivalence boundaries/counterexamples, and valid,
+  malformed, non-executable, and type-invalid patches are tested end to end;
+- all 62 conformance fixtures and 2,000 malformed mutations pass, with 100
+  random probes through every bounded tool command;
+- geometric 250/500/1,000/2,000-declaration measurements keep check, reduce,
+  analysis, and proof discovery below the 1.25 process-scaling exponent gate;
+- the matched SLIM/C/Rust agent fixture records lexical/model-token proxies,
+  edit spans, diagnostics, acceptance, and feedback without claiming an LLM
+  success rate; and
+- the twenty-module compiler reproduces the 1,364,504-byte portable C seed at
+  a byte-identical fixed point.
+
+Frozen measurements, reproduction commands, and negative results are recorded
+in `benchmarks/results/2026-07-22-core-1b.md`.

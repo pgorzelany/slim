@@ -49,6 +49,25 @@ These rules apply to every change in this repository.
 - A new rewrite is a feature: weigh it through `design/FEATURE_POLICY.md`, add
   positive and non-applicability tests, and measure direct-reduction scaling.
 
+## Evidence and agent-tool constraints
+
+- Classify every semantic claim as `exact`, `bounded` with its fixed budget, or
+  `unknown` with a stable reason. Never turn missing evidence into a negative
+  quality score.
+- Report independent quality facts; do not invent one universal goodness score
+  or infer application invariants from representable state alone.
+- Keep default evidence collection approximately linear. Exhaustive search is
+  allowed only behind an explicit command with a hard checked bound.
+- Equivalence results apply only to the complete domain named in the report. A
+  supported mismatch must include the first deterministic counterexample.
+- Proof records are explanatory data. Replay must recompute the accepted result
+  from checked source rather than trust proof text.
+- Agent patches are versioned, bounded, non-executable tooling data. They may
+  address one stable canonical node, but the normal checker remains the sole
+  authority that accepts the resulting program.
+- Source/model-token proxies and edit-size measurements are evidence, not an
+  LLM success rate. Keep native performance measurements independent.
+
 ## Change requirements
 
 - Implement new production compiler capabilities in `selfhost/` SLIM by
@@ -62,8 +81,9 @@ These rules apply to every change in this repository.
 - Preserve deterministic formatting, diagnostics, and generated C.
 - Add positive, negative, and diagnostic tests for behavior changes.
 - Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, `cargo test`,
-  and `cargo run --release --bin slim-bench -- reduction --quick` before
-  committing a compiler change.
+  `cargo run --release --bin slim-bench -- reduction --quick`, and
+  `cargo run --release --bin slim-bench -- agent` before committing a compiler
+  or agent-tool change.
 - Do not add a dependency without an accepted architecture decision.
 - If a requested change conflicts with a hard gate, record the conflict rather
   than bypassing the gate.

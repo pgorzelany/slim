@@ -12,6 +12,8 @@ target/release/slim-bench compare
 target/release/slim-bench scaling
 target/release/slim-bench incremental
 target/release/slim-bench project
+target/release/slim-bench reduction
+target/release/slim-bench agent
 ```
 
 SLIM compilation time includes the frontend, deterministic C emission, and an
@@ -58,3 +60,12 @@ cost more wall time than a clean check at these sizes. See
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/
 session process timings, and explicit claims that remain out of scope.
+
+The `agent` command uses one matched unknown-operation repair in SLIM, C11, and
+Rust. It reports source bytes, a language-neutral ASCII lexical-token count, a
+clearly labelled `ceil(bytes / 4)` model-token proxy, the common-prefix/suffix
+edit span, diagnostic bytes, before/after acceptance, and median process-level
+compiler feedback. Every broken fixture must be rejected and every fixed
+fixture accepted before a row is printed. These static measurements can test
+token economy and edit locality; they are not an LLM generation or repair
+success rate. Native runtime and binary-size comparisons remain in `compare`.

@@ -313,10 +313,16 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert!(first.status.success());
     assert_eq!(first.stdout, second.stdout);
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 1 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 2 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
+    assert!(report.contains("(quality (guarantee exact)"));
+    assert!(report.contains("(function-quality 3 fill"));
+    assert!(report.contains("(allocation-sites 1)"));
+    assert!(report.contains("(totality (guarantee unknown) (reason calls-or-recursion))"));
     assert!(report.contains("(function 71 sum"));
-    assert!(report.contains("(binding 76 values (type (Vec I64)) (ownership owned)"));
+    assert!(
+        report.contains("(binding 76 values (type (Vec I64)) (ownership owned) (scope-end 138)")
+    );
     assert!(report.contains("(uses 3)"));
     assert!(report.contains("(last-use 130)"));
     assert!(report.ends_with(")\n"));
@@ -330,9 +336,185 @@ fn semantic_analysis_is_stable_and_bounded() {
     let pattern_report = String::from_utf8(pattern_report.stdout).unwrap();
     assert!(
         pattern_report.contains(
-            "(binding 230 items (type unknown) (ownership unknown) (uses 1) (last-use 235)"
+            "(binding 230 items (type unknown) (ownership unknown) (scope-end 238) (uses 1) (last-use 235)"
         )
     );
+}
+
+#[test]
+fn quality_analysis_classifies_exact_and_unknown_facts() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/evidence/quality.slim");
+    let output = Command::new(slimc())
+        .arg("analyze")
+        .arg(source)
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert!(report.contains("(state-model TenFlags (guarantee exact) (cardinality (pow2 10)))"));
+    assert!(
+        report.contains(
+            "(state-model Dynamic (guarantee unknown) (reason dynamic-or-unresolved-type))"
+        )
+    );
+    assert!(report.contains(
+        "(state-model Decision (guarantee exact) (cardinality (sum (pow2 0) (pow2 1) (pow2 8))))"
+    ));
+    assert!(report.contains("(totality (guarantee exact) (status total))"));
+}
+
+#[test]
+fn reduction_proofs_are_deterministic_and_replayed_independently() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/pass/reduction.slim");
+    let first = Command::new(slimc())
+        .arg("prove-reduction")
+        .arg(&source)
+        .output()
+        .unwrap();
+    let second = Command::new(slimc())
+        .arg("prove-reduction")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(first.status.success());
+    assert_eq!(first.stdout, second.stdout);
+    let report = String::from_utf8(first.stdout).unwrap();
+    assert!(report.starts_with("(reduction-proof 1 (guarantee bounded)"));
+    assert!(report.contains("(pass-limit 8) (site-limit 64)"));
+    assert!(report.contains("dead-scalar-binding"));
+    assert!(report.contains("right-identity"));
+    assert!(report.ends_with(")\n"));
+
+    let directory = temporary_directory("proof-replay");
+    let reduced = directory.join("reduced.slim");
+    let reduced_output = Command::new(slimc())
+        .arg("reduce")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(reduced_output.status.success());
+    fs::write(&reduced, reduced_output.stdout).unwrap();
+    let verified = Command::new(slimc())
+        .arg("verify-reduction")
+        .arg(&source)
+        .arg(&reduced)
+        .output()
+        .unwrap();
+    assert!(verified.status.success());
+    assert_eq!(
+        verified.stdout,
+        b"(reduction-verification 1 (status verified))\n"
+    );
+
+    let different = Command::new(slimc())
+        .arg("verify-reduction")
+        .arg(&source)
+        .arg(root.join("conformance/pass/scalars.slim"))
+        .output()
+        .unwrap();
+    assert!(different.status.success());
+    assert_eq!(
+        different.stdout,
+        b"(reduction-verification 1 (status different))\n"
+    );
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn finite_equivalence_proves_or_returns_the_first_counterexample() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let evidence = root.join("conformance/evidence");
+    let left = evidence.join("equivalent-left.slim");
+    let right = evidence.join("equivalent-right.slim");
+    let equivalent = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&left)
+        .arg(&right)
+        .output()
+        .unwrap();
+    assert!(equivalent.status.success());
+    assert_eq!(
+        equivalent.stdout,
+        b"(equivalence 1 (status equivalent) (domain exact) (cases 4))\n"
+    );
+
+    let different = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&left)
+        .arg(evidence.join("different.slim"))
+        .output()
+        .unwrap();
+    assert!(different.status.success());
+    assert_eq!(
+        different.stdout,
+        b"(equivalence 1 (status different) (domain exact) (counterexample (inputs false true) (left false) (right true)))\n"
+    );
+
+    let unsupported = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&left)
+        .arg(evidence.join("unsupported.slim"))
+        .output()
+        .unwrap();
+    assert!(unsupported.status.success());
+    assert_eq!(
+        unsupported.stdout,
+        b"(equivalence 1 (status unknown) (reason unsupported-signature))\n"
+    );
+}
+
+#[test]
+fn structural_edits_are_versioned_bounded_and_normally_checked() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let evidence = root.join("conformance/evidence");
+    let source = evidence.join("equivalent-left.slim");
+    let edited = Command::new(slimc())
+        .arg("edit")
+        .arg(&source)
+        .arg(evidence.join("edit.patch"))
+        .output()
+        .unwrap();
+    assert!(edited.status.success());
+    assert_eq!(
+        edited.stdout,
+        b"(module equivalent-left (fn subject ((a Bool) (b Bool)) Bool (effects) false) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n"
+    );
+
+    let malformed = Command::new(slimc())
+        .arg("edit")
+        .arg(&source)
+        .arg(evidence.join("edit-malformed.patch"))
+        .output()
+        .unwrap();
+    assert_eq!(malformed.status.code(), Some(1));
+    assert!(malformed.stdout.is_empty());
+    assert!(
+        String::from_utf8(malformed.stderr)
+            .unwrap()
+            .contains("E0411@0:0")
+    );
+
+    let directory = temporary_directory("edit-normal-check");
+    let invalid_patch = directory.join("invalid.patch");
+    fs::write(&invalid_patch, "(slim-edit 1 (node 20) (replace 0))\n").unwrap();
+    let invalid = Command::new(slimc())
+        .arg("--message-format=json")
+        .arg("edit")
+        .arg(&source)
+        .arg(&invalid_patch)
+        .output()
+        .unwrap();
+    assert_eq!(invalid.status.code(), Some(1));
+    assert!(invalid.stdout.is_empty());
+    assert!(
+        String::from_utf8(invalid.stderr)
+            .unwrap()
+            .contains("\"code\":\"E0344\"")
+    );
+    fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]

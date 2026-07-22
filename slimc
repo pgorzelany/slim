@@ -23,6 +23,10 @@ slim_usage() {
     echo "  slimc [--message-format=human|json] run SOURCE [--jobs N] [-- ARGS...]"
     echo "  slimc [--message-format=human|json] reduce SOURCE"
     echo "  slimc [--message-format=human|json] analyze SOURCE"
+    echo "  slimc [--message-format=human|json] prove-reduction SOURCE"
+    echo "  slimc [--message-format=human|json] verify-reduction ORIGINAL REDUCED"
+    echo "  slimc [--message-format=human|json] equivalent LEFT RIGHT"
+    echo "  slimc [--message-format=human|json] edit SOURCE PATCH"
     echo "  slimc fmt SOURCE [--check]"
     echo "  slimc interfaces PROJECT [--jobs N] -o DIRECTORY"
     echo "  slimc runtime DIRECTORY"
@@ -155,6 +159,48 @@ case "$slim_command" in
         else
             slim_status=$?
             slim_render_diagnostics "$slim_tmp/transformed" "$slim_source"
+            exit "$slim_status"
+        fi
+        ;;
+    prove-reduction)
+        test "$#" -eq 1 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        if "$slim_compiler" prove-reduction "$slim_source" > "$slim_tmp/evidence"; then
+            cat "$slim_tmp/evidence"
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/evidence" "$slim_source"
+            exit "$slim_status"
+        fi
+        ;;
+    verify-reduction|equivalent)
+        test "$#" -eq 2 || { slim_usage >&2; exit 64; }
+        slim_left=$1
+        slim_right=$2
+        if "$slim_compiler" "$slim_command" "$slim_left" "$slim_right" > "$slim_tmp/evidence"; then
+            cat "$slim_tmp/evidence"
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/evidence" "$slim_left"
+            exit "$slim_status"
+        fi
+        ;;
+    edit)
+        test "$#" -eq 2 || { slim_usage >&2; exit 64; }
+        slim_source=$1
+        slim_patch=$2
+        if "$slim_compiler" edit "$slim_source" "$slim_patch" > "$slim_tmp/candidate.slim"; then
+            :
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/candidate.slim" "$slim_patch"
+            exit "$slim_status"
+        fi
+        if "$slim_compiler" check "$slim_tmp/candidate.slim" > "$slim_tmp/diagnostics"; then
+            cat "$slim_tmp/candidate.slim"
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/diagnostics" "$slim_source"
             exit "$slim_status"
         fi
         ;;

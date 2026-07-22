@@ -1,6 +1,6 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. Its sixteen explicit modules cover
+`slim.project` is the self-hosting input. Its twenty explicit modules cover
 syntax/token utilities, byte-text emission, checking, typed memory planning,
 bounded semantic analysis, direct reduction, project handling, C generation,
 coordination, and the minimal executable driver. The checked-in portable C11
@@ -33,6 +33,13 @@ directly, uses at most eight closure passes and 64-token dead-binding scans,
 and emits canonical SLIM. These opt-in tools are not part of ordinary C
 generation.
 
+The `quality`, `proof`, `equivalence`, and `edit` modules implement D0029.
+They classify bounded evidence, record and independently replay reduction,
+exhaust the documented finite Boolean domain, and apply one checked canonical
+node replacement. Their reports and patches are non-executable tooling data;
+ordinary source checking and C generation retain the same authority and Core
+surface.
+
 The self-hosted path accepts the subset needed to compile itself plus the Core
 standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
 `set`, vector update, arenas, canonical formatting, and structured checking.
@@ -55,10 +62,13 @@ Run the complete proof with:
 
     ./bootstrap.sh
 
-Inspect the Core 1A tools with:
+Inspect the Core 1A/Core 1B tools with:
 
     ./slimc analyze examples/vector_sum.slim
     ./slimc reduce conformance/pass/reduction.slim
+    ./slimc prove-reduction conformance/pass/reduction.slim
+    ./slimc equivalent conformance/evidence/equivalent-left.slim conformance/evidence/equivalent-right.slim
+    ./slimc edit conformance/evidence/equivalent-left.slim conformance/evidence/edit.patch
 
 Generated compiler and C files are placed in `build/toolchain/`, which is
 ignored by Git.

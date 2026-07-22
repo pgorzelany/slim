@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 0 implementation and research direction
+Status: Core 1B implementation and research direction
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-22
 
@@ -126,6 +126,12 @@ For example, ten independent properties with ten possible values describe
 model should encode only the legal combinations. Comparisons of this kind
 require declared invariants or a behavioral specification; the compiler cannot
 infer intent from representation alone.
+
+Core 1B implements a first conservative metric vector over canonical checked
+SLIM: primitive representable-state cardinality, structural/effect/failure and
+reduction sites, ownership pressure, dependency facts, and a narrow totality
+classification. Every fact is labelled exact, bounded, or unknown. It does not
+claim to measure valid or reachable application states without a specification.
 
 ### 9. Programs should be reducible
 

@@ -76,6 +76,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_selfhost_architecture(root, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
+    check_bounded_program_evidence(root, &mut errors);
     errors
 }
 
@@ -623,9 +624,13 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("codegen", "codegen.slim"),
         ("compiler", "slimc.slim"),
         ("driver", "driver.slim"),
+        ("edit", "edit.slim"),
+        ("equivalence", "equivalence.slim"),
         ("ir", "ir.slim"),
         ("memory", "memory.slim"),
         ("project", "project.slim"),
+        ("proof", "proof.slim"),
+        ("quality", "quality.slim"),
         ("query", "query.slim"),
         ("reduce", "reduce.slim"),
         ("scheduler", "scheduler.slim"),
@@ -903,6 +908,161 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
                 ));
             }
         });
+    }
+}
+
+fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
+    for required in [
+        "design/decisions/D0029-bounded-program-evidence.md",
+        "docs/QUALITY.md",
+        "selfhost/edit.slim",
+        "selfhost/equivalence.slim",
+        "selfhost/proof.slim",
+        "selfhost/quality.slim",
+        "conformance/evidence/equivalent-left.slim",
+        "conformance/evidence/equivalent-right.slim",
+        "conformance/evidence/different.slim",
+        "conformance/evidence/unsupported.slim",
+        "conformance/evidence/quality.slim",
+        "conformance/evidence/edit.patch",
+        "conformance/evidence/edit-malformed.patch",
+        "conformance/fail/tool_patch.slim",
+        "benchmarks/agent/slim/broken.slim",
+        "benchmarks/agent/slim/fixed.slim",
+        "benchmarks/agent/c/broken.c",
+        "benchmarks/agent/c/fixed.c",
+        "benchmarks/agent/rust/broken.rs",
+        "benchmarks/agent/rust/fixed.rs",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("Core 1B evidence artifact is missing {required}"));
+        }
+    }
+
+    let decision =
+        fs::read_to_string(root.join("design/decisions/D0029-bounded-program-evidence.md"))
+            .unwrap_or_default();
+    for required in ["Status: accepted", "Primitive: none"] {
+        if !decision.contains(required) {
+            errors.push(format!("Core 1B requires D0029 field `{required}`"));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    for required in [
+        "(analysis 2",
+        "(call quality/emit_module_facts",
+        "(ownership-pressure",
+        "(max-live-owned ",
+        "(scope-end ",
+    ] {
+        if !analysis.contains(required) {
+            errors.push(format!("Core 1B analysis is missing `{required}`"));
+        }
+    }
+
+    let quality = fs::read_to_string(root.join("selfhost/quality.slim")).unwrap_or_default();
+    for required in [
+        "(record Metrics",
+        "(state-model ",
+        "(guarantee unknown)",
+        "(cardinality (pow2 ",
+        "(totality (guarantee",
+        "\"rewrite-sites\"",
+    ] {
+        if !quality.contains(required) {
+            errors.push(format!("Core 1B quality evidence is missing `{required}`"));
+        }
+    }
+
+    let proof = fs::read_to_string(root.join("selfhost/proof.slim")).unwrap_or_default();
+    for required in [
+        "(reduction-proof 1",
+        "(pass-limit 8)",
+        "(site-limit 64)",
+        "(call reduce/reduction_kind",
+        "(call reduce/normalize original)",
+        "(call reduce/canonicalize candidate)",
+    ] {
+        if !proof.contains(required) {
+            errors.push(format!(
+                "Core 1B reduction evidence is missing `{required}`"
+            ));
+        }
+    }
+
+    let equivalence =
+        fs::read_to_string(root.join("selfhost/equivalence.slim")).unwrap_or_default();
+    for required in [
+        "(call i64.lt count 8)",
+        "(call i64.le left_size 256)",
+        "(call i64.le right_size 256)",
+        "(status equivalent)",
+        "(status different)",
+        "(status unknown)",
+        "(counterexample (inputs",
+    ] {
+        if !equivalence.contains(required) {
+            errors.push(format!(
+                "Core 1B equivalence checker is missing `{required}`"
+            ));
+        }
+    }
+
+    let edit = fs::read_to_string(root.join("selfhost/edit.slim")).unwrap_or_default();
+    for required in [
+        "\"slim-edit\"",
+        "(call i64.le replacement_size 64)",
+        "(call emit_form source tokens 0 target",
+    ] {
+        if !edit.contains(required) {
+            errors.push(format!("Core 1B structural editor is missing `{required}`"));
+        }
+    }
+
+    let compiler = fs::read_to_string(root.join("selfhost/slimc.slim")).unwrap_or_default();
+    for command in [
+        "\"prove-reduction\"",
+        "\"verify-reduction\"",
+        "\"equivalent\"",
+        "\"edit\"",
+    ] {
+        if !compiler.contains(command) {
+            errors.push(format!(
+                "self-hosted compiler does not expose Core 1B command {command}"
+            ));
+        }
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for forbidden in ["quality/", "proof/", "equivalence/", "edit/"] {
+        if codegen.contains(forbidden) {
+            errors.push(format!(
+                "optional Core 1B tooling leaked into ordinary C generation through `{forbidden}`"
+            ));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0029") {
+        errors.push("D0029 has Primitive: none and must not add Core surface".to_owned());
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "fn run_agent()",
+        "broken_model_token_proxy",
+        "fn neutral_lexical_tokens",
+        "fn changed_span",
+        "unknown-operation-rejected",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!("Core 1B agent benchmark is missing `{required}`"));
+        }
+    }
+    let verification = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    if !verification.contains("slim-bench -- agent") {
+        errors.push("Core 1B agent benchmark is absent from the release gate".to_owned());
     }
 }
 

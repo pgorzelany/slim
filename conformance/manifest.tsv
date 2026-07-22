@@ -29,6 +29,7 @@ type-mismatch	check-fail	conformance/fail/type_mismatch.slim	parity	E0344@61:65	
 unknown-form	check-fail	conformance/fail/unknown_form.slim	parity	E0221@61:67	diagnostic:E0221,recovery:parser
 qualified-reference	check-fail	conformance/fail/qualified_reference.slim	parity	E0228@74:79	diagnostic:E0228,syntax:qualified-reference
 unterminated	check-fail	conformance/fail/unterminated.slim	parity	E0102@0:68	diagnostic:E0102,recovery:malformed
+tool-patch-non-program	check-fail	conformance/fail/tool_patch.slim	parity	E0102@0:38	tooling:nonexecutable-edit
 multiple	check-fail	conformance/fail/multiple.slim	parity	E0336@67:119,E0314@91:98,E0335@106:118,E0344@112:117	recovery:multiple-diagnostics
 overflow	trap	conformance/runtime/overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 addition overflow\n	runtime:overflow-trap
 bounds	trap	conformance/runtime/bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: vector index out of bounds\n	runtime:bounds-trap

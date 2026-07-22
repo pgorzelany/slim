@@ -15,9 +15,10 @@ fn main() {
         "incremental" => run_incremental(),
         "project" => run_project(),
         "compare" => run_comparison(),
+        "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <scaling [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare>"
+                "usage: slim-bench <scaling [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare | agent>"
             );
             std::process::exit(64);
         }
@@ -114,7 +115,9 @@ fn run_reduction() {
     let samples = if quick { 5 } else { 9 };
     let compiler = selfhost_compiler();
     let directory = TemporaryDirectory::new("reduction");
-    println!("declarations\tbytes\treduce_us\tanalyze_us\treduced_bytes\tanalysis_bytes");
+    println!(
+        "declarations\tbytes\treduce_us\tanalyze_us\tproof_us\treduced_bytes\tanalysis_bytes\tproof_bytes"
+    );
     let mut first = None;
     let mut last = None;
     for size in sizes {
@@ -130,8 +133,13 @@ fn run_reduction() {
             compiler_output(&compiler, "analyze", &path),
             "analysis warmup",
         );
+        let warm_proof = require_transform_output(
+            compiler_output(&compiler, "prove-reduction", &path),
+            "proof warmup",
+        );
         let mut reduce_times = Vec::with_capacity(samples);
         let mut analyze_times = Vec::with_capacity(samples);
+        let mut proof_times = Vec::with_capacity(samples);
         for _ in 0..samples {
             let (elapsed, output) = timed_output(
                 Command::new(&compiler).arg("reduce").arg(&path),
@@ -150,32 +158,46 @@ fn run_reduction() {
             assert_eq!(analysis, warm_analysis, "analysis must be deterministic");
             black_box(&analysis);
             analyze_times.push(elapsed);
+
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("prove-reduction").arg(&path),
+                "SLIM reduction proof",
+            );
+            let proof = require_transform_output(output, "proof scaling");
+            assert_eq!(proof, warm_proof, "proof output must be deterministic");
+            black_box(&proof);
+            proof_times.push(elapsed);
         }
         reduce_times.sort();
         analyze_times.sort();
+        proof_times.sort();
         let reduce = reduce_times[samples / 2];
         let analyze = analyze_times[samples / 2];
+        let proof = proof_times[samples / 2];
         println!(
-            "{size}\t{}\t{}\t{}\t{}\t{}",
+            "{size}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             source.len(),
             reduce.as_micros(),
             analyze.as_micros(),
+            proof.as_micros(),
             warm_reduced.len(),
-            warm_analysis.len()
+            warm_analysis.len(),
+            warm_proof.len(),
         );
         if first.is_none() {
-            first = Some((*size, reduce, analyze));
+            first = Some((*size, reduce, analyze, proof));
         }
-        last = Some((*size, reduce, analyze));
+        last = Some((*size, reduce, analyze, proof));
     }
 
-    let (first_size, first_reduce, first_analyze) =
+    let (first_size, first_reduce, first_analyze, first_proof) =
         first.expect("reduction benchmark has a first sample");
-    let (last_size, last_reduce, last_analyze) =
+    let (last_size, last_reduce, last_analyze, last_proof) =
         last.expect("reduction benchmark has a last sample");
     for (role, first_time, last_time) in [
         ("reduction", first_reduce, last_reduce),
         ("analysis", first_analyze, last_analyze),
+        ("proof", first_proof, last_proof),
     ] {
         let size_ratio = last_size as f64 / first_size as f64;
         let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
@@ -384,6 +406,171 @@ fn run_comparison() {
             );
         }
     }
+}
+
+fn run_agent() {
+    let root = repository_root();
+    let build = TemporaryDirectory::new("agent");
+    println!(
+        "language\tbroken_bytes\tfixed_bytes\tbroken_lexical_tokens\tfixed_lexical_tokens\tbroken_model_token_proxy\tfixed_model_token_proxy\tremoved_bytes\tinserted_bytes\tdiagnostic_bytes\tbroken_accepted\tfixed_accepted\tbroken_feedback_us\tfixed_feedback_us\tsafety_outcome"
+    );
+    for (language, extension) in [("slim", "slim"), ("c", "c"), ("rust", "rs")] {
+        let directory = root.join("benchmarks/agent").join(language);
+        let broken_path = directory.join(format!("broken.{extension}"));
+        let fixed_path = directory.join(format!("fixed.{extension}"));
+        let broken = fs::read(&broken_path).expect("read broken agent fixture");
+        let fixed = fs::read(&fixed_path).expect("read fixed agent fixture");
+        let (removed_bytes, inserted_bytes) = changed_span(&broken, &fixed);
+        let (broken_feedback, broken_output) =
+            median_agent_feedback(&root, language, &broken_path, &build.path, "broken");
+        let (fixed_feedback, fixed_output) =
+            median_agent_feedback(&root, language, &fixed_path, &build.path, "fixed");
+        if broken_output.status.success() || !fixed_output.status.success() {
+            eprintln!(
+                "agent fixture invariant failed for {language}: broken={} fixed={}\nbroken stdout:\n{}\nbroken stderr:\n{}\nfixed stdout:\n{}\nfixed stderr:\n{}",
+                broken_output.status,
+                fixed_output.status,
+                String::from_utf8_lossy(&broken_output.stdout),
+                String::from_utf8_lossy(&broken_output.stderr),
+                String::from_utf8_lossy(&fixed_output.stdout),
+                String::from_utf8_lossy(&fixed_output.stderr),
+            );
+            std::process::exit(1);
+        }
+        let diagnostic_bytes = broken_output.stdout.len() + broken_output.stderr.len();
+        println!(
+            "{language}\t{}\t{}\t{}\t{}\t{}\t{}\t{removed_bytes}\t{inserted_bytes}\t{diagnostic_bytes}\tfalse\ttrue\t{}\t{}\tunknown-operation-rejected",
+            broken.len(),
+            fixed.len(),
+            neutral_lexical_tokens(&broken),
+            neutral_lexical_tokens(&fixed),
+            broken.len().div_ceil(4),
+            fixed.len().div_ceil(4),
+            broken_feedback.as_micros(),
+            fixed_feedback.as_micros(),
+        );
+    }
+}
+
+fn median_agent_feedback(
+    root: &Path,
+    language: &str,
+    source: &Path,
+    build: &Path,
+    role: &str,
+) -> (Duration, Output) {
+    let mut samples = Vec::with_capacity(5);
+    let mut representative = None;
+    for sample in 0..5 {
+        let mut command = agent_check_command(root, language, source, build, role, sample);
+        let (elapsed, output) = timed_output(&mut command, "agent compiler feedback");
+        if representative.is_none() {
+            representative = Some(output);
+        }
+        samples.push(elapsed);
+    }
+    samples.sort();
+    (
+        samples[samples.len() / 2],
+        representative.expect("agent benchmark output"),
+    )
+}
+
+fn agent_check_command(
+    root: &Path,
+    language: &str,
+    source: &Path,
+    build: &Path,
+    role: &str,
+    sample: usize,
+) -> Command {
+    match language {
+        "slim" => {
+            let mut command = Command::new(root.join("slimc"));
+            command.arg("check").arg(source);
+            command
+        }
+        "c" => {
+            let mut command = Command::new(native_compiler());
+            command
+                .current_dir(source.parent().expect("C fixture directory"))
+                .arg("-std=c11")
+                .arg("-Wall")
+                .arg("-Wextra")
+                .arg("-Werror")
+                .arg("-fsyntax-only")
+                .arg(source.file_name().expect("C fixture name"));
+            command
+        }
+        "rust" => {
+            let mut command = Command::new("rustc");
+            command
+                .current_dir(source.parent().expect("Rust fixture directory"))
+                .arg("--edition=2024")
+                .arg("-D")
+                .arg("warnings")
+                .arg("--emit=metadata")
+                .arg(source.file_name().expect("Rust fixture name"))
+                .arg("-o")
+                .arg(build.join(format!("{role}-{sample}.rmeta")));
+            command
+        }
+        _ => unreachable!("agent languages are fixed"),
+    }
+}
+
+fn changed_span(before: &[u8], after: &[u8]) -> (usize, usize) {
+    let prefix = before
+        .iter()
+        .zip(after)
+        .take_while(|(left, right)| left == right)
+        .count();
+    let remaining_before = before.len() - prefix;
+    let remaining_after = after.len() - prefix;
+    let suffix = before[prefix..]
+        .iter()
+        .rev()
+        .zip(after[prefix..].iter().rev())
+        .take(remaining_before.min(remaining_after))
+        .take_while(|(left, right)| left == right)
+        .count();
+    (remaining_before - suffix, remaining_after - suffix)
+}
+
+fn neutral_lexical_tokens(source: &[u8]) -> usize {
+    let mut index = 0;
+    let mut tokens = 0;
+    while index < source.len() {
+        let byte = source[index];
+        if byte.is_ascii_whitespace() {
+            index += 1;
+        } else if byte.is_ascii_alphanumeric() || byte == b'_' {
+            tokens += 1;
+            index += 1;
+            while index < source.len()
+                && (source[index].is_ascii_alphanumeric() || source[index] == b'_')
+            {
+                index += 1;
+            }
+        } else if byte == b'"' {
+            tokens += 1;
+            index += 1;
+            while index < source.len() {
+                if source[index] == b'\\' && index + 1 < source.len() {
+                    index += 2;
+                } else if source[index] == b'"' {
+                    index += 1;
+                    break;
+                } else {
+                    index += 1;
+                }
+            }
+        } else {
+            tokens += 1;
+            index += 1;
+        }
+    }
+    tokens
 }
 
 fn has_quick_flag() -> bool {
@@ -687,3 +874,23 @@ impl Drop for ComparisonBuild {
 }
 
 static TEMPORARY_SERIAL: AtomicU64 = AtomicU64::new(0);
+
+#[cfg(test)]
+mod tests {
+    use super::{changed_span, neutral_lexical_tokens};
+
+    #[test]
+    fn edit_span_removes_shared_context() {
+        assert_eq!(
+            changed_span(b"left mystery right", b"left false right"),
+            (7, 5)
+        );
+        assert_eq!(changed_span(b"same", b"same"), (0, 0));
+    }
+
+    #[test]
+    fn neutral_lexer_is_language_independent_and_deterministic() {
+        assert_eq!(neutral_lexical_tokens(b"call(bool.and, value)"), 8);
+        assert_eq!(neutral_lexical_tokens(b"\"one token\" + name_1"), 3);
+    }
+}

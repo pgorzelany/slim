@@ -14,6 +14,7 @@ cargo run --release --quiet --bin slim-bench -- scaling --quick
 cargo run --release --quiet --bin slim-bench -- reduction --quick
 cargo run --release --quiet --bin slim-bench -- incremental --quick
 cargo run --release --quiet --bin slim-bench -- project --quick
+cargo run --release --quiet --bin slim-bench -- agent
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
 trap 'rm -rf "$verify_dir"' EXIT HUP INT TERM

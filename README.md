@@ -18,6 +18,9 @@ only through Git history.
     ./slimc emit-c examples/hello.slim -o /tmp/hello.c
     ./slimc reduce conformance/pass/reduction.slim
     ./slimc analyze examples/vector_sum.slim
+    ./slimc prove-reduction conformance/pass/reduction.slim
+    ./slimc equivalent conformance/evidence/equivalent-left.slim conformance/evidence/equivalent-right.slim
+    ./slimc edit conformance/evidence/equivalent-left.slim conformance/evidence/edit.patch
 
 For an explicit multi-module project:
 
@@ -48,14 +51,15 @@ For the executable Core oracle and incremental measurements:
     cargo run --bin slim-conform -- differential
     cargo run --release --bin slim-bench -- incremental
     cargo run --release --bin slim-bench -- project
+    cargo run --release --bin slim-bench -- agent
 
 ## Current boundary
 
 The self-hosted compiler is a genuine deterministic compiler, not a wrapper.
 The checked-in C11 seed builds it without Rust and reproduces the compiler C
-byte for byte. Core 1A is frozen with all 61 standalone and project fixtures
+byte for byte. Core 1B is frozen with all 62 standalone and project fixtures
 running through the SLIM compiler with no semantic fallback.
-Its sixteen SLIM modules implement structured syntax, bounded malformed-input
+Its twenty SLIM modules implement structured syntax, bounded malformed-input
 validation, and typed declarations,
 standalone and project checking, deterministic C generation,
 declaration-level query invalidation, transactional last-good sessions, a
@@ -80,11 +84,14 @@ declaration-level project reuse, and an opt-in deterministic worker path. The
 measured worker path is currently slower than serial and is not enabled by
 default. Core 0.3's self-host scheduler likewise plans bounded dependency
 batches but executes them serially because Core has no concurrency runtime.
-Language-level concurrency, automatic program parallelization, whole-program
-quality grading, bounded equivalence, and globally optimal reduction remain
-designed goals rather than implemented claims. Core 1A adds a small direct
-reducer and bounded semantic facts without new source syntax or a separate IR
-language; its contract is documented in
-[docs/REDUCTION.md](docs/REDUCTION.md). The 0.3 freeze evidence and remaining
+Language-level concurrency, automatic program parallelization, inferred
+application invariants, general equivalence, and globally optimal reduction
+remain designed goals rather than implemented claims. Core 1A adds a small
+direct reducer and bounded semantic facts without new source syntax or a
+separate IR language. Core 1B adds classified quality evidence, independently
+replayed reduction records, exact finite Boolean equivalence with concrete
+counterexamples, and one versioned node edit protocol. Its limits are
+documented in [docs/QUALITY.md](docs/QUALITY.md), alongside the Core 1A contract
+in [docs/REDUCTION.md](docs/REDUCTION.md). The 0.3 freeze evidence and remaining
 performance gap are recorded in
 [benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).
