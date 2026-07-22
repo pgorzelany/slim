@@ -5,12 +5,16 @@ file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
+lifetimes	run	conformance/pass/lifetimes.slim	parity	exit=0;stdout=OK\n;stderr=	ownership:lifetime,ownership:aggregate-move,ownership:frozen-view,runtime:region
 format	format	conformance/tool/format.slim	parity	-	tool:format
 emit	emit	conformance/pass/scalars.slim	parity	-	backend:c11,tool:emit-deterministic
 missing-effect	check-fail	conformance/fail/missing_effect.slim	parity	E0343@83:105	diagnostic:E0343,effect:enforcement
 missing-alloc	check-fail	conformance/fail/missing_alloc.slim	parity	E0343@94:108	diagnostic:E0343,effect:alloc-enforcement
 missing-partial	check-fail	conformance/fail/missing_partial.slim	parity	E0343@151:167	diagnostic:E0343,effect:partial-enforcement
 use-after-move	check-fail	conformance/fail/use_after_move.slim	parity	E0315@223:229	diagnostic:E0315,ownership:move
+aggregate-use-after-move	check-fail	conformance/fail/aggregate_use_after_move.slim	parity	E0315@379:383	ownership:aggregate-move,ownership:lifetime
+frozen-source-use	check-fail	conformance/fail/frozen_source_use.slim	parity	E0315@264:270	ownership:frozen-view,ownership:lifetime
+variant-use-after-move	check-fail	conformance/fail/variant_use_after_move.slim	parity	E0315@377:382	ownership:aggregate-move,ownership:lifetime
 move-from-inout	check-fail	conformance/fail/move_from_inout.slim	parity	E0347@167:173	diagnostic:E0347,ownership:inout-no-move
 inout-temporary	check-fail	conformance/fail/inout_temporary.slim	parity	E0348@176:190	diagnostic:E0348,ownership:named-inout
 inout-alias	check-fail	conformance/fail/inout_alias.slim	parity	E0349@213:219	diagnostic:E0349,ownership:no-alias

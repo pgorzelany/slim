@@ -1,0 +1,10 @@
+(module variant-use-after-move
+  (variant Boxed ((some (Vec I64))))
+  (fn length ((value Boxed)) I64 (effects)
+    (match value
+      (some (items) (call vec.len items))))
+  (fn main ((args (Vec Bytes))) I64 (effects alloc)
+    (let items (Vec I64) (call vec.new)
+      (let boxed Boxed (case Boxed some items)
+        (let first I64 (call length boxed)
+          (call length boxed))))))
