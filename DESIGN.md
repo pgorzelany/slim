@@ -1,14 +1,15 @@
 # SLIM Language Design
 
 Status: Core 0 implementation and research direction
-Codename: **SLIM**  
-Last updated: 2026-07-21
+Name: **SLIM — Small Language for Intelligent Machines**
+Last updated: 2026-07-22
 
 ## Vision
 
-SLIM is a programming language designed for AI to write, inspect, transform, and
-reason about. It should produce programs that remain readable to humans while
-using a compact, token-efficient syntax.
+SLIM, the Small Language for Intelligent Machines, is a programming language
+designed for AI to write, inspect, transform, and reason about. It should
+produce programs that remain readable to humans while using a compact,
+token-efficient syntax.
 
 SLIM aims to combine systems-language performance and static safety with strong
 support for program analysis, deterministic concurrency, and mechanical

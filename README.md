@@ -1,9 +1,9 @@
-# SLIM
+# SLIM — Small Language for Intelligent Machines
 
-SLIM is an experimental systems language designed for AI-generated programs:
-small canonical syntax, strong static typing, explicit effects, affine
-ownership, exclusive borrows, deterministic output, and no tracing garbage
-collector.
+SLIM stands for **Small Language for Intelligent Machines**. It is an
+experimental systems language designed for AI-generated programs: small
+canonical syntax, strong static typing, explicit effects, affine ownership,
+exclusive borrows, deterministic output, and no tracing garbage collector.
 
 The repository contains a working Rust stage-0 compiler, a small C runtime, a
 compiler written in SLIM itself, governance gates for language growth, scaling
