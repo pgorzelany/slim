@@ -22,9 +22,11 @@ types, and records structured type facts and issues. Expression facts form one
 dense token-indexed table with a guarded constant-time query. The checker
 consumes that view now, standalone emission retains the checked artifact, and
 effect and ownership call resolution reuse its declaration links. Ordinary C
-emission consumes the same table for computed call and recursive-transfer
-temporaries. Remaining aggregate, match, and per-call allocation queries must
-cross the same checked boundary before Core 1D is frozen.
+emission consumes the same table for computed call, recursive-transfer,
+aggregate, variant-payload, and Boolean-match temporaries. Explicit let types,
+match destinations, and pattern bindings remain source or caller contracts;
+per-call allocation queries must still cross the checked boundary before Core
+1D is frozen.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

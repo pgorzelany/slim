@@ -5,6 +5,7 @@ allocation-failure	allocation-fail	conformance/pass/storage.slim	parity	exit=71;
 allocation-user-failure	allocation-fail	conformance/pass/lifetimes.slim	parity	exit=71;stdout=;stderr=SLIM allocation failure: exhausted at allocation 2\n	backend:retained-allocation-sites,runtime:allocation-failure
 file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.read-file
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
+typed-temporaries	run	conformance/pass/typed_temporaries.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-fact-temporaries,backend:aggregate-links,syntax:make,syntax:case,syntax:match
 record-wide	run	conformance/pass/record_wide.slim	parity	exit=0;stdout=42\n;stderr=	backend:aggregate-links,syntax:record,syntax:make,syntax:get,type:canonical-record-fields
 variant-local-match	run	conformance/pass/variant_local_match.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-links,syntax:let,syntax:match,type:variant
 variant-wide	run	conformance/pass/variant_wide.slim	parity	exit=0;stdout=42\n;stderr=	backend:aggregate-links,syntax:variant,syntax:case,syntax:match,type:canonical-variant-order

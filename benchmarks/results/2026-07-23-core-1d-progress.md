@@ -452,3 +452,32 @@ The authoritative release run measures 2.958, 5.281, 12.113, and 38.210
 milliseconds, an endpoint exponent of 1.230. The complete gate passes all
 performance budgets, sanitizers, allocation-failure injection, native
 challenges, and deterministic bootstrap verification.
+
+## Typed aggregate temporaries
+
+D0054 makes computed record fields, variant payload values, and Boolean match
+scrutinees consume the dense checked fact table. Record-field and variant-case
+declaration traversal remains intact for structural identity, canonical order,
+arity, and emitted layout. C output remains byte-identical to D0053 across the
+representative compiler corpus and a new fixture combining scalar and named
+temporary types.
+
+The permanent `generated-aggregate-temporaries` series emits 125, 250, 500, and
+1,000 field/payload pairs. The candidate measured 3.288, 5.058, 8.128, and
+14.524 milliseconds, an endpoint exponent of 0.714 under the 1.25 budget. The
+preceding compiler measured 3.795, 4.995, 8.264, and 14.689 milliseconds on the
+same workload. The portable fixed point is 1,623,453 generated C bytes with
+SHA-256
+`fed3fc3edb035a6960a33d8986842b2366eeda8122079d0ecc487fb2176165e8`.
+
+The first complete release attempt stopped on an unrelated noisy
+nested-binding final sample of 58.144 milliseconds, exponent 1.252 against the
+unchanged 1.25 budget. An immediate rerun measured 4.155, 6.538, 11.557, and
+22.501 milliseconds, exponent 0.812. The complete rerun measured 4.280, 6.754,
+12.015, and 23.006 milliseconds and passed. Its aggregate series had an isolated
+17.240-millisecond first sample followed by 6.622, 10.943, and 14.634
+milliseconds; the clean candidate and release-confirming series above remain
+the scaling evidence, and the noisy point is not hidden. The complete gate
+passes all budgets, 99 fixtures, 2,000 mutations, sanitizers,
+allocation-failure injection, native challenges, and deterministic bootstrap
+verification.

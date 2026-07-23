@@ -207,6 +207,7 @@ fn check_performance_architecture(
         "check-exponent/generated-owned-transfers",
         "emit-exponent/generated-declarations",
         "emit-exponent/generated-computed-arguments",
+        "emit-exponent/generated-aggregate-temporaries",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
         "incremental-exponent/wide-private-body",
@@ -282,7 +283,9 @@ fn check_performance_architecture(
         "performance_budget(\"check-exponent\", \"generated-named-type-parameters\")",
         "performance_budget(\"check-exponent\", \"generated-owned-transfers\")",
         "performance_budget(\"emit-exponent\", \"generated-computed-arguments\")",
+        "performance_budget(\"emit-exponent\", \"generated-aggregate-temporaries\")",
         "fn generated_computed_argument_program(calls: usize)",
+        "fn generated_aggregate_temporary_program(fields: usize)",
         "fn generated_named_type_program(functions: usize)",
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
@@ -1318,6 +1321,9 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn fact_type_index",
         "(call typing/fact_type facts expr)",
         "(call fact_type_index facts argument)",
+        "computed_boolean Bool (call bool.and form boolean_match) (match computed_boolean (false unit) (true (let type_index I64 (call fact_type_index facts value)",
+        "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
+        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(get view facts)",
         "(get prepared facts)",
@@ -1366,6 +1372,10 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         .contains("allocation-user-failure\tallocation-fail\tconformance/pass/lifetimes.slim")
     {
         errors.push("retained user-allocation failure fixture is missing".to_owned());
+    }
+    if !manifest.contains("typed-temporaries\trun\tconformance/pass/typed_temporaries.slim\tparity")
+    {
+        errors.push("typed-fact temporary conformance fixture is missing".to_owned());
     }
 }
 

@@ -1,0 +1,24 @@
+(module typed-temporaries
+  (record Pair ((left I64) (right I64)))
+  (record Envelope ((pair Pair) (ready Bool)))
+  (variant Packet ((Empty) (Data Pair Bool)))
+  (fn main ((args (Vec Bytes))) I64 (effects io)
+    (let envelope Envelope
+      (make Envelope
+        (pair (make Pair (left 10) (right 20)))
+        (ready (call bool.and true true)))
+      (let packet Packet
+        (case Packet Data
+          (make Pair (left 20) (right 22))
+          (call bool.and true true))
+        (match packet
+          (Empty 1)
+          (Data (pair ready)
+            (match (call bool.and ready true)
+              (true
+                (let left I64 (get pair left)
+                  (let right I64 (get pair right)
+                    (let answer I64 (call i64.add left right)
+                      (let shown Unit (call io.print-i64 answer)
+                        (let newline Unit (call io.println "") 0))))))
+              (false 2))))))))

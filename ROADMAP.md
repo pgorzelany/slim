@@ -805,9 +805,18 @@ same-workload latency regression against the preceding compiler. Removing the
 duplicate tables shrinks the byte-identical fixed-point seed to 1,623,034 C
 bytes.
 
-This is not yet a completed milestone. Code generation still uses explicit
-declared/contextual types for some aggregate and match temporaries and derives
-per-call allocation boundaries from canonical effect queries. All accepted
+The twenty-third slice adopts D0054's typed aggregate temporaries. Computed
+record fields, variant payloads, and Boolean match scrutinees query their
+checked expression facts while declaration traversal continues to validate
+canonical aggregate identity and layout. A dedicated fixture pins scalar and
+named temporary paths, and a permanent geometric aggregate-emission workload
+guards the lookup boundary. The byte-identical fixed-point seed is 1,623,453 C
+bytes.
+
+This is not yet a completed milestone. Explicit let types, match destinations,
+and pattern bindings remain legitimate source or caller contracts, while code
+generation still derives per-call allocation boundaries from canonical effect
+queries. All accepted
 type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.
 Core 1D acceptance requires bounded expression-fact lookup, removal of the

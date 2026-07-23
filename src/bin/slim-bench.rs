@@ -236,6 +236,62 @@ fn run_performance() {
         std::process::exit(1);
     }
 
+    println!("aggregate_temporaries\tsource_bytes\temit_us\temit_ns_per_byte");
+    let mut first_aggregate = None;
+    let mut last_aggregate = None;
+    for size in nested_sizes {
+        let source = generated_aggregate_temporary_program(*size);
+        let path = directory
+            .path
+            .join(format!("aggregate-temporaries-{size}.slim"));
+        fs::write(&path, &source).expect("write aggregate-temporary scaling source");
+        let warmup = Command::new(&compiler)
+            .arg(&path)
+            .output()
+            .expect("run aggregate-temporary scaling warmup");
+        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
+            fail_output("aggregate-temporary scaling warmup", &warmup);
+        }
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg(&path),
+                "SLIM aggregate-temporary emit",
+            );
+            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
+                fail_output("aggregate-temporary scaling emit", &output);
+            }
+            black_box(&output.stdout);
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_aggregate.is_none() {
+            first_aggregate = Some((*size, elapsed));
+        }
+        last_aggregate = Some((*size, elapsed));
+    }
+    let (first_size, first_time) =
+        first_aggregate.expect("aggregate-temporary series has a first sample");
+    let (last_size, last_time) =
+        last_aggregate.expect("aggregate-temporary series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("emit-exponent", "generated-aggregate-temporaries");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: aggregate-temporary emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} fields"
+        );
+        std::process::exit(1);
+    }
+
     println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
     let mut first_named = None;
     let mut last_named = None;
@@ -1088,6 +1144,38 @@ fn generated_computed_argument_program(calls: usize) -> String {
         source.push(')');
     }
     source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call chain 0)))\n");
+    source
+}
+
+fn generated_aggregate_temporary_program(fields: usize) -> String {
+    let mut source = String::with_capacity(fields * 110);
+    source.push_str("(module aggregate-temporaries (record Wide (");
+    for index in 0..fields {
+        source.push_str("(field-");
+        source.push_str(&index.to_string());
+        source.push_str(" I64)");
+    }
+    source.push_str(")) (variant Payload ((Values");
+    for _ in 0..fields {
+        source.push_str(" I64");
+    }
+    source.push_str(
+        "))) (fn identity ((value I64)) I64 (effects) value) (fn build () I64 (effects) (let record-value Wide (make Wide ",
+    );
+    for index in 0..fields {
+        source.push_str("(field-");
+        source.push_str(&index.to_string());
+        source.push_str(" (call identity ");
+        source.push_str(&index.to_string());
+        source.push_str("))");
+    }
+    source.push_str(" ) (let variant-value Payload (case Payload Values");
+    for index in 0..fields {
+        source.push_str(" (call identity ");
+        source.push_str(&index.to_string());
+        source.push(')');
+    }
+    source.push_str(") 0))) (fn main ((args (Vec Bytes))) I64 (effects) (call build)))\n");
     source
 }
 
