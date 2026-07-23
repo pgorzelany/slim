@@ -1,6 +1,6 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. Its twenty-one explicit modules cover
+`slim.project` is the self-hosting input. Its twenty-two explicit modules cover
 syntax/token utilities, byte-text emission, typing, checking, typed memory planning,
 bounded semantic analysis, direct reduction, project handling, C generation,
 coordination, and the minimal executable driver. The checked-in portable C11
@@ -27,9 +27,10 @@ before Core 1D is frozen.
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction
 plans. The checker executes it from the structured declaration vector, while
-the backend uses its function summary to select caller or child regions. The
-generated ABI also propagates D0026's typed allocation-effect status and
-destroys child regions at the single function exit.
+the backend uses its function summary to select caller or child regions and to
+emit recurrence boundaries without rescanning bodies. The generated ABI also
+propagates D0026's typed allocation-effect status and destroys child regions at
+the single function exit.
 
 The `analysis` and `reduce` modules implement D0028 without a second program
 representation. Analysis derives at most 64 binding facts per function from

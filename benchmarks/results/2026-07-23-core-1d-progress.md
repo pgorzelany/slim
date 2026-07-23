@@ -217,7 +217,7 @@ old per-reference declaration scan.
 - Boolean recovery and ownership diagnostics now use the finalized structured
   channel; every accepted project semantic diagnostic uses the same origin
   projection.
-- Code generation still derives allocation-effect, recurrence, and expression
+- Code generation still derives per-call allocation-effect and expression
   facts from token structure instead of consuming bounded typed-view queries.
 - Adversarial expression tests and geometric source-shape budgets still need to
   join the existing aggregate, allocation-failure, sanitizer, and release gates.
@@ -385,5 +385,23 @@ the change adds no language primitive and changes no generated-program runtime
 path. The fixed-point seed is 1,622,171 C bytes with SHA-256
 `7678b680cf808a216bc9b1077f28802434f04bc03b810cde5b9b1f39a213441f`.
 The complete release gate passes project scaling and regression budgets,
+sanitizers, allocation-failure injection, native challenges, and deterministic
+bootstrap verification.
+
+## Retained recurrence boundaries
+
+D0051 moves function-level recurrence classification into the checked memory
+plan. Planning records a Boolean only for an actual form headed by `recur`, and
+function emission consumes it instead of scanning the body for an atom with
+that spelling. This removes one backend semantic authority and makes the
+classification structurally precise without changing the language or runtime.
+
+The earlier combined allocation-and-recurrence summary exceeded eight seconds
+of self-validation; the isolated fact remains around 0.10 seconds and reaches a
+byte-identical candidate fixed point. The `recur` fixture continues to print
+`55`, and all 98 fixtures plus 2,000 deterministic malformed-input mutations
+pass. The portable fixed point is 1,622,521 C bytes with SHA-256
+`65d23caa0a0b70e7b4e5db8892538596f2a63e89a73ba89b273f013254a8025a`.
+The complete release gate passes geometric and same-host performance budgets,
 sanitizers, allocation-failure injection, native challenges, and deterministic
 bootstrap verification.

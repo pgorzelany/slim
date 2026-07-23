@@ -1291,10 +1291,12 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "SlimAllocStatus",
         "(record AllocationPlan",
         "(record DestructionPlan",
-        "(record FunctionPlan",
+        "(record FunctionPlan ((function I64) (return_storage I64) (local_region Bool) (recursive Bool)",
         "(fn empty_plan",
         "(fn function_uses_local_region",
         "(fn function_plan_allocates",
+        "(fn span_has_form",
+        "(call span_has_form source tokens body body_end \"recur\")",
         "(fn call_requires",
         "(call effects/call_requires source tokens callee 1)",
         "(call syntax/token_link tokens type_index)",
@@ -1303,6 +1305,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (plan memory/Plan)",
         "(get function_plan function)",
         "(get function_plan local_region)",
+        "(get function_plan recursive)",
         "(call memory/function_plan_allocates function_plan)",
         "(call effects/params_have source tokens callee_params 1)",
         "slim_region_destroy(&slim_function_region)",
@@ -1327,6 +1330,8 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn call_allocates",
         "(call memory/function_has_alloc_effect source tokens item)",
         "(call memory/function_uses_local_region source tokens item)",
+        "(fn contains_atom",
+        "(call contains_atom source tokens body body_end \"recur\")",
     ] {
         if joined.contains(forbidden) {
             errors.push(format!(

@@ -779,12 +779,19 @@ permanent malformed-project fixture grows the corpus to 98 fixtures without a
 new language or runtime feature. The byte-identical fixed-point seed is
 1,622,171 C bytes.
 
+The twentieth slice adopts D0051's retained recurrence boundaries. The checked
+function plan records whether a body contains an actual `recur` form, and code
+generation consumes that fact instead of scanning every body for an atom with
+the same spelling. The isolated plan field stays at the approximately
+0.10-second self-check boundary that the earlier combined summary failed to
+preserve. No source or runtime surface is added.
+The byte-identical fixed-point seed is 1,622,521 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. All accepted type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.
-Core 1D
-acceptance requires bounded expression-fact lookup, removal of the remaining
-redundant ordinary-generation analysis, complete project
+Core 1D acceptance requires bounded expression-fact lookup, removal of the
+remaining redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
 same-host regression budgets, allocation-failure and sanitizer coverage, and
 the complete release/bootstrap gate.
