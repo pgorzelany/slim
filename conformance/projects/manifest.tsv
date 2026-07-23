@@ -11,6 +11,7 @@ project-incremental	incremental	conformance/projects/basic/slim.project	parity	-
 project-private	check-fail	conformance/projects/private/slim.project	parity	E0415@app@56:77	project:visibility,project:diagnostics
 project-cycle	check-fail	conformance/projects/cycle/slim.project	parity	E0413@-@29:30	project:cycles,project:diagnostics
 project-version	check-fail	conformance/projects/malformed/slim.project	parity	E0402@-@9:10	project:manifest-version,project:diagnostics
+project-malformed-module	check-fail	conformance/projects/malformed-module/slim.project	parity	E0102@app@0:59	project:module-shape,project:diagnostics
 project-path-escape	check-fail	conformance/projects/rules/path-escape.project	parity	E0407@-@77:88	project:path-confinement,project:diagnostics
 project-missing-source	check-fail	conformance/projects/rules/missing-source.project	parity	E0409@app@35:49	project:diagnostics
 project-module-mismatch	check-fail	conformance/projects/rules/module-mismatch.project	parity	E0410@app@31:34	project:source-identity,project:diagnostics

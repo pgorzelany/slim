@@ -770,6 +770,15 @@ gate protects owned-transfer scaling. The corpus grows to 97 fixtures while
 self-validation remains near 0.10 seconds. Removing the duplicate scanner
 shrinks the byte-identical fixed-point seed to 1,619,795 C bytes.
 
+The nineteenth slice adopts D0050's bounded project module validation. Every
+module's exact token slice is structurally checked before declaration linking,
+and malformed source is rejected as module-local `E0102`. Name indexing also
+stops independently at the shared token-vector length, closing the internal
+nontermination path even if a future caller violates the validation order. A
+permanent malformed-project fixture grows the corpus to 98 fixtures without a
+new language or runtime feature. The byte-identical fixed-point seed is
+1,622,171 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. All accepted type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.

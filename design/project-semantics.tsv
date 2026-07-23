@@ -1,6 +1,7 @@
 # category	name	semantic-role	decision
 project	manifest-version	versioned-manifest-schema	D0017
 project	manifest-shape	canonical-manifest-grammar	D0017
+project	module-shape	validated-source-before-semantic-linking	D0050
 project	manifest-order	canonical-semantic-order	D0017
 project	module-identity	explicit-module-identity	D0017
 project	path-confinement	confined-manifest-relative-path	D0017

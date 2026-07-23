@@ -864,6 +864,16 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
+    for required in [
+        "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
+        "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
+    ] {
+        if !project.contains(required) {
+            errors.push(format!(
+                "selfhost/slim.project is missing project validation boundary `{required}`"
+            ));
+        }
+    }
 
     let check_path = directory.join("check.slim");
     let Ok(check) = fs::read_to_string(&check_path) else {
@@ -1012,6 +1022,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     ) {
         errors.push("ownership project projection fixture is missing".to_owned());
     }
+    if !project_manifest.contains(
+        "project-malformed-module\tcheck-fail\tconformance/projects/malformed-module/slim.project\tparity\tE0102@app@0:59\tproject:module-shape,project:diagnostics",
+    ) {
+        errors.push("malformed project module fixture is missing".to_owned());
+    }
 
     let project_path = directory.join("project.slim");
     let Ok(project_source) = fs::read_to_string(&project_path) else {
@@ -1034,6 +1049,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn report_project_issues",
         "(fn report_loaded_project",
         "(fn report_private_type_leaks",
+        "(call validate/module_shape_valid_from source module_tokens root end)",
     ] {
         if !project_source.contains(required) {
             errors.push(format!(
@@ -1050,6 +1066,39 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     if !project_source.contains("(get checked issues)") {
         errors.push("self-host project checker does not consume finalized issues".to_owned());
+    }
+
+    let syntax_path = directory.join("syntax.slim");
+    let Ok(syntax) = fs::read_to_string(&syntax_path) else {
+        return;
+    };
+    for required in [
+        "(fn index_names_from",
+        "(let length I64 (call vec.len tokens)",
+        "(let exhausted Bool (call i64.ge cursor length)",
+    ] {
+        if !syntax.contains(required) {
+            errors.push(format!(
+                "self-host name indexing is missing its token bound `{required}`"
+            ));
+        }
+    }
+
+    let validate_path = directory.join("validate.slim");
+    let Ok(validate) = fs::read_to_string(&validate_path) else {
+        return;
+    };
+    for required in [
+        "(fn module_shape_valid_from",
+        "(let length I64 (call i64.sub end root)",
+        "(call item_list_valid source tokens (call i64.add root 3) closing)",
+        "(call module_shape_valid_from source tokens 0 end)",
+    ] {
+        if !validate.contains(required) {
+            errors.push(format!(
+                "self-host module validation is missing bounded-slice capability `{required}`"
+            ));
+        }
     }
 
     let codegen_path = directory.join("codegen.slim");

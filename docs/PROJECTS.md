@@ -228,6 +228,14 @@ stream. Recovery retains its standalone order while projecting unknown names,
 duplicate arms, arm-type mismatches, repeated moves, borrowed transfers, and
 borrowed returns to their original module.
 
+Each module source is structurally validated over its exact token slice before
+declaration names are linked or the module is admitted to the prepared project.
+Malformed source produces `E0102` with that module's identity and complete
+source byte range. Name indexing also has its own token-vector exhaustion bound;
+the validation order is the primary contract and the local bound prevents an
+invalid internal caller from turning malformed input into unbounded compiler
+work.
+
 ## Non-goals
 
 - Packages, registries, dependency downloading, version solving, or lockfiles.

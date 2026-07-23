@@ -368,3 +368,22 @@ measured 4.836, 8.102, 14.275, and 26.535 milliseconds for 125, 250, 500, and
 deterministic malformed-input mutations pass. The release checkpoint records a
 byte-identical 1,619,795-byte fixed point with SHA-256
 `f4021a1524dcb4dcfaa45aff76d0875b3df0ec9bcc7e55d7f447e10bbd4e5f71`.
+
+## Bounded project module validation
+
+D0050 moves structural source validation ahead of declaration linking for each
+module loaded from a project. Validation receives that module's half-open range
+inside the shared token vector; malformed source is never retained or exposed
+to semantic consumers. `index_names_from` also stops at the vector length as an
+independent invariant rather than relying on a closing token to appear.
+
+`project-malformed-module` removes the final module delimiter and requires the
+stable projected result `E0102@app@0:59`. The first accepted conformance run
+passes 98 fixtures and 2,000 deterministic malformed-input mutations. The
+existing project geometric gate measures the one added linear validation pass;
+the change adds no language primitive and changes no generated-program runtime
+path. The fixed-point seed is 1,622,171 C bytes with SHA-256
+`7678b680cf808a216bc9b1077f28802434f04bc03b810cde5b9b1f39a213441f`.
+The complete release gate passes project scaling and regression budgets,
+sanitizers, allocation-failure injection, native challenges, and deterministic
+bootstrap verification.
