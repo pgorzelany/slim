@@ -799,6 +799,7 @@ struct ParallelismEvidence {
     refinements: usize,
     safe_functions: usize,
     reasons: [usize; PARALLELISM_REASONS.len()],
+    blockers: [usize; PARALLELISM_REASONS.len()],
     eligible_sites: usize,
 }
 
@@ -808,10 +809,15 @@ fn run_parallelism_evidence() {
     let challenges = challenge_manifest();
     let baseline = parallelism_baseline();
     println!(
-        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\teligible_sites",
+        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\t{}\teligible_sites",
         PARALLELISM_REASONS
             .iter()
             .map(|(column, _)| *column)
+            .collect::<Vec<_>>()
+            .join("\t"),
+        PARALLELISM_REASONS
+            .iter()
+            .map(|(column, _)| format!("blocker_{column}"))
             .collect::<Vec<_>>()
             .join("\t")
     );
@@ -861,10 +867,15 @@ fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidenc
     for (index, (_, report_name)) in PARALLELISM_REASONS.iter().enumerate() {
         reasons[index] = parallel.matches(&format!("(reason {report_name})")).count();
     }
+    let (blocker_sets, blockers) = parallelism_blockers(parallel);
     assert_eq!(
         safe_functions + reasons.iter().sum::<usize>(),
         functions,
         "every application function must have one parallel status"
+    );
+    assert_eq!(
+        blocker_sets, functions,
+        "every application function must have one complete blocker set"
     );
     ParallelismEvidence {
         source_bytes: fs::metadata(path)
@@ -876,6 +887,7 @@ fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidenc
         refinements: report_number(integer, "(refinements "),
         safe_functions,
         reasons,
+        blockers,
         eligible_sites: report_number(parallel, "(eligible-sites "),
     }
 }
@@ -893,6 +905,9 @@ fn print_parallelism_evidence(challenge: &str, evidence: &ParallelismEvidence) {
     for count in evidence.reasons {
         print!("\t{count}");
     }
+    for count in evidence.blockers {
+        print!("\t{count}");
+    }
     println!("\t{}", evidence.eligible_sites);
 }
 
@@ -907,8 +922,8 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
         let columns: Vec<_> = line.split('\t').collect();
         assert_eq!(
             columns.len(),
-            19,
-            "parallelism baseline line {} must have nineteen columns",
+            30,
+            "parallelism baseline line {} must have thirty columns",
             line_number + 1
         );
         let number = |index: usize| {
@@ -924,6 +939,10 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
         for (offset, value) in reasons.iter_mut().enumerate() {
             *value = number(offset + 7);
         }
+        let mut blockers = [0; PARALLELISM_REASONS.len()];
+        for (offset, value) in blockers.iter_mut().enumerate() {
+            *value = number(offset + 18);
+        }
         let evidence = ParallelismEvidence {
             source_bytes: number(1),
             functions: number(2),
@@ -932,7 +951,8 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
             refinements: number(5),
             safe_functions: number(6),
             reasons,
-            eligible_sites: number(18),
+            blockers,
+            eligible_sites: number(29),
         };
         assert!(
             baseline.insert(columns[0].to_owned(), evidence).is_none(),
@@ -941,6 +961,30 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
         );
     }
     baseline
+}
+
+fn parallelism_blockers(report: &str) -> (usize, [usize; PARALLELISM_REASONS.len()]) {
+    let mut remaining = report;
+    let mut sets = 0;
+    let mut counts = [0; PARALLELISM_REASONS.len()];
+    while let Some(start) = remaining.find("(blockers") {
+        let blocker_tail = &remaining[start + "(blockers".len()..];
+        let end = blocker_tail
+            .find(')')
+            .expect("parallel blocker set must be closed");
+        let blockers = &blocker_tail[..end];
+        for (index, (_, report_name)) in PARALLELISM_REASONS.iter().enumerate() {
+            if blockers
+                .split_ascii_whitespace()
+                .any(|name| name == *report_name)
+            {
+                counts[index] += 1;
+            }
+        }
+        sets += 1;
+        remaining = &blocker_tail[end + 1..];
+    }
+    (sets, counts)
 }
 
 fn report_section<'a>(report: &'a str, start: &str, end: &str) -> &'a str {

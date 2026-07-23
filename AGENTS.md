@@ -75,6 +75,9 @@ These rules apply to every change in this repository.
 - Keep the native application analysis baseline exact and durable. Explain and
   record every changed row; primary blocker counts are not complete hazard sets
   and cannot alone justify a new precision feature.
+- Preserve every discovered parallel blocker even when an earlier blocker is
+  already sufficient. Safe functions require an exact empty blocker set; graph
+  uncertainty must remain explicit at the function boundary.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

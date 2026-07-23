@@ -957,7 +957,7 @@ compiler-size cost and full measurements are recorded in
 
 D0064 turns all twelve native algorithm challenges into a permanent
 parallel-safety application corpus. The release gate runs every analysis twice,
-requires byte-identical balanced reports, and compares nineteen metrics with a
+requires byte-identical balanced reports, and compares schema-versioned metrics with a
 checked-in baseline. Across 16,521 source bytes, 49 functions, and 140 checked
 integer sites, only one reported site is total and no function or fork site is
 eligible. The primary reasons are 30 exclusive borrows, ten allocation/I/O
@@ -966,6 +966,18 @@ mask coexisting hazards, this negative result justifies complete blocker
 evidence before selecting a precision feature. The durable command and results
 are recorded in
 `benchmarks/results/2026-07-23-core-1f-application-baseline.md`.
+
+D0065 replaces primary-reason guesswork with complete bounded blocker sets.
+The SLIM analysis retains all direct local blockers and a stable unsafe-callee
+or unknown-graph boundary, while primary classifications and fork selection
+remain unchanged. Schema 2 shows that all 49 application functions have
+declared effects, 40 have unproved traps, 31 recur, 30 borrow exclusively, 22
+allocate or perform I/O, and 22 call an unsafe function. Eleven functions have
+two blockers, eleven have three, eighteen have four, and nine have five. No
+single precision feature can make a current application function safe. The
+analysis exponent is 0.870 under the unchanged 1.25 budget, and the
+1,854,768-byte seed reproduces exactly. Detailed evidence is in
+`benchmarks/results/2026-07-23-core-1f-blocker-sets.md`.
 
 Before any execution decision, Core 1F still needs substantial application
 evidence using these positive range/totality proofs, collection-bounds and

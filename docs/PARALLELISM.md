@@ -65,6 +65,18 @@ checked trap, and four recurrence. These are primary reasons only; secondary
 hazards remain masked. This result rejects execution work and rejects choosing
 the next precision feature from headline counts alone.
 
+D0065 removes that evidence ambiguity without weakening classification. Every
+retained function now prints a fixed-order `blockers` set. It contains every
+direct local blocker plus one stable graph-boundary blocker for an unsafe or
+unknown callee. Safe functions have an exact empty set. The set does not
+recursively copy every callee detail; `callee-not-safe` is the compositional
+boundary.
+
+In the application corpus, all 49 functions have declared effects, 40 have an
+unproved checked trap, 31 recur, 30 borrow exclusively, 22 allocate or perform
+I/O, and 22 call an unsafe function. Every function has between two and five
+blockers. Removing any single category would therefore unlock zero functions.
+
 The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a
 bounded result rather than silently treating omitted functions as safe.

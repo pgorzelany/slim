@@ -81,6 +81,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_parallelism_evidence(root, &decisions, &mut errors);
     check_integer_proof_evidence(root, &decisions, &mut errors);
     check_parallelism_application_baseline(root, &decisions, &mut errors);
+    check_complete_parallel_blockers(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -316,7 +317,7 @@ fn check_parallelism_application_baseline(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
-    if !baseline.contains("# schema=1")
+    if !baseline.contains("# schema=2")
         || baseline
             .lines()
             .filter(|line| !line.starts_with('#') && !line.is_empty())
@@ -324,7 +325,7 @@ fn check_parallelism_application_baseline(
             != 12
     {
         errors.push(
-            "parallelism baseline must retain schema 1 and all twelve applications".to_owned(),
+            "parallelism baseline must retain schema 2 and all twelve applications".to_owned(),
         );
     }
     for challenge in [
@@ -357,6 +358,97 @@ fn check_parallelism_application_baseline(
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     if surface.contains("D0064") {
         errors.push("D0064 has Primitive: none and must not add Core language surface".to_owned());
+    }
+}
+
+fn check_complete_parallel_blockers(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0065") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "complete parallel blockers require accepted primitive-free D0065 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("complete parallel blocker decision D0065 is missing".to_owned()),
+    }
+
+    if !root
+        .join("benchmarks/results/2026-07-23-core-1f-blocker-sets.md")
+        .is_file()
+    {
+        errors.push("complete blocker result artifact is missing".to_owned());
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(record Blockers ((declared-effects Bool) (exclusive-borrow Bool)",
+        "(fn add_blocker",
+        "(fn graph_blockers",
+        "(fn enrich_graph_blockers",
+        "(fn emit_blockers",
+        "(call enrich_graph_blockers facts edges 0)",
+        " (blockers",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!(
+                "complete SLIM blocker view is missing `{required}`"
+            ));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "fn parallelism_blockers(",
+        "blocker_{column}",
+        "every application function must have one complete blocker set",
+        "parallelism baseline line {} must have thirty columns",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!(
+                "schema-2 blocker benchmark is missing `{required}`"
+            ));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "safe-left (guarantee exact) (status safe) (blockers)",
+        "(blockers declared-effects allocation-or-io)",
+        "(blockers declared-effects recurrence)",
+        "(blockers callee-not-safe)",
+        "(blockers call-cycle)",
+        "(blockers function-limit)",
+        "(blockers edge-limit)",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!("complete blocker evidence is missing `{required}`"));
+        }
+    }
+
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    for required in [
+        "# schema=2",
+        "blocker_declared_effects",
+        "blocker_checked_trap",
+        "blocker_recurrence",
+        "blocker_callee_not_safe",
+    ] {
+        if !baseline.contains(required) {
+            errors.push(format!("schema-2 blocker baseline is missing `{required}`"));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0065") {
+        errors.push("D0065 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 

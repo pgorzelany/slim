@@ -519,15 +519,15 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
         "(parallelism (guarantee exact) (function-limit 64) (edge-limit 4096)",
-        "safe-left (guarantee exact) (status safe)",
-        "safe-right (guarantee exact) (status safe)",
-        "traps (guarantee exact) (status unavailable) (reason checked-trap)",
-        "calls-trap (guarantee exact) (status unavailable) (reason callee-not-safe)",
-        "allocates (guarantee exact) (status unavailable) (reason allocation-or-io)",
-        "borrows (guarantee exact) (status unavailable) (reason exclusive-borrow)",
-        "mutates (guarantee exact) (status unavailable) (reason mutation)",
-        "repeats (guarantee exact) (status unavailable) (reason recurrence)",
-        "cycle-left (guarantee unknown) (status unknown) (reason call-cycle)",
+        "safe-left (guarantee exact) (status safe) (blockers)",
+        "safe-right (guarantee exact) (status safe) (blockers)",
+        "traps (guarantee exact) (status unavailable) (reason checked-trap) (blockers checked-trap)",
+        "calls-trap (guarantee exact) (status unavailable) (reason callee-not-safe) (blockers callee-not-safe)",
+        "allocates (guarantee exact) (status unavailable) (reason allocation-or-io) (blockers declared-effects allocation-or-io)",
+        "borrows (guarantee exact) (status unavailable) (reason exclusive-borrow) (blockers exclusive-borrow)",
+        "mutates (guarantee exact) (status unavailable) (reason mutation) (blockers mutation)",
+        "repeats (guarantee exact) (status unavailable) (reason recurrence) (blockers declared-effects recurrence)",
+        "cycle-left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
         "(race-free true) (deadlock-free true) (profitability unknown)",
         "(eligible-sites 1)",
     ] {
@@ -562,7 +562,7 @@ fn parallelism_analysis_reports_function_and_edge_bounds() {
     assert!(function_report.contains("(parallelism (guarantee bounded)"));
     assert!(
         function_report
-            .contains("needs-late (guarantee unknown) (status unknown) (reason function-limit)")
+            .contains("needs-late (guarantee unknown) (status unknown) (reason function-limit) (blockers function-limit)")
     );
 
     let mut edge_source = String::from("(module parallel-edge-bound (record Wide (");
@@ -585,7 +585,9 @@ fn parallelism_analysis_reports_function_and_edge_bounds() {
     assert!(edge_output.status.success());
     let edge_report = String::from_utf8(edge_output.stdout).unwrap();
     assert!(edge_report.contains("(parallelism (guarantee bounded)"));
-    assert!(edge_report.contains("build (guarantee unknown) (status unknown) (reason edge-limit)"));
+    assert!(edge_report.contains(
+        "build (guarantee unknown) (status unknown) (reason edge-limit) (blockers edge-limit)"
+    ));
 
     fs::remove_dir_all(directory).unwrap();
 }

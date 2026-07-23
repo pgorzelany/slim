@@ -37,11 +37,12 @@ Rust remains measurement and verification infrastructure only.
 
 ## Costs
 
-The baseline has nineteen explicit columns: source size, function count,
-checked-site count, reported total sites, refinements, safe functions, eleven
-stable reason counts, and eligible sites. Exact source size makes application
-edits visible. Exact classifications make proof changes visible. Improvements
-are expected to require baseline updates; silent drift is not.
+The initial baseline had nineteen explicit columns: source size, function
+count, checked-site count, reported total sites, refinements, safe functions,
+eleven stable primary-reason counts, and eligible sites. D0065 advances it to
+schema 2 with eleven complete-blocker columns. Exact source size makes
+application edits visible. Exact classifications make proof changes visible.
+Improvements are expected to require baseline updates; silent drift is not.
 
 The reason counts are the compiler's current primary reasons, not a complete
 set of coexisting blockers. D0064 therefore cannot by itself justify selecting
