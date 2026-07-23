@@ -10,6 +10,9 @@ emit-exponent	generated-aggregate-temporaries	1.25	exponent	D0054
 emit-exponent	generated-planned-allocation-calls	1.25	exponent	D0055
 emit-exponent	generated-inout-binding-reads	1.25	exponent	D0057
 emit-check-ratio	generated-2000	4.00	ratio	D0030
+reduction-exponent	generated-declarations	1.25	exponent	D0028
+analysis-exponent	generated-declarations	1.25	exponent	D0062
+proof-exponent	generated-declarations	1.25	exponent	D0029
 incremental-exponent	wide-no-change	1.25	exponent	D0030
 incremental-exponent	wide-private-body	1.25	exponent	D0030
 incremental-exponent	wide-public-interface	1.25	exponent	D0030

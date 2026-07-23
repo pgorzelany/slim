@@ -907,3 +907,39 @@ operations or documented source-algorithm differences rather than an unchecked
 fast-path opportunity. All non-startup-dominated limits tighten to 1.75-2.5.
 The compiler self-check is 0.03 seconds, 109 fixtures and 2,000 mutations pass,
 and the portable 1,622,580-byte seed reproduces exactly.
+
+### Core 1F: deterministic parallelism evidence
+
+Status: in progress
+
+D0062 rejects language-level concurrency and runtime scheduling as the first
+step. Empty effect lists do not imply reorder-safety because checked overflow,
+bounds traps, lexical mutation, exclusive borrows, and recurrence remain
+observable. Analysis version 3 instead consumes the normal checked token links
+and typed facts and produces a non-executable, bounded proof report.
+
+The first slice stores at most 64 function facts and 4,096 direct call edges,
+resolves the call graph in at most 64 passes, and classifies each result as
+exact, bounded, or unknown. A function is reorder-safe only when it and every
+callee are free of declared effects, allocation, I/O, defined traps, mutation,
+exclusive borrows, and recurrence. Cycles and exceeded bounds remain unknown.
+Adjacent immutable `let` computations become candidate fork sites only when
+both contain a proven-safe user call and the second does not depend on the first
+result. The report records exact source nodes, race/deadlock compatibility, and
+unknown profitability; it changes neither generated C nor runtime behavior.
+
+The first evidence gate passes the exact hazard/dependency/cycle fixture and
+generated 66-function and 4,097-edge bound crossings. Full 1,000/2,000/4,000/
+8,000-declaration analysis has an end-to-end 0.833 scaling exponent, below its
+durable 1.25 budget. The 661-function compiler project honestly reports a
+bounded result, and the 1,711,913-byte portable seed reproduces exactly. Dated
+measurements and the 5.51% compiler-size cost are recorded in
+`benchmarks/results/2026-07-23-core-1f-progress.md`.
+
+Before any execution decision, Core 1F still needs substantial application
+evidence, positive range/totality proofs that expand useful work beyond small
+trap-free call DAGs, a deterministic trap and cancellation model, and measured
+task-cost thresholds that beat serial execution after creation and join
+overhead. Candidate sites may overlap, so schedule selection also requires a
+deterministic bounded policy. A later scored decision must demonstrate all of
+these without adding locks, hidden synchronization, or cost to unselected code.

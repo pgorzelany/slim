@@ -509,12 +509,14 @@ fn run_reduction() {
         ("analysis", first_analyze, last_analyze),
         ("proof", first_proof, last_proof),
     ] {
+        let metric = format!("{role}-exponent");
+        let limit = performance_budget(&metric, "generated-declarations");
         let size_ratio = last_size as f64 / first_size as f64;
         let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
         let exponent = time_ratio.ln() / size_ratio.ln();
-        if exponent > 1.25 {
+        if exponent > limit {
             eprintln!(
-                "{role} scaling gate: process-level exponent {exponent:.3} exceeds 1.25 between {first_size} and {last_size} declarations"
+                "{role} scaling gate: process-level exponent {exponent:.3} exceeds {limit:.2} between {first_size} and {last_size} declarations"
             );
             std::process::exit(1);
         }

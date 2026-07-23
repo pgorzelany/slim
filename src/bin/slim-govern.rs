@@ -78,11 +78,106 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_runtime_fast_paths(root, &decisions, &mut errors);
     check_allocation_free_region_elision(root, &decisions, &mut errors);
     check_core_1e_acceptance(root, &decisions, &mut errors);
+    check_parallelism_evidence(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_parallelism_evidence(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0062") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1F evidence requires accepted primitive-free D0062 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1F parallelism evidence decision D0062 is missing".to_owned()),
+    }
+
+    for required in [
+        "docs/PARALLELISM.md",
+        "selfhost/parallel.slim",
+        "conformance/evidence/parallelism.slim",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "Core 1F parallelism artifact is missing {required}"
+            ));
+        }
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(record FunctionFact",
+        "(function-limit 64)",
+        "(edge-limit 4096)",
+        "(resolution-pass-limit 64)",
+        "(race-free true)",
+        "(deadlock-free true)",
+        "(profitability unknown)",
+        "(call typing/fact_type",
+        "(call typing/linked_binding_declaration",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!(
+                "Core 1F bounded parallelism evidence is missing `{required}`"
+            ));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    for required in [
+        "(analysis 3",
+        "(inout typed_facts (Vec typing/Fact))",
+        "(call parallel/emit_module_facts source tokens typed_facts output)",
+    ] {
+        if !analysis.contains(required) {
+            errors.push(format!(
+                "Core 1F analysis does not consume the checked view through `{required}`"
+            ));
+        }
+    }
+
+    let compiler = fs::read_to_string(root.join("selfhost/slimc.slim")).unwrap_or_default();
+    if !compiler.contains("(call check/check_source input tokens)")
+        || !compiler.contains("(call analysis/emit_module input tokens typed_facts output)")
+        || !compiler.contains("(fn analyze_project_path")
+        || !compiler.contains("(call project/prepare_project_path path)")
+    {
+        errors.push(
+            "source and project analysis must consume normal checked artifacts without a second semantic path"
+                .to_owned(),
+        );
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0062") {
+        errors.push("D0062 has Primitive: none and must not add Core language surface".to_owned());
+    }
+
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    if !budgets.contains("analysis-exponent\tgenerated-declarations\t1.25\texponent\tD0062") {
+        errors.push("Core 1F analysis scaling lacks its durable 1.25 budget".to_owned());
+    }
+
+    let e2e = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    if !e2e.contains("fn report_parentheses_are_balanced")
+        || !e2e.contains("parallelism_analysis_reports_function_and_edge_bounds")
+        || !e2e.contains("project_analysis_dogfoods_the_bounded_parallelism_view")
+    {
+        errors.push("Core 1F report structure and hard bounds lack durable tests".to_owned());
+    }
 }
 
 fn check_core_1e_acceptance(
@@ -1084,7 +1179,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(module codegen \"codegen.slim\" (imports memory syntax text typing) (exports emit_program))",
         "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
-        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type linked_binding_is_inout))",
+        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue builtin_known empty_view fact_type linked_binding_declaration linked_binding_is_inout))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
     ] {
         if !project.contains(required) {
@@ -1771,7 +1866,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 2",
+        "(analysis 3",
         "(call quality/emit_module_facts",
         "(ownership-pressure",
         "(max-live-owned ",

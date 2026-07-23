@@ -39,7 +39,7 @@ operation that may trap, aggregate move, mutation, or exclusive borrow.
 
 ## Analysis contract
 
-`slimc analyze SOURCE` writes a deterministic `(analysis 2 ...)` report. Token
+`slimc analyze SOURCE` writes a deterministic `(analysis 3 ...)` report. Token
 indices in the canonical input are stable node and binding identities. Each
 function reports its declared effects and every parameter, lexical binding,
 and pattern binding that fits the bounded fact table. Binding facts include the
@@ -52,6 +52,8 @@ by the production compiler, and makes no equivalence or optimality claim.
 Core 1B additions—state models, effect/failure surfaces, ownership pressure,
 totality classifications, reduction proof replay, finite equivalence, and
 structural edits—are specified in `docs/QUALITY.md`.
+Core 1F reorder-safety and independent fork-site evidence is specified in
+`docs/PARALLELISM.md`; it remains non-executable analysis data.
 
 ## Representation boundary
 

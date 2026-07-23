@@ -28,6 +28,36 @@ fn write_source(directory: &Path, source: &str) -> PathBuf {
     path
 }
 
+fn report_parentheses_are_balanced(report: &[u8]) -> bool {
+    let mut depth = 0_i64;
+    let mut in_string = false;
+    let mut escaped = false;
+    for byte in report {
+        if in_string {
+            if escaped {
+                escaped = false;
+            } else if *byte == b'\\' {
+                escaped = true;
+            } else if *byte == b'"' {
+                in_string = false;
+            }
+            continue;
+        }
+        match *byte {
+            b'"' => in_string = true,
+            b'(' => depth += 1,
+            b')' => {
+                depth -= 1;
+                if depth < 0 {
+                    return false;
+                }
+            }
+            _ => {}
+        }
+    }
+    depth == 0 && !in_string && !escaped
+}
+
 #[test]
 fn checks_builds_and_runs_native_program() {
     let directory = temporary_directory("native");
@@ -312,8 +342,9 @@ fn semantic_analysis_is_stable_and_bounded() {
         .unwrap();
     assert!(first.status.success());
     assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 2 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 3 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
@@ -363,6 +394,114 @@ fn quality_analysis_classifies_exact_and_unknown_facts() {
         "(state-model Decision (guarantee exact) (cardinality (sum (pow2 0) (pow2 1) (pow2 8))))"
     ));
     assert!(report.contains("(totality (guarantee exact) (status total))"));
+}
+
+#[test]
+fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/evidence/parallelism.slim");
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&source)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert!(first.stderr.is_empty());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    for required in [
+        "(parallelism (guarantee exact) (function-limit 64) (edge-limit 4096)",
+        "safe-left (guarantee exact) (status safe)",
+        "safe-right (guarantee exact) (status safe)",
+        "traps (guarantee exact) (status unavailable) (reason checked-trap)",
+        "calls-trap (guarantee exact) (status unavailable) (reason callee-not-safe)",
+        "allocates (guarantee exact) (status unavailable) (reason allocation-or-io)",
+        "borrows (guarantee exact) (status unavailable) (reason exclusive-borrow)",
+        "mutates (guarantee exact) (status unavailable) (reason mutation)",
+        "repeats (guarantee exact) (status unavailable) (reason recurrence)",
+        "cycle-left (guarantee unknown) (status unknown) (reason call-cycle)",
+        "(race-free true) (deadlock-free true) (profitability unknown)",
+        "(eligible-sites 1)",
+    ] {
+        assert!(
+            report.contains(required),
+            "missing parallel fact: {required}"
+        );
+    }
+}
+
+#[test]
+fn parallelism_analysis_reports_function_and_edge_bounds() {
+    let directory = temporary_directory("parallel-bounds");
+
+    let mut function_source = String::from(
+        "(module parallel-function-bound (fn needs-late () Bool (effects) (call late)) ",
+    );
+    for index in 0..63 {
+        function_source.push_str(&format!("(fn filler-{index} () Bool (effects) true) "));
+    }
+    function_source.push_str(
+        "(fn late () Bool (effects) true) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n",
+    );
+    let function_path = write_source(&directory, &function_source);
+    let function_output = Command::new(slimc())
+        .arg("analyze")
+        .arg(&function_path)
+        .output()
+        .unwrap();
+    assert!(function_output.status.success());
+    let function_report = String::from_utf8(function_output.stdout).unwrap();
+    assert!(function_report.contains("(parallelism (guarantee bounded)"));
+    assert!(
+        function_report
+            .contains("needs-late (guarantee unknown) (status unknown) (reason function-limit)")
+    );
+
+    let mut edge_source = String::from("(module parallel-edge-bound (record Wide (");
+    for index in 0..4097 {
+        edge_source.push_str(&format!("(field-{index} Bool)"));
+    }
+    edge_source
+        .push_str(")) (fn leaf () Bool (effects) true) (fn build () Wide (effects) (make Wide ");
+    for index in 0..4097 {
+        edge_source.push_str(&format!("(field-{index} (call leaf))"));
+    }
+    edge_source.push_str(")) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    let edge_path = directory.join("edges.slim");
+    fs::write(&edge_path, edge_source).unwrap();
+    let edge_output = Command::new(slimc())
+        .arg("analyze")
+        .arg(&edge_path)
+        .output()
+        .unwrap();
+    assert!(edge_output.status.success());
+    let edge_report = String::from_utf8(edge_output.stdout).unwrap();
+    assert!(edge_report.contains("(parallelism (guarantee bounded)"));
+    assert!(edge_report.contains("build (guarantee unknown) (status unknown) (reason edge-limit)"));
+
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn project_analysis_dogfoods_the_bounded_parallelism_view() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new(slimc())
+        .arg("analyze")
+        .arg(root.join("selfhost/slim.project"))
+        .output()
+        .unwrap();
+    assert!(output.status.success());
+    assert!(output.stderr.is_empty());
+    assert!(report_parentheses_are_balanced(&output.stdout));
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert!(report.starts_with("(analysis 3 (module project)"));
+    assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
+    assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
 }
 
 #[test]

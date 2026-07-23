@@ -12,11 +12,11 @@ syntax. Every result is classified as one of:
 The tools never turn `unknown` into a negative quality judgment. They emit a
 vector of facts rather than a universal goodness score.
 
-## Analysis version 2
+## Analysis version 3
 
-`slimc analyze SOURCE` emits `(analysis 2 ...)`. It retains Core 1A binding
+`slimc analyze SOURCE` emits `(analysis 3 ...)`. It retains Core 1A binding
 identity, declared type, storage ownership, use, last-use, scope, and dependency
-facts. It adds:
+facts and Core 1B quality facts. Version 2 added:
 
 - exact token, declaration, function, record, and variant counts;
 - exact declared effect and structural mutation/call/match/recur counts;
@@ -37,6 +37,25 @@ live-range pressure therefore has a fixed maximum of 4,096 comparisons.
 Structural metrics use one token traversal. Exceeding a bound marks the result
 `bounded` or `unknown`; it never silently shortens a lifetime or claims an exact
 result.
+
+Standalone sources and explicit project manifests use the same command. Project
+analysis consumes the ordinary prepared project artifact after module,
+visibility, type, effect, ownership, and memory-plan checking; it does not
+reparse or independently type project code.
+
+Version 3 adds D0062's bounded parallelism evidence. It consumes the same
+checked token links and typed facts as ordinary compilation, stores at most 64
+function facts and 4,096 direct call edges, and performs at most 64 resolution
+passes. It reports exact safe or unavailable functions, explicit unknown call
+cycles and bound overflows, and stable adjacent fork-site candidates. A site is
+reported only when both computations are transitively free of declared effects,
+exclusive borrows, mutation, recurrence, allocation, I/O, and defined traps and
+the second does not use the first result.
+
+Parallelism evidence does not select or execute a schedule. Candidate sites may
+overlap, structural task-token counts do not predict dynamic work, and
+profitability is therefore `unknown`. The full contract and future execution
+boundary are specified in `docs/PARALLELISM.md`.
 
 ## Reduction evidence and replay
 

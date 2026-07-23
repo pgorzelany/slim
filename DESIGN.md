@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1D implementation and research direction
+Status: Core 1F implementation and research direction
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-22
 
