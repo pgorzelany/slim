@@ -71,6 +71,13 @@ Standalone and prepared-project code generation consume the retained function
 plans in declaration order and verify their function identity before selecting
 a region. There is no Rust-owned lifetime IR and no source annotation.
 
+Allocation plans include every call boundary that can propagate allocation
+failure: allocating built-ins and user functions declaring `alloc`. The shared
+SLIM `effects` module is the single classifier used by diagnostics, memory
+planning, and call emission. A function's generated failure boundary is present
+exactly when its retained plan has at least one such site; the backend does not
+reparse that function's effect declaration.
+
 Analysis is conservative. An unknown call or recursive component may lengthen
 a lifetime to the caller or process region, but may never shorten it. Planning
 is deterministic and approximately linear in the declaration body plus its

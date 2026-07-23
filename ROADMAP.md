@@ -744,6 +744,14 @@ is removed. The sixteen-field `record-wide` fixture remains executable and the
 self-check remains near 0.11 seconds. The byte-identical fixed-point seed is
 1,635,270 C bytes.
 
+The sixteenth slice adopts D0047's retained allocation boundaries. One
+canonical SLIM effect query now serves diagnostics, memory planning, and call
+emission. The retained plan records built-in and user calls that can propagate
+allocation failure, and function emission no longer reparses the declaration
+to decide whether it needs a failure boundary. An injected user-call failure
+fixture grows the corpus to 95; the self-check remains near 0.11 seconds and
+the byte-identical fixed-point seed is 1,631,733 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project

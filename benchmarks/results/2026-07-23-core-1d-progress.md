@@ -304,3 +304,24 @@ cost.
 complete release gate passes 94 fixtures, 2,000 deterministic malformed-input
 mutations, quick performance budgets, sanitizers, allocation-failure injection,
 and a byte-identical 1,635,270-byte C bootstrap seed.
+
+## Retained allocation boundaries
+
+D0047 completes the function-level allocation consumer without widening
+`FunctionPlan`. Its existing allocation-site vector now records all five
+allocating built-ins and allocation-capable user calls using checked declaration
+links. Function emission derives the presence of its failure label from that
+retained vector instead of reading the declared effect list again.
+
+The previously duplicated built-in effect tables were not copied into the
+planner. A new internal `effects` module owns list, built-in, function, and call
+queries for diagnostics, planning, and emission. This adds no language or
+runtime surface. The remaining per-call postcondition check uses the same
+canonical query; passing planned site cursors through every expression emitter
+is explicitly later work.
+
+`allocation-user-failure` injects failure at allocation two inside a called
+SLIM function and requires the caller to return status 71 with the exact
+allocation report. All 95 fixtures and 2,000 mutations pass, self-validation
+remains near 0.11 seconds, and the complete release gate fixes the bootstrap at
+1,631,733 generated C bytes.

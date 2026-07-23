@@ -834,6 +834,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("compiler", "slimc.slim"),
         ("driver", "driver.slim"),
         ("edit", "edit.slim"),
+        ("effects", "effects.slim"),
         ("equivalence", "equivalence.slim"),
         ("ir", "ir.slim"),
         ("memory", "memory.slim"),
@@ -1177,6 +1178,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         root.join("runtime/slim_rt.h"),
         root.join("runtime/slim_rt.c"),
         root.join("selfhost/check.slim"),
+        root.join("selfhost/effects.slim"),
         root.join("selfhost/memory.slim"),
         root.join("selfhost/codegen.slim"),
     ];
@@ -1192,12 +1194,17 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(record FunctionPlan",
         "(fn empty_plan",
         "(fn function_uses_local_region",
+        "(fn function_plan_allocates",
+        "(fn call_requires",
+        "(call effects/call_requires source tokens callee 1)",
         "(call syntax/token_link tokens type_index)",
         "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
         "(make typing/Checked (status status) (view view) (issues issues) (plan plan))",
         "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (plan memory/Plan)",
         "(get function_plan function)",
         "(get function_plan local_region)",
+        "(call memory/function_plan_allocates function_plan)",
+        "(call effects/params_have source tokens callee_params 1)",
         "slim_region_destroy(&slim_function_region)",
         "slim_allocation_failed",
     ] {
@@ -1212,6 +1219,13 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "slim_find_allocation",
         "slim_rt_trap(\"out of memory\")",
         "(fn find_type_item",
+        "(fn effect_list_has_alloc",
+        "(fn params_have_alloc_effect",
+        "(fn builtin_requires_effect",
+        "(fn call_requires_effect",
+        "(fn builtin_call_allocates",
+        "(fn call_allocates",
+        "(call memory/function_has_alloc_effect source tokens item)",
         "(call memory/function_uses_local_region source tokens item)",
     ] {
         if joined.contains(forbidden) {
@@ -1219,6 +1233,12 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
                 "Core 0.4 memory architecture retains forbidden `{forbidden}`"
             ));
         }
+    }
+    let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+    if !manifest
+        .contains("allocation-user-failure\tallocation-fail\tconformance/pass/lifetimes.slim")
+    {
+        errors.push("retained user-allocation failure fixture is missing".to_owned());
     }
 }
 
