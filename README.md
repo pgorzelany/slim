@@ -58,49 +58,8 @@ For the executable Core oracle and incremental measurements:
 
 ## Current boundary
 
-The self-hosted compiler is a genuine deterministic compiler, not a wrapper.
-The checked-in C11 seed builds it without Rust and reproduces the compiler C
-byte for byte. Core 1C is frozen with all 62 standalone and project fixtures
-running through the SLIM compiler with no semantic fallback.
-Its twenty SLIM modules implement structured syntax, bounded malformed-input
-validation, and typed declarations,
-standalone and project checking, deterministic C generation,
-declaration-level query invalidation, transactional last-good sessions, a
-bounded validated persistent cache, deterministic bounded scheduling, and a
-SLIM-owned bounded lifetime planner. Core 0.4 adds compiler-selected function
-regions, self-describing region allocations with deterministic reverse
-destruction, and a typed allocation-effect failure channel. It adds no source
-syntax, allocator alias, reference counting, or garbage collector. Detailed
-per-binding planning is capped at 64 values and conservatively falls back to a
-function boundary; dynamic-buffer stack promotion and earlier lexical release
-remain future precision work.
-New compiler capabilities must be implemented in SLIM. Governance rejects
-production Rust semantics and permits Rust only for bootstrap-independent
-verification and measurement infrastructure.
-Core 0.1 also has declaration-local in-memory incremental compilation with
-stable syntax/interface fingerprints and dependency-aware invalidation; its
-architecture and measured remaining whole-file costs are documented in
-[docs/INCREMENTAL.md](docs/INCREMENTAL.md).
-Core 0.2 adds explicit deterministic projects, qualified cross-module
-references, canonical public interfaces, safe persistent cache recovery,
-declaration-level project reuse, and an opt-in deterministic worker path. The
-measured worker path is currently slower than serial and is not enabled by
-default. Core 0.3's self-host scheduler likewise plans bounded dependency
-batches but executes them serially because Core has no concurrency runtime.
-Language-level concurrency, automatic program parallelization, inferred
-application invariants, general equivalence, and globally optimal reduction
-remain designed goals rather than implemented claims. Core 1A adds a small
-direct reducer and bounded semantic facts without new source syntax or a
-separate IR language. Core 1B adds classified quality evidence, independently
-replayed reduction records, exact finite Boolean equivalence with concrete
-counterexamples, and one versioned node edit protocol. Its limits are
-documented in [docs/QUALITY.md](docs/QUALITY.md), alongside the Core 1A contract
-in [docs/REDUCTION.md](docs/REDUCTION.md). The 0.3 freeze evidence and remaining
-performance gap are recorded in
-[benchmarks/results/2026-07-21-core-03.md](benchmarks/results/2026-07-21-core-03.md).
-Core 1C adds permanent compiler, incremental, project, and per-workload native
-performance budgets; twelve matched real-program challenges; and five matched
-agent repair cases. It replaces repeated declaration scans with a derived
-compiler-local name index without adding language or runtime surface. Full
-measurements and remaining diagnostic/runtime gaps are in
-[benchmarks/results/2026-07-22-core-1c.md](benchmarks/results/2026-07-22-core-1c.md).
+SLIM is currently at **Core 1G guarded automatic parallel execution**. The
+self-hosted compiler, portable C11 seed, language surface, bounded analysis,
+reduction tools, memory model, and exact current limitations are summarized in
+[docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;
+the roadmap retains the detailed milestone history and evidence.
