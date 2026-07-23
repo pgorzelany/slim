@@ -37,8 +37,7 @@ test ! -e "$slim_install/target"
 
 (
     cd "$slim_install"
-    while IFS= read -r slim_digest slim_path; do
-        slim_path=${slim_path# }
+    while read -r slim_digest slim_path; do
         if command -v sha256sum >/dev/null 2>&1; then
             slim_actual=$(sha256sum "$slim_path" | awk '{ print $1 }')
         else
