@@ -917,6 +917,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     }
     for required in [
+        "(call append_form_issue \"E0336\" incomplete tokens issues)",
         "(call append_form_issue \"E0343\" missing tokens issues)",
         "(call append_form_issue \"E0348\" temporary tokens issues)",
         "(call append_token_issue \"E0349\" duplicate issues)",
@@ -927,7 +928,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    for code in ["E0343", "E0348", "E0349", "E0350"] {
+    for code in ["E0336", "E0343", "E0348", "E0349", "E0350"] {
         let direct = format!("(call report_diagnostic \"{code}\"");
         if check.contains(&direct) {
             errors.push(format!(
@@ -953,6 +954,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@99:104,E0350@app@105:109",
     ) {
         errors.push("recursive-inout project projection fixture is missing".to_owned());
+    }
+    if !project_manifest.contains(
+        "project-nonexhaustive\tcheck-fail\tconformance/projects/nonexhaustive/slim.project\tparity\tE0336@app@56:77",
+    ) {
+        errors.push("nonexhaustive project projection fixture is missing".to_owned());
     }
 
     let project_path = directory.join("project.slim");

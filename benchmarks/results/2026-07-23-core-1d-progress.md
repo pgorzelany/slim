@@ -214,9 +214,9 @@ old per-reference declaration scan.
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy exhaustiveness and move diagnostics still need to
-  move into the structured issue channel so every project semantic diagnostic
-  uses the same projection.
+- Legacy move and secondary Boolean-recovery diagnostics still need to move
+  into the structured issue channel so every project semantic diagnostic uses
+  the same projection.
 - Code generation still derives allocation-effect, recurrence, and expression
   facts from token structure instead of consuming bounded typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,
@@ -239,3 +239,23 @@ and 2,000 mutations pass, and the fixed-point seed is 1,635,534 C bytes.
 The plan does not yet retain allocation-effect or recurrence facts, and
 expression lowering still reads token structure. Those remain bounded
 typed-view work rather than being hidden inside this checkpoint.
+
+An immediate follow-up tried to add allocation-effect and recurrence fields to
+`FunctionPlan` while folding recurrence discovery into the allocation walk.
+The old compiler required more than 8.11 seconds of user CPU to validate that
+source, versus about 0.11 seconds at the accepted boundary. The candidate was
+interrupted and reverted completely. This is another source-shape result, not
+evidence against retaining those facts through a differently factored change.
+
+## Structured nonexhaustive diagnostics
+
+D0044 changes the existing Boolean exhaustiveness coordinator from direct byte
+reporting to one `typing/Issue` carrying the complete match token interval.
+Standalone `nonexhaustive` remains `E0336@66:87`, and `multiple` preserves its
+four-code order. The prepared-project fixture projects the same family as
+`E0336@app@56:77`.
+
+Self-validation remains about 0.11 seconds. The byte-identical seed is
+1,635,539 C bytes, and the corpus contains 94 fixtures plus 2,000 deterministic
+mutations. Secondary recovery inside an already invalid Boolean match remains
+direct in standalone mode and is not claimed as migrated.

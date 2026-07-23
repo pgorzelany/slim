@@ -730,11 +730,18 @@ consumed in declaration order with an identity check, and region selection no
 longer has a backend-owned inference path. The self-check remains near 0.11
 seconds and the byte-identical seed is 1,635,534 C bytes.
 
+The fourteenth slice adopts D0044's structured nonexhaustive diagnostics. The
+existing bounded Boolean-match finder appends `E0336` with the complete match
+interval instead of printing flattened bytes. A project fixture pins
+`E0336@app@56:77`; standalone multiple-diagnostic ordering is unchanged. The
+self-check remains near 0.11 seconds, the corpus grows to 94 fixtures, and the
+byte-identical seed is 1,635,539 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
-source projection, while legacy exhaustiveness and move reports have not yet
-joined that channel. Core 1D
+source projection, while legacy move and secondary Boolean-recovery reports
+have not yet joined that channel. Core 1D
 acceptance requires bounded expression-fact and remaining member lookup, removal of
 the remaining redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and

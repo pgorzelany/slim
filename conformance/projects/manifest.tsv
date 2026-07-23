@@ -28,6 +28,7 @@ project-unimported-reference	check-fail	conformance/projects/rules/unimported-re
 project-self-qualified	check-fail	conformance/projects/rules/self-qualified-reference.project	parity	E0417@app@87:104	project:local-qualification,project:diagnostics
 project-wrong-kind	check-fail	conformance/projects/rules/wrong-kind-reference.project	parity	E0415@app@56:77	project:visibility,project:diagnostics
 project-type-error	check-fail	conformance/projects/type-error/slim.project	parity	E0344@app@56:60	project:diagnostics,type:expression
+project-nonexhaustive	check-fail	conformance/projects/nonexhaustive/slim.project	parity	E0336@app@56:77	project:diagnostics,match:exhaustive
 project-effect-error	check-fail	conformance/projects/effect-error/slim.project	parity	E0343@app@72:94	project:diagnostics,effect:enforcement
 project-inout-temporary	check-fail	conformance/projects/inout-temporary/slim.project	parity	E0348@app@164:178	project:diagnostics,ownership:named-inout
 project-inout-alias	check-fail	conformance/projects/inout-alias/slim.project	parity	E0349@app@211:217	project:diagnostics,ownership:no-alias
