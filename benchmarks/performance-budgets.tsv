@@ -2,6 +2,7 @@
 # metric	workload	limit	unit	decision
 check-exponent	generated-declarations	1.25	exponent	D0030
 check-exponent	generated-nested-bindings	1.25	exponent	D0030
+check-exponent	generated-named-type-parameters	1.25	exponent	D0042
 emit-exponent	generated-declarations	1.25	exponent	D0030
 emit-check-ratio	generated-2000	4.00	ratio	D0030
 incremental-exponent	wide-no-change	1.25	exponent	D0030

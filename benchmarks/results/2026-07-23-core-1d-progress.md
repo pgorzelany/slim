@@ -188,6 +188,27 @@ seconds of user CPU time, and the byte-identical seed shrinks from 1,643,001 to
 1,634,840 C bytes. Multiple structured issues retain exit status one; all 93
 fixtures and 2,000 malformed mutations pass.
 
+## Checked memory type links
+
+D0042 orders standalone type analysis before memory planning and removes the
+planner's recursive textual declaration lookup. Named record and variant
+storage classification now consumes the declaration link on the checked type
+token; code generation already satisfies the same checked-token precondition.
+
+The lifetime and wide aggregate fixtures remain executable. Nine warm
+self-checks recorded user times of 0.10, 0.11, 0.12, 0.10, 0.11, 0.11, 0.12,
+0.11, and 0.11 seconds, with a 0.11-second median; wall-time median was 0.12
+seconds. That is about twice as fast as the preceding 0.22-second boundary.
+The byte-identical seed shrinks from 1,634,840 to 1,631,678 C bytes. This is a
+bounded named-type query, not yet a claim that the complete memory plan is
+retained in `typing/Checked`.
+
+The durable quick scaling series places `Payload` after 125, 250, 500, and
+1,000 functions that each use it as a parameter type. Checks took 4,701, 6,099,
+7,551, and 8,239 microseconds, an endpoint exponent of 0.270 under the permanent
+1.25 limit. This adversarial declaration order would expose restoration of the
+old per-reference declaration scan.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share

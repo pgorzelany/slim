@@ -203,6 +203,7 @@ fn check_performance_architecture(
     for required in [
         "check-exponent/generated-declarations",
         "check-exponent/generated-nested-bindings",
+        "check-exponent/generated-named-type-parameters",
         "emit-exponent/generated-declarations",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
@@ -276,6 +277,8 @@ fn check_performance_architecture(
         "enforce_scaling_series(\"project-emit-exponent\"",
         "performance_budget(\"native-runtime-ratio\"",
         "performance_budget(\"check-exponent\", \"generated-nested-bindings\")",
+        "performance_budget(\"check-exponent\", \"generated-named-type-parameters\")",
+        "fn generated_named_type_program(functions: usize)",
         "fn agent_manifest()",
     ] {
         if !benchmark.contains(required) {
@@ -1143,6 +1146,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
     let sources = [
         root.join("runtime/slim_rt.h"),
         root.join("runtime/slim_rt.c"),
+        root.join("selfhost/check.slim"),
         root.join("selfhost/memory.slim"),
         root.join("selfhost/codegen.slim"),
     ];
@@ -1157,6 +1161,8 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(record DestructionPlan",
         "(record FunctionPlan",
         "(fn function_uses_local_region",
+        "(call syntax/token_link tokens type_index)",
+        "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
         "slim_region_destroy(&slim_function_region)",
         "slim_allocation_failed",
     ] {
@@ -1170,6 +1176,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "slim_allocations",
         "slim_find_allocation",
         "slim_rt_trap(\"out of memory\")",
+        "(fn find_type_item",
     ] {
         if joined.contains(forbidden) {
             errors.push(format!(

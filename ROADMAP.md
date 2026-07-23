@@ -716,6 +716,13 @@ removed. A project fixture pins two module-local intervals, self-validation
 stays near 0.22 seconds, and the fixed-point seed shrinks to 1,634,840 C bytes;
 93 fixtures and 2,000 malformed mutations pass.
 
+The twelfth slice adopts D0042's checked memory type links. Standalone checking
+establishes the typed view before planning, and recursive record/variant storage
+classification consumes retained declaration links instead of scanning all
+items by name. The fixed-point seed shrinks to 1,631,678 C bytes without a new
+plan field, pass, or source feature. Nine warm self-checks have a 0.11-second
+median user time, about twice as fast as the preceding 0.22-second boundary.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project

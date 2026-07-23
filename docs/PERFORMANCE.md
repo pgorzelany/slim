@@ -50,6 +50,11 @@ ordinary checking and C emission must have a process-level scaling exponent no
 greater than 1.25. At 2,000 declarations, emission may take at most four times
 the check duration on the same warmed host.
 
+A second geometric check series places a named aggregate declaration after
+every function that references it. This permanently guards the memory planner's
+bounded checked-type lookup against restoration of per-reference declaration
+scans. Its process-level scaling exponent is also limited to 1.25.
+
 Core 1C must improve the recorded 2,000-declaration C emission result by at
 least five times on the baseline host without materially regressing checking,
 generated runtime, generated binary size, or compiler peak memory. Challenge

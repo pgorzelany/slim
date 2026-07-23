@@ -180,6 +180,52 @@ fn run_performance() {
         );
         std::process::exit(1);
     }
+
+    println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
+    let mut first_named = None;
+    let mut last_named = None;
+    for size in nested_sizes {
+        let source = generated_named_type_program(*size);
+        let path = directory.path.join(format!("named-types-{size}.slim"));
+        fs::write(&path, &source).expect("write named-type scaling source");
+        require_clean_output(
+            compiler_output(&compiler, "check", &path),
+            "named-type scaling warmup",
+        );
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("check").arg(&path),
+                "SLIM named-type check",
+            );
+            require_clean_output(output, "named-type scaling check");
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_named.is_none() {
+            first_named = Some((*size, elapsed));
+        }
+        last_named = Some((*size, elapsed));
+    }
+    let (first_size, first_time) = first_named.expect("named-type series has a first sample");
+    let (last_size, last_time) = last_named.expect("named-type series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("check-exponent", "generated-named-type-parameters");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: named-type check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} parameters"
+        );
+        std::process::exit(1);
+    }
 }
 
 fn run_reduction() {
@@ -925,6 +971,20 @@ fn generated_nested_program(bindings: usize) -> String {
         source.push(')');
     }
     source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call deep 0)))\n");
+    source
+}
+
+fn generated_named_type_program(functions: usize) -> String {
+    let mut source = String::with_capacity(functions * 70);
+    source.push_str("(module named-types ");
+    for index in 0..functions {
+        source.push_str("(fn worker-");
+        source.push_str(&index.to_string());
+        source.push_str(" ((value Payload)) I64 (effects) 0) ");
+    }
+    source.push_str(
+        "(record Payload ((bytes Bytes))) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n",
+    );
     source
 }
 
