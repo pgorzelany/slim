@@ -89,10 +89,18 @@ These rules apply to every change in this repository.
 - Keep parallel candidates distinct from the selected plan. Selection uses
   stable lexical node order, emits only pairwise non-overlapping intervals, and
   becomes bounded rather than silently truncating after 64 reported sites.
-- Do not reinterpret a selected site as executed. Core 1F execution remains
-  disabled until D0069's portable-worker, capture/result, fallback, no-nesting,
-  and target-cost reopening conditions are all satisfied by a replacement
-  decision and permanent multi-application evidence.
+- Keep selected, executable, and executed sites distinct. D0071 permits
+  execution only for the exact checked capture shape, leading-chain lowering,
+  total recurrence work, and `posix-v1` threshold it records. Unknown work,
+  computed captures, unsupported placement, bounded-away facts, and unreported
+  sites remain serial.
+- Keep structured workers behind `SLIM_PARALLEL`; keep platform workers behind
+  a separate target-tier macro. A declined spawn must run the identical task
+  body inline, every successful spawn must join once, and worker scope must
+  decline nested spawning.
+- Preserve the generated parallel/forced-serial runtime ratios for both
+  `state_machine` and `signal_network`. A new execution shape needs positive
+  multi-application evidence and a permanent same-host regression budget.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

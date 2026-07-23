@@ -1,6 +1,6 @@
 # Deterministic parallelism
 
-Status: Core 1F evidence boundary
+Status: Core 1G guarded automatic execution
 
 SLIM has no language-level concurrency primitive and no program runtime
 scheduler. Core 1F first establishes which checked computations could be placed
@@ -38,20 +38,21 @@ structured model.
 
 `slimc analyze SOURCE_OR_PROJECT` remains the only command. A project is
 analyzed through its normal validated, flattened, typed artifact; there is no
-second project parser or checker. Analysis version 4 contains the version 3
-`parallelism` section with stable source-token node identities, per-function
-safety facts, candidate fork sites, and explicit reasons for unavailable or
-unknown results. It stores at most 64 functions and 4,096 direct call edges and
-performs at most 64 graph-resolution passes.
+second project parser or checker. Analysis version 5 contains stable
+source-token node identities, per-function safety facts, exact recurrence work
+when derivable, candidate fork sites, and distinct selected, executable, and
+executed counts. Unavailable or unknown results retain explicit reasons. It
+stores at most 64 functions and 4,096 direct call edges and performs at most 64
+graph-resolution passes.
 
 Candidate sites may overlap. D0067 derives one schedule by scanning stable
 source nodes in lexical order, selecting the earliest candidate at or after the
 prior selected join. The result is unique and pairwise non-overlapping. The
 report retains the complete candidate and selected counts and prints at most 64
 selected sites; a larger plan is labelled bounded rather than truncated
-silently. It still does not create a task or change generated code. Source
-task-token counts are exact structural facts; runtime profitability remains
-`unknown` until a separately measured cost model justifies execution.
+silently. Source task-token counts remain structural evidence only. D0071 uses
+exact total-recurrence iterations, never token counts, for its narrow
+`posix-v1` execution decision.
 
 The shared `integer-proofs` view can prove guarded additions/subtractions,
 bounded arithmetic, nonzero division/remainder, and checked byte conversion.
@@ -132,3 +133,67 @@ its 2.00 largest-work ratio budget. Reopening execution requires a portable or
 explicitly tiered worker ABI, general ownership-safe capture/result lowering,
 serial fallback and join tests, bounded no-nesting behavior, and
 target-calibrated or profile-backed evidence on more than one application.
+
+## Core 1G tiered worker ABI
+
+D0070 satisfies the worker, fallback, join-failure, and bounded no-nesting
+parts of that reopening contract without enabling generated execution. The
+runtime has two explicit opt-in tiers:
+
+- `SLIM_PARALLEL` exposes the structured ABI but declines worker creation, so
+  generated code must execute the task body inline; and
+- `SLIM_PARALLEL` plus `SLIM_POSIX_WORKERS` implements the same ABI with one
+  POSIX worker and one parent-owned join.
+
+Neither macro is defined for ordinary generated programs. They therefore
+include no thread header, task declarations, task state, environment parsing,
+or worker calls. The build driver will opt in only after code generation emits
+an executable plan; unsupported targets retain the first tier and identical
+serial semantics.
+
+The ABI attempts one child, explicitly runs the same body inline after a
+declined attempt, and joins every successful attempt. Both a real worker and
+its inline fallback run in worker scope, where further attempts are declined.
+One selected site therefore creates at most one worker even if an admitted
+callee later contains another selected site.
+
+`SLIM_TASK_FAIL_AT`, `SLIM_TASK_DISABLE`, and `SLIM_TASK_JOIN_FAIL_AT` are
+test-only deterministic environment controls in opted-in binaries. They prove
+the fallback and external join-failure paths without making either outcome
+source-observable.
+
+Automatic execution is still disabled at this checkpoint. D0070 does not by
+itself establish ownership-safe capture/result lowering, profitability, or the
+required second positive application.
+
+## Core 1G guarded execution
+
+D0071 supersedes D0069's production non-execution boundary for one exact
+subset. A selected site becomes executable only when both initializers are
+direct user calls with atomic checked arguments, both callees are proven total
+and reorder-safe, the site is on the function's leading `let` chain supported
+by code generation, and both calls have at least 1,000,000 exact recurrence
+iterations. Missing work, computed arguments, unsupported placement, or any
+safety uncertainty leaves the site serial.
+
+The production generator emits typed stack contexts and wrappers for both
+calls. It attempts one child, runs the second wrapper in worker scope on the
+parent, joins every successful child, and then installs both results into their
+original immutable bindings. A declined spawn invokes the same first wrapper
+inline. Both branches therefore decline transitive nested creation, so
+execution never expands into an unbounded task tree. Supported POSIX targets
+select the worker tier; other targets use the portable serial tier.
+
+Analysis schema 5 and the permanent application baseline distinguish all five
+stages: candidate, selected, reported, executable, and executed. Both
+`state_machine` and the independent eight-Boolean `signal_network` challenge
+retain exactly `1/1/1/1/1`; the other twelve applications retain zero executed
+sites. A nested profitable fixture proves that an unsupported location remains
+reported but not executable.
+
+`slim-bench parallel-runtime` now retains both D0069's geometric manual
+reference and generated parallel-versus-forced-serial measurements for the two
+positive applications. On the acceptance host the accepted quick ratios were
+0.724 and 0.695. Permanent same-host budgets prevent silent regressions.
+Unselected programs, including `hello`, contain no task macro, context,
+wrapper, environment parsing, thread include, or worker link flag.

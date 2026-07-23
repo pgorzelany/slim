@@ -57,27 +57,27 @@ wide/deep emission has its own scaling budget. Workers remain opt-in because
 these small graphs still show no stable parallel speedup; the compiler does
 not claim concurrency that its runtime cannot yet provide.
 
-The `parallelism` command runs the SLIM-written version-4 analysis twice over
+The `parallelism` command runs the SLIM-written version-5 analysis twice over
 every native challenge, requires deterministic balanced reports, and compares
 schema-versioned safety and opportunity metrics with
-`parallelism-baseline.tsv`. Schema 4 retains primary reasons, complete
-per-function blocker incidence, and candidate/selected/reported schedule counts
-across thirteen applications. The
-`state_machine` row is a permanent positive case: two independent
-two-million-step total recurrences must retain one candidate and one selected,
-reported site.
+`parallelism-baseline.tsv`. Schema 5 retains primary reasons, complete
+per-function blocker incidence, and
+candidate/selected/reported/executable/executed schedule counts across fourteen
+applications. The `state_machine` and `signal_network` rows are permanent
+positive cases: each has two independent two-million-step total recurrences and
+must retain exactly one site through all five stages.
 Changing an application or its proof classification requires an intentional
 baseline update and dated explanation. Reason columns are primary blockers;
 they must not be treated as the complete set of hazards in a function.
 
-The `parallel-runtime` command is a permanent execution-boundary probe. It
-builds serial and manual POSIX fork/join versions of `state_machine` at
-geometric recurrence counts, verifies identical output, and reports warmed
-median process time. Repetitions amortize process startup at small sizes. The
-two-million-iteration parallel/serial ratio has a durable 2.00 gate. This
-reference measures worker overhead and crossover; it is not linked into SLIM
-programs because ISO C11 threads are unavailable on the acceptance host and no
-portable worker ABI or target cost model has been accepted.
+The `parallel-runtime` command is a permanent execution-boundary gate. It keeps
+the serial and manual POSIX fork/join `state_machine` reference at geometric
+recurrence counts to retain worker-overhead and crossover evidence. It also
+builds the production-generated `state_machine` and `signal_network`, verifies
+parallel output against `SLIM_TASK_DISABLE=1`, and measures warmed median
+parallel/forced-serial ratios. The manual and generated ratios have separate
+durable budgets. Generated workers use D0070's explicit POSIX tier; unsupported
+targets retain the same production code with the portable inline tier.
 
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/

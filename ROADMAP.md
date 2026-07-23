@@ -1026,3 +1026,40 @@ explicitly tiered worker ABI, general checked capture/result lowering, serial
 fallback and join tests, bounded no-nesting behavior, target-calibrated or
 profile-backed costs, and positive evidence from more than one substantial
 application. Those are Core 1G candidates, not unfinished Core 1F work.
+
+### Core 1G: guarded automatic execution
+
+Status: complete
+
+D0070 adds an opt-in structured worker ABI without language surface. The
+portable tier declines creation and requires explicit inline execution; the
+POSIX tier attempts one child and one parent-owned join. Worker and fallback
+scope decline nested creation. Deterministic spawn, disable, and join-failure
+controls permanently verify fallback, bounded nesting, and the defined
+join-failure trap. Programs without an executable plan compile the runtime with
+neither task declarations nor thread support.
+
+D0071 reuses the checked range and parallel views to execute one deliberately
+narrow plan shape. Both adjacent initializers must be direct user calls with
+atomic checked arguments, complete total and reorder-safe callees, exact
+recurrence work of at least 1,000,000 iterations, and placement on the
+function's leading `let` chain supported by lowering. The generator emits typed
+stack captures for both calls, attempts the first wrapper on one worker, runs
+the second wrapper in worker scope on the parent, joins, and installs both
+results before the original continuation. Both branches decline transitive
+nested creation. Unknown or unsupported sites remain serial.
+
+Analysis advances to schema 5 with separate candidate, selected, reported,
+executable, and executed counts. The fourteen-application baseline contains two
+positive workloads: the four-Boolean `state_machine` and distinct eight-Boolean
+`signal_network` each remain exactly `1/1/1/1/1`. A nested profitable fixture
+proves report/codegen agreement by remaining non-executable. Unselected hello
+output remains worker-free.
+
+The permanent `parallel-runtime` command now measures generated execution
+against forced serial fallback while retaining D0069's manual geometric
+reference. Accepted acceptance-host quick ratios are 0.724 for `state_machine`
+and 0.695 for `signal_network`, with durable 1.25 regression budgets. The
+portable fixed point is 1,973,458 C bytes.
+Full release measurements are recorded in
+`benchmarks/results/2026-07-23-core-1g-automatic-execution.md`.

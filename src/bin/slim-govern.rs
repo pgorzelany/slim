@@ -144,9 +144,10 @@ fn check_parallelism_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 4",
-        "(inout typed_facts (Vec typing/Fact))",
-        "(call parallel/emit_module_facts source tokens typed_facts range_facts output)",
+        "(analysis 5",
+        "(inout typed-facts (Vec typing/Fact))",
+        "(call parallel/analyze source tokens typed-facts range-view)",
+        "(call parallel/emit_module_facts source tokens parallel-view output)",
     ] {
         if !analysis.contains(required) {
             errors.push(format!(
@@ -235,12 +236,12 @@ fn check_integer_proof_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 4",
-        "(call ranges/analyze source tokens typed_facts)",
-        "(call ranges/emit-module-facts source tokens range_view output)",
+        "(analysis 5",
+        "(call ranges/analyze source tokens typed-facts)",
+        "(call ranges/emit-module-facts source tokens range-view output)",
     ] {
         if !analysis.contains(required) {
-            errors.push(format!("analysis version 4 is missing `{required}`"));
+            errors.push(format!("analysis version 5 is missing `{required}`"));
         }
     }
 
@@ -321,15 +322,15 @@ fn check_parallelism_application_baseline(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
-    if !baseline.contains("# schema=4")
+    if !baseline.contains("# schema=5")
         || baseline
             .lines()
             .filter(|line| !line.starts_with('#') && !line.is_empty())
             .count()
-            != 13
+            != 14
     {
         errors.push(
-            "parallelism baseline must retain schema 4 and all thirteen applications".to_owned(),
+            "parallelism baseline must retain schema 5 and all fourteen applications".to_owned(),
         );
     }
     for challenge in [
@@ -344,6 +345,7 @@ fn check_parallelism_application_baseline(
         "records",
         "variants",
         "state_machine",
+        "signal_network",
         "arena_sum",
         "knapsack",
     ] {
@@ -413,7 +415,7 @@ fn check_complete_parallel_blockers(
         "fn parallelism_blockers(",
         "blocker_{column}",
         "every application function must have one complete blocker set",
-        "parallelism baseline line {} must have thirty-three columns",
+        "parallelism baseline line {} must have thirty-five columns",
     ] {
         if !benchmark.contains(required) {
             errors.push(format!(
@@ -440,7 +442,7 @@ fn check_complete_parallel_blockers(
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     for required in [
-        "# schema=4",
+        "# schema=5",
         "blocker_declared_effects",
         "blocker_checked_trap",
         "blocker_recurrence",
@@ -583,10 +585,10 @@ fn check_deterministic_parallel_schedule(
 
     let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
     for required in [
-        "(record Schedule ((candidates I64) (selected I64) (reported I64) (selected_until I64)))",
+        "(record Schedule ((candidates I64) (selected I64) (reported I64) (executable I64) (executed I64) (selected_until I64)))",
         "(schedule-limit 64)",
         "(call i64.ge index (get schedule selected_until))",
-        "(call bool.and eligible after_previous)",
+        "(call bool.and eligible after-previous)",
         "(policy lexical-earliest-nonoverlap)",
         "(candidate-sites ",
         "(selected-sites ",
@@ -618,11 +620,13 @@ fn check_deterministic_parallel_schedule(
         "candidate_sites: usize",
         "selected_sites: usize",
         "reported_sites: usize",
-        "parallelism baseline line {} must have thirty-three columns",
+        "executable_sites: usize",
+        "executed_sites: usize",
+        "parallelism baseline line {} must have thirty-five columns",
     ] {
         if !benchmark.contains(required) {
             errors.push(format!(
-                "schema-4 schedule benchmark is missing `{required}`"
+                "schema-5 schedule benchmark is missing `{required}`"
             ));
         }
     }
@@ -630,13 +634,13 @@ fn check_deterministic_parallel_schedule(
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     for required in [
-        "# schema=4",
-        "candidate_sites\tselected_sites\treported_sites\teligible_sites",
+        "# schema=5",
+        "candidate_sites\tselected_sites\treported_sites\texecutable_sites\texecuted_sites\teligible_sites",
         "state_machine\t1423\t3\t1\t1\t2\t2\t",
     ] {
         if !baseline.contains(required) {
             errors.push(format!(
-                "schema-4 schedule baseline is missing `{required}`"
+                "schema-5 schedule baseline is missing `{required}`"
             ));
         }
     }
@@ -644,8 +648,8 @@ fn check_deterministic_parallel_schedule(
         .lines()
         .find(|line| line.starts_with("state_machine\t"))
         .unwrap_or_default();
-    if !state.ends_with("\t1\t1\t1\t1") {
-        errors.push("state_machine schedule baseline must remain exactly 1/1/1".to_owned());
+    if !state.ends_with("\t1\t1\t1\t1\t1\t1") {
+        errors.push("state_machine schedule baseline must remain exactly 1/1/1/1/1".to_owned());
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
@@ -691,9 +695,9 @@ fn check_total_task_failure_semantics(
     let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
     for required in [
         "(race-free true) (deadlock-free true)",
-        "(let both_safe Bool",
+        "(let both-safe Bool",
         "(let independent Bool",
-        "(call bool.and adjacent_let",
+        "(call bool.and adjacent-let",
     ] {
         if !parallel.contains(required) {
             errors.push(format!("total-task proof is missing `{required}`"));
@@ -737,10 +741,39 @@ fn check_parallel_execution_boundary(
         ),
         None => errors.push("parallel execution boundary decision D0069 is missing".to_owned()),
     }
+    match decisions.get("D0070") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "runtime"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "tiered structured workers require accepted primitive-free D0070 runtime decision scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("tiered structured worker decision D0070 is missing".to_owned()),
+    }
+    match decisions.get("D0071") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "runtime"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "guarded automatic execution requires accepted primitive-free D0071 runtime decision scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("guarded automatic execution decision D0071 is missing".to_owned()),
+    }
 
     for required in [
         "benchmarks/challenges/state_machine/program_parallel.c",
         "benchmarks/results/2026-07-23-core-1f-acceptance.md",
+        "benchmarks/challenges/signal_network/program.slim",
+        "benchmarks/challenges/signal_network/program.c",
+        "benchmarks/challenges/signal_network/program.rs",
+        "design/decisions/D0071-guarded-automatic-fork-join.md",
+        "benchmarks/results/2026-07-23-core-1g-automatic-execution.md",
     ] {
         if !root.join(required).is_file() {
             errors.push(format!(
@@ -751,12 +784,19 @@ fn check_parallel_execution_boundary(
 
     let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
     for required in [
-        "(profitability unknown) (profitability-reason target-cost-unavailable)",
-        "(execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model))",
+        "(record Site ((site I64) (first I64) (second I64) (join I64) (first-work I64) (second-work I64) (executable Bool)))",
+        "(fn call-work",
+        "(call ranges/recurrence-work",
+        "(fn leading-let-site",
+        "(minimum-task-iterations 1000000)",
+        "(profitability-reason target-work-unavailable)",
+        "(executable-sites ",
+        "(executed-sites ",
+        "(status enabled)",
     ] {
         if !parallel.contains(required) {
             errors.push(format!(
-                "parallel non-execution report is missing `{required}`"
+                "guarded automatic execution analysis is missing `{required}`"
             ));
         }
     }
@@ -781,6 +821,10 @@ fn check_parallel_execution_boundary(
         "fn run_parallel_runtime()",
         "manual-parallel-runtime-ratio",
         "manual parallel probe must preserve state-machine output",
+        "[\"state_machine\", \"signal_network\"]",
+        "generated-parallel-runtime-ratio",
+        "generated parallel execution must preserve serial-fallback output",
+        "SLIM_TASK_DISABLE",
     ] {
         if !benchmark.contains(required) {
             errors.push(format!("parallel runtime evidence is missing `{required}`"));
@@ -793,40 +837,139 @@ fn check_parallel_execution_boundary(
     {
         errors.push("manual parallel reference lacks its durable ratio budget".to_owned());
     }
+    for required in [
+        "generated-parallel-runtime-ratio\tstate_machine\t1.25\tparallel-over-serial\tD0071",
+        "generated-parallel-runtime-ratio\tsignal_network\t1.25\tparallel-over-serial\tD0071",
+        "native-runtime-ratio\tsignal_network\t2.50\tslim-over-c\tD0071",
+    ] {
+        if !budgets.contains(required) {
+            errors.push(format!(
+                "guarded automatic execution budget is missing `{required}`"
+            ));
+        }
+    }
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    for challenge in ["state_machine", "signal_network"] {
+        let row = baseline
+            .lines()
+            .find(|line| line.starts_with(&format!("{challenge}\t")))
+            .unwrap_or_default();
+        if !row.ends_with("\t1\t1\t1\t1\t1\t1") {
+            errors.push(format!(
+                "{challenge} must retain one candidate, selected, reported, executable, and executed site"
+            ));
+        }
+    }
     let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
     if !verify.contains("slim-bench -- parallel-runtime --quick") {
         errors.push("full verification does not retain the parallel runtime probe".to_owned());
     }
 
     let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    let driver = fs::read_to_string(root.join("slimc")).unwrap_or_default();
     let runtime_header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
     let runtime_source = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap_or_default();
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for forbidden in ["pthread_", "thrd_create", "thrd_join"] {
-        if codegen.contains(forbidden)
-            || runtime_header.contains(forbidden)
-            || runtime_source.contains(forbidden)
-        {
+        if codegen.contains(forbidden) {
             errors.push(format!(
-                "production codegen/runtime must remain serial at Core 1F: found `{forbidden}`"
+                "generated code must use only the tiered structured worker ABI: found `{forbidden}`"
+            ));
+        }
+    }
+    for required in [
+        "(call parallel/analyze source tokens facts range_view)",
+        "#define SLIM_PARALLEL 1",
+        "slim_task_spawn",
+        "slim_task_run_inline",
+        "slim_task_join",
+        "slim_parallel_first.slim_result",
+        "slim_parallel_second.slim_result",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "guarded automatic execution code generation is missing `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "SLIM_WORKER_TIER",
+        "-DSLIM_PARALLEL=1",
+        "-DSLIM_POSIX_WORKERS=1",
+        "-pthread",
+    ] {
+        if !driver.contains(required) {
+            errors.push(format!(
+                "tiered generated-program build selection is missing `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "#if defined(SLIM_PARALLEL)",
+        "#if defined(SLIM_POSIX_WORKERS)",
+        "bool slim_task_spawn",
+        "void slim_task_run_inline",
+        "void slim_task_join",
+        "slim_task_disabled || slim_task_worker",
+    ] {
+        if !runtime_header.contains(required) && !runtime_source.contains(required) {
+            errors.push(format!(
+                "tiered structured worker ABI is missing `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "structured_worker_runtime_falls_back_and_prevents_nesting",
+        "SLIM_TASK_FAIL_AT",
+        "SLIM_TASK_DISABLE",
+        "SLIM_TASK_JOIN_FAIL_AT",
+        "-DSLIM_PARALLEL=1",
+        "-DSLIM_POSIX_WORKERS=1",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!(
+                "tiered structured worker test is missing `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "design/decisions/D0070-tiered-structured-worker-abi.md",
+        "benchmarks/results/2026-07-23-core-1g-worker-abi.md",
+        "tests/fixtures/parallel_runtime.c",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "tiered structured worker artifact is missing {required}"
             ));
         }
     }
 
-    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for required in [
-        "profitability-reason target-cost-unavailable",
-        "status disabled) (reason no-portable-runtime-or-cost-model)",
+        "production_codegen_executes_profitable_plan_with_serial_fallback",
+        "benchmarks/challenges/signal_network/program.slim",
+        "(task-work 2000000 2000000)",
+        "(executable-sites 1) (executed-sites 1)",
+        "(executable-sites 0) (executed-sites 0)",
+        "SLIM_TASK_DISABLE",
+        "SLIM_TASK_JOIN_FAIL_AT",
+        "!fs::read_to_string(nested_generated)",
+        "examples/hello.slim",
     ] {
         if !tests.contains(required) {
             errors.push(format!(
-                "parallel execution boundary test is missing `{required}`"
+                "guarded automatic execution test is missing `{required}`"
             ));
         }
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0069") {
-        errors.push("D0069 has Primitive: none and must not add Core language surface".to_owned());
+    for decision in ["D0069", "D0070", "D0071"] {
+        if surface.contains(decision) {
+            errors.push(format!(
+                "{decision} has Primitive: none and must not add Core language surface"
+            ));
+        }
     }
 }
 
@@ -1825,7 +1968,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     }
     for required in [
-        "(module codegen \"codegen.slim\" (imports memory syntax text typing) (exports emit_program))",
+        "(module codegen \"codegen.slim\" (imports memory parallel ranges syntax text typing) (exports emit_program))",
         "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
         "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue builtin_known empty_view fact_type linked_binding_declaration linked_binding_is_inout))",
@@ -2515,7 +2658,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 4",
+        "(analysis 5",
         "(call quality/emit_module_facts",
         "(ownership-pressure",
         "(max-live-owned ",

@@ -6,6 +6,10 @@
 #include <stdint.h>
 #include <string.h>
 
+#if defined(SLIM_PARALLEL) && defined(SLIM_POSIX_WORKERS)
+#include <pthread.h>
+#endif
+
 typedef struct {
     uint8_t value;
 } SlimUnit;
@@ -45,6 +49,19 @@ typedef struct {
 
 typedef int64_t SlimId;
 
+#if defined(SLIM_PARALLEL)
+typedef void (*SlimTaskFn)(void *context);
+
+typedef struct {
+    SlimTaskFn function;
+    void *context;
+    bool active;
+#if defined(SLIM_POSIX_WORKERS)
+    pthread_t worker;
+#endif
+} SlimTask;
+#endif
+
 void slim_alloc_status_init(SlimAllocStatus *status);
 void slim_alloc_report(const SlimAllocStatus *status);
 void slim_rt_init(SlimRegion *root, SlimAllocStatus *status);
@@ -57,6 +74,12 @@ void *slim_rt_alloc(SlimRegion *region, size_t size);
 void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t new_size);
 
 bool slim_read_file(SlimBytes path, SlimVec *output);
+
+#if defined(SLIM_PARALLEL)
+bool slim_task_spawn(SlimTask *task, SlimTaskFn function, void *context);
+void slim_task_run_inline(SlimTaskFn function, void *context);
+void slim_task_join(SlimTask *task);
+#endif
 
 SlimUnit slim_print_i64(int64_t value);
 SlimUnit slim_print_bytes(SlimBytes value);

@@ -12,9 +12,9 @@ syntax. Every result is classified as one of:
 The tools never turn `unknown` into a negative quality judgment. They emit a
 vector of facts rather than a universal goodness score.
 
-## Analysis version 4
+## Analysis version 5
 
-`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 4 ...)`. It retains Core 1A binding
+`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 5 ...)`. It retains Core 1A binding
 identity, declared type, storage ownership, use, last-use, scope, and dependency
 facts and Core 1B quality facts. Version 2 added:
 

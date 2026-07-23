@@ -22,6 +22,10 @@ fn slim_bootstrap() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("bootstrap.sh")
 }
 
+fn native_compiler() -> std::ffi::OsString {
+    std::env::var_os("CC").unwrap_or_else(|| "cc".into())
+}
+
 fn write_source(directory: &Path, source: &str) -> PathBuf {
     let path = directory.join("program.slim");
     fs::write(&path, source).unwrap();
@@ -93,6 +97,269 @@ fn checks_builds_and_runs_native_program() {
     let run = Command::new(&executable).output().unwrap();
     assert!(run.status.success());
     assert_eq!(run.stdout, b"42\n");
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn structured_worker_runtime_falls_back_and_prevents_nesting() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("parallel-runtime");
+    let fixture = root.join("tests/fixtures/parallel_runtime.c");
+    let runtime = root.join("runtime/slim_rt.c");
+
+    let serial = directory.join("serial-tier");
+    let serial_build = Command::new(native_compiler())
+        .arg("-std=c11")
+        .arg("-O2")
+        .arg("-Wall")
+        .arg("-Wextra")
+        .arg("-Werror")
+        .arg("-DSLIM_PARALLEL=1")
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(&fixture)
+        .arg(&runtime)
+        .arg("-o")
+        .arg(&serial)
+        .output()
+        .unwrap();
+    assert!(
+        serial_build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&serial_build.stderr)
+    );
+    let serial_run = Command::new(&serial).output().unwrap();
+    assert!(serial_run.status.success());
+    assert_eq!(serial_run.stdout, b"0 0 42\n");
+
+    #[cfg(unix)]
+    {
+        let posix = directory.join("posix-tier");
+        let posix_build = Command::new(native_compiler())
+            .arg("-std=c11")
+            .arg("-O2")
+            .arg("-Wall")
+            .arg("-Wextra")
+            .arg("-Werror")
+            .arg("-DSLIM_PARALLEL=1")
+            .arg("-DSLIM_POSIX_WORKERS=1")
+            .arg("-pthread")
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(&fixture)
+            .arg(&runtime)
+            .arg("-o")
+            .arg(&posix)
+            .output()
+            .unwrap();
+        assert!(
+            posix_build.status.success(),
+            "{}",
+            String::from_utf8_lossy(&posix_build.stderr)
+        );
+        let parallel = Command::new(&posix).output().unwrap();
+        assert!(parallel.status.success());
+        assert_eq!(parallel.stdout, b"1 0 42\n");
+
+        for setting in ["SLIM_TASK_FAIL_AT", "SLIM_TASK_DISABLE"] {
+            let fallback = Command::new(&posix).env(setting, "1").output().unwrap();
+            assert!(fallback.status.success());
+            assert_eq!(fallback.stdout, b"0 0 42\n");
+        }
+
+        let join_failure = Command::new(&posix)
+            .env("SLIM_TASK_JOIN_FAIL_AT", "1")
+            .output()
+            .unwrap();
+        assert_eq!(join_failure.status.code(), Some(70));
+        assert!(join_failure.stdout.is_empty());
+        assert_eq!(
+            join_failure.stderr,
+            b"SLIM runtime trap: injected structured task join failure\n"
+        );
+    }
+
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn production_codegen_executes_profitable_plan_with_serial_fallback() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("parallel-codegen");
+    let source = root.join("benchmarks/challenges/state_machine/program.slim");
+    let analysis = Command::new(slimc())
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success());
+    let analysis = String::from_utf8(analysis.stdout).unwrap();
+    for required in [
+        "(task-work 2000000 2000000)",
+        "(profitability exact) (profitable true) (target-tier posix-v1)",
+        "(executable-sites 1) (executed-sites 1)",
+        "(execution (guarantee exact) (status enabled) (tier posix-v1-with-serial-fallback))",
+    ] {
+        assert!(
+            analysis.contains(required),
+            "state-machine analysis is missing {required}"
+        );
+    }
+    let generated = directory.join("state-machine.c");
+    let emit = Command::new(slimc())
+        .arg("emit-c")
+        .arg(&source)
+        .arg("-o")
+        .arg(&generated)
+        .output()
+        .unwrap();
+    assert!(
+        emit.status.success(),
+        "{}",
+        String::from_utf8_lossy(&emit.stderr)
+    );
+    let generated_text = fs::read_to_string(&generated).unwrap();
+    for required in [
+        "#define SLIM_PARALLEL 1",
+        "typedef struct {",
+        "SlimParallel_",
+        "slim_task_spawn",
+        "slim_task_join",
+        "slim_task_run_inline",
+        "slim_parallel_first.slim_result",
+        "slim_parallel_second.slim_result",
+    ] {
+        assert!(
+            generated_text.contains(required),
+            "generated parallel C is missing {required}"
+        );
+    }
+    assert_eq!(
+        generated_text
+            .matches("static void slim_parallel_run_")
+            .count(),
+        2
+    );
+    assert_eq!(generated_text.matches("slim_task_run_inline").count(), 2);
+
+    let serial = directory.join("serial");
+    let serial_build = Command::new(slimc())
+        .env("SLIM_WORKER_TIER", "serial")
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&serial)
+        .output()
+        .unwrap();
+    assert!(
+        serial_build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&serial_build.stderr)
+    );
+    let serial_run = Command::new(&serial).output().unwrap();
+    assert!(serial_run.status.success());
+    assert_eq!(serial_run.stdout, b"0\n");
+
+    let automatic = directory.join("automatic");
+    let automatic_build = Command::new(slimc())
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&automatic)
+        .output()
+        .unwrap();
+    assert!(
+        automatic_build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&automatic_build.stderr)
+    );
+    for setting in ["SLIM_TASK_FAIL_AT", "SLIM_TASK_DISABLE"] {
+        let fallback = Command::new(&automatic).env(setting, "1").output().unwrap();
+        assert!(fallback.status.success());
+        assert_eq!(fallback.stdout, b"0\n");
+    }
+    #[cfg(unix)]
+    {
+        let joined = Command::new(&automatic)
+            .env("SLIM_TASK_JOIN_FAIL_AT", "1")
+            .output()
+            .unwrap();
+        assert_eq!(joined.status.code(), Some(70));
+        assert_eq!(
+            joined.stderr,
+            b"SLIM runtime trap: injected structured task join failure\n"
+        );
+    }
+
+    let signal_source = root.join("benchmarks/challenges/signal_network/program.slim");
+    let signal = directory.join("signal-network");
+    let signal_build = Command::new(slimc())
+        .arg("build")
+        .arg(&signal_source)
+        .arg("-o")
+        .arg(&signal)
+        .output()
+        .unwrap();
+    assert!(
+        signal_build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&signal_build.stderr)
+    );
+    let signal_parallel = Command::new(&signal).output().unwrap();
+    let signal_fallback = Command::new(&signal)
+        .env("SLIM_TASK_DISABLE", "1")
+        .output()
+        .unwrap();
+    assert!(signal_parallel.status.success());
+    assert!(signal_fallback.status.success());
+    assert_eq!(signal_parallel.stdout, b"0\n");
+    assert_eq!(signal_parallel.stdout, signal_fallback.stdout);
+
+    let nested_source = write_source(
+        &directory,
+        "(module nested-plan (fn run ((remaining I64) (state Bool)) Bool (effects partial) (match (call i64.le remaining 0) (true state) (false (recur (call i64.sub remaining 1) (call bool.not state))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (match true (true (let left Bool (call run 1000000 true) (let right Bool (call run 1000000 false) 0))) (false 0))))\n",
+    );
+    let nested_analysis = Command::new(slimc())
+        .arg("analyze")
+        .arg(&nested_source)
+        .output()
+        .unwrap();
+    assert!(nested_analysis.status.success());
+    let nested_analysis = String::from_utf8(nested_analysis.stdout).unwrap();
+    assert!(nested_analysis.contains("(task-work 1000000 1000000)"));
+    assert!(nested_analysis.contains("(executable-sites 0) (executed-sites 0)"));
+    let nested_generated = directory.join("nested.c");
+    let nested_emit = Command::new(slimc())
+        .arg("emit-c")
+        .arg(&nested_source)
+        .arg("-o")
+        .arg(&nested_generated)
+        .output()
+        .unwrap();
+    assert!(nested_emit.status.success());
+    assert!(
+        !fs::read_to_string(nested_generated)
+            .unwrap()
+            .contains("SLIM_PARALLEL")
+    );
+
+    let hello = directory.join("hello.c");
+    let hello_emit = Command::new(slimc())
+        .arg("emit-c")
+        .arg(root.join("examples/hello.slim"))
+        .arg("-o")
+        .arg(&hello)
+        .output()
+        .unwrap();
+    assert!(hello_emit.status.success());
+    let hello_text = fs::read_to_string(hello).unwrap();
+    for absent in ["SLIM_PARALLEL", "SlimTask", "slim_parallel_"] {
+        assert!(
+            !hello_text.contains(absent),
+            "unselected generated C unexpectedly contains {absent}"
+        );
+    }
+
     fs::remove_dir_all(directory).unwrap();
 }
 
@@ -344,7 +611,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 4 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 5 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
@@ -415,7 +682,7 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 4 (module integer-ranges)",
+        "(analysis 5 (module integer-ranges)",
         "(integer-proofs (domain -1000000000 1000000000)",
         "(refinements 6) (refinements-truncated false)",
         "(checked-site 26 (status total) (lower unknown) (upper 10))",
@@ -542,10 +809,10 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
         "countdown-pair (guarantee exact) (status safe) (blockers)",
         "overlap (guarantee exact) (status safe) (blockers)",
         "cycle-left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
-        "(race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-cost-unavailable)",
-        "(schedule (policy lexical-earliest-nonoverlap) (guarantee exact) (candidate-sites 4) (selected-sites 3) (reported-sites 3))",
+        "(race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-work-unavailable)",
+        "(schedule (policy lexical-earliest-nonoverlap) (guarantee exact) (candidate-sites 4) (selected-sites 3) (reported-sites 3) (executable-sites 0) (executed-sites 0))",
         "(eligible-sites 4)",
-        "(execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model))",
+        "(execution (guarantee exact) (status disabled) (reason no-profitable-capture-safe-site))",
     ] {
         assert!(
             report.contains(required),
@@ -581,7 +848,7 @@ fn parallelism_schedule_limit_is_explicit_and_deterministic() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     assert!(report.contains(
-        "(schedule (policy lexical-earliest-nonoverlap) (guarantee bounded) (candidate-sites 129) (selected-sites 65) (reported-sites 64))"
+        "(schedule (policy lexical-earliest-nonoverlap) (guarantee bounded) (candidate-sites 129) (selected-sites 65) (reported-sites 64) (executable-sites 0) (executed-sites 0))"
     ));
     assert!(report.contains("(eligible-sites 129)"));
     assert_eq!(report.matches("(fork-site ").count(), 64);
@@ -654,7 +921,7 @@ fn project_analysis_dogfoods_the_bounded_parallelism_view() {
     assert!(output.stderr.is_empty());
     assert!(report_parentheses_are_balanced(&output.stdout));
     let report = String::from_utf8(output.stdout).unwrap();
-    assert!(report.starts_with("(analysis 4 (module project)"));
+    assert!(report.starts_with("(analysis 5 (module project)"));
     assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
     assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
 }

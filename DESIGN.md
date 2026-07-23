@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1F proof infrastructure and research direction
+Status: Core 1G guarded automatic parallel execution
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -79,13 +79,13 @@ Guaranteeing deadlock freedom requires restricting concurrency primitives.
 Arbitrary locks, unrestricted communication, and foreign code cannot receive a
 general static deadlock-freedom guarantee.
 
-Core 1F now proves a bounded, deterministic, pairwise non-overlapping
-fork/join plan for a total effect-free subset. It deliberately does not execute
-that plan: ISO C11 workers are unavailable on the acceptance host, one POSIX
-reference measurement is not a portable target cost model, and general
-ownership-safe capture/result lowering has not been accepted. Programs remain
-serial and pay no worker cost while the evidence and reopening conditions stay
-machine-checkable.
+Core 1G executes a deliberately narrow subset of Core 1F's bounded,
+deterministic, pairwise non-overlapping fork/join plan. The compiler requires
+complete totality and reorder-safety, atomic typed captures, a codegen-supported
+leading `let` chain, and exact work above the measured `posix-v1` threshold.
+One child and one parent-owned join guarantee bounded, deadlock-free structure;
+spawn failure runs the identical task inline. Unknown, unsupported, and
+unprofitable sites remain serial, and unselected programs pay no worker cost.
 
 ### 6. Systems-level performance
 
@@ -106,9 +106,10 @@ may therefore need distinct fast-development and optimized-build modes.
   representable.
 
 Core 1D replaced shallow and repeated token interpretation with one checked
-compiler view. Core 1F now derives a bounded integer interval and totality view
-from those same token identities and types. Missing bounds remain unknown, and
-no proof analysis changes ordinary checking or generated code.
+compiler view. Core 1F derives a bounded integer interval and totality view from
+those same token identities and types. Missing bounds remain unknown. Core 1G
+allows only exact facts from that view to enable guarded code generation;
+ordinary checking remains unchanged.
 
 ### 8. Programs should be measurable
 

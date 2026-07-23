@@ -73,9 +73,42 @@ slim_compile_c() {
     slim_c_source=$1
     slim_output=$2
     mkdir -p "$(dirname -- "$slim_output")"
-    "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
-        -I "$slim_root/runtime" "$slim_c_source" \
-        "$slim_root/runtime/slim_rt.c" -o "$slim_output"
+    if grep -q '^#define SLIM_PARALLEL 1$' "$slim_c_source"; then
+        slim_worker_tier=${SLIM_WORKER_TIER:-auto}
+        if test "$slim_worker_tier" = auto; then
+            slim_target=$("$slim_cc" -dumpmachine 2>/dev/null || true)
+            case "$slim_target" in
+                *darwin*|*linux*|*freebsd*|*netbsd*|*openbsd*)
+                    slim_worker_tier=posix
+                    ;;
+                *)
+                    slim_worker_tier=serial
+                    ;;
+            esac
+        fi
+        case "$slim_worker_tier" in
+            posix)
+                "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+                    -DSLIM_PARALLEL=1 -DSLIM_POSIX_WORKERS=1 -pthread \
+                    -I "$slim_root/runtime" "$slim_c_source" \
+                    "$slim_root/runtime/slim_rt.c" -o "$slim_output"
+                ;;
+            serial)
+                "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+                    -DSLIM_PARALLEL=1 -I "$slim_root/runtime" \
+                    "$slim_c_source" "$slim_root/runtime/slim_rt.c" \
+                    -o "$slim_output"
+                ;;
+            *)
+                echo "unsupported SLIM_WORKER_TIER: $slim_worker_tier" >&2
+                return 64
+                ;;
+        esac
+    else
+        "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+            -I "$slim_root/runtime" "$slim_c_source" \
+            "$slim_root/runtime/slim_rt.c" -o "$slim_output"
+    fi
 }
 
 slim_emit() {

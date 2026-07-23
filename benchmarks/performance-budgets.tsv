@@ -33,5 +33,8 @@ native-runtime-ratio	records	2.50	slim-over-c	D0061
 native-runtime-ratio	variants	1.75	slim-over-c	D0061
 native-runtime-ratio	state_machine	2.50	slim-over-c	D0066
 manual-parallel-runtime-ratio	state_machine	2.00	parallel-over-serial	D0069
+generated-parallel-runtime-ratio	state_machine	1.25	parallel-over-serial	D0071
+native-runtime-ratio	signal_network	2.50	slim-over-c	D0071
+generated-parallel-runtime-ratio	signal_network	1.25	parallel-over-serial	D0071
 native-runtime-ratio	arena_sum	2.00	slim-over-c	D0061
 native-runtime-ratio	knapsack	2.00	slim-over-c	D0061

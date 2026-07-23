@@ -11,5 +11,6 @@ prefix_sum	vector,mutation,checked-arithmetic
 records	record,value-state,recursion
 variants	variant,finite-state,exhaustive-match
 state_machine	record,finite-state,recursion,parallel-candidate
+signal_network	record,finite-state,boolean-network,recursion,parallel-candidate
 arena_sum	arena,typed-id,allocation
 knapsack	vector,dynamic-programming,mutation

@@ -106,3 +106,12 @@ disproved by the retained allocation plan. The accepted release ratios span
 1.017-1.871 for twelve real programs, while the self-host check consumes 0.03
 seconds of user CPU. Remaining collection and arithmetic checks require future
 positive proofs; the milestone does not infer safety from optimization level.
+
+## Core 1G parallel-runtime contract
+
+D0071 adds same-host generated parallel/forced-serial ratios for
+`state_machine` and `signal_network` to the permanent `parallel-runtime` gate.
+The command verifies output first, warms both modes, and compares medians from
+the identical generated executable. Its existing geometric manual reference is
+retained independently. A generated ratio budget may be tightened normally;
+relaxing it follows the scored performance-exception policy above.

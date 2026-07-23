@@ -854,6 +854,51 @@ fn run_parallel_runtime() {
             }
         }
     }
+
+    println!("generated_challenge\tserial_us\tparallel_us\tparallel_over_serial");
+    for challenge in ["state_machine", "signal_network"] {
+        let executable = build.path.join(format!("{challenge}-generated"));
+        let challenge_source = root
+            .join("benchmarks/challenges")
+            .join(challenge)
+            .join("program.slim");
+        let mut command = Command::new(root.join("slimc"));
+        command
+            .env(
+                "SLIM_WORKER_TIER",
+                if cfg!(unix) { "posix" } else { "serial" },
+            )
+            .arg("build")
+            .arg(challenge_source)
+            .arg("-o")
+            .arg(&executable);
+        timed_success(&mut command, "generated parallel challenge build");
+
+        let serial_environment = [("SLIM_TASK_DISABLE", "1")];
+        let expected = run_output_with_env(&executable, &[], &serial_environment);
+        assert_eq!(
+            run_output(&executable, &[]),
+            expected,
+            "{challenge}: generated parallel execution must preserve serial-fallback output"
+        );
+        let serial_time = median_runtime_with_env(&executable, &[], &serial_environment, samples);
+        let parallel_time = median_runtime(&executable, &[], samples);
+        let ratio = parallel_time.as_nanos() as f64 / serial_time.as_nanos() as f64;
+        println!(
+            "{challenge}\t{}\t{}\t{ratio:.3}",
+            serial_time.as_micros(),
+            parallel_time.as_micros()
+        );
+        if cfg!(unix) {
+            let limit = performance_budget("generated-parallel-runtime-ratio", challenge);
+            if ratio > limit {
+                eprintln!(
+                    "performance gate: {challenge} generated parallel/serial ratio {ratio:.3} exceeds {limit:.3}"
+                );
+                std::process::exit(1);
+            }
+        }
+    }
 }
 
 const PARALLELISM_REASONS: [(&str, &str); 11] = [
@@ -883,6 +928,8 @@ struct ParallelismEvidence {
     candidate_sites: usize,
     selected_sites: usize,
     reported_sites: usize,
+    executable_sites: usize,
+    executed_sites: usize,
     eligible_sites: usize,
 }
 
@@ -892,7 +939,7 @@ fn run_parallelism_evidence() {
     let challenges = challenge_manifest();
     let baseline = parallelism_baseline();
     println!(
-        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\t{}\tcandidate_sites\tselected_sites\treported_sites\teligible_sites",
+        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\t{}\tcandidate_sites\tselected_sites\treported_sites\texecutable_sites\texecuted_sites\teligible_sites",
         PARALLELISM_REASONS
             .iter()
             .map(|(column, _)| *column)
@@ -941,7 +988,7 @@ fn run_parallelism_evidence() {
 }
 
 fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidence {
-    assert!(report.starts_with("(analysis 4 "));
+    assert!(report.starts_with("(analysis 5 "));
     let integer = report_section(report, "(integer-proofs ", " (quality ");
     let parallel = report_section(report, "(parallelism ", " (function ");
     let functions = report_number(report, "(quality (guarantee exact) (functions ");
@@ -980,6 +1027,8 @@ fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidenc
         candidate_sites,
         selected_sites: report_number(parallel, "(selected-sites "),
         reported_sites: report_number(parallel, "(reported-sites "),
+        executable_sites: report_number(parallel, "(executable-sites "),
+        executed_sites: report_number(parallel, "(executed-sites "),
         eligible_sites,
     }
 }
@@ -1001,10 +1050,12 @@ fn print_parallelism_evidence(challenge: &str, evidence: &ParallelismEvidence) {
         print!("\t{count}");
     }
     println!(
-        "\t{}\t{}\t{}\t{}",
+        "\t{}\t{}\t{}\t{}\t{}\t{}",
         evidence.candidate_sites,
         evidence.selected_sites,
         evidence.reported_sites,
+        evidence.executable_sites,
+        evidence.executed_sites,
         evidence.eligible_sites
     );
 }
@@ -1020,8 +1071,8 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
         let columns: Vec<_> = line.split('\t').collect();
         assert_eq!(
             columns.len(),
-            33,
-            "parallelism baseline line {} must have thirty-three columns",
+            35,
+            "parallelism baseline line {} must have thirty-five columns",
             line_number + 1
         );
         let number = |index: usize| {
@@ -1053,7 +1104,9 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
             candidate_sites: number(29),
             selected_sites: number(30),
             reported_sites: number(31),
-            eligible_sites: number(32),
+            executable_sites: number(32),
+            executed_sites: number(33),
+            eligible_sites: number(34),
         };
         assert!(
             baseline.insert(columns[0].to_owned(), evidence).is_none(),
@@ -1473,8 +1526,17 @@ fn fail_output(role: &str, output: &Output) -> ! {
 }
 
 fn run_output(executable: &Path, arguments: &[PathBuf]) -> Vec<u8> {
+    run_output_with_env(executable, arguments, &[])
+}
+
+fn run_output_with_env(
+    executable: &Path,
+    arguments: &[PathBuf],
+    environment: &[(&str, &str)],
+) -> Vec<u8> {
     let output = Command::new(executable)
         .args(arguments)
+        .envs(environment.iter().copied())
         .output()
         .expect("benchmark executable");
     if !output.status.success() {
@@ -1484,11 +1546,20 @@ fn run_output(executable: &Path, arguments: &[PathBuf]) -> Vec<u8> {
 }
 
 fn median_runtime(executable: &Path, arguments: &[PathBuf], samples: usize) -> Duration {
-    let _ = run_output(executable, arguments);
+    median_runtime_with_env(executable, arguments, &[], samples)
+}
+
+fn median_runtime_with_env(
+    executable: &Path,
+    arguments: &[PathBuf],
+    environment: &[(&str, &str)],
+    samples: usize,
+) -> Duration {
+    let _ = run_output_with_env(executable, arguments, environment);
     let mut times = Vec::with_capacity(samples);
     for _ in 0..samples {
         let start = Instant::now();
-        black_box(run_output(executable, arguments));
+        black_box(run_output_with_env(executable, arguments, environment));
         times.push(start.elapsed());
     }
     times.sort();

@@ -18,6 +18,39 @@ struct SlimAllocation {
 static _Thread_local SlimRegion *slim_root_region = NULL;
 static _Thread_local SlimRegion *slim_active_region = NULL;
 
+#if defined(SLIM_PARALLEL)
+static _Thread_local bool slim_task_worker = false;
+static uint64_t slim_task_spawn_attempts = 0;
+static uint64_t slim_task_spawn_fail_at = 0;
+static uint64_t slim_task_join_attempts = 0;
+static uint64_t slim_task_join_fail_at = 0;
+static bool slim_task_disabled = false;
+
+static uint64_t slim_positive_environment_ordinal(const char *name) {
+    const char *setting = getenv(name);
+    if (setting == NULL || setting[0] == 0) {
+        return 0;
+    }
+    errno = 0;
+    char *end = NULL;
+    unsigned long long ordinal = strtoull(setting, &end, 10);
+    if (errno != 0 || end == setting || *end != 0 || ordinal == 0) {
+        return 0;
+    }
+    return (uint64_t)ordinal;
+}
+
+#if defined(SLIM_POSIX_WORKERS)
+static void *slim_task_entry(void *opaque) {
+    SlimTask *task = opaque;
+    slim_task_worker = true;
+    task->function(task->context);
+    slim_task_worker = false;
+    return NULL;
+}
+#endif
+#endif
+
 void slim_region_init(SlimRegion *region, SlimRegion *parent) {
     if (region == NULL) {
         slim_rt_trap("cannot initialize a null region");
@@ -71,6 +104,13 @@ void slim_rt_init(SlimRegion *root, SlimAllocStatus *status) {
     slim_region_init(root, NULL);
     root->status = status;
     slim_root_region = root;
+#if defined(SLIM_PARALLEL)
+    slim_task_spawn_attempts = 0;
+    slim_task_spawn_fail_at = slim_positive_environment_ordinal("SLIM_TASK_FAIL_AT");
+    slim_task_join_attempts = 0;
+    slim_task_join_fail_at = slim_positive_environment_ordinal("SLIM_TASK_JOIN_FAIL_AT");
+    slim_task_disabled = slim_positive_environment_ordinal("SLIM_TASK_DISABLE") != 0;
+#endif
 }
 
 void slim_rt_shutdown(void) {
@@ -89,6 +129,67 @@ _Noreturn void slim_rt_trap(const char *message) {
     slim_root_region = NULL;
     exit(70);
 }
+
+#if defined(SLIM_PARALLEL)
+bool slim_task_spawn(SlimTask *task, SlimTaskFn function, void *context) {
+    if (task == NULL || function == NULL) {
+        slim_rt_trap("invalid structured task");
+    }
+    *task = (SlimTask){
+        .function = function,
+        .context = context,
+        .active = false,
+    };
+    if (slim_task_disabled || slim_task_worker) {
+        return false;
+    }
+    slim_task_spawn_attempts += 1;
+    if (slim_task_spawn_attempts == 0 ||
+        slim_task_spawn_attempts == slim_task_spawn_fail_at) {
+        return false;
+    }
+#if defined(SLIM_POSIX_WORKERS)
+    int created = pthread_create(&task->worker, NULL, slim_task_entry, task);
+    if (created != 0) {
+        return false;
+    }
+    task->active = true;
+    return true;
+#else
+    return false;
+#endif
+}
+
+void slim_task_run_inline(SlimTaskFn function, void *context) {
+    if (function == NULL) {
+        slim_rt_trap("invalid inline structured task");
+    }
+    bool prior_worker = slim_task_worker;
+    slim_task_worker = true;
+    function(context);
+    slim_task_worker = prior_worker;
+}
+
+void slim_task_join(SlimTask *task) {
+    if (task == NULL || !task->active) {
+        slim_rt_trap("invalid structured task join");
+    }
+#if defined(SLIM_POSIX_WORKERS)
+    int joined = pthread_join(task->worker, NULL);
+    task->active = false;
+    if (joined != 0) {
+        slim_rt_trap("structured task join failed");
+    }
+    slim_task_join_attempts += 1;
+    if (slim_task_join_attempts == 0 ||
+        slim_task_join_attempts == slim_task_join_fail_at) {
+        slim_rt_trap("injected structured task join failure");
+    }
+#else
+    slim_rt_trap("structured task joined without a worker backend");
+#endif
+}
+#endif
 
 static SlimAllocation *slim_allocation_from_data(void *pointer) {
     return (SlimAllocation *)((uint8_t *)pointer - offsetof(SlimAllocation, data));
