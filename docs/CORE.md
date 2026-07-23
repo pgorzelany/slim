@@ -1,6 +1,6 @@
 # SLIM Core 0
 
-Status: internal bootstrap specification
+Status: implemented Core 1G language surface
 
 SLIM Core is the only compilable source representation. Whitespace and comments
 are insignificant, and `slimc fmt` emits the unique canonical layout.

@@ -61,19 +61,27 @@ test("tutorial embeds only existing production-checked SLIM files", async () => 
   );
 });
 
-test("status metadata agrees with DESIGN.md and Cargo.toml", async () => {
-  const [design, cargo, status] = await Promise.all([
+test("status metadata agrees with design, roadmap, and Cargo.toml", async () => {
+  const [design, cargo, status, roadmap] = await Promise.all([
     readFile(path.join(repositoryRoot, "DESIGN.md"), "utf8"),
     readFile(path.join(repositoryRoot, "Cargo.toml"), "utf8"),
     readFile(path.join(repositoryRoot, "docs/STATUS.md"), "utf8"),
+    readFile(path.join(repositoryRoot, "ROADMAP.md"), "utf8"),
   ]);
   const designStatus = design.match(/^Status:\s*(.+)$/m)?.[1].trim();
   const cargoVersion = cargo.match(/^version\s*=\s*"([^"]+)"$/m)?.[1].trim();
   const statusMilestone = status.match(/^Status:\s*(.+)$/m)?.[1].trim();
   const statusVersion = status.match(/^Compiler version:\s*(.+)$/m)?.[1].trim();
+  const nextMilestone = status.match(/^Next milestone:\s*(.+)$/m)?.[1].trim();
+  const roadmapStatus = roadmap.match(/^Status:\s*(.+)$/m)?.[1].trim();
+  const roadmapMilestone = roadmap
+    .match(/^Current milestone:\s*(.+)$/m)?.[1]
+    .trim();
 
   assert.equal(generated.meta.milestone, designStatus);
   assert.equal(statusMilestone, designStatus);
+  assert.equal(roadmapStatus, designStatus);
+  assert.equal(roadmapMilestone, nextMilestone);
   assert.equal(generated.meta.compilerVersion, cargoVersion);
   assert.equal(statusVersion, cargoVersion);
 });

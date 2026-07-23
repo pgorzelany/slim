@@ -2,6 +2,7 @@
 
 Status: Core 1G guarded automatic parallel execution
 Compiler version: 0.0.1
+Next milestone: Core 1H bounded resources and application evidence
 Updated: 2026-07-23
 
 SLIM is experimental. The production compiler is written in SLIM, bootstraps
@@ -63,12 +64,14 @@ yet a stable public release.
 
 ## Next boundary
 
-No milestone after Core 1G has been accepted. The next milestone must be chosen
-from measured application, compiler, safety, and complexity evidence and must
-pass the normal weighted feature policy. Core 1G should be widened only when a
-new execution shape has positive multi-application evidence and permanent
-regression gates.
+Core 1H through Core 1L are the planned path to 1.0. Core 1H begins with
+application evidence and compiler-derived resource bounds; it does not
+pre-approve resource syntax. Every durable mechanism still requires a weighted
+decision, measured cost, diagnostics, specifications, and permanent tests.
+Core 1G widens only when a new execution shape has positive
+multi-application evidence.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,
-`docs/PERFORMANCE.md`, and `docs/PARALLELISM.md`.
+`docs/PERFORMANCE.md`, and `docs/PARALLELISM.md`. The concise milestone
+sequence and acceptance boundaries are in `ROADMAP.md`.

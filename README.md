@@ -62,4 +62,5 @@ SLIM is currently at **Core 1G guarded automatic parallel execution**. The
 self-hosted compiler, portable C11 seed, language surface, bounded analysis,
 reduction tools, memory model, and exact current limitations are summarized in
 [docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;
-the roadmap retains the detailed milestone history and evidence.
+the concise roadmap plans Core 1H through Core 1L while design decisions and
+dated benchmark records retain the detailed evidence.

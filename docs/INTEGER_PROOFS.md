@@ -1,6 +1,6 @@
 # Integer proofs
 
-Status: Core 1F bounded totality evidence
+Status: Core 1G bounded totality evidence
 
 SLIM analysis derives integer facts from the normal checked token and type
 view. These facts are evidence for quality and parallelism; they do not alter

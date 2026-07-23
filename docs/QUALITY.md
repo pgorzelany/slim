@@ -1,6 +1,6 @@
 # Bounded program evidence
 
-Status: Core 1B internal tool specification
+Status: Core 1G analysis schema 5
 
 Core 1B adds evidence about checked canonical SLIM without changing Core
 syntax. Every result is classified as one of:
@@ -52,10 +52,9 @@ reported only when both computations are transitively free of declared effects,
 exclusive borrows, mutation, recurrence, allocation, I/O, and defined traps and
 the second does not use the first result.
 
-Parallelism evidence does not select or execute a schedule. Candidate sites may
-overlap, structural task-token counts do not predict dynamic work, and
-profitability is therefore `unknown`. The full contract and future execution
-boundary are specified in `docs/PARALLELISM.md`.
+Version 3 did not select or execute a schedule. Candidate sites could overlap,
+structural task-token counts did not predict dynamic work, and profitability
+remained `unknown`.
 
 Version 4 adds D0063's bounded integer interval and operation-totality facts.
 The quality report now calls a function total only when the shared fact for its
@@ -65,6 +64,12 @@ conversion, and D0066's canonical strictly decreasing tail recurrence can be
 proved. The fixed ±1,000,000,000 domain, 64 comparison refinements,
 checked-site output limit, and conservative unknown cases are specified in
 `docs/INTEGER_PROOFS.md`.
+
+Version 5 includes D0067 and D0071's deterministic non-overlapping schedule and
+guarded execution boundary. It distinguishes candidate, selected, reported,
+executable, and executed sites. Execution requires the exact Core 1G totality,
+reorder-safety, capture, placement, and work proofs; every missing fact keeps
+the program serial. The complete contract is in `docs/PARALLELISM.md`.
 
 ## Reduction evidence and replay
 

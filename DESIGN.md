@@ -225,59 +225,31 @@ analysis to be useful.
 SLIM can provide stronger guarantees by defining analyzable subsets and making
 those subsets the natural way to write most programs.
 
-## Provisional Design Directions
+## Established implementation choices
 
-The following ideas are promising consequences of the requirements, but are not
-yet final decisions:
+Core 1G already has affine ownership, immutable bindings, exclusive mutation,
+algebraic data types, explicit effects, deterministic projects, incremental
+checking, machine-readable diagnostics, a retained typed compiler view,
+bounded analysis, direct-source reduction, and guarded automatic fork/join.
+There is no second executable IR, garbage collector, source-level task system,
+or unrestricted foreign boundary.
 
-- Ownership, affine types, regions, and deterministic destruction for memory
-  management
-- Immutable values by default with uniquely owned mutation
-- Algebraic data types and exhaustive pattern matching
-- An effect and capability system that exposes mutation, allocation, I/O,
-  failure, blocking, spawning, and foreign calls
-- Structured fork/join concurrency, deterministic data-parallel operations, or
-  typed communication protocols
-- Pure maps, pipelines, and associative reductions that the compiler can safely
-  parallelize
-- A small canonical typed core representation beneath a readable surface syntax
-- Incremental, query-based compilation with independently checkable modules
-- Machine-readable diagnostics with source spans, fix suggestions, and proof
-  obligations
-- Specialized analyzable domains for pure computations, parallel dataflow, and
-  finite-state machines
-- First-class bounded functions and machines with declared or inferred limits
-  on memory, steps, inputs, tasks, and communication queues
-- A distinction between total functions, productive long-running processes,
-  and explicitly partial computations
-- Defined resource-exhaustion results for bounded computations
-- Explicit unsafe and foreign-function boundaries
+## Remaining research questions
 
-## Open Questions
+The Core 1H through Core 1L sequence in `ROADMAP.md` focuses the remaining
+design work:
 
-1. What is the smallest useful semantic core of the language?
-2. Should SLIM require ownership annotations, infer them, or combine both?
-3. Which memory patterns need explicit regions, arenas, handles, or reference
-   counting?
-4. Which concurrency primitives can provide both usability and static deadlock
-   freedom?
-5. How should the compiler decide whether proven parallelism is profitable?
-6. Which effects should be represented in function types?
-7. How much type inference is compatible with predictable, fast compilation?
-8. Which subset should guarantee termination or support full normalization?
-9. What constitutes observable behavior when comparing two programs?
-10. Which program-quality metrics should be enforced, reported, or used only as
-    optimization guidance?
-11. What cost models should reduction and optimization support?
-12. Should AI tools manipulate source text, a canonical syntax tree, or both?
-13. How should interoperability with C, operating systems, and existing
-    libraries affect the safety model?
-14. Which resource bounds belong in types, function contracts, build profiles,
-    or target descriptions?
-15. Should portable and target-bounded semantics be separate language profiles
-    or different guarantee levels within one language?
-16. How should bounded internal state and unbounded external event streams be
-    represented and verified?
+1. Which resource bounds can be derived, and which require one explicit
+   contract?
+2. How should bounded internal state interact with indefinite external event
+   streams?
+3. What is the smallest safe host-capability boundary for real applications?
+4. Can one structured effectful-concurrency form cover demonstrated needs while
+   preserving race and deadlock freedom?
+5. Which invariants and cost models make state-space comparison and reduction
+   useful without claiming one universal quality score?
+6. Which behaviors and artifacts must be frozen for a credible 1.0
+   compatibility promise?
 
 ## Current Non-Goals
 

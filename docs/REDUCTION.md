@@ -1,6 +1,6 @@
 # Direct reduction and semantic analysis
 
-Status: Core 1A internal tool specification
+Status: current bounded reduction contract
 
 Canonical `.slim` source is the compiler's only accepted program
 representation. The reducer traverses checked expression forms directly and

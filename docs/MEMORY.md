@@ -1,6 +1,6 @@
-# Core 0.4 memory model and audit
+# SLIM memory model
 
-Status: implemented Core 0.4 boundary
+Status: implemented through Core 1E
 
 Core 0.4 strengthens the implementation of the existing ownership model. It
 adds no source syntax, type, effect, built-in, or alternative allocation path.

@@ -1,6 +1,6 @@
 # Core 1C performance contract
 
-Status: Core 1C complete
+Status: permanent contract through Core 1G
 
 Performance tests are permanent compatibility evidence. They are not deleted
 after an optimization lands, and a result file never replaces an executable
