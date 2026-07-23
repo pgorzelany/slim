@@ -85,3 +85,18 @@ cargo run --release --bin slim-bench -- agent
 A full release freeze runs the same commands without `--quick` and commits the
 dated results. A performance-directed compiler or runtime change records a
 baseline and candidate on the same host after warmup.
+
+## Core 1E native-efficiency boundary
+
+Core 1E keeps checked and unchecked execution from becoming separate language
+profiles. D0059 exposes small checked scalar, byte, and vector operations as
+one canonical header-visible runtime implementation so the existing C compiler
+can optimize the successful path without LTO. Exact arithmetic, conversion,
+byte, and vector trap fixtures are permanent correctness gates.
+
+Later check elimination requires a positive proof derived from Core 1D's
+checked artifact. Lack of a fact preserves the dynamic check. Source
+annotations, optimizer hints, a second executable IR, and LLVM are not part of
+this milestone. Native ratios tightened after D0059 are compatibility limits;
+they may not be widened without the scored exception and evidence required by
+D0030.

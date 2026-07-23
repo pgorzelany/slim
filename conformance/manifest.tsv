@@ -63,3 +63,11 @@ tool-patch-non-program	check-fail	conformance/fail/tool_patch.slim	parity	E0102@
 multiple	check-fail	conformance/fail/multiple.slim	parity	E0336@67:119,E0314@91:98,E0335@106:118,E0344@112:117	recovery:multiple-diagnostics
 overflow	trap	conformance/runtime/overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 addition overflow\n	runtime:overflow-trap
 bounds	trap	conformance/runtime/bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: vector index out of bounds\n	runtime:bounds-trap
+subtraction-overflow	trap	conformance/runtime/subtraction_overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 subtraction overflow\n	runtime:subtraction-overflow-trap
+multiplication-overflow	trap	conformance/runtime/multiplication_overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 multiplication overflow\n	runtime:multiplication-overflow-trap
+division-zero	trap	conformance/runtime/division_zero.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 division by zero\n	runtime:division-zero-trap
+division-overflow	trap	conformance/runtime/division_overflow.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 division overflow\n	runtime:division-overflow-trap
+remainder-zero	trap	conformance/runtime/remainder_zero.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 remainder by zero\n	runtime:remainder-zero-trap
+u8-conversion-bounds	trap	conformance/runtime/u8_conversion_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 value does not fit U8\n	runtime:u8-conversion-trap
+bytes-bounds	trap	conformance/runtime/bytes_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: byte index out of bounds\n	runtime:byte-bounds-trap
+vector-set-bounds	trap	conformance/runtime/vector_set_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: vector index out of bounds\n	runtime:vector-set-bounds-trap

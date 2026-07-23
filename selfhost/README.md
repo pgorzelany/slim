@@ -38,6 +38,10 @@ D0058 freezes Core 1D after its final audit and complete release gate: ordinary
 generation has one checked semantic authority while source forms, literals,
 declared layouts, and parameter declarations remain canonical lowering and ABI
 inputs.
+D0059 begins Core 1E without changing that boundary. Header-visible checked
+integer, byte, and vector fast paths preserve all traps while allowing the C
+optimizer to specialize the self-hosted compiler's hot operations; five warm
+self-checks consume 0.05 seconds of user CPU each.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

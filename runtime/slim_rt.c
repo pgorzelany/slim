@@ -58,10 +58,6 @@ void slim_alloc_status_init(SlimAllocStatus *status) {
     }
 }
 
-bool slim_region_failed(const SlimRegion *region) {
-    return region->status->code != SLIM_ALLOC_OK;
-}
-
 void slim_alloc_report(const SlimAllocStatus *status) {
     fprintf(stderr,
             "SLIM allocation failure: exhausted at allocation %" PRIu64 "\n",
@@ -169,82 +165,6 @@ void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t
     return new_pointer;
 }
 
-int64_t slim_i64_add(int64_t left, int64_t right) {
-    int64_t result;
-    if (__builtin_add_overflow(left, right, &result)) {
-        slim_rt_trap("I64 addition overflow");
-    }
-    return result;
-}
-
-int64_t slim_i64_sub(int64_t left, int64_t right) {
-    int64_t result;
-    if (__builtin_sub_overflow(left, right, &result)) {
-        slim_rt_trap("I64 subtraction overflow");
-    }
-    return result;
-}
-
-int64_t slim_i64_mul(int64_t left, int64_t right) {
-    int64_t result;
-    if (__builtin_mul_overflow(left, right, &result)) {
-        slim_rt_trap("I64 multiplication overflow");
-    }
-    return result;
-}
-
-int64_t slim_i64_div(int64_t left, int64_t right) {
-    if (right == 0) {
-        slim_rt_trap("I64 division by zero");
-    }
-    if (left == INT64_MIN && right == -1) {
-        slim_rt_trap("I64 division overflow");
-    }
-    return left / right;
-}
-
-int64_t slim_i64_rem(int64_t left, int64_t right) {
-    if (right == 0) {
-        slim_rt_trap("I64 remainder by zero");
-    }
-    if (left == INT64_MIN && right == -1) {
-        return 0;
-    }
-    return left % right;
-}
-
-uint8_t slim_i64_to_u8(int64_t value) {
-    if (value < 0 || value > UINT8_MAX) {
-        slim_rt_trap("I64 value does not fit U8");
-    }
-    return (uint8_t)value;
-}
-
-SlimBytes slim_bytes_static(const uint8_t *data, int64_t len) {
-    if (len < 0) {
-        slim_rt_trap("negative byte length");
-    }
-    return (SlimBytes){.data = data, .len = len};
-}
-
-int64_t slim_bytes_len(SlimBytes bytes) {
-    return bytes.len;
-}
-
-uint8_t slim_bytes_get(SlimBytes bytes, int64_t index) {
-    if (index < 0 || index >= bytes.len) {
-        slim_rt_trap("byte index out of bounds");
-    }
-    return bytes.data[index];
-}
-
-SlimBytes slim_bytes_freeze(SlimVec bytes) {
-    if (bytes.element_size != sizeof(uint8_t)) {
-        slim_rt_trap("bytes.freeze requires a U8 vector");
-    }
-    return (SlimBytes){.data = bytes.data, .len = bytes.len};
-}
-
 bool slim_read_file(SlimBytes path, SlimVec *output) {
     if (output->element_size != sizeof(uint8_t)) {
         slim_rt_trap("io.read-file requires a U8 vector");
@@ -323,79 +243,4 @@ SlimUnit slim_println(SlimBytes value) {
         slim_rt_trap("cannot write output");
     }
     return (SlimUnit){0};
-}
-
-SlimVec slim_vec_new(size_t element_size, SlimRegion *region) {
-    if (element_size == 0) {
-        slim_rt_trap("zero-sized vector element");
-    }
-    if (region == NULL) {
-        slim_rt_trap("vector requires a region");
-    }
-    return (SlimVec){
-        .data = NULL,
-        .len = 0,
-        .capacity = 0,
-        .element_size = element_size,
-        .region = region,
-    };
-}
-
-int64_t slim_vec_len(SlimVec vector) {
-    return vector.len;
-}
-
-size_t slim_vec_check_index(const SlimVec *vector, int64_t index) {
-    if (index < 0 || index >= vector->len) {
-        slim_rt_trap("vector index out of bounds");
-    }
-    return (size_t)index;
-}
-
-static size_t slim_vec_offset(const SlimVec *vector, int64_t index) {
-    size_t checked_index = slim_vec_check_index(vector, index);
-    if ((uint64_t)index > SIZE_MAX / vector->element_size) {
-        slim_rt_trap("vector offset overflow");
-    }
-    return checked_index * vector->element_size;
-}
-
-void slim_vec_get(const SlimVec *vector, int64_t index, void *output) {
-    memcpy(output, vector->data + slim_vec_offset(vector, index), vector->element_size);
-}
-
-bool slim_vec_push(SlimVec *vector, const void *value) {
-    if (vector->len == vector->capacity) {
-        int64_t new_capacity = vector->capacity == 0 ? 8 : vector->capacity * 2;
-        if (new_capacity < vector->capacity ||
-            (uint64_t)new_capacity > SIZE_MAX / vector->element_size) {
-            slim_rt_trap("vector capacity overflow");
-        }
-        size_t old_size = (size_t)vector->capacity * vector->element_size;
-        size_t new_size = (size_t)new_capacity * vector->element_size;
-        uint8_t *resized = slim_rt_realloc(vector->region, vector->data, old_size, new_size);
-        if (resized == NULL) {
-            return false;
-        }
-        vector->data = resized;
-        vector->capacity = new_capacity;
-    }
-    memcpy(vector->data + (size_t)vector->len * vector->element_size,
-           value,
-           vector->element_size);
-    vector->len += 1;
-    return true;
-}
-
-void slim_vec_set(SlimVec *vector, int64_t index, const void *value) {
-    memcpy(vector->data + slim_vec_offset(vector, index), value, vector->element_size);
-}
-
-bool slim_arena_add(SlimVec *arena, const void *value, SlimId *output) {
-    SlimId id = arena->len;
-    if (!slim_vec_push(arena, value)) {
-        return false;
-    }
-    *output = id;
-    return true;
 }

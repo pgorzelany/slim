@@ -75,11 +75,75 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_toolchain_cutover(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
     check_core_1d_acceptance(root, &decisions, &mut errors);
+    check_runtime_fast_paths(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_runtime_fast_paths(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0059") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "checked runtime fast paths require accepted D0059 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("checked runtime fast-path decision D0059 is missing".to_owned()),
+    }
+
+    let header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
+    for required in [
+        "static inline int64_t slim_i64_add",
+        "static inline int64_t slim_i64_sub",
+        "static inline int64_t slim_i64_mul",
+        "static inline uint8_t slim_bytes_get",
+        "static inline size_t slim_vec_check_index",
+        "static inline bool slim_vec_push",
+        "static inline void slim_vec_set",
+        "if (vector->capacity > INT64_MAX / 2)",
+    ] {
+        if !header.contains(required) {
+            errors.push(format!("checked runtime fast path is missing `{required}`"));
+        }
+    }
+
+    let runtime = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap_or_default();
+    for duplicate in [
+        "int64_t slim_i64_add(",
+        "uint8_t slim_bytes_get(",
+        "size_t slim_vec_check_index(",
+        "bool slim_vec_push(",
+        "void slim_vec_set(",
+    ] {
+        if runtime.contains(duplicate) {
+            errors.push(format!(
+                "runtime source duplicates header fast path `{duplicate}`"
+            ));
+        }
+    }
+
+    let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+    for fixture in [
+        "subtraction-overflow\ttrap\t",
+        "multiplication-overflow\ttrap\t",
+        "division-zero\ttrap\t",
+        "division-overflow\ttrap\t",
+        "remainder-zero\ttrap\t",
+        "u8-conversion-bounds\ttrap\t",
+        "bytes-bounds\ttrap\t",
+        "vector-set-bounds\ttrap\t",
+    ] {
+        if !manifest.contains(fixture) {
+            errors.push(format!(
+                "checked runtime trap fixture is missing `{fixture}`"
+            ));
+        }
+    }
 }
 
 fn check_core_1d_acceptance(
