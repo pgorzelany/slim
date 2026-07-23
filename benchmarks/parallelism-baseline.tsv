@@ -1,0 +1,14 @@
+# schema=1
+# challenge	source_bytes	functions	checked_sites	reported_total_sites	refinements	safe_functions	declared_effects	exclusive_borrow	mutation	checked_trap	allocation_or_io	recurrence	callee_not_safe	call_cycle	function_limit	edge_limit	missing_typed_fact	eligible_sites
+gcd_fib	569	3	4	0	0	0	0	0	0	1	0	2	0	0	0	0	0	0
+sieve	1634	5	14	0	0	0	0	4	0	0	1	0	0	0	0	0	0	0
+bfs	933	3	6	0	0	0	0	2	0	0	1	0	0	0	0	0	0	0
+matrix	1707	4	19	1	0	0	0	3	0	0	1	0	0	0	0	0	0	0
+merge_sort	3513	9	32	0	0	0	0	8	0	0	1	0	0	0	0	0	0	0
+bytefreq	1529	4	12	0	0	0	0	3	0	0	1	0	0	0	0	0	0	0
+binary_search	1435	4	12	0	0	0	0	3	0	0	1	0	0	0	0	0	0	0
+prefix_sum	897	3	7	0	0	0	0	2	0	0	1	0	0	0	0	0	0	0
+records	795	3	6	0	0	0	0	0	0	2	0	1	0	0	0	0	0	0
+variants	938	4	6	0	0	0	0	0	0	2	1	1	0	0	0	0	0	0
+arena_sum	1016	3	7	0	0	0	0	2	0	0	1	0	0	0	0	0	0	0
+knapsack	1555	4	15	0	0	0	0	3	0	0	1	0	0	0	0	0	0	0

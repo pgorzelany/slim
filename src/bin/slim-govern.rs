@@ -80,6 +80,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_core_1e_acceptance(root, &decisions, &mut errors);
     check_parallelism_evidence(root, &decisions, &mut errors);
     check_integer_proof_evidence(root, &decisions, &mut errors);
+    check_parallelism_application_baseline(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -266,6 +267,96 @@ fn check_integer_proof_evidence(
         if !e2e.contains(required) {
             errors.push(format!("integer proof evidence is missing `{required}`"));
         }
+    }
+}
+
+fn check_parallelism_application_baseline(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0064") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "parallelism application baseline requires accepted primitive-free D0064 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("parallelism application baseline decision D0064 is missing".to_owned()),
+    }
+
+    for required in [
+        "benchmarks/parallelism-baseline.tsv",
+        "benchmarks/results/2026-07-23-core-1f-application-baseline.md",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "parallelism application artifact is missing {required}"
+            ));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "\"parallelism\" => run_parallelism_evidence()",
+        "assert_eq!(first, second",
+        "report_parentheses_are_balanced(&first)",
+        "benchmarks/parallelism-baseline.tsv",
+        "parallelism evidence changed; record the reason",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!(
+                "durable parallelism benchmark is missing `{required}`"
+            ));
+        }
+    }
+
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    if !baseline.contains("# schema=1")
+        || baseline
+            .lines()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .count()
+            != 12
+    {
+        errors.push(
+            "parallelism baseline must retain schema 1 and all twelve applications".to_owned(),
+        );
+    }
+    for challenge in [
+        "gcd_fib",
+        "sieve",
+        "bfs",
+        "matrix",
+        "merge_sort",
+        "bytefreq",
+        "binary_search",
+        "prefix_sum",
+        "records",
+        "variants",
+        "arena_sum",
+        "knapsack",
+    ] {
+        if !baseline
+            .lines()
+            .any(|line| line.starts_with(&format!("{challenge}\t")))
+        {
+            errors.push(format!("parallelism baseline is missing {challenge}"));
+        }
+    }
+
+    let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    if !verify.contains("slim-bench -- parallelism") {
+        errors
+            .push("full verification does not run the parallelism application baseline".to_owned());
+    }
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0064") {
+        errors.push("D0064 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 

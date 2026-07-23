@@ -53,6 +53,7 @@ For the executable Core oracle and incremental measurements:
     cargo run --release --bin slim-bench -- incremental
     cargo run --release --bin slim-bench -- project
     cargo run --release --bin slim-bench -- compare
+    cargo run --release --bin slim-bench -- parallelism
     cargo run --release --bin slim-bench -- agent
 
 ## Current boundary

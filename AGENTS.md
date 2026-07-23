@@ -72,6 +72,9 @@ These rules apply to every change in this repository.
 - Keep abstract interpretation domains and refinement/report limits explicit,
   deterministic, and crossed by permanent tests. The analyzer's own arithmetic
   must be unable to overflow inside its declared proof domain.
+- Keep the native application analysis baseline exact and durable. Explain and
+  record every changed row; primary blocker counts are not complete hazard sets
+  and cannot alone justify a new precision feature.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result
@@ -97,6 +100,7 @@ These rules apply to every change in this repository.
 - Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, `cargo test`,
   `cargo run --release --bin slim-bench -- performance --quick`,
   `cargo run --release --bin slim-bench -- reduction --quick`,
+  `cargo run --release --bin slim-bench -- parallelism`,
   `cargo run --release --bin slim-bench -- compare --quick`, and
   `cargo run --release --bin slim-bench -- agent` before committing a compiler,
   runtime, benchmark, or agent-tool change.

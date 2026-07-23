@@ -50,6 +50,21 @@ bounded arithmetic, nonzero division/remainder, and checked byte conversion.
 Its fixed domain and refinement limits are described in
 `docs/INTEGER_PROOFS.md`. Parallel analysis never reconstructs those facts.
 
+## Application baseline
+
+D0064 makes the twelve native algorithm challenges a permanent analysis
+corpus. `slim-bench parallelism` runs every report twice and compares source
+size, proof counts, primary safety reasons, and eligible sites with
+`benchmarks/parallelism-baseline.tsv`. The command runs in every full release
+verification. Baseline changes require a dated explanation.
+
+The initial corpus has 49 functions and 140 checked integer sites, but only one
+reported checked site is total and no function or fork site is eligible. Thirty
+functions first report an exclusive borrow, ten allocation or I/O, five a
+checked trap, and four recurrence. These are primary reasons only; secondary
+hazards remain masked. This result rejects execution work and rejects choosing
+the next precision feature from headline counts alone.
+
 The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a
 bounded result rather than silently treating omitted functions as safe.

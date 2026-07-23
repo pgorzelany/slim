@@ -16,10 +16,11 @@ fn main() {
         "incremental" => run_incremental(),
         "project" => run_project(),
         "compare" => run_comparison(),
+        "parallelism" => run_parallelism_evidence(),
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | agent>"
             );
             std::process::exit(64);
         }
@@ -773,6 +774,226 @@ fn run_comparison() {
             );
         }
     }
+}
+
+const PARALLELISM_REASONS: [(&str, &str); 11] = [
+    ("declared_effects", "declared-effects"),
+    ("exclusive_borrow", "exclusive-borrow"),
+    ("mutation", "mutation"),
+    ("checked_trap", "checked-trap"),
+    ("allocation_or_io", "allocation-or-io"),
+    ("recurrence", "recurrence"),
+    ("callee_not_safe", "callee-not-safe"),
+    ("call_cycle", "call-cycle"),
+    ("function_limit", "function-limit"),
+    ("edge_limit", "edge-limit"),
+    ("missing_typed_fact", "missing-typed-fact"),
+];
+
+#[derive(Debug, PartialEq, Eq)]
+struct ParallelismEvidence {
+    source_bytes: usize,
+    functions: usize,
+    checked_sites: usize,
+    reported_total_sites: usize,
+    refinements: usize,
+    safe_functions: usize,
+    reasons: [usize; PARALLELISM_REASONS.len()],
+    eligible_sites: usize,
+}
+
+fn run_parallelism_evidence() {
+    let root = repository_root();
+    let compiler = selfhost_compiler();
+    let challenges = challenge_manifest();
+    let baseline = parallelism_baseline();
+    println!(
+        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\teligible_sites",
+        PARALLELISM_REASONS
+            .iter()
+            .map(|(column, _)| *column)
+            .collect::<Vec<_>>()
+            .join("\t")
+    );
+    for challenge in &challenges {
+        let path = root
+            .join("benchmarks/challenges")
+            .join(challenge)
+            .join("program.slim");
+        let first = require_transform_output(
+            compiler_output(&compiler, "analyze", &path),
+            "parallelism application analysis",
+        );
+        let second = require_transform_output(
+            compiler_output(&compiler, "analyze", &path),
+            "repeated parallelism application analysis",
+        );
+        assert_eq!(first, second, "{challenge}: analysis must be deterministic");
+        assert!(
+            report_parentheses_are_balanced(&first),
+            "{challenge}: analysis report must be balanced"
+        );
+        let report = std::str::from_utf8(&first).expect("analysis report must be UTF-8");
+        let evidence = measure_parallelism_evidence(&path, report);
+        let expected = baseline
+            .get(challenge)
+            .unwrap_or_else(|| panic!("missing parallelism baseline for {challenge}"));
+        assert_eq!(
+            &evidence, expected,
+            "{challenge}: parallelism evidence changed; record the reason and update the durable baseline"
+        );
+        print_parallelism_evidence(challenge, &evidence);
+    }
+    assert_eq!(
+        baseline.len(),
+        challenges.len(),
+        "parallelism baseline contains a challenge absent from the manifest"
+    );
+}
+
+fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidence {
+    assert!(report.starts_with("(analysis 4 "));
+    let integer = report_section(report, "(integer-proofs ", " (quality ");
+    let parallel = report_section(report, "(parallelism ", " (function ");
+    let functions = report_number(report, "(quality (guarantee exact) (functions ");
+    let safe_functions = parallel.matches("(status safe)").count();
+    let mut reasons = [0; PARALLELISM_REASONS.len()];
+    for (index, (_, report_name)) in PARALLELISM_REASONS.iter().enumerate() {
+        reasons[index] = parallel.matches(&format!("(reason {report_name})")).count();
+    }
+    assert_eq!(
+        safe_functions + reasons.iter().sum::<usize>(),
+        functions,
+        "every application function must have one parallel status"
+    );
+    ParallelismEvidence {
+        source_bytes: fs::metadata(path)
+            .expect("parallelism application metadata")
+            .len() as usize,
+        functions,
+        checked_sites: report_number(integer, "(checked-site-count "),
+        reported_total_sites: integer.matches("(status total)").count(),
+        refinements: report_number(integer, "(refinements "),
+        safe_functions,
+        reasons,
+        eligible_sites: report_number(parallel, "(eligible-sites "),
+    }
+}
+
+fn print_parallelism_evidence(challenge: &str, evidence: &ParallelismEvidence) {
+    print!(
+        "{challenge}\t{}\t{}\t{}\t{}\t{}\t{}",
+        evidence.source_bytes,
+        evidence.functions,
+        evidence.checked_sites,
+        evidence.reported_total_sites,
+        evidence.refinements,
+        evidence.safe_functions
+    );
+    for count in evidence.reasons {
+        print!("\t{count}");
+    }
+    println!("\t{}", evidence.eligible_sites);
+}
+
+fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
+    let path = repository_root().join("benchmarks/parallelism-baseline.tsv");
+    let contents = fs::read_to_string(path).expect("read parallelism baseline");
+    let mut baseline = BTreeMap::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            19,
+            "parallelism baseline line {} must have nineteen columns",
+            line_number + 1
+        );
+        let number = |index: usize| {
+            columns[index].parse::<usize>().unwrap_or_else(|_| {
+                panic!(
+                    "invalid parallelism evidence on line {}, column {}",
+                    line_number + 1,
+                    index + 1
+                )
+            })
+        };
+        let mut reasons = [0; PARALLELISM_REASONS.len()];
+        for (offset, value) in reasons.iter_mut().enumerate() {
+            *value = number(offset + 7);
+        }
+        let evidence = ParallelismEvidence {
+            source_bytes: number(1),
+            functions: number(2),
+            checked_sites: number(3),
+            reported_total_sites: number(4),
+            refinements: number(5),
+            safe_functions: number(6),
+            reasons,
+            eligible_sites: number(18),
+        };
+        assert!(
+            baseline.insert(columns[0].to_owned(), evidence).is_none(),
+            "duplicate parallelism baseline for {}",
+            columns[0]
+        );
+    }
+    baseline
+}
+
+fn report_section<'a>(report: &'a str, start: &str, end: &str) -> &'a str {
+    let start_index = report
+        .find(start)
+        .unwrap_or_else(|| panic!("analysis report is missing {start}"));
+    let tail = &report[start_index..];
+    let end_index = tail
+        .find(end)
+        .unwrap_or_else(|| panic!("analysis report is missing section terminator {end}"));
+    &tail[..end_index]
+}
+
+fn report_number(report: &str, marker: &str) -> usize {
+    let start = report
+        .find(marker)
+        .unwrap_or_else(|| panic!("analysis report is missing {marker}"))
+        + marker.len();
+    let digits = report[start..]
+        .bytes()
+        .take_while(u8::is_ascii_digit)
+        .count();
+    assert!(digits > 0, "analysis report has no number after {marker}");
+    report[start..start + digits]
+        .parse()
+        .expect("analysis count must fit usize")
+}
+
+fn report_parentheses_are_balanced(report: &[u8]) -> bool {
+    let mut depth = 0_i64;
+    let mut quoted = false;
+    let mut escaped = false;
+    for byte in report {
+        if quoted {
+            if escaped {
+                escaped = false;
+            } else if *byte == b'\\' {
+                escaped = true;
+            } else if *byte == b'"' {
+                quoted = false;
+            }
+        } else if *byte == b'"' {
+            quoted = true;
+        } else if *byte == b'(' {
+            depth += 1;
+        } else if *byte == b')' {
+            depth -= 1;
+            if depth < 0 {
+                return false;
+            }
+        }
+    }
+    depth == 0 && !quoted && !escaped
 }
 
 fn challenge_manifest() -> Vec<String> {

@@ -13,6 +13,7 @@ target/release/slim-bench compare
 target/release/slim-bench incremental
 target/release/slim-bench project
 target/release/slim-bench reduction
+target/release/slim-bench parallelism
 target/release/slim-bench agent
 ```
 
@@ -54,6 +55,13 @@ Repeated runs and every worker count must produce identical bytes. Serial
 wide/deep emission has its own scaling budget. Workers remain opt-in because
 these small graphs still show no stable parallel speedup; the compiler does
 not claim concurrency that its runtime cannot yet provide.
+
+The `parallelism` command runs the SLIM-written version-4 analysis twice over
+every native challenge, requires deterministic balanced reports, and compares
+nineteen safety and opportunity metrics with `parallelism-baseline.tsv`.
+Changing an application or its proof classification requires an intentional
+baseline update and dated explanation. Reason columns are primary blockers;
+they must not be treated as the complete set of hazards in a function.
 
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/

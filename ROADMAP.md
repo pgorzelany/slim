@@ -955,6 +955,18 @@ the 1,832,302-byte portable seed reproduces exactly. D0063's 7.03% incremental
 compiler-size cost and full measurements are recorded in
 `benchmarks/results/2026-07-23-core-1f-integer-proofs.md`.
 
+D0064 turns all twelve native algorithm challenges into a permanent
+parallel-safety application corpus. The release gate runs every analysis twice,
+requires byte-identical balanced reports, and compares nineteen metrics with a
+checked-in baseline. Across 16,521 source bytes, 49 functions, and 140 checked
+integer sites, only one reported site is total and no function or fork site is
+eligible. The primary reasons are 30 exclusive borrows, ten allocation/I/O
+functions, five checked traps, and four recurrences. Because primary reasons
+mask coexisting hazards, this negative result justifies complete blocker
+evidence before selecting a precision feature. The durable command and results
+are recorded in
+`benchmarks/results/2026-07-23-core-1f-application-baseline.md`.
+
 Before any execution decision, Core 1F still needs substantial application
 evidence using these positive range/totality proofs, collection-bounds and
 interprocedural precision only where applications justify them, a deterministic
