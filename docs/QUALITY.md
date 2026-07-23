@@ -1,6 +1,6 @@
 # Bounded program evidence
 
-Status: Core 1G analysis schema 5
+Status: Core 1H analysis schema 6
 
 Core 1B adds evidence about checked canonical SLIM without changing Core
 syntax. Every result is classified as one of:
@@ -12,64 +12,37 @@ syntax. Every result is classified as one of:
 The tools never turn `unknown` into a negative quality judgment. They emit a
 vector of facts rather than a universal goodness score.
 
-## Analysis version 5
+## Analysis schema 6
 
-`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 5 ...)`. It retains Core 1A binding
-identity, declared type, storage ownership, use, last-use, scope, and dependency
-facts and Core 1B quality facts. Version 2 added:
+`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 6 ...)` from the same checked
+artifact used by normal compilation. The current report includes:
 
-- exact token, declaration, function, record, and variant counts;
-- exact declared effect and structural mutation/call/match/recur counts;
-- allocation-site, checked-trap-site, and partial-operation counts;
-- an exact `total` classification only for call-free, recursion-free finite
-  expressions, and `unknown` for calls or recursion;
-- bounded owned-binding and maximum-live-owned pressure;
-- exact primitive record state models when every field has a known
-  power-of-two cardinality; and
-- explicit unknown state models for dynamically sized or unresolved storage.
+- stable token and binding identities, types, ownership, use, last-use, scope,
+  and dependency facts;
+- exact declaration, effect, call, match, mutation, recurrence, allocation,
+  and checked-trap counts;
+- exact or unknown totality, bounded owned-binding pressure, and finite record
+  state cardinality where the compiler knows every field cardinality;
+- bounded integer and recurrence proofs described in
+  `docs/INTEGER_PROOFS.md`;
+- reusable recurrence profiles and exact or unknown call workloads described
+  in `docs/RESOURCE_BOUNDS.md`; and
+- deterministic parallel safety, schedule, and execution evidence described in
+  `docs/PARALLELISM.md`.
 
 State models describe representable values, not valid application states. A
 valid-state ratio requires an invariant or behavioral specification that Core
 1B does not infer.
 
-Default analysis stores at most 64 binding facts per function. Pairwise
-live-range pressure therefore has a fixed maximum of 4,096 comparisons.
-Structural metrics use one token traversal. Exceeding a bound marks the result
-`bounded` or `unknown`; it never silently shortens a lifetime or claims an exact
-result.
+Analysis stores at most 64 binding facts per function. Pairwise live-range
+pressure therefore has at most 4,096 comparisons. Other analyzers publish
+their own limits. Exceeding any bound is explicit; it never silently shortens a
+lifetime or turns missing evidence into an exact result.
 
 Standalone sources and explicit project manifests use the same command. Project
 analysis consumes the ordinary prepared project artifact after module,
 visibility, type, effect, ownership, and memory-plan checking; it does not
 reparse or independently type project code.
-
-Version 3 added D0062's bounded parallelism evidence. It consumes the same
-checked token links and typed facts as ordinary compilation, stores at most 64
-function facts and 4,096 direct call edges, and performs at most 64 resolution
-passes. It reports exact safe or unavailable functions, explicit unknown call
-cycles and bound overflows, and stable adjacent fork-site candidates. A site is
-reported only when both computations are transitively free of declared effects,
-exclusive borrows, mutation, recurrence, allocation, I/O, and defined traps and
-the second does not use the first result.
-
-Version 3 did not select or execute a schedule. Candidate sites could overlap,
-structural task-token counts did not predict dynamic work, and profitability
-remained `unknown`.
-
-Version 4 adds D0063's bounded integer interval and operation-totality facts.
-The quality report now calls a function total only when the shared fact for its
-body is positive. Exact literal flow, selected guarded arithmetic, bounded
-multiplication, denominator-proven division/remainder, valid I64-to-U8
-conversion, and D0066's canonical strictly decreasing tail recurrence can be
-proved. The fixed ±1,000,000,000 domain, 64 comparison refinements,
-checked-site output limit, and conservative unknown cases are specified in
-`docs/INTEGER_PROOFS.md`.
-
-Version 5 includes D0067 and D0071's deterministic non-overlapping schedule and
-guarded execution boundary. It distinguishes candidate, selected, reported,
-executable, and executed sites. Execution requires the exact Core 1G totality,
-reorder-safety, capture, placement, and work proofs; every missing fact keeps
-the program serial. The complete contract is in `docs/PARALLELISM.md`.
 
 ## Reduction evidence and replay
 

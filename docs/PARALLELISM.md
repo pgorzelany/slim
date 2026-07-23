@@ -38,7 +38,8 @@ structured model.
 
 `slimc analyze SOURCE_OR_PROJECT` remains the only command. A project is
 analyzed through its normal validated, flattened, typed artifact; there is no
-second project parser or checker. Analysis version 5 contains stable
+second project parser or checker. Analysis schema 6 preserves the Core 1G
+parallel fields: stable
 source-token node identities, per-function safety facts, exact recurrence work
 when derivable, candidate fork sites, and distinct selected, executable, and
 executed counts. Unavailable or unknown results retain explicit reasons. It
@@ -184,7 +185,7 @@ inline. Both branches therefore decline transitive nested creation, so
 execution never expands into an unbounded task tree. Supported POSIX targets
 select the worker tier; other targets use the portable serial tier.
 
-Analysis schema 5 and the permanent application baseline distinguish all five
+Analysis schema 6 and the permanent application baseline distinguish all five
 stages: candidate, selected, reported, executable, and executed. Both
 `state_machine` and the independent eight-Boolean `signal_network` challenge
 retain exactly `1/1/1/1/1`; the other twelve applications retain zero executed

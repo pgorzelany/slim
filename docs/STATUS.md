@@ -1,6 +1,6 @@
 # SLIM Status
 
-Status: Core 1G guarded automatic parallel execution
+Status: Core 1H bounded-resource evidence in progress
 Compiler version: 0.0.1
 Next milestone: Core 1H bounded resources and application evidence
 Updated: 2026-07-23
@@ -47,6 +47,10 @@ yet a stable public release.
   with atomic captures, complete reorder-safety and totality proofs, and at
   least 1,000,000 exact recurrence iterations per task. Other sites stay
   serial.
+- Analysis schema 6 retains at most 16 canonical recurrence profiles and
+  prints at most 64 profiled calls. Literal controllers may have exact
+  iteration work; nonliteral controllers and unsupported recurrences remain
+  unknown.
 
 ## Not implemented
 
@@ -64,14 +68,15 @@ yet a stable public release.
 
 ## Next boundary
 
-Core 1H through Core 1L are the planned path to 1.0. Core 1H begins with
-application evidence and compiler-derived resource bounds; it does not
-pre-approve resource syntax. Every durable mechanism still requires a weighted
-decision, measured cost, diagnostics, specifications, and permanent tests.
-Core 1G widens only when a new execution shape has positive
-multi-application evidence.
+Core 1H through Core 1L are the planned path to 1.0. Core 1H's first slice
+publishes recurrence profiles and call-work evidence and maintains a
+14-application baseline. It does not pre-approve resource syntax. Next, the
+baseline must justify any stronger execution, allocation, or peak-memory proof.
+Every durable mechanism still requires a weighted decision, measured cost,
+diagnostics, specifications, and permanent tests.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,
-`docs/PERFORMANCE.md`, and `docs/PARALLELISM.md`. The concise milestone
-sequence and acceptance boundaries are in `ROADMAP.md`.
+`docs/PERFORMANCE.md`, `docs/PARALLELISM.md`, and
+`docs/RESOURCE_BOUNDS.md`. The concise milestone sequence and acceptance
+boundaries are in `ROADMAP.md`.

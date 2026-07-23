@@ -80,6 +80,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_core_1e_acceptance(root, &decisions, &mut errors);
     check_parallelism_evidence(root, &decisions, &mut errors);
     check_integer_proof_evidence(root, &decisions, &mut errors);
+    check_resource_evidence(root, &decisions, &mut errors);
     check_parallelism_application_baseline(root, &decisions, &mut errors);
     check_complete_parallel_blockers(root, &decisions, &mut errors);
     check_total_recurrence_evidence(root, &decisions, &mut errors);
@@ -144,7 +145,7 @@ fn check_parallelism_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 5",
+        "(analysis 6",
         "(inout typed-facts (Vec typing/Fact))",
         "(call parallel/analyze source tokens typed-facts range-view)",
         "(call parallel/emit_module_facts source tokens parallel-view output)",
@@ -236,12 +237,12 @@ fn check_integer_proof_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 5",
+        "(analysis 6",
         "(call ranges/analyze source tokens typed-facts)",
         "(call ranges/emit-module-facts source tokens range-view output)",
     ] {
         if !analysis.contains(required) {
-            errors.push(format!("analysis version 5 is missing `{required}`"));
+            errors.push(format!("analysis version 6 is missing `{required}`"));
         }
     }
 
@@ -273,6 +274,115 @@ fn check_integer_proof_evidence(
         if !e2e.contains(required) {
             errors.push(format!("integer proof evidence is missing `{required}`"));
         }
+    }
+}
+
+fn check_resource_evidence(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0073") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1H resource evidence requires accepted primitive-free D0073 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1H resource evidence decision D0073 is missing".to_owned()),
+    }
+
+    for required in [
+        "docs/RESOURCE_BOUNDS.md",
+        "selfhost/ranges.slim",
+        "conformance/evidence/resource_work.slim",
+        "benchmarks/resource-baseline.tsv",
+        "benchmarks/results/2026-07-23-core-1h-resource-evidence.md",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "Core 1H resource evidence artifact is missing {required}"
+            ));
+        }
+    }
+
+    let ranges = fs::read_to_string(root.join("selfhost/ranges.slim")).unwrap_or_default();
+    for required in [
+        "(record ResourceScan",
+        "(profile-limit 16)",
+        "(call-site-report-limit 64)",
+        "(range-refinements-truncated ",
+        "(reason nonliteral-controller)",
+        "(false 16)",
+    ] {
+        if !ranges.contains(required) {
+            errors.push(format!(
+                "bounded resource evidence implementation is missing `{required}`"
+            ));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    if !analysis.contains("(analysis 6")
+        || !analysis.contains("(call ranges/emit-module-facts source tokens range-view output)")
+    {
+        errors.push(
+            "analysis schema 6 must emit resource evidence from the shared checked range view"
+                .to_owned(),
+        );
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "resource_evidence_reports_exact_zero_and_unknown_recurrence_work",
+        "resource_evidence_limits_profiles_and_reported_call_sites",
+        "(recurrence-profile-count 17) (reported-recurrence-profiles 16)",
+        "(profiled-call-site-count 65) (reported-call-site-count 64)",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!("resource evidence tests are missing `{required}`"));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "\"resources\" => run_resource_evidence()",
+        "benchmarks/resource-baseline.tsv",
+        "unknown_call_work_sites",
+        "resource evidence changed; record the reason",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!(
+                "durable resource benchmark is missing `{required}`"
+            ));
+        }
+    }
+
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/resource-baseline.tsv")).unwrap_or_default();
+    if !baseline.contains("# schema=1")
+        || baseline
+            .lines()
+            .filter(|line| !line.starts_with('#') && !line.is_empty())
+            .count()
+            != 14
+    {
+        errors.push(
+            "resource baseline must retain schema 1 and all fourteen applications".to_owned(),
+        );
+    }
+
+    let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    if !verify.contains("slim-bench -- resources") {
+        errors.push("full verification does not run the resource application baseline".to_owned());
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0073") {
+        errors.push("D0073 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
@@ -2658,7 +2768,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 5",
+        "(analysis 6",
         "(call quality/emit_module_facts",
         "(ownership-pressure",
         "(max-live-owned ",

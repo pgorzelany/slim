@@ -45,6 +45,11 @@ const referenceSources = [
     path: "docs/PARALLELISM.md",
     summary: "Reorder-safety, bounded plans, worker ABI, and guarded execution.",
   },
+  {
+    id: "resources",
+    path: "docs/RESOURCE_BOUNDS.md",
+    summary: "Recurrence profiles, exact or unknown call work, and explicit limits.",
+  },
 ];
 
 const referenceByBasename = new Map(

@@ -611,7 +611,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 5 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 6 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
@@ -682,7 +682,7 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 5 (module integer-ranges)",
+        "(analysis 6 (module integer-ranges)",
         "(integer-proofs (domain -1000000000 1000000000)",
         "(refinements 6) (refinements-truncated false)",
         "(checked-site 26 (status total) (lower unknown) (upper 10))",
@@ -715,6 +715,99 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
             "missing integer fact: {required}"
         );
     }
+}
+
+#[test]
+fn resource_evidence_reports_exact_zero_and_unknown_recurrence_work() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/evidence/resource_work.slim");
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&source)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert!(first.stderr.is_empty());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    for required in [
+        "(analysis 6 (module resource-work)",
+        "(resource-evidence (profile-limit 16) (call-site-report-limit 64)",
+        "(recurrence-profile 3 run (guarantee exact) (controller-position 0) (stop-bound 0) (step 1))",
+        "(call-work 53 3 run (guarantee exact) (iterations 10))",
+        "(call-work 69 3 run (guarantee exact) (iterations 0))",
+        "(call-work 89 3 run (guarantee unknown) (reason nonliteral-controller))",
+        "(recurrence-profile-count 1) (reported-recurrence-profiles 1) (recurrence-profiles-truncated false)",
+        "(profiled-call-site-count 3) (reported-call-site-count 3) (exact-call-work-sites 2) (unknown-call-work-sites 1)",
+        "(maximum-exact-iterations 10) (guarantee exact)",
+    ] {
+        assert!(
+            report.contains(required),
+            "missing resource fact: {required}"
+        );
+    }
+}
+
+#[test]
+fn resource_evidence_limits_profiles_and_reported_call_sites() {
+    let directory = temporary_directory("resource-bounds");
+
+    let mut profiles = "(module resource-profile-bound".to_owned();
+    for index in 0..17 {
+        profiles.push_str(&format!(
+            " (fn run-{index} ((remaining I64)) I64 (effects partial) (match (call i64.le remaining 0) (true 0) (false (recur (call i64.sub remaining 1)))))"
+        ));
+    }
+    profiles.push_str(" (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    let profile_path = write_source(&directory, &profiles);
+    let profile_output = Command::new(slimc())
+        .arg("analyze")
+        .arg(&profile_path)
+        .output()
+        .unwrap();
+    assert!(profile_output.status.success());
+    assert!(report_parentheses_are_balanced(&profile_output.stdout));
+    let profile_report = String::from_utf8(profile_output.stdout).unwrap();
+    assert!(profile_report.contains(
+        "(recurrence-profile-count 17) (reported-recurrence-profiles 16) (recurrence-profiles-truncated true)"
+    ));
+    assert_eq!(profile_report.matches("(recurrence-profile ").count(), 16);
+    assert!(profile_report.contains("(guarantee bounded)"));
+
+    let mut body = "0".to_owned();
+    for index in (0..65).rev() {
+        body = format!("(let value-{index} I64 (call run {index}) {body})");
+    }
+    let calls = format!(
+        "(module resource-call-bound (fn run ((remaining I64)) I64 (effects partial) (match (call i64.le remaining 0) (true 0) (false (recur (call i64.sub remaining 1))))) (fn many () I64 (effects partial) {body}) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n"
+    );
+    let call_path = directory.join("calls.slim");
+    fs::write(&call_path, calls).unwrap();
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&call_path)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let call_report = String::from_utf8(first.stdout).unwrap();
+    assert!(call_report.contains(
+        "(profiled-call-site-count 65) (reported-call-site-count 64) (exact-call-work-sites 65) (unknown-call-work-sites 0)"
+    ));
+    assert!(call_report.contains("(maximum-exact-iterations 64) (guarantee bounded)"));
+    assert_eq!(call_report.matches("(call-work ").count(), 64);
+
+    fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]
@@ -921,7 +1014,7 @@ fn project_analysis_dogfoods_the_bounded_parallelism_view() {
     assert!(output.stderr.is_empty());
     assert!(report_parentheses_are_balanced(&output.stdout));
     let report = String::from_utf8(output.stdout).unwrap();
-    assert!(report.starts_with("(analysis 5 (module project)"));
+    assert!(report.starts_with("(analysis 6 (module project)"));
     assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
     assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
 }

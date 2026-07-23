@@ -17,11 +17,12 @@ fn main() {
         "project" => run_project(),
         "compare" => run_comparison(),
         "parallelism" => run_parallelism_evidence(),
+        "resources" => run_resource_evidence(),
         "parallel-runtime" => run_parallel_runtime(),
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | resources | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -916,6 +917,158 @@ const PARALLELISM_REASONS: [(&str, &str); 11] = [
 ];
 
 #[derive(Debug, PartialEq, Eq)]
+struct ResourceEvidence {
+    source_bytes: usize,
+    recurrence_profiles: usize,
+    profiled_call_sites: usize,
+    exact_call_work_sites: usize,
+    unknown_call_work_sites: usize,
+    maximum_exact_iterations: usize,
+    allocation_sites: usize,
+    trap_sites: usize,
+    owned_bindings: usize,
+    max_live_owned: usize,
+    total_functions: usize,
+}
+
+fn run_resource_evidence() {
+    let root = repository_root();
+    let compiler = selfhost_compiler();
+    let challenges = challenge_manifest();
+    let mut measured = Vec::with_capacity(challenges.len());
+    for challenge in &challenges {
+        let path = root
+            .join("benchmarks/challenges")
+            .join(challenge)
+            .join("program.slim");
+        let first = require_transform_output(
+            compiler_output(&compiler, "analyze", &path),
+            "resource application analysis",
+        );
+        let second = require_transform_output(
+            compiler_output(&compiler, "analyze", &path),
+            "repeated resource application analysis",
+        );
+        assert_eq!(first, second, "{challenge}: analysis must be deterministic");
+        assert!(
+            report_parentheses_are_balanced(&first),
+            "{challenge}: analysis report must be balanced"
+        );
+        let report = std::str::from_utf8(&first).expect("analysis report must be UTF-8");
+        measured.push((challenge.clone(), measure_resource_evidence(&path, report)));
+    }
+
+    println!(
+        "challenge\tsource_bytes\trecurrence_profiles\tprofiled_call_sites\texact_call_work_sites\tunknown_call_work_sites\tmaximum_exact_iterations\tallocation_sites\ttrap_sites\towned_bindings\tmax_live_owned\ttotal_functions"
+    );
+    for (challenge, evidence) in &measured {
+        println!(
+            "{challenge}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            evidence.source_bytes,
+            evidence.recurrence_profiles,
+            evidence.profiled_call_sites,
+            evidence.exact_call_work_sites,
+            evidence.unknown_call_work_sites,
+            evidence.maximum_exact_iterations,
+            evidence.allocation_sites,
+            evidence.trap_sites,
+            evidence.owned_bindings,
+            evidence.max_live_owned,
+            evidence.total_functions
+        );
+    }
+
+    let baseline = resource_baseline();
+    for (challenge, evidence) in &measured {
+        let expected = baseline
+            .get(challenge)
+            .unwrap_or_else(|| panic!("missing resource baseline for {challenge}"));
+        assert_eq!(
+            evidence, expected,
+            "{challenge}: resource evidence changed; record the reason and update the durable baseline"
+        );
+    }
+    assert_eq!(
+        baseline.len(),
+        challenges.len(),
+        "resource baseline contains a challenge absent from the manifest"
+    );
+}
+
+fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {
+    assert!(report.starts_with("(analysis 6 "));
+    let resources = report_section(report, "(resource-evidence ", " (quality ");
+    let quality = report_section(report, "(quality ", " (parallelism ");
+    let total_functions = quality.matches("(status total)").count();
+    ResourceEvidence {
+        source_bytes: fs::metadata(path)
+            .expect("resource application metadata")
+            .len() as usize,
+        recurrence_profiles: report_number(resources, "(recurrence-profile-count "),
+        profiled_call_sites: report_number(resources, "(profiled-call-site-count "),
+        exact_call_work_sites: report_number(resources, "(exact-call-work-sites "),
+        unknown_call_work_sites: report_number(resources, "(unknown-call-work-sites "),
+        maximum_exact_iterations: report_number(resources, "(maximum-exact-iterations "),
+        allocation_sites: report_numbers(quality, "(allocation-sites ")
+            .into_iter()
+            .sum(),
+        trap_sites: report_numbers(quality, "(trap-sites ").into_iter().sum(),
+        owned_bindings: report_numbers(report, "(owned-bindings ").into_iter().sum(),
+        max_live_owned: report_numbers(report, "(max-live-owned ")
+            .into_iter()
+            .max()
+            .unwrap_or(0),
+        total_functions,
+    }
+}
+
+fn resource_baseline() -> BTreeMap<String, ResourceEvidence> {
+    let path = repository_root().join("benchmarks/resource-baseline.tsv");
+    let contents = fs::read_to_string(path).expect("read resource baseline");
+    let mut baseline = BTreeMap::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            12,
+            "resource baseline line {} must have twelve columns",
+            line_number + 1
+        );
+        let number = |index: usize| {
+            columns[index].parse::<usize>().unwrap_or_else(|_| {
+                panic!(
+                    "invalid resource evidence on line {}, column {}",
+                    line_number + 1,
+                    index + 1
+                )
+            })
+        };
+        let evidence = ResourceEvidence {
+            source_bytes: number(1),
+            recurrence_profiles: number(2),
+            profiled_call_sites: number(3),
+            exact_call_work_sites: number(4),
+            unknown_call_work_sites: number(5),
+            maximum_exact_iterations: number(6),
+            allocation_sites: number(7),
+            trap_sites: number(8),
+            owned_bindings: number(9),
+            max_live_owned: number(10),
+            total_functions: number(11),
+        };
+        assert!(
+            baseline.insert(columns[0].to_owned(), evidence).is_none(),
+            "duplicate resource baseline for {}",
+            columns[0]
+        );
+    }
+    baseline
+}
+
+#[derive(Debug, PartialEq, Eq)]
 struct ParallelismEvidence {
     source_bytes: usize,
     functions: usize,
@@ -988,8 +1141,8 @@ fn run_parallelism_evidence() {
 }
 
 fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidence {
-    assert!(report.starts_with("(analysis 5 "));
-    let integer = report_section(report, "(integer-proofs ", " (quality ");
+    assert!(report.starts_with("(analysis 6 "));
+    let integer = report_section(report, "(integer-proofs ", " (resource-evidence ");
     let parallel = report_section(report, "(parallelism ", " (function ");
     let functions = report_number(report, "(quality (guarantee exact) (functions ");
     let safe_functions = parallel.matches("(status safe)").count();
@@ -1165,6 +1318,23 @@ fn report_number(report: &str, marker: &str) -> usize {
     report[start..start + digits]
         .parse()
         .expect("analysis count must fit usize")
+}
+
+fn report_numbers(report: &str, marker: &str) -> Vec<usize> {
+    let mut numbers = Vec::new();
+    let mut remaining = report;
+    while let Some(index) = remaining.find(marker) {
+        let tail = &remaining[index + marker.len()..];
+        let digits = tail.bytes().take_while(u8::is_ascii_digit).count();
+        assert!(digits > 0, "analysis report has no number after {marker}");
+        numbers.push(
+            tail[..digits]
+                .parse()
+                .expect("analysis count must fit usize"),
+        );
+        remaining = &tail[digits..];
+    }
+    numbers
 }
 
 fn report_parentheses_are_balanced(report: &[u8]) -> bool {

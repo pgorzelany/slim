@@ -117,7 +117,7 @@ test("surface JSON is an exact projection of the accepted ledger", async () => {
 });
 
 test("every rendered reference retains a canonical repository source", async () => {
-  assert.equal(generated.reference.length, 7);
+  assert.equal(generated.reference.length, 8);
   for (const document of generated.reference) {
     await access(path.join(repositoryRoot, document.path));
     assert.ok(document.html.length > 100);
@@ -134,7 +134,7 @@ test("agent summary and dependency boundary remain explicit", async () => {
   ]);
 
   assert.match(llms, /Small Language for Intelligent Machines/);
-  assert.match(llms, /Core 1G guarded automatic parallel execution/);
+  assert.match(llms, /Core 1H bounded-resource evidence in progress/);
   assert.match(llms, /\/reference\/surface\.json/);
   assert.doesNotMatch(rootCargo, /website|vinext|react|marked/);
   assert.match(websitePackage, /"marked": "16\.4\.2"/);

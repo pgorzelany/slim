@@ -1,6 +1,6 @@
 # SLIM Roadmap
 
-Status: Core 1G guarded automatic parallel execution
+Status: Core 1H bounded-resource evidence in progress
 Current milestone: Core 1H bounded resources and application evidence
 Last updated: 2026-07-23
 
@@ -90,15 +90,16 @@ serial. The exact boundary is in `docs/PARALLELISM.md`.
 
 ## Core 1H: bounded resources and application evidence
 
-Status: planned
+Status: in progress
 
 Core 1H should make physical limits useful without pretending arbitrary
-programs are decidable.
+programs are decidable. D0073's first slice advances analysis to schema 6,
+publishes bounded recurrence profiles and exact-or-unknown call workloads, and
+locks a 14-application resource baseline without adding language surface.
 
 ### Work
 
-- Establish a maintained application corpus that is not shaped around one
-  optimization.
+- Maintain the application corpus without shaping it around one optimization.
 - Derive execution-step, allocation, peak-live-memory, recurrence, task,
   effect, and failure-path evidence from the existing checked artifact.
 - Classify every fact as `exact`, `bounded`, or `unknown`; unknown never means

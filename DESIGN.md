@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1G guarded automatic parallel execution
+Status: Core 1H bounded-resource evidence in progress
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -110,6 +110,11 @@ compiler view. Core 1F derives a bounded integer interval and totality view from
 those same token identities and types. Missing bounds remain unknown. Core 1G
 allows only exact facts from that view to enable guarded code generation;
 ordinary checking remains unchanged.
+
+Core 1H analysis schema 6 exposes the reusable canonical recurrence profile and
+exact-or-unknown literal call workloads from that same view. The first
+application baseline does not justify a source resource contract, so none was
+added.
 
 ### 8. Programs should be measurable
 
@@ -227,7 +232,7 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-Core 1G already has affine ownership, immutable bindings, exclusive mutation,
+Core 1H in progress has affine ownership, immutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic fork/join.
