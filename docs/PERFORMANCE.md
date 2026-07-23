@@ -1,6 +1,6 @@
 # Core 1C performance contract
 
-Status: permanent contract through Core 1G
+Status: permanent contract through Core 1I
 
 Performance tests are permanent compatibility evidence. They are not deleted
 after an optimization lands, and a result file never replaces an executable
@@ -79,6 +79,7 @@ Focused quick measurements are:
 ```text
 cargo run --release --bin slim-bench -- performance --quick
 cargo run --release --bin slim-bench -- compare --quick
+cargo run --release --bin slim-bench -- host
 cargo run --release --bin slim-bench -- agent
 ```
 
@@ -115,3 +116,12 @@ The command verifies output first, warms both modes, and compares medians from
 the identical generated executable. Its existing geometric manual reference is
 retained independently. A generated ratio budget may be tightened normally;
 relaxing it follows the scored performance-exception policy above.
+
+## Core 1I host-call contract
+
+D0075 compares 100,000 `io.monotonic-ms` samples in generated SLIM with a C
+reference using the same runtime operation. The same-host SLIM/C ratio must not
+exceed 2.00. This isolates language call and recurrence overhead from the host
+clock's own latency. The test also requires successful output-free execution;
+it is not a substitute for the type, effect, allocation, trap, or monotonicity
+checks.

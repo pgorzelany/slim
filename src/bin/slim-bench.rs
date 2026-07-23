@@ -18,11 +18,12 @@ fn main() {
         "compare" => run_comparison(),
         "parallelism" => run_parallelism_evidence(),
         "resources" => run_resource_evidence(),
+        "host" => run_host_evidence(),
         "parallel-runtime" => run_parallel_runtime(),
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | resources | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -1001,6 +1002,53 @@ fn run_resource_evidence() {
         challenges.len(),
         "resource baseline contains a challenge absent from the manifest"
     );
+}
+
+fn run_host_evidence() {
+    let root = repository_root();
+    let build = TemporaryDirectory::new("host-clock");
+    let slim = build.path.join("clock-slim");
+    let c = build.path.join("clock-c");
+    require_success(
+        Command::new(root.join("slimc"))
+            .arg("build")
+            .arg(root.join("benchmarks/host/clock.slim"))
+            .arg("-o")
+            .arg(&slim),
+        "SLIM host clock build",
+    );
+    require_success(
+        Command::new(native_compiler())
+            .arg("-std=c11")
+            .arg("-O2")
+            .arg("-DNDEBUG")
+            .arg("-Wall")
+            .arg("-Wextra")
+            .arg("-Werror")
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(root.join("benchmarks/host/clock.c"))
+            .arg(root.join("runtime/slim_rt.c"))
+            .arg("-o")
+            .arg(&c),
+        "C host clock reference build",
+    );
+    assert!(run_output(&slim, &[]).is_empty());
+    assert!(run_output(&c, &[]).is_empty());
+    let slim_time = median_runtime(&slim, &[], 9);
+    let c_time = median_runtime(&c, &[], 9);
+    let ratio = slim_time.as_nanos() as f64 / c_time.as_nanos() as f64;
+    println!("calls\tslim_us\tc_us\tslim_over_c");
+    println!(
+        "100000\t{}\t{}\t{ratio:.3}",
+        slim_time.as_micros(),
+        c_time.as_micros()
+    );
+    let limit = performance_budget("host-clock-runtime-ratio", "clock-100000");
+    if ratio > limit {
+        eprintln!("performance gate: host clock SLIM/C ratio {ratio:.3} exceeds {limit:.3}");
+        std::process::exit(1);
+    }
 }
 
 fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {

@@ -23,7 +23,7 @@ test("tutorial embeds only existing production-checked SLIM files", async () => 
     /<!--\s*slim-example:\s*([^|]+?)(?:\s*\|\s*output:\s*(.*?))?\s*-->/g;
   const examples = [...learnSource.matchAll(pattern)];
 
-  assert.equal(examples.length, 4);
+  assert.equal(examples.length, 5);
   for (const match of examples) {
     const sourcePath = match[1].trim();
     const expectedOutput = match[2]?.trim() ?? null;
@@ -117,7 +117,7 @@ test("surface JSON is an exact projection of the accepted ledger", async () => {
 });
 
 test("every rendered reference retains a canonical repository source", async () => {
-  assert.equal(generated.reference.length, 8);
+  assert.equal(generated.reference.length, 9);
   for (const document of generated.reference) {
     await access(path.join(repositoryRoot, document.path));
     assert.ok(document.html.length > 100);
@@ -134,7 +134,7 @@ test("agent summary and dependency boundary remain explicit", async () => {
   ]);
 
   assert.match(llms, /Small Language for Intelligent Machines/);
-  assert.match(llms, /Core 1H bounded-resource evidence complete/);
+  assert.match(llms, /Core 1I safe typed host boundary in progress/);
   assert.match(llms, /\/reference\/surface\.json/);
   assert.doesNotMatch(rootCargo, /website|vinext|react|marked/);
   assert.match(websitePackage, /"marked": "16\.4\.2"/);

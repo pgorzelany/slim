@@ -71,6 +71,9 @@ type arguments are rejected before code generation.
   undefined behavior. `io.read-file` has the single total signature
   `(Bytes, inout (Vec U8)) -> Bool`: success appends the complete file, while
   failure returns `false` and leaves the output unchanged.
+- `io.monotonic-ms() -> I64` requires `io`, allocates nothing, and returns a
+  nonnegative reading that does not decrease within one execution thread. Its
+  epoch is unspecified.
 - Allocation exhaustion is the typed failure outcome of the existing `alloc`
   effect. Generated code propagates it immediately, destroys active regions,
   and handles it once at the executable boundary with exit code 71. Core 0.4
@@ -84,6 +87,9 @@ one canonical name. Core 0 includes checked integer arithmetic and comparison,
 Boolean operations, byte length/access, vector length/access/update, and basic
 I/O required by the compiler. Their concrete signatures are emitted by
 `slimc builtins` and tested as part of the language surface.
+
+The current host-service contract and its deliberately absent capabilities are
+specified in `docs/HOST.md`.
 
 ## Diagnostics
 

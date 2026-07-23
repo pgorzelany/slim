@@ -81,6 +81,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_parallelism_evidence(root, &decisions, &mut errors);
     check_integer_proof_evidence(root, &decisions, &mut errors);
     check_resource_evidence(root, &decisions, &mut errors);
+    check_host_boundary(root, &decisions, &mut errors);
     check_parallelism_application_baseline(root, &decisions, &mut errors);
     check_complete_parallel_blockers(root, &decisions, &mut errors);
     check_total_recurrence_evidence(root, &decisions, &mut errors);
@@ -405,11 +406,119 @@ fn check_resource_evidence(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1H bounded-resource evidence complete")
+    if !status.contains("Status: Core 1I safe typed host boundary in progress")
         || !status.contains("Next milestone: Core 1I safe typed host boundary")
         || !roadmap.contains("Current milestone: Core 1I safe typed host boundary")
+        || !roadmap
+            .contains("## Core 1H: bounded resources and application evidence\n\nStatus: complete")
     {
-        errors.push("Core 1H closure and Core 1I boundary are not canonical".to_owned());
+        errors.push("Core 1H closure and current Core 1I boundary are not canonical".to_owned());
+    }
+}
+
+fn check_host_boundary(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0075") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "language"
+                && decision.primitive == "monotonic-clock"
+                && decision.score >= 40 => {}
+        Some(_) => errors.push(
+            "Core 1I clock requires accepted D0075 monotonic-clock language surface scoring at least 40"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1I monotonic clock decision D0075 is missing".to_owned()),
+    }
+
+    for required in [
+        "docs/HOST.md",
+        "conformance/pass/monotonic_clock.slim",
+        "conformance/fail/missing_clock_effect.slim",
+        "benchmarks/host/clock.slim",
+        "benchmarks/host/clock.c",
+        "benchmarks/results/2026-07-23-core-1i-monotonic-clock.md",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "Core 1I host boundary artifact is missing {required}"
+            ));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface
+        .lines()
+        .filter(|line| line.starts_with("builtin\tio.monotonic-ms\tmonotonic-clock\tD0075"))
+        .count()
+        != 1
+    {
+        errors.push("io.monotonic-ms must have exactly one D0075 surface row".to_owned());
+    }
+    for forbidden in ["builtin\tio.clock", "builtin\tio.now", "builtin\tio.time"] {
+        if surface.contains(forbidden) {
+            errors.push(format!(
+                "monotonic clock alias is forbidden through `{forbidden}`"
+            ));
+        }
+    }
+
+    for (path, required) in [
+        (
+            "selfhost/typing.slim",
+            "(call infer_zero_scalar_builtin tokens expr arguments 3 issues)",
+        ),
+        (
+            "selfhost/effects.slim",
+            "(call syntax/token_equal source tokens callee \"io.monotonic-ms\")",
+        ),
+        ("selfhost/codegen.slim", "(true \"slim_monotonic_ms\")"),
+        ("runtime/slim_rt.h", "int64_t slim_monotonic_ms(void);"),
+        (
+            "runtime/slim_rt.c",
+            "static _Thread_local int64_t slim_last_monotonic_ms = 0;",
+        ),
+    ] {
+        let contents = fs::read_to_string(root.join(path)).unwrap_or_default();
+        if !contents.contains(required) {
+            errors.push(format!(
+                "Core 1I clock implementation {path} is missing `{required}`"
+            ));
+        }
+    }
+
+    let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+    for required in [
+        "monotonic-clock\trun\tconformance/pass/monotonic_clock.slim",
+        "builtin:io.monotonic-ms,effect:io",
+        "missing-clock-effect\tcheck-fail\tconformance/fail/missing_clock_effect.slim",
+    ] {
+        if !manifest.contains(required) {
+            errors.push(format!("Core 1I clock conformance is missing `{required}`"));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    if !tests.contains("monotonic_clock_is_typed_effectful_and_allocation_free")
+        || !tests.contains("generated.matches(\"slim_monotonic_ms()\").count(), 2")
+        || !tests.contains("(allocation-sites 0) (trap-sites 0)")
+    {
+        errors.push("Core 1I clock lacks its durable type/effect/runtime test".to_owned());
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    if !benchmark.contains("\"host\" => run_host_evidence()")
+        || !benchmark.contains("performance_budget(\"host-clock-runtime-ratio\", \"clock-100000\")")
+        || !budgets.contains("host-clock-runtime-ratio\tclock-100000\t2.00\tslim-over-c\tD0075")
+        || !verify.contains("slim-bench -- host")
+    {
+        errors.push("Core 1I clock performance is not a permanent gated comparison".to_owned());
     }
 }
 

@@ -1,6 +1,6 @@
 # Learn SLIM
 
-This is the shortest path through the implemented Core 1G language. Every SLIM
+This is the shortest path through the implemented Core 1I language. Every SLIM
 example below is loaded from a repository fixture and compiled by the website
 test; the website does not keep a second copy.
 
@@ -85,6 +85,15 @@ not introduce a second executable language.
 Every analysis result says whether a fact is exact, bounded, or unknown.
 Reduction is deterministic and idempotent. Equivalence is exact only for the
 finite Boolean domain named in its report.
+
+## Host services
+
+Host calls use ordinary types and explicit effects. The monotonic clock has one
+canonical form, `(call io.monotonic-ms)`, and requires `io`. It allocates
+nothing and returns nondecreasing milliseconds for elapsed-time comparisons;
+it is not wall-clock time.
+
+<!-- slim-example: conformance/pass/monotonic_clock.slim | output: OK -->
 
 ## Automatic parallelism
 

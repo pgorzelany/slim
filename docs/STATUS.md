@@ -1,6 +1,6 @@
 # SLIM Status
 
-Status: Core 1H bounded-resource evidence complete
+Status: Core 1I safe typed host boundary in progress
 Compiler version: 0.0.1
 Next milestone: Core 1I safe typed host boundary
 Updated: 2026-07-23
@@ -30,6 +30,8 @@ yet a stable public release.
   edits.
 - Guarded automatic fork/join execution for the exact Core 1G subset, with
   serial fallback, one parent-owned join, and no nested worker expansion.
+- One effect-gated, allocation-free monotonic millisecond clock with no
+  wall-clock or timer alias.
 
 ## Guarded or bounded
 
@@ -70,13 +72,15 @@ yet a stable public release.
 
 Core 1I through Core 1L are the remaining path to 1.0. D0074 closes Core 1H
 without resource syntax: the 14-application baseline did not justify treating
-structural counts as physical time or bytes. Core 1I now measures and defines
-the smallest typed capability boundary needed for clocks, networking, process,
-and other host services. Every durable mechanism still requires a weighted
-decision, measured cost, diagnostics, specifications, and permanent tests.
+structural counts as physical time or bytes. D0075 begins Core 1I with one
+typed, `io`-effect-gated monotonic clock. Next, representative applications
+must determine whether resource-bearing host services need nominal capability
+values and which networking or process boundary is small enough to keep.
+Every durable mechanism still requires a weighted decision, measured cost,
+diagnostics, specifications, and permanent tests.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,
 `docs/PERFORMANCE.md`, `docs/PARALLELISM.md`, and
-`docs/RESOURCE_BOUNDS.md`. The concise milestone sequence and acceptance
-boundaries are in `ROADMAP.md`.
+`docs/RESOURCE_BOUNDS.md`, and `docs/HOST.md`. The concise milestone sequence
+and acceptance boundaries are in `ROADMAP.md`.

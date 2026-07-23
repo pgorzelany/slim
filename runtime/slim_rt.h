@@ -74,6 +74,7 @@ void *slim_rt_alloc(SlimRegion *region, size_t size);
 void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t new_size);
 
 bool slim_read_file(SlimBytes path, SlimVec *output);
+int64_t slim_monotonic_ms(void);
 
 #if defined(SLIM_PARALLEL)
 bool slim_task_spawn(SlimTask *task, SlimTaskFn function, void *context);

@@ -101,6 +101,37 @@ fn checks_builds_and_runs_native_program() {
 }
 
 #[test]
+fn monotonic_clock_is_typed_effectful_and_allocation_free() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/pass/monotonic_clock.slim");
+    let emitted = Command::new(slimc()).arg(&source).output().unwrap();
+    assert!(emitted.status.success());
+    assert!(emitted.stderr.is_empty());
+    let generated = String::from_utf8(emitted.stdout).unwrap();
+    assert_eq!(generated.matches("slim_monotonic_ms()").count(), 2);
+
+    let analysis = Command::new(slimc())
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success());
+    let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains(
+        "(effects io) (expression-nodes 13) (calls 4) (matches 1) (mutations 0) (recurs 0) (allocation-sites 0) (trap-sites 0)"
+    ));
+
+    let run = Command::new(slimc())
+        .arg("run")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(run.status.success());
+    assert_eq!(run.stdout, b"OK\n");
+    assert!(run.stderr.is_empty());
+}
+
+#[test]
 fn structured_worker_runtime_falls_back_and_prevents_nesting() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let directory = temporary_directory("parallel-runtime");

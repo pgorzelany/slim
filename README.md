@@ -55,11 +55,12 @@ For the executable Core oracle and incremental measurements:
     cargo run --release --bin slim-bench -- compare
     cargo run --release --bin slim-bench -- parallelism
     cargo run --release --bin slim-bench -- resources
+    cargo run --release --bin slim-bench -- host
     cargo run --release --bin slim-bench -- agent
 
 ## Current boundary
 
-SLIM is currently at **Core 1H bounded-resource evidence complete**. The
+SLIM is currently at **Core 1I safe typed host boundary in progress**. The
 self-hosted compiler, portable C11 seed, language surface, bounded analysis,
 reduction tools, memory model, and exact current limitations are summarized in
 [docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;

@@ -48,6 +48,11 @@ without initializing an empty child. Allocation-capable functions keep their
 planned child/caller region, failure label, and reverse destruction path. Five
 warm self-checks now consume 0.03 seconds of user CPU each.
 
+D0075 begins Core 1I with `io.monotonic-ms`. Typing gives it zero arguments and
+an `I64` result, effects require `io`, and code generation maps it to one
+allocation-free runtime call. Pure analysis and automatic parallelism
+conservatively treat the sample as effectful.
+
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction
 plans. The checker executes it from the structured declaration vector, while

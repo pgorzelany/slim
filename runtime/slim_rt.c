@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 struct SlimAllocation {
     struct SlimAllocation *next;
@@ -17,6 +18,7 @@ struct SlimAllocation {
 
 static _Thread_local SlimRegion *slim_root_region = NULL;
 static _Thread_local SlimRegion *slim_active_region = NULL;
+static _Thread_local int64_t slim_last_monotonic_ms = 0;
 
 #if defined(SLIM_PARALLEL)
 static _Thread_local bool slim_task_worker = false;
@@ -322,6 +324,35 @@ bool slim_read_file(SlimBytes path, SlimVec *output) {
     }
     output->len = required;
     return true;
+}
+
+int64_t slim_monotonic_ms(void) {
+    struct timespec now = {0, 0};
+#if defined(CLOCK_MONOTONIC)
+    if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+        return slim_last_monotonic_ms;
+    }
+#else
+    if (timespec_get(&now, TIME_UTC) != TIME_UTC) {
+        return slim_last_monotonic_ms;
+    }
+#endif
+    if (now.tv_sec < 0) {
+        return slim_last_monotonic_ms;
+    }
+    uint64_t seconds = (uint64_t)now.tv_sec;
+    if (seconds > (uint64_t)INT64_MAX / 1000) {
+        slim_last_monotonic_ms = INT64_MAX;
+        return slim_last_monotonic_ms;
+    }
+    int64_t milliseconds = (int64_t)(seconds * 1000);
+    if (now.tv_nsec > 0) {
+        milliseconds += (int64_t)((uint64_t)now.tv_nsec / 1000000);
+    }
+    if (milliseconds > slim_last_monotonic_ms) {
+        slim_last_monotonic_ms = milliseconds;
+    }
+    return slim_last_monotonic_ms;
 }
 
 SlimUnit slim_print_i64(int64_t value) {

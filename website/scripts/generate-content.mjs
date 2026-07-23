@@ -50,6 +50,11 @@ const referenceSources = [
     path: "docs/RESOURCE_BOUNDS.md",
     summary: "Recurrence profiles, exact or unknown call work, and explicit limits.",
   },
+  {
+    id: "host",
+    path: "docs/HOST.md",
+    summary: "Effect-gated host services, typed failure, and capability limits.",
+  },
 ];
 
 const referenceByBasename = new Map(

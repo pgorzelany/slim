@@ -1,6 +1,6 @@
 # SLIM Roadmap
 
-Status: Core 1H bounded-resource evidence complete
+Status: Core 1I safe typed host boundary in progress
 Current milestone: Core 1I safe typed host boundary
 Last updated: 2026-07-23
 
@@ -128,10 +128,12 @@ justify physical time, allocation-volume, or peak-byte contracts.
 
 ## Core 1I: safe typed host boundary
 
-Status: planned
+Status: in progress
 
 Core 1I should make SLIM useful for real operating-system work while preserving
-the default safety model.
+the default safety model. D0075 starts with one allocation-free monotonic clock
+behind the existing statically enforced `io` effect; it does not pre-approve a
+general host handle or further services.
 
 ### Work
 
