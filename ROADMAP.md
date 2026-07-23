@@ -703,6 +703,12 @@ sixteen ordered arms and prints `42`. The producer checkpoint deliberately
 keeps the old case-name reader for one generation; its byte-identical seed is
 1,645,415 C bytes, with 92 fixtures and 2,000 malformed mutations passing.
 
+The tenth slice completes that migration under D0040. Constructors and match
+arms consume their structural case links directly, removing the recursive
+case-name scanner and making variant member lookup independent of case count.
+The producer seed builds the consumer normally, self-validation remains about
+0.22 seconds, and the fixed-point seed shrinks to 1,643,001 C bytes.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project

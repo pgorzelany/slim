@@ -1000,6 +1000,19 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if codegen.contains("(fn find_variant_item") {
         errors.push("self-host code generation restored variant declaration scans".to_owned());
     }
+    if codegen.contains("(fn find_variant_case") {
+        errors.push("self-host code generation restored variant case scans".to_owned());
+    }
+    for required in [
+        "(let case_link I64 (call syntax/token_link tokens expr)",
+        "(let case_link I64 (call syntax/token_link tokens cursor)",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "self-host code generation is missing bounded variant member query `{required}`"
+            ));
+        }
+    }
     for required in [
         "record-wide\trun\tconformance/pass/record_wide.slim",
         "variant-wide\trun\tconformance/pass/variant_wide.slim",

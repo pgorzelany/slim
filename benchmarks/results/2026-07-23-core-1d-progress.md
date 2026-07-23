@@ -161,6 +161,19 @@ of user CPU time, all 92 fixtures plus 2,000 malformed mutations pass, and the
 fixed-point seed shrinks to 1,645,415 C bytes. The case-link consumer is recorded
 in the next checkpoint.
 
+## Bounded variant members
+
+D0040 consumes the case links published by D0039 for both construction and
+match-arm emission. The recursive textual case scanner is gone, making those
+queries independent of the number and spelling length of cases. The staged
+producer seed builds the consumer through the normal bootstrap path.
+
+The sixteen-case fixture and existing local-match fixture compile and print
+`42`; self-validation remains about 0.22 seconds of user CPU time. All 92
+fixtures and 2,000 malformed mutations pass, and the byte-identical seed shrinks
+again to 1,643,001 C bytes. Record-field lookup remains the only aggregate
+member scan and retains D0038's explicit negative result.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share
