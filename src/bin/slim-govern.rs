@@ -206,6 +206,7 @@ fn check_performance_architecture(
         "check-exponent/generated-named-type-parameters",
         "check-exponent/generated-owned-transfers",
         "emit-exponent/generated-declarations",
+        "emit-exponent/generated-computed-arguments",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
         "incremental-exponent/wide-private-body",
@@ -280,6 +281,8 @@ fn check_performance_architecture(
         "performance_budget(\"check-exponent\", \"generated-nested-bindings\")",
         "performance_budget(\"check-exponent\", \"generated-named-type-parameters\")",
         "performance_budget(\"check-exponent\", \"generated-owned-transfers\")",
+        "performance_budget(\"emit-exponent\", \"generated-computed-arguments\")",
+        "fn generated_computed_argument_program(calls: usize)",
         "fn generated_named_type_program(functions: usize)",
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
@@ -865,6 +868,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     }
     for required in [
+        "(module codegen \"codegen.slim\" (imports effects memory syntax text typing) (exports emit_program))",
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
         "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
@@ -1287,6 +1291,8 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         root.join("selfhost/effects.slim"),
         root.join("selfhost/memory.slim"),
         root.join("selfhost/codegen.slim"),
+        root.join("selfhost/project.slim"),
+        root.join("selfhost/slimc.slim"),
     ];
     let joined = sources
         .iter()
@@ -1308,7 +1314,15 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call syntax/token_link tokens type_index)",
         "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
         "(make typing/Checked (status status) (view view) (issues issues) (plan plan))",
-        "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (plan memory/Plan)",
+        "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (plan memory/Plan)",
+        "(fn fact_type_index",
+        "(call typing/fact_type facts expr)",
+        "(call fact_type_index facts argument)",
+        "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "(get view facts)",
+        "(get prepared facts)",
+        "(call codegen/emit_program input tokens facts plan output)",
+        "(call codegen/emit_program source tokens facts plan output)",
         "(get function_plan function)",
         "(get function_plan local_region)",
         "(get function_plan recursive)",
@@ -1334,6 +1348,8 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn call_requires_effect",
         "(fn builtin_call_allocates",
         "(fn call_allocates",
+        "(fn builtin_argument_type",
+        "(fn parameter_type_index",
         "(call memory/function_has_alloc_effect source tokens item)",
         "(call memory/function_uses_local_region source tokens item)",
         "(fn contains_atom",

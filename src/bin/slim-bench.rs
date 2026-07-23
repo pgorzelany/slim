@@ -181,6 +181,61 @@ fn run_performance() {
         std::process::exit(1);
     }
 
+    println!("computed_arguments\tsource_bytes\temit_us\temit_ns_per_byte");
+    let mut first_computed = None;
+    let mut last_computed = None;
+    for size in nested_sizes {
+        let source = generated_computed_argument_program(*size);
+        let path = directory
+            .path
+            .join(format!("computed-arguments-{size}.slim"));
+        fs::write(&path, &source).expect("write computed-argument scaling source");
+        let warmup = Command::new(&compiler)
+            .arg(&path)
+            .output()
+            .expect("run computed-argument scaling warmup");
+        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
+            fail_output("computed-argument scaling warmup", &warmup);
+        }
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg(&path),
+                "SLIM computed-argument emit",
+            );
+            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
+                fail_output("computed-argument scaling emit", &output);
+            }
+            black_box(&output.stdout);
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_computed.is_none() {
+            first_computed = Some((*size, elapsed));
+        }
+        last_computed = Some((*size, elapsed));
+    }
+    let (first_size, first_time) =
+        first_computed.expect("computed-argument series has a first sample");
+    let (last_size, last_time) = last_computed.expect("computed-argument series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("emit-exponent", "generated-computed-arguments");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: computed-argument emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} calls"
+        );
+        std::process::exit(1);
+    }
+
     println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
     let mut first_named = None;
     let mut last_named = None;
@@ -1017,6 +1072,22 @@ fn generated_nested_program(bindings: usize) -> String {
         source.push(')');
     }
     source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call deep 0)))\n");
+    source
+}
+
+fn generated_computed_argument_program(calls: usize) -> String {
+    let mut source = String::with_capacity(calls * 16);
+    source.push_str(
+        "(module computed-arguments (fn identity ((value I64)) I64 (effects) value) (fn chain ((seed I64)) I64 (effects) ",
+    );
+    for _ in 0..calls {
+        source.push_str("(call identity ");
+    }
+    source.push_str("seed");
+    for _ in 0..calls {
+        source.push(')');
+    }
+    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call chain 0)))\n");
     source
 }
 

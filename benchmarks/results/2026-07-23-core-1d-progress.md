@@ -429,3 +429,26 @@ milliseconds for named-type parameters and 4.222, 6.752, 11.723, and 22.265
 milliseconds for nested bindings. The complete gate passes all performance
 budgets, sanitizers, allocation-failure injection, native challenges, and
 deterministic bootstrap verification.
+
+## Typed-fact code generation
+
+D0053 threads the checked dense fact vector through ordinary recursive C
+emission. Computed call arguments and recursive-transfer temporaries query their
+expression token directly; the duplicate backend built-in-argument table and
+parameter-type reader are removed. Representative nested-call, recurrence,
+storage, aggregate, lifetime, local-variant, and project programs produce C
+byte-identical to the preceding compiler.
+
+The permanent `generated-computed-arguments` series emits 125, 250, 500, and
+1,000 geometrically nested calls. The first candidate run measured 2.992,
+5.106, 12.157, and 37.695 milliseconds, an endpoint exponent of 1.218 under the
+1.25 budget. The preceding compiler measured 3.138, 5.446, 12.301, and 38.089
+milliseconds on the same workload. Recursive fact threading therefore preserves
+the approximately 0.10-second self-check boundary and does not conceal a
+same-workload latency regression.
+The portable fixed point is 1,623,034 generated C bytes with SHA-256
+`f6c123aa537f28e78e62d82f12f391d2ec684c7b318929d51d4036d893ebdba2`.
+The authoritative release run measures 2.958, 5.281, 12.113, and 38.210
+milliseconds, an endpoint exponent of 1.230. The complete gate passes all
+performance budgets, sanitizers, allocation-failure injection, native
+challenges, and deterministic bootstrap verification.

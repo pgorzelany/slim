@@ -21,9 +21,10 @@ derives linked lexical bindings, validates all declared and nested expression
 types, and records structured type facts and issues. Expression facts form one
 dense token-indexed table with a guarded constant-time query. The checker
 consumes that view now, standalone emission retains the checked artifact, and
-effect and ownership call resolution reuse its declaration links. Remaining
-code-generation queries must consume the same bounded facts before Core 1D is
-frozen.
+effect and ownership call resolution reuse its declaration links. Ordinary C
+emission consumes the same table for computed call and recursive-transfer
+temporaries. Remaining aggregate, match, and per-call allocation queries must
+cross the same checked boundary before Core 1D is frozen.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

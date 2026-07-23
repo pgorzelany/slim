@@ -795,8 +795,20 @@ the permanent source-shape scaling workloads exercise the lookup. This is the
 bounded storage boundary; ordinary code-generation consumers remain the next
 migration cut. The byte-identical fixed-point seed is 1,625,465 C bytes.
 
-This is not yet a completed milestone. Code generation still rediscovers some
-semantic facts from tokens. All accepted type, effect, match, recurrence, and
+The twenty-second slice adopts D0053's typed-fact code generation. The dense
+fact vector crosses the ordinary emission boundary and is threaded explicitly
+through the recursive emitter. Computed call and `recur` temporaries query their
+checked expression types directly; the backend's partial built-in-argument and
+parameter-type reconstruction functions are removed. A permanent geometric
+computed-argument emit workload stays under a 1.25 exponent budget and shows no
+same-workload latency regression against the preceding compiler. Removing the
+duplicate tables shrinks the byte-identical fixed-point seed to 1,623,034 C
+bytes.
+
+This is not yet a completed milestone. Code generation still uses explicit
+declared/contextual types for some aggregate and match temporaries and derives
+per-call allocation boundaries from canonical effect queries. All accepted
+type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.
 Core 1D acceptance requires bounded expression-fact lookup, removal of the
 remaining redundant ordinary-generation analysis, complete project
