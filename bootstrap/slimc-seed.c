@@ -1,5 +1,6 @@
 /* generated deterministically by self-hosted slimc */
 #include "slim_rt.h"
+_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, "SLIM runtime ABI mismatch");
 #include <string.h>
 
 typedef struct Slim_type_analysis_95BindingFact Slim_type_analysis_95BindingFact;
@@ -17115,7 +17116,7 @@ slim_v_marker = (SlimUnit){0};
 (void)slim_v_marker;
 {
 SlimUnit slim_v_header = {0};
-slim_v_header = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n#include <string.h>\n\n", (int64_t)(sizeof("/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n#include <string.h>\n\n") - 1)), slim_allocation_region);
+slim_v_header = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");\n#include <string.h>\n\n", (int64_t)(sizeof("/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");\n#include <string.h>\n\n") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_header;
 {

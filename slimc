@@ -5,16 +5,16 @@ slim_root=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 slim_compiler="$slim_root/build/toolchain/slimc"
 slim_cc=${CC:-cc}
 slim_message_format=human
-
-if ! test -x "$slim_compiler"; then
-    "$slim_root/bootstrap.sh" >&2
-fi
+slim_version=$(sed -n '1p' "$slim_root/VERSION")
+case "$slim_version" in
+    ''|*[!0-9.]*|.*|*.) echo "slimc: invalid VERSION" >&2; exit 1 ;;
+esac
 
 slim_tmp=$(mktemp -d "${TMPDIR:-/tmp}/slimc.XXXXXX")
 trap 'rm -rf "$slim_tmp"' EXIT HUP INT TERM
 
 slim_usage() {
-    echo "SLIM compiler 0.0.1 (self-hosted)"
+    echo "SLIM compiler $slim_version (self-hosted)"
     echo
     echo "usage:"
     echo "  slimc [--message-format=human|json] check SOURCE [--jobs N]"
@@ -31,6 +31,8 @@ slim_usage() {
     echo "  slimc interfaces PROJECT [--jobs N] -o DIRECTORY"
     echo "  slimc runtime DIRECTORY"
     echo "  slimc builtins"
+    echo "  slimc --version"
+    echo "  slimc --help"
 }
 
 slim_render_diagnostics() {
@@ -63,7 +65,7 @@ slim_render_diagnostics() {
                 sub(/:.*/, "", start)
                 end = location
                 sub(/^[^:]*:/, "", end)
-                printf "{\"code\":\"%s\",\"severity\":\"error\",\"message\":\"rejected by the SLIM compiler\",\"file\":\"%s\",\"span\":{\"start\":%s,\"end\":%s,\"line\":0,\"column\":0},\"labels\":[],\"notes\":[],\"fixes\":[]}\n", escape(code), escape(file), start, end
+                printf "{\"schema\":1,\"code\":\"%s\",\"severity\":\"error\",\"message\":\"rejected by the SLIM compiler\",\"file\":\"%s\",\"span\":{\"start\":%s,\"end\":%s,\"line\":0,\"column\":0},\"labels\":[],\"notes\":[],\"fixes\":[]}\n", escape(code), escape(file), start, end
             }
         ' "$slim_diagnostics" >&2
     fi
@@ -157,11 +159,20 @@ slim_command=$1
 shift
 
 case "$slim_command" in
-    help|--help)
+    --help|--version|builtins|runtime) ;;
+    *)
+        if ! test -x "$slim_compiler"; then
+            "$slim_root/bootstrap.sh" >&2
+        fi
+        ;;
+esac
+
+case "$slim_command" in
+    --help)
         slim_usage
         ;;
-    version|--version)
-        echo "slimc 0.0.1 (self-hosted)"
+    --version)
+        echo "slimc $slim_version (self-hosted)"
         ;;
     builtins)
         awk -F '\t' '$1 == "builtin" { print $2 }' "$slim_root/design/surface.tsv"

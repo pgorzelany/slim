@@ -1,90 +1,61 @@
 # SLIM Status
 
-Status: Core 1K semantic quality and reduction complete
-Compiler version: 0.0.1
-Next milestone: Core 1L compatibility and release stabilization
+Status: Core 1L release stabilization in progress
+Compiler version: 1.0.0
+Next milestone: SLIM 1.0 release acceptance
 Updated: 2026-07-23
 
-SLIM is experimental. The production compiler is written in SLIM, bootstraps
-from a checked-in portable C11 seed, and reproduces that seed byte for byte.
-The language and tooling are usable for the maintained examples, conformance
-corpus, compiler project, and benchmark applications, but the surface is not
-yet a stable public release.
+SLIM is the Small Language for Intelligent Machines: a compact systems
+language for AI-generated programs. Its production compiler is written in
+SLIM, bootstraps from a checked-in portable C11 seed, and reproduces that seed
+byte for byte. Core 1H through 1K are accepted; Core 1L is freezing and
+packaging the result.
 
 ## Implemented
 
-- One canonical S-expression source form with a deterministic formatter.
-- Strong static types, explicit `alloc`, `io`, and `partial` effects, checked
-  arithmetic, checked indexing, records, variants, and exhaustive matching.
-- Affine ownership for aggregates, immutable bindings by default, exclusive
-  non-escaping `inout` borrows, and deterministic destruction.
-- Compiler-selected regions, typed allocation failure, and no tracing garbage
-  collector or reference counting.
-- Deterministic C11 generation, native build and run commands, stable
-  diagnostics, JSON diagnostics, and allocation-failure testing.
-- Deterministic multi-module projects, canonical interfaces, incremental
-  declaration reuse, validated persistent caches, and bounded parallel project
-  checking.
-- Direct source reduction, replayed reduction proofs, named quality cost
-  vectors, exact Boolean-product or single-byte equivalence with accepted-state
-  counts and counterexamples, and versioned structural edits.
-- Guarded automatic fork/join execution for the exact Core 1G subset, with
-  serial fallback, one parent-owned join, and no nested worker expansion.
-- One explicit leading two-call `fork` for independent bounded host work.
-  Tasks have isolated allocation regions, one lexical join, deterministic
-  result installation, serial fallback, and no locks or detached lifetime.
-- One effect-gated, allocation-free monotonic millisecond clock with no
-  wall-clock or timer alias.
-- One bounded whole TCP byte exchange with numeric addresses, explicit response
-  and timeout bounds, typed failure, and no source handle.
+- One canonical S-expression source form; strong static types; explicit
+  `alloc`, `io`, and `partial` effects; checked arithmetic and indexing.
+- Records, variants, exhaustive matches, affine ownership, immutable bindings,
+  exclusive non-escaping `inout` borrows, compiler-selected regions, and
+  deterministic destruction without tracing garbage collection.
+- Deterministic C11 generation, native build/run, stable diagnostics, JSON
+  schema 1, typed allocation failure, and reproducible self-hosting.
+- Explicit deterministic projects, canonical interfaces, validated caches,
+  declaration reuse, and bounded parallel project checking.
+- Bounded analysis schema 7, named cost vectors, exact Boolean-product or
+  single-byte equivalence, replayed reduction proofs, and structural edits.
+- Guarded automatic fork/join for proven pure work and one lexical two-call
+  `fork` for bounded host work, both with serial fallback and no locks or
+  detached tasks.
+- One monotonic millisecond clock and one bounded whole TCP exchange with
+  numeric addresses, explicit limits, typed failure, and no source handle.
 
-## Guarded or bounded
+## Deliberate bounds
 
-- Integer proofs use a fixed `-1,000,000,000..1,000,000,000` domain and retain
-  at most 64 refinements.
-- Parallel analysis retains at most 64 functions and 4,096 call edges, resolves
-  the graph in at most 64 passes, and prints at most 64 selected sites.
-- Exact finite equivalence supports zero-to-eight-Boolean products or one byte,
-  not arbitrary programs.
-- Reduction is a small deterministic, terminating, idempotent rewrite set, not
-  a globally optimal normalizer.
-- Per-binding lifetime planning retains at most 64 values before conservatively
-  falling back to a function boundary.
-- Automatic execution currently requires two adjacent leading direct calls
-  with atomic captures, complete reorder-safety and totality proofs, and at
-  least 1,000,000 exact recurrence iterations per task. Other sites stay
-  serial.
-- Analysis schema 7 retains at most 16 canonical recurrence profiles and
-  prints at most 64 profiled calls. Literal controllers may have exact
-  iteration work; nonliteral controllers and unsupported recurrences remain
-  unknown.
+- Integer proofs use a fixed `-1,000,000,000..1,000,000,000` domain; retained
+  proof, lifetime, graph, report, and rewrite tables have documented limits.
+- Exact equivalence covers at most eight Boolean parameters or one `U8`.
+  Reduction is a small terminating, idempotent rule set, not global
+  optimization.
+- Automatic parallel execution requires two leading independent, total,
+  reorder-safe calls with exact profitable work. Explicit `fork` admits two
+  checked bounded leaf calls and joins both before continuing.
 
 ## Not implemented
 
-- Futures, async/await, task handles, cancellation state, locks, channels,
-  detached tasks, or a general concurrency scheduler.
-- DNS, TLS, raw socket handles, timers, foreign-function, or unsafe source
-  interfaces.
-- General profitable automatic parallelization, a worker pool, cancellation,
-  or arbitrary capture and result lowering.
-- General termination proofs, general program equivalence, inferred application
-  invariants, or a globally optimal reduction algorithm.
-- Source syntax for physical resource bounds or local recovery from allocation
-  failure.
-- A native backend beyond the portable C11 backend, release packages, or a
-  compatibility-stable 1.0 surface.
+Futures, async/await, task handles, cancellation, locks, channels, detached
+tasks, DNS, TLS, raw host handles, wall-clock time, general FFI, unsafe source,
+general termination/equivalence proofs, global optimal reduction, source
+resource contracts, LLVM, and a second executable IR are absent.
 
-## Next boundary
+## Release boundary
 
-Core 1L is the remaining boundary before 1.0. D0080 and D0081 close Core 1K
-without language surface: a checked pure `subject` can identify an exact
-accepted subset of a Boolean product or byte domain, quality uses named vectors
-rather than a universal score, and three atom-only reductions strictly improve
-the named token cost. Arbitrary equivalence, inferred invariants, and global
-optimality remain out of scope.
+Core 1L adds no language feature. D0082 freezes the source/project surface,
+diagnostics, tooling schemas, compatibility policy, and runtime ABI. Remaining
+acceptance work is a reproducible source archive, clean-install validation,
+full release gates, and publication of the matching canonical website.
 
-The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
-`docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,
-`docs/PERFORMANCE.md`, `docs/PARALLELISM.md`, `docs/RESOURCE_BOUNDS.md`, and
-`docs/HOST.md`. The concise milestone sequence
-and acceptance boundaries are in `ROADMAP.md`.
+The normative language, compatibility, diagnostics, and release contracts are
+`docs/CORE.md`, `docs/COMPATIBILITY.md`, `docs/DIAGNOSTICS.md`, and
+`docs/RELEASE.md`. Detailed subsystem evidence remains in the other documents,
+decisions, and dated benchmark results.

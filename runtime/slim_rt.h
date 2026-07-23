@@ -1,6 +1,8 @@
 #ifndef SLIM_RT_H
 #define SLIM_RT_H
 
+#define SLIM_RUNTIME_ABI_VERSION 1
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>

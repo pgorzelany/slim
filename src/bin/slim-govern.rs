@@ -90,11 +90,236 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_parallel_execution_boundary(root, &decisions, &mut errors);
     check_core_1j_acceptance(root, &decisions, &mut errors);
     check_core_1k_acceptance(root, &decisions, &mut errors);
+    check_core_1l_contracts(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_core_1l_contracts(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0082") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "compatibility"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1L requires accepted primitive-free compatibility decision D0082 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1L compatibility decision D0082 is missing".to_owned()),
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0082") {
+        errors.push("D0082 must not add Core language surface".to_owned());
+    }
+
+    for required in [
+        "VERSION",
+        "design/release-contract.tsv",
+        "docs/COMPATIBILITY.md",
+        "docs/DIAGNOSTICS.md",
+        "docs/RELEASE.md",
+        "release/manifest.txt",
+        "scripts/package-release.sh",
+        "scripts/verify-release.sh",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("Core 1L contract artifact is missing {required}"));
+        }
+    }
+
+    let version = fs::read_to_string(root.join("VERSION")).unwrap_or_default();
+    let version = version.trim();
+    if version != "1.0.0" {
+        errors.push(format!(
+            "Core 1L VERSION must be exactly 1.0.0, found `{version}`"
+        ));
+    }
+    for (path, needle) in [
+        ("Cargo.toml", "version = \"1.0.0\""),
+        ("Cargo.lock", "version = \"1.0.0\""),
+        ("docs/STATUS.md", "Compiler version: 1.0.0"),
+    ] {
+        let contents = fs::read_to_string(root.join(path)).unwrap_or_default();
+        if !contents.contains(needle) {
+            errors.push(format!(
+                "Core 1L version drift: {path} is missing `{needle}`"
+            ));
+        }
+    }
+
+    let launcher = fs::read_to_string(root.join("slimc")).unwrap_or_default();
+    for required in [
+        "slim_version=$(sed -n '1p' \"$slim_root/VERSION\")",
+        "--version)",
+        "--help)",
+        "\\\"schema\\\":1",
+    ] {
+        if !launcher.contains(required) {
+            errors.push(format!("Core 1L launcher is missing `{required}`"));
+        }
+    }
+    for forbidden in ["0.0.1", "help|--help", "version|--version"] {
+        if launcher.contains(forbidden) {
+            errors.push(format!(
+                "Core 1L launcher retains duplicate or stale spelling `{forbidden}`"
+            ));
+        }
+    }
+
+    let runtime = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    if !runtime.contains("#define SLIM_RUNTIME_ABI_VERSION 1")
+        || !codegen.contains("SLIM_RUNTIME_ABI_VERSION == 1")
+        || !codegen.contains("SLIM runtime ABI mismatch")
+    {
+        errors.push("Core 1L generated C/runtime ABI 1 contract is incomplete".to_owned());
+    }
+
+    let expected_contracts = [
+        "source-surface\t1\tstable-major\tdesign/surface.tsv",
+        "project-manifest\t1\tstable-major\tdocs/PROJECTS.md",
+        "project-interface\t1\tstable-major\tdocs/PROJECTS.md",
+        "persistent-cache\t1\trebuildable\tselfhost/cache.slim",
+        "diagnostic-codes\t1\tstable-major\tdocs/DIAGNOSTICS.md",
+        "diagnostic-json\t1\tstable-major\tdocs/DIAGNOSTICS.md",
+        "analysis\t7\tversioned-tooling\tdocs/QUALITY.md",
+        "cost-vector\t1\tversioned-tooling\tdocs/QUALITY.md",
+        "equivalence\t2\tversioned-tooling\tdocs/QUALITY.md",
+        "reduction-proof\t2\tversioned-tooling\tdocs/REDUCTION.md",
+        "reduction-verification\t1\tversioned-tooling\tdocs/REDUCTION.md",
+        "structural-edit\t1\tversioned-tooling\tdocs/QUALITY.md",
+        "runtime-abi\t1\texact-match\truntime/slim_rt.h",
+        "c-backend\t1\tstable-major\tdocs/CORE.md",
+    ];
+    let contract = fs::read_to_string(root.join("design/release-contract.tsv")).unwrap_or_default();
+    let rows: Vec<_> = contract
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect();
+    if rows != expected_contracts {
+        errors.push(
+            "design/release-contract.tsv differs from the frozen SLIM 1.0 contract".to_owned(),
+        );
+    }
+    for row in rows {
+        let Some(path) = row.split('\t').nth(3) else {
+            continue;
+        };
+        if !root.join(path).is_file() {
+            errors.push(format!(
+                "release contract cites missing canonical source `{path}`"
+            ));
+        }
+    }
+
+    let release_manifest =
+        fs::read_to_string(root.join("release/manifest.txt")).unwrap_or_default();
+    let release_roots: Vec<_> = release_manifest
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .collect();
+    let expected_release_roots = [
+        "Cargo.lock",
+        "Cargo.toml",
+        "DESIGN.md",
+        "README.md",
+        "ROADMAP.md",
+        "VERSION",
+        "benchmarks",
+        "bootstrap",
+        "bootstrap.sh",
+        "conformance",
+        "design",
+        "docs",
+        "examples",
+        "release",
+        "runtime",
+        "scripts",
+        "selfhost",
+        "slimc",
+        "src",
+        "tests",
+    ];
+    if release_roots != expected_release_roots {
+        errors.push("release/manifest.txt differs from the frozen source package".to_owned());
+    }
+
+    let packager = fs::read_to_string(root.join("scripts/package-release.sh")).unwrap_or_default();
+    for required in [
+        "status --porcelain --untracked-files=all",
+        "SOURCE-MANIFEST.sha256",
+        "touch -t 200001010000.00",
+        "--format ustar",
+        "--uid 0 --gid 0 --uname root --gname root",
+        "gzip -n -9",
+    ] {
+        if !packager.contains(required) {
+            errors.push(format!("Core 1L packager is missing `{required}`"));
+        }
+    }
+    let release_test =
+        fs::read_to_string(root.join("scripts/verify-release.sh")).unwrap_or_default();
+    for required in [
+        "cmp -s \"$slim_archive\" \"$slim_second\"",
+        "SOURCE-MANIFEST.sha256",
+        "./bootstrap.sh",
+        "./slimc run benchmarks/challenges/sieve/program.slim",
+        "mismatched runtime ABI compiled",
+    ] {
+        if !release_test.contains(required) {
+            errors.push(format!(
+                "Core 1L clean-package test is missing `{required}`"
+            ));
+        }
+    }
+
+    let diagnostics = fs::read_to_string(root.join("docs/DIAGNOSTICS.md")).unwrap_or_default();
+    let compatibility = fs::read_to_string(root.join("docs/COMPATIBILITY.md")).unwrap_or_default();
+    for required in [
+        "Schema: 1",
+        "half-open primary byte span",
+        "conformance/manifest.tsv",
+        "conformance/projects/manifest.tsv",
+    ] {
+        if !diagnostics.contains(required) {
+            errors.push(format!(
+                "Core 1L diagnostic contract is missing `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "design/surface.tsv",
+        "design/project-semantics.tsv",
+        "no second spelling",
+        "runtime ABI 1",
+        "new major version",
+    ] {
+        if !compatibility.contains(required) {
+            errors.push(format!(
+                "Core 1L compatibility contract is missing `{required}`"
+            ));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "exposes_one_canonical_version_and_help_spelling",
+        "generated_c_requires_the_exact_runtime_abi",
+        "{\\\"schema\\\":1,\\\"code\\\":",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!("Core 1L permanent tests are missing `{required}`"));
+        }
+    }
 }
 
 fn check_core_1k_acceptance(
@@ -186,8 +411,8 @@ fn check_core_1k_acceptance(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1K semantic quality and reduction complete")
-        || !status.contains("Next milestone: Core 1L compatibility and release stabilization")
+    if !status.contains("Status: Core 1L release stabilization in progress")
+        || !status.contains("Next milestone: SLIM 1.0 release acceptance")
         || !roadmap.contains("Current milestone: Core 1L compatibility and release stabilization")
         || !roadmap.contains("## Core 1K: semantic quality and reduction\n\nStatus: complete")
     {

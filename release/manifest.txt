@@ -1,0 +1,21 @@
+# Tracked repository paths included in the SLIM source release.
+Cargo.lock
+Cargo.toml
+DESIGN.md
+README.md
+ROADMAP.md
+VERSION
+benchmarks
+bootstrap
+bootstrap.sh
+conformance
+design
+docs
+examples
+release
+runtime
+scripts
+selfhost
+slimc
+src
+tests

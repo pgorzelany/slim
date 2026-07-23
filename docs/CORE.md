@@ -1,8 +1,8 @@
-# SLIM Core 0
+# SLIM 1.0 Core language
 
-Status: implemented Core 1J language surface
+Status: stable for major version 1
 
-SLIM Core is the only compilable source representation. Whitespace and comments
+SLIM source is the only compilable program representation. Whitespace and comments
 are insignificant, and `slimc fmt` emits the unique canonical layout.
 
 ## Lexical grammar
@@ -28,7 +28,7 @@ type     = Unit | Bool | U8 | I64 | Bytes | NAME | (Vec TYPE)
          | (Arena TYPE) | (Id TYPE)
 ```
 
-The bootstrap expression forms are literals, names, `let`, `call`, `make`,
+The expression forms are literals, names, `let`, `call`, `make`,
 `get`, `case`, `match`, `recur`, `set`, and `fork`. Each maps directly to one
 AST form; there is no desugaring layer.
 
@@ -91,7 +91,7 @@ type arguments are rejected before code generation.
 ## Built-in calls
 
 Built-in calls use the same `call` form as ordinary functions and have exactly
-one canonical name. Core 0 includes checked integer arithmetic and comparison,
+one canonical name. SLIM 1.0 includes checked integer arithmetic and comparison,
 Boolean operations, byte length/access, vector length/access/update, and basic
 I/O required by the compiler. Their concrete signatures are emitted by
 `slimc builtins` and tested as part of the language surface.
@@ -114,4 +114,5 @@ checked edit emit ordinary canonical `.slim` source and cannot change which
 forms the compiler accepts. Canonical SLIM remains the only compilable
 representation; derived facts, proofs, patches, and control-flow views have no
 independent executable syntax or type system. The bounded contracts are
-specified in `docs/REDUCTION.md` and `docs/QUALITY.md`.
+specified in `docs/REDUCTION.md` and `docs/QUALITY.md`; compatibility and
+diagnostic promises are in `docs/COMPATIBILITY.md` and `docs/DIAGNOSTICS.md`.

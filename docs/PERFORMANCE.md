@@ -1,6 +1,6 @@
 # Core 1C performance contract
 
-Status: permanent contract through Core 1J
+Status: permanent SLIM 1.0 contract
 
 Performance tests are permanent compatibility evidence. They are not deleted
 after an optimization lands, and a result file never replaces an executable

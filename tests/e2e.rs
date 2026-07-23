@@ -66,6 +66,94 @@ fn report_parentheses_are_balanced(report: &[u8]) -> bool {
 }
 
 #[test]
+fn exposes_one_canonical_version_and_help_spelling() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let version = fs::read_to_string(root.join("VERSION")).unwrap();
+    let reported = Command::new(slimc()).arg("--version").output().unwrap();
+    assert!(reported.status.success());
+    assert_eq!(
+        String::from_utf8(reported.stdout).unwrap(),
+        format!("slimc {} (self-hosted)\n", version.trim())
+    );
+
+    let help = Command::new(slimc()).arg("--help").output().unwrap();
+    assert!(help.status.success());
+    let help = String::from_utf8(help.stdout).unwrap();
+    assert!(help.starts_with(&format!("SLIM compiler {} (self-hosted)\n", version.trim())));
+    assert!(help.contains("slimc --version"));
+    assert!(help.contains("slimc --help"));
+
+    for alias in ["version", "help"] {
+        let rejected = Command::new(slimc()).arg(alias).output().unwrap();
+        assert!(
+            !rejected.status.success(),
+            "{alias} became a second spelling"
+        );
+    }
+}
+
+#[test]
+fn generated_c_requires_the_exact_runtime_abi() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("runtime-abi");
+    let generated = directory.join("hello.c");
+    let emitted = Command::new(slimc())
+        .arg("emit-c")
+        .arg(root.join("examples/hello.slim"))
+        .arg("-o")
+        .arg(&generated)
+        .output()
+        .unwrap();
+    assert!(
+        emitted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&emitted.stderr)
+    );
+    let source = fs::read_to_string(&generated).unwrap();
+    assert!(
+        source.contains(
+            "_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");"
+        )
+    );
+
+    let matching = Command::new(native_compiler())
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg("-c")
+        .arg(&generated)
+        .arg("-o")
+        .arg(directory.join("matching.o"))
+        .output()
+        .unwrap();
+    assert!(
+        matching.status.success(),
+        "{}",
+        String::from_utf8_lossy(&matching.stderr)
+    );
+
+    let header = fs::read_to_string(root.join("runtime/slim_rt.h"))
+        .unwrap()
+        .replace(
+            "#define SLIM_RUNTIME_ABI_VERSION 1",
+            "#define SLIM_RUNTIME_ABI_VERSION 2",
+        );
+    fs::write(directory.join("slim_rt.h"), header).unwrap();
+    let mismatched = Command::new(native_compiler())
+        .args(["-std=c11", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(&directory)
+        .arg("-c")
+        .arg(&generated)
+        .arg("-o")
+        .arg(directory.join("mismatched.o"))
+        .output()
+        .unwrap();
+    assert!(!mismatched.status.success());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn checks_builds_and_runs_native_program() {
     let directory = temporary_directory("native");
     let source = write_source(
@@ -711,7 +799,11 @@ fn returns_structured_multiple_diagnostics() {
     let stderr = String::from_utf8(output.stderr).unwrap();
     let lines: Vec<_> = stderr.lines().collect();
     assert!(lines.len() >= 2, "{stderr}");
-    assert!(lines.iter().all(|line| line.starts_with("{\"code\":")));
+    assert!(
+        lines
+            .iter()
+            .all(|line| line.starts_with("{\"schema\":1,\"code\":"))
+    );
     assert!(stderr.contains("E0314"));
     assert!(stderr.contains("E0336"));
     fs::remove_dir_all(directory).unwrap();

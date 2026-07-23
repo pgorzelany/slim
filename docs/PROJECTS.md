@@ -1,6 +1,6 @@
 # SLIM deterministic projects
 
-Status: implemented in Core 0.2
+Status: stable project schema 1
 
 Core 0.2 combines existing Core modules into one executable without adding a
 second module form or source-level import/export declarations. One explicit

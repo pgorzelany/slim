@@ -1,6 +1,6 @@
 # Learn SLIM
 
-This is the shortest path through the implemented Core 1J language. Every SLIM
+This is the shortest path through SLIM 1.0. Every SLIM
 example below is loaded from a repository fixture and compiled by the website
 test; the website does not keep a second copy.
 
@@ -84,7 +84,7 @@ not introduce a second executable language.
 
 Every analysis result says whether a fact is exact, bounded, or unknown.
 Reduction is deterministic and idempotent. Equivalence is exact only for the
-finite Boolean domain named in its report.
+finite Boolean-product or single-byte domain named in its report.
 
 ## Host services
 
@@ -104,11 +104,11 @@ instead of exposing a failed handle, and leaves output unchanged on failure.
 
 ## Structured parallelism
 
-Core 1G may automatically fork two adjacent computations when it proves them
+The compiler may automatically fork two adjacent computations when it proves them
 independent, total, reorder-safe, supported by lowering, and profitable.
 Unknown or too-small work remains serial.
 
-Core 1J adds one explicit wrapper for independent bounded host calls. It reuses
+SLIM also has one explicit wrapper for independent bounded host calls. It reuses
 ordinary `let` and `call`; there are no futures, task handles, locks, or
 detached work. One call may run on a child, the other on the parent, and both
 join before the continuation. Spawn failure executes the same calls serially.

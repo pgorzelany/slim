@@ -1,6 +1,6 @@
 [package]
 name = "slim"
-version = "0.0.1"
+version = "1.0.0"
 edition = "2024"
 description = "Bootstrap-independent verification and benchmark tools for SLIM"
 license = "Apache-2.0 OR MIT"
