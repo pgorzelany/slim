@@ -17,10 +17,11 @@ fn main() {
         "project" => run_project(),
         "compare" => run_comparison(),
         "parallelism" => run_parallelism_evidence(),
+        "parallel-runtime" => run_parallel_runtime(),
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -772,6 +773,85 @@ fn run_comparison() {
                 compile_time.as_secs_f64() * 1_000.0,
                 runtime.as_micros()
             );
+        }
+    }
+}
+
+fn run_parallel_runtime() {
+    let quick = has_quick_flag();
+    let samples = if quick { 7 } else { 15 };
+    let iterations: &[usize] = if quick {
+        &[0, 10_000, 100_000, 2_000_000]
+    } else {
+        &[0, 1_000, 10_000, 100_000, 1_000_000, 2_000_000]
+    };
+    let root = repository_root();
+    let source = root.join("benchmarks/challenges/state_machine");
+    let build = ComparisonBuild::new();
+    println!("iterations\trepetitions\tserial_us\tmanual_parallel_us\tparallel_over_serial");
+    for &work in iterations {
+        let repetitions = match work {
+            0..=1_000 => 200,
+            1_001..=10_000 => 100,
+            10_001..=100_000 => 20,
+            100_001..=1_000_000 => 4,
+            _ => 2,
+        };
+        let serial = build.path.join(format!("state-machine-serial-{work}"));
+        let parallel = build.path.join(format!("state-machine-parallel-{work}"));
+        let definition = format!("-DSTATE_MACHINE_ITERATIONS={work}");
+        let repetition_definition = format!("-DSTATE_MACHINE_REPETITIONS={repetitions}");
+        timed_success(
+            Command::new(native_compiler())
+                .arg("-std=c11")
+                .arg("-O3")
+                .arg("-Wall")
+                .arg("-Wextra")
+                .arg("-Werror")
+                .arg(&definition)
+                .arg(&repetition_definition)
+                .arg(source.join("program.c"))
+                .arg("-o")
+                .arg(&serial),
+            "serial state-machine probe build",
+        );
+        timed_success(
+            Command::new(native_compiler())
+                .arg("-std=c11")
+                .arg("-O3")
+                .arg("-Wall")
+                .arg("-Wextra")
+                .arg("-Werror")
+                .arg("-pthread")
+                .arg(&definition)
+                .arg(&repetition_definition)
+                .arg(source.join("program_parallel.c"))
+                .arg("-o")
+                .arg(&parallel),
+            "manual POSIX parallel state-machine probe build",
+        );
+        let expected = run_output(&serial, &[]);
+        assert_eq!(
+            run_output(&parallel, &[]),
+            expected,
+            "manual parallel probe must preserve state-machine output"
+        );
+        let serial_time = median_runtime(&serial, &[], samples);
+        let parallel_time = median_runtime(&parallel, &[], samples);
+        let ratio = parallel_time.as_nanos() as f64 / serial_time.as_nanos() as f64;
+        println!(
+            "{work}\t{repetitions}\t{}\t{}\t{ratio:.3}",
+            serial_time.as_micros(),
+            parallel_time.as_micros()
+        );
+        if work == 2_000_000 {
+            let limit = performance_budget("manual-parallel-runtime-ratio", "state_machine");
+            if ratio > limit {
+                eprintln!(
+                    "performance gate: state_machine manual parallel/serial ratio {ratio:.3} exceeds {limit:.3}"
+                );
+                std::process::exit(1);
+            }
         }
     }
 }

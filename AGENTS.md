@@ -89,6 +89,10 @@ These rules apply to every change in this repository.
 - Keep parallel candidates distinct from the selected plan. Selection uses
   stable lexical node order, emits only pairwise non-overlapping intervals, and
   becomes bounded rather than silently truncating after 64 reported sites.
+- Do not reinterpret a selected site as executed. Core 1F execution remains
+  disabled until D0069's portable-worker, capture/result, fallback, no-nesting,
+  and target-cost reopening conditions are all satisfied by a replacement
+  decision and permanent multi-application evidence.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

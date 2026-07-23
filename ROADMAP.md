@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1E safety-preserving native efficiency complete
-Current milestone: define the Core 1F deterministic parallelism boundary
+Status: Core 1F deterministic parallelism evidence complete
+Current milestone: paused at the accepted Core 1F boundary
 Last updated: 2026-07-23
 
 ## Direction
@@ -910,7 +910,7 @@ and the portable 1,622,580-byte seed reproduces exactly.
 
 ### Core 1F: deterministic parallelism evidence
 
-Status: in progress
+Status: complete
 
 D0062 rejects language-level concurrency and runtime scheduling as the first
 step. Empty effect lists do not imply reorder-safety because checked overflow,
@@ -1002,9 +1002,27 @@ to three selected sites; a 129-candidate boundary selects 65 and prints exactly
 candidate, selection, and report. Detailed evidence is in
 `benchmarks/results/2026-07-23-core-1f-schedule-selection.md`.
 
-Before any execution decision, Core 1F still needs a source-order trap/failure
-and cancellation model and measured task-cost thresholds that beat serial
-execution after creation and join overhead. The scored acceptance decision
-must demonstrate those requirements without adding locks, hidden
-synchronization, or cost to unselected code; otherwise Core 1F must retain an
-explicit non-execution boundary rather than speculate.
+D0068 closes failure semantics by restricting any future task to the already
+proven-total subset. Such a task cannot allocate, perform I/O, trap, mutate,
+borrow exclusively, diverge under the accepted proof, or cross an unknown
+callee. Existing ownership rules prevent two tasks from moving the same input.
+Worker-creation failure must execute inline; one parent-owned join and no child
+wait operation make cancellation and wait cycles unnecessary.
+
+D0069 accepts the explicit non-execution boundary. The acceptance host's C11
+compiler lacks `<threads.h>`, so a manual POSIX fork/join implementation remains
+a reference rather than a portable backend. Repeated measurements put this
+body's crossover near 100,000 iterations per task and produce a 0.761
+parallel/serial ratio at two million, proving both real opportunity and the
+unsoundness of deriving a universal threshold from source-token counts or one
+host. Production output remains serial and pays zero worker cost; reports state
+`execution disabled` and `target-cost-unavailable`. The permanent
+`parallel-runtime` command verifies output and gates the largest-work ratio.
+Full acceptance evidence is recorded in
+`benchmarks/results/2026-07-23-core-1f-acceptance.md`.
+
+Core 1F is complete and paused. Reopening execution requires a portable or
+explicitly tiered worker ABI, general checked capture/result lowering, serial
+fallback and join tests, bounded no-nesting behavior, target-calibrated or
+profile-backed costs, and positive evidence from more than one substantial
+application. Those are Core 1G candidates, not unfinished Core 1F work.

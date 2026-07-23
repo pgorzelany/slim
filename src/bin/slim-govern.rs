@@ -84,6 +84,8 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_complete_parallel_blockers(root, &decisions, &mut errors);
     check_total_recurrence_evidence(root, &decisions, &mut errors);
     check_deterministic_parallel_schedule(root, &decisions, &mut errors);
+    check_total_task_failure_semantics(root, &decisions, &mut errors);
+    check_parallel_execution_boundary(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -652,6 +654,182 @@ fn check_deterministic_parallel_schedule(
     }
 }
 
+fn check_total_task_failure_semantics(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0068") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "total-task failure semantics require accepted primitive-free D0068 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("total-task failure decision D0068 is missing".to_owned()),
+    }
+
+    let decision =
+        fs::read_to_string(root.join("design/decisions/D0068-total-task-failure-semantics.md"))
+            .unwrap_or_default();
+    for required in [
+        "Worker-creation failure executes the same work inline",
+        "A task cannot require\ncancellation because no accepted task can fail",
+        "the parent owns the only join handle",
+        "move each owned input exactly once",
+    ] {
+        if !decision.contains(required) {
+            errors.push(format!(
+                "total-task failure contract is missing `{required}`"
+            ));
+        }
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(race-free true) (deadlock-free true)",
+        "(let both_safe Bool",
+        "(let independent Bool",
+        "(call bool.and adjacent_let",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!("total-task proof is missing `{required}`"));
+        }
+    }
+
+    let docs = fs::read_to_string(root.join("docs/PARALLELISM.md")).unwrap_or_default();
+    for required in [
+        "worker-creation failure",
+        "cannot fail and a child",
+        "cancellation and",
+        "wait cycles do not exist",
+    ] {
+        if !docs.contains(required) {
+            errors.push(format!(
+                "parallel failure specification is missing `{required}`"
+            ));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0068") {
+        errors.push("D0068 has Primitive: none and must not add Core language surface".to_owned());
+    }
+}
+
+fn check_parallel_execution_boundary(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0069") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "runtime"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "parallel execution boundary requires accepted primitive-free D0069 runtime decision scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("parallel execution boundary decision D0069 is missing".to_owned()),
+    }
+
+    for required in [
+        "benchmarks/challenges/state_machine/program_parallel.c",
+        "benchmarks/results/2026-07-23-core-1f-acceptance.md",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!(
+                "parallel execution boundary artifact is missing {required}"
+            ));
+        }
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(profitability unknown) (profitability-reason target-cost-unavailable)",
+        "(execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model))",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!(
+                "parallel non-execution report is missing `{required}`"
+            ));
+        }
+    }
+
+    let reference =
+        fs::read_to_string(root.join("benchmarks/challenges/state_machine/program_parallel.c"))
+            .unwrap_or_default();
+    for required in [
+        "#include <pthread.h>",
+        "pthread_create",
+        "pthread_join",
+        "left.output = run(left.remaining, left.input)",
+    ] {
+        if !reference.contains(required) {
+            errors.push(format!("manual parallel reference is missing `{required}`"));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "\"parallel-runtime\" => run_parallel_runtime()",
+        "fn run_parallel_runtime()",
+        "manual-parallel-runtime-ratio",
+        "manual parallel probe must preserve state-machine output",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!("parallel runtime evidence is missing `{required}`"));
+        }
+    }
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    if !budgets
+        .contains("manual-parallel-runtime-ratio\tstate_machine\t2.00\tparallel-over-serial\tD0069")
+    {
+        errors.push("manual parallel reference lacks its durable ratio budget".to_owned());
+    }
+    let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
+    if !verify.contains("slim-bench -- parallel-runtime --quick") {
+        errors.push("full verification does not retain the parallel runtime probe".to_owned());
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    let runtime_header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
+    let runtime_source = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap_or_default();
+    for forbidden in ["pthread_", "thrd_create", "thrd_join"] {
+        if codegen.contains(forbidden)
+            || runtime_header.contains(forbidden)
+            || runtime_source.contains(forbidden)
+        {
+            errors.push(format!(
+                "production codegen/runtime must remain serial at Core 1F: found `{forbidden}`"
+            ));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "profitability-reason target-cost-unavailable",
+        "status disabled) (reason no-portable-runtime-or-cost-model)",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!(
+                "parallel execution boundary test is missing `{required}`"
+            ));
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0069") {
+        errors.push("D0069 has Primitive: none and must not add Core language surface".to_owned());
+    }
+}
+
 fn check_core_1e_acceptance(
     root: &Path,
     decisions: &BTreeMap<String, Decision>,
@@ -667,7 +845,6 @@ fn check_core_1e_acceptance(
 
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
     for required in [
-        "Status: Core 1E safety-preserving native efficiency complete",
         "### Core 1E: safety-preserving native efficiency\n\nStatus: complete",
         "D0061 accepts Core 1E",
     ] {

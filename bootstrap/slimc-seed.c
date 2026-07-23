@@ -23470,7 +23470,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_join_95text;
 {
 SlimUnit slim_v_proof = {0};
-slim_v_proof = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)") (race-free true) (deadlock-free true) (profitability unknown) (task-tokens ", (int64_t)(sizeof(") (race-free true) (deadlock-free true) (profitability unknown) (task-tokens ") - 1)), slim_allocation_region);
+slim_v_proof = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)") (race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-cost-unavailable) (task-tokens ", (int64_t)(sizeof(") (race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-cost-unavailable) (task-tokens ") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_proof;
 {
@@ -24167,7 +24167,7 @@ slim_t_51679 = slim_v_schedule.slim_field_candidates;
 slim_v_eligible_95text = slim_fn_parallel_95append_95i64(slim_t_51679, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_eligible_95text;
-slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"))", (int64_t)(sizeof("))") - 1)), slim_allocation_region);
+slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)") (execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model)))", (int64_t)(sizeof(") (execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model)))") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }

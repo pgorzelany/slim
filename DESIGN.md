@@ -79,6 +79,14 @@ Guaranteeing deadlock freedom requires restricting concurrency primitives.
 Arbitrary locks, unrestricted communication, and foreign code cannot receive a
 general static deadlock-freedom guarantee.
 
+Core 1F now proves a bounded, deterministic, pairwise non-overlapping
+fork/join plan for a total effect-free subset. It deliberately does not execute
+that plan: ISO C11 workers are unavailable on the acceptance host, one POSIX
+reference measurement is not a portable target cost model, and general
+ownership-safe capture/result lowering has not been accepted. Programs remain
+serial and pay no worker cost while the evidence and reopening conditions stay
+machine-checkable.
+
 ### 6. Systems-level performance
 
 - Runtime performance should be competitive with Rust and C++.

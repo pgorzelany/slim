@@ -14,6 +14,7 @@ target/release/slim-bench incremental
 target/release/slim-bench project
 target/release/slim-bench reduction
 target/release/slim-bench parallelism
+target/release/slim-bench parallel-runtime
 target/release/slim-bench agent
 ```
 
@@ -68,6 +69,15 @@ reported site.
 Changing an application or its proof classification requires an intentional
 baseline update and dated explanation. Reason columns are primary blockers;
 they must not be treated as the complete set of hazards in a function.
+
+The `parallel-runtime` command is a permanent execution-boundary probe. It
+builds serial and manual POSIX fork/join versions of `state_machine` at
+geometric recurrence counts, verifies identical output, and reports warmed
+median process time. Repetitions amortize process startup at small sizes. The
+two-million-iteration parallel/serial ratio has a durable 2.00 gate. This
+reference measures worker overhead and crossover; it is not linked into SLIM
+programs because ISO C11 threads are unavailable on the acceptance host and no
+portable worker ABI or target cost model has been accepted.
 
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/

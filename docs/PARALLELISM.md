@@ -12,8 +12,7 @@ proof boundary, not an execution claim.
 A function is currently `safe` for concurrent reordering only when the checked
 compiler view proves all of the following:
 
-- its complete checked implementation has no observed allocation, I/O, or
-  partial operation;
+- its complete checked implementation has no observed allocation or I/O;
 - it has no `inout` parameter or lexical mutation;
 - it contains no allocating, I/O, or checked-trapping operation; and
 - every user function it calls has the same property; and
@@ -108,10 +107,28 @@ The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a
 bounded result rather than silently treating omitted functions as safe.
 
-## Execution boundary
+## Failure and execution boundary
 
-Any future execution slice requires another accepted decision. It must define
-deterministic trap and allocation-failure order, bounded task creation, joining,
-ownership transfer, cancellation, and a profitability gate. It may not expose
-locks or hidden synchronization, and code without a selected plan must pay no
-runtime cost.
+D0068 defines the only accepted execution semantics. Eligible tasks are proven
+total and contain no allocation, I/O, trap, mutation, exclusive borrow, or
+unknown callee. Existing ownership checking ensures the two expressions cannot
+move the same owned input. Results install into their original immutable
+bindings before the continuation. A future worker-creation failure must execute
+inline; a successfully created worker has one parent-owned join. Since a task
+cannot fail and a child has no source operation that waits, cancellation and
+wait cycles do not exist in this subset.
+
+D0069 deliberately keeps production execution disabled. The acceptance host's
+C11 compiler has no `<threads.h>`; POSIX threads are available only as a
+non-portable reference. Repeated reference measurements place this
+state-machine body's crossover near 100,000 iterations per task, but that
+host/body result is not a portable static cost model. The report therefore
+states `(execution ... (status disabled) (reason
+no-portable-runtime-or-cost-model))`, and each site retains profitability
+`unknown` with reason `target-cost-unavailable`.
+
+The `parallel-runtime` release command preserves the reference experiment and
+its 2.00 largest-work ratio budget. Reopening execution requires a portable or
+explicitly tiered worker ABI, general ownership-safe capture/result lowering,
+serial fallback and join tests, bounded no-nesting behavior, and
+target-calibrated or profile-backed evidence on more than one application.

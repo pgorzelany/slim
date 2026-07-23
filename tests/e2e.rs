@@ -542,9 +542,10 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
         "countdown-pair (guarantee exact) (status safe) (blockers)",
         "overlap (guarantee exact) (status safe) (blockers)",
         "cycle-left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
-        "(race-free true) (deadlock-free true) (profitability unknown)",
+        "(race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-cost-unavailable)",
         "(schedule (policy lexical-earliest-nonoverlap) (guarantee exact) (candidate-sites 4) (selected-sites 3) (reported-sites 3))",
         "(eligible-sites 4)",
+        "(execution (guarantee exact) (status disabled) (reason no-portable-runtime-or-cost-model))",
     ] {
         assert!(
             report.contains(required),
