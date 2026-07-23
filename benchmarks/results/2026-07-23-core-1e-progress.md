@@ -1,7 +1,7 @@
 # Core 1E native-efficiency progress
 
 Date: 2026-07-23
-Status: first accepted slice
+Status: milestone complete
 Host: macOS arm64, same checkout and warmed local toolchains
 Command: `cargo run --release --quiet --bin slim-bench -- compare --quick`
 
@@ -59,3 +59,13 @@ is 1,622,580 C bytes with SHA-256
 The authoritative complete release run measures records at 2.104/1.369
 milliseconds SLIM/C and variants at 3.421/3.542 milliseconds SLIM/C, with every
 correctness, safety, performance, and bootstrap gate passing.
+
+## Core 1E acceptance
+
+D0061 freezes the milestone with release SLIM/C ratios from 1.017 to 1.871.
+Dynamic vector bounds and layout remain checked where no range/storage proof is
+available. Matrix's flattened traversal, merge sort's checked recursive
+indices, and byte frequency's total whole-file input are recorded algorithmic
+or semantic differences rather than hidden as optimizer failures. All
+non-startup-dominated budgets tighten to 1.75-2.5, and the full release evidence
+remains the acceptance gate.

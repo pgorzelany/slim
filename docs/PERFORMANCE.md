@@ -100,3 +100,9 @@ annotations, optimizer hints, a second executable IR, and LLVM are not part of
 this milestone. Native ratios tightened after D0059 are compatibility limits;
 they may not be widened without the scored exception and evidence required by
 D0030.
+
+D0061 marks Core 1E complete after D0060 removes only child-region work
+disproved by the retained allocation plan. The accepted release ratios span
+1.017-1.871 for twelve real programs, while the self-host check consumes 0.03
+seconds of user CPU. Remaining collection and arithmetic checks require future
+positive proofs; the milestone does not infer safety from optimization level.

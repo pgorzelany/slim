@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1D shared typed compiler view complete
-Current milestone: define the Core 1E typed optimization boundary
+Status: Core 1E safety-preserving native efficiency complete
+Current milestone: define the Core 1F deterministic parallelism boundary
 Last updated: 2026-07-23
 
 ## Direction
@@ -855,7 +855,7 @@ feedback checks, and the byte-identical 1,629,310-byte bootstrap seed all pass.
 
 ### Core 1E: safety-preserving native efficiency
 
-Status: in progress
+Status: complete
 
 Core 1E improves generated native code without LLVM, unsafe profiles, new
 syntax, or a second executable IR. The permanent C11 backend remains the
@@ -900,3 +900,10 @@ Core 1E acceptance will require a profiled explanation of remaining gaps,
 proof-carrying removal of any dynamic check, no material compiler-latency or
 binary-size regression, tightened durable challenge budgets, the complete
 sanitizer/allocation-failure/conformance gate, and byte-identical bootstrap.
+
+D0061 accepts Core 1E at that boundary. The release suite's twelve SLIM/C
+ratios range from 1.017 to 1.871; remaining gaps are checked dynamic-vector
+operations or documented source-algorithm differences rather than an unchecked
+fast-path opportunity. All non-startup-dominated limits tighten to 1.75-2.5.
+The compiler self-check is 0.03 seconds, 109 fixtures and 2,000 mutations pass,
+and the portable 1,622,580-byte seed reproduces exactly.

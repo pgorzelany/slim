@@ -77,11 +77,60 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_core_1d_acceptance(root, &decisions, &mut errors);
     check_runtime_fast_paths(root, &decisions, &mut errors);
     check_allocation_free_region_elision(root, &decisions, &mut errors);
+    check_core_1e_acceptance(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_core_1e_acceptance(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0061") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => {
+            errors.push("Core 1E acceptance requires accepted D0061 scoring at least 60".to_owned())
+        }
+        None => errors.push("Core 1E acceptance decision D0061 is missing".to_owned()),
+    }
+
+    let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
+    for required in [
+        "Status: Core 1E safety-preserving native efficiency complete",
+        "### Core 1E: safety-preserving native efficiency\n\nStatus: complete",
+        "D0061 accepts Core 1E",
+    ] {
+        if !roadmap.contains(required) {
+            errors.push(format!("Core 1E roadmap freeze is missing `{required}`"));
+        }
+    }
+
+    let evidence =
+        fs::read_to_string(root.join("benchmarks/results/2026-07-23-core-1e-progress.md"))
+            .unwrap_or_default();
+    if !evidence.contains("Status: milestone complete")
+        || !evidence.contains("## Core 1E acceptance")
+    {
+        errors.push("Core 1E acceptance evidence is not frozen as complete".to_owned());
+    }
+
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    for required in [
+        "native-runtime-ratio\tsieve\t2.50\tslim-over-c\tD0061",
+        "native-runtime-ratio\tmatrix\t2.50\tslim-over-c\tD0061",
+        "native-runtime-ratio\tbytefreq\t2.50\tslim-over-c\tD0061",
+        "native-runtime-ratio\trecords\t2.50\tslim-over-c\tD0061",
+        "native-runtime-ratio\tvariants\t1.75\tslim-over-c\tD0061",
+    ] {
+        if !budgets.contains(required) {
+            errors.push(format!("Core 1E tightened budget is missing `{required}`"));
+        }
+    }
 }
 
 fn check_allocation_free_region_elision(
@@ -195,7 +244,6 @@ fn check_core_1d_acceptance(
 
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
     for required in [
-        "Status: Core 1D shared typed compiler view complete",
         "### Core 1D: complete typed compiler view\n\nStatus: complete",
         "Core 1D is accepted by D0058.",
     ] {
