@@ -39,7 +39,7 @@ structured model.
 
 `slimc analyze SOURCE_OR_PROJECT` remains the only command. A project is
 analyzed through its normal validated, flattened, typed artifact; there is no
-second project parser or checker. Analysis schema 6 preserves the Core 1G
+second project parser or checker. Analysis schema 7 preserves the Core 1G
 parallel fields: stable
 source-token node identities, per-function safety facts, exact recurrence work
 when derivable, candidate fork sites, and distinct selected, executable, and
@@ -186,7 +186,7 @@ inline. Both branches therefore decline transitive nested creation, so
 execution never expands into an unbounded task tree. Supported POSIX targets
 select the worker tier; other targets use the portable serial tier.
 
-Analysis schema 6 and the permanent application baseline distinguish all five
+Analysis schema 7 and the permanent application baseline distinguish all five
 stages: candidate, selected, reported, executable, and executed. Both
 `state_machine` and the independent eight-Boolean `signal_network` challenge
 retain exactly `1/1/1/1/1`; the other twelve applications retain zero executed
@@ -229,7 +229,7 @@ shared through C11 atomics, but their allocation lists are not shared. After
 join, the parent adopts both lists before exposing owned results. Allocation
 failure is then propagated through the existing typed `alloc` path.
 
-Analysis schema 6 labels every site `(intent explicit)`, keeps race-free and
+Analysis schema 7 labels every site `(intent explicit)`, keeps race-free and
 deadlock-free proofs visible, and distinguishes explicit selection from Core
 1G's target profitability model. The `dual_fetch` and `dual_health`
 applications retain forced-serial and POSIX-worker builds. Their accepted

@@ -1,6 +1,6 @@
 # Bounded program evidence
 
-Status: Core 1H analysis schema 6
+Status: Core 1K analysis schema 7
 
 Core 1B adds evidence about checked canonical SLIM without changing Core
 syntax. Every result is classified as one of:
@@ -12,9 +12,9 @@ syntax. Every result is classified as one of:
 The tools never turn `unknown` into a negative quality judgment. They emit a
 vector of facts rather than a universal goodness score.
 
-## Analysis schema 6
+## Analysis schema 7
 
-`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 6 ...)` from the same checked
+`slimc analyze SOURCE_OR_PROJECT` emits `(analysis 7 ...)` from the same checked
 artifact used by normal compilation. The current report includes:
 
 - stable token and binding identities, types, ownership, use, last-use, scope,
@@ -29,6 +29,20 @@ artifact used by normal compilation. The current report includes:
   in `docs/RESOURCE_BOUNDS.md`; and
 - deterministic parallel safety, schedule, and execution evidence described in
   `docs/PARALLELISM.md`.
+
+Each function also reports `cost-vector 1`. It is a vector, not a score:
+
+- `source-size` uses exact `expression-tokens-v1`;
+- `effect-surface` counts exact declared effect kinds;
+- `failure-surface` counts exact static allocation and checked-trap sites;
+- `proof-burden` counts exact static matches, mutations, recurrences, and
+  checked-trap obligations;
+- `runtime-work` remains unknown without execution-frequency and call bounds;
+  and
+- `peak-memory` remains unknown without allocation-volume and layout bounds.
+
+The model name is part of the result. Changing a definition requires a new
+version rather than silently changing historical comparisons.
 
 State models describe representable values, not valid application states. A
 valid-state ratio requires an invariant or behavioral specification that Core
@@ -49,7 +63,8 @@ reparse or independently type project code.
 `slimc prove-reduction SOURCE` reports at most 64 directly justified rewrite
 sites as `(rewrite NODE RULE JUSTIFICATION)`, where `NODE` is a stable token
 identity in the checked source. The report also records canonical source and
-normal-form byte/token costs and the fixed eight-pass limit.
+normal-form byte/token costs, the `canonical-tokens-v1` cost model, and the
+fixed eight-pass limit.
 
 `slimc verify-reduction ORIGINAL REDUCED` recomputes the unique Core 1A normal
 form and reports `verified` only when `REDUCED` is its exact canonical bytes.
@@ -58,17 +73,26 @@ It does not trust proof text as executable input.
 ## Finite equivalence
 
 `slimc equivalent LEFT RIGHT` compares the function named `subject` in two
-checked standalone modules. Core 1B accepts only:
+checked standalone modules. Equivalence schema 2 accepts either:
 
-- zero through eight parameters, all `Bool`;
+- zero through eight parameters, all `Bool`; or
+- exactly one `U8` parameter;
+
+and requires:
+
 - a `Bool` result and an empty `(effects)` declaration;
 - at most 256 tokens in the subject expression; and
-- Boolean literals/names, immutable Boolean `let`, `bool.not`, `bool.and`,
-  `bool.or`, and exhaustive Boolean `match`.
+- Boolean and bounded integer literals/names; immutable `Bool`, `U8`, or `I64`
+  `let`; `bool.not`, `bool.and`, `bool.or`, `u8.to-i64`, integer comparisons,
+  and exhaustive Boolean `match`.
 
-The tool enumerates all `2^N` inputs in canonical false-before-true order. It
-emits `equivalent`, `different` with the first concrete counterexample, or
-`unknown` with a stable reason. No result applies to arbitrary SLIM programs.
+The tool enumerates all `2^N` Boolean inputs in false-before-true order or all
+256 byte values in numeric order. It reports domain kind, cases,
+accepted-state counts, `expression-tokens-v1` costs, and either `equivalent`,
+the first concrete counterexample, or `unknown` with a stable reason.
+Accepted states are values satisfying the explicit `subject` predicate; they
+are not inferred application invariants. No result applies to arbitrary SLIM
+programs.
 
 ## Structural edit protocol
 

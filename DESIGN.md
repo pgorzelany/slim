@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1J complete; Core 1K semantic quality in progress
+Status: Core 1K complete; Core 1L stabilization in progress
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -117,7 +117,7 @@ those same token identities and types. Missing bounds remain unknown. Core 1G
 allows only exact facts from that view to enable guarded code generation;
 ordinary checking remains unchanged.
 
-Core 1H analysis schema 6 exposes the reusable canonical recurrence profile and
+Core 1H analysis schema 7 exposes the reusable canonical recurrence profile and
 exact-or-unknown literal call workloads from that same view. The first
 application baseline does not justify a source resource contract, so none was
 added.
@@ -157,6 +157,11 @@ SLIM: primitive representable-state cardinality, structural/effect/failure and
 reduction sites, ownership pressure, dependency facts, and a narrow totality
 classification. Every fact is labelled exact, bounded, or unknown. It does not
 claim to measure valid or reachable application states without a specification.
+
+Core 1K adds named cost vectors without aggregating them. It also treats an
+ordinary checked pure `subject` as an explicit specification over either a
+Boolean product or all 256 byte values. Reports include exact accepted-state
+counts and first counterexamples; unsupported expressions remain unknown.
 
 Core 1F strengthens totality for a bounded integer domain. It proves selected
 literal, immutable-flow, guarded arithmetic, denominator-safe
@@ -238,13 +243,15 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-Core 1H has affine ownership, immutable bindings, exclusive mutation,
+Core 1K has affine ownership, immutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic fork/join.
 Core 1I adds one effect-gated monotonic clock and one bounded whole TCP
-exchange, then closes without source handles. Core 1J is evaluating one
-structured form for demonstrated effectful overlap. There is no second
+exchange, then closes without source handles. Core 1J adds one structured form
+for demonstrated effectful overlap. Core 1K adds exact finite byte
+specifications, named cost vectors, and strictly reducing atom rewrites. There
+is no second
 executable IR, garbage collector, general host handle, or unrestricted foreign
 boundary.
 

@@ -1,8 +1,8 @@
 # SLIM Status
 
-Status: Core 1J deterministic structured concurrency complete
+Status: Core 1K semantic quality and reduction complete
 Compiler version: 0.0.1
-Next milestone: Core 1K semantic quality and reduction
+Next milestone: Core 1L compatibility and release stabilization
 Updated: 2026-07-23
 
 SLIM is experimental. The production compiler is written in SLIM, bootstraps
@@ -25,9 +25,9 @@ yet a stable public release.
 - Deterministic multi-module projects, canonical interfaces, incremental
   declaration reuse, validated persistent caches, and bounded parallel project
   checking.
-- Direct source reduction, replayed reduction proofs, bounded quality evidence,
-  finite Boolean equivalence with counterexamples, and versioned structural
-  edits.
+- Direct source reduction, replayed reduction proofs, named quality cost
+  vectors, exact Boolean-product or single-byte equivalence with accepted-state
+  counts and counterexamples, and versioned structural edits.
 - Guarded automatic fork/join execution for the exact Core 1G subset, with
   serial fallback, one parent-owned join, and no nested worker expansion.
 - One explicit leading two-call `fork` for independent bounded host work.
@@ -44,8 +44,8 @@ yet a stable public release.
   at most 64 refinements.
 - Parallel analysis retains at most 64 functions and 4,096 call edges, resolves
   the graph in at most 64 passes, and prints at most 64 selected sites.
-- Exact finite equivalence currently supports bounded Boolean subjects rather
-  than arbitrary programs.
+- Exact finite equivalence supports zero-to-eight-Boolean products or one byte,
+  not arbitrary programs.
 - Reduction is a small deterministic, terminating, idempotent rewrite set, not
   a globally optimal normalizer.
 - Per-binding lifetime planning retains at most 64 values before conservatively
@@ -54,7 +54,7 @@ yet a stable public release.
   with atomic captures, complete reorder-safety and totality proofs, and at
   least 1,000,000 exact recurrence iterations per task. Other sites stay
   serial.
-- Analysis schema 6 retains at most 16 canonical recurrence profiles and
+- Analysis schema 7 retains at most 16 canonical recurrence profiles and
   prints at most 64 profiled calls. Literal controllers may have exact
   iteration work; nonliteral controllers and unsupported recurrences remain
   unknown.
@@ -76,11 +76,12 @@ yet a stable public release.
 
 ## Next boundary
 
-Core 1K and Core 1L remain on the path to 1.0. D0079 closes Core 1J on one
-explicit two-call form after two loopback applications demonstrate material
-latency reduction. Broader concurrency remains out of scope. Core 1K now
-strengthens specification-backed quality and reduction without assuming that
-arbitrary program equivalence or global optimality is decidable.
+Core 1L is the remaining boundary before 1.0. D0080 and D0081 close Core 1K
+without language surface: a checked pure `subject` can identify an exact
+accepted subset of a Boolean product or byte domain, quality uses named vectors
+rather than a universal score, and three atom-only reductions strictly improve
+the named token cost. Arbitrary equivalence, inferred invariants, and global
+optimality remain out of scope.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,

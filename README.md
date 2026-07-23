@@ -60,10 +60,10 @@ For the executable Core oracle and incremental measurements:
 
 ## Current boundary
 
-SLIM is currently at **Core 1J deterministic structured concurrency in
-progress**. The
+SLIM is currently at **Core 1K semantic quality and reduction complete**. The
 self-hosted compiler, portable C11 seed, language surface, bounded analysis,
 reduction tools, memory model, and exact current limitations are summarized in
 [docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;
-the concise roadmap plans Core 1I through Core 1L while design decisions and
+the concise roadmap now has one remaining Core 1L stabilization boundary while
+design decisions and
 dated benchmark records retain the detailed evidence.

@@ -89,11 +89,110 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_total_task_failure_semantics(root, &decisions, &mut errors);
     check_parallel_execution_boundary(root, &decisions, &mut errors);
     check_core_1j_acceptance(root, &decisions, &mut errors);
+    check_core_1k_acceptance(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_core_1k_acceptance(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    for (id, label) in [
+        ("D0080", "finite byte equivalence and named cost vectors"),
+        ("D0081", "Core 1K closure"),
+    ] {
+        match decisions.get(id) {
+            Some(decision)
+                if decision.status == "accepted"
+                    && decision.kind == "architecture"
+                    && decision.primitive == "none"
+                    && decision.score >= 60 => {}
+            Some(_) => errors.push(format!(
+                "Core 1K {label} requires an accepted primitive-free {id} scoring at least 60"
+            )),
+            None => errors.push(format!("Core 1K decision {id} is missing")),
+        }
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0080") || surface.contains("D0081") {
+        errors.push("Core 1K decisions must not add Core language surface".to_owned());
+    }
+
+    for required in [
+        "docs/QUALITY.md",
+        "docs/REDUCTION.md",
+        "benchmarks/results/2026-07-23-core-1k-semantic-quality.md",
+        "conformance/evidence/u8-equivalent-left.slim",
+        "conformance/evidence/u8-equivalent-right.slim",
+        "conformance/evidence/u8-different.slim",
+        "conformance/evidence/u8-unsupported-expression.slim",
+        "conformance/evidence/reduction-nonapplicable.slim",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("Core 1K artifact is missing {required}"));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    let quality = fs::read_to_string(root.join("selfhost/quality.slim")).unwrap_or_default();
+    let equivalence =
+        fs::read_to_string(root.join("selfhost/equivalence.slim")).unwrap_or_default();
+    let reduce = fs::read_to_string(root.join("selfhost/reduce.slim")).unwrap_or_default();
+    let proof = fs::read_to_string(root.join("selfhost/proof.slim")).unwrap_or_default();
+    for (contents, label, required) in [
+        (&analysis, "analysis", "(analysis 7"),
+        (&quality, "quality", "(cost-vector 1"),
+        (&quality, "quality", "\"dynamic-work-v1\""),
+        (&quality, "quality", "\"peak-bytes-v1\""),
+        (&equivalence, "equivalence", "(equivalence 2"),
+        (&equivalence, "equivalence", "expression-tokens-v1"),
+        (&equivalence, "equivalence", "(true 256)"),
+        (&reduce, "reducer", "(true 6)"),
+        (&reduce, "reducer", "(true 7)"),
+        (&reduce, "reducer", "(true 8)"),
+        (&proof, "proof", "(reduction-proof 2"),
+        (&proof, "proof", "canonical-tokens-v1"),
+        (&proof, "proof", "boolean-idempotence"),
+        (&proof, "proof", "boolean-identity-match"),
+        (&proof, "proof", "common-match-result"),
+    ] {
+        if !contents.contains(required) {
+            errors.push(format!("Core 1K {label} is missing `{required}`"));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "finite_equivalence_proves_or_returns_the_first_counterexample",
+        "(domain-kind u8) (cases 256) (accepted-states 2)",
+        "(counterexample (inputs 3)",
+        "(reason unsupported-expression)",
+        "boolean-idempotence",
+        "boolean-identity-match",
+        "common-match-result",
+        "reduction-nonapplicable.slim",
+        "assert_eq!(reduced_again.stdout",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!("Core 1K permanent tests are missing `{required}`"));
+        }
+    }
+
+    let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
+    let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
+    if !status.contains("Status: Core 1K semantic quality and reduction complete")
+        || !status.contains("Next milestone: Core 1L compatibility and release stabilization")
+        || !roadmap.contains("Current milestone: Core 1L compatibility and release stabilization")
+        || !roadmap.contains("## Core 1K: semantic quality and reduction\n\nStatus: complete")
+    {
+        errors.push("Core 1K closure boundary is not canonical".to_owned());
+    }
 }
 
 fn check_core_1j_acceptance(
@@ -300,7 +399,7 @@ fn check_parallelism_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 6",
+        "(analysis 7",
         "(inout typed-facts (Vec typing/Fact))",
         "(call parallel/analyze source tokens typed-facts range-view)",
         "(call parallel/emit_module_facts source tokens parallel-view output)",
@@ -392,7 +491,7 @@ fn check_integer_proof_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 6",
+        "(analysis 7",
         "(call ranges/analyze source tokens typed-facts)",
         "(call ranges/emit-module-facts source tokens range-view output)",
     ] {
@@ -492,11 +591,11 @@ fn check_resource_evidence(
     }
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
-    if !analysis.contains("(analysis 6")
+    if !analysis.contains("(analysis 7")
         || !analysis.contains("(call ranges/emit-module-facts source tokens range-view output)")
     {
         errors.push(
-            "analysis schema 6 must emit resource evidence from the shared checked range view"
+            "analysis schema 7 must emit resource evidence from the shared checked range view"
                 .to_owned(),
         );
     }
@@ -558,14 +657,11 @@ fn check_resource_evidence(
         );
     }
 
-    let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1J deterministic structured concurrency complete")
-        || !status.contains("Next milestone: Core 1K semantic quality and reduction")
-        || !roadmap.contains("Current milestone: Core 1K semantic quality and reduction")
-        || !roadmap
-            .contains("## Core 1H: bounded resources and application evidence\n\nStatus: complete")
+    if !roadmap
+        .contains("## Core 1H: bounded resources and application evidence\n\nStatus: complete")
         || !roadmap.contains("## Core 1I: safe typed host boundary\n\nStatus: complete")
+        || !roadmap.contains("## Core 1J: deterministic structured concurrency\n\nStatus: complete")
     {
         errors.push("Core 1H through Core 1J closure boundary is not canonical".to_owned());
     }
@@ -3141,7 +3237,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 6",
+        "(analysis 7",
         "(call quality/emit_module_facts",
         "(ownership-pressure",
         "(max-live-owned ",
@@ -3168,7 +3264,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let proof = fs::read_to_string(root.join("selfhost/proof.slim")).unwrap_or_default();
     for required in [
-        "(reduction-proof 1",
+        "(reduction-proof 2",
         "(pass-limit 8)",
         "(site-limit 64)",
         "(call reduce/reduction_kind",
@@ -3186,8 +3282,8 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         fs::read_to_string(root.join("selfhost/equivalence.slim")).unwrap_or_default();
     for required in [
         "(call i64.lt count 8)",
-        "(call i64.le left_size 256)",
-        "(call i64.le right_size 256)",
+        "(call i64.le left-size 256)",
+        "(call i64.le right-size 256)",
         "(status equivalent)",
         "(status different)",
         "(status unknown)",

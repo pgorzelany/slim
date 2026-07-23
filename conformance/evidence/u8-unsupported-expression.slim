@@ -1,0 +1,1 @@
+(module u8-unsupported-expression (fn subject ((state U8)) Bool (effects) (let number I64 (call u8.to-i64 state) (call i64.eq (call i64.add number 1) 2))) (fn main ((args (Vec Bytes))) I64 (effects) 0))

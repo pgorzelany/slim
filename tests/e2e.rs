@@ -120,8 +120,9 @@ fn monotonic_clock_is_typed_effectful_and_allocation_free() {
         .unwrap();
     assert!(analysis.status.success());
     let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains("(effects io) (cost-vector 1"));
     assert!(report.contains(
-        "(effects io) (expression-nodes 13) (calls 4) (matches 1) (mutations 0) (recurs 0) (allocation-sites 0) (trap-sites 0)"
+        "(expression-nodes 13) (calls 4) (matches 1) (mutations 0) (recurs 0) (allocation-sites 0) (trap-sites 0)"
     ));
 
     let run = Command::new(slimc())
@@ -173,6 +174,7 @@ fn bounded_tcp_exchange_preserves_failure_state_and_closes_connections() {
                     Err(error) => panic!("loopback accept failed: {error}"),
                 }
             };
+            stream.set_nonblocking(false).unwrap();
             stream
                 .set_read_timeout(Some(Duration::from_secs(2)))
                 .unwrap();
@@ -881,7 +883,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 6 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 7 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
@@ -930,6 +932,21 @@ fn quality_analysis_classifies_exact_and_unknown_facts() {
     assert!(report.contains(
         "(state-model Decision (guarantee exact) (cardinality (sum (pow2 0) (pow2 1) (pow2 8))))"
     ));
+    assert!(
+        report
+            .contains("(cost-vector 1 (source-size (model expression-tokens-v1) (guarantee exact)")
+    );
+    assert!(report.contains(
+        "(runtime-work (model dynamic-work-v1) (guarantee unknown) (reason execution-frequency-or-call-bound))"
+    ));
+    assert!(report.contains(
+        "(peak-memory (model peak-bytes-v1) (guarantee unknown) (reason allocation-volume-or-layout-bound))"
+    ));
+    assert!(report.contains("(effect-surface (model declared-effect-kinds-v1) (guarantee exact)"));
+    assert!(report.contains(
+        "(failure-surface (model static-allocation-and-trap-sites-v1) (guarantee exact)"
+    ));
+    assert!(report.contains("(proof-burden (model static-obligations-v1) (guarantee exact)"));
     assert!(report.contains("(totality (guarantee exact) (status total))"));
 }
 
@@ -952,7 +969,7 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 6 (module integer-ranges)",
+        "(analysis 7 (module integer-ranges)",
         "(integer-proofs (domain -1000000000 1000000000)",
         "(refinements 6) (refinements-truncated false)",
         "(checked-site 26 (status total) (lower unknown) (upper 10))",
@@ -976,7 +993,8 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
         "constant-division (guarantee exact) (status safe) (blockers)",
         "possible-division-overflow (guarantee exact) (status unavailable) (reason checked-trap)",
         "total-countdown (guarantee exact) (status safe) (blockers)",
-        "total-countdown (guarantee exact) (effects partial) (expression-nodes 11)",
+        "total-countdown (guarantee exact) (effects partial) (cost-vector 1",
+        "(expression-nodes 11)",
         "(recurs 1) (allocation-sites 0) (trap-sites 1) (totality (guarantee exact) (status total))",
         "(eligible-sites 1)",
     ] {
@@ -1006,7 +1024,7 @@ fn resource_evidence_reports_exact_zero_and_unknown_recurrence_work() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 6 (module resource-work)",
+        "(analysis 7 (module resource-work)",
         "(resource-evidence (profile-limit 16) (call-site-report-limit 64)",
         "(recurrence-profile 3 run (guarantee exact) (controller-position 0) (stop-bound 0) (step 1))",
         "(call-work 53 3 run (guarantee exact) (iterations 10))",
@@ -1284,7 +1302,7 @@ fn project_analysis_dogfoods_the_bounded_parallelism_view() {
     assert!(output.stderr.is_empty());
     assert!(report_parentheses_are_balanced(&output.stdout));
     let report = String::from_utf8(output.stdout).unwrap();
-    assert!(report.starts_with("(analysis 6 (module project)"));
+    assert!(report.starts_with("(analysis 7 (module project)"));
     assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
     assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
 }
@@ -1306,10 +1324,16 @@ fn reduction_proofs_are_deterministic_and_replayed_independently() {
     assert!(first.status.success());
     assert_eq!(first.stdout, second.stdout);
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(reduction-proof 1 (guarantee bounded)"));
+    assert!(
+        report
+            .starts_with("(reduction-proof 2 (guarantee bounded) (cost-model canonical-tokens-v1)")
+    );
     assert!(report.contains("(pass-limit 8) (site-limit 64)"));
     assert!(report.contains("dead-scalar-binding"));
     assert!(report.contains("right-identity"));
+    assert!(report.contains("boolean-idempotence"));
+    assert!(report.contains("boolean-identity-match"));
+    assert!(report.contains("common-match-result"));
     assert!(report.ends_with(")\n"));
 
     let directory = temporary_directory("proof-replay");
@@ -1320,7 +1344,38 @@ fn reduction_proofs_are_deterministic_and_replayed_independently() {
         .output()
         .unwrap();
     assert!(reduced_output.status.success());
+    let reduced_source = String::from_utf8(reduced_output.stdout.clone()).unwrap();
+    assert!(reduced_source.contains("(fn idempotent ((value Bool)) Bool (effects) value)"));
+    assert!(reduced_source.contains("(fn identity-match ((value Bool)) Bool (effects) value)"));
+    assert!(
+        reduced_source
+            .contains("(fn common-result ((condition Bool) (value Bool)) Bool (effects) value)")
+    );
     fs::write(&reduced, reduced_output.stdout).unwrap();
+    let reduced_again = Command::new(slimc())
+        .arg("reduce")
+        .arg(&reduced)
+        .output()
+        .unwrap();
+    assert!(reduced_again.status.success());
+    assert_eq!(reduced_again.stdout, fs::read(&reduced).unwrap());
+
+    let nonapplicable = Command::new(slimc())
+        .arg("reduce")
+        .arg(root.join("conformance/evidence/reduction-nonapplicable.slim"))
+        .output()
+        .unwrap();
+    assert!(nonapplicable.status.success());
+    let nonapplicable_source = String::from_utf8(nonapplicable.stdout).unwrap();
+    assert!(
+        nonapplicable_source
+            .contains("(call bool.and (call bool.not value) (call bool.not value))")
+    );
+    assert!(
+        nonapplicable_source
+            .contains("(match (call bool.not condition) (true value) (false value))")
+    );
+    assert!(nonapplicable_source.contains("(match condition (true left) (false right))"));
     let verified = Command::new(slimc())
         .arg("verify-reduction")
         .arg(&source)
@@ -1362,7 +1417,7 @@ fn finite_equivalence_proves_or_returns_the_first_counterexample() {
     assert!(equivalent.status.success());
     assert_eq!(
         equivalent.stdout,
-        b"(equivalence 1 (status equivalent) (domain exact) (cases 4))\n"
+        b"(equivalence 2 (status equivalent) (domain exact) (domain-kind boolean-product) (cases 4) (accepted-states 1) (cost-model expression-tokens-v1) (left-cost 6) (right-cost 12))\n"
     );
 
     let different = Command::new(slimc())
@@ -1374,7 +1429,7 @@ fn finite_equivalence_proves_or_returns_the_first_counterexample() {
     assert!(different.status.success());
     assert_eq!(
         different.stdout,
-        b"(equivalence 1 (status different) (domain exact) (counterexample (inputs false true) (left false) (right true)))\n"
+        b"(equivalence 2 (status different) (domain exact) (domain-kind boolean-product) (left-accepted-states 1) (right-accepted-states 3) (counterexample (inputs false true) (left false) (right true)) (cost-model expression-tokens-v1) (left-cost 6) (right-cost 6))\n"
     );
 
     let unsupported = Command::new(slimc())
@@ -1386,7 +1441,45 @@ fn finite_equivalence_proves_or_returns_the_first_counterexample() {
     assert!(unsupported.status.success());
     assert_eq!(
         unsupported.stdout,
-        b"(equivalence 1 (status unknown) (reason unsupported-signature))\n"
+        b"(equivalence 2 (status unknown) (reason unsupported-signature))\n"
+    );
+
+    let u8_left = evidence.join("u8-equivalent-left.slim");
+    let u8_right = evidence.join("u8-equivalent-right.slim");
+    let u8_equivalent = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&u8_left)
+        .arg(&u8_right)
+        .output()
+        .unwrap();
+    assert!(u8_equivalent.status.success());
+    assert_eq!(
+        u8_equivalent.stdout,
+        b"(equivalence 2 (status equivalent) (domain exact) (domain-kind u8) (cases 256) (accepted-states 2) (cost-model expression-tokens-v1) (left-cost 26) (right-cost 26))\n"
+    );
+
+    let u8_different = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&u8_left)
+        .arg(evidence.join("u8-different.slim"))
+        .output()
+        .unwrap();
+    assert!(u8_different.status.success());
+    assert_eq!(
+        u8_different.stdout,
+        b"(equivalence 2 (status different) (domain exact) (domain-kind u8) (left-accepted-states 2) (right-accepted-states 3) (counterexample (inputs 3) (left false) (right true)) (cost-model expression-tokens-v1) (left-cost 26) (right-cost 26))\n"
+    );
+
+    let u8_unknown = Command::new(slimc())
+        .arg("equivalent")
+        .arg(&u8_left)
+        .arg(evidence.join("u8-unsupported-expression.slim"))
+        .output()
+        .unwrap();
+    assert!(u8_unknown.status.success());
+    assert_eq!(
+        u8_unknown.stdout,
+        b"(equivalence 2 (status unknown) (reason unsupported-expression))\n"
     );
 }
 

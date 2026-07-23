@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1J deterministic structured concurrency complete
-Current milestone: Core 1K semantic quality and reduction
+Status: Core 1K semantic quality and reduction complete
+Current milestone: Core 1L compatibility and release stabilization
 Last updated: 2026-07-23
 
 ## Direction
@@ -47,6 +47,7 @@ summary rather than a second copy of those records.
 | Core 1H | Bounded resource evidence over fourteen maintained applications without new source contracts. |
 | Core 1I | One monotonic clock and one bounded TCP exchange without source handles or FFI. |
 | Core 1J | One lexical two-call fork for bounded host work, isolated task regions, and deterministic join. |
+| Core 1K | Exact Boolean/byte specification evidence, named cost vectors, and strict replayable atom reductions without new syntax. |
 
 Core 0.3 evidence is summarized in
 `benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
@@ -201,10 +202,11 @@ unsupported-tier behavior have permanent tests.
 
 ## Core 1K: semantic quality and reduction
 
-Status: planned
+Status: complete
 
-Core 1K should compare programs against explicit specifications and cost models,
-not one universal goodness score.
+Core 1K compares programs against explicit specifications and cost models, not
+one universal goodness score. D0080 accepts one exact byte domain and analysis
+schema 7; D0081 closes on three strictly token-reducing atom rules.
 
 ### Work
 
@@ -228,6 +230,12 @@ not one universal goodness score.
   behavior, and cannot silently trade safety for a lower score.
 - Application evidence demonstrates that the added specification burden
   removes real invalid states or proof obligations.
+
+The maintained byte-state predicate accepts exactly two of 256 representable
+states. A different range predicate proves the same set; a three-state
+predicate returns byte `3` as the first counterexample. The reduction fixture
+falls from 410 to 310 canonical tokens, replays independently, is byte-stable
+on a second pass, and retains computed or effect-relevant shapes.
 
 ## Core 1L: compatibility and release stabilization
 

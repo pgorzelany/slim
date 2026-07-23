@@ -15,7 +15,7 @@ The command rejects malformed or semantically invalid input through the normal
 compiler diagnostics. Applying it twice must produce the same bytes as applying
 it once.
 
-Core 1A admits only these rule families:
+The current reducer admits only these rule families:
 
 - literal Boolean `not`, `and`, and `or` evaluation;
 - literal Boolean `match` selection;
@@ -23,7 +23,13 @@ Core 1A admits only these rule families:
 - removal of `i64.add VALUE 0`, `i64.sub VALUE 0`, and `i64.mul VALUE 1`
   when `VALUE` is an atom;
 - removal of `bool.and VALUE true` and `bool.or VALUE false` when `VALUE`
-  is an atom; and
+  is an atom;
+- replacement of `bool.and VALUE VALUE` or `bool.or VALUE VALUE` with the
+  repeated atom;
+- replacement of `(match VALUE (true true) (false false))` with the Boolean
+  atom `VALUE`;
+- replacement of a Boolean match whose two arms return the same atom with that
+  atom, only when the scrutinee is also an atom; and
 - removal of an unused immutable `Unit`, `Bool`, or `I64` binding whose value
   is a matching literal.
 
@@ -37,9 +43,15 @@ reduction into a default superlinear algorithm.
 No rule discards or reorders a call, allocation, I/O operation, checked
 operation that may trap, aggregate move, mutation, or exclusive borrow.
 
+`slimc prove-reduction` emits proof schema 2 and names
+`canonical-tokens-v1`. Every reported rewrite strictly decreases that cost.
+The report records exact canonical source/result token counts and at most 64
+sites. Replay recomputes the normal form from checked source; proof text is
+never trusted as executable input.
+
 ## Analysis contract
 
-`slimc analyze SOURCE` writes a deterministic `(analysis 6 ...)` report. Token
+`slimc analyze SOURCE` writes a deterministic `(analysis 7 ...)` report. Token
 indices in the canonical input are stable node and binding identities. Each
 function reports its declared effects and every parameter, lexical binding,
 and pattern binding that fits the bounded fact table. Binding facts include the

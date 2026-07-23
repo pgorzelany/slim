@@ -1242,7 +1242,7 @@ fn run_host_evidence() {
 }
 
 fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {
-    assert!(report.starts_with("(analysis 6 "));
+    assert!(report.starts_with("(analysis 7 "));
     let resources = report_section(report, "(resource-evidence ", " (quality ");
     let quality = report_section(report, "(quality ", " (parallelism ");
     let functions = report_number(quality, "(quality (guarantee exact) (functions ");
@@ -1405,7 +1405,7 @@ fn run_parallelism_evidence() {
 }
 
 fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidence {
-    assert!(report.starts_with("(analysis 6 "));
+    assert!(report.starts_with("(analysis 7 "));
     let integer = report_section(report, "(integer-proofs ", " (resource-evidence ");
     let parallel = report_section(report, "(parallelism ", " (function ");
     let functions = report_number(report, "(quality (guarantee exact) (functions ");
