@@ -89,7 +89,8 @@ done < "$slim_paths"
 find "$slim_tree/$slim_prefix" -type d -exec chmod 755 {} +
 find "$slim_tree/$slim_prefix" -type f -exec chmod 644 {} +
 for slim_executable in bootstrap.sh slimc scripts/package-release.sh \
-    scripts/refresh-bootstrap-seed.sh scripts/verify-release.sh scripts/verify.sh
+    scripts/refresh-bootstrap-seed.sh scripts/verify-1.0.sh \
+    scripts/verify-release.sh scripts/verify.sh
 do
     chmod 755 "$slim_tree/$slim_prefix/$slim_executable"
 done

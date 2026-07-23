@@ -115,10 +115,22 @@ fn check_core_1l_contracts(
         ),
         None => errors.push("Core 1L compatibility decision D0082 is missing".to_owned()),
     }
+    match decisions.get("D0083") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1L closure requires accepted primitive-free architecture decision D0083 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1L closure decision D0083 is missing".to_owned()),
+    }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0082") {
-        errors.push("D0082 must not add Core language surface".to_owned());
+    if surface.contains("D0082") || surface.contains("D0083") {
+        errors.push("Core 1L decisions must not add Core language surface".to_owned());
     }
 
     for required in [
@@ -129,7 +141,9 @@ fn check_core_1l_contracts(
         "docs/RELEASE.md",
         "release/manifest.txt",
         "scripts/package-release.sh",
+        "scripts/verify-1.0.sh",
         "scripts/verify-release.sh",
+        "benchmarks/results/2026-07-23-core-1l-slim-1-0.md",
     ] {
         if !root.join(required).is_file() {
             errors.push(format!("Core 1L contract artifact is missing {required}"));
@@ -281,6 +295,17 @@ fn check_core_1l_contracts(
             ));
         }
     }
+    let release_gate = fs::read_to_string(root.join("scripts/verify-1.0.sh")).unwrap_or_default();
+    for required in [
+        "scripts/verify.sh",
+        "scripts/verify-release.sh",
+        "npm test",
+        "SLIM 1.0 verification",
+    ] {
+        if !release_gate.contains(required) {
+            errors.push(format!("Core 1L release gate is missing `{required}`"));
+        }
+    }
 
     let diagnostics = fs::read_to_string(root.join("docs/DIAGNOSTICS.md")).unwrap_or_default();
     let compatibility = fs::read_to_string(root.join("docs/COMPATIBILITY.md")).unwrap_or_default();
@@ -318,6 +343,37 @@ fn check_core_1l_contracts(
     ] {
         if !tests.contains(required) {
             errors.push(format!("Core 1L permanent tests are missing `{required}`"));
+        }
+    }
+
+    let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
+    let design = fs::read_to_string(root.join("DESIGN.md")).unwrap_or_default();
+    let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
+    let release_evidence =
+        fs::read_to_string(root.join("benchmarks/results/2026-07-23-core-1l-slim-1-0.md"))
+            .unwrap_or_default();
+    if !status.contains("Status: SLIM 1.0 released")
+        || !status.contains("Next milestone: Post-1.0 evidence-driven development")
+        || !design.contains("Status: SLIM 1.0 released")
+        || !roadmap.contains("Status: SLIM 1.0 released")
+        || !roadmap.contains("Current milestone: Post-1.0 evidence-driven development")
+        || !roadmap
+            .contains("## Core 1L: compatibility and release stabilization\n\nStatus: complete")
+    {
+        errors.push("Core 1L closure boundary is not canonical".to_owned());
+    }
+    for required in [
+        "Version: 1.0.0",
+        "Decisions: D0082, D0083",
+        "2,154,365-byte compiler seed",
+        "116 conformance fixtures",
+        "2,000",
+        "malformed-input mutations",
+        "./scripts/verify-1.0.sh",
+        "Darwin/arm64",
+    ] {
+        if !release_evidence.contains(required) {
+            errors.push(format!("Core 1L evidence is missing `{required}`"));
         }
     }
 }
@@ -411,9 +467,9 @@ fn check_core_1k_acceptance(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1L release stabilization in progress")
-        || !status.contains("Next milestone: SLIM 1.0 release acceptance")
-        || !roadmap.contains("Current milestone: Core 1L compatibility and release stabilization")
+    if !status.contains("Status: SLIM 1.0 released")
+        || !status.contains("Next milestone: Post-1.0 evidence-driven development")
+        || !roadmap.contains("Current milestone: Post-1.0 evidence-driven development")
         || !roadmap.contains("## Core 1K: semantic quality and reduction\n\nStatus: complete")
     {
         errors.push("Core 1K closure boundary is not canonical".to_owned());

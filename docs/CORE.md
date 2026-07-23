@@ -84,7 +84,7 @@ type arguments are rejected before code generation.
   in lexical order. Spawn failure uses the same serial execution.
 - Allocation exhaustion is the typed failure outcome of the existing `alloc`
   effect. Generated code propagates it immediately, destroys active regions,
-  and handles it once at the executable boundary with exit code 71. Core 0.4
+  and handles it once at the executable boundary with exit code 71. SLIM 1.0
   exposes no trapping or `try-` allocation alias and no invalid value sentinel;
   local recovery is not yet source surface.
 

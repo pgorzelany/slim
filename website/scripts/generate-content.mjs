@@ -16,6 +16,16 @@ const referenceSources = [
     summary: "Canonical syntax, semantics, built-ins, diagnostics, and tooling boundary.",
   },
   {
+    id: "compatibility",
+    path: "docs/COMPATIBILITY.md",
+    summary: "Major-version source, project, diagnostics, schema, and ABI promises.",
+  },
+  {
+    id: "diagnostics",
+    path: "docs/DIAGNOSTICS.md",
+    summary: "Stable diagnostic identities, byte spans, ordering, and JSON schema.",
+  },
+  {
     id: "memory",
     path: "docs/MEMORY.md",
     summary: "Ownership, compiler-selected regions, destruction, and allocation failure.",
@@ -54,6 +64,11 @@ const referenceSources = [
     id: "host",
     path: "docs/HOST.md",
     summary: "Effect-gated host services, typed failure, and capability limits.",
+  },
+  {
+    id: "release",
+    path: "docs/RELEASE.md",
+    summary: "Reproducible source packaging, clean bootstrap, and supported targets.",
   },
 ];
 
@@ -274,7 +289,7 @@ const content = {
 
 const llms = `# SLIM — ${meta.expansion}
 
-> Experimental systems language for AI-generated programs.
+> Small systems language for AI-generated programs.
 
 Current milestone: ${meta.milestone}
 Compiler version: ${meta.compilerVersion}

@@ -1,7 +1,7 @@
 # SLIM — Small Language for Intelligent Machines
 
 SLIM stands for **Small Language for Intelligent Machines**. It is an
-experimental systems language designed for AI-generated programs: small
+compact systems language designed for AI-generated programs: small
 canonical syntax, strong static typing, explicit effects, affine ownership,
 exclusive borrows, deterministic output, and no tracing garbage collector.
 
@@ -60,10 +60,11 @@ For the executable Core oracle and incremental measurements:
 
 ## Current boundary
 
-SLIM is currently at **Core 1K semantic quality and reduction complete**. The
+SLIM is currently at **1.0**. The
 self-hosted compiler, portable C11 seed, language surface, bounded analysis,
 reduction tools, memory model, and exact current limitations are summarized in
 [docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;
-the concise roadmap now has one remaining Core 1L stabilization boundary while
-design decisions and
-dated benchmark records retain the detailed evidence.
+the compatibility and clean-release contracts are in
+[docs/COMPATIBILITY.md](docs/COMPATIBILITY.md) and
+[docs/RELEASE.md](docs/RELEASE.md), while decisions and dated benchmark records
+retain detailed evidence.

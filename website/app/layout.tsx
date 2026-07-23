@@ -30,7 +30,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s · SLIM",
     },
     description:
-      "A small experimental systems language designed for AI-generated programs.",
+      "A small systems language designed for AI-generated programs.",
     robots: {
       index: false,
       follow: false,

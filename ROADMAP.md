@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1K semantic quality and reduction complete
-Current milestone: Core 1L compatibility and release stabilization
+Status: SLIM 1.0 released
+Current milestone: Post-1.0 evidence-driven development
 Last updated: 2026-07-23
 
 ## Direction
@@ -48,6 +48,7 @@ summary rather than a second copy of those records.
 | Core 1I | One monotonic clock and one bounded TCP exchange without source handles or FFI. |
 | Core 1J | One lexical two-call fork for bounded host work, isolated task regions, and deterministic join. |
 | Core 1K | Exact Boolean/byte specification evidence, named cost vectors, and strict replayable atom reductions without new syntax. |
+| Core 1L / 1.0 | Frozen compatibility, diagnostics and ABI contracts, reproducible source packaging, and clean-install validation. |
 
 Core 0.3 evidence is summarized in
 `benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
@@ -96,7 +97,7 @@ serial. The exact boundary is in `docs/PARALLELISM.md`.
 
 Status: complete
 
-Core 1H should make physical limits useful without pretending arbitrary
+Core 1H makes physical limits useful without pretending arbitrary
 programs are decidable. D0073 advances analysis to schema 6,
 publishes bounded recurrence profiles and exact-or-unknown call workloads, and
 locks a 14-application resource baseline without adding language surface.
@@ -134,7 +135,7 @@ justify physical time, allocation-volume, or peak-byte contracts.
 
 Status: complete
 
-Core 1I should make SLIM useful for real operating-system work while preserving
+Core 1I makes SLIM useful for real operating-system work while preserving
 the default safety model. D0075 starts with one allocation-free monotonic clock
 behind the existing statically enforced `io` effect. D0076 adds one bounded
 whole TCP exchange. D0077 closes the milestone without source handles, DNS,
@@ -239,7 +240,7 @@ on a second pass, and retains computed or effect-relevant shapes.
 
 ## Core 1L: compatibility and release stabilization
 
-Status: planned
+Status: complete
 
 Core 1L turns the accepted language into SLIM 1.0; it is not a feature sweep.
 
@@ -267,6 +268,11 @@ Core 1L turns the accepted language into SLIM 1.0; it is not a feature sweep.
 - A clean installation can build and run the maintained applications without
   repository-internal knowledge.
 
+D0082 freezes the compatibility and runtime contracts without language
+surface. D0083 accepts a reproducible source archive, clean bootstrap and
+application run, complete repository and website gates, and one honestly
+validated Darwin/arm64 release target.
+
 ## Milestone discipline
 
 For every milestone:
@@ -280,6 +286,6 @@ For every milestone:
 7. Do not call the milestone complete while any required behavior depends on an
    undocumented fallback.
 
-The compiler remains experimental until Core 1L is accepted. A planned item may
-be changed or removed when evidence fails; the design goals and feature policy
-take precedence over milestone labels.
+SLIM 1.0 is compatibility-stable under `docs/COMPATIBILITY.md`. Future work
+still begins with evidence; the design goals and feature policy take
+precedence over milestone labels.

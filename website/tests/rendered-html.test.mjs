@@ -65,7 +65,7 @@ test("home exposes the current boundary and tested hello source", async () => {
   const response = await render("/");
   const html = await response.text();
 
-  assert.match(html, /Core 1J deterministic structured concurrency in progress/);
+  assert.match(html, /SLIM 1.0 released/);
   assert.match(html, /examples\/hello\.slim/);
   assert.match(html, /hello from SLIM/);
   assert.match(html, /Small language\./);
@@ -79,12 +79,15 @@ test("reference renders the generated surface and canonical documents", async ()
   assert.match(html, /Accepted language surface/);
   assert.match(html, /design\/surface\.tsv/);
   assert.match(html, /reference-core/);
+  assert.match(html, /reference-compatibility/);
+  assert.match(html, /reference-diagnostics/);
   assert.match(html, /reference-memory/);
   assert.match(html, /reference-projects/);
   assert.match(html, /reference-quality/);
   assert.match(html, /reference-reduction/);
   assert.match(html, /reference-performance/);
   assert.match(html, /reference-parallelism/);
+  assert.match(html, /reference-release/);
   assert.match(html, /i64\.add/);
-  assert.match(html, /guarded automatic execution/i);
+  assert.match(html, /guarded automatic and explicit structured execution/i);
 });

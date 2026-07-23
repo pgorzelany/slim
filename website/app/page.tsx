@@ -7,7 +7,7 @@ export const metadata: Metadata = {
     absolute: "SLIM — Small Language for Intelligent Machines",
   },
   description:
-    "An experimental systems language designed for AI-generated programs.",
+    "A small systems language designed for AI-generated programs.",
 };
 
 export default function Home() {
@@ -16,7 +16,7 @@ export default function Home() {
       <section className="hero shell">
         <div className="hero__copy">
           <p className="eyebrow">
-            Experimental · compiler {content.meta.compilerVersion}
+            Stable 1.0 · compiler {content.meta.compilerVersion}
           </p>
           <h1>
             Small language.

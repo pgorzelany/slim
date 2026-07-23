@@ -39,7 +39,7 @@ export function SiteFooter({
       <div className="site-footer__inner">
         <p>SLIM — Small Language for Intelligent Machines</p>
         <p>
-          Experimental · compiler {version} · {milestone}
+          Compiler {version} · {milestone}
         </p>
       </div>
     </footer>

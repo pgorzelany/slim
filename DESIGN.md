@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1K complete; Core 1L stabilization in progress
+Status: SLIM 1.0 released
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -243,7 +243,7 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-Core 1K has affine ownership, immutable bindings, exclusive mutation,
+SLIM 1.0 has affine ownership, immutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic fork/join.
@@ -257,8 +257,7 @@ boundary.
 
 ## Remaining research questions
 
-The Core 1H through Core 1L sequence in `ROADMAP.md` focuses the remaining
-design work:
+Post-1.0 work remains evidence-driven:
 
 1. How should bounded internal state interact with indefinite external event
    streams?
@@ -269,8 +268,7 @@ design work:
    useful without claiming one universal quality score?
 5. Which currently unknown physical resource bounds eventually justify one
    explicit contract?
-6. Which behaviors and artifacts must be frozen for a credible 1.0
-   compatibility promise?
+6. Which additional targets can pass the complete clean-release gate?
 
 ## Current Non-Goals
 

@@ -1,15 +1,15 @@
 # SLIM Status
 
-Status: Core 1L release stabilization in progress
+Status: SLIM 1.0 released
 Compiler version: 1.0.0
-Next milestone: SLIM 1.0 release acceptance
+Next milestone: Post-1.0 evidence-driven development
 Updated: 2026-07-23
 
 SLIM is the Small Language for Intelligent Machines: a compact systems
 language for AI-generated programs. Its production compiler is written in
 SLIM, bootstraps from a checked-in portable C11 seed, and reproduces that seed
-byte for byte. Core 1H through 1K are accepted; Core 1L is freezing and
-packaging the result.
+byte for byte. Core 1H through 1L are accepted and the 1.0 surface is governed
+by an explicit compatibility contract.
 
 ## Implemented
 
@@ -50,10 +50,10 @@ resource contracts, LLVM, and a second executable IR are absent.
 
 ## Release boundary
 
-Core 1L adds no language feature. D0082 freezes the source/project surface,
-diagnostics, tooling schemas, compatibility policy, and runtime ABI. Remaining
-acceptance work is a reproducible source archive, clean-install validation,
-full release gates, and publication of the matching canonical website.
+Core 1L added no language feature. D0082 freezes the source/project surface,
+diagnostics, tooling schemas, compatibility policy, and runtime ABI. D0083
+accepts the reproducible source archive, clean-install gate, complete release
+suite, and matching canonical website.
 
 The normative language, compatibility, diagnostics, and release contracts are
 `docs/CORE.md`, `docs/COMPATIBILITY.md`, `docs/DIAGNOSTICS.md`, and
