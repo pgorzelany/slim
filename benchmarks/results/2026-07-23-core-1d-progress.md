@@ -325,3 +325,21 @@ SLIM function and requires the caller to return status 71 with the exact
 allocation report. All 95 fixtures and 2,000 mutations pass, self-validation
 remains near 0.11 seconds, and the complete release gate fixes the bootstrap at
 1,631,733 generated C bytes.
+
+## Structured Boolean recovery
+
+D0048 converts the complete secondary recovery sequence for an invalid Boolean
+match from direct rendering to finalized `typing/Issue` intervals. The existing
+walk appends unknown-name `E0314`, duplicate-arm `E0335`, and arm-type `E0344`
+after the primary nonexhaustive `E0336`, then renders once. The shallow recovery
+rules and accepted language are unchanged.
+
+The standalone `multiple` fixture preserves its four-code order and byte spans.
+`project-boolean-recovery` pins the same sequence at
+`E0336@app@56:96`, `E0314@app@74:81`, `E0335@app@83:95`, and
+`E0344@app@89:94`. Obsolete byte-span locals were removed from the token-based
+collector. Self-validation remains around 0.10--0.11 seconds.
+
+All 96 fixtures and 2,000 deterministic mutations pass. The complete release
+gate records a byte-identical 1,631,074-byte generated C seed. Move diagnostics
+are now the remaining legacy semantic family outside project projection.

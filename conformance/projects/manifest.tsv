@@ -29,6 +29,7 @@ project-self-qualified	check-fail	conformance/projects/rules/self-qualified-refe
 project-wrong-kind	check-fail	conformance/projects/rules/wrong-kind-reference.project	parity	E0415@app@56:77	project:visibility,project:diagnostics
 project-type-error	check-fail	conformance/projects/type-error/slim.project	parity	E0344@app@56:60	project:diagnostics,type:expression
 project-nonexhaustive	check-fail	conformance/projects/nonexhaustive/slim.project	parity	E0336@app@56:77	project:diagnostics,match:exhaustive
+project-boolean-recovery	check-fail	conformance/projects/boolean-recovery/slim.project	parity	E0336@app@56:96,E0314@app@74:81,E0335@app@83:95,E0344@app@89:94	project:diagnostics,recovery:multiple-diagnostics
 project-effect-error	check-fail	conformance/projects/effect-error/slim.project	parity	E0343@app@72:94	project:diagnostics,effect:enforcement
 project-inout-temporary	check-fail	conformance/projects/inout-temporary/slim.project	parity	E0348@app@164:178	project:diagnostics,ownership:named-inout
 project-inout-alias	check-fail	conformance/projects/inout-alias/slim.project	parity	E0349@app@211:217	project:diagnostics,ownership:no-alias

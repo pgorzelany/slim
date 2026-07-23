@@ -919,6 +919,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     for required in [
         "(call append_form_issue \"E0336\" incomplete tokens issues)",
+        "(call append_form_issue \"E0335\" cursor tokens issues)",
+        "(call append_token_issue \"E0314\" body issues)",
+        "(call append_token_issue \"E0344\" body issues)",
         "(call append_form_issue \"E0343\" missing tokens issues)",
         "(call append_form_issue \"E0348\" temporary tokens issues)",
         "(call append_token_issue \"E0349\" duplicate issues)",
@@ -929,7 +932,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    for code in ["E0336", "E0343", "E0348", "E0349", "E0350"] {
+    for code in [
+        "E0314", "E0335", "E0336", "E0343", "E0344", "E0348", "E0349", "E0350",
+    ] {
         let direct = format!("(call report_diagnostic \"{code}\"");
         if check.contains(&direct) {
             errors.push(format!(
@@ -942,6 +947,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn report_recur_span",
         "(fn report_recur_items",
         "(fn check_path_recur",
+        "(fn report_boolean_match_arms",
+        "(fn report_boolean_match_span",
+        "(fn report_boolean_match_items",
     ] {
         if check.contains(superseded) {
             errors.push(format!(
@@ -960,6 +968,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "project-nonexhaustive\tcheck-fail\tconformance/projects/nonexhaustive/slim.project\tparity\tE0336@app@56:77",
     ) {
         errors.push("nonexhaustive project projection fixture is missing".to_owned());
+    }
+    if !project_manifest.contains(
+        "project-boolean-recovery\tcheck-fail\tconformance/projects/boolean-recovery/slim.project\tparity\tE0336@app@56:96,E0314@app@74:81,E0335@app@83:95,E0344@app@89:94",
+    ) {
+        errors.push("Boolean recovery project projection fixture is missing".to_owned());
     }
 
     let project_path = directory.join("project.slim");

@@ -752,11 +752,18 @@ to decide whether it needs a failure boundary. An injected user-call failure
 fixture grows the corpus to 95; the self-check remains near 0.11 seconds and
 the byte-identical fixed-point seed is 1,631,733 C bytes.
 
+The seventeenth slice adopts D0048's structured Boolean recovery. Unknown-name
+`E0314`, duplicate-arm `E0335`, and arm-type `E0344` now follow the primary
+`E0336` interval through one finalized issue stream. Standalone ordering is
+unchanged, while a prepared-project fixture pins all four module-local ranges.
+The corpus grows to 96, self-validation remains near 0.11 seconds, and the
+byte-identical fixed-point seed is 1,631,074 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
-source projection, while legacy move and secondary Boolean-recovery reports
-have not yet joined that channel. Core 1D
+source projection, while legacy move reports have not yet joined that channel.
+Core 1D
 acceptance requires bounded expression-fact lookup, removal of the remaining
 redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
