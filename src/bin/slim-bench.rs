@@ -181,169 +181,54 @@ fn run_performance() {
         std::process::exit(1);
     }
 
-    println!("computed_arguments\tsource_bytes\temit_us\temit_ns_per_byte");
-    let mut first_computed = None;
-    let mut last_computed = None;
-    for size in nested_sizes {
-        let source = generated_computed_argument_program(*size);
-        let path = directory
-            .path
-            .join(format!("computed-arguments-{size}.slim"));
-        fs::write(&path, &source).expect("write computed-argument scaling source");
-        let warmup = Command::new(&compiler)
-            .arg(&path)
-            .output()
-            .expect("run computed-argument scaling warmup");
-        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
-            fail_output("computed-argument scaling warmup", &warmup);
-        }
-        let mut times = Vec::with_capacity(samples);
-        for _ in 0..samples {
-            let (elapsed, output) = timed_output(
-                Command::new(&compiler).arg(&path),
-                "SLIM computed-argument emit",
-            );
-            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
-                fail_output("computed-argument scaling emit", &output);
-            }
-            black_box(&output.stdout);
-            times.push(elapsed);
-        }
-        times.sort();
-        let elapsed = times[samples / 2];
-        println!(
-            "{size}\t{}\t{}\t{:.2}",
-            source.len(),
-            elapsed.as_micros(),
-            elapsed.as_nanos() as f64 / source.len() as f64
-        );
-        if first_computed.is_none() {
-            first_computed = Some((*size, elapsed));
-        }
-        last_computed = Some((*size, elapsed));
-    }
-    let (first_size, first_time) =
-        first_computed.expect("computed-argument series has a first sample");
-    let (last_size, last_time) = last_computed.expect("computed-argument series has a last sample");
-    let size_ratio = last_size as f64 / first_size as f64;
-    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
-    let exponent = time_ratio.ln() / size_ratio.ln();
-    let limit = performance_budget("emit-exponent", "generated-computed-arguments");
-    if exponent > limit {
-        eprintln!(
-            "performance gate: computed-argument emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} calls"
-        );
-        std::process::exit(1);
-    }
-
-    println!("aggregate_temporaries\tsource_bytes\temit_us\temit_ns_per_byte");
-    let mut first_aggregate = None;
-    let mut last_aggregate = None;
-    for size in nested_sizes {
-        let source = generated_aggregate_temporary_program(*size);
-        let path = directory
-            .path
-            .join(format!("aggregate-temporaries-{size}.slim"));
-        fs::write(&path, &source).expect("write aggregate-temporary scaling source");
-        let warmup = Command::new(&compiler)
-            .arg(&path)
-            .output()
-            .expect("run aggregate-temporary scaling warmup");
-        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
-            fail_output("aggregate-temporary scaling warmup", &warmup);
-        }
-        let mut times = Vec::with_capacity(samples);
-        for _ in 0..samples {
-            let (elapsed, output) = timed_output(
-                Command::new(&compiler).arg(&path),
-                "SLIM aggregate-temporary emit",
-            );
-            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
-                fail_output("aggregate-temporary scaling emit", &output);
-            }
-            black_box(&output.stdout);
-            times.push(elapsed);
-        }
-        times.sort();
-        let elapsed = times[samples / 2];
-        println!(
-            "{size}\t{}\t{}\t{:.2}",
-            source.len(),
-            elapsed.as_micros(),
-            elapsed.as_nanos() as f64 / source.len() as f64
-        );
-        if first_aggregate.is_none() {
-            first_aggregate = Some((*size, elapsed));
-        }
-        last_aggregate = Some((*size, elapsed));
-    }
-    let (first_size, first_time) =
-        first_aggregate.expect("aggregate-temporary series has a first sample");
-    let (last_size, last_time) =
-        last_aggregate.expect("aggregate-temporary series has a last sample");
-    let size_ratio = last_size as f64 / first_size as f64;
-    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
-    let exponent = time_ratio.ln() / size_ratio.ln();
-    let limit = performance_budget("emit-exponent", "generated-aggregate-temporaries");
-    if exponent > limit {
-        eprintln!(
-            "performance gate: aggregate-temporary emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} fields"
-        );
-        std::process::exit(1);
-    }
-
-    println!("planned_allocation_calls\tsource_bytes\temit_us\temit_ns_per_byte");
-    let mut first_planned_call = None;
-    let mut last_planned_call = None;
-    for size in nested_sizes {
-        let source = generated_planned_allocation_call_program(*size);
-        let path = directory
-            .path
-            .join(format!("planned-allocation-calls-{size}.slim"));
-        fs::write(&path, &source).expect("write planned-call scaling source");
-        let warmup = Command::new(&compiler)
-            .arg(&path)
-            .output()
-            .expect("run planned-call scaling warmup");
-        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
-            fail_output("planned-call scaling warmup", &warmup);
-        }
-        let mut times = Vec::with_capacity(samples);
-        for _ in 0..samples {
-            let (elapsed, output) =
-                timed_output(Command::new(&compiler).arg(&path), "SLIM planned-call emit");
-            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
-                fail_output("planned-call scaling emit", &output);
-            }
-            black_box(&output.stdout);
-            times.push(elapsed);
-        }
-        times.sort();
-        let elapsed = times[samples / 2];
-        println!(
-            "{size}\t{}\t{}\t{:.2}",
-            source.len(),
-            elapsed.as_micros(),
-            elapsed.as_nanos() as f64 / source.len() as f64
-        );
-        if first_planned_call.is_none() {
-            first_planned_call = Some((*size, elapsed));
-        }
-        last_planned_call = Some((*size, elapsed));
-    }
-    let (first_size, first_time) =
-        first_planned_call.expect("planned-call series has a first sample");
-    let (last_size, last_time) = last_planned_call.expect("planned-call series has a last sample");
-    let size_ratio = last_size as f64 / first_size as f64;
-    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
-    let exponent = time_ratio.ln() / size_ratio.ln();
-    let limit = performance_budget("emit-exponent", "generated-planned-allocation-calls");
-    if exponent > limit {
-        eprintln!(
-            "performance gate: planned allocation-call emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} calls"
-        );
-        std::process::exit(1);
-    }
+    benchmark_generated_emit_scaling(
+        &compiler,
+        &directory.path,
+        nested_sizes,
+        samples,
+        "computed_arguments",
+        "computed-arguments",
+        "computed-argument",
+        "generated-computed-arguments",
+        "calls",
+        generated_computed_argument_program,
+    );
+    benchmark_generated_emit_scaling(
+        &compiler,
+        &directory.path,
+        nested_sizes,
+        samples,
+        "aggregate_temporaries",
+        "aggregate-temporaries",
+        "aggregate-temporary",
+        "generated-aggregate-temporaries",
+        "fields",
+        generated_aggregate_temporary_program,
+    );
+    benchmark_generated_emit_scaling(
+        &compiler,
+        &directory.path,
+        nested_sizes,
+        samples,
+        "planned_allocation_calls",
+        "planned-allocation-calls",
+        "planned allocation-call",
+        "generated-planned-allocation-calls",
+        "calls",
+        generated_planned_allocation_call_program,
+    );
+    benchmark_generated_emit_scaling(
+        &compiler,
+        &directory.path,
+        nested_sizes,
+        samples,
+        "inout_binding_reads",
+        "inout-reads",
+        "inout-binding read",
+        "generated-inout-binding-reads",
+        "parameters",
+        generated_inout_read_program,
+    );
 
     println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
     let mut first_named = None;
@@ -435,6 +320,98 @@ fn run_performance() {
             "performance gate: owned-transfer check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} transfers"
         );
         std::process::exit(1);
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn benchmark_generated_emit_scaling(
+    compiler: &Path,
+    directory: &Path,
+    sizes: &[usize],
+    samples: usize,
+    heading: &str,
+    file_stem: &str,
+    role: &str,
+    budget_subject: &str,
+    units: &str,
+    generate: fn(usize) -> String,
+) {
+    let rounds = balanced_round_count(samples);
+    let mut cases = Vec::with_capacity(sizes.len());
+    for size in sizes {
+        let source = generate(*size);
+        let path = directory.join(format!("{file_stem}-{size}.slim"));
+        fs::write(&path, &source).expect("write generated emit-scaling source");
+        let warmup = Command::new(compiler)
+            .arg(&path)
+            .output()
+            .expect("run generated emit-scaling warmup");
+        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
+            fail_output(&format!("{role} scaling warmup"), &warmup);
+        }
+        cases.push((*size, source.len(), path, Vec::with_capacity(rounds)));
+    }
+
+    // Alternate ascending and descending rounds so machine drift is shared by
+    // both ends of the scaling series instead of being mistaken for growth.
+    for round in 0..rounds {
+        let mut order: Vec<usize> = (0..cases.len()).collect();
+        if round % 2 == 1 {
+            order.reverse();
+        }
+        for index in order {
+            let (_, _, path, times) = &mut cases[index];
+            let (elapsed, output) = timed_output(
+                Command::new(compiler).arg(path),
+                &format!("SLIM {role} emit"),
+            );
+            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
+                fail_output(&format!("{role} scaling emit"), &output);
+            }
+            black_box(&output.stdout);
+            times.push(elapsed);
+        }
+    }
+
+    println!("{heading}\tsource_bytes\temit_us\temit_ns_per_byte");
+    let mut medians = Vec::with_capacity(cases.len());
+    for (size, source_bytes, _, mut times) in cases {
+        let elapsed = median_duration(&mut times);
+        println!(
+            "{size}\t{source_bytes}\t{}\t{:.2}",
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source_bytes as f64
+        );
+        medians.push((size, elapsed));
+    }
+
+    let (first_size, first_time) = medians[0];
+    let (last_size, last_time) = medians[medians.len() - 1];
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("emit-exponent", budget_subject);
+    if exponent > limit {
+        eprintln!(
+            "performance gate: {role} emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} {units}"
+        );
+        std::process::exit(1);
+    }
+}
+
+fn balanced_round_count(samples: usize) -> usize {
+    assert!(samples > 0, "performance series must have samples");
+    samples + samples % 2
+}
+
+fn median_duration(times: &mut [Duration]) -> Duration {
+    assert!(!times.is_empty(), "performance series must have times");
+    times.sort();
+    let middle = times.len() / 2;
+    if times.len().is_multiple_of(2) {
+        (times[middle - 1] + times[middle]) / 2
+    } else {
+        times[middle]
     }
 }
 
@@ -1248,6 +1225,28 @@ fn generated_planned_allocation_call_program(calls: usize) -> String {
     source
 }
 
+fn generated_inout_read_program(parameters: usize) -> String {
+    let mut source = String::with_capacity(parameters * 58);
+    source.push_str("(module inout-reads (fn read (");
+    for index in 0..parameters {
+        source.push_str("(inout value-");
+        source.push_str(&index.to_string());
+        source.push_str(" I64)");
+    }
+    source.push_str(") I64 (effects partial) ");
+    for index in 0..parameters {
+        source.push_str("(call i64.add value-");
+        source.push_str(&index.to_string());
+        source.push(' ');
+    }
+    source.push('0');
+    for _ in 0..parameters {
+        source.push(')');
+    }
+    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    source
+}
+
 fn generated_named_type_program(functions: usize) -> String {
     let mut source = String::with_capacity(functions * 70);
     source.push_str("(module named-types ");
@@ -1491,7 +1490,9 @@ static TEMPORARY_SERIAL: AtomicU64 = AtomicU64::new(0);
 
 #[cfg(test)]
 mod tests {
-    use super::{changed_span, neutral_lexical_tokens};
+    use super::{
+        Duration, balanced_round_count, changed_span, median_duration, neutral_lexical_tokens,
+    };
 
     #[test]
     fn edit_span_removes_shared_context() {
@@ -1506,5 +1507,18 @@ mod tests {
     fn neutral_lexer_is_language_independent_and_deterministic() {
         assert_eq!(neutral_lexical_tokens(b"call(bool.and, value)"), 8);
         assert_eq!(neutral_lexical_tokens(b"\"one token\" + name_1"), 3);
+    }
+
+    #[test]
+    fn generated_emit_sampling_balances_both_series_directions() {
+        assert_eq!(balanced_round_count(5), 6);
+        assert_eq!(balanced_round_count(8), 8);
+        let mut times = [
+            Duration::from_millis(40),
+            Duration::from_millis(10),
+            Duration::from_millis(30),
+            Duration::from_millis(20),
+        ];
+        assert_eq!(median_duration(&mut times), Duration::from_millis(25));
     }
 }

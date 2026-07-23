@@ -828,6 +828,16 @@ then trapped while emitting now compiles and prints `42`; bound-match output
 remains byte-identical. The obsolete packed binding-type decoder is removed,
 shrinking the byte-identical fixed-point seed to 1,627,142 C bytes.
 
+The twenty-sixth slice adopts D0057's linked binding modes. The packed local
+link retains one `inout` bit beside exact type and declaration identity, letting
+code generation and borrowed-return checking remove their parameter spelling
+scans without enlarging syntax tokens. A permanent 125-to-1,000-parameter
+workload turns the D0056 endpoint exponent of 1.298 into 1.088 in the accepted
+candidate run and 1.050 in the authoritative release run. The typed-view emit
+series use balanced ascending/descending sampling so drift cannot masquerade
+as input-size growth. Generated programs remain byte-identical, and the
+fixed-point seed is 1,629,310 C bytes.
+
 This is not yet a completed milestone. Explicit let types, match destinations,
 and pattern bindings remain legitimate source or caller contracts rather than
 redundant analysis. All accepted

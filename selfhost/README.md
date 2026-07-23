@@ -28,6 +28,10 @@ match destinations, and pattern bindings remain source or caller contracts.
 Boolean/variant match selection and arbitrary computed scrutinee materialization
 also consume the same expression fact; codegen no longer decodes the older
 packed binding-type link.
+The checked local link still retains type and declaration identity for typed
+ownership, and now carries the binding's `inout` mode in the same bounded
+integer. Code generation and borrowed-return checking query that mode directly
+instead of rescanning parameter names.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
 Core 1D can be frozen after its final acceptance audit and complete release

@@ -520,3 +520,33 @@ pass the candidate, and the byte-identical portable fixed point shrinks to
 The complete gate passes all performance budgets, sanitizers,
 allocation-failure injection, native challenges, and deterministic bootstrap
 verification.
+
+## Linked binding modes
+
+D0057 packs one `inout` mode bit beside the existing local-link type and
+declaration token. Code generation and borrowed-return checking decode that
+checked binding mode in constant time; they no longer scan the current
+parameter list by spelling for every named use. Existing programs and
+diagnostics remain byte-identical to D0056.
+
+The permanent `generated-inout-binding-reads` series emits 125, 250, 500, and
+1,000 borrowed parameters with one read per parameter. D0056 measured 5.585,
+33.701, 30.378, and 82.996 milliseconds and correctly failed the new 1.25 gate
+at exponent 1.298. The authoritative release run measures 5.383, 8.679, 18.479,
+and 47.779 milliseconds, exponent 1.050. Two earlier candidate passes stopped
+on unchanged computed-argument (1.268) and planned-allocation-call (1.259)
+budgets; neither budget was weakened.
+
+Those results exposed order sensitivity in four related emit series. They now
+share balanced ascending/descending rounds and an even-sample median, with a
+unit test and governance checks preserving that measurement rule. The release
+run keeps the unchanged computed, aggregate, planned-call, and inout budgets at
+endpoint exponents 1.195, 0.671, 1.130, and 1.050 respectively.
+
+The self-check remains about 0.11 seconds, all 101 fixtures and 2,000 mutations
+pass the candidate, and the byte-identical portable fixed point is 1,629,310
+generated C bytes with SHA-256
+`90f60cadb6d845ed9cfe6bd58a81578d8cc9fd9f112690c3e42f9d03dc15b2c7`.
+The complete gate passes all performance budgets, 101 fixtures, 2,000
+mutations, sanitizers, allocation-failure injection, native challenges, agent
+feedback checks, and deterministic bootstrap verification.

@@ -209,6 +209,7 @@ fn check_performance_architecture(
         "emit-exponent/generated-computed-arguments",
         "emit-exponent/generated-aggregate-temporaries",
         "emit-exponent/generated-planned-allocation-calls",
+        "emit-exponent/generated-inout-binding-reads",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
         "incremental-exponent/wide-private-body",
@@ -283,12 +284,18 @@ fn check_performance_architecture(
         "performance_budget(\"check-exponent\", \"generated-nested-bindings\")",
         "performance_budget(\"check-exponent\", \"generated-named-type-parameters\")",
         "performance_budget(\"check-exponent\", \"generated-owned-transfers\")",
-        "performance_budget(\"emit-exponent\", \"generated-computed-arguments\")",
-        "performance_budget(\"emit-exponent\", \"generated-aggregate-temporaries\")",
-        "performance_budget(\"emit-exponent\", \"generated-planned-allocation-calls\")",
+        "performance_budget(\"emit-exponent\", budget_subject)",
+        "\"generated-computed-arguments\"",
+        "\"generated-aggregate-temporaries\"",
+        "\"generated-planned-allocation-calls\"",
+        "\"generated-inout-binding-reads\"",
+        "let rounds = balanced_round_count(samples);",
+        "order.reverse();",
+        "let elapsed = median_duration(&mut times);",
         "fn generated_computed_argument_program(calls: usize)",
         "fn generated_aggregate_temporary_program(fields: usize)",
         "fn generated_planned_allocation_call_program(calls: usize)",
+        "fn generated_inout_read_program(parameters: usize)",
         "fn generated_named_type_program(functions: usize)",
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
@@ -877,7 +884,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(module codegen \"codegen.slim\" (imports memory syntax text typing) (exports emit_program))",
         "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
-        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type))",
+        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type linked_binding_is_inout))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
     ] {
         if !project.contains(required) {
@@ -970,7 +977,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn mark_named_move",
         "(fn check_owned_argument",
         "(fn append_inout_return_issue",
-        "(call i64.mul type_value base)",
+        "(call i64.mul type_mode base)",
         "(call i64.rem packed base)",
         "(call append_ownership_issue \"E0315\" argument issues)",
         "(call append_ownership_issue \"E0347\" argument issues)",
@@ -1161,6 +1168,40 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     if codegen.contains("(fn find_record_field") {
         errors.push("self-host code generation restored record field scans".to_owned());
+    }
+    if codegen.contains("syntax/name_is_inout") {
+        errors.push("self-host code generation restored parameter-mode scans".to_owned());
+    }
+    for required in [
+        "(call typing/linked_binding_is_inout tokens name)",
+        "(fn emit_binding_value",
+        "(fn emit_binding_address",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "self-host code generation is missing linked binding-mode use `{required}`"
+            ));
+        }
+    }
+    let typing_path = directory.join("typing.slim");
+    let Ok(typing) = fs::read_to_string(&typing_path) else {
+        return;
+    };
+    for required in [
+        "(fn linked_binding_is_inout",
+        "(let type_scaled I64 (call i64.mul type_value 2)",
+        "(let type_mode I64 (call i64.add type_scaled borrowed_value)",
+        "(call i64.div type_mode 2)",
+        "(call linked_binding_is_inout tokens result)",
+    ] {
+        if !typing.contains(required) {
+            errors.push(format!(
+                "self-host typing is missing linked binding-mode capability `{required}`"
+            ));
+        }
+    }
+    if typing.contains("syntax/name_is_inout source tokens params result") {
+        errors.push("self-host typing restored borrowed-return parameter scans".to_owned());
     }
     for required in [
         "(let case_link I64 (call syntax/token_link tokens expr)",
