@@ -74,6 +74,9 @@ type arguments are rejected before code generation.
 - `io.monotonic-ms() -> I64` requires `io`, allocates nothing, and returns a
   nonnegative reading that does not decrease within one execution thread. Its
   epoch is unspecified.
+- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout (Vec U8)) -> Bool`
+  requires `alloc io`; response size and elapsed wait are explicit, every
+  descriptor is runtime-lexical, and failure leaves output unchanged.
 - Allocation exhaustion is the typed failure outcome of the existing `alloc`
   effect. Generated code propagates it immediately, destroys active regions,
   and handles it once at the executable boundary with exit code 71. Core 0.4

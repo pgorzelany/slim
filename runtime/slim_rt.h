@@ -75,6 +75,14 @@ void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t
 
 bool slim_read_file(SlimBytes path, SlimVec *output);
 int64_t slim_monotonic_ms(void);
+bool slim_tcp_exchange(
+    SlimBytes address,
+    int64_t port,
+    SlimBytes request,
+    int64_t response_limit,
+    int64_t timeout_ms,
+    SlimVec *output
+);
 
 #if defined(SLIM_PARALLEL)
 bool slim_task_spawn(SlimTask *task, SlimTaskFn function, void *context);

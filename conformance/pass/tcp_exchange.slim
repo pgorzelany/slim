@@ -1,0 +1,1 @@
+(module tcp-exchange (fn main ((args (Vec Bytes))) I64 (effects alloc io) (let output (Vec U8) (call vec.new) (let result Bool (call io.tcp-exchange "not-an-address" 8080 "PING" 64 1000 output) (match result (true 1) (false (call vec.len output)))))))

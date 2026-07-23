@@ -1,8 +1,8 @@
 # SLIM Status
 
-Status: Core 1I safe typed host boundary in progress
+Status: Core 1J deterministic structured concurrency in progress
 Compiler version: 0.0.1
-Next milestone: Core 1I safe typed host boundary
+Next milestone: Core 1J deterministic structured concurrency
 Updated: 2026-07-23
 
 SLIM is experimental. The production compiler is written in SLIM, bootstraps
@@ -32,6 +32,8 @@ yet a stable public release.
   serial fallback, one parent-owned join, and no nested worker expansion.
 - One effect-gated, allocation-free monotonic millisecond clock with no
   wall-clock or timer alias.
+- One bounded whole TCP byte exchange with numeric addresses, explicit response
+  and timeout bounds, typed failure, and no source handle.
 
 ## Guarded or bounded
 
@@ -58,7 +60,8 @@ yet a stable public release.
 
 - Source-level tasks, futures, async/await, locks, channels, explicit
   parallelism, or a general concurrency scheduler.
-- Network, socket, timer, foreign-function, or unsafe source interfaces.
+- DNS, TLS, raw socket handles, timers, foreign-function, or unsafe source
+  interfaces.
 - General profitable automatic parallelization, a worker pool, cancellation,
   or arbitrary capture and result lowering.
 - General termination proofs, general program equivalence, inferred application
@@ -70,17 +73,16 @@ yet a stable public release.
 
 ## Next boundary
 
-Core 1I through Core 1L are the remaining path to 1.0. D0074 closes Core 1H
-without resource syntax: the 14-application baseline did not justify treating
-structural counts as physical time or bytes. D0075 begins Core 1I with one
-typed, `io`-effect-gated monotonic clock. Next, representative applications
-must determine whether resource-bearing host services need nominal capability
-values and which networking or process boundary is small enough to keep.
-Every durable mechanism still requires a weighted decision, measured cost,
-diagnostics, specifications, and permanent tests.
+Core 1J through Core 1L are the remaining path to 1.0. D0077 closes Core 1I
+without host handles: file input, arguments, stdout, a monotonic clock, and one
+bounded TCP exchange cover maintained applications, while process and
+filesystem orchestration stay with the external launcher. The dual-endpoint
+fetch now provides the evidence for one explicit structured effectful
+concurrency form. Every durable mechanism still requires a weighted decision,
+measured cost, diagnostics, specifications, and permanent tests.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,
-`docs/PERFORMANCE.md`, `docs/PARALLELISM.md`, and
-`docs/RESOURCE_BOUNDS.md`, and `docs/HOST.md`. The concise milestone sequence
+`docs/PERFORMANCE.md`, `docs/PARALLELISM.md`, `docs/RESOURCE_BOUNDS.md`, and
+`docs/HOST.md`. The concise milestone sequence
 and acceptance boundaries are in `ROADMAP.md`.

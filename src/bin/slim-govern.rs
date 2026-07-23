@@ -406,13 +406,14 @@ fn check_resource_evidence(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1I safe typed host boundary in progress")
-        || !status.contains("Next milestone: Core 1I safe typed host boundary")
-        || !roadmap.contains("Current milestone: Core 1I safe typed host boundary")
+    if !status.contains("Status: Core 1J deterministic structured concurrency in progress")
+        || !status.contains("Next milestone: Core 1J deterministic structured concurrency")
+        || !roadmap.contains("Current milestone: Core 1J deterministic structured concurrency")
         || !roadmap
             .contains("## Core 1H: bounded resources and application evidence\n\nStatus: complete")
+        || !roadmap.contains("## Core 1I: safe typed host boundary\n\nStatus: complete")
     {
-        errors.push("Core 1H closure and current Core 1I boundary are not canonical".to_owned());
+        errors.push("Core 1H/1I closure and current Core 1J boundary are not canonical".to_owned());
     }
 }
 
@@ -433,14 +434,43 @@ fn check_host_boundary(
         ),
         None => errors.push("Core 1I monotonic clock decision D0075 is missing".to_owned()),
     }
+    match decisions.get("D0076") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "language"
+                && decision.primitive == "bounded-tcp-exchange"
+                && decision.score >= 40 => {}
+        Some(_) => errors.push(
+            "Core 1I network boundary requires accepted D0076 bounded-tcp-exchange language surface scoring at least 40"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1I bounded TCP decision D0076 is missing".to_owned()),
+    }
+    match decisions.get("D0077") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1I closure requires accepted primitive-free D0077 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("Core 1I closure decision D0077 is missing".to_owned()),
+    }
 
     for required in [
         "docs/HOST.md",
+        "benchmarks/host/needs.tsv",
         "conformance/pass/monotonic_clock.slim",
         "conformance/fail/missing_clock_effect.slim",
+        "conformance/pass/tcp_exchange.slim",
+        "conformance/fail/missing_tcp_effect.slim",
         "benchmarks/host/clock.slim",
         "benchmarks/host/clock.c",
+        "benchmarks/host/tcp_client.slim",
         "benchmarks/results/2026-07-23-core-1i-monotonic-clock.md",
+        "benchmarks/results/2026-07-23-core-1i-bounded-tcp.md",
+        "tests/fixtures/unsupported_network.c",
     ] {
         if !root.join(required).is_file() {
             errors.push(format!(
@@ -458,10 +488,30 @@ fn check_host_boundary(
     {
         errors.push("io.monotonic-ms must have exactly one D0075 surface row".to_owned());
     }
+    if surface
+        .lines()
+        .filter(|line| line.starts_with("builtin\tio.tcp-exchange\tbounded-tcp-exchange\tD0076"))
+        .count()
+        != 1
+    {
+        errors.push("io.tcp-exchange must have exactly one D0076 surface row".to_owned());
+    }
     for forbidden in ["builtin\tio.clock", "builtin\tio.now", "builtin\tio.time"] {
         if surface.contains(forbidden) {
             errors.push(format!(
                 "monotonic clock alias is forbidden through `{forbidden}`"
+            ));
+        }
+    }
+    for forbidden in [
+        "builtin\tio.socket",
+        "builtin\tio.tcp-connect",
+        "builtin\tio.network",
+        "builtin\tio.http",
+    ] {
+        if surface.contains(forbidden) {
+            errors.push(format!(
+                "network or socket alias is forbidden through `{forbidden}`"
             ));
         }
     }
@@ -481,6 +531,11 @@ fn check_host_boundary(
             "runtime/slim_rt.c",
             "static _Thread_local int64_t slim_last_monotonic_ms = 0;",
         ),
+        ("selfhost/typing.slim", "(fn infer_tcp_exchange "),
+        ("selfhost/effects.slim", "callee \"io.tcp-exchange\""),
+        ("selfhost/codegen.slim", "(fn emit_tcp_exchange_call "),
+        ("runtime/slim_rt.h", "bool slim_tcp_exchange("),
+        ("runtime/slim_rt.c", "#if !defined(SLIM_POSIX_NETWORK)"),
     ] {
         let contents = fs::read_to_string(root.join(path)).unwrap_or_default();
         if !contents.contains(required) {
@@ -495,6 +550,9 @@ fn check_host_boundary(
         "monotonic-clock\trun\tconformance/pass/monotonic_clock.slim",
         "builtin:io.monotonic-ms,effect:io",
         "missing-clock-effect\tcheck-fail\tconformance/fail/missing_clock_effect.slim",
+        "tcp-exchange\tcheck-pass\tconformance/pass/tcp_exchange.slim",
+        "builtin:io.tcp-exchange,effect:alloc,effect:io,host:bounded-network",
+        "missing-tcp-effect\tcheck-fail\tconformance/fail/missing_tcp_effect.slim",
     ] {
         if !manifest.contains(required) {
             errors.push(format!("Core 1I clock conformance is missing `{required}`"));
@@ -508,6 +566,28 @@ fn check_host_boundary(
     {
         errors.push("Core 1I clock lacks its durable type/effect/runtime test".to_owned());
     }
+    if !tests.contains("bounded_tcp_exchange_preserves_failure_state_and_closes_connections")
+        || !tests.contains("generated.matches(\"slim_tcp_exchange(\").count(), 3")
+        || !tests.contains("unsupported_network_target_returns_typed_failure")
+        || !tests.contains("-DSLIM_DISABLE_NETWORK=1")
+    {
+        errors.push(
+            "Core 1I TCP exchange lacks durable loopback and target-absence tests".to_owned(),
+        );
+    }
+
+    let needs = fs::read_to_string(root.join("benchmarks/host/needs.tsv")).unwrap_or_default();
+    for required in [
+        "dual-endpoint-fetch\tsend and receive bounded bytes with deadline\tio.tcp-exchange\tD0076",
+        "child-tool-orchestration\tstart arbitrary executable and capture output\texternal launcher\tdefer",
+        "filesystem-output\tpersist generated artifacts\tstdout plus external launcher\tdefer",
+    ] {
+        if !needs.contains(required) {
+            errors.push(format!(
+                "Core 1I host application matrix is missing `{required}`"
+            ));
+        }
+    }
 
     let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
     let budgets =
@@ -515,7 +595,10 @@ fn check_host_boundary(
     let verify = fs::read_to_string(root.join("scripts/verify.sh")).unwrap_or_default();
     if !benchmark.contains("\"host\" => run_host_evidence()")
         || !benchmark.contains("performance_budget(\"host-clock-runtime-ratio\", \"clock-100000\")")
+        || !benchmark.contains("performance_budget(\"host-network-binary-ratio\", \"hello\")")
         || !budgets.contains("host-clock-runtime-ratio\tclock-100000\t2.00\tslim-over-c\tD0075")
+        || !budgets
+            .contains("host-network-binary-ratio\thello\t1.03\thost-over-network-disabled\tD0076")
         || !verify.contains("slim-bench -- host")
     {
         errors.push("Core 1I clock performance is not a permanent gated comparison".to_owned());

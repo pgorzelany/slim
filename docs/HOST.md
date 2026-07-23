@@ -1,6 +1,6 @@
 # Typed host boundary
 
-Status: Core 1I first host-service slice
+Status: Core 1I complete
 
 SLIM host operations use ordinary typed `call` forms and explicit effects.
 They cannot appear in a pure `(effects)` function. There is no unsafe source
@@ -18,6 +18,12 @@ handle.
   returns a nonnegative millisecond reading. Successive readings on one
   execution thread do not decrease. The epoch is unspecified; only differences
   are meaningful.
+- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout (Vec U8)) -> Bool`
+  requires `alloc io`. It sends one finite request to a numeric IP address and
+  port, receives at most the declared response bytes before the positive
+  timeout, closes the connection, and appends only a complete response.
+  Invalid input, timeout, transport error, or limit exhaustion returns `false`
+  and leaves the output unchanged.
 
 The monotonic clock is intentionally the only clock. SLIM has no wall-clock,
 timezone, calendar, sleep, deadline, or timer alias.
@@ -28,10 +34,12 @@ Today the `io` effect is the compile-time host capability: callers and every
 transitive function must declare that they may cross the host boundary. This is
 explicit and statically enforced, but it grants the whole current `io` set.
 
-Core 1I will use application evidence to decide whether resource-bearing or
-authority-narrowing services need nominal capability values. A general `Host`
-value is not pre-approved. Adding one without narrower authority would cost
-tokens while preserving the same ambient access inside an `io` function.
+The Core 1I application matrix in `benchmarks/host/needs.tsv` did not justify
+resource-bearing source handles. The complete TCP exchange keeps descriptor
+ownership lexical inside the runtime, so invalid handle and close states are
+unrepresentable. A general `Host` value is not pre-approved. Adding one without
+narrower authority would cost tokens while preserving the same ambient access
+inside an `io` function.
 
 ## Target behavior
 
@@ -44,9 +52,14 @@ Unsupported future host capabilities must fail through a typed result or a
 documented capability absence. They may not silently become unsafe, trapping,
 or globally mutable source operations.
 
+On POSIX targets, TCP connect, send, and receive share the explicit elapsed
+deadline. Unsupported targets return `false`; they do not expose a partial
+descriptor or trap.
+
 ## Not implemented
 
-There are no sockets, DNS, TLS, processes, environment mutation, timers,
-filesystem writes, directory traversal, foreign calls, or source-level
-capability handles. Their absence is deliberate until representative
+There are no source socket handles, DNS, TLS, processes, environment mutation,
+timers, filesystem writes, directory traversal, foreign calls, or source-level
+capability handles. TCP exchange is a bounded whole operation, not access to a
+descriptor. The remaining omissions are deliberate until representative
 applications define the smallest common operation and failure model.

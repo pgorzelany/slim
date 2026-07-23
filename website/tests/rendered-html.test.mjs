@@ -65,7 +65,7 @@ test("home exposes the current boundary and tested hello source", async () => {
   const response = await render("/");
   const html = await response.text();
 
-  assert.match(html, /Core 1I safe typed host boundary in progress/);
+  assert.match(html, /Core 1J deterministic structured concurrency in progress/);
   assert.match(html, /examples\/hello\.slim/);
   assert.match(html, /hello from SLIM/);
   assert.match(html, /Small language\./);

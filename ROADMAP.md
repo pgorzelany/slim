@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1I safe typed host boundary in progress
-Current milestone: Core 1I safe typed host boundary
+Status: Core 1J deterministic structured concurrency in progress
+Current milestone: Core 1J deterministic structured concurrency
 Last updated: 2026-07-23
 
 ## Direction
@@ -128,12 +128,14 @@ justify physical time, allocation-volume, or peak-byte contracts.
 
 ## Core 1I: safe typed host boundary
 
-Status: in progress
+Status: complete
 
 Core 1I should make SLIM useful for real operating-system work while preserving
 the default safety model. D0075 starts with one allocation-free monotonic clock
-behind the existing statically enforced `io` effect; it does not pre-approve a
-general host handle or further services.
+behind the existing statically enforced `io` effect. D0076 adds one bounded
+whole TCP exchange. D0077 closes the milestone without source handles, DNS,
+TLS, processes, or foreign declarations because maintained applications do not
+justify their state and authority surface.
 
 ### Work
 
@@ -159,7 +161,7 @@ general host handle or further services.
 
 ## Core 1J: deterministic structured concurrency
 
-Status: planned
+Status: in progress
 
 Automatic parallelism is suitable for proven pure CPU work, but effectful host
 operations have observable intent that cannot generally be inferred. Core 1J

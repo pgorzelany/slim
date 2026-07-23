@@ -1,6 +1,6 @@
 # Learn SLIM
 
-This is the shortest path through the implemented Core 1I language. Every SLIM
+This is the shortest path through the implemented Core 1J language. Every SLIM
 example below is loaded from a repository fixture and compiled by the website
 test; the website does not keep a second copy.
 
@@ -94,6 +94,13 @@ nothing and returns nondecreasing milliseconds for elapsed-time comparisons;
 it is not wall-clock time.
 
 <!-- slim-example: conformance/pass/monotonic_clock.slim | output: OK -->
+
+Bounded request/response networking is also one ordinary call:
+`io.tcp-exchange` takes a numeric address, port, request bytes, response limit,
+positive timeout, and output vector. It requires `alloc io`, returns `false`
+instead of exposing a failed handle, and leaves output unchanged on failure.
+
+<!-- slim-example: conformance/pass/tcp_exchange.slim -->
 
 ## Automatic parallelism
 

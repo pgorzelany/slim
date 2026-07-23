@@ -1,0 +1,1 @@
+(module missing-tcp-effect (fn main ((args (Vec Bytes))) I64 (effects alloc) (let output (Vec U8) (call vec.new) (match (call io.tcp-exchange "127.0.0.1" 8080 "PING" 64 1000 output) (true 0) (false 1)))))

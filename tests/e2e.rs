@@ -1,7 +1,10 @@
 use std::fs;
+use std::io::{ErrorKind, Read, Write};
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::Command;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::thread;
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 fn temporary_directory(name: &str) -> PathBuf {
     let nonce = SystemTime::now()
@@ -129,6 +132,116 @@ fn monotonic_clock_is_typed_effectful_and_allocation_free() {
     assert!(run.status.success());
     assert_eq!(run.stdout, b"OK\n");
     assert!(run.stderr.is_empty());
+}
+
+#[cfg(unix)]
+#[test]
+fn bounded_tcp_exchange_preserves_failure_state_and_closes_connections() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("tcp-exchange");
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    listener.set_nonblocking(true).unwrap();
+    let port = listener.local_addr().unwrap().port();
+
+    let template = fs::read_to_string(root.join("benchmarks/host/tcp_client.slim")).unwrap();
+    let source = write_source(&directory, &template.replace("8080", &port.to_string()));
+    let executable = directory.join("tcp-exchange");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let server = thread::spawn(move || {
+        let deadline = Instant::now() + Duration::from_secs(5);
+        for _ in 0..2 {
+            let mut stream = loop {
+                match listener.accept() {
+                    Ok((stream, _)) => break stream,
+                    Err(error)
+                        if error.kind() == ErrorKind::WouldBlock && Instant::now() < deadline =>
+                    {
+                        thread::sleep(Duration::from_millis(5));
+                    }
+                    Err(error) => panic!("loopback accept failed: {error}"),
+                }
+            };
+            stream
+                .set_read_timeout(Some(Duration::from_secs(2)))
+                .unwrap();
+            let mut request = Vec::new();
+            stream.read_to_end(&mut request).unwrap();
+            assert_eq!(request, b"PING");
+            stream.write_all(b"PONG").unwrap();
+        }
+    });
+
+    let run = Command::new(&executable).output().unwrap();
+    server.join().unwrap();
+    assert!(
+        run.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&run.stdout),
+        String::from_utf8_lossy(&run.stderr)
+    );
+    assert!(run.stdout.is_empty());
+    assert!(run.stderr.is_empty());
+
+    let emitted = Command::new(slimc()).arg(&source).output().unwrap();
+    assert!(emitted.status.success());
+    let generated = String::from_utf8(emitted.stdout).unwrap();
+    assert_eq!(generated.matches("slim_tcp_exchange(").count(), 3);
+
+    let analysis = Command::new(slimc())
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success());
+    let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains("(effects alloc io partial)"));
+    assert!(report.contains("(allocation-sites 1) (trap-sites 2)"));
+    assert!(report.contains("(reason allocation-or-io)"));
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn unsupported_network_target_returns_typed_failure() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("unsupported-network");
+    let executable = directory.join("unsupported-network");
+    let build = Command::new(native_compiler())
+        .arg("-std=c11")
+        .arg("-O2")
+        .arg("-Wall")
+        .arg("-Wextra")
+        .arg("-Werror")
+        .arg("-DSLIM_DISABLE_NETWORK=1")
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(root.join("tests/fixtures/unsupported_network.c"))
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let run = Command::new(&executable).output().unwrap();
+    assert!(run.status.success());
+    assert!(run.stdout.is_empty());
+    assert!(run.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]

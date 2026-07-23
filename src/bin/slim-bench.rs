@@ -1049,6 +1049,68 @@ fn run_host_evidence() {
         eprintln!("performance gate: host clock SLIM/C ratio {ratio:.3} exceeds {limit:.3}");
         std::process::exit(1);
     }
+
+    let hello_c = build.path.join("hello.c");
+    let hello_host = build.path.join("hello-host");
+    let hello_without_network = build.path.join("hello-without-network");
+    require_success(
+        Command::new(root.join("slimc"))
+            .arg("emit-c")
+            .arg(root.join("examples/hello.slim"))
+            .arg("-o")
+            .arg(&hello_c),
+        "host-cost hello emission",
+    );
+    require_success(
+        Command::new(native_compiler())
+            .arg("-std=c11")
+            .arg("-O2")
+            .arg("-DNDEBUG")
+            .arg("-Wall")
+            .arg("-Wextra")
+            .arg("-Werror")
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(&hello_c)
+            .arg(root.join("runtime/slim_rt.c"))
+            .arg("-o")
+            .arg(&hello_host),
+        "host-cost hello build",
+    );
+    require_success(
+        Command::new(native_compiler())
+            .arg("-std=c11")
+            .arg("-O2")
+            .arg("-DNDEBUG")
+            .arg("-Wall")
+            .arg("-Wextra")
+            .arg("-Werror")
+            .arg("-DSLIM_DISABLE_NETWORK=1")
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(&hello_c)
+            .arg(root.join("runtime/slim_rt.c"))
+            .arg("-o")
+            .arg(&hello_without_network),
+        "host-cost hello reference build",
+    );
+    assert_eq!(run_output(&hello_host, &[]), b"hello from SLIM\n");
+    assert_eq!(
+        run_output(&hello_without_network, &[]),
+        b"hello from SLIM\n"
+    );
+    let host_bytes = fs::metadata(&hello_host).unwrap().len();
+    let reference_bytes = fs::metadata(&hello_without_network).unwrap().len();
+    let binary_ratio = host_bytes as f64 / reference_bytes as f64;
+    println!("binary\thost_bytes\twithout_network_bytes\thost_over_reference");
+    println!("hello\t{host_bytes}\t{reference_bytes}\t{binary_ratio:.3}");
+    let binary_limit = performance_budget("host-network-binary-ratio", "hello");
+    if binary_ratio > binary_limit {
+        eprintln!(
+            "performance gate: unused host network binary ratio {binary_ratio:.3} exceeds {binary_limit:.3}"
+        );
+        std::process::exit(1);
+    }
 }
 
 fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {

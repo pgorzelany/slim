@@ -53,6 +53,12 @@ an `I64` result, effects require `io`, and code generation maps it to one
 allocation-free runtime call. Pure analysis and automatic parallelism
 conservatively treat the sample as effectful.
 
+D0076 adds `io.tcp-exchange` as one six-argument `alloc io` operation. Typing
+requires ordinary scalar inputs and a `Vec U8` output, code generation emits
+one runtime call, and analysis blocks effect reordering. D0077 closes Core 1I
+without resource handles; the compiler continues to use the smaller file,
+argument, and stdout boundary.
+
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction
 plans. The checker executes it from the structured declaration vector, while

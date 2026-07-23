@@ -1,11 +1,27 @@
+#ifndef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #include "slim_rt.h"
 
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+
+#define SLIM_NETWORK_ADDRESS_LIMIT 46
+
+#if (defined(__unix__) || defined(__APPLE__)) && !defined(SLIM_DISABLE_NETWORK)
+#include <arpa/inet.h>
+#include <fcntl.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#define SLIM_POSIX_NETWORK 1
+#endif
 
 struct SlimAllocation {
     struct SlimAllocation *next;
@@ -353,6 +369,262 @@ int64_t slim_monotonic_ms(void) {
         slim_last_monotonic_ms = milliseconds;
     }
     return slim_last_monotonic_ms;
+}
+
+#if defined(SLIM_POSIX_NETWORK)
+static int slim_socket_wait(int socket_fd, short events, int64_t deadline_ms) {
+    for (;;) {
+        int64_t now = slim_monotonic_ms();
+        if (now >= deadline_ms) {
+            return 0;
+        }
+        int64_t remaining = deadline_ms - now;
+        int timeout = remaining > INT_MAX ? INT_MAX : (int)remaining;
+        struct pollfd descriptor = {
+            .fd = socket_fd,
+            .events = events,
+            .revents = 0,
+        };
+        int result = poll(&descriptor, 1, timeout);
+        if (result > 0) {
+            if ((descriptor.revents & (POLLERR | POLLHUP | POLLNVAL)) != 0 &&
+                (descriptor.revents & events) == 0) {
+                return -1;
+            }
+            return (descriptor.revents & events) != 0 ? 1 : -1;
+        }
+        if (result == 0) {
+            return 0;
+        }
+        if (errno != EINTR) {
+            return -1;
+        }
+    }
+}
+
+static bool slim_socket_connect(
+    int socket_fd,
+    const struct sockaddr *address,
+    socklen_t address_length,
+    int64_t deadline_ms
+) {
+    int result = connect(socket_fd, address, address_length);
+    if (result == 0) {
+        return true;
+    }
+    if (errno != EINPROGRESS) {
+        return false;
+    }
+    if (slim_socket_wait(socket_fd, POLLOUT, deadline_ms) != 1) {
+        return false;
+    }
+    int socket_error = 0;
+    socklen_t error_length = sizeof(socket_error);
+    return getsockopt(
+               socket_fd,
+               SOL_SOCKET,
+               SO_ERROR,
+               &socket_error,
+               &error_length
+           ) == 0 &&
+           socket_error == 0;
+}
+
+static bool slim_socket_send_all(
+    int socket_fd,
+    SlimBytes request,
+    int64_t deadline_ms
+) {
+    int64_t sent = 0;
+    while (sent < request.len) {
+        if (slim_socket_wait(socket_fd, POLLOUT, deadline_ms) != 1) {
+            return false;
+        }
+#if defined(MSG_NOSIGNAL)
+        int flags = MSG_NOSIGNAL;
+#else
+        int flags = 0;
+#endif
+        ssize_t count = send(
+            socket_fd,
+            request.data + sent,
+            (size_t)(request.len - sent),
+            flags
+        );
+        if (count > 0) {
+            sent += (int64_t)count;
+        } else if (count == 0) {
+            return false;
+        } else if (errno != EINTR && errno != EAGAIN && errno != EWOULDBLOCK) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool slim_socket_receive(
+    int socket_fd,
+    int64_t response_limit,
+    int64_t deadline_ms,
+    SlimVec *scratch
+) {
+    uint8_t chunk[4096];
+    for (;;) {
+        if (slim_socket_wait(socket_fd, POLLIN, deadline_ms) != 1) {
+            return false;
+        }
+        int64_t remaining = response_limit - scratch->len;
+        size_t requested = remaining > (int64_t)sizeof(chunk)
+                               ? sizeof(chunk)
+                               : (size_t)remaining;
+        if (requested == 0) {
+            uint8_t extra = 0;
+            ssize_t count = recv(socket_fd, &extra, 1, 0);
+            return count == 0;
+        }
+        ssize_t count = recv(socket_fd, chunk, requested, 0);
+        if (count == 0) {
+            return true;
+        }
+        if (count < 0) {
+            if (errno == EINTR || errno == EAGAIN || errno == EWOULDBLOCK) {
+                continue;
+            }
+            return false;
+        }
+        int64_t required = scratch->len + (int64_t)count;
+        if (required > scratch->capacity) {
+            uint8_t *resized = slim_rt_realloc(
+                scratch->region,
+                scratch->data,
+                (size_t)scratch->capacity,
+                (size_t)required
+            );
+            if (resized == NULL) {
+                return false;
+            }
+            scratch->data = resized;
+            scratch->capacity = required;
+        }
+        memcpy(scratch->data + scratch->len, chunk, (size_t)count);
+        scratch->len = required;
+    }
+}
+#endif
+
+bool slim_tcp_exchange(
+    SlimBytes address,
+    int64_t port,
+    SlimBytes request,
+    int64_t response_limit,
+    int64_t timeout_ms,
+    SlimVec *output
+) {
+    if (output->element_size != sizeof(uint8_t)) {
+        slim_rt_trap("io.tcp-exchange requires a U8 vector");
+    }
+    if (address.len <= 0 || address.len >= SLIM_NETWORK_ADDRESS_LIMIT || port <= 0 ||
+        port > 65535 || request.len < 0 || response_limit < 0 ||
+        timeout_ms <= 0 || memchr(address.data, 0, (size_t)address.len) != NULL) {
+        return false;
+    }
+#if !defined(SLIM_POSIX_NETWORK)
+    (void)request;
+    return false;
+#else
+    char address_string[SLIM_NETWORK_ADDRESS_LIMIT];
+    memcpy(address_string, address.data, (size_t)address.len);
+    address_string[address.len] = 0;
+
+    struct sockaddr_storage socket_address;
+    memset(&socket_address, 0, sizeof(socket_address));
+    int family = AF_UNSPEC;
+    socklen_t address_length = 0;
+    struct sockaddr_in *ipv4 = (struct sockaddr_in *)&socket_address;
+    struct sockaddr_in6 *ipv6 = (struct sockaddr_in6 *)&socket_address;
+    if (inet_pton(AF_INET, address_string, &ipv4->sin_addr) == 1) {
+        family = AF_INET;
+        ipv4->sin_family = AF_INET;
+        ipv4->sin_port = htons((uint16_t)port);
+        address_length = sizeof(*ipv4);
+    } else if (inet_pton(AF_INET6, address_string, &ipv6->sin6_addr) == 1) {
+        family = AF_INET6;
+        ipv6->sin6_family = AF_INET6;
+        ipv6->sin6_port = htons((uint16_t)port);
+        address_length = sizeof(*ipv6);
+    } else {
+        return false;
+    }
+
+    int socket_fd = socket(family, SOCK_STREAM, 0);
+    if (socket_fd < 0) {
+        return false;
+    }
+#if defined(SO_NOSIGPIPE)
+    int no_sigpipe = 1;
+    (void)setsockopt(
+        socket_fd,
+        SOL_SOCKET,
+        SO_NOSIGPIPE,
+        &no_sigpipe,
+        sizeof(no_sigpipe)
+    );
+#endif
+    int flags = fcntl(socket_fd, F_GETFL, 0);
+    if (flags < 0 || fcntl(socket_fd, F_SETFL, flags | O_NONBLOCK) != 0) {
+        close(socket_fd);
+        return false;
+    }
+
+    int64_t start = slim_monotonic_ms();
+    int64_t deadline = timeout_ms > INT64_MAX - start
+                           ? INT64_MAX
+                           : start + timeout_ms;
+    bool connected = slim_socket_connect(
+        socket_fd,
+        (const struct sockaddr *)&socket_address,
+        address_length,
+        deadline
+    );
+    bool sent = connected && slim_socket_send_all(socket_fd, request, deadline);
+    bool write_closed = sent && shutdown(socket_fd, SHUT_WR) == 0;
+
+    SlimRegion scratch_region;
+    slim_region_init(&scratch_region, output->region);
+    SlimVec response = slim_vec_new(sizeof(uint8_t), &scratch_region);
+    bool received =
+        write_closed &&
+        slim_socket_receive(socket_fd, response_limit, deadline, &response);
+    int close_result = close(socket_fd);
+
+    bool valid = received && close_result == 0;
+    if (valid && response.len > INT64_MAX - output->len) {
+        valid = false;
+    }
+    if (valid) {
+        int64_t required = output->len + response.len;
+        if (required > output->capacity) {
+            uint8_t *resized = slim_rt_realloc(
+                output->region,
+                output->data,
+                (size_t)output->capacity,
+                (size_t)required
+            );
+            if (resized == NULL) {
+                valid = false;
+            } else {
+                output->data = resized;
+                output->capacity = required;
+            }
+        }
+        if (valid) {
+            memcpy(output->data + output->len, response.data, (size_t)response.len);
+            output->len = required;
+        }
+    }
+    slim_region_destroy(&scratch_region);
+    return valid;
+#endif
 }
 
 SlimUnit slim_print_i64(int64_t value) {

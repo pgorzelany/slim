@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1I safe typed host boundary in progress
+Status: Core 1J deterministic structured concurrency in progress
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -236,9 +236,11 @@ Core 1H has affine ownership, immutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic fork/join.
-Core 1I begins with one effect-gated monotonic clock. There is no second
-executable IR, garbage collector, source-level task system, general host
-handle, or unrestricted foreign boundary.
+Core 1I adds one effect-gated monotonic clock and one bounded whole TCP
+exchange, then closes without source handles. Core 1J is evaluating one
+structured form for demonstrated effectful overlap. There is no second
+executable IR, garbage collector, general host handle, or unrestricted foreign
+boundary.
 
 ## Remaining research questions
 

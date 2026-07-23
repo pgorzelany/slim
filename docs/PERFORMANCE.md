@@ -1,6 +1,6 @@
 # Core 1C performance contract
 
-Status: permanent contract through Core 1I
+Status: permanent contract through Core 1J
 
 Performance tests are permanent compatibility evidence. They are not deleted
 after an optimization lands, and a result file never replaces an executable
@@ -125,3 +125,8 @@ exceed 2.00. This isolates language call and recurrence overhead from the host
 clock's own latency. The test also requires successful output-free execution;
 it is not a substitute for the type, effect, allocation, trap, or monotonicity
 checks.
+
+D0076 separately compiles unrelated Hello executables with the supported
+network implementation enabled and disabled. Their same-host binary-size ratio
+must not exceed 1.03. The gate bounds inactive host support without pretending
+that loopback timing predicts real network latency.

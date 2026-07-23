@@ -5,6 +5,7 @@ allocation-failure	allocation-fail	conformance/pass/storage.slim	parity	exit=71;
 allocation-user-failure	allocation-fail	conformance/pass/lifetimes.slim	parity	exit=71;stdout=;stderr=SLIM allocation failure: exhausted at allocation 2\n	backend:retained-allocation-sites,runtime:allocation-failure
 file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.read-file
 monotonic-clock	run	conformance/pass/monotonic_clock.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.monotonic-ms,effect:io
+tcp-exchange	check-pass	conformance/pass/tcp_exchange.slim	parity	-	builtin:io.tcp-exchange,effect:alloc,effect:io,host:bounded-network
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
 typed-temporaries	run	conformance/pass/typed_temporaries.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-fact-temporaries,backend:aggregate-links,syntax:make,syntax:case,syntax:match
 record-wide	run	conformance/pass/record_wide.slim	parity	exit=0;stdout=42\n;stderr=	backend:aggregate-links,syntax:record,syntax:make,syntax:get,type:canonical-record-fields
@@ -22,6 +23,7 @@ format	format	conformance/tool/format.slim	parity	-	tool:format
 emit	emit	conformance/pass/scalars.slim	parity	-	backend:c11,tool:emit-deterministic
 missing-effect	check-fail	conformance/fail/missing_effect.slim	parity	E0343@83:105	diagnostic:E0343,effect:enforcement
 missing-clock-effect	check-fail	conformance/fail/missing_clock_effect.slim	parity	E0343@91:113	diagnostic:E0343,effect:io-enforcement
+missing-tcp-effect	check-fail	conformance/fail/missing_tcp_effect.slim	parity	E0343@120:181	diagnostic:E0343,effect:io-enforcement
 missing-alloc	check-fail	conformance/fail/missing_alloc.slim	parity	E0343@94:108	diagnostic:E0343,effect:alloc-enforcement
 missing-partial	check-fail	conformance/fail/missing_partial.slim	parity	E0343@151:167	diagnostic:E0343,effect:partial-enforcement
 use-after-move	check-fail	conformance/fail/use_after_move.slim	parity	E0315@223:229	diagnostic:E0315,ownership:move
