@@ -1,0 +1,8 @@
+(module computed-variant-match
+  (variant Maybe ((None) (Some I64)))
+  (fn main ((args (Vec Bytes))) I64 (effects io)
+    (match (case Maybe Some (call i64.add 20 22))
+      (None 1)
+      (Some (answer)
+        (let shown Unit (call io.print-i64 answer)
+          (let newline Unit (call io.println "") 0))))))

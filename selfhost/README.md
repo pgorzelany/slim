@@ -25,6 +25,9 @@ effect and ownership call resolution reuse its declaration links. Ordinary C
 emission consumes the same table for computed call, recursive-transfer,
 aggregate, variant-payload, and Boolean-match temporaries. Explicit let types,
 match destinations, and pattern bindings remain source or caller contracts.
+Boolean/variant match selection and arbitrary computed scrutinee materialization
+also consume the same expression fact; codegen no longer decodes the older
+packed binding-type link.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
 Core 1D can be frozen after its final acceptance audit and complete release

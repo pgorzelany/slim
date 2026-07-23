@@ -821,6 +821,13 @@ sequential cursor. The last backend effect-list read and codegen's unused
 geometric emit workload pin correctness and bounded lookup. The byte-identical
 fixed-point seed is 1,628,984 C bytes.
 
+The twenty-fifth slice adopts D0056's typed match scrutinees. Boolean/variant
+selection, variant type naming, and computed scrutinee materialization consume
+the checked expression fact. A direct computed variant that D0055 accepted and
+then trapped while emitting now compiles and prints `42`; bound-match output
+remains byte-identical. The obsolete packed binding-type decoder is removed,
+shrinking the byte-identical fixed-point seed to 1,627,142 C bytes.
+
 This is not yet a completed milestone. Explicit let types, match destinations,
 and pattern bindings remain legitimate source or caller contracts rather than
 redundant analysis. All accepted

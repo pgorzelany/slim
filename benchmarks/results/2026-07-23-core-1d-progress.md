@@ -503,3 +503,20 @@ The authoritative release run measures 3.229, 5.366, 12.737, and 38.688
 milliseconds, exponent 1.194. The complete gate passes all budgets, 100
 fixtures, 2,000 mutations, sanitizers, allocation-failure injection, native
 challenges, and deterministic bootstrap verification.
+
+## Typed match scrutinees
+
+D0056 makes match kind selection, variant type recovery, and arbitrary computed
+scrutinee materialization consume the checked expression fact. D0055 accepts a
+direct `(case ...)` scrutinee during checking but traps with `I64 division by
+zero` during emission because the form has no packed local-binding link. The
+candidate compiles and runs the same fixture, printing `42`, while existing
+bound-match programs retain byte-identical C.
+
+The self-check remains about 0.11 seconds, all 101 fixtures and 2,000 mutations
+pass the candidate, and the byte-identical portable fixed point shrinks to
+1,627,142 generated C bytes with SHA-256
+`c9ce8ca18be88c8fbd03b31e3231737cc641cc1e0476748ac8aa4b288869a031`.
+The complete gate passes all performance budgets, sanitizers,
+allocation-failure injection, native challenges, and deterministic bootstrap
+verification.

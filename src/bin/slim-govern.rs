@@ -1136,16 +1136,14 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("self-host code generation redundantly rebuilds declaration links".to_owned());
     }
     for required in [
-        "(fn linked_source_type",
-        "(call syntax/token_link tokens value)",
-        "(let variant_type I64 (call linked_source_type tokens value)",
+        "(let variant_type I64 (call fact_type_index facts value)",
         "(let item I64 (call syntax/token_link tokens record)",
         "(let variant_link I64 (call syntax/token_link tokens variant)",
         "(let variant_link I64 (call syntax/token_link tokens variant_type)",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
-                "self-host code generation is missing linked binding type use `{required}`"
+                "self-host code generation is missing checked type/member use `{required}`"
             ));
         }
     }
@@ -1329,7 +1327,10 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn fact_type_index",
         "(call typing/fact_type facts expr)",
         "(call fact_type_index facts argument)",
-        "computed_boolean Bool (call bool.and form boolean_match) (match computed_boolean (false unit) (true (let type_index I64 (call fact_type_index facts value)",
+        "(fn emit_match_value_binding ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (value I64) (inout output (Vec U8)))",
+        "(let type_index I64 (call fact_type_index facts value) (let boolean_match Bool (call i64.eq type_index -2)",
+        "(fn emit_variant_match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "(let variant_type I64 (call fact_type_index facts value)",
         "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
         "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
@@ -1365,6 +1366,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn call_allocates",
         "(fn builtin_argument_type",
         "(fn parameter_type_index",
+        "(fn linked_source_type",
         "(call effects/params_have source tokens callee_params 1)",
         "(call memory/function_has_alloc_effect source tokens item)",
         "(call memory/function_uses_local_region source tokens item)",
@@ -1391,6 +1393,11 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "planned-allocation-calls\trun\tconformance/pass/planned_allocation_calls.slim\tparity",
     ) {
         errors.push("retained allocation-call conformance fixture is missing".to_owned());
+    }
+    if !manifest.contains(
+        "computed-variant-match\trun\tconformance/pass/computed_variant_match.slim\tparity",
+    ) {
+        errors.push("typed computed-match conformance fixture is missing".to_owned());
     }
 }
 
