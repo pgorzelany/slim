@@ -45,10 +45,14 @@ safety facts, candidate fork sites, and explicit reasons for unavailable or
 unknown results. It stores at most 64 functions and 4,096 direct call edges and
 performs at most 64 graph-resolution passes.
 
-Candidate sites may overlap. The report does not select a schedule, create a
-task, or change generated code. Source task-token counts are exact
-structural facts; runtime profitability remains `unknown` until a separately
-measured cost model justifies execution.
+Candidate sites may overlap. D0067 derives one schedule by scanning stable
+source nodes in lexical order, selecting the earliest candidate at or after the
+prior selected join. The result is unique and pairwise non-overlapping. The
+report retains the complete candidate and selected counts and prints at most 64
+selected sites; a larger plan is labelled bounded rather than truncated
+silently. It still does not create a task or change generated code. Source
+task-token counts are exact structural facts; runtime profitability remains
+`unknown` until a separately measured cost model justifies execution.
 
 The shared `integer-proofs` view can prove guarded additions/subtractions,
 bounded arithmetic, nonzero division/remainder, and checked byte conversion.
@@ -82,7 +86,7 @@ unproved checked trap, 31 recur, 30 borrow exclusively, 22 allocate or perform
 I/O, and 22 call an unsafe function. Every function has between two and five
 blockers. Removing any single category would therefore unlock zero functions.
 
-D0066 advances the baseline to schema 3 and thirteen applications. Declared
+D0066 advances the baseline to thirteen applications. Declared
 effects remain reported for compatibility but no longer block a function when
 the complete implementation proves that no granted capability is exercised.
 The shared integer view also proves one canonical, strictly decreasing tail
@@ -92,6 +96,13 @@ adjacent calls produce one exact positive fork candidate. The original
 `variants/command` helper also becomes safe. Real allocation, I/O, unchecked
 traps, unsupported recurrence, exclusive access, and graph uncertainty remain
 blockers.
+
+D0067 advances the application baseline to schema 4. It stores complete
+candidate, selected, and reported-site counts in addition to every prior
+metric. `state_machine` remains exactly `1/1/1`; the other twelve applications
+remain zero. A separate overlap fixture proves that four candidates become
+three selected non-overlapping sites, and a 65-selection boundary fixture
+prints 64 sites with a bounded schedule guarantee.
 
 The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a

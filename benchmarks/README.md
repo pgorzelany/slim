@@ -59,10 +59,12 @@ not claim concurrency that its runtime cannot yet provide.
 The `parallelism` command runs the SLIM-written version-4 analysis twice over
 every native challenge, requires deterministic balanced reports, and compares
 schema-versioned safety and opportunity metrics with
-`parallelism-baseline.tsv`. Schema 3 retains primary reasons and complete
-per-function blocker incidence across thirteen applications. The
+`parallelism-baseline.tsv`. Schema 4 retains primary reasons, complete
+per-function blocker incidence, and candidate/selected/reported schedule counts
+across thirteen applications. The
 `state_machine` row is a permanent positive case: two independent
-two-million-step total recurrences must retain one eligible site.
+two-million-step total recurrences must retain one candidate and one selected,
+reported site.
 Changing an application or its proof classification requires an intentional
 baseline update and dated explanation. Reason columns are primary blockers;
 they must not be treated as the complete set of hazards in a function.

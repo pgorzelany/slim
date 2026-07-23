@@ -86,6 +86,9 @@ These rules apply to every change in this repository.
   exact guard, the same linked controller, positive exact step, total update,
   total recurrent arguments, total base and prefix, and one tail recurrence.
   Direction alone is never a termination proof.
+- Keep parallel candidates distinct from the selected plan. Selection uses
+  stable lexical node order, emits only pairwise non-overlapping intervals, and
+  becomes bounded rather than silently truncating after 64 reported sites.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

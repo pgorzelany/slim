@@ -83,6 +83,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_parallelism_application_baseline(root, &decisions, &mut errors);
     check_complete_parallel_blockers(root, &decisions, &mut errors);
     check_total_recurrence_evidence(root, &decisions, &mut errors);
+    check_deterministic_parallel_schedule(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -318,7 +319,7 @@ fn check_parallelism_application_baseline(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
-    if !baseline.contains("# schema=3")
+    if !baseline.contains("# schema=4")
         || baseline
             .lines()
             .filter(|line| !line.starts_with('#') && !line.is_empty())
@@ -326,7 +327,7 @@ fn check_parallelism_application_baseline(
             != 13
     {
         errors.push(
-            "parallelism baseline must retain schema 3 and all thirteen applications".to_owned(),
+            "parallelism baseline must retain schema 4 and all thirteen applications".to_owned(),
         );
     }
     for challenge in [
@@ -410,7 +411,7 @@ fn check_complete_parallel_blockers(
         "fn parallelism_blockers(",
         "blocker_{column}",
         "every application function must have one complete blocker set",
-        "parallelism baseline line {} must have thirty columns",
+        "parallelism baseline line {} must have thirty-three columns",
     ] {
         if !benchmark.contains(required) {
             errors.push(format!(
@@ -437,7 +438,7 @@ fn check_complete_parallel_blockers(
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     for required in [
-        "# schema=3",
+        "# schema=4",
         "blocker_declared_effects",
         "blocker_checked_trap",
         "blocker_recurrence",
@@ -523,7 +524,7 @@ fn check_total_recurrence_evidence(
         "total-countdown (guarantee exact) (status safe)",
         "overdeclared (guarantee exact) (status safe)",
         "countdown-pair (guarantee exact) (status safe)",
-        "(eligible-sites 2)",
+        "(eligible-sites 4)",
     ] {
         if !tests.contains(required) {
             errors.push(format!("total recurrence evidence is missing `{required}`"));
@@ -537,7 +538,7 @@ fn check_total_recurrence_evidence(
         .any(|line| line.starts_with("state_machine\t1423\t3\t1\t1\t2\t2\t"))
     {
         errors.push(
-            "schema-3 baseline must retain the positive state_machine application".to_owned(),
+            "parallelism baseline must retain the positive state_machine application".to_owned(),
         );
     }
 
@@ -550,6 +551,104 @@ fn check_total_recurrence_evidence(
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     if surface.contains("D0066") {
         errors.push("D0066 has Primitive: none and must not add Core language surface".to_owned());
+    }
+}
+
+fn check_deterministic_parallel_schedule(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0067") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "deterministic parallel scheduling requires accepted primitive-free D0067 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("deterministic parallel schedule decision D0067 is missing".to_owned()),
+    }
+
+    if !root
+        .join("benchmarks/results/2026-07-23-core-1f-schedule-selection.md")
+        .is_file()
+    {
+        errors.push("deterministic schedule result artifact is missing".to_owned());
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(record Schedule ((candidates I64) (selected I64) (reported I64) (selected_until I64)))",
+        "(schedule-limit 64)",
+        "(call i64.ge index (get schedule selected_until))",
+        "(call bool.and eligible after_previous)",
+        "(policy lexical-earliest-nonoverlap)",
+        "(candidate-sites ",
+        "(selected-sites ",
+        "(reported-sites ",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!(
+                "deterministic SLIM schedule is missing `{required}`"
+            ));
+        }
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "fn parallelism_schedule_limit_is_explicit_and_deterministic()",
+        "(candidate-sites 4) (selected-sites 3) (reported-sites 3)",
+        "(candidate-sites 129) (selected-sites 65) (reported-sites 64)",
+        "report.matches(\"(fork-site \").count(), 64",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!(
+                "deterministic schedule evidence is missing `{required}`"
+            ));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    for required in [
+        "candidate_sites: usize",
+        "selected_sites: usize",
+        "reported_sites: usize",
+        "parallelism baseline line {} must have thirty-three columns",
+    ] {
+        if !benchmark.contains(required) {
+            errors.push(format!(
+                "schema-4 schedule benchmark is missing `{required}`"
+            ));
+        }
+    }
+
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    for required in [
+        "# schema=4",
+        "candidate_sites\tselected_sites\treported_sites\teligible_sites",
+        "state_machine\t1423\t3\t1\t1\t2\t2\t",
+    ] {
+        if !baseline.contains(required) {
+            errors.push(format!(
+                "schema-4 schedule baseline is missing `{required}`"
+            ));
+        }
+    }
+    let state = baseline
+        .lines()
+        .find(|line| line.starts_with("state_machine\t"))
+        .unwrap_or_default();
+    if !state.ends_with("\t1\t1\t1\t1") {
+        errors.push("state_machine schedule baseline must remain exactly 1/1/1".to_owned());
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0067") {
+        errors.push("D0067 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 

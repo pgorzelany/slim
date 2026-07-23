@@ -528,7 +528,7 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(parallelism (guarantee exact) (function-limit 64) (edge-limit 4096)",
+        "(parallelism (guarantee exact) (function-limit 64) (edge-limit 4096) (resolution-pass-limit 64) (schedule-limit 64)",
         "safe-left (guarantee exact) (status safe) (blockers)",
         "safe-right (guarantee exact) (status safe) (blockers)",
         "overdeclared (guarantee exact) (status safe) (blockers)",
@@ -540,15 +540,51 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
         "repeats (guarantee exact) (status unavailable) (reason recurrence) (blockers recurrence)",
         "countdown (guarantee exact) (status safe) (blockers)",
         "countdown-pair (guarantee exact) (status safe) (blockers)",
+        "overlap (guarantee exact) (status safe) (blockers)",
         "cycle-left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
         "(race-free true) (deadlock-free true) (profitability unknown)",
-        "(eligible-sites 2)",
+        "(schedule (policy lexical-earliest-nonoverlap) (guarantee exact) (candidate-sites 4) (selected-sites 3) (reported-sites 3))",
+        "(eligible-sites 4)",
     ] {
         assert!(
             report.contains(required),
             "missing parallel fact: {required}"
         );
     }
+    assert_eq!(report.matches("(fork-site ").count(), 3);
+}
+
+#[test]
+fn parallelism_schedule_limit_is_explicit_and_deterministic() {
+    let directory = temporary_directory("parallel-schedule-bound");
+    let mut body = "true".to_owned();
+    for index in (0..130).rev() {
+        body = format!("(let task-{index} Bool (call work) {body})");
+    }
+    let source = format!(
+        "(module parallel-schedule-bound (fn work () Bool (effects) true) (fn plan () Bool (effects) {body}) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n"
+    );
+    let path = write_source(&directory, &source);
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&path)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert!(first.stderr.is_empty());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    assert!(report.contains(
+        "(schedule (policy lexical-earliest-nonoverlap) (guarantee bounded) (candidate-sites 129) (selected-sites 65) (reported-sites 64))"
+    ));
+    assert!(report.contains("(eligible-sites 129)"));
+    assert_eq!(report.matches("(fork-site ").count(), 64);
+    fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]

@@ -992,10 +992,19 @@ applications, analysis scales at exponent 0.890 under the 1.25 budget, and the
 1,880,430-byte seed reproduces exactly. Detailed evidence is in
 `benchmarks/results/2026-07-23-core-1f-total-recurrence.md`.
 
-Before any execution decision, Core 1F still needs a deterministic bounded
-policy for overlapping candidates, a source-order trap/failure and cancellation
-model, and measured task-cost thresholds that beat serial execution after
-creation and join overhead. The scored acceptance decision must demonstrate
-those requirements without adding locks, hidden synchronization, or cost to
-unselected code; otherwise Core 1F must retain an explicit non-execution
-boundary rather than speculate.
+D0067 turns overlapping candidates into one deterministic bounded plan. Stable
+lexical order greedily selects the earliest candidate at or after the previous
+join, so selected intervals never overlap and selection remains linear. The
+report stores complete candidate and selected counts, prints at most 64 sites,
+and labels a larger plan bounded. A permanent fixture reduces four candidates
+to three selected sites; a 129-candidate boundary selects 65 and prints exactly
+64. Application baseline schema 4 retains `state_machine` at exactly one
+candidate, selection, and report. Detailed evidence is in
+`benchmarks/results/2026-07-23-core-1f-schedule-selection.md`.
+
+Before any execution decision, Core 1F still needs a source-order trap/failure
+and cancellation model and measured task-cost thresholds that beat serial
+execution after creation and join overhead. The scored acceptance decision
+must demonstrate those requirements without adding locks, hidden
+synchronization, or cost to unselected code; otherwise Core 1F must retain an
+explicit non-execution boundary rather than speculate.

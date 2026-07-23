@@ -800,6 +800,9 @@ struct ParallelismEvidence {
     safe_functions: usize,
     reasons: [usize; PARALLELISM_REASONS.len()],
     blockers: [usize; PARALLELISM_REASONS.len()],
+    candidate_sites: usize,
+    selected_sites: usize,
+    reported_sites: usize,
     eligible_sites: usize,
 }
 
@@ -809,7 +812,7 @@ fn run_parallelism_evidence() {
     let challenges = challenge_manifest();
     let baseline = parallelism_baseline();
     println!(
-        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\t{}\teligible_sites",
+        "challenge\tsource_bytes\tfunctions\tchecked_sites\treported_total_sites\trefinements\tsafe_functions\t{}\t{}\tcandidate_sites\tselected_sites\treported_sites\teligible_sites",
         PARALLELISM_REASONS
             .iter()
             .map(|(column, _)| *column)
@@ -877,6 +880,12 @@ fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidenc
         blocker_sets, functions,
         "every application function must have one complete blocker set"
     );
+    let candidate_sites = report_number(parallel, "(candidate-sites ");
+    let eligible_sites = report_number(parallel, "(eligible-sites ");
+    assert_eq!(
+        candidate_sites, eligible_sites,
+        "eligible-site compatibility count must equal the complete candidate count"
+    );
     ParallelismEvidence {
         source_bytes: fs::metadata(path)
             .expect("parallelism application metadata")
@@ -888,7 +897,10 @@ fn measure_parallelism_evidence(path: &Path, report: &str) -> ParallelismEvidenc
         safe_functions,
         reasons,
         blockers,
-        eligible_sites: report_number(parallel, "(eligible-sites "),
+        candidate_sites,
+        selected_sites: report_number(parallel, "(selected-sites "),
+        reported_sites: report_number(parallel, "(reported-sites "),
+        eligible_sites,
     }
 }
 
@@ -908,7 +920,13 @@ fn print_parallelism_evidence(challenge: &str, evidence: &ParallelismEvidence) {
     for count in evidence.blockers {
         print!("\t{count}");
     }
-    println!("\t{}", evidence.eligible_sites);
+    println!(
+        "\t{}\t{}\t{}\t{}",
+        evidence.candidate_sites,
+        evidence.selected_sites,
+        evidence.reported_sites,
+        evidence.eligible_sites
+    );
 }
 
 fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
@@ -922,8 +940,8 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
         let columns: Vec<_> = line.split('\t').collect();
         assert_eq!(
             columns.len(),
-            30,
-            "parallelism baseline line {} must have thirty columns",
+            33,
+            "parallelism baseline line {} must have thirty-three columns",
             line_number + 1
         );
         let number = |index: usize| {
@@ -952,7 +970,10 @@ fn parallelism_baseline() -> BTreeMap<String, ParallelismEvidence> {
             safe_functions: number(6),
             reasons,
             blockers,
-            eligible_sites: number(29),
+            candidate_sites: number(29),
+            selected_sites: number(30),
+            reported_sites: number(31),
+            eligible_sites: number(32),
         };
         assert!(
             baseline.insert(columns[0].to_owned(), evidence).is_none(),

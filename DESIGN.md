@@ -2,7 +2,7 @@
 
 Status: Core 1F proof infrastructure and research direction
 Name: **SLIM — Small Language for Intelligent Machines**
-Last updated: 2026-07-22
+Last updated: 2026-07-23
 
 ## Vision
 
@@ -139,8 +139,9 @@ classification. Every fact is labelled exact, bounded, or unknown. It does not
 claim to measure valid or reachable application states without a specification.
 
 Core 1F strengthens totality for a bounded integer domain. It proves selected
-literal, immutable-flow, guarded arithmetic, nonzero division/remainder, and
-checked conversion sites, while mutation, collection bounds, recurrence,
+literal, immutable-flow, guarded arithmetic, denominator-safe
+division/remainder, checked conversion sites, and one canonical strictly
+decreasing tail recurrence. Mutation, collection bounds, general recurrence,
 interprocedural return ranges, and out-of-domain values remain unknown.
 
 ### 9. Programs should be reducible
