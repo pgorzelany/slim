@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1F implementation and research direction
+Status: Core 1F proof infrastructure and research direction
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-22
 
@@ -97,11 +97,10 @@ may therefore need distinct fast-development and optimized-build modes.
 - Types should help represent domain rules so invalid states are not
   representable.
 
-Core 1D is replacing shallow and repeated token interpretation with one typed
-compiler view. The implemented slice validates every declared type and nested
-expression, while records and variant matches use one declared-order form.
-Code-generation reuse, project source maps, and measured bounded lookup remain
-acceptance work rather than completed claims.
+Core 1D replaced shallow and repeated token interpretation with one checked
+compiler view. Core 1F now derives a bounded integer interval and totality view
+from those same token identities and types. Missing bounds remain unknown, and
+no proof analysis changes ordinary checking or generated code.
 
 ### 8. Programs should be measurable
 
@@ -138,6 +137,11 @@ SLIM: primitive representable-state cardinality, structural/effect/failure and
 reduction sites, ownership pressure, dependency facts, and a narrow totality
 classification. Every fact is labelled exact, bounded, or unknown. It does not
 claim to measure valid or reachable application states without a specification.
+
+Core 1F strengthens totality for a bounded integer domain. It proves selected
+literal, immutable-flow, guarded arithmetic, nonzero division/remainder, and
+checked conversion sites, while mutation, collection bounds, recurrence,
+interprocedural return ranges, and out-of-domain values remain unknown.
 
 ### 9. Programs should be reducible
 

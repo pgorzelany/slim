@@ -936,10 +936,30 @@ bounded result, and the 1,711,913-byte portable seed reproduces exactly. Dated
 measurements and the 5.51% compiler-size cost are recorded in
 `benchmarks/results/2026-07-23-core-1f-progress.md`.
 
+D0063 advances the report to version 4 without adding syntax or execution. A
+shared SLIM-written integer view derives sound optional bounds inside a fixed
+±1,000,000,000 proof domain and retains at most 64 comparison refinements.
+Quality and parallelism consume the same node facts. Guarded addition and
+subtraction, exact nested arithmetic, nonzero bounded division/remainder, and
+valid checked conversion can now become total; unguarded overflow, zero
+divisors, unsupported collection bounds, and out-of-domain reasoning remain
+unknown hazards. The report prints at most 64 checked sites and records both
+refinement saturation and the complete site count.
+
+Both fixed limits now have deterministic boundary tests: 33 nested comparisons
+fill the 64-refinement table, while 65 checked operations produce exactly 64
+printed facts and an exact complete count. Full analysis retains a 0.868
+scaling exponent under the unchanged 1.25 budget. The 712-function compiler
+project reports 1,013 checked sites and 14 refinements without saturation, and
+the 1,832,302-byte portable seed reproduces exactly. D0063's 7.03% incremental
+compiler-size cost and full measurements are recorded in
+`benchmarks/results/2026-07-23-core-1f-integer-proofs.md`.
+
 Before any execution decision, Core 1F still needs substantial application
-evidence, positive range/totality proofs that expand useful work beyond small
-trap-free call DAGs, a deterministic trap and cancellation model, and measured
-task-cost thresholds that beat serial execution after creation and join
-overhead. Candidate sites may overlap, so schedule selection also requires a
-deterministic bounded policy. A later scored decision must demonstrate all of
-these without adding locks, hidden synchronization, or cost to unselected code.
+evidence using these positive range/totality proofs, collection-bounds and
+interprocedural precision only where applications justify them, a deterministic
+trap and cancellation model, and measured task-cost thresholds that beat
+serial execution after creation and join overhead. Candidate sites may overlap,
+so schedule selection also requires a deterministic bounded policy. A later
+scored decision must demonstrate all of these without adding locks, hidden
+synchronization, or cost to unselected code.

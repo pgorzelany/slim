@@ -79,6 +79,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_allocation_free_region_elision(root, &decisions, &mut errors);
     check_core_1e_acceptance(root, &decisions, &mut errors);
     check_parallelism_evidence(root, &decisions, &mut errors);
+    check_integer_proof_evidence(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -137,9 +138,9 @@ fn check_parallelism_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 3",
+        "(analysis 4",
         "(inout typed_facts (Vec typing/Fact))",
-        "(call parallel/emit_module_facts source tokens typed_facts output)",
+        "(call parallel/emit_module_facts source tokens typed_facts range_facts output)",
     ] {
         if !analysis.contains(required) {
             errors.push(format!(
@@ -177,6 +178,94 @@ fn check_parallelism_evidence(
         || !e2e.contains("project_analysis_dogfoods_the_bounded_parallelism_view")
     {
         errors.push("Core 1F report structure and hard bounds lack durable tests".to_owned());
+    }
+}
+
+fn check_integer_proof_evidence(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0063") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "integer proof evidence requires accepted primitive-free D0063 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("integer proof evidence decision D0063 is missing".to_owned()),
+    }
+
+    for required in [
+        "docs/INTEGER_PROOFS.md",
+        "selfhost/ranges.slim",
+        "conformance/evidence/integer_ranges.slim",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("integer proof artifact is missing {required}"));
+        }
+    }
+
+    let ranges = fs::read_to_string(root.join("selfhost/ranges.slim")).unwrap_or_default();
+    for required in [
+        "(record Fact ((analyzed Bool) (lower-known Bool)",
+        "(call typing/linked_binding_declaration",
+        "(call i64.ge value -1000000000)",
+        "(call i64.le value 1000000000)",
+        "(call i64.ge refinement-count 64)",
+        "(domain -1000000000 1000000000)",
+        "(refinement-limit 64)",
+        "(checked-site-report-limit 64)",
+    ] {
+        if !ranges.contains(required) {
+            errors.push(format!(
+                "bounded integer proof implementation is missing `{required}`"
+            ));
+        }
+    }
+
+    let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
+    for required in [
+        "(analysis 4",
+        "(call ranges/analyze source tokens typed_facts)",
+        "(call ranges/emit-module-facts source tokens range_view output)",
+    ] {
+        if !analysis.contains(required) {
+            errors.push(format!("analysis version 4 is missing `{required}`"));
+        }
+    }
+
+    let quality = fs::read_to_string(root.join("selfhost/quality.slim")).unwrap_or_default();
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    if !quality.contains("(call ranges/fact-total range_facts body)")
+        || !parallel.contains("(call ranges/fact-total range_facts expr)")
+    {
+        errors.push(
+            "quality and parallelism must consume the same exact-node integer totality facts"
+                .to_owned(),
+        );
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0063") {
+        errors.push("D0063 has Primitive: none and must not add Core language surface".to_owned());
+    }
+
+    let e2e = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns",
+        "integer_range_refinement_limit_is_explicit_and_deterministic",
+        "integer_checked_site_report_limit_is_explicit_and_deterministic",
+        "(checked-site-count 65) (guarantee bounded)",
+        "zero-divisor (guarantee exact) (status unavailable)",
+        "domain-limit (guarantee exact) (status unavailable)",
+    ] {
+        if !e2e.contains(required) {
+            errors.push(format!("integer proof evidence is missing `{required}`"));
+        }
     }
 }
 
@@ -1866,7 +1955,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
-        "(analysis 3",
+        "(analysis 4",
         "(call quality/emit_module_facts",
         "(ownership-pressure",
         "(max-live-owned ",

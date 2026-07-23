@@ -18,8 +18,10 @@ compiler view proves all of the following:
 - every user function it calls has the same property.
 
 Defined overflow and bounds traps remain observable even in an `(effects)`
-function, so declared effects alone never establish reorder-safety. Cyclic call
-graphs and facts beyond a fixed bound are `unknown`. Unknown never means safe.
+function, so declared effects alone never establish reorder-safety. A checked
+integer operation stops being a hazard only when D0063's fact for that exact
+source node positively proves totality. Cyclic call graphs and facts beyond a
+fixed bound are `unknown`. Unknown never means safe.
 
 The analysis recognizes an independent fork site when two adjacent immutable
 `let` initializers are reorder-safe user computations and the second does not
@@ -32,7 +34,7 @@ structured model.
 
 `slimc analyze SOURCE_OR_PROJECT` remains the only command. A project is
 analyzed through its normal validated, flattened, typed artifact; there is no
-second project parser or checker. Analysis version 3 adds a
+second project parser or checker. Analysis version 4 contains the version 3
 `parallelism` section with stable source-token node identities, per-function
 safety facts, candidate fork sites, and explicit reasons for unavailable or
 unknown results. It stores at most 64 functions and 4,096 direct call edges and
@@ -42,6 +44,11 @@ Candidate sites may overlap. The report does not select a schedule, create a
 task, or change generated code. Source task-token counts are exact
 structural facts; runtime profitability remains `unknown` until a separately
 measured cost model justifies execution.
+
+The shared `integer-proofs` view can prove guarded additions/subtractions,
+bounded arithmetic, nonzero division/remainder, and checked byte conversion.
+Its fixed domain and refinement limits are described in
+`docs/INTEGER_PROOFS.md`. Parallel analysis never reconstructs those facts.
 
 The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a

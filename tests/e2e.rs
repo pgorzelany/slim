@@ -344,12 +344,12 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 3 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 4 (module vector-sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
     assert!(report.contains("(allocation-sites 1)"));
-    assert!(report.contains("(totality (guarantee unknown) (reason calls-or-recursion))"));
+    assert!(report.contains("(totality (guarantee unknown) (reason recursion-or-unproved-call))"));
     assert!(report.contains("(function 71 sum"));
     assert!(
         report.contains("(binding 76 values (type (Vec I64)) (ownership owned) (scope-end 138)")
@@ -394,6 +394,109 @@ fn quality_analysis_classifies_exact_and_unknown_facts() {
         "(state-model Decision (guarantee exact) (cardinality (sum (pow2 0) (pow2 1) (pow2 8))))"
     ));
     assert!(report.contains("(totality (guarantee exact) (status total))"));
+}
+
+#[test]
+fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/evidence/integer_ranges.slim");
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&source)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert!(first.stderr.is_empty());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    for required in [
+        "(analysis 4 (module integer-ranges)",
+        "(integer-proofs (domain -1000000000 1000000000)",
+        "(refinements 4) (refinements-truncated false)",
+        "(checked-site 26 (status total) (lower unknown) (upper 10))",
+        "(checked-site 62 (status total) (lower -10) (upper unknown))",
+        "(checked-site 84 (status total) (lower 44) (upper 44))",
+        "(checked-site 105 (status total) (lower 42) (upper 42))",
+        "(checked-site 140 (status unknown)",
+        "(checked-site 156 (status unknown)",
+        "(checked-site 172 (status unknown)",
+        "guarded-upper (guarantee exact) (status safe)",
+        "guarded-lower (guarantee exact) (status safe)",
+        "exact-arithmetic (guarantee exact) (status safe)",
+        "unguarded (guarantee exact) (status unavailable) (reason checked-trap)",
+        "zero-divisor (guarantee exact) (status unavailable) (reason checked-trap)",
+        "domain-limit (guarantee exact) (status unavailable) (reason checked-trap)",
+        "(eligible-sites 1)",
+    ] {
+        assert!(
+            report.contains(required),
+            "missing integer fact: {required}"
+        );
+    }
+}
+
+#[test]
+fn integer_range_refinement_limit_is_explicit_and_deterministic() {
+    let directory = temporary_directory("integer-range-bound");
+    let mut body = "value".to_owned();
+    for _ in 0..33 {
+        body = format!("(match (call i64.lt value 10) (true {body}) (false value))");
+    }
+    let source = format!(
+        "(module integer-range-bound (fn nested ((value I64)) I64 (effects) {body}) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n"
+    );
+    let path = write_source(&directory, &source);
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&path)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    assert!(report.contains("(refinement-limit 64) (refinements 64)"));
+    assert!(report.contains("(refinements-truncated true)"));
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn integer_checked_site_report_limit_is_explicit_and_deterministic() {
+    let directory = temporary_directory("integer-site-bound");
+    let mut source = "(module integer-site-bound".to_owned();
+    for index in 0..65 {
+        source.push_str(&format!(
+            " (fn f{index} ((value I64)) I64 (effects) (call i64.add value 1))"
+        ));
+    }
+    source.push_str(" (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    let path = write_source(&directory, &source);
+    let analyze = || {
+        Command::new(slimc())
+            .arg("analyze")
+            .arg(&path)
+            .output()
+            .unwrap()
+    };
+    let first = analyze();
+    let second = analyze();
+    assert!(first.status.success());
+    assert_eq!(first.stdout, second.stdout);
+    assert!(report_parentheses_are_balanced(&first.stdout));
+    let report = String::from_utf8(first.stdout).unwrap();
+    assert!(report.contains("(checked-site-report-limit 64)"));
+    assert!(report.contains("(checked-site-count 65) (guarantee bounded)"));
+    assert_eq!(report.matches("(checked-site ").count(), 64);
+    fs::remove_dir_all(directory).unwrap();
 }
 
 #[test]
@@ -499,7 +602,7 @@ fn project_analysis_dogfoods_the_bounded_parallelism_view() {
     assert!(output.stderr.is_empty());
     assert!(report_parentheses_are_balanced(&output.stdout));
     let report = String::from_utf8(output.stdout).unwrap();
-    assert!(report.starts_with("(analysis 3 (module project)"));
+    assert!(report.starts_with("(analysis 4 (module project)"));
     assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
     assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
 }

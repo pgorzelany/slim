@@ -66,6 +66,12 @@ These rules apply to every change in this repository.
   or infer application invariants from representable state alone.
 - Keep default evidence collection approximately linear. Exhaustive search is
   allowed only behind an explicit command with a hard checked bound.
+- A checked operation may lose its trap hazard only from a positive fact for
+  that exact checked node. Out-of-domain values, saturated refinement budgets,
+  missing facts, and unsupported transfers remain unknown.
+- Keep abstract interpretation domains and refinement/report limits explicit,
+  deterministic, and crossed by permanent tests. The analyzer's own arithmetic
+  must be unable to overflow inside its declared proof domain.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

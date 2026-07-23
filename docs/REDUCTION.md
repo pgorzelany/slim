@@ -39,7 +39,7 @@ operation that may trap, aggregate move, mutation, or exclusive borrow.
 
 ## Analysis contract
 
-`slimc analyze SOURCE` writes a deterministic `(analysis 3 ...)` report. Token
+`slimc analyze SOURCE` writes a deterministic `(analysis 4 ...)` report. Token
 indices in the canonical input are stable node and binding identities. Each
 function reports its declared effects and every parameter, lexical binding,
 and pattern binding that fits the bounded fact table. Binding facts include the
