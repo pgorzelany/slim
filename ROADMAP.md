@@ -737,13 +737,20 @@ interval instead of printing flattened bytes. A project fixture pins
 self-check remains near 0.11 seconds, the corpus grows to 94 fixtures, and the
 byte-identical seed is 1,635,539 C bytes.
 
+The fifteenth slice adopts D0046's bounded record member lookup. Record
+construction consumes the checked field-definition link through a constant-time
+structural verifier, and the final recursive textual aggregate-member scanner
+is removed. The sixteen-field `record-wide` fixture remains executable and the
+self-check remains near 0.11 seconds. The byte-identical fixed-point seed is
+1,635,270 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
 source projection, while legacy move and secondary Boolean-recovery reports
 have not yet joined that channel. Core 1D
-acceptance requires bounded expression-fact and remaining member lookup, removal of
-the remaining redundant ordinary-generation analysis, complete project
+acceptance requires bounded expression-fact lookup, removal of the remaining
+redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
 same-host regression budgets, allocation-failure and sanitizer coverage, and
 the complete release/bootstrap gate.

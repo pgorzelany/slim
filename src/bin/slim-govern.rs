@@ -1004,6 +1004,16 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let Ok(codegen) = fs::read_to_string(&codegen_path) else {
         return;
     };
+    let bounded_record_decision =
+        fs::read_to_string(root.join("design/decisions/D0046-bounded-record-member-lookup.md"))
+            .unwrap_or_default();
+    for required in ["# D0046: Bounded record member lookup", "Status: accepted"] {
+        if !bounded_record_decision.contains(required) {
+            errors.push(format!(
+                "bounded record member lookup is missing accepted decision evidence `{required}`"
+            ));
+        }
+    }
     if codegen.contains("link_declaration_names") {
         errors.push("self-host code generation redundantly rebuilds declaration links".to_owned());
     }
@@ -1033,6 +1043,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if codegen.contains("(fn find_variant_case") {
         errors.push("self-host code generation restored variant case scans".to_owned());
     }
+    if codegen.contains("(fn find_record_field") {
+        errors.push("self-host code generation restored record field scans".to_owned());
+    }
     for required in [
         "(let case_link I64 (call syntax/token_link tokens expr)",
         "(let case_link I64 (call syntax/token_link tokens cursor)",
@@ -1040,6 +1053,17 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         if !codegen.contains(required) {
             errors.push(format!(
                 "self-host code generation is missing bounded variant member query `{required}`"
+            ));
+        }
+    }
+    for required in [
+        "(fn checked_record_field_link",
+        "(call syntax/token_link tokens field_form)",
+        "(call checked_record_field_link source tokens cursor definition name_start name_end)",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "self-host code generation is missing bounded record member query `{required}`"
             ));
         }
     }

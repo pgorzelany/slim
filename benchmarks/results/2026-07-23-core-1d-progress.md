@@ -219,8 +219,8 @@ old per-reference declaration scan.
   the same projection.
 - Code generation still derives allocation-effect, recurrence, and expression
   facts from token structure instead of consuming bounded typed-view queries.
-- Member lookup, adversarial aggregate tests, allocation-failure checks,
-  sanitizers, and the complete release gate remain to be frozen together.
+- Adversarial expression tests and geometric source-shape budgets still need to
+  join the existing aggregate, allocation-failure, sanitizer, and release gates.
 
 ## Retained memory plan
 
@@ -259,3 +259,48 @@ Self-validation remains about 0.11 seconds. The byte-identical seed is
 1,635,539 C bytes, and the corpus contains 94 fixtures plus 2,000 deterministic
 mutations. Secondary recovery inside an already invalid Boolean match remains
 direct in standalone mode and is not claimed as migrated.
+
+## Rejected ownership diagnostic stream shapes
+
+Several attempts moved legacy use-after-move discovery into a typed event
+stream before issue projection. A `MoveEvent` carried inside `check.slim`
+pushed self-validation beyond nine seconds. Moving the event into a separate
+ownership module still exceeded eight seconds, and a clean split between a
+token-state vector and a final issue vector exceeded fifteen seconds.
+
+Smaller isolation experiments found two sensitive compiler-source shapes:
+classification followed by mutation is fast when split across helpers, while
+branching and mutation in the same function crosses the cliff; recursively
+converting events while carrying both event and issue vectors also crosses it.
+All candidates were reverted. No token sentinel, overloaded issue field, or
+rendered-diagnostic shortcut was retained. Move diagnostics remain an explicit
+Core 1D blocker until their structure has a durable geometric reproducer and a
+bounded implementation.
+
+A separate compact-plan experiment replaced the existing `local_region Bool`
+with a same-width `summary I64` intended to retain the allocation effect. Even
+without widening `FunctionPlan`, self-validation exceeded six seconds. That
+candidate was also reverted; record width alone is not the cause of the
+source-shape cliff.
+
+## Bounded record members
+
+D0046 consumes the record-field links published by D0038 and removes the last
+recursive textual aggregate-member scanner. The checked link is verified
+against the first record-field token and the existing field-name source span,
+so lookup is independent of declared field count without blindly trusting an
+unchecked index. There is no fallback scan.
+
+The accepted change intentionally preserves the surrounding recursive emitter.
+Extracting a leaf and calling it through a new recursive wrapper accumulated
+more than 94 seconds of CPU time before interruption. Removing three apparently
+redundant scalar bindings from the existing recursive source exceeded eight
+seconds. An uncalled leaf, a non-recursive wrapper, and the final in-place
+lookup replacement each remained near 0.10--0.11 seconds. These results are
+recorded as compiler source-shape evidence, not rationalized away as runtime
+cost.
+
+`record-wide` still constructs sixteen ordered fields and prints `42`. The
+complete release gate passes 94 fixtures, 2,000 deterministic malformed-input
+mutations, quick performance budgets, sanitizers, allocation-failure injection,
+and a byte-identical 1,635,270-byte C bootstrap seed.
