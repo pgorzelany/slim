@@ -1,0 +1,11 @@
+(module variant-local-match
+  (variant Maybe ((None) (Some I64)))
+  (fn unwrap ((value Maybe)) I64 (effects)
+    (let local Maybe value
+      (match local
+        (None 0)
+        (Some (number) number))))
+  (fn main ((args (Vec Bytes))) I64 (effects io)
+    (let answer I64 (call unwrap (case Maybe Some 42))
+      (let shown Unit (call io.print-i64 answer)
+        (let newline Unit (call io.println "") 0)))))

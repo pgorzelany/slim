@@ -679,6 +679,13 @@ no longer rebuilds them. The fixed-point seed shrank by 247 C bytes. A quick
 before/after series was noisy, so no runtime or latency improvement is claimed;
 the durable result is removal of one unconditional whole-token analysis pass.
 
+The seventh slice fixes a typed/backend mismatch under D0037. Variant matches
+now decode the scrutinee binding's retained type link instead of scanning only
+function parameters. `variant-local-match` proves a variant can flow through a
+lexical `let` and still compile and run. The obsolete scan was removed, shrinking
+the fixed-point seed to 1,650,892 C bytes; all 90 fixtures and 2,000 malformed
+mutations pass at the approximately 0.22-second self-check boundary.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project

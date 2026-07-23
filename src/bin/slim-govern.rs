@@ -974,6 +974,20 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if codegen.contains("link_declaration_names") {
         errors.push("self-host code generation redundantly rebuilds declaration links".to_owned());
     }
+    for required in [
+        "(fn linked_source_type",
+        "(call syntax/token_link tokens value)",
+        "(let variant_type I64 (call linked_source_type tokens value)",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "self-host code generation is missing linked binding type use `{required}`"
+            ));
+        }
+    }
+    if codegen.contains("(fn find_parameter_type") {
+        errors.push("self-host code generation restored parameter-only type lookup".to_owned());
+    }
     for superseded in [
         "(fn report_private_modules",
         "(fn append_project_modules",

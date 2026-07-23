@@ -112,6 +112,25 @@ directions. This is recorded as one proven linear pass removed, not as a stable
 percentage speedup. Permanent exponent and emit/check-ratio budgets remain the
 performance authority.
 
+## Bound variant type links
+
+D0037 closes a checker/backend gap exposed by an adversarial aggregate fixture.
+A variant copied from a parameter into a lexical local passed type checking but
+the backend's parameter-only type scan emitted invalid C. Variant-match emission
+now decodes the scoped type link already attached to the bound scrutinee. The
+obsolete parameter scan was removed.
+
+`variant-local-match` compiles, runs, and prints `42`; the previous parameter
+fixture remains green. Self-validation stays near 0.22 seconds and the
+byte-identical seed shrank from 1,653,599 to 1,650,892 C bytes. The corpus now
+passes 90 fixtures and 2,000 malformed mutations.
+
+A broader trial annotated composite expressions and lowered a direct
+variant-producing match scrutinee. The annotation itself could be kept small,
+but generalized nested-expression lowering pushed self-validation beyond 12
+seconds. It was reverted completely. This checkpoint claims bounded scrutinees,
+not arbitrary expression lowering.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share

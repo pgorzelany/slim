@@ -4,6 +4,7 @@ storage	run	conformance/pass/storage.slim	parity	exit=0;stdout=OK\n;stderr=	type
 allocation-failure	allocation-fail	conformance/pass/storage.slim	parity	exit=71;stdout=;stderr=SLIM allocation failure: exhausted at allocation 2\n	runtime:allocation-failure,runtime:region-destruction
 file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.read-file
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
+variant-local-match	run	conformance/pass/variant_local_match.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-links,syntax:let,syntax:match,type:variant
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
 lifetimes	run	conformance/pass/lifetimes.slim	parity	exit=0;stdout=OK\n;stderr=	ownership:lifetime,ownership:aggregate-move,ownership:frozen-view,runtime:region
