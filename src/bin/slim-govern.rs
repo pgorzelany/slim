@@ -208,6 +208,7 @@ fn check_performance_architecture(
         "emit-exponent/generated-declarations",
         "emit-exponent/generated-computed-arguments",
         "emit-exponent/generated-aggregate-temporaries",
+        "emit-exponent/generated-planned-allocation-calls",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
         "incremental-exponent/wide-private-body",
@@ -284,8 +285,10 @@ fn check_performance_architecture(
         "performance_budget(\"check-exponent\", \"generated-owned-transfers\")",
         "performance_budget(\"emit-exponent\", \"generated-computed-arguments\")",
         "performance_budget(\"emit-exponent\", \"generated-aggregate-temporaries\")",
+        "performance_budget(\"emit-exponent\", \"generated-planned-allocation-calls\")",
         "fn generated_computed_argument_program(calls: usize)",
         "fn generated_aggregate_temporary_program(fields: usize)",
+        "fn generated_planned_allocation_call_program(calls: usize)",
         "fn generated_named_type_program(functions: usize)",
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
@@ -871,7 +874,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         }
     }
     for required in [
-        "(module codegen \"codegen.slim\" (imports effects memory syntax text typing) (exports emit_program))",
+        "(module codegen \"codegen.slim\" (imports memory syntax text typing) (exports emit_program))",
+        "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
         "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
@@ -1310,6 +1314,10 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn empty_plan",
         "(fn function_uses_local_region",
         "(fn function_plan_allocates",
+        "(fn allocation_site_region_range",
+        "(fn allocation_site_region",
+        "(recur allocations site low middle)",
+        "(recur allocations site next high)",
         "(fn span_has_form",
         "(call span_has_form source tokens body body_end \"recur\")",
         "(fn call_requires",
@@ -1323,7 +1331,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call fact_type_index facts argument)",
         "computed_boolean Bool (call bool.and form boolean_match) (match computed_boolean (false unit) (true (let type_index I64 (call fact_type_index facts value)",
         "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
-        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
+        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(get view facts)",
         "(get prepared facts)",
@@ -1332,8 +1340,9 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(get function_plan function)",
         "(get function_plan local_region)",
         "(get function_plan recursive)",
+        "(get function_plan allocations)",
         "(call memory/function_plan_allocates function_plan)",
-        "(call effects/params_have source tokens callee_params 1)",
+        "(call memory/allocation_site_region allocations call_form)",
         "slim_region_destroy(&slim_function_region)",
         "slim_allocation_failed",
     ] {
@@ -1356,6 +1365,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn call_allocates",
         "(fn builtin_argument_type",
         "(fn parameter_type_index",
+        "(call effects/params_have source tokens callee_params 1)",
         "(call memory/function_has_alloc_effect source tokens item)",
         "(call memory/function_uses_local_region source tokens item)",
         "(fn contains_atom",
@@ -1376,6 +1386,11 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
     if !manifest.contains("typed-temporaries\trun\tconformance/pass/typed_temporaries.slim\tparity")
     {
         errors.push("typed-fact temporary conformance fixture is missing".to_owned());
+    }
+    if !manifest.contains(
+        "planned-allocation-calls\trun\tconformance/pass/planned_allocation_calls.slim\tparity",
+    ) {
+        errors.push("retained allocation-call conformance fixture is missing".to_owned());
     }
 }
 

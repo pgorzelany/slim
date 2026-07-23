@@ -813,10 +813,17 @@ named temporary paths, and a permanent geometric aggregate-emission workload
 guards the lookup boundary. The byte-identical fixed-point seed is 1,623,453 C
 bytes.
 
+The twenty-fourth slice adopts D0055's retained call allocation boundaries.
+User-call failure propagation binary-searches the checked function plan by
+exact call-form token, supporting computed-argument evaluation order without a
+sequential cursor. The last backend effect-list read and codegen's unused
+`effects` dependency are removed. A nested allocation-call fixture and
+geometric emit workload pin correctness and bounded lookup. The byte-identical
+fixed-point seed is 1,628,984 C bytes.
+
 This is not yet a completed milestone. Explicit let types, match destinations,
-and pattern bindings remain legitimate source or caller contracts, while code
-generation still derives per-call allocation boundaries from canonical effect
-queries. All accepted
+and pattern bindings remain legitimate source or caller contracts rather than
+redundant analysis. All accepted
 type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.
 Core 1D acceptance requires bounded expression-fact lookup, removal of the

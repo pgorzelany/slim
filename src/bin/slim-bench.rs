@@ -292,6 +292,59 @@ fn run_performance() {
         std::process::exit(1);
     }
 
+    println!("planned_allocation_calls\tsource_bytes\temit_us\temit_ns_per_byte");
+    let mut first_planned_call = None;
+    let mut last_planned_call = None;
+    for size in nested_sizes {
+        let source = generated_planned_allocation_call_program(*size);
+        let path = directory
+            .path
+            .join(format!("planned-allocation-calls-{size}.slim"));
+        fs::write(&path, &source).expect("write planned-call scaling source");
+        let warmup = Command::new(&compiler)
+            .arg(&path)
+            .output()
+            .expect("run planned-call scaling warmup");
+        if !warmup.status.success() || !warmup.stderr.is_empty() || warmup.stdout.is_empty() {
+            fail_output("planned-call scaling warmup", &warmup);
+        }
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) =
+                timed_output(Command::new(&compiler).arg(&path), "SLIM planned-call emit");
+            if !output.status.success() || !output.stderr.is_empty() || output.stdout.is_empty() {
+                fail_output("planned-call scaling emit", &output);
+            }
+            black_box(&output.stdout);
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_planned_call.is_none() {
+            first_planned_call = Some((*size, elapsed));
+        }
+        last_planned_call = Some((*size, elapsed));
+    }
+    let (first_size, first_time) =
+        first_planned_call.expect("planned-call series has a first sample");
+    let (last_size, last_time) = last_planned_call.expect("planned-call series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("emit-exponent", "generated-planned-allocation-calls");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: planned allocation-call emit exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} calls"
+        );
+        std::process::exit(1);
+    }
+
     println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
     let mut first_named = None;
     let mut last_named = None;
@@ -1176,6 +1229,22 @@ fn generated_aggregate_temporary_program(fields: usize) -> String {
         source.push(')');
     }
     source.push_str(") 0))) (fn main ((args (Vec Bytes))) I64 (effects) (call build)))\n");
+    source
+}
+
+fn generated_planned_allocation_call_program(calls: usize) -> String {
+    let mut source = String::with_capacity(calls * 17);
+    source.push_str(
+        "(module planned-allocation-calls (fn allocate ((value I64)) I64 (effects alloc) (let values (Vec I64) (call vec.new) value)) (fn chain ((seed I64)) I64 (effects alloc) ",
+    );
+    for _ in 0..calls {
+        source.push_str("(call allocate ");
+    }
+    source.push_str("seed");
+    for _ in 0..calls {
+        source.push(')');
+    }
+    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects alloc) (call chain 0)))\n");
     source
 }
 

@@ -1,0 +1,9 @@
+(module planned-allocation-calls
+  (fn allocate ((value I64)) I64 (effects alloc)
+    (let values (Vec I64) (call vec.new)
+      (let pushed Unit (call vec.push values value)
+        (call vec.get values 0))))
+  (fn main ((args (Vec Bytes))) I64 (effects alloc io)
+    (let answer I64 (call allocate (call allocate 42))
+      (let shown Unit (call io.print-i64 answer)
+        (let newline Unit (call io.println "") 0)))))

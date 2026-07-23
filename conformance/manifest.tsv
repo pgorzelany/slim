@@ -13,6 +13,7 @@ recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:r
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
 lifetimes	run	conformance/pass/lifetimes.slim	parity	exit=0;stdout=OK\n;stderr=	ownership:lifetime,ownership:aggregate-move,ownership:frozen-view,runtime:region
 nested-calls	run	conformance/pass/nested_calls.slim	parity	exit=0;stdout=0\n;stderr=	semantics:left-to-right,backend:nested-call-lowering
+planned-allocation-calls	run	conformance/pass/planned_allocation_calls.slim	parity	exit=0;stdout=42\n;stderr=	backend:retained-allocation-sites,backend:nested-call-lowering,effect:alloc
 direct-reduction	run	conformance/pass/reduction.slim	parity	exit=0;stdout=42\n;stderr=	analysis:direct-reduction,tool:reduce
 reduction-preserves-effects	trap	conformance/pass/reduction_preserve.slim	parity	exit=70;stdout=kept\n;stderr=SLIM runtime trap: I64 addition overflow\n	analysis:effect-preservation,analysis:trap-preservation,ownership:aggregate-move
 format	format	conformance/tool/format.slim	parity	-	tool:format

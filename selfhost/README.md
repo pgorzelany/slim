@@ -24,9 +24,11 @@ consumes that view now, standalone emission retains the checked artifact, and
 effect and ownership call resolution reuse its declaration links. Ordinary C
 emission consumes the same table for computed call, recursive-transfer,
 aggregate, variant-payload, and Boolean-match temporaries. Explicit let types,
-match destinations, and pattern bindings remain source or caller contracts;
-per-call allocation queries must still cross the checked boundary before Core
-1D is frozen.
+match destinations, and pattern bindings remain source or caller contracts.
+User-call allocation failure boundaries now come from the retained memory plan
+through a sparse binary site query rather than a backend effect-list read.
+Core 1D can be frozen after its final acceptance audit and complete release
+gate.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

@@ -7,6 +7,7 @@ check-exponent	generated-owned-transfers	1.25	exponent	D0049
 emit-exponent	generated-declarations	1.25	exponent	D0030
 emit-exponent	generated-computed-arguments	1.25	exponent	D0053
 emit-exponent	generated-aggregate-temporaries	1.25	exponent	D0054
+emit-exponent	generated-planned-allocation-calls	1.25	exponent	D0055
 emit-check-ratio	generated-2000	4.00	ratio	D0030
 incremental-exponent	wide-no-change	1.25	exponent	D0030
 incremental-exponent	wide-private-body	1.25	exponent	D0030

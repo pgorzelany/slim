@@ -393,11 +393,11 @@ static bool slim_fn_codegen_95emit_95vec_95set_95call(SlimBytes slim_v_source, S
 static bool slim_fn_codegen_95emit_95arena_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95vec_95push_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95collection_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95let_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95match_95value_95binding(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, bool slim_v_boolean_95match, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95match_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95set_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95expr_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95let_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95match_95value_95binding(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, bool slim_v_boolean_95match, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95match_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95set_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95expr_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95mangled_95span(SlimBytes slim_v_source, int64_t slim_v_index, int64_t slim_v_end, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95mangled_95token(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_index, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95source_95name(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_index, SlimVec * slim_v_output, SlimRegion *slim_region);
@@ -419,8 +419,8 @@ static SlimUnit slim_fn_codegen_95emit_95variant(SlimBytes slim_v_source, SlimVe
 static SlimUnit slim_fn_codegen_95emit_95data_95items(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95binding_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_name, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95binding_95address(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_name, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95call_95argument_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_argument, int64_t slim_v_callee_95param, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95call_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_callee_95params, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95call_95argument_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_argument, int64_t slim_v_callee_95param, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95call_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_callee_95params, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_value, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimBytes slim_fn_codegen_95runtime_95math_95name(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_callee, SlimRegion *slim_region);
 static SlimBytes slim_fn_codegen_95runtime_95bytes_95name(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_callee, SlimRegion *slim_region);
@@ -434,30 +434,30 @@ static SlimUnit slim_fn_codegen_95emit_95prototypes(SlimBytes slim_v_source, Sli
 static SlimUnit slim_fn_codegen_95emit_95parameter_95voids(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95temp_95name(int64_t slim_v_index, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95destination(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95recur_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95recur_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95recur_95updates(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95recur_95assignments(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95recur_95assignments(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95runtime_95assignment(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimBytes slim_v_runtime, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95binary_95operator(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimBytes slim_v_operator, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95comparison(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95boolean_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95u8_95conversion(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_codegen_95emit_95vector_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95user_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_callee_95params, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_call_95form, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95user_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_callee_95params, bool slim_v_allocation_95effect, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_call_95form, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
 static int64_t slim_fn_codegen_95checked_95record_95field_95link(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_field_95form, int64_t slim_v_definition, int64_t slim_v_name_95start, int64_t slim_v_name_95end, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95make_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_definition, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95make_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_definition, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95make_95fields(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_cursor, bool slim_v_first, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95make(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95make(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95get(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95case_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_cursor, int64_t slim_v_payload_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95case_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_cursor, int64_t slim_v_payload_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95case_95payload(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_cursor, int64_t slim_v_field, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95case_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95case_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static int64_t slim_fn_codegen_95linked_95source_95type(SlimVec * slim_v_tokens, int64_t slim_v_value, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95variant_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_value, int64_t slim_v_case_95name, int64_t slim_v_bindings, int64_t slim_v_payload_95type, int64_t slim_v_field, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95variant_95arms(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_variant_95name, int64_t slim_v_variant_95cases, int64_t slim_v_cursor, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95boolean_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
-static SlimUnit slim_fn_codegen_95emit_95variant_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95variant_95arms(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_variant_95name, int64_t slim_v_variant_95cases, int64_t slim_v_cursor, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95boolean_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
+static SlimUnit slim_fn_codegen_95emit_95variant_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95atom_95assignment(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95function(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_item, Slim_type_memory_95FunctionPlan slim_v_function_95plan, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_codegen_95emit_95functions(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, SlimVec * slim_v_function_95plans, int64_t slim_v_cursor, int64_t slim_v_plan_95index, SlimVec * slim_v_output, SlimRegion *slim_region);
@@ -519,6 +519,8 @@ static SlimUnit slim_fn_equivalence_95emit_95different(int64_t slim_v_mask, int6
 static SlimUnit slim_fn_equivalence_95compare_95cases(SlimBytes slim_v_left_95source, SlimVec * slim_v_left_95tokens, int64_t slim_v_left_95body, SlimVec * slim_v_left_95params, SlimBytes slim_v_right_95source, SlimVec * slim_v_right_95tokens, int64_t slim_v_right_95body, SlimVec * slim_v_right_95params, int64_t slim_v_count, int64_t slim_v_mask, int64_t slim_v_cases, SlimVec * slim_v_output, SlimRegion *slim_region);
 static SlimUnit slim_fn_equivalence_95emit_95comparison(SlimBytes slim_v_left_95source, SlimVec * slim_v_left_95tokens, SlimBytes slim_v_right_95source, SlimVec * slim_v_right_95tokens, SlimVec * slim_v_output, SlimRegion *slim_region);
 static bool slim_fn_memory_95function_95plan_95allocates(Slim_type_memory_95FunctionPlan slim_v_plan, SlimRegion *slim_region);
+static int64_t slim_fn_memory_95allocation_95site_95region_95range(SlimVec * slim_v_allocations, int64_t slim_v_site, int64_t slim_v_low, int64_t slim_v_high, SlimRegion *slim_region);
+static int64_t slim_fn_memory_95allocation_95site_95region(SlimVec * slim_v_allocations, int64_t slim_v_site, SlimRegion *slim_region);
 static bool slim_fn_memory_95span_95has_95form(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_cursor, int64_t slim_v_end, SlimBytes slim_v_text, SlimRegion *slim_region);
 static Slim_type_memory_95Plan slim_fn_memory_95empty_95plan(SlimRegion *slim_region);
 static int64_t slim_fn_memory_95storage_95join(int64_t slim_v_left, int64_t slim_v_right, SlimRegion *slim_region);
@@ -8774,10 +8776,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95let_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95let_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_expr;
@@ -8833,7 +8836,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_initialized;
 {
 SlimUnit slim_v_value_95emitted = {0};
-slim_v_value_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_name, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_v_value_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_name, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_value_95emitted;
 {
@@ -8853,7 +8856,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_unused_95end;
 {
 SlimUnit slim_v_body_95emitted = {0};
-slim_v_body_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_v_body_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_body_95emitted;
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"}\n", (int64_t)(sizeof("}\n") - 1)), slim_allocation_region);
@@ -8876,10 +8879,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95match_95value_95binding(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, bool slim_v_boolean_95match, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95match_95value_95binding(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, bool slim_v_boolean_95match, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_value;
@@ -8934,7 +8938,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_temporary = {0};
 slim_v_temporary = slim_i64_sub(INT64_C(0), slim_v_value);
 (void)slim_v_temporary;
-slim_result = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_temporary, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_temporary, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -8950,10 +8954,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95match_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95match_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_expr;
@@ -8992,15 +8997,15 @@ slim_v_boolean_95match = slim_v_first_95true || slim_v_first_95false;
 (void)slim_v_boolean_95match;
 {
 SlimUnit slim_v_bound = {0};
-slim_v_bound = slim_fn_codegen_95emit_95match_95value_95binding(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_boolean_95match, slim_v_output, slim_allocation_region);
+slim_v_bound = slim_fn_codegen_95emit_95match_95value_95binding(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_boolean_95match, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bound;
 if (slim_v_boolean_95match) {
-slim_result = slim_fn_codegen_95emit_95boolean_95match(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95boolean_95match(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_result = slim_fn_codegen_95emit_95variant_95match(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95variant_95match(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -9014,10 +9019,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95set_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95set_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_expr;
@@ -9062,7 +9068,7 @@ SlimUnit slim_v_suffix = {0};
 slim_v_suffix = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)";\n", (int64_t)(sizeof(";\n") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_suffix;
-slim_result = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -9075,10 +9081,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95expr_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95expr_95full(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_expr;
@@ -9113,7 +9120,7 @@ bool slim_v_let_95form = {0};
 slim_v_let_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"let", (int64_t)(sizeof("let") - 1)), slim_allocation_region);
 (void)slim_v_let_95form;
 if (slim_v_let_95form) {
-slim_result = slim_fn_codegen_95emit_95let_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95let_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9122,7 +9129,7 @@ bool slim_v_call_95form = {0};
 slim_v_call_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"call", (int64_t)(sizeof("call") - 1)), slim_allocation_region);
 (void)slim_v_call_95form;
 if (slim_v_call_95form) {
-slim_result = slim_fn_codegen_95emit_95call(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95call(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9131,7 +9138,7 @@ bool slim_v_match_95form = {0};
 slim_v_match_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"match", (int64_t)(sizeof("match") - 1)), slim_allocation_region);
 (void)slim_v_match_95form;
 if (slim_v_match_95form) {
-slim_result = slim_fn_codegen_95emit_95match_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95match_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9148,7 +9155,7 @@ slim_v_arguments = slim_i64_add(slim_v_expr, INT64_C(2));
 int64_t slim_v_first_95param = {0};
 slim_v_first_95param = slim_i64_add(slim_v_params, INT64_C(1));
 (void)slim_v_first_95param;
-slim_result = slim_fn_codegen_95emit_95recur_95assignments(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_params, slim_v_first_95param, slim_v_arguments, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95recur_95assignments(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_params, slim_v_first_95param, slim_v_arguments, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -9159,7 +9166,7 @@ bool slim_v_set_95form = {0};
 slim_v_set_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"set", (int64_t)(sizeof("set") - 1)), slim_allocation_region);
 (void)slim_v_set_95form;
 if (slim_v_set_95form) {
-slim_result = slim_fn_codegen_95emit_95set_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95set_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9168,7 +9175,7 @@ bool slim_v_make_95form = {0};
 slim_v_make_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"make", (int64_t)(sizeof("make") - 1)), slim_allocation_region);
 (void)slim_v_make_95form;
 if (slim_v_make_95form) {
-slim_result = slim_fn_codegen_95emit_95make(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95make(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9186,7 +9193,7 @@ bool slim_v_case_95form = {0};
 slim_v_case_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"case", (int64_t)(sizeof("case") - 1)), slim_allocation_region);
 (void)slim_v_case_95form;
 if (slim_v_case_95form) {
-slim_result = slim_fn_codegen_95emit_95case_95value(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95case_95value(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_params, slim_v_expr, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -9307,15 +9314,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_18715 = {0};
-slim_t_18715 = slim_v_source;
-int64_t slim_t_18716 = {0};
-slim_t_18716 = slim_v_next;
-int64_t slim_t_18717 = {0};
-slim_t_18717 = slim_v_end;
-slim_v_source = slim_t_18715;
-slim_v_index = slim_t_18716;
-slim_v_end = slim_t_18717;
+SlimBytes slim_t_18769 = {0};
+slim_t_18769 = slim_v_source;
+int64_t slim_t_18770 = {0};
+slim_t_18770 = slim_v_next;
+int64_t slim_t_18771 = {0};
+slim_t_18771 = slim_v_end;
+slim_v_source = slim_t_18769;
+slim_v_index = slim_t_18770;
+slim_v_end = slim_t_18771;
 goto slim_recur;
 }
 }
@@ -9854,12 +9861,12 @@ slim_v_emitted = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_20017 = {0};
-slim_t_20017 = slim_v_source;
-int64_t slim_t_20019 = {0};
-slim_t_20019 = slim_v_next;
-slim_v_source = slim_t_20017;
-slim_v_cursor = slim_t_20019;
+SlimBytes slim_t_20071 = {0};
+slim_t_20071 = slim_v_source;
+int64_t slim_t_20073 = {0};
+slim_t_20073 = slim_v_next;
+slim_v_source = slim_t_20071;
+slim_v_cursor = slim_t_20073;
 goto slim_recur;
 }
 }
@@ -9935,15 +9942,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_20192 = {0};
-slim_t_20192 = slim_v_source;
-int64_t slim_t_20194 = {0};
-slim_t_20194 = slim_v_next;
-bool slim_t_20195 = {0};
-slim_t_20195 = false;
-slim_v_source = slim_t_20192;
-slim_v_cursor = slim_t_20194;
-slim_v_first = slim_t_20195;
+SlimBytes slim_t_20246 = {0};
+slim_t_20246 = slim_v_source;
+int64_t slim_t_20248 = {0};
+slim_t_20248 = slim_v_next;
+bool slim_t_20249 = {0};
+slim_t_20249 = false;
+slim_v_source = slim_t_20246;
+slim_v_cursor = slim_t_20248;
+slim_v_first = slim_t_20249;
 goto slim_recur;
 }
 }
@@ -10076,18 +10083,18 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95tag = {0};
 slim_v_next_95tag = slim_i64_add(slim_v_tag, INT64_C(1));
 (void)slim_v_next_95tag;
-SlimBytes slim_t_20491 = {0};
-slim_t_20491 = slim_v_source;
-int64_t slim_t_20493 = {0};
-slim_t_20493 = slim_v_variant_95name;
-int64_t slim_t_20494 = {0};
-slim_t_20494 = slim_v_next;
-int64_t slim_t_20495 = {0};
-slim_t_20495 = slim_v_next_95tag;
-slim_v_source = slim_t_20491;
-slim_v_variant_95name = slim_t_20493;
-slim_v_cursor = slim_t_20494;
-slim_v_tag = slim_t_20495;
+SlimBytes slim_t_20545 = {0};
+slim_t_20545 = slim_v_source;
+int64_t slim_t_20547 = {0};
+slim_t_20547 = slim_v_variant_95name;
+int64_t slim_t_20548 = {0};
+slim_t_20548 = slim_v_next;
+int64_t slim_t_20549 = {0};
+slim_t_20549 = slim_v_next_95tag;
+slim_v_source = slim_t_20545;
+slim_v_variant_95name = slim_t_20547;
+slim_v_cursor = slim_t_20548;
+slim_v_tag = slim_t_20549;
 goto slim_recur;
 }
 }
@@ -10156,15 +10163,15 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95field = {0};
 slim_v_next_95field = slim_i64_add(slim_v_field, INT64_C(1));
 (void)slim_v_next_95field;
-SlimBytes slim_t_20643 = {0};
-slim_t_20643 = slim_v_source;
-int64_t slim_t_20645 = {0};
-slim_t_20645 = slim_v_next;
-int64_t slim_t_20646 = {0};
-slim_t_20646 = slim_v_next_95field;
-slim_v_source = slim_t_20643;
-slim_v_cursor = slim_t_20645;
-slim_v_field = slim_t_20646;
+SlimBytes slim_t_20697 = {0};
+slim_t_20697 = slim_v_source;
+int64_t slim_t_20699 = {0};
+slim_t_20699 = slim_v_next;
+int64_t slim_t_20700 = {0};
+slim_t_20700 = slim_v_next_95field;
+slim_v_source = slim_t_20697;
+slim_v_cursor = slim_t_20699;
+slim_v_field = slim_t_20700;
 goto slim_recur;
 }
 }
@@ -10256,12 +10263,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_20846 = {0};
-slim_t_20846 = slim_v_source;
-int64_t slim_t_20848 = {0};
-slim_t_20848 = slim_v_next;
-slim_v_source = slim_t_20846;
-slim_v_cursor = slim_t_20848;
+SlimBytes slim_t_20900 = {0};
+slim_t_20900 = slim_v_source;
+int64_t slim_t_20902 = {0};
+slim_t_20902 = slim_v_next;
+slim_v_source = slim_t_20900;
+slim_v_cursor = slim_t_20902;
 goto slim_recur;
 }
 }
@@ -10392,12 +10399,12 @@ slim_v_emitted_95variant = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_21146 = {0};
-slim_t_21146 = slim_v_source;
-int64_t slim_t_21148 = {0};
-slim_t_21148 = slim_v_next;
-slim_v_source = slim_t_21146;
-slim_v_cursor = slim_t_21148;
+SlimBytes slim_t_21200 = {0};
+slim_t_21200 = slim_v_source;
+int64_t slim_t_21202 = {0};
+slim_t_21202 = slim_v_next;
+slim_v_source = slim_t_21200;
+slim_v_cursor = slim_t_21202;
 goto slim_recur;
 }
 }
@@ -10485,10 +10492,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95call_95argument_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_argument, int64_t slim_v_callee_95param, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95call_95argument_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_argument, int64_t slim_v_callee_95param, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_argument;
@@ -10554,7 +10562,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_destination = {0};
 slim_v_destination = slim_i64_sub(INT64_C(0), slim_v_argument);
 (void)slim_v_destination;
-slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_argument, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_argument, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -10576,21 +10584,21 @@ else {
 slim_v_next_95param = INT64_C(-1);
 }
 (void)slim_v_next_95param;
-SlimBytes slim_t_21585 = {0};
-slim_t_21585 = slim_v_source;
-int64_t slim_t_21588 = {0};
-slim_t_21588 = slim_v_module_95items;
-int64_t slim_t_21589 = {0};
-slim_t_21589 = slim_v_params;
-int64_t slim_t_21590 = {0};
-slim_t_21590 = slim_v_next_95argument;
-int64_t slim_t_21591 = {0};
-slim_t_21591 = slim_v_next_95param;
-slim_v_source = slim_t_21585;
-slim_v_module_95items = slim_t_21588;
-slim_v_params = slim_t_21589;
-slim_v_argument = slim_t_21590;
-slim_v_callee_95param = slim_t_21591;
+SlimBytes slim_t_21648 = {0};
+slim_t_21648 = slim_v_source;
+int64_t slim_t_21652 = {0};
+slim_t_21652 = slim_v_module_95items;
+int64_t slim_t_21653 = {0};
+slim_t_21653 = slim_v_params;
+int64_t slim_t_21654 = {0};
+slim_t_21654 = slim_v_next_95argument;
+int64_t slim_t_21655 = {0};
+slim_t_21655 = slim_v_next_95param;
+slim_v_source = slim_t_21648;
+slim_v_module_95items = slim_t_21652;
+slim_v_params = slim_t_21653;
+slim_v_argument = slim_t_21654;
+slim_v_callee_95param = slim_t_21655;
 goto slim_recur;
 }
 }
@@ -10605,10 +10613,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95call_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_callee_95params, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95call_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_arguments, int64_t slim_v_callee_95params, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_arguments;
@@ -10632,7 +10641,7 @@ else {
 slim_v_first_95param = INT64_C(-1);
 }
 (void)slim_v_first_95param;
-slim_result = slim_fn_codegen_95emit_95call_95argument_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_arguments, slim_v_first_95param, slim_v_output, slim_allocation_region);
+slim_result = slim_fn_codegen_95emit_95call_95argument_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_arguments, slim_v_first_95param, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -11007,18 +11016,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_22603 = {0};
-slim_t_22603 = slim_v_source;
-int64_t slim_t_22605 = {0};
-slim_t_22605 = slim_v_params;
-int64_t slim_t_22606 = {0};
-slim_t_22606 = slim_v_next;
-bool slim_t_22607 = {0};
-slim_t_22607 = false;
-slim_v_source = slim_t_22603;
-slim_v_params = slim_t_22605;
-slim_v_cursor = slim_t_22606;
-slim_v_first = slim_t_22607;
+SlimBytes slim_t_22676 = {0};
+slim_t_22676 = slim_v_source;
+int64_t slim_t_22678 = {0};
+slim_t_22678 = slim_v_params;
+int64_t slim_t_22679 = {0};
+slim_t_22679 = slim_v_next;
+bool slim_t_22680 = {0};
+slim_t_22680 = false;
+slim_v_source = slim_t_22676;
+slim_v_params = slim_t_22678;
+slim_v_cursor = slim_t_22679;
+slim_v_first = slim_t_22680;
 goto slim_recur;
 }
 }
@@ -11038,18 +11047,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_22650 = {0};
-slim_t_22650 = slim_v_source;
-int64_t slim_t_22652 = {0};
-slim_t_22652 = slim_v_params;
-int64_t slim_t_22653 = {0};
-slim_t_22653 = slim_v_next;
-bool slim_t_22654 = {0};
-slim_t_22654 = false;
-slim_v_source = slim_t_22650;
-slim_v_params = slim_t_22652;
-slim_v_cursor = slim_t_22653;
-slim_v_first = slim_t_22654;
+SlimBytes slim_t_22723 = {0};
+slim_t_22723 = slim_v_source;
+int64_t slim_t_22725 = {0};
+slim_t_22725 = slim_v_params;
+int64_t slim_t_22726 = {0};
+slim_t_22726 = slim_v_next;
+bool slim_t_22727 = {0};
+slim_t_22727 = false;
+slim_v_source = slim_t_22723;
+slim_v_params = slim_t_22725;
+slim_v_cursor = slim_t_22726;
+slim_v_first = slim_t_22727;
 goto slim_recur;
 }
 }
@@ -11137,21 +11146,21 @@ slim_v_next_95argument = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_argu
 int64_t slim_v_next_95param = {0};
 slim_v_next_95param = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_callee_95param, slim_allocation_region);
 (void)slim_v_next_95param;
-SlimBytes slim_t_22867 = {0};
-slim_t_22867 = slim_v_source;
-int64_t slim_t_22869 = {0};
-slim_t_22869 = slim_v_current_95params;
-int64_t slim_t_22870 = {0};
-slim_t_22870 = slim_v_next_95argument;
-int64_t slim_t_22871 = {0};
-slim_t_22871 = slim_v_next_95param;
-bool slim_t_22872 = {0};
-slim_t_22872 = false;
-slim_v_source = slim_t_22867;
-slim_v_current_95params = slim_t_22869;
-slim_v_argument = slim_t_22870;
-slim_v_callee_95param = slim_t_22871;
-slim_v_first = slim_t_22872;
+SlimBytes slim_t_22940 = {0};
+slim_t_22940 = slim_v_source;
+int64_t slim_t_22942 = {0};
+slim_t_22942 = slim_v_current_95params;
+int64_t slim_t_22943 = {0};
+slim_t_22943 = slim_v_next_95argument;
+int64_t slim_t_22944 = {0};
+slim_t_22944 = slim_v_next_95param;
+bool slim_t_22945 = {0};
+slim_t_22945 = false;
+slim_v_source = slim_t_22940;
+slim_v_current_95params = slim_t_22942;
+slim_v_argument = slim_t_22943;
+slim_v_callee_95param = slim_t_22944;
+slim_v_first = slim_t_22945;
 goto slim_recur;
 }
 }
@@ -11267,15 +11276,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_23143 = {0};
-slim_t_23143 = slim_v_source;
-int64_t slim_t_23145 = {0};
-slim_t_23145 = slim_v_next;
-bool slim_t_23146 = {0};
-slim_t_23146 = false;
-slim_v_source = slim_t_23143;
-slim_v_cursor = slim_t_23145;
-slim_v_first = slim_t_23146;
+SlimBytes slim_t_23216 = {0};
+slim_t_23216 = slim_v_source;
+int64_t slim_t_23218 = {0};
+slim_t_23218 = slim_v_next;
+bool slim_t_23219 = {0};
+slim_t_23219 = false;
+slim_v_source = slim_t_23216;
+slim_v_cursor = slim_t_23218;
+slim_v_first = slim_t_23219;
 goto slim_recur;
 }
 }
@@ -11408,12 +11417,12 @@ slim_v_emitted = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_23439 = {0};
-slim_t_23439 = slim_v_source;
-int64_t slim_t_23441 = {0};
-slim_t_23441 = slim_v_next;
-slim_v_source = slim_t_23439;
-slim_v_cursor = slim_t_23441;
+SlimBytes slim_t_23512 = {0};
+slim_t_23512 = slim_v_source;
+int64_t slim_t_23514 = {0};
+slim_t_23514 = slim_v_next;
+slim_v_source = slim_t_23512;
+slim_v_cursor = slim_t_23514;
 goto slim_recur;
 }
 }
@@ -11485,12 +11494,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_23613 = {0};
-slim_t_23613 = slim_v_source;
-int64_t slim_t_23615 = {0};
-slim_t_23615 = slim_v_next;
-slim_v_source = slim_t_23613;
-slim_v_cursor = slim_t_23615;
+SlimBytes slim_t_23686 = {0};
+slim_t_23686 = slim_v_source;
+int64_t slim_t_23688 = {0};
+slim_t_23688 = slim_v_next;
+slim_v_source = slim_t_23686;
+slim_v_cursor = slim_t_23688;
 goto slim_recur;
 }
 }
@@ -11565,10 +11574,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95recur_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95recur_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_param;
@@ -11634,7 +11644,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_destination = {0};
 slim_v_destination = slim_i64_sub(INT64_C(0), slim_v_argument);
 (void)slim_v_destination;
-slim_v_bound = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_argument, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_v_bound = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_argument, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -11652,21 +11662,21 @@ slim_v_next_95param = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_param, 
 int64_t slim_v_next_95argument = {0};
 slim_v_next_95argument = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_argument, slim_allocation_region);
 (void)slim_v_next_95argument;
-SlimBytes slim_t_23998 = {0};
-slim_t_23998 = slim_v_source;
-int64_t slim_t_24001 = {0};
-slim_t_24001 = slim_v_module_95items;
-int64_t slim_t_24002 = {0};
-slim_t_24002 = slim_v_params;
-int64_t slim_t_24003 = {0};
-slim_t_24003 = slim_v_next_95param;
-int64_t slim_t_24004 = {0};
-slim_t_24004 = slim_v_next_95argument;
-slim_v_source = slim_t_23998;
-slim_v_module_95items = slim_t_24001;
-slim_v_params = slim_t_24002;
-slim_v_param = slim_t_24003;
-slim_v_argument = slim_t_24004;
+SlimBytes slim_t_24080 = {0};
+slim_t_24080 = slim_v_source;
+int64_t slim_t_24084 = {0};
+slim_t_24084 = slim_v_module_95items;
+int64_t slim_t_24085 = {0};
+slim_t_24085 = slim_v_params;
+int64_t slim_t_24086 = {0};
+slim_t_24086 = slim_v_next_95param;
+int64_t slim_t_24087 = {0};
+slim_t_24087 = slim_v_next_95argument;
+slim_v_source = slim_t_24080;
+slim_v_module_95items = slim_t_24084;
+slim_v_params = slim_t_24085;
+slim_v_param = slim_t_24086;
+slim_v_argument = slim_t_24087;
 goto slim_recur;
 }
 }
@@ -11759,18 +11769,18 @@ slim_v_next_95param = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_param, 
 int64_t slim_v_next_95argument = {0};
 slim_v_next_95argument = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_argument, slim_allocation_region);
 (void)slim_v_next_95argument;
-SlimBytes slim_t_24220 = {0};
-slim_t_24220 = slim_v_source;
-int64_t slim_t_24222 = {0};
-slim_t_24222 = slim_v_params;
-int64_t slim_t_24223 = {0};
-slim_t_24223 = slim_v_next_95param;
-int64_t slim_t_24224 = {0};
-slim_t_24224 = slim_v_next_95argument;
-slim_v_source = slim_t_24220;
-slim_v_params = slim_t_24222;
-slim_v_param = slim_t_24223;
-slim_v_argument = slim_t_24224;
+SlimBytes slim_t_24303 = {0};
+slim_t_24303 = slim_v_source;
+int64_t slim_t_24305 = {0};
+slim_t_24305 = slim_v_params;
+int64_t slim_t_24306 = {0};
+slim_t_24306 = slim_v_next_95param;
+int64_t slim_t_24307 = {0};
+slim_t_24307 = slim_v_next_95argument;
+slim_v_source = slim_t_24303;
+slim_v_params = slim_t_24305;
+slim_v_param = slim_t_24306;
+slim_v_argument = slim_t_24307;
 goto slim_recur;
 }
 }
@@ -11785,10 +11795,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95recur_95assignments(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95recur_95assignments(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_param, int64_t slim_v_argument, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_params;
 (void)slim_v_param;
 (void)slim_v_argument;
@@ -11800,7 +11811,7 @@ SlimUnit slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 SlimUnit slim_v_bound = {0};
-slim_v_bound = slim_fn_codegen_95emit_95recur_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, INT64_C(3), slim_v_params, slim_v_param, slim_v_argument, slim_v_output, slim_allocation_region);
+slim_v_bound = slim_fn_codegen_95emit_95recur_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, INT64_C(3), slim_v_params, slim_v_param, slim_v_argument, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bound;
 slim_result = slim_fn_codegen_95emit_95recur_95updates(slim_v_source, slim_v_tokens, slim_v_params, slim_v_param, slim_v_argument, slim_v_output, slim_allocation_region);
@@ -12394,13 +12405,14 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95user_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_callee_95params, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95user_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_params, int64_t slim_v_callee, int64_t slim_v_arguments, int64_t slim_v_callee_95params, bool slim_v_allocation_95effect, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_params;
 (void)slim_v_callee;
 (void)slim_v_arguments;
 (void)slim_v_callee_95params;
+(void)slim_v_allocation_95effect;
 (void)slim_v_destination;
 (void)slim_v_result;
 (void)slim_v_output;
@@ -12443,10 +12455,6 @@ SlimUnit slim_v_closed = {0};
 slim_v_closed = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)");\n", (int64_t)(sizeof(");\n") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_closed;
-{
-bool slim_v_allocation_95effect = {0};
-slim_v_allocation_95effect = slim_fn_effects_95params_95have(slim_v_source, slim_v_tokens, slim_v_callee_95params, INT64_C(1), slim_allocation_region);
-(void)slim_v_allocation_95effect;
 if (slim_v_allocation_95effect) {
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;\n", (int64_t)(sizeof("if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;\n") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
@@ -12461,15 +12469,15 @@ slim_result = (SlimUnit){0};
 }
 }
 }
-}
 slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_call_95form, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95call(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_call_95form, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_call_95form;
@@ -12509,7 +12517,7 @@ slim_v_callee_95params = INT64_C(-1);
 (void)slim_v_callee_95params;
 {
 SlimUnit slim_v_bindings = {0};
-slim_v_bindings = slim_fn_codegen_95emit_95call_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_arguments, slim_v_callee_95params, slim_v_output, slim_allocation_region);
+slim_v_bindings = slim_fn_codegen_95emit_95call_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_arguments, slim_v_callee_95params, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bindings;
 {
@@ -12574,8 +12582,18 @@ if (slim_v_vector_95call) {
 slim_result = (SlimUnit){0};
 }
 else {
-slim_result = slim_fn_codegen_95emit_95user_95call(slim_v_source, slim_v_tokens, slim_v_params, slim_v_callee, slim_v_arguments, slim_v_callee_95params, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
+{
+int64_t slim_v_allocation_95region = {0};
+slim_v_allocation_95region = slim_fn_memory_95allocation_95site_95region(slim_v_allocations, slim_v_call_95form, slim_allocation_region);
+(void)slim_v_allocation_95region;
+{
+bool slim_v_allocation_95effect = {0};
+slim_v_allocation_95effect = slim_v_allocation_95region >= INT64_C(0);
+(void)slim_v_allocation_95effect;
+slim_result = slim_fn_codegen_95emit_95user_95call(slim_v_source, slim_v_tokens, slim_v_params, slim_v_callee, slim_v_arguments, slim_v_callee_95params, slim_v_allocation_95effect, slim_v_destination, slim_v_result, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
 }
 }
 }
@@ -12655,10 +12673,11 @@ slim_result = slim_i64_div(slim_v_field_95form, INT64_C(0));
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95make_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_definition, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95make_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_definition, int64_t slim_v_cursor, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_definition;
@@ -12732,28 +12751,28 @@ slim_v_destination = slim_i64_sub(INT64_C(0), slim_v_cursor);
 (void)slim_v_destination;
 {
 SlimUnit slim_v_emitted = {0};
-slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_emitted;
 {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_26598 = {0};
-slim_t_26598 = slim_v_source;
-int64_t slim_t_26601 = {0};
-slim_t_26601 = slim_v_module_95items;
-int64_t slim_t_26602 = {0};
-slim_t_26602 = slim_v_params;
-int64_t slim_t_26603 = {0};
-slim_t_26603 = slim_v_definition;
-int64_t slim_t_26604 = {0};
-slim_t_26604 = slim_v_next;
-slim_v_source = slim_t_26598;
-slim_v_module_95items = slim_t_26601;
-slim_v_params = slim_t_26602;
-slim_v_definition = slim_t_26603;
-slim_v_cursor = slim_t_26604;
+SlimBytes slim_t_26722 = {0};
+slim_t_26722 = slim_v_source;
+int64_t slim_t_26726 = {0};
+slim_t_26726 = slim_v_module_95items;
+int64_t slim_t_26727 = {0};
+slim_t_26727 = slim_v_params;
+int64_t slim_t_26728 = {0};
+slim_t_26728 = slim_v_definition;
+int64_t slim_t_26729 = {0};
+slim_t_26729 = slim_v_next;
+slim_v_source = slim_t_26722;
+slim_v_module_95items = slim_t_26726;
+slim_v_params = slim_t_26727;
+slim_v_definition = slim_t_26728;
+slim_v_cursor = slim_t_26729;
 goto slim_recur;
 }
 }
@@ -12838,18 +12857,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_26782 = {0};
-slim_t_26782 = slim_v_source;
-int64_t slim_t_26784 = {0};
-slim_t_26784 = slim_v_params;
-int64_t slim_t_26785 = {0};
-slim_t_26785 = slim_v_next;
-bool slim_t_26786 = {0};
-slim_t_26786 = false;
-slim_v_source = slim_t_26782;
-slim_v_params = slim_t_26784;
-slim_v_cursor = slim_t_26785;
-slim_v_first = slim_t_26786;
+SlimBytes slim_t_26907 = {0};
+slim_t_26907 = slim_v_source;
+int64_t slim_t_26909 = {0};
+slim_t_26909 = slim_v_params;
+int64_t slim_t_26910 = {0};
+slim_t_26910 = slim_v_next;
+bool slim_t_26911 = {0};
+slim_t_26911 = false;
+slim_v_source = slim_t_26907;
+slim_v_params = slim_t_26909;
+slim_v_cursor = slim_t_26910;
+slim_v_first = slim_t_26911;
 goto slim_recur;
 }
 }
@@ -12865,10 +12884,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95make(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95make(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_params;
 (void)slim_v_expr;
 (void)slim_v_destination;
@@ -12910,7 +12930,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_open;
 {
 SlimUnit slim_v_bindings = {0};
-slim_v_bindings = slim_fn_codegen_95emit_95make_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_definition, slim_v_first_95field, slim_v_output, slim_allocation_region);
+slim_v_bindings = slim_fn_codegen_95emit_95make_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_definition, slim_v_first_95field, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bindings;
 {
@@ -13022,10 +13042,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95case_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_cursor, int64_t slim_v_payload_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95case_95bindings(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_cursor, int64_t slim_v_payload_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_cursor;
@@ -13079,7 +13100,7 @@ slim_v_destination = slim_i64_sub(INT64_C(0), slim_v_cursor);
 (void)slim_v_destination;
 {
 SlimUnit slim_v_emitted = {0};
-slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_cursor, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
+slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_cursor, slim_v_destination, false, slim_v_type_95index, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_emitted;
 {
@@ -13090,21 +13111,21 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95type = {0};
 slim_v_next_95type = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_payload_95type, slim_allocation_region);
 (void)slim_v_next_95type;
-SlimBytes slim_t_27352 = {0};
-slim_t_27352 = slim_v_source;
-int64_t slim_t_27355 = {0};
-slim_t_27355 = slim_v_module_95items;
-int64_t slim_t_27356 = {0};
-slim_t_27356 = slim_v_params;
-int64_t slim_t_27357 = {0};
-slim_t_27357 = slim_v_next;
-int64_t slim_t_27358 = {0};
-slim_t_27358 = slim_v_next_95type;
-slim_v_source = slim_t_27352;
-slim_v_module_95items = slim_t_27355;
-slim_v_params = slim_t_27356;
-slim_v_cursor = slim_t_27357;
-slim_v_payload_95type = slim_t_27358;
+SlimBytes slim_t_27495 = {0};
+slim_t_27495 = slim_v_source;
+int64_t slim_t_27499 = {0};
+slim_t_27499 = slim_v_module_95items;
+int64_t slim_t_27500 = {0};
+slim_t_27500 = slim_v_params;
+int64_t slim_t_27501 = {0};
+slim_t_27501 = slim_v_next;
+int64_t slim_t_27502 = {0};
+slim_t_27502 = slim_v_next_95type;
+slim_v_source = slim_t_27495;
+slim_v_module_95items = slim_t_27499;
+slim_v_params = slim_t_27500;
+slim_v_cursor = slim_t_27501;
+slim_v_payload_95type = slim_t_27502;
 goto slim_recur;
 }
 }
@@ -13189,18 +13210,18 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95field = {0};
 slim_v_next_95field = slim_i64_add(slim_v_field, INT64_C(1));
 (void)slim_v_next_95field;
-SlimBytes slim_t_27540 = {0};
-slim_t_27540 = slim_v_source;
-int64_t slim_t_27542 = {0};
-slim_t_27542 = slim_v_params;
-int64_t slim_t_27543 = {0};
-slim_t_27543 = slim_v_next;
-int64_t slim_t_27544 = {0};
-slim_t_27544 = slim_v_next_95field;
-slim_v_source = slim_t_27540;
-slim_v_params = slim_t_27542;
-slim_v_cursor = slim_t_27543;
-slim_v_field = slim_t_27544;
+SlimBytes slim_t_27684 = {0};
+slim_t_27684 = slim_v_source;
+int64_t slim_t_27686 = {0};
+slim_t_27686 = slim_v_params;
+int64_t slim_t_27687 = {0};
+slim_t_27687 = slim_v_next;
+int64_t slim_t_27688 = {0};
+slim_t_27688 = slim_v_next_95field;
+slim_v_source = slim_t_27684;
+slim_v_params = slim_t_27686;
+slim_v_cursor = slim_t_27687;
+slim_v_field = slim_t_27688;
 goto slim_recur;
 }
 }
@@ -13217,10 +13238,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95case_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95case_95value(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_params, int64_t slim_v_expr, int64_t slim_v_destination, bool slim_v_result, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_params;
 (void)slim_v_expr;
 (void)slim_v_destination;
@@ -13308,7 +13330,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_open;
 {
 SlimUnit slim_v_bindings = {0};
-slim_v_bindings = slim_fn_codegen_95emit_95case_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_payload, slim_v_payload_95type, slim_v_output, slim_allocation_region);
+slim_v_bindings = slim_fn_codegen_95emit_95case_95bindings(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_payload, slim_v_payload_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bindings;
 {
@@ -13426,9 +13448,9 @@ slim_v_packed = slim_i64_sub(slim_v_positive, INT64_C(2));
 (void)slim_v_packed;
 {
 int64_t slim_v_base = {0};
-int64_t slim_t_28037 = {0};
-slim_t_28037 = ((*slim_v_tokens)).len;
-slim_v_base = slim_i64_add(slim_t_28037, INT64_C(1));
+int64_t slim_t_28190 = {0};
+slim_t_28190 = ((*slim_v_tokens)).len;
+slim_v_base = slim_i64_add(slim_t_28190, INT64_C(1));
 (void)slim_v_base;
 slim_result = slim_i64_div(slim_v_packed, slim_v_base);
 }
@@ -13531,24 +13553,24 @@ slim_v_next_95type = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_payload_
 int64_t slim_v_next_95field = {0};
 slim_v_next_95field = slim_i64_add(slim_v_field, INT64_C(1));
 (void)slim_v_next_95field;
-SlimBytes slim_t_28286 = {0};
-slim_t_28286 = slim_v_source;
-int64_t slim_t_28288 = {0};
-slim_t_28288 = slim_v_value;
-int64_t slim_t_28289 = {0};
-slim_t_28289 = slim_v_case_95name;
-int64_t slim_t_28290 = {0};
-slim_t_28290 = slim_v_next_95bindings;
-int64_t slim_t_28291 = {0};
-slim_t_28291 = slim_v_next_95type;
-int64_t slim_t_28292 = {0};
-slim_t_28292 = slim_v_next_95field;
-slim_v_source = slim_t_28286;
-slim_v_value = slim_t_28288;
-slim_v_case_95name = slim_t_28289;
-slim_v_bindings = slim_t_28290;
-slim_v_payload_95type = slim_t_28291;
-slim_v_field = slim_t_28292;
+SlimBytes slim_t_28439 = {0};
+slim_t_28439 = slim_v_source;
+int64_t slim_t_28441 = {0};
+slim_t_28441 = slim_v_value;
+int64_t slim_t_28442 = {0};
+slim_t_28442 = slim_v_case_95name;
+int64_t slim_t_28443 = {0};
+slim_t_28443 = slim_v_next_95bindings;
+int64_t slim_t_28444 = {0};
+slim_t_28444 = slim_v_next_95type;
+int64_t slim_t_28445 = {0};
+slim_t_28445 = slim_v_next_95field;
+slim_v_source = slim_t_28439;
+slim_v_value = slim_t_28441;
+slim_v_case_95name = slim_t_28442;
+slim_v_bindings = slim_t_28443;
+slim_v_payload_95type = slim_t_28444;
+slim_v_field = slim_t_28445;
 goto slim_recur;
 }
 }
@@ -13571,10 +13593,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95variant_95arms(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_variant_95name, int64_t slim_v_variant_95cases, int64_t slim_v_cursor, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95variant_95arms(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_variant_95name, int64_t slim_v_variant_95cases, int64_t slim_v_cursor, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_value;
@@ -13676,7 +13699,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bound;
 {
 SlimUnit slim_v_emitted = {0};
-slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_emitted;
 {
@@ -13688,36 +13711,36 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_28630 = {0};
-slim_t_28630 = slim_v_source;
-int64_t slim_t_28633 = {0};
-slim_t_28633 = slim_v_module_95items;
-int64_t slim_t_28634 = {0};
-slim_t_28634 = slim_v_params;
-int64_t slim_t_28635 = {0};
-slim_t_28635 = slim_v_value;
-int64_t slim_t_28636 = {0};
-slim_t_28636 = slim_v_variant_95name;
-int64_t slim_t_28637 = {0};
-slim_t_28637 = slim_v_variant_95cases;
-int64_t slim_t_28638 = {0};
-slim_t_28638 = slim_v_next;
-int64_t slim_t_28639 = {0};
-slim_t_28639 = slim_v_destination;
-bool slim_t_28640 = {0};
-slim_t_28640 = slim_v_result;
-int64_t slim_t_28641 = {0};
-slim_t_28641 = slim_v_destination_95type;
-slim_v_source = slim_t_28630;
-slim_v_module_95items = slim_t_28633;
-slim_v_params = slim_t_28634;
-slim_v_value = slim_t_28635;
-slim_v_variant_95name = slim_t_28636;
-slim_v_variant_95cases = slim_t_28637;
-slim_v_cursor = slim_t_28638;
-slim_v_destination = slim_t_28639;
-slim_v_result = slim_t_28640;
-slim_v_destination_95type = slim_t_28641;
+SlimBytes slim_t_28792 = {0};
+slim_t_28792 = slim_v_source;
+int64_t slim_t_28796 = {0};
+slim_t_28796 = slim_v_module_95items;
+int64_t slim_t_28797 = {0};
+slim_t_28797 = slim_v_params;
+int64_t slim_t_28798 = {0};
+slim_t_28798 = slim_v_value;
+int64_t slim_t_28799 = {0};
+slim_t_28799 = slim_v_variant_95name;
+int64_t slim_t_28800 = {0};
+slim_t_28800 = slim_v_variant_95cases;
+int64_t slim_t_28801 = {0};
+slim_t_28801 = slim_v_next;
+int64_t slim_t_28802 = {0};
+slim_t_28802 = slim_v_destination;
+bool slim_t_28803 = {0};
+slim_t_28803 = slim_v_result;
+int64_t slim_t_28804 = {0};
+slim_t_28804 = slim_v_destination_95type;
+slim_v_source = slim_t_28792;
+slim_v_module_95items = slim_t_28796;
+slim_v_params = slim_t_28797;
+slim_v_value = slim_t_28798;
+slim_v_variant_95name = slim_t_28799;
+slim_v_variant_95cases = slim_t_28800;
+slim_v_cursor = slim_t_28801;
+slim_v_destination = slim_t_28802;
+slim_v_result = slim_t_28803;
+slim_v_destination_95type = slim_t_28804;
 goto slim_recur;
 }
 }
@@ -13742,10 +13765,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95boolean_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95boolean_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_value;
@@ -13806,7 +13830,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_branch_95open;
 {
 SlimUnit slim_v_first_95emitted = {0};
-slim_v_first_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_first_95body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_v_first_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_first_95body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_first_95emitted;
 {
@@ -13816,7 +13840,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_branch_95middle;
 {
 SlimUnit slim_v_second_95emitted = {0};
-slim_v_second_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_second_95body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_v_second_95emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_second_95body, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_second_95emitted;
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"}\n", (int64_t)(sizeof("}\n") - 1)), slim_allocation_region);
@@ -13837,10 +13861,11 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SlimUnit slim_fn_codegen_95emit_95variant_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
+static SlimUnit slim_fn_codegen_95emit_95variant_95match(SlimBytes slim_v_source, SlimVec * slim_v_tokens, SlimVec * slim_v_facts, SlimVec * slim_v_allocations, int64_t slim_v_module_95items, int64_t slim_v_params, int64_t slim_v_value, int64_t slim_v_first_95arm, int64_t slim_v_destination, bool slim_v_result, int64_t slim_v_destination_95type, SlimVec * slim_v_output, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
 (void)slim_v_facts;
+(void)slim_v_allocations;
 (void)slim_v_module_95items;
 (void)slim_v_params;
 (void)slim_v_value;
@@ -13900,7 +13925,7 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_tag;
 {
 SlimUnit slim_v_arms = {0};
-slim_v_arms = slim_fn_codegen_95emit_95variant_95arms(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_variant_95type, slim_v_variant_95cases, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
+slim_v_arms = slim_fn_codegen_95emit_95variant_95arms(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_value, slim_v_variant_95type, slim_v_variant_95cases, slim_v_first_95arm, slim_v_destination, slim_v_result, slim_v_destination_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_arms;
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"default: slim_rt_trap(\"invalid variant tag\");\n}\n", (int64_t)(sizeof("default: slim_rt_trap(\"invalid variant tag\");\n}\n") - 1)), slim_allocation_region);
@@ -14046,14 +14071,18 @@ bool slim_v_plan_95aligned = {0};
 slim_v_plan_95aligned = slim_v_planned_95function == slim_v_item;
 (void)slim_v_plan_95aligned;
 {
+SlimVec slim_v_allocations = {0};
+slim_v_allocations = slim_v_function_95plan.slim_field_allocations;
+(void)slim_v_allocations;
+{
 bool slim_v_local_95region = {0};
 if (slim_v_plan_95aligned) {
 slim_v_local_95region = slim_v_function_95plan.slim_field_local_95region;
 }
 else {
-int64_t slim_t_29454 = {0};
-slim_t_29454 = slim_i64_div(slim_v_item, INT64_C(0));
-slim_v_local_95region = slim_t_29454 == INT64_C(0);
+int64_t slim_t_29648 = {0};
+slim_t_29648 = slim_i64_div(slim_v_item, INT64_C(0));
+slim_v_local_95region = slim_t_29648 == INT64_C(0);
 }
 (void)slim_v_local_95region;
 {
@@ -14107,7 +14136,7 @@ slim_v_label = (SlimUnit){0};
 (void)slim_v_label;
 {
 SlimUnit slim_v_emitted = {0};
-slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, slim_v_module_95items, slim_v_params, slim_v_body, INT64_C(0), true, slim_v_return_95type, slim_v_output, slim_allocation_region);
+slim_v_emitted = slim_fn_codegen_95emit_95expr_95full(slim_v_source, slim_v_tokens, slim_v_facts, &slim_v_allocations, slim_v_module_95items, slim_v_params, slim_v_body, INT64_C(0), true, slim_v_return_95type, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_emitted;
 {
@@ -14132,6 +14161,7 @@ slim_v_destroyed = (SlimUnit){0};
 (void)slim_v_destroyed;
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)"return slim_result;\n}\n\n", (int64_t)(sizeof("return slim_result;\n}\n\n") - 1)), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 }
 }
@@ -14219,18 +14249,18 @@ slim_v_next_95plan = slim_v_plan_95index;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_29827 = {0};
-slim_t_29827 = slim_v_source;
-int64_t slim_t_29830 = {0};
-slim_t_29830 = slim_v_module_95items;
-int64_t slim_t_29832 = {0};
-slim_t_29832 = slim_v_next;
-int64_t slim_t_29833 = {0};
-slim_t_29833 = slim_v_next_95plan;
-slim_v_source = slim_t_29827;
-slim_v_module_95items = slim_t_29830;
-slim_v_cursor = slim_t_29832;
-slim_v_plan_95index = slim_t_29833;
+SlimBytes slim_t_30023 = {0};
+slim_t_30023 = slim_v_source;
+int64_t slim_t_30026 = {0};
+slim_t_30026 = slim_v_module_95items;
+int64_t slim_t_30028 = {0};
+slim_t_30028 = slim_v_next;
+int64_t slim_t_30029 = {0};
+slim_t_30029 = slim_v_next_95plan;
+slim_v_source = slim_t_30023;
+slim_v_module_95items = slim_t_30026;
+slim_v_cursor = slim_t_30028;
+slim_v_plan_95index = slim_t_30029;
 goto slim_recur;
 }
 }
@@ -14470,18 +14500,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_30380 = {0};
-slim_t_30380 = slim_v_source;
-int64_t slim_t_30382 = {0};
-slim_t_30382 = slim_v_next;
-int64_t slim_t_30383 = {0};
-slim_t_30383 = slim_v_length;
-int64_t slim_t_30384 = {0};
-slim_t_30384 = slim_v_kind;
-slim_v_source = slim_t_30380;
-slim_v_index = slim_t_30382;
-slim_v_length = slim_t_30383;
-slim_v_previous_95kind = slim_t_30384;
+SlimBytes slim_t_30576 = {0};
+slim_t_30576 = slim_v_source;
+int64_t slim_t_30578 = {0};
+slim_t_30578 = slim_v_next;
+int64_t slim_t_30579 = {0};
+slim_t_30579 = slim_v_length;
+int64_t slim_t_30580 = {0};
+slim_t_30580 = slim_v_kind;
+slim_v_source = slim_t_30576;
+slim_v_index = slim_t_30578;
+slim_v_length = slim_t_30579;
+slim_v_previous_95kind = slim_t_30580;
 goto slim_recur;
 }
 }
@@ -16124,18 +16154,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_33839 = {0};
-slim_t_33839 = slim_v_source;
-int64_t slim_t_33840 = {0};
-slim_t_33840 = slim_v_next;
-int64_t slim_t_33841 = {0};
-slim_t_33841 = slim_v_end;
-int64_t slim_t_33842 = {0};
-slim_t_33842 = slim_v_candidate;
-slim_v_source = slim_t_33839;
-slim_v_index = slim_t_33840;
-slim_v_end = slim_t_33841;
-slim_v_value = slim_t_33842;
+SlimBytes slim_t_34035 = {0};
+slim_t_34035 = slim_v_source;
+int64_t slim_t_34036 = {0};
+slim_t_34036 = slim_v_next;
+int64_t slim_t_34037 = {0};
+slim_t_34037 = slim_v_end;
+int64_t slim_t_34038 = {0};
+slim_t_34038 = slim_v_candidate;
+slim_v_source = slim_t_34035;
+slim_v_index = slim_t_34036;
+slim_v_end = slim_t_34037;
+slim_v_value = slim_t_34038;
 goto slim_recur;
 }
 }
@@ -16225,9 +16255,9 @@ slim_result = INT64_C(-1);
 else {
 {
 bool slim_v_root_95left = {0};
-int64_t slim_t_34033 = {0};
-slim_t_34033 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(0), slim_allocation_region);
-slim_v_root_95left = slim_t_34033 == INT64_C(0);
+int64_t slim_t_34229 = {0};
+slim_t_34229 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(0), slim_allocation_region);
+slim_v_root_95left = slim_t_34229 == INT64_C(0);
 (void)slim_v_root_95left;
 {
 bool slim_v_root_95name = {0};
@@ -16239,9 +16269,9 @@ slim_v_version = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, IN
 (void)slim_v_version;
 {
 bool slim_v_node_95left = {0};
-int64_t slim_t_34072 = {0};
-slim_t_34072 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(3), slim_allocation_region);
-slim_v_node_95left = slim_t_34072 == INT64_C(0);
+int64_t slim_t_34268 = {0};
+slim_t_34268 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(3), slim_allocation_region);
+slim_v_node_95left = slim_t_34268 == INT64_C(0);
 (void)slim_v_node_95left;
 {
 bool slim_v_node_95name = {0};
@@ -16249,15 +16279,15 @@ slim_v_node_95name = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens
 (void)slim_v_node_95name;
 {
 bool slim_v_node_95close = {0};
-int64_t slim_t_34099 = {0};
-slim_t_34099 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(6), slim_allocation_region);
-slim_v_node_95close = slim_t_34099 == INT64_C(1);
+int64_t slim_t_34295 = {0};
+slim_t_34295 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(6), slim_allocation_region);
+slim_v_node_95close = slim_t_34295 == INT64_C(1);
 (void)slim_v_node_95close;
 {
 bool slim_v_replace_95left = {0};
-int64_t slim_t_34114 = {0};
-slim_t_34114 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(7), slim_allocation_region);
-slim_v_replace_95left = slim_t_34114 == INT64_C(0);
+int64_t slim_t_34310 = {0};
+slim_t_34310 = slim_fn_syntax_95token_95kind(slim_v_tokens, INT64_C(7), slim_allocation_region);
+slim_v_replace_95left = slim_t_34310 == INT64_C(0);
 (void)slim_v_replace_95left;
 {
 bool slim_v_replace_95name = {0};
@@ -16269,9 +16299,9 @@ slim_v_replacement_95end = slim_fn_syntax_95skip_95form(slim_v_tokens, INT64_C(9
 (void)slim_v_replacement_95end;
 {
 bool slim_v_replace_95close = {0};
-int64_t slim_t_34151 = {0};
-slim_t_34151 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_replacement_95end, slim_allocation_region);
-slim_v_replace_95close = slim_t_34151 == INT64_C(1);
+int64_t slim_t_34347 = {0};
+slim_t_34347 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_replacement_95end, slim_allocation_region);
+slim_v_replace_95close = slim_t_34347 == INT64_C(1);
 (void)slim_v_replace_95close;
 {
 int64_t slim_v_root_95close = {0};
@@ -16279,9 +16309,9 @@ slim_v_root_95close = slim_i64_add(slim_v_replacement_95end, INT64_C(1));
 (void)slim_v_root_95close;
 {
 bool slim_v_root_95closed = {0};
-int64_t slim_t_34176 = {0};
-slim_t_34176 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_root_95close, slim_allocation_region);
-slim_v_root_95closed = slim_t_34176 == INT64_C(1);
+int64_t slim_t_34372 = {0};
+slim_t_34372 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_root_95close, slim_allocation_region);
+slim_v_root_95closed = slim_t_34372 == INT64_C(1);
 (void)slim_v_root_95closed;
 {
 int64_t slim_v_exact_95end = {0};
@@ -16439,24 +16469,24 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_34543 = {0};
-slim_t_34543 = slim_v_source;
-int64_t slim_t_34545 = {0};
-slim_t_34545 = slim_v_next;
-int64_t slim_t_34546 = {0};
-slim_t_34546 = slim_v_target;
-SlimBytes slim_t_34547 = {0};
-slim_t_34547 = slim_v_patch;
-int64_t slim_t_34549 = {0};
-slim_t_34549 = slim_v_replacement;
-bool slim_t_34550 = {0};
-slim_t_34550 = false;
-slim_v_source = slim_t_34543;
-slim_v_cursor = slim_t_34545;
-slim_v_target = slim_t_34546;
-slim_v_patch = slim_t_34547;
-slim_v_replacement = slim_t_34549;
-slim_v_first = slim_t_34550;
+SlimBytes slim_t_34739 = {0};
+slim_t_34739 = slim_v_source;
+int64_t slim_t_34741 = {0};
+slim_t_34741 = slim_v_next;
+int64_t slim_t_34742 = {0};
+slim_t_34742 = slim_v_target;
+SlimBytes slim_t_34743 = {0};
+slim_t_34743 = slim_v_patch;
+int64_t slim_t_34745 = {0};
+slim_t_34745 = slim_v_replacement;
+bool slim_t_34746 = {0};
+slim_t_34746 = false;
+slim_v_source = slim_t_34739;
+slim_v_cursor = slim_t_34741;
+slim_v_target = slim_t_34742;
+slim_v_patch = slim_t_34743;
+slim_v_replacement = slim_t_34745;
+slim_v_first = slim_t_34746;
 goto slim_recur;
 }
 }
@@ -16573,9 +16603,9 @@ slim_v_target_95kind = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_targe
 (void)slim_v_target_95kind;
 {
 bool slim_v_not_95closing = {0};
-bool slim_t_34845 = {0};
-slim_t_34845 = slim_v_target_95kind == INT64_C(1);
-slim_v_not_95closing = !slim_t_34845;
+bool slim_t_35041 = {0};
+slim_t_35041 = slim_v_target_95kind == INT64_C(1);
+slim_v_not_95closing = !slim_t_35041;
 (void)slim_v_not_95closing;
 {
 bool slim_v_first_95valid = {0};
@@ -16681,15 +16711,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_35086 = {0};
-slim_t_35086 = slim_v_source;
-int64_t slim_t_35088 = {0};
-slim_t_35088 = slim_v_next;
-int64_t slim_t_35089 = {0};
-slim_t_35089 = slim_v_effect_95code;
-slim_v_source = slim_t_35086;
-slim_v_cursor = slim_t_35088;
-slim_v_effect_95code = slim_t_35089;
+SlimBytes slim_t_35282 = {0};
+slim_t_35282 = slim_v_source;
+int64_t slim_t_35284 = {0};
+slim_t_35284 = slim_v_next;
+int64_t slim_t_35285 = {0};
+slim_t_35285 = slim_v_effect_95code;
+slim_v_source = slim_t_35282;
+slim_v_cursor = slim_t_35284;
+slim_v_effect_95code = slim_t_35285;
 goto slim_recur;
 }
 }
@@ -16971,12 +17001,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_35764 = {0};
-slim_t_35764 = slim_v_source;
-int64_t slim_t_35766 = {0};
-slim_t_35766 = slim_v_next;
-slim_v_source = slim_t_35764;
-slim_v_cursor = slim_t_35766;
+SlimBytes slim_t_35960 = {0};
+slim_t_35960 = slim_v_source;
+int64_t slim_t_35962 = {0};
+slim_t_35962 = slim_v_next;
+slim_v_source = slim_t_35960;
+slim_v_cursor = slim_t_35962;
 goto slim_recur;
 }
 }
@@ -17043,9 +17073,9 @@ slim_v_after_95type = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_type_95
 (void)slim_v_after_95type;
 {
 bool slim_v_closing = {0};
-int64_t slim_t_35925 = {0};
-slim_t_35925 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95type, slim_allocation_region);
-slim_v_closing = slim_t_35925 == INT64_C(1);
+int64_t slim_t_36121 = {0};
+slim_t_36121 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95type, slim_allocation_region);
+slim_v_closing = slim_t_36121 == INT64_C(1);
 (void)slim_v_closing;
 {
 bool slim_v_first_95valid = {0};
@@ -17071,15 +17101,15 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95count = {0};
 slim_v_next_95count = slim_i64_add(slim_v_count, INT64_C(1));
 (void)slim_v_next_95count;
-SlimBytes slim_t_35994 = {0};
-slim_t_35994 = slim_v_source;
-int64_t slim_t_35996 = {0};
-slim_t_35996 = slim_v_next;
-int64_t slim_t_35997 = {0};
-slim_t_35997 = slim_v_next_95count;
-slim_v_source = slim_t_35994;
-slim_v_cursor = slim_t_35996;
-slim_v_count = slim_t_35997;
+SlimBytes slim_t_36190 = {0};
+slim_t_36190 = slim_v_source;
+int64_t slim_t_36192 = {0};
+slim_t_36192 = slim_v_next;
+int64_t slim_t_36193 = {0};
+slim_t_36193 = slim_v_next_95count;
+slim_v_source = slim_t_36190;
+slim_v_cursor = slim_t_36192;
+slim_v_count = slim_t_36193;
 goto slim_recur;
 }
 }
@@ -17159,9 +17189,9 @@ slim_v_effects_95end = slim_i64_add(slim_v_effects, INT64_C(2));
 (void)slim_v_effects_95end;
 {
 bool slim_v_empty_95effects = {0};
-int64_t slim_t_36179 = {0};
-slim_t_36179 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_effects_95end, slim_allocation_region);
-slim_v_empty_95effects = slim_t_36179 == INT64_C(1);
+int64_t slim_t_36375 = {0};
+slim_t_36375 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_effects_95end, slim_allocation_region);
+slim_v_empty_95effects = slim_t_36375 == INT64_C(1);
 (void)slim_v_empty_95effects;
 {
 bool slim_v_signature_95first = {0};
@@ -17257,15 +17287,15 @@ else {
 int64_t slim_v_previous = {0};
 slim_v_previous = slim_i64_sub(slim_v_index, INT64_C(1));
 (void)slim_v_previous;
-SlimBytes slim_t_36411 = {0};
-slim_t_36411 = slim_v_source;
-int64_t slim_t_36413 = {0};
-slim_t_36413 = slim_v_name;
-int64_t slim_t_36416 = {0};
-slim_t_36416 = slim_v_previous;
-slim_v_source = slim_t_36411;
-slim_v_name = slim_t_36413;
-slim_v_index = slim_t_36416;
+SlimBytes slim_t_36607 = {0};
+slim_t_36607 = slim_v_source;
+int64_t slim_t_36609 = {0};
+slim_t_36609 = slim_v_name;
+int64_t slim_t_36612 = {0};
+slim_t_36612 = slim_v_previous;
+slim_v_source = slim_t_36607;
+slim_v_name = slim_t_36609;
+slim_v_index = slim_t_36612;
 goto slim_recur;
 }
 }
@@ -17346,9 +17376,9 @@ slim_v_after_95first = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_first,
 (void)slim_v_after_95first;
 {
 bool slim_v_unary_95end = {0};
-int64_t slim_t_36631 = {0};
-slim_t_36631 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95first, slim_allocation_region);
-slim_v_unary_95end = slim_t_36631 == INT64_C(1);
+int64_t slim_t_36827 = {0};
+slim_t_36827 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95first, slim_allocation_region);
+slim_v_unary_95end = slim_t_36827 == INT64_C(1);
 (void)slim_v_unary_95end;
 {
 bool slim_v_not_95call = {0};
@@ -17364,15 +17394,15 @@ int64_t slim_v_value = {0};
 slim_v_value = slim_fn_equivalence_95eval_95expr(slim_v_source, slim_v_tokens, slim_v_first, slim_v_names, slim_v_values, slim_v_limit, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_value;
-bool slim_t_36682 = {0};
-slim_t_36682 = slim_v_value == INT64_C(0);
-if (slim_t_36682) {
+bool slim_t_36878 = {0};
+slim_t_36878 = slim_v_value == INT64_C(0);
+if (slim_t_36878) {
 slim_result = INT64_C(1);
 }
 else {
-bool slim_t_36696 = {0};
-slim_t_36696 = slim_v_value == INT64_C(1);
-if (slim_t_36696) {
+bool slim_t_36892 = {0};
+slim_t_36892 = slim_v_value == INT64_C(1);
+if (slim_t_36892) {
 slim_result = INT64_C(0);
 }
 else {
@@ -17392,9 +17422,9 @@ slim_v_after_95second = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_secon
 (void)slim_v_after_95second;
 {
 bool slim_v_binary_95end = {0};
-int64_t slim_t_36739 = {0};
-slim_t_36739 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95second, slim_allocation_region);
-slim_v_binary_95end = slim_t_36739 == INT64_C(1);
+int64_t slim_t_36935 = {0};
+slim_t_36935 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95second, slim_allocation_region);
+slim_v_binary_95end = slim_t_36935 == INT64_C(1);
 (void)slim_v_binary_95end;
 {
 bool slim_v_and_95call = {0};
@@ -17572,9 +17602,9 @@ slim_v_after_95body = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_body, s
 (void)slim_v_after_95body;
 {
 bool slim_v_exact_95end = {0};
-int64_t slim_t_37176 = {0};
-slim_t_37176 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95body, slim_allocation_region);
-slim_v_exact_95end = slim_t_37176 == INT64_C(1);
+int64_t slim_t_37372 = {0};
+slim_t_37372 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95body, slim_allocation_region);
+slim_v_exact_95end = slim_t_37372 == INT64_C(1);
 (void)slim_v_exact_95end;
 {
 bool slim_v_supported = {0};
@@ -17688,9 +17718,9 @@ slim_v_after_95body = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_body, s
 (void)slim_v_after_95body;
 {
 bool slim_v_exact_95arm = {0};
-int64_t slim_t_37443 = {0};
-slim_t_37443 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95body, slim_allocation_region);
-slim_v_exact_95arm = slim_t_37443 == INT64_C(1);
+int64_t slim_t_37639 = {0};
+slim_t_37639 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_after_95body, slim_allocation_region);
+slim_v_exact_95arm = slim_t_37639 == INT64_C(1);
 (void)slim_v_exact_95arm;
 {
 bool slim_v_valid_95match = {0};
@@ -17708,15 +17738,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_37492 = {0};
-slim_t_37492 = slim_v_source;
-int64_t slim_t_37494 = {0};
-slim_t_37494 = slim_v_next;
-bool slim_t_37495 = {0};
-slim_t_37495 = slim_v_wanted;
-slim_v_source = slim_t_37492;
-slim_v_cursor = slim_t_37494;
-slim_v_wanted = slim_t_37495;
+SlimBytes slim_t_37688 = {0};
+slim_t_37688 = slim_v_source;
+int64_t slim_t_37690 = {0};
+slim_t_37690 = slim_v_next;
+bool slim_t_37691 = {0};
+slim_t_37691 = slim_v_wanted;
+slim_v_source = slim_t_37688;
+slim_v_cursor = slim_t_37690;
+slim_v_wanted = slim_t_37691;
 goto slim_recur;
 }
 }
@@ -17747,9 +17777,9 @@ int64_t slim_result = {0};
 slim_recur: ;
 {
 bool slim_v_done = {0};
-int64_t slim_t_37548 = {0};
-slim_t_37548 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_cursor, slim_allocation_region);
-slim_v_done = slim_t_37548 == INT64_C(1);
+int64_t slim_t_37744 = {0};
+slim_t_37744 = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_cursor, slim_allocation_region);
+slim_v_done = slim_t_37744 == INT64_C(1);
 (void)slim_v_done;
 if (slim_v_done) {
 slim_result = slim_v_count;
@@ -17763,12 +17793,12 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_next_95count = {0};
 slim_v_next_95count = slim_i64_add(slim_v_count, INT64_C(1));
 (void)slim_v_next_95count;
-int64_t slim_t_37588 = {0};
-slim_t_37588 = slim_v_next;
-int64_t slim_t_37589 = {0};
-slim_t_37589 = slim_v_next_95count;
-slim_v_cursor = slim_t_37588;
-slim_v_count = slim_t_37589;
+int64_t slim_t_37784 = {0};
+slim_t_37784 = slim_v_next;
+int64_t slim_t_37785 = {0};
+slim_t_37785 = slim_v_next_95count;
+slim_v_cursor = slim_t_37784;
+slim_v_count = slim_t_37785;
 goto slim_recur;
 }
 }
@@ -17962,12 +17992,12 @@ slim_v_next = slim_i64_sub(slim_v_exponent, INT64_C(1));
 int64_t slim_v_doubled = {0};
 slim_v_doubled = slim_i64_mul(slim_v_value, INT64_C(2));
 (void)slim_v_doubled;
-int64_t slim_t_38076 = {0};
-slim_t_38076 = slim_v_next;
-int64_t slim_t_38077 = {0};
-slim_t_38077 = slim_v_doubled;
-slim_v_exponent = slim_t_38076;
-slim_v_value = slim_t_38077;
+int64_t slim_t_38272 = {0};
+slim_t_38272 = slim_v_next;
+int64_t slim_t_38273 = {0};
+slim_t_38273 = slim_v_doubled;
+slim_v_exponent = slim_t_38272;
+slim_v_value = slim_t_38273;
 goto slim_recur;
 }
 }
@@ -17989,9 +18019,9 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 bool slim_result = {0};
 {
 int64_t slim_v_reversed = {0};
-int64_t slim_t_38114 = {0};
-slim_t_38114 = slim_i64_sub(slim_v_count, slim_v_position);
-slim_v_reversed = slim_i64_sub(slim_t_38114, INT64_C(1));
+int64_t slim_t_38310 = {0};
+slim_t_38310 = slim_i64_sub(slim_v_count, slim_v_position);
+slim_v_reversed = slim_i64_sub(slim_t_38310, INT64_C(1));
 (void)slim_v_reversed;
 {
 int64_t slim_v_divisor = {0};
@@ -18055,15 +18085,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_position, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_38262 = {0};
-slim_t_38262 = slim_v_mask;
-int64_t slim_t_38263 = {0};
-slim_t_38263 = slim_v_next;
-int64_t slim_t_38264 = {0};
-slim_t_38264 = slim_v_count;
-slim_v_mask = slim_t_38262;
-slim_v_position = slim_t_38263;
-slim_v_count = slim_t_38264;
+int64_t slim_t_38458 = {0};
+slim_t_38458 = slim_v_mask;
+int64_t slim_t_38459 = {0};
+slim_t_38459 = slim_v_next;
+int64_t slim_t_38460 = {0};
+slim_t_38460 = slim_v_count;
+slim_v_mask = slim_t_38458;
+slim_v_position = slim_t_38459;
+slim_v_count = slim_t_38460;
 goto slim_recur;
 }
 }
@@ -18106,15 +18136,15 @@ if (!slim_vec_push(slim_v_values, &slim_v_value)) goto slim_allocation_failed; s
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_position, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_38358 = {0};
-slim_t_38358 = slim_v_mask;
-int64_t slim_t_38359 = {0};
-slim_t_38359 = slim_v_next;
-int64_t slim_t_38360 = {0};
-slim_t_38360 = slim_v_count;
-slim_v_mask = slim_t_38358;
-slim_v_position = slim_t_38359;
-slim_v_count = slim_t_38360;
+int64_t slim_t_38554 = {0};
+slim_t_38554 = slim_v_mask;
+int64_t slim_t_38555 = {0};
+slim_t_38555 = slim_v_next;
+int64_t slim_t_38556 = {0};
+slim_t_38556 = slim_v_count;
+slim_v_mask = slim_t_38554;
+slim_v_position = slim_t_38555;
+slim_v_count = slim_t_38556;
 goto slim_recur;
 }
 }
@@ -18196,12 +18226,12 @@ if (!slim_vec_push(slim_v_output, &slim_v_name)) goto slim_allocation_failed; sl
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_38561 = {0};
-slim_t_38561 = slim_v_next;
-int64_t slim_t_38562 = {0};
-slim_t_38562 = slim_v_count;
-slim_v_index = slim_t_38561;
-slim_v_count = slim_t_38562;
+int64_t slim_t_38757 = {0};
+slim_t_38757 = slim_v_next;
+int64_t slim_t_38758 = {0};
+slim_t_38758 = slim_v_count;
+slim_v_index = slim_t_38757;
+slim_v_count = slim_t_38758;
 goto slim_recur;
 }
 }
@@ -18292,9 +18322,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_middle;
 {
 SlimBytes slim_v_left_95text = {0};
-bool slim_t_38749 = {0};
-slim_t_38749 = slim_v_left == INT64_C(1);
-if (slim_t_38749) {
+bool slim_t_38945 = {0};
+slim_t_38945 = slim_v_left == INT64_C(1);
+if (slim_t_38945) {
 slim_v_left_95text = slim_bytes_static((const uint8_t *)"true", (int64_t)(sizeof("true") - 1));
 }
 else {
@@ -18313,9 +18343,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_separator;
 {
 SlimBytes slim_v_right_95text = {0};
-bool slim_t_38790 = {0};
-slim_t_38790 = slim_v_right == INT64_C(1);
-if (slim_t_38790) {
+bool slim_t_38986 = {0};
+slim_t_38986 = slim_v_right == INT64_C(1);
+if (slim_t_38986) {
 slim_v_right_95text = slim_bytes_static((const uint8_t *)"true", (int64_t)(sizeof("true") - 1));
 }
 else {
@@ -18409,27 +18439,27 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_mask, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_39044 = {0};
-slim_t_39044 = slim_v_left_95source;
-int64_t slim_t_39046 = {0};
-slim_t_39046 = slim_v_left_95body;
-SlimBytes slim_t_39048 = {0};
-slim_t_39048 = slim_v_right_95source;
-int64_t slim_t_39050 = {0};
-slim_t_39050 = slim_v_right_95body;
-int64_t slim_t_39052 = {0};
-slim_t_39052 = slim_v_count;
-int64_t slim_t_39053 = {0};
-slim_t_39053 = slim_v_next;
-int64_t slim_t_39054 = {0};
-slim_t_39054 = slim_v_cases;
-slim_v_left_95source = slim_t_39044;
-slim_v_left_95body = slim_t_39046;
-slim_v_right_95source = slim_t_39048;
-slim_v_right_95body = slim_t_39050;
-slim_v_count = slim_t_39052;
-slim_v_mask = slim_t_39053;
-slim_v_cases = slim_t_39054;
+SlimBytes slim_t_39240 = {0};
+slim_t_39240 = slim_v_left_95source;
+int64_t slim_t_39242 = {0};
+slim_t_39242 = slim_v_left_95body;
+SlimBytes slim_t_39244 = {0};
+slim_t_39244 = slim_v_right_95source;
+int64_t slim_t_39246 = {0};
+slim_t_39246 = slim_v_right_95body;
+int64_t slim_t_39248 = {0};
+slim_t_39248 = slim_v_count;
+int64_t slim_t_39249 = {0};
+slim_t_39249 = slim_v_next;
+int64_t slim_t_39250 = {0};
+slim_t_39250 = slim_v_cases;
+slim_v_left_95source = slim_t_39240;
+slim_v_left_95body = slim_t_39242;
+slim_v_right_95source = slim_t_39244;
+slim_v_right_95body = slim_t_39246;
+slim_v_count = slim_t_39248;
+slim_v_mask = slim_t_39249;
+slim_v_cases = slim_t_39250;
 goto slim_recur;
 }
 }
@@ -18627,6 +18657,114 @@ slim_region_destroy(&slim_function_region);
 return slim_result;
 }
 
+static int64_t slim_fn_memory_95allocation_95site_95region_95range(SlimVec * slim_v_allocations, int64_t slim_v_site, int64_t slim_v_low, int64_t slim_v_high, SlimRegion *slim_region) {
+(void)slim_v_allocations;
+(void)slim_v_site;
+(void)slim_v_low;
+(void)slim_v_high;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+slim_recur: ;
+{
+bool slim_v_done = {0};
+slim_v_done = slim_v_low >= slim_v_high;
+(void)slim_v_done;
+if (slim_v_done) {
+slim_result = INT64_C(-1);
+}
+else {
+{
+int64_t slim_v_distance = {0};
+slim_v_distance = slim_i64_sub(slim_v_high, slim_v_low);
+(void)slim_v_distance;
+{
+int64_t slim_v_half = {0};
+slim_v_half = slim_i64_div(slim_v_distance, INT64_C(2));
+(void)slim_v_half;
+{
+int64_t slim_v_middle = {0};
+slim_v_middle = slim_i64_add(slim_v_low, slim_v_half);
+(void)slim_v_middle;
+{
+Slim_type_memory_95AllocationPlan slim_v_plan = {0};
+slim_v_plan = ((Slim_type_memory_95AllocationPlan *)((*slim_v_allocations)).data)[slim_vec_check_index(&((*slim_v_allocations)), slim_v_middle)];
+(void)slim_v_plan;
+{
+int64_t slim_v_planned_95site = {0};
+slim_v_planned_95site = slim_v_plan.slim_field_site;
+(void)slim_v_planned_95site;
+{
+bool slim_v_same = {0};
+slim_v_same = slim_v_site == slim_v_planned_95site;
+(void)slim_v_same;
+if (slim_v_same) {
+slim_result = slim_v_plan.slim_field_region;
+}
+else {
+{
+bool slim_v_before = {0};
+slim_v_before = slim_v_site < slim_v_planned_95site;
+(void)slim_v_before;
+if (slim_v_before) {
+int64_t slim_t_40000 = {0};
+slim_t_40000 = slim_v_site;
+int64_t slim_t_40001 = {0};
+slim_t_40001 = slim_v_low;
+int64_t slim_t_40002 = {0};
+slim_t_40002 = slim_v_middle;
+slim_v_site = slim_t_40000;
+slim_v_low = slim_t_40001;
+slim_v_high = slim_t_40002;
+goto slim_recur;
+}
+else {
+{
+int64_t slim_v_next = {0};
+slim_v_next = slim_i64_add(slim_v_middle, INT64_C(1));
+(void)slim_v_next;
+int64_t slim_t_40020 = {0};
+slim_t_40020 = slim_v_site;
+int64_t slim_t_40021 = {0};
+slim_t_40021 = slim_v_next;
+int64_t slim_t_40022 = {0};
+slim_t_40022 = slim_v_high;
+slim_v_site = slim_t_40020;
+slim_v_low = slim_t_40021;
+slim_v_high = slim_t_40022;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+return slim_result;
+}
+
+static int64_t slim_fn_memory_95allocation_95site_95region(SlimVec * slim_v_allocations, int64_t slim_v_site, SlimRegion *slim_region) {
+(void)slim_v_allocations;
+(void)slim_v_site;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+{
+int64_t slim_v_count = {0};
+slim_v_count = ((*slim_v_allocations)).len;
+(void)slim_v_count;
+slim_result = slim_fn_memory_95allocation_95site_95region_95range(slim_v_allocations, slim_v_site, INT64_C(0), slim_v_count, slim_allocation_region);
+}
+return slim_result;
+}
+
 static bool slim_fn_memory_95span_95has_95form(SlimBytes slim_v_source, SlimVec * slim_v_tokens, int64_t slim_v_cursor, int64_t slim_v_end, SlimBytes slim_v_text, SlimRegion *slim_region) {
 (void)slim_v_source;
 (void)slim_v_tokens;
@@ -18675,18 +18813,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_39792 = {0};
-slim_t_39792 = slim_v_source;
-int64_t slim_t_39794 = {0};
-slim_t_39794 = slim_v_next;
-int64_t slim_t_39795 = {0};
-slim_t_39795 = slim_v_end;
-SlimBytes slim_t_39796 = {0};
-slim_t_39796 = slim_v_text;
-slim_v_source = slim_t_39792;
-slim_v_cursor = slim_t_39794;
-slim_v_end = slim_t_39795;
-slim_v_text = slim_t_39796;
+SlimBytes slim_t_40208 = {0};
+slim_t_40208 = slim_v_source;
+int64_t slim_t_40210 = {0};
+slim_t_40210 = slim_v_next;
+int64_t slim_t_40211 = {0};
+slim_t_40211 = slim_v_end;
+SlimBytes slim_t_40212 = {0};
+slim_t_40212 = slim_v_text;
+slim_v_source = slim_t_40208;
+slim_v_cursor = slim_t_40210;
+slim_v_end = slim_t_40211;
+slim_v_text = slim_t_40212;
 goto slim_recur;
 }
 }
@@ -18710,9 +18848,9 @@ SlimVec slim_v_functions = {0};
 slim_v_functions = slim_vec_new(sizeof(Slim_type_memory_95FunctionPlan), slim_allocation_region);
 (void)slim_v_functions;
 {
-SlimVec slim_t_39833 = {0};
-slim_t_39833 = slim_v_functions;
-slim_result = (Slim_type_memory_95Plan){.slim_field_functions = slim_t_39833};
+SlimVec slim_t_40249 = {0};
+slim_t_40249 = slim_v_functions;
+slim_result = (Slim_type_memory_95Plan){.slim_field_functions = slim_t_40249};
 }
 }
 slim_allocation_failed: ;
@@ -18791,21 +18929,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_40012 = {0};
-slim_t_40012 = slim_v_source;
-int64_t slim_t_40014 = {0};
-slim_t_40014 = slim_v_module_95items;
-int64_t slim_t_40015 = {0};
-slim_t_40015 = slim_v_next;
-int64_t slim_t_40016 = {0};
-slim_t_40016 = slim_v_depth;
-int64_t slim_t_40017 = {0};
-slim_t_40017 = slim_v_joined;
-slim_v_source = slim_t_40012;
-slim_v_module_95items = slim_t_40014;
-slim_v_cursor = slim_t_40015;
-slim_v_depth = slim_t_40016;
-slim_v_current = slim_t_40017;
+SlimBytes slim_t_40428 = {0};
+slim_t_40428 = slim_v_source;
+int64_t slim_t_40430 = {0};
+slim_t_40430 = slim_v_module_95items;
+int64_t slim_t_40431 = {0};
+slim_t_40431 = slim_v_next;
+int64_t slim_t_40432 = {0};
+slim_t_40432 = slim_v_depth;
+int64_t slim_t_40433 = {0};
+slim_t_40433 = slim_v_joined;
+slim_v_source = slim_t_40428;
+slim_v_module_95items = slim_t_40430;
+slim_v_cursor = slim_t_40431;
+slim_v_depth = slim_t_40432;
+slim_v_current = slim_t_40433;
 goto slim_recur;
 }
 }
@@ -18863,21 +19001,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_40152 = {0};
-slim_t_40152 = slim_v_source;
-int64_t slim_t_40154 = {0};
-slim_t_40154 = slim_v_module_95items;
-int64_t slim_t_40155 = {0};
-slim_t_40155 = slim_v_next;
-int64_t slim_t_40156 = {0};
-slim_t_40156 = slim_v_depth;
-int64_t slim_t_40157 = {0};
-slim_t_40157 = slim_v_joined;
-slim_v_source = slim_t_40152;
-slim_v_module_95items = slim_t_40154;
-slim_v_cursor = slim_t_40155;
-slim_v_depth = slim_t_40156;
-slim_v_current = slim_t_40157;
+SlimBytes slim_t_40568 = {0};
+slim_t_40568 = slim_v_source;
+int64_t slim_t_40570 = {0};
+slim_t_40570 = slim_v_module_95items;
+int64_t slim_t_40571 = {0};
+slim_t_40571 = slim_v_next;
+int64_t slim_t_40572 = {0};
+slim_t_40572 = slim_v_depth;
+int64_t slim_t_40573 = {0};
+slim_t_40573 = slim_v_joined;
+slim_v_source = slim_t_40568;
+slim_v_module_95items = slim_t_40570;
+slim_v_cursor = slim_t_40571;
+slim_v_depth = slim_t_40572;
+slim_v_current = slim_t_40573;
 goto slim_recur;
 }
 }
@@ -18934,21 +19072,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_40292 = {0};
-slim_t_40292 = slim_v_source;
-int64_t slim_t_40294 = {0};
-slim_t_40294 = slim_v_module_95items;
-int64_t slim_t_40295 = {0};
-slim_t_40295 = slim_v_next;
-int64_t slim_t_40296 = {0};
-slim_t_40296 = slim_v_depth;
-int64_t slim_t_40297 = {0};
-slim_t_40297 = slim_v_storage;
-slim_v_source = slim_t_40292;
-slim_v_module_95items = slim_t_40294;
-slim_v_cursor = slim_t_40295;
-slim_v_depth = slim_t_40296;
-slim_v_current = slim_t_40297;
+SlimBytes slim_t_40708 = {0};
+slim_t_40708 = slim_v_source;
+int64_t slim_t_40710 = {0};
+slim_t_40710 = slim_v_module_95items;
+int64_t slim_t_40711 = {0};
+slim_t_40711 = slim_v_next;
+int64_t slim_t_40712 = {0};
+slim_t_40712 = slim_v_depth;
+int64_t slim_t_40713 = {0};
+slim_t_40713 = slim_v_storage;
+slim_v_source = slim_t_40708;
+slim_v_module_95items = slim_t_40710;
+slim_v_cursor = slim_t_40711;
+slim_v_depth = slim_t_40712;
+slim_v_current = slim_t_40713;
 goto slim_recur;
 }
 }
@@ -19144,12 +19282,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_40762 = {0};
-slim_t_40762 = slim_v_source;
-int64_t slim_t_40764 = {0};
-slim_t_40764 = slim_v_next;
-slim_v_source = slim_t_40762;
-slim_v_cursor = slim_t_40764;
+SlimBytes slim_t_41178 = {0};
+slim_t_41178 = slim_v_source;
+int64_t slim_t_41180 = {0};
+slim_t_41180 = slim_v_next;
+slim_v_source = slim_t_41178;
+slim_v_cursor = slim_t_41180;
 goto slim_recur;
 }
 }
@@ -19267,24 +19405,24 @@ slim_v_next_95last = slim_v_last;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_41040 = {0};
-slim_t_41040 = slim_v_source;
-int64_t slim_t_41042 = {0};
-slim_t_41042 = slim_v_next;
-int64_t slim_t_41043 = {0};
-slim_t_41043 = slim_v_end;
-int64_t slim_t_41044 = {0};
-slim_t_41044 = slim_v_name_95start;
-int64_t slim_t_41045 = {0};
-slim_t_41045 = slim_v_name_95end;
-int64_t slim_t_41046 = {0};
-slim_t_41046 = slim_v_next_95last;
-slim_v_source = slim_t_41040;
-slim_v_cursor = slim_t_41042;
-slim_v_end = slim_t_41043;
-slim_v_name_95start = slim_t_41044;
-slim_v_name_95end = slim_t_41045;
-slim_v_last = slim_t_41046;
+SlimBytes slim_t_41456 = {0};
+slim_t_41456 = slim_v_source;
+int64_t slim_t_41458 = {0};
+slim_t_41458 = slim_v_next;
+int64_t slim_t_41459 = {0};
+slim_t_41459 = slim_v_end;
+int64_t slim_t_41460 = {0};
+slim_t_41460 = slim_v_name_95start;
+int64_t slim_t_41461 = {0};
+slim_t_41461 = slim_v_name_95end;
+int64_t slim_t_41462 = {0};
+slim_t_41462 = slim_v_next_95last;
+slim_v_source = slim_t_41456;
+slim_v_cursor = slim_t_41458;
+slim_v_end = slim_t_41459;
+slim_v_name_95start = slim_t_41460;
+slim_v_name_95end = slim_t_41461;
+slim_v_last = slim_t_41462;
 goto slim_recur;
 }
 }
@@ -19385,12 +19523,12 @@ slim_v_value = slim_v_first;
 int64_t slim_v_body = {0};
 slim_v_body = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_value, slim_allocation_region);
 (void)slim_v_body;
-SlimBytes slim_t_41287 = {0};
-slim_t_41287 = slim_v_source;
-int64_t slim_t_41289 = {0};
-slim_t_41289 = slim_v_body;
-slim_v_source = slim_t_41287;
-slim_v_expr = slim_t_41289;
+SlimBytes slim_t_41703 = {0};
+slim_t_41703 = slim_v_source;
+int64_t slim_t_41705 = {0};
+slim_t_41705 = slim_v_body;
+slim_v_source = slim_t_41703;
+slim_v_expr = slim_t_41705;
 goto slim_recur;
 }
 }
@@ -19441,24 +19579,24 @@ if (!slim_v_form) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_41404 = {0};
-slim_t_41404 = slim_v_source;
-int64_t slim_t_41406 = {0};
-slim_t_41406 = slim_v_params;
-int64_t slim_t_41407 = {0};
-slim_t_41407 = slim_v_next;
-int64_t slim_t_41408 = {0};
-slim_t_41408 = slim_v_end;
-int64_t slim_t_41409 = {0};
-slim_t_41409 = slim_v_name_95start;
-int64_t slim_t_41410 = {0};
-slim_t_41410 = slim_v_name_95end;
-slim_v_source = slim_t_41404;
-slim_v_params = slim_t_41406;
-slim_v_cursor = slim_t_41407;
-slim_v_end = slim_t_41408;
-slim_v_name_95start = slim_t_41409;
-slim_v_name_95end = slim_t_41410;
+SlimBytes slim_t_41820 = {0};
+slim_t_41820 = slim_v_source;
+int64_t slim_t_41822 = {0};
+slim_t_41822 = slim_v_params;
+int64_t slim_t_41823 = {0};
+slim_t_41823 = slim_v_next;
+int64_t slim_t_41824 = {0};
+slim_t_41824 = slim_v_end;
+int64_t slim_t_41825 = {0};
+slim_t_41825 = slim_v_name_95start;
+int64_t slim_t_41826 = {0};
+slim_t_41826 = slim_v_name_95end;
+slim_v_source = slim_t_41820;
+slim_v_params = slim_t_41822;
+slim_v_cursor = slim_t_41823;
+slim_v_end = slim_t_41824;
+slim_v_name_95start = slim_t_41825;
+slim_v_name_95end = slim_t_41826;
 goto slim_recur;
 }
 }
@@ -19476,24 +19614,24 @@ if (!slim_v_call_95form) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_41455 = {0};
-slim_t_41455 = slim_v_source;
-int64_t slim_t_41457 = {0};
-slim_t_41457 = slim_v_params;
-int64_t slim_t_41458 = {0};
-slim_t_41458 = slim_v_next;
-int64_t slim_t_41459 = {0};
-slim_t_41459 = slim_v_end;
-int64_t slim_t_41460 = {0};
-slim_t_41460 = slim_v_name_95start;
-int64_t slim_t_41461 = {0};
-slim_t_41461 = slim_v_name_95end;
-slim_v_source = slim_t_41455;
-slim_v_params = slim_t_41457;
-slim_v_cursor = slim_t_41458;
-slim_v_end = slim_t_41459;
-slim_v_name_95start = slim_t_41460;
-slim_v_name_95end = slim_t_41461;
+SlimBytes slim_t_41871 = {0};
+slim_t_41871 = slim_v_source;
+int64_t slim_t_41873 = {0};
+slim_t_41873 = slim_v_params;
+int64_t slim_t_41874 = {0};
+slim_t_41874 = slim_v_next;
+int64_t slim_t_41875 = {0};
+slim_t_41875 = slim_v_end;
+int64_t slim_t_41876 = {0};
+slim_t_41876 = slim_v_name_95start;
+int64_t slim_t_41877 = {0};
+slim_t_41877 = slim_v_name_95end;
+slim_v_source = slim_t_41871;
+slim_v_params = slim_t_41873;
+slim_v_cursor = slim_t_41874;
+slim_v_end = slim_t_41875;
+slim_v_name_95start = slim_t_41876;
+slim_v_name_95end = slim_t_41877;
 goto slim_recur;
 }
 }
@@ -19519,24 +19657,24 @@ if (!slim_v_store) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_41528 = {0};
-slim_t_41528 = slim_v_source;
-int64_t slim_t_41530 = {0};
-slim_t_41530 = slim_v_params;
-int64_t slim_t_41531 = {0};
-slim_t_41531 = slim_v_next;
-int64_t slim_t_41532 = {0};
-slim_t_41532 = slim_v_end;
-int64_t slim_t_41533 = {0};
-slim_t_41533 = slim_v_name_95start;
-int64_t slim_t_41534 = {0};
-slim_t_41534 = slim_v_name_95end;
-slim_v_source = slim_t_41528;
-slim_v_params = slim_t_41530;
-slim_v_cursor = slim_t_41531;
-slim_v_end = slim_t_41532;
-slim_v_name_95start = slim_t_41533;
-slim_v_name_95end = slim_t_41534;
+SlimBytes slim_t_41944 = {0};
+slim_t_41944 = slim_v_source;
+int64_t slim_t_41946 = {0};
+slim_t_41946 = slim_v_params;
+int64_t slim_t_41947 = {0};
+slim_t_41947 = slim_v_next;
+int64_t slim_t_41948 = {0};
+slim_t_41948 = slim_v_end;
+int64_t slim_t_41949 = {0};
+slim_t_41949 = slim_v_name_95start;
+int64_t slim_t_41950 = {0};
+slim_t_41950 = slim_v_name_95end;
+slim_v_source = slim_t_41944;
+slim_v_params = slim_t_41946;
+slim_v_cursor = slim_t_41947;
+slim_v_end = slim_t_41948;
+slim_v_name_95start = slim_t_41949;
+slim_v_name_95end = slim_t_41950;
 goto slim_recur;
 }
 }
@@ -19578,24 +19716,24 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_41637 = {0};
-slim_t_41637 = slim_v_source;
-int64_t slim_t_41639 = {0};
-slim_t_41639 = slim_v_params;
-int64_t slim_t_41640 = {0};
-slim_t_41640 = slim_v_next;
-int64_t slim_t_41641 = {0};
-slim_t_41641 = slim_v_end;
-int64_t slim_t_41642 = {0};
-slim_t_41642 = slim_v_name_95start;
-int64_t slim_t_41643 = {0};
-slim_t_41643 = slim_v_name_95end;
-slim_v_source = slim_t_41637;
-slim_v_params = slim_t_41639;
-slim_v_cursor = slim_t_41640;
-slim_v_end = slim_t_41641;
-slim_v_name_95start = slim_t_41642;
-slim_v_name_95end = slim_t_41643;
+SlimBytes slim_t_42053 = {0};
+slim_t_42053 = slim_v_source;
+int64_t slim_t_42055 = {0};
+slim_t_42055 = slim_v_params;
+int64_t slim_t_42056 = {0};
+slim_t_42056 = slim_v_next;
+int64_t slim_t_42057 = {0};
+slim_t_42057 = slim_v_end;
+int64_t slim_t_42058 = {0};
+slim_t_42058 = slim_v_name_95start;
+int64_t slim_t_42059 = {0};
+slim_t_42059 = slim_v_name_95end;
+slim_v_source = slim_t_42053;
+slim_v_params = slim_t_42055;
+slim_v_cursor = slim_t_42056;
+slim_v_end = slim_t_42057;
+slim_v_name_95start = slim_t_42058;
+slim_v_name_95end = slim_t_42059;
 goto slim_recur;
 }
 }
@@ -19703,21 +19841,21 @@ slim_v_storage = slim_fn_memory_95type_95storage_95kind(slim_v_source, slim_v_to
 {
 Slim_type_memory_95ValuePlan slim_v_plan = {0};
 {
-int64_t slim_t_41900 = {0};
-slim_t_41900 = slim_v_name;
-int64_t slim_t_41904 = {0};
-slim_t_41904 = slim_v_type_95index;
-int64_t slim_t_41908 = {0};
-slim_t_41908 = slim_v_storage;
-bool slim_t_41912 = {0};
-slim_t_41912 = slim_v_borrowed;
-int64_t slim_t_41916 = {0};
-slim_t_41916 = slim_v_declared;
-int64_t slim_t_41920 = {0};
-slim_t_41920 = slim_v_name_95end;
-int64_t slim_t_41924 = {0};
-slim_t_41924 = INT64_C(0);
-slim_v_plan = (Slim_type_memory_95ValuePlan){.slim_field_name = slim_t_41900, .slim_field_type_95index = slim_t_41904, .slim_field_storage = slim_t_41908, .slim_field_borrowed = slim_t_41912, .slim_field_declared = slim_t_41916, .slim_field_last_95use = slim_t_41920, .slim_field_escape = slim_t_41924};
+int64_t slim_t_42316 = {0};
+slim_t_42316 = slim_v_name;
+int64_t slim_t_42320 = {0};
+slim_t_42320 = slim_v_type_95index;
+int64_t slim_t_42324 = {0};
+slim_t_42324 = slim_v_storage;
+bool slim_t_42328 = {0};
+slim_t_42328 = slim_v_borrowed;
+int64_t slim_t_42332 = {0};
+slim_t_42332 = slim_v_declared;
+int64_t slim_t_42336 = {0};
+slim_t_42336 = slim_v_name_95end;
+int64_t slim_t_42340 = {0};
+slim_t_42340 = INT64_C(0);
+slim_v_plan = (Slim_type_memory_95ValuePlan){.slim_field_name = slim_t_42316, .slim_field_type_95index = slim_t_42320, .slim_field_storage = slim_t_42324, .slim_field_borrowed = slim_t_42328, .slim_field_declared = slim_t_42332, .slim_field_last_95use = slim_t_42336, .slim_field_escape = slim_t_42340};
 }
 (void)slim_v_plan;
 if (!slim_vec_push(slim_v_values, &slim_v_plan)) goto slim_allocation_failed; slim_result = (SlimUnit){0};
@@ -19790,21 +19928,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_42115 = {0};
-slim_t_42115 = slim_v_source;
-int64_t slim_t_42117 = {0};
-slim_t_42117 = slim_v_params;
-int64_t slim_t_42118 = {0};
-slim_t_42118 = slim_v_body;
-int64_t slim_t_42119 = {0};
-slim_t_42119 = slim_v_body_95end;
-int64_t slim_t_42120 = {0};
-slim_t_42120 = slim_v_next;
-slim_v_source = slim_t_42115;
-slim_v_params = slim_t_42117;
-slim_v_body = slim_t_42118;
-slim_v_body_95end = slim_t_42119;
-slim_v_cursor = slim_t_42120;
+SlimBytes slim_t_42531 = {0};
+slim_t_42531 = slim_v_source;
+int64_t slim_t_42533 = {0};
+slim_t_42533 = slim_v_params;
+int64_t slim_t_42534 = {0};
+slim_t_42534 = slim_v_body;
+int64_t slim_t_42535 = {0};
+slim_t_42535 = slim_v_body_95end;
+int64_t slim_t_42536 = {0};
+slim_t_42536 = slim_v_next;
+slim_v_source = slim_t_42531;
+slim_v_params = slim_t_42533;
+slim_v_body = slim_t_42534;
+slim_v_body_95end = slim_t_42535;
+slim_v_cursor = slim_t_42536;
 goto slim_recur;
 }
 }
@@ -19886,21 +20024,21 @@ slim_v_appended = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_42316 = {0};
-slim_t_42316 = slim_v_source;
-int64_t slim_t_42318 = {0};
-slim_t_42318 = slim_v_params;
-int64_t slim_t_42319 = {0};
-slim_t_42319 = slim_v_body;
-int64_t slim_t_42320 = {0};
-slim_t_42320 = slim_v_body_95end;
-int64_t slim_t_42321 = {0};
-slim_t_42321 = slim_v_next;
-slim_v_source = slim_t_42316;
-slim_v_params = slim_t_42318;
-slim_v_body = slim_t_42319;
-slim_v_body_95end = slim_t_42320;
-slim_v_cursor = slim_t_42321;
+SlimBytes slim_t_42732 = {0};
+slim_t_42732 = slim_v_source;
+int64_t slim_t_42734 = {0};
+slim_t_42734 = slim_v_params;
+int64_t slim_t_42735 = {0};
+slim_t_42735 = slim_v_body;
+int64_t slim_t_42736 = {0};
+slim_t_42736 = slim_v_body_95end;
+int64_t slim_t_42737 = {0};
+slim_t_42737 = slim_v_next;
+slim_v_source = slim_t_42732;
+slim_v_params = slim_t_42734;
+slim_v_body = slim_t_42735;
+slim_v_body_95end = slim_t_42736;
+slim_v_cursor = slim_t_42737;
 goto slim_recur;
 }
 }
@@ -19978,11 +20116,11 @@ if (slim_v_allocation) {
 {
 Slim_type_memory_95AllocationPlan slim_v_plan = {0};
 {
-int64_t slim_t_42501 = {0};
-slim_t_42501 = slim_v_cursor;
-int64_t slim_t_42505 = {0};
-slim_t_42505 = slim_v_region;
-slim_v_plan = (Slim_type_memory_95AllocationPlan){.slim_field_site = slim_t_42501, .slim_field_region = slim_t_42505};
+int64_t slim_t_42917 = {0};
+slim_t_42917 = slim_v_cursor;
+int64_t slim_t_42921 = {0};
+slim_t_42921 = slim_v_region;
+slim_v_plan = (Slim_type_memory_95AllocationPlan){.slim_field_site = slim_t_42917, .slim_field_region = slim_t_42921};
 }
 (void)slim_v_plan;
 if (!slim_vec_push(slim_v_allocations, &slim_v_plan)) goto slim_allocation_failed; slim_v_appended = (SlimUnit){0};
@@ -19996,18 +20134,18 @@ slim_v_appended = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_42535 = {0};
-slim_t_42535 = slim_v_source;
-int64_t slim_t_42537 = {0};
-slim_t_42537 = slim_v_next;
-int64_t slim_t_42538 = {0};
-slim_t_42538 = slim_v_end;
-int64_t slim_t_42539 = {0};
-slim_t_42539 = slim_v_region;
-slim_v_source = slim_t_42535;
-slim_v_cursor = slim_t_42537;
-slim_v_end = slim_t_42538;
-slim_v_region = slim_t_42539;
+SlimBytes slim_t_42951 = {0};
+slim_t_42951 = slim_v_source;
+int64_t slim_t_42953 = {0};
+slim_t_42953 = slim_v_next;
+int64_t slim_t_42954 = {0};
+slim_t_42954 = slim_v_end;
+int64_t slim_t_42955 = {0};
+slim_t_42955 = slim_v_region;
+slim_v_source = slim_t_42951;
+slim_v_cursor = slim_t_42953;
+slim_v_end = slim_t_42954;
+slim_v_region = slim_t_42955;
 goto slim_recur;
 }
 }
@@ -20142,21 +20280,21 @@ slim_v_escape = INT64_C(0);
 {
 Slim_type_memory_95ValuePlan slim_v_updated = {0};
 {
-int64_t slim_t_42852 = {0};
-slim_t_42852 = slim_v_name;
-int64_t slim_t_42856 = {0};
-slim_t_42856 = slim_v_value.slim_field_type_95index;
-int64_t slim_t_42864 = {0};
-slim_t_42864 = slim_v_value.slim_field_storage;
-bool slim_t_42872 = {0};
-slim_t_42872 = slim_v_value.slim_field_borrowed;
-int64_t slim_t_42880 = {0};
-slim_t_42880 = slim_v_value.slim_field_declared;
-int64_t slim_t_42888 = {0};
-slim_t_42888 = slim_v_last_95use;
-int64_t slim_t_42892 = {0};
-slim_t_42892 = slim_v_escape;
-slim_v_updated = (Slim_type_memory_95ValuePlan){.slim_field_name = slim_t_42852, .slim_field_type_95index = slim_t_42856, .slim_field_storage = slim_t_42864, .slim_field_borrowed = slim_t_42872, .slim_field_declared = slim_t_42880, .slim_field_last_95use = slim_t_42888, .slim_field_escape = slim_t_42892};
+int64_t slim_t_43268 = {0};
+slim_t_43268 = slim_v_name;
+int64_t slim_t_43272 = {0};
+slim_t_43272 = slim_v_value.slim_field_type_95index;
+int64_t slim_t_43280 = {0};
+slim_t_43280 = slim_v_value.slim_field_storage;
+bool slim_t_43288 = {0};
+slim_t_43288 = slim_v_value.slim_field_borrowed;
+int64_t slim_t_43296 = {0};
+slim_t_43296 = slim_v_value.slim_field_declared;
+int64_t slim_t_43304 = {0};
+slim_t_43304 = slim_v_last_95use;
+int64_t slim_t_43308 = {0};
+slim_t_43308 = slim_v_escape;
+slim_v_updated = (Slim_type_memory_95ValuePlan){.slim_field_name = slim_t_43268, .slim_field_type_95index = slim_t_43272, .slim_field_storage = slim_t_43280, .slim_field_borrowed = slim_t_43288, .slim_field_declared = slim_t_43296, .slim_field_last_95use = slim_t_43304, .slim_field_escape = slim_t_43308};
 }
 (void)slim_v_updated;
 {
@@ -20167,27 +20305,27 @@ slim_vec_set(slim_v_values, slim_v_index, &slim_v_updated); slim_v_replaced = (S
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_42920 = {0};
-slim_t_42920 = slim_v_source;
-int64_t slim_t_42922 = {0};
-slim_t_42922 = slim_v_params;
-int64_t slim_t_42923 = {0};
-slim_t_42923 = slim_v_body;
-int64_t slim_t_42924 = {0};
-slim_t_42924 = slim_v_body_95end;
-int64_t slim_t_42925 = {0};
-slim_t_42925 = slim_v_return_95storage;
-bool slim_t_42926 = {0};
-slim_t_42926 = slim_v_output;
-int64_t slim_t_42928 = {0};
-slim_t_42928 = slim_v_next;
-slim_v_source = slim_t_42920;
-slim_v_params = slim_t_42922;
-slim_v_body = slim_t_42923;
-slim_v_body_95end = slim_t_42924;
-slim_v_return_95storage = slim_t_42925;
-slim_v_output = slim_t_42926;
-slim_v_index = slim_t_42928;
+SlimBytes slim_t_43336 = {0};
+slim_t_43336 = slim_v_source;
+int64_t slim_t_43338 = {0};
+slim_t_43338 = slim_v_params;
+int64_t slim_t_43339 = {0};
+slim_t_43339 = slim_v_body;
+int64_t slim_t_43340 = {0};
+slim_t_43340 = slim_v_body_95end;
+int64_t slim_t_43341 = {0};
+slim_t_43341 = slim_v_return_95storage;
+bool slim_t_43342 = {0};
+slim_t_43342 = slim_v_output;
+int64_t slim_t_43344 = {0};
+slim_t_43344 = slim_v_next;
+slim_v_source = slim_t_43336;
+slim_v_params = slim_t_43338;
+slim_v_body = slim_t_43339;
+slim_v_body_95end = slim_t_43340;
+slim_v_return_95storage = slim_t_43341;
+slim_v_output = slim_t_43342;
+slim_v_index = slim_t_43344;
 goto slim_recur;
 }
 }
@@ -20267,12 +20405,12 @@ slim_v_total = slim_i64_add(slim_v_count, slim_v_increment);
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_43096 = {0};
-slim_t_43096 = slim_v_next;
-int64_t slim_t_43097 = {0};
-slim_t_43097 = slim_v_total;
-slim_v_index = slim_t_43096;
-slim_v_count = slim_t_43097;
+int64_t slim_t_43512 = {0};
+slim_t_43512 = slim_v_next;
+int64_t slim_t_43513 = {0};
+slim_t_43513 = slim_v_total;
+slim_v_index = slim_t_43512;
+slim_v_count = slim_t_43513;
 goto slim_recur;
 }
 }
@@ -20393,13 +20531,13 @@ if (slim_v_local_95region) {
 {
 Slim_type_memory_95DestructionPlan slim_v_plan = {0};
 {
-int64_t slim_t_43388 = {0};
-slim_t_43388 = INT64_C(0);
-int64_t slim_t_43392 = {0};
-slim_t_43392 = slim_v_body_95end;
-bool slim_t_43396 = {0};
-slim_t_43396 = true;
-slim_v_plan = (Slim_type_memory_95DestructionPlan){.slim_field_region = slim_t_43388, .slim_field_end = slim_t_43392, .slim_field_reverse = slim_t_43396};
+int64_t slim_t_43804 = {0};
+slim_t_43804 = INT64_C(0);
+int64_t slim_t_43808 = {0};
+slim_t_43808 = slim_v_body_95end;
+bool slim_t_43812 = {0};
+slim_t_43812 = true;
+slim_v_plan = (Slim_type_memory_95DestructionPlan){.slim_field_region = slim_t_43804, .slim_field_end = slim_t_43808, .slim_field_reverse = slim_t_43812};
 }
 (void)slim_v_plan;
 if (!slim_vec_push(&slim_v_destructions, &slim_v_plan)) goto slim_allocation_failed; slim_v_destruction = (SlimUnit){0};
@@ -20418,25 +20556,25 @@ bool slim_v_recursive = {0};
 slim_v_recursive = slim_fn_memory_95span_95has_95form(slim_v_source, slim_v_tokens, slim_v_body, slim_v_body_95end, slim_bytes_static((const uint8_t *)"recur", (int64_t)(sizeof("recur") - 1)), slim_allocation_region);
 (void)slim_v_recursive;
 {
-int64_t slim_t_43441 = {0};
-slim_t_43441 = slim_v_function;
-int64_t slim_t_43445 = {0};
-slim_t_43445 = slim_v_return_95storage;
-bool slim_t_43449 = {0};
-slim_t_43449 = slim_v_local_95region;
-bool slim_t_43453 = {0};
-slim_t_43453 = slim_v_recursive;
-bool slim_t_43457 = {0};
-slim_t_43457 = slim_v_liveness_95precise;
-SlimVec slim_t_43461 = {0};
-slim_t_43461 = slim_v_values;
-SlimVec slim_t_43465 = {0};
-slim_t_43465 = slim_v_allocations;
-SlimVec slim_t_43469 = {0};
-slim_t_43469 = slim_v_destructions;
-int64_t slim_t_43473 = {0};
-slim_t_43473 = slim_v_escaping;
-slim_result = (Slim_type_memory_95FunctionPlan){.slim_field_function = slim_t_43441, .slim_field_return_95storage = slim_t_43445, .slim_field_local_95region = slim_t_43449, .slim_field_recursive = slim_t_43453, .slim_field_liveness_95precise = slim_t_43457, .slim_field_values = slim_t_43461, .slim_field_allocations = slim_t_43465, .slim_field_destructions = slim_t_43469, .slim_field_escaping_95values = slim_t_43473};
+int64_t slim_t_43857 = {0};
+slim_t_43857 = slim_v_function;
+int64_t slim_t_43861 = {0};
+slim_t_43861 = slim_v_return_95storage;
+bool slim_t_43865 = {0};
+slim_t_43865 = slim_v_local_95region;
+bool slim_t_43869 = {0};
+slim_t_43869 = slim_v_recursive;
+bool slim_t_43873 = {0};
+slim_t_43873 = slim_v_liveness_95precise;
+SlimVec slim_t_43877 = {0};
+slim_t_43877 = slim_v_values;
+SlimVec slim_t_43881 = {0};
+slim_t_43881 = slim_v_allocations;
+SlimVec slim_t_43885 = {0};
+slim_t_43885 = slim_v_destructions;
+int64_t slim_t_43889 = {0};
+slim_t_43889 = slim_v_escaping;
+slim_result = (Slim_type_memory_95FunctionPlan){.slim_field_function = slim_t_43857, .slim_field_return_95storage = slim_t_43861, .slim_field_local_95region = slim_t_43865, .slim_field_recursive = slim_t_43869, .slim_field_liveness_95precise = slim_t_43873, .slim_field_values = slim_t_43877, .slim_field_allocations = slim_t_43881, .slim_field_destructions = slim_t_43885, .slim_field_escaping_95values = slim_t_43889};
 }
 }
 }
@@ -20520,12 +20658,12 @@ slim_v_appended = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_43649 = {0};
-slim_t_43649 = slim_v_source;
-int64_t slim_t_43652 = {0};
-slim_t_43652 = slim_v_next;
-slim_v_source = slim_t_43649;
-slim_v_index = slim_t_43652;
+SlimBytes slim_t_44065 = {0};
+slim_t_44065 = slim_v_source;
+int64_t slim_t_44068 = {0};
+slim_t_44068 = slim_v_next;
+slim_v_source = slim_t_44065;
+slim_v_index = slim_t_44068;
 goto slim_recur;
 }
 }
@@ -20558,9 +20696,9 @@ slim_v_appended = slim_fn_memory_95append_95function_95plans(slim_v_source, slim
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_appended;
 {
-SlimVec slim_t_43723 = {0};
-slim_t_43723 = slim_v_functions;
-slim_result = (Slim_type_memory_95Plan){.slim_field_functions = slim_t_43723};
+SlimVec slim_t_44139 = {0};
+slim_t_44139 = slim_v_functions;
+slim_result = (Slim_type_memory_95Plan){.slim_field_functions = slim_t_44139};
 }
 }
 }
@@ -20623,24 +20761,24 @@ if (slim_v_same) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_43869 = {0};
-slim_t_43869 = slim_v_left;
-int64_t slim_t_43870 = {0};
-slim_t_43870 = slim_v_left_95start;
-SlimBytes slim_t_43871 = {0};
-slim_t_43871 = slim_v_right;
-int64_t slim_t_43872 = {0};
-slim_t_43872 = slim_v_right_95start;
-int64_t slim_t_43873 = {0};
-slim_t_43873 = slim_v_next;
-int64_t slim_t_43874 = {0};
-slim_t_43874 = slim_v_length;
-slim_v_left = slim_t_43869;
-slim_v_left_95start = slim_t_43870;
-slim_v_right = slim_t_43871;
-slim_v_right_95start = slim_t_43872;
-slim_v_index = slim_t_43873;
-slim_v_length = slim_t_43874;
+SlimBytes slim_t_44285 = {0};
+slim_t_44285 = slim_v_left;
+int64_t slim_t_44286 = {0};
+slim_t_44286 = slim_v_left_95start;
+SlimBytes slim_t_44287 = {0};
+slim_t_44287 = slim_v_right;
+int64_t slim_t_44288 = {0};
+slim_t_44288 = slim_v_right_95start;
+int64_t slim_t_44289 = {0};
+slim_t_44289 = slim_v_next;
+int64_t slim_t_44290 = {0};
+slim_t_44290 = slim_v_length;
+slim_v_left = slim_t_44285;
+slim_v_left_95start = slim_t_44286;
+slim_v_right = slim_t_44287;
+slim_v_right_95start = slim_t_44288;
+slim_v_index = slim_t_44289;
+slim_v_length = slim_t_44290;
 goto slim_recur;
 }
 }
@@ -20743,18 +20881,18 @@ slim_v_next_95last = slim_v_last;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_44090 = {0};
-slim_t_44090 = slim_v_path;
-int64_t slim_t_44091 = {0};
-slim_t_44091 = slim_v_next;
-int64_t slim_t_44092 = {0};
-slim_t_44092 = slim_v_length;
-int64_t slim_t_44093 = {0};
-slim_t_44093 = slim_v_next_95last;
-slim_v_path = slim_t_44090;
-slim_v_index = slim_t_44091;
-slim_v_length = slim_t_44092;
-slim_v_last = slim_t_44093;
+SlimBytes slim_t_44506 = {0};
+slim_t_44506 = slim_v_path;
+int64_t slim_t_44507 = {0};
+slim_t_44507 = slim_v_next;
+int64_t slim_t_44508 = {0};
+slim_t_44508 = slim_v_length;
+int64_t slim_t_44509 = {0};
+slim_t_44509 = slim_v_next_95last;
+slim_v_path = slim_t_44506;
+slim_v_index = slim_t_44507;
+slim_v_length = slim_t_44508;
+slim_v_last = slim_t_44509;
 goto slim_recur;
 }
 }
@@ -20874,15 +21012,15 @@ if (!slim_vec_push(slim_v_output, &slim_v_byte)) goto slim_allocation_failed; sl
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_44363 = {0};
-slim_t_44363 = slim_v_source;
-int64_t slim_t_44364 = {0};
-slim_t_44364 = slim_v_next;
-int64_t slim_t_44365 = {0};
-slim_t_44365 = slim_v_end;
-slim_v_source = slim_t_44363;
-slim_v_index = slim_t_44364;
-slim_v_end = slim_t_44365;
+SlimBytes slim_t_44779 = {0};
+slim_t_44779 = slim_v_source;
+int64_t slim_t_44780 = {0};
+slim_t_44780 = slim_v_next;
+int64_t slim_t_44781 = {0};
+slim_t_44781 = slim_v_end;
+slim_v_source = slim_t_44779;
+slim_v_index = slim_t_44780;
+slim_v_end = slim_t_44781;
 goto slim_recur;
 }
 }
@@ -21003,13 +21141,13 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_project_95Origin slim_v_origin = {0};
 {
-int64_t slim_t_44731 = {0};
-slim_t_44731 = slim_v_module;
-int64_t slim_t_44735 = {0};
-slim_t_44735 = slim_v_start;
-int64_t slim_t_44739 = {0};
-slim_t_44739 = slim_v_end;
-slim_v_origin = (Slim_type_project_95Origin){.slim_field_module = slim_t_44731, .slim_field_start = slim_t_44735, .slim_field_end = slim_t_44739};
+int64_t slim_t_45147 = {0};
+slim_t_45147 = slim_v_module;
+int64_t slim_t_45151 = {0};
+slim_t_45151 = slim_v_start;
+int64_t slim_t_45155 = {0};
+slim_t_45155 = slim_v_end;
+slim_v_origin = (Slim_type_project_95Origin){.slim_field_module = slim_t_45147, .slim_field_start = slim_t_45151, .slim_field_end = slim_t_45155};
 }
 (void)slim_v_origin;
 if (!slim_vec_push(slim_v_origins, &slim_v_origin)) goto slim_allocation_failed; slim_result = (SlimUnit){0};
@@ -21112,33 +21250,33 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_45018 = {0};
-slim_t_45018 = slim_v_manifest_95source;
-int64_t slim_t_45020 = {0};
-slim_t_45020 = slim_v_module_95name;
-SlimBytes slim_t_45021 = {0};
-slim_t_45021 = slim_v_module_95source;
-int64_t slim_t_45023 = {0};
-slim_t_45023 = slim_v_module_95items;
-bool slim_t_45024 = {0};
-slim_t_45024 = slim_v_entry;
-int64_t slim_t_45025 = {0};
-slim_t_45025 = slim_v_module_95index;
-int64_t slim_t_45026 = {0};
-slim_t_45026 = slim_v_next;
-int64_t slim_t_45027 = {0};
-slim_t_45027 = slim_v_end;
-int64_t slim_t_45028 = {0};
-slim_t_45028 = slim_v_kind;
-slim_v_manifest_95source = slim_t_45018;
-slim_v_module_95name = slim_t_45020;
-slim_v_module_95source = slim_t_45021;
-slim_v_module_95items = slim_t_45023;
-slim_v_entry = slim_t_45024;
-slim_v_module_95index = slim_t_45025;
-slim_v_index = slim_t_45026;
-slim_v_end = slim_t_45027;
-slim_v_previous_95kind = slim_t_45028;
+SlimBytes slim_t_45434 = {0};
+slim_t_45434 = slim_v_manifest_95source;
+int64_t slim_t_45436 = {0};
+slim_t_45436 = slim_v_module_95name;
+SlimBytes slim_t_45437 = {0};
+slim_t_45437 = slim_v_module_95source;
+int64_t slim_t_45439 = {0};
+slim_t_45439 = slim_v_module_95items;
+bool slim_t_45440 = {0};
+slim_t_45440 = slim_v_entry;
+int64_t slim_t_45441 = {0};
+slim_t_45441 = slim_v_module_95index;
+int64_t slim_t_45442 = {0};
+slim_t_45442 = slim_v_next;
+int64_t slim_t_45443 = {0};
+slim_t_45443 = slim_v_end;
+int64_t slim_t_45444 = {0};
+slim_t_45444 = slim_v_kind;
+slim_v_manifest_95source = slim_t_45434;
+slim_v_module_95name = slim_t_45436;
+slim_v_module_95source = slim_t_45437;
+slim_v_module_95items = slim_t_45439;
+slim_v_entry = slim_t_45440;
+slim_v_module_95index = slim_t_45441;
+slim_v_index = slim_t_45442;
+slim_v_end = slim_t_45443;
+slim_v_previous_95kind = slim_t_45444;
 goto slim_recur;
 }
 }
@@ -21243,15 +21381,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_45293 = {0};
-slim_t_45293 = slim_v_manifest_95source;
-int64_t slim_t_45295 = {0};
-slim_t_45295 = slim_v_entry_95name;
-int64_t slim_t_45298 = {0};
-slim_t_45298 = slim_v_next;
-slim_v_manifest_95source = slim_t_45293;
-slim_v_entry_95name = slim_t_45295;
-slim_v_index = slim_t_45298;
+SlimBytes slim_t_45709 = {0};
+slim_t_45709 = slim_v_manifest_95source;
+int64_t slim_t_45711 = {0};
+slim_t_45711 = slim_v_entry_95name;
+int64_t slim_t_45714 = {0};
+slim_t_45714 = slim_v_next;
+slim_v_manifest_95source = slim_t_45709;
+slim_v_entry_95name = slim_t_45711;
+slim_v_index = slim_t_45714;
 goto slim_recur;
 }
 }
@@ -21672,18 +21810,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_46166 = {0};
-slim_t_46166 = slim_v_source;
-int64_t slim_t_46168 = {0};
-slim_t_46168 = slim_v_next;
-int64_t slim_t_46169 = {0};
-slim_t_46169 = slim_v_name_95start;
-int64_t slim_t_46170 = {0};
-slim_t_46170 = slim_v_name_95end;
-slim_v_source = slim_t_46166;
-slim_v_cursor = slim_t_46168;
-slim_v_name_95start = slim_t_46169;
-slim_v_name_95end = slim_t_46170;
+SlimBytes slim_t_46582 = {0};
+slim_t_46582 = slim_v_source;
+int64_t slim_t_46584 = {0};
+slim_t_46584 = slim_v_next;
+int64_t slim_t_46585 = {0};
+slim_t_46585 = slim_v_name_95start;
+int64_t slim_t_46586 = {0};
+slim_t_46586 = slim_v_name_95end;
+slim_v_source = slim_t_46582;
+slim_v_cursor = slim_t_46584;
+slim_v_name_95start = slim_t_46585;
+slim_v_name_95end = slim_t_46586;
 goto slim_recur;
 }
 }
@@ -21743,18 +21881,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_46310 = {0};
-slim_t_46310 = slim_v_source;
-int64_t slim_t_46312 = {0};
-slim_t_46312 = slim_v_next;
-int64_t slim_t_46313 = {0};
-slim_t_46313 = slim_v_name_95start;
-int64_t slim_t_46314 = {0};
-slim_t_46314 = slim_v_name_95end;
-slim_v_source = slim_t_46310;
-slim_v_cursor = slim_t_46312;
-slim_v_name_95start = slim_t_46313;
-slim_v_name_95end = slim_t_46314;
+SlimBytes slim_t_46726 = {0};
+slim_t_46726 = slim_v_source;
+int64_t slim_t_46728 = {0};
+slim_t_46728 = slim_v_next;
+int64_t slim_t_46729 = {0};
+slim_t_46729 = slim_v_name_95start;
+int64_t slim_t_46730 = {0};
+slim_t_46730 = slim_v_name_95end;
+slim_v_source = slim_t_46726;
+slim_v_cursor = slim_t_46728;
+slim_v_name_95start = slim_t_46729;
+slim_v_name_95end = slim_t_46730;
 goto slim_recur;
 }
 }
@@ -21896,18 +22034,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_46663 = {0};
-slim_t_46663 = slim_v_source;
-int64_t slim_t_46665 = {0};
-slim_t_46665 = slim_v_modules;
-int64_t slim_t_46666 = {0};
-slim_t_46666 = slim_v_module_95name;
-int64_t slim_t_46667 = {0};
-slim_t_46667 = slim_v_next;
-slim_v_source = slim_t_46663;
-slim_v_modules = slim_t_46665;
-slim_v_module_95name = slim_t_46666;
-slim_v_cursor = slim_t_46667;
+SlimBytes slim_t_47079 = {0};
+slim_t_47079 = slim_v_source;
+int64_t slim_t_47081 = {0};
+slim_t_47081 = slim_v_modules;
+int64_t slim_t_47082 = {0};
+slim_t_47082 = slim_v_module_95name;
+int64_t slim_t_47083 = {0};
+slim_t_47083 = slim_v_next;
+slim_v_source = slim_t_47079;
+slim_v_modules = slim_t_47081;
+slim_v_module_95name = slim_t_47082;
+slim_v_cursor = slim_t_47083;
 goto slim_recur;
 }
 }
@@ -21971,15 +22109,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_46808 = {0};
-slim_t_46808 = slim_v_source;
-int64_t slim_t_46810 = {0};
-slim_t_46810 = slim_v_modules;
-int64_t slim_t_46811 = {0};
-slim_t_46811 = slim_v_next;
-slim_v_source = slim_t_46808;
-slim_v_modules = slim_t_46810;
-slim_v_cursor = slim_t_46811;
+SlimBytes slim_t_47224 = {0};
+slim_t_47224 = slim_v_source;
+int64_t slim_t_47226 = {0};
+slim_t_47226 = slim_v_modules;
+int64_t slim_t_47227 = {0};
+slim_t_47227 = slim_v_next;
+slim_v_source = slim_t_47224;
+slim_v_modules = slim_t_47226;
+slim_v_cursor = slim_t_47227;
 goto slim_recur;
 }
 }
@@ -22032,15 +22170,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_46916 = {0};
-slim_t_46916 = slim_v_source;
-int64_t slim_t_46917 = {0};
-slim_t_46917 = slim_v_next;
-int64_t slim_t_46918 = {0};
-slim_t_46918 = slim_v_end;
-slim_v_source = slim_t_46916;
-slim_v_index = slim_t_46917;
-slim_v_end = slim_t_46918;
+SlimBytes slim_t_47332 = {0};
+slim_t_47332 = slim_v_source;
+int64_t slim_t_47333 = {0};
+slim_t_47333 = slim_v_next;
+int64_t slim_t_47334 = {0};
+slim_t_47334 = slim_v_end;
+slim_v_source = slim_t_47332;
+slim_v_index = slim_t_47333;
+slim_v_end = slim_t_47334;
 goto slim_recur;
 }
 }
@@ -22097,21 +22235,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_47052 = {0};
-slim_t_47052 = slim_v_manifest_95source;
-int64_t slim_t_47054 = {0};
-slim_t_47054 = slim_v_next;
-SlimBytes slim_t_47055 = {0};
-slim_t_47055 = slim_v_module_95source;
-int64_t slim_t_47056 = {0};
-slim_t_47056 = slim_v_segment_95start;
-int64_t slim_t_47057 = {0};
-slim_t_47057 = slim_v_segment_95end;
-slim_v_manifest_95source = slim_t_47052;
-slim_v_cursor = slim_t_47054;
-slim_v_module_95source = slim_t_47055;
-slim_v_segment_95start = slim_t_47056;
-slim_v_segment_95end = slim_t_47057;
+SlimBytes slim_t_47468 = {0};
+slim_t_47468 = slim_v_manifest_95source;
+int64_t slim_t_47470 = {0};
+slim_t_47470 = slim_v_next;
+SlimBytes slim_t_47471 = {0};
+slim_t_47471 = slim_v_module_95source;
+int64_t slim_t_47472 = {0};
+slim_t_47472 = slim_v_segment_95start;
+int64_t slim_t_47473 = {0};
+slim_t_47473 = slim_v_segment_95end;
+slim_v_manifest_95source = slim_t_47468;
+slim_v_cursor = slim_t_47470;
+slim_v_module_95source = slim_t_47471;
+slim_v_segment_95start = slim_t_47472;
+slim_v_segment_95end = slim_t_47473;
 goto slim_recur;
 }
 }
@@ -22157,25 +22295,25 @@ slim_v_plan = slim_fn_memory_95empty_95plan(slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_plan;
 {
-int64_t slim_t_47150 = {0};
-slim_t_47150 = slim_v_status;
-SlimBytes slim_t_47154 = {0};
-slim_t_47154 = slim_bytes_static((const uint8_t *)"", (int64_t)(sizeof("") - 1));
-SlimVec slim_t_47158 = {0};
-slim_t_47158 = slim_v_tokens;
-SlimVec slim_t_47162 = {0};
-slim_t_47162 = slim_v_origins;
-SlimBytes slim_t_47166 = {0};
-slim_t_47166 = slim_bytes_static((const uint8_t *)"", (int64_t)(sizeof("") - 1));
-SlimVec slim_t_47170 = {0};
-slim_t_47170 = slim_v_manifest_95tokens;
-SlimVec slim_t_47174 = {0};
-slim_t_47174 = slim_v_facts;
-SlimVec slim_t_47178 = {0};
-slim_t_47178 = slim_v_issues;
-Slim_type_memory_95Plan slim_t_47182 = {0};
-slim_t_47182 = slim_v_plan;
-slim_result = (Slim_type_project_95PreparedProject){.slim_field_status = slim_t_47150, .slim_field_source = slim_t_47154, .slim_field_tokens = slim_t_47158, .slim_field_origins = slim_t_47162, .slim_field_manifest_95source = slim_t_47166, .slim_field_manifest_95tokens = slim_t_47170, .slim_field_facts = slim_t_47174, .slim_field_issues = slim_t_47178, .slim_field_plan = slim_t_47182};
+int64_t slim_t_47566 = {0};
+slim_t_47566 = slim_v_status;
+SlimBytes slim_t_47570 = {0};
+slim_t_47570 = slim_bytes_static((const uint8_t *)"", (int64_t)(sizeof("") - 1));
+SlimVec slim_t_47574 = {0};
+slim_t_47574 = slim_v_tokens;
+SlimVec slim_t_47578 = {0};
+slim_t_47578 = slim_v_origins;
+SlimBytes slim_t_47582 = {0};
+slim_t_47582 = slim_bytes_static((const uint8_t *)"", (int64_t)(sizeof("") - 1));
+SlimVec slim_t_47586 = {0};
+slim_t_47586 = slim_v_manifest_95tokens;
+SlimVec slim_t_47590 = {0};
+slim_t_47590 = slim_v_facts;
+SlimVec slim_t_47594 = {0};
+slim_t_47594 = slim_v_issues;
+Slim_type_memory_95Plan slim_t_47598 = {0};
+slim_t_47598 = slim_v_plan;
+slim_result = (Slim_type_project_95PreparedProject){.slim_field_status = slim_t_47566, .slim_field_source = slim_t_47570, .slim_field_tokens = slim_t_47574, .slim_field_origins = slim_t_47578, .slim_field_manifest_95source = slim_t_47582, .slim_field_manifest_95tokens = slim_t_47586, .slim_field_facts = slim_t_47590, .slim_field_issues = slim_t_47594, .slim_field_plan = slim_t_47598};
 }
 }
 }
@@ -22200,15 +22338,15 @@ int64_t slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_project_95Origin slim_v_start_95origin = {0};
-int64_t slim_t_47246 = {0};
-slim_t_47246 = slim_v_issue.slim_field_start;
-slim_v_start_95origin = ((Slim_type_project_95Origin *)((*slim_v_origins)).data)[slim_vec_check_index(&((*slim_v_origins)), slim_t_47246)];
+int64_t slim_t_47662 = {0};
+slim_t_47662 = slim_v_issue.slim_field_start;
+slim_v_start_95origin = ((Slim_type_project_95Origin *)((*slim_v_origins)).data)[slim_vec_check_index(&((*slim_v_origins)), slim_t_47662)];
 (void)slim_v_start_95origin;
 {
 Slim_type_project_95Origin slim_v_end_95origin = {0};
-int64_t slim_t_47260 = {0};
-slim_t_47260 = slim_v_issue.slim_field_end;
-slim_v_end_95origin = ((Slim_type_project_95Origin *)((*slim_v_origins)).data)[slim_vec_check_index(&((*slim_v_origins)), slim_t_47260)];
+int64_t slim_t_47676 = {0};
+slim_t_47676 = slim_v_issue.slim_field_end;
+slim_v_end_95origin = ((Slim_type_project_95Origin *)((*slim_v_origins)).data)[slim_vec_check_index(&((*slim_v_origins)), slim_t_47676)];
 (void)slim_v_end_95origin;
 {
 int64_t slim_v_module_95index = {0};
@@ -22219,13 +22357,13 @@ bool slim_v_synthetic = {0};
 slim_v_synthetic = slim_v_module_95index < INT64_C(0);
 (void)slim_v_synthetic;
 if (slim_v_synthetic) {
-SlimBytes slim_t_47293 = {0};
-slim_t_47293 = slim_v_issue.slim_field_code;
-int64_t slim_t_47299 = {0};
-slim_t_47299 = slim_v_start_95origin.slim_field_start;
-int64_t slim_t_47304 = {0};
-slim_t_47304 = slim_v_end_95origin.slim_field_end;
-slim_result = slim_fn_project_95report_95project_95diagnostic(slim_t_47293, slim_bytes_static((const uint8_t *)"-", (int64_t)(sizeof("-") - 1)), slim_t_47299, slim_t_47304, slim_allocation_region);
+SlimBytes slim_t_47709 = {0};
+slim_t_47709 = slim_v_issue.slim_field_code;
+int64_t slim_t_47715 = {0};
+slim_t_47715 = slim_v_start_95origin.slim_field_start;
+int64_t slim_t_47720 = {0};
+slim_t_47720 = slim_v_end_95origin.slim_field_end;
+slim_result = slim_fn_project_95report_95project_95diagnostic(slim_t_47709, slim_bytes_static((const uint8_t *)"-", (int64_t)(sizeof("-") - 1)), slim_t_47715, slim_t_47720, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -22242,13 +22380,13 @@ SlimBytes slim_v_module_95name = {0};
 slim_v_module_95name = slim_fn_project_95token_95bytes(slim_v_manifest_95source, slim_v_manifest_95tokens, slim_v_name, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_module_95name;
-SlimBytes slim_t_47346 = {0};
-slim_t_47346 = slim_v_issue.slim_field_code;
-int64_t slim_t_47352 = {0};
-slim_t_47352 = slim_v_start_95origin.slim_field_start;
-int64_t slim_t_47357 = {0};
-slim_t_47357 = slim_v_end_95origin.slim_field_end;
-slim_result = slim_fn_project_95report_95project_95diagnostic(slim_t_47346, slim_v_module_95name, slim_t_47352, slim_t_47357, slim_allocation_region);
+SlimBytes slim_t_47762 = {0};
+slim_t_47762 = slim_v_issue.slim_field_code;
+int64_t slim_t_47768 = {0};
+slim_t_47768 = slim_v_start_95origin.slim_field_start;
+int64_t slim_t_47773 = {0};
+slim_t_47773 = slim_v_end_95origin.slim_field_end;
+slim_result = slim_fn_project_95report_95project_95diagnostic(slim_t_47762, slim_v_module_95name, slim_t_47768, slim_t_47773, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -22305,15 +22443,15 @@ slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-int64_t slim_t_47503 = {0};
-slim_t_47503 = slim_v_next;
-SlimBytes slim_t_47505 = {0};
-slim_t_47505 = slim_v_manifest_95source;
-int64_t slim_t_47508 = {0};
-slim_t_47508 = slim_v_total;
-slim_v_index = slim_t_47503;
-slim_v_manifest_95source = slim_t_47505;
-slim_v_count = slim_t_47508;
+int64_t slim_t_47919 = {0};
+slim_t_47919 = slim_v_next;
+SlimBytes slim_t_47921 = {0};
+slim_t_47921 = slim_v_manifest_95source;
+int64_t slim_t_47924 = {0};
+slim_t_47924 = slim_v_total;
+slim_v_index = slim_t_47919;
+slim_v_manifest_95source = slim_t_47921;
+slim_v_count = slim_t_47924;
 goto slim_recur;
 }
 }
@@ -22386,25 +22524,25 @@ slim_v_reported = slim_fn_project_95report_95project_95issues(&slim_v_issues, IN
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_reported;
 {
-int64_t slim_t_47688 = {0};
-slim_t_47688 = slim_v_status;
-SlimBytes slim_t_47692 = {0};
-slim_t_47692 = slim_v_source;
-SlimVec slim_t_47696 = {0};
-slim_t_47696 = slim_v_tokens;
-SlimVec slim_t_47700 = {0};
-slim_t_47700 = slim_v_origins;
-SlimBytes slim_t_47704 = {0};
-slim_t_47704 = slim_v_manifest_95source;
-SlimVec slim_t_47708 = {0};
-slim_t_47708 = slim_v_manifest_95tokens;
-SlimVec slim_t_47712 = {0};
-slim_t_47712 = slim_v_facts;
-SlimVec slim_t_47716 = {0};
-slim_t_47716 = slim_v_issues;
-Slim_type_memory_95Plan slim_t_47720 = {0};
-slim_t_47720 = slim_v_plan;
-slim_result = (Slim_type_project_95PreparedProject){.slim_field_status = slim_t_47688, .slim_field_source = slim_t_47692, .slim_field_tokens = slim_t_47696, .slim_field_origins = slim_t_47700, .slim_field_manifest_95source = slim_t_47704, .slim_field_manifest_95tokens = slim_t_47708, .slim_field_facts = slim_t_47712, .slim_field_issues = slim_t_47716, .slim_field_plan = slim_t_47720};
+int64_t slim_t_48104 = {0};
+slim_t_48104 = slim_v_status;
+SlimBytes slim_t_48108 = {0};
+slim_t_48108 = slim_v_source;
+SlimVec slim_t_48112 = {0};
+slim_t_48112 = slim_v_tokens;
+SlimVec slim_t_48116 = {0};
+slim_t_48116 = slim_v_origins;
+SlimBytes slim_t_48120 = {0};
+slim_t_48120 = slim_v_manifest_95source;
+SlimVec slim_t_48124 = {0};
+slim_t_48124 = slim_v_manifest_95tokens;
+SlimVec slim_t_48128 = {0};
+slim_t_48128 = slim_v_facts;
+SlimVec slim_t_48132 = {0};
+slim_t_48132 = slim_v_issues;
+Slim_type_memory_95Plan slim_t_48136 = {0};
+slim_t_48136 = slim_v_plan;
+slim_result = (Slim_type_project_95PreparedProject){.slim_field_status = slim_t_48104, .slim_field_source = slim_t_48108, .slim_field_tokens = slim_t_48112, .slim_field_origins = slim_t_48116, .slim_field_manifest_95source = slim_t_48120, .slim_field_manifest_95tokens = slim_t_48124, .slim_field_facts = slim_t_48128, .slim_field_issues = slim_t_48132, .slim_field_plan = slim_t_48136};
 }
 }
 }
@@ -22841,21 +22979,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_48720 = {0};
-slim_t_48720 = slim_v_manifest_95source;
-int64_t slim_t_48722 = {0};
-slim_t_48722 = slim_v_module_95name;
-SlimBytes slim_t_48723 = {0};
-slim_t_48723 = slim_v_module_95source;
-int64_t slim_t_48725 = {0};
-slim_t_48725 = slim_v_next;
-bool slim_t_48726 = {0};
-slim_t_48726 = false;
-slim_v_manifest_95source = slim_t_48720;
-slim_v_module_95name = slim_t_48722;
-slim_v_module_95source = slim_t_48723;
-slim_v_cursor = slim_t_48725;
-slim_v_first = slim_t_48726;
+SlimBytes slim_t_49136 = {0};
+slim_t_49136 = slim_v_manifest_95source;
+int64_t slim_t_49138 = {0};
+slim_t_49138 = slim_v_module_95name;
+SlimBytes slim_t_49139 = {0};
+slim_t_49139 = slim_v_module_95source;
+int64_t slim_t_49141 = {0};
+slim_t_49141 = slim_v_next;
+bool slim_t_49142 = {0};
+slim_t_49142 = false;
+slim_v_manifest_95source = slim_t_49136;
+slim_v_module_95name = slim_t_49138;
+slim_v_module_95source = slim_t_49139;
+slim_v_cursor = slim_t_49141;
+slim_v_first = slim_t_49142;
 goto slim_recur;
 }
 }
@@ -22911,12 +23049,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_48846 = {0};
-slim_t_48846 = slim_v_module_95source;
-int64_t slim_t_48848 = {0};
-slim_t_48848 = slim_v_next;
-slim_v_module_95source = slim_t_48846;
-slim_v_cursor = slim_t_48848;
+SlimBytes slim_t_49262 = {0};
+slim_t_49262 = slim_v_module_95source;
+int64_t slim_t_49264 = {0};
+slim_t_49264 = slim_v_next;
+slim_v_module_95source = slim_t_49262;
+slim_v_cursor = slim_t_49264;
 goto slim_recur;
 }
 }
@@ -22984,18 +23122,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_49015 = {0};
-slim_t_49015 = slim_v_manifest_95source;
-int64_t slim_t_49017 = {0};
-slim_t_49017 = slim_v_export_95name;
-SlimBytes slim_t_49018 = {0};
-slim_t_49018 = slim_v_module_95source;
-int64_t slim_t_49020 = {0};
-slim_t_49020 = slim_v_next;
-slim_v_manifest_95source = slim_t_49015;
-slim_v_export_95name = slim_t_49017;
-slim_v_module_95source = slim_t_49018;
-slim_v_cursor = slim_t_49020;
+SlimBytes slim_t_49431 = {0};
+slim_t_49431 = slim_v_manifest_95source;
+int64_t slim_t_49433 = {0};
+slim_t_49433 = slim_v_export_95name;
+SlimBytes slim_t_49434 = {0};
+slim_t_49434 = slim_v_module_95source;
+int64_t slim_t_49436 = {0};
+slim_t_49436 = slim_v_next;
+slim_v_manifest_95source = slim_t_49431;
+slim_v_export_95name = slim_t_49433;
+slim_v_module_95source = slim_t_49434;
+slim_v_cursor = slim_t_49436;
 goto slim_recur;
 }
 }
@@ -23086,21 +23224,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_49235 = {0};
-slim_t_49235 = slim_v_manifest_95source;
-int64_t slim_t_49237 = {0};
-slim_t_49237 = slim_v_module_95name;
-SlimBytes slim_t_49238 = {0};
-slim_t_49238 = slim_v_module_95source;
-int64_t slim_t_49240 = {0};
-slim_t_49240 = slim_v_next;
-bool slim_t_49241 = {0};
-slim_t_49241 = false;
-slim_v_manifest_95source = slim_t_49235;
-slim_v_module_95name = slim_t_49237;
-slim_v_module_95source = slim_t_49238;
-slim_v_cursor = slim_t_49240;
-slim_v_first = slim_t_49241;
+SlimBytes slim_t_49651 = {0};
+slim_t_49651 = slim_v_manifest_95source;
+int64_t slim_t_49653 = {0};
+slim_t_49653 = slim_v_module_95name;
+SlimBytes slim_t_49654 = {0};
+slim_t_49654 = slim_v_module_95source;
+int64_t slim_t_49656 = {0};
+slim_t_49656 = slim_v_next;
+bool slim_t_49657 = {0};
+slim_t_49657 = false;
+slim_v_manifest_95source = slim_t_49651;
+slim_v_module_95name = slim_t_49653;
+slim_v_module_95source = slim_t_49654;
+slim_v_cursor = slim_t_49656;
+slim_v_first = slim_t_49657;
 goto slim_recur;
 }
 }
@@ -23158,18 +23296,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_49375 = {0};
-slim_t_49375 = slim_v_manifest_95source;
-int64_t slim_t_49377 = {0};
-slim_t_49377 = slim_v_module_95name;
-SlimBytes slim_t_49378 = {0};
-slim_t_49378 = slim_v_module_95source;
-int64_t slim_t_49380 = {0};
-slim_t_49380 = slim_v_next;
-slim_v_manifest_95source = slim_t_49375;
-slim_v_module_95name = slim_t_49377;
-slim_v_module_95source = slim_t_49378;
-slim_v_cursor = slim_t_49380;
+SlimBytes slim_t_49791 = {0};
+slim_t_49791 = slim_v_manifest_95source;
+int64_t slim_t_49793 = {0};
+slim_t_49793 = slim_v_module_95name;
+SlimBytes slim_t_49794 = {0};
+slim_t_49794 = slim_v_module_95source;
+int64_t slim_t_49796 = {0};
+slim_t_49796 = slim_v_next;
+slim_v_manifest_95source = slim_t_49791;
+slim_v_module_95name = slim_t_49793;
+slim_v_module_95source = slim_t_49794;
+slim_v_cursor = slim_t_49796;
 goto slim_recur;
 }
 }
@@ -23251,21 +23389,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_49580 = {0};
-slim_t_49580 = slim_v_manifest_95source;
-int64_t slim_t_49582 = {0};
-slim_t_49582 = slim_v_module_95name;
-SlimBytes slim_t_49583 = {0};
-slim_t_49583 = slim_v_module_95source;
-int64_t slim_t_49585 = {0};
-slim_t_49585 = slim_v_next;
-bool slim_t_49586 = {0};
-slim_t_49586 = false;
-slim_v_manifest_95source = slim_t_49580;
-slim_v_module_95name = slim_t_49582;
-slim_v_module_95source = slim_t_49583;
-slim_v_cursor = slim_t_49585;
-slim_v_first = slim_t_49586;
+SlimBytes slim_t_49996 = {0};
+slim_t_49996 = slim_v_manifest_95source;
+int64_t slim_t_49998 = {0};
+slim_t_49998 = slim_v_module_95name;
+SlimBytes slim_t_49999 = {0};
+slim_t_49999 = slim_v_module_95source;
+int64_t slim_t_50001 = {0};
+slim_t_50001 = slim_v_next;
+bool slim_t_50002 = {0};
+slim_t_50002 = false;
+slim_v_manifest_95source = slim_t_49996;
+slim_v_module_95name = slim_t_49998;
+slim_v_module_95source = slim_t_49999;
+slim_v_cursor = slim_t_50001;
+slim_v_first = slim_t_50002;
 goto slim_recur;
 }
 }
@@ -23491,21 +23629,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_50129 = {0};
-slim_t_50129 = slim_v_manifest_95source;
-int64_t slim_t_50131 = {0};
-slim_t_50131 = slim_v_module_95name;
-int64_t slim_t_50132 = {0};
-slim_t_50132 = slim_v_next;
-SlimBytes slim_t_50133 = {0};
-slim_t_50133 = slim_v_module_95source;
-int64_t slim_t_50135 = {0};
-slim_t_50135 = slim_v_module_95items;
-slim_v_manifest_95source = slim_t_50129;
-slim_v_module_95name = slim_t_50131;
-slim_v_cursor = slim_t_50132;
-slim_v_module_95source = slim_t_50133;
-slim_v_module_95items = slim_t_50135;
+SlimBytes slim_t_50545 = {0};
+slim_t_50545 = slim_v_manifest_95source;
+int64_t slim_t_50547 = {0};
+slim_t_50547 = slim_v_module_95name;
+int64_t slim_t_50548 = {0};
+slim_t_50548 = slim_v_next;
+SlimBytes slim_t_50549 = {0};
+slim_t_50549 = slim_v_module_95source;
+int64_t slim_t_50551 = {0};
+slim_t_50551 = slim_v_module_95items;
+slim_v_manifest_95source = slim_t_50545;
+slim_v_module_95name = slim_t_50547;
+slim_v_cursor = slim_t_50548;
+slim_v_module_95source = slim_t_50549;
+slim_v_module_95items = slim_t_50551;
 goto slim_recur;
 }
 }
@@ -23617,15 +23755,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_manifest_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_50395 = {0};
-slim_t_50395 = slim_v_manifest_95path;
-SlimBytes slim_t_50396 = {0};
-slim_t_50396 = slim_v_manifest_95source;
-int64_t slim_t_50398 = {0};
-slim_t_50398 = slim_v_next;
-slim_v_manifest_95path = slim_t_50395;
-slim_v_manifest_95source = slim_t_50396;
-slim_v_cursor = slim_t_50398;
+SlimBytes slim_t_50811 = {0};
+slim_t_50811 = slim_v_manifest_95path;
+SlimBytes slim_t_50812 = {0};
+slim_t_50812 = slim_v_manifest_95source;
+int64_t slim_t_50814 = {0};
+slim_t_50814 = slim_v_next;
+slim_v_manifest_95path = slim_t_50811;
+slim_v_manifest_95source = slim_t_50812;
+slim_v_cursor = slim_t_50814;
 goto slim_recur;
 }
 }
@@ -23798,21 +23936,21 @@ slim_v_next_95left = slim_i64_add(slim_v_left, INT64_C(1));
 int64_t slim_v_next_95right = {0};
 slim_v_next_95right = slim_i64_add(slim_v_right, INT64_C(1));
 (void)slim_v_next_95right;
-SlimBytes slim_t_50740 = {0};
-slim_t_50740 = slim_v_source;
-int64_t slim_t_50741 = {0};
-slim_t_50741 = slim_v_next_95left;
-int64_t slim_t_50742 = {0};
-slim_t_50742 = slim_v_left_95end;
-int64_t slim_t_50743 = {0};
-slim_t_50743 = slim_v_next_95right;
-int64_t slim_t_50744 = {0};
-slim_t_50744 = slim_v_right_95end;
-slim_v_source = slim_t_50740;
-slim_v_left = slim_t_50741;
-slim_v_left_95end = slim_t_50742;
-slim_v_right = slim_t_50743;
-slim_v_right_95end = slim_t_50744;
+SlimBytes slim_t_51156 = {0};
+slim_t_51156 = slim_v_source;
+int64_t slim_t_51157 = {0};
+slim_t_51157 = slim_v_next_95left;
+int64_t slim_t_51158 = {0};
+slim_t_51158 = slim_v_left_95end;
+int64_t slim_t_51159 = {0};
+slim_t_51159 = slim_v_next_95right;
+int64_t slim_t_51160 = {0};
+slim_t_51160 = slim_v_right_95end;
+slim_v_source = slim_t_51156;
+slim_v_left = slim_t_51157;
+slim_v_left_95end = slim_t_51158;
+slim_v_right = slim_t_51159;
+slim_v_right_95end = slim_t_51160;
 goto slim_recur;
 }
 }
@@ -23913,15 +24051,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_50978 = {0};
-slim_t_50978 = slim_v_source;
-int64_t slim_t_50980 = {0};
-slim_t_50980 = slim_v_next;
-int64_t slim_t_50981 = {0};
-slim_t_50981 = slim_v_name;
-slim_v_source = slim_t_50978;
-slim_v_cursor = slim_t_50980;
-slim_v_previous = slim_t_50981;
+SlimBytes slim_t_51394 = {0};
+slim_t_51394 = slim_v_source;
+int64_t slim_t_51396 = {0};
+slim_t_51396 = slim_v_next;
+int64_t slim_t_51397 = {0};
+slim_t_51397 = slim_v_name;
+slim_v_source = slim_t_51394;
+slim_v_cursor = slim_t_51396;
+slim_v_previous = slim_t_51397;
 goto slim_recur;
 }
 }
@@ -23978,21 +24116,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_51115 = {0};
-slim_t_51115 = slim_v_source;
-int64_t slim_t_51117 = {0};
-slim_t_51117 = slim_v_next;
-int64_t slim_t_51118 = {0};
-slim_t_51118 = slim_v_current;
-int64_t slim_t_51119 = {0};
-slim_t_51119 = slim_v_name_95start;
-int64_t slim_t_51120 = {0};
-slim_t_51120 = slim_v_name_95end;
-slim_v_source = slim_t_51115;
-slim_v_cursor = slim_t_51117;
-slim_v_current = slim_t_51118;
-slim_v_name_95start = slim_t_51119;
-slim_v_name_95end = slim_t_51120;
+SlimBytes slim_t_51531 = {0};
+slim_t_51531 = slim_v_source;
+int64_t slim_t_51533 = {0};
+slim_t_51533 = slim_v_next;
+int64_t slim_t_51534 = {0};
+slim_t_51534 = slim_v_current;
+int64_t slim_t_51535 = {0};
+slim_t_51535 = slim_v_name_95start;
+int64_t slim_t_51536 = {0};
+slim_t_51536 = slim_v_name_95end;
+slim_v_source = slim_t_51531;
+slim_v_cursor = slim_t_51533;
+slim_v_current = slim_t_51534;
+slim_v_name_95start = slim_t_51535;
+slim_v_name_95end = slim_t_51536;
 goto slim_recur;
 }
 }
@@ -24055,15 +24193,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_51267 = {0};
-slim_t_51267 = slim_v_source;
-int64_t slim_t_51269 = {0};
-slim_t_51269 = slim_v_modules;
-int64_t slim_t_51270 = {0};
-slim_t_51270 = slim_v_next;
-slim_v_source = slim_t_51267;
-slim_v_modules = slim_t_51269;
-slim_v_cursor = slim_t_51270;
+SlimBytes slim_t_51683 = {0};
+slim_t_51683 = slim_v_source;
+int64_t slim_t_51685 = {0};
+slim_t_51685 = slim_v_modules;
+int64_t slim_t_51686 = {0};
+slim_t_51686 = slim_v_next;
+slim_v_source = slim_t_51683;
+slim_v_modules = slim_t_51685;
+slim_v_cursor = slim_t_51686;
 goto slim_recur;
 }
 }
@@ -24122,21 +24260,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_51406 = {0};
-slim_t_51406 = slim_v_source;
-int64_t slim_t_51408 = {0};
-slim_t_51408 = slim_v_next;
-int64_t slim_t_51409 = {0};
-slim_t_51409 = slim_v_current;
-int64_t slim_t_51410 = {0};
-slim_t_51410 = slim_v_path_95start;
-int64_t slim_t_51411 = {0};
-slim_t_51411 = slim_v_path_95end;
-slim_v_source = slim_t_51406;
-slim_v_cursor = slim_t_51408;
-slim_v_current = slim_t_51409;
-slim_v_path_95start = slim_t_51410;
-slim_v_path_95end = slim_t_51411;
+SlimBytes slim_t_51822 = {0};
+slim_t_51822 = slim_v_source;
+int64_t slim_t_51824 = {0};
+slim_t_51824 = slim_v_next;
+int64_t slim_t_51825 = {0};
+slim_t_51825 = slim_v_current;
+int64_t slim_t_51826 = {0};
+slim_t_51826 = slim_v_path_95start;
+int64_t slim_t_51827 = {0};
+slim_t_51827 = slim_v_path_95end;
+slim_v_source = slim_t_51822;
+slim_v_cursor = slim_t_51824;
+slim_v_current = slim_t_51825;
+slim_v_path_95start = slim_t_51826;
+slim_v_path_95end = slim_t_51827;
 goto slim_recur;
 }
 }
@@ -24199,15 +24337,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_51558 = {0};
-slim_t_51558 = slim_v_source;
-int64_t slim_t_51560 = {0};
-slim_t_51560 = slim_v_modules;
-int64_t slim_t_51561 = {0};
-slim_t_51561 = slim_v_next;
-slim_v_source = slim_t_51558;
-slim_v_modules = slim_t_51560;
-slim_v_cursor = slim_t_51561;
+SlimBytes slim_t_51974 = {0};
+slim_t_51974 = slim_v_source;
+int64_t slim_t_51976 = {0};
+slim_t_51976 = slim_v_modules;
+int64_t slim_t_51977 = {0};
+slim_t_51977 = slim_v_next;
+slim_v_source = slim_t_51974;
+slim_v_modules = slim_t_51976;
+slim_v_cursor = slim_t_51977;
 goto slim_recur;
 }
 }
@@ -24320,18 +24458,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_51810 = {0};
-slim_t_51810 = slim_v_source;
-int64_t slim_t_51811 = {0};
-slim_t_51811 = slim_v_next;
-int64_t slim_t_51812 = {0};
-slim_t_51812 = slim_v_end;
-int64_t slim_t_51813 = {0};
-slim_t_51813 = slim_v_next;
-slim_v_source = slim_t_51810;
-slim_v_index = slim_t_51811;
-slim_v_end = slim_t_51812;
-slim_v_segment_95start = slim_t_51813;
+SlimBytes slim_t_52226 = {0};
+slim_t_52226 = slim_v_source;
+int64_t slim_t_52227 = {0};
+slim_t_52227 = slim_v_next;
+int64_t slim_t_52228 = {0};
+slim_t_52228 = slim_v_end;
+int64_t slim_t_52229 = {0};
+slim_t_52229 = slim_v_next;
+slim_v_source = slim_t_52226;
+slim_v_index = slim_t_52227;
+slim_v_end = slim_t_52228;
+slim_v_segment_95start = slim_t_52229;
 goto slim_recur;
 }
 }
@@ -24342,18 +24480,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_51834 = {0};
-slim_t_51834 = slim_v_source;
-int64_t slim_t_51835 = {0};
-slim_t_51835 = slim_v_next;
-int64_t slim_t_51836 = {0};
-slim_t_51836 = slim_v_end;
-int64_t slim_t_51837 = {0};
-slim_t_51837 = slim_v_segment_95start;
-slim_v_source = slim_t_51834;
-slim_v_index = slim_t_51835;
-slim_v_end = slim_t_51836;
-slim_v_segment_95start = slim_t_51837;
+SlimBytes slim_t_52250 = {0};
+slim_t_52250 = slim_v_source;
+int64_t slim_t_52251 = {0};
+slim_t_52251 = slim_v_next;
+int64_t slim_t_52252 = {0};
+slim_t_52252 = slim_v_end;
+int64_t slim_t_52253 = {0};
+slim_t_52253 = slim_v_segment_95start;
+slim_v_source = slim_t_52250;
+slim_v_index = slim_t_52251;
+slim_v_end = slim_t_52252;
+slim_v_segment_95start = slim_t_52253;
 goto slim_recur;
 }
 }
@@ -24472,12 +24610,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_52106 = {0};
-slim_t_52106 = slim_v_source;
-int64_t slim_t_52108 = {0};
-slim_t_52108 = slim_v_next;
-slim_v_source = slim_t_52106;
-slim_v_cursor = slim_t_52108;
+SlimBytes slim_t_52522 = {0};
+slim_t_52522 = slim_v_source;
+int64_t slim_t_52524 = {0};
+slim_t_52524 = slim_v_next;
+slim_v_source = slim_t_52522;
+slim_v_cursor = slim_t_52524;
 goto slim_recur;
 }
 }
@@ -24532,18 +24670,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_52237 = {0};
-slim_t_52237 = slim_v_source;
-int64_t slim_t_52239 = {0};
-slim_t_52239 = slim_v_next;
-int64_t slim_t_52240 = {0};
-slim_t_52240 = slim_v_name_95start;
-int64_t slim_t_52241 = {0};
-slim_t_52241 = slim_v_name_95end;
-slim_v_source = slim_t_52237;
-slim_v_cursor = slim_t_52239;
-slim_v_name_95start = slim_t_52240;
-slim_v_name_95end = slim_t_52241;
+SlimBytes slim_t_52653 = {0};
+slim_t_52653 = slim_v_source;
+int64_t slim_t_52655 = {0};
+slim_t_52655 = slim_v_next;
+int64_t slim_t_52656 = {0};
+slim_t_52656 = slim_v_name_95start;
+int64_t slim_t_52657 = {0};
+slim_t_52657 = slim_v_name_95end;
+slim_v_source = slim_t_52653;
+slim_v_cursor = slim_t_52655;
+slim_v_name_95start = slim_t_52656;
+slim_v_name_95end = slim_t_52657;
 goto slim_recur;
 }
 }
@@ -24613,12 +24751,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_52403 = {0};
-slim_t_52403 = slim_v_source;
-int64_t slim_t_52405 = {0};
-slim_t_52405 = slim_v_next;
-slim_v_source = slim_t_52403;
-slim_v_cursor = slim_t_52405;
+SlimBytes slim_t_52819 = {0};
+slim_t_52819 = slim_v_source;
+int64_t slim_t_52821 = {0};
+slim_t_52821 = slim_v_next;
+slim_v_source = slim_t_52819;
+slim_v_cursor = slim_t_52821;
 goto slim_recur;
 }
 }
@@ -24681,15 +24819,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_52545 = {0};
-slim_t_52545 = slim_v_source;
-int64_t slim_t_52547 = {0};
-slim_t_52547 = slim_v_modules;
-int64_t slim_t_52548 = {0};
-slim_t_52548 = slim_v_next;
-slim_v_source = slim_t_52545;
-slim_v_modules = slim_t_52547;
-slim_v_cursor = slim_t_52548;
+SlimBytes slim_t_52961 = {0};
+slim_t_52961 = slim_v_source;
+int64_t slim_t_52963 = {0};
+slim_t_52963 = slim_v_modules;
+int64_t slim_t_52964 = {0};
+slim_t_52964 = slim_v_next;
+slim_v_source = slim_t_52961;
+slim_v_modules = slim_t_52963;
+slim_v_cursor = slim_t_52964;
 goto slim_recur;
 }
 }
@@ -24749,15 +24887,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_52684 = {0};
-slim_t_52684 = slim_v_source;
-int64_t slim_t_52686 = {0};
-slim_t_52686 = slim_v_modules;
-int64_t slim_t_52687 = {0};
-slim_t_52687 = slim_v_next;
-slim_v_source = slim_t_52684;
-slim_v_modules = slim_t_52686;
-slim_v_cursor = slim_t_52687;
+SlimBytes slim_t_53100 = {0};
+slim_t_53100 = slim_v_source;
+int64_t slim_t_53102 = {0};
+slim_t_53102 = slim_v_modules;
+int64_t slim_t_53103 = {0};
+slim_t_53103 = slim_v_next;
+slim_v_source = slim_t_53100;
+slim_v_modules = slim_t_53102;
+slim_v_cursor = slim_t_53103;
 goto slim_recur;
 }
 }
@@ -25086,17 +25224,17 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_project_95LoadedModule slim_v_module = {0};
 {
-int64_t slim_t_53495 = {0};
-slim_t_53495 = slim_v_cursor;
-int64_t slim_t_53499 = {0};
-slim_t_53499 = slim_v_name;
-int64_t slim_t_53503 = {0};
-slim_t_53503 = slim_v_path;
-SlimBytes slim_t_53507 = {0};
-slim_t_53507 = slim_v_source;
-int64_t slim_t_53511 = {0};
-slim_t_53511 = slim_v_root;
-slim_v_module = (Slim_type_project_95LoadedModule){.slim_field_manifest = slim_t_53495, .slim_field_name = slim_t_53499, .slim_field_path = slim_t_53503, .slim_field_source = slim_t_53507, .slim_field_root = slim_t_53511};
+int64_t slim_t_53911 = {0};
+slim_t_53911 = slim_v_cursor;
+int64_t slim_t_53915 = {0};
+slim_t_53915 = slim_v_name;
+int64_t slim_t_53919 = {0};
+slim_t_53919 = slim_v_path;
+SlimBytes slim_t_53923 = {0};
+slim_t_53923 = slim_v_source;
+int64_t slim_t_53927 = {0};
+slim_t_53927 = slim_v_root;
+slim_v_module = (Slim_type_project_95LoadedModule){.slim_field_manifest = slim_t_53911, .slim_field_name = slim_t_53915, .slim_field_path = slim_t_53919, .slim_field_source = slim_t_53923, .slim_field_root = slim_t_53927};
 }
 (void)slim_v_module;
 {
@@ -25107,15 +25245,15 @@ if (!slim_vec_push(slim_v_loaded, &slim_v_module)) goto slim_allocation_failed; 
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_manifest_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_53538 = {0};
-slim_t_53538 = slim_v_manifest_95path;
-SlimBytes slim_t_53539 = {0};
-slim_t_53539 = slim_v_manifest_95source;
-int64_t slim_t_53541 = {0};
-slim_t_53541 = slim_v_next;
-slim_v_manifest_95path = slim_t_53538;
-slim_v_manifest_95source = slim_t_53539;
-slim_v_cursor = slim_t_53541;
+SlimBytes slim_t_53954 = {0};
+slim_t_53954 = slim_v_manifest_95path;
+SlimBytes slim_t_53955 = {0};
+slim_t_53955 = slim_v_manifest_95source;
+int64_t slim_t_53957 = {0};
+slim_t_53957 = slim_v_next;
+slim_v_manifest_95path = slim_t_53954;
+slim_v_manifest_95source = slim_t_53955;
+slim_v_cursor = slim_t_53957;
 goto slim_recur;
 }
 }
@@ -25219,12 +25357,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_53781 = {0};
-slim_t_53781 = slim_v_manifest_95source;
-int64_t slim_t_53785 = {0};
-slim_t_53785 = slim_v_next;
-slim_v_manifest_95source = slim_t_53781;
-slim_v_index = slim_t_53785;
+SlimBytes slim_t_54197 = {0};
+slim_t_54197 = slim_v_manifest_95source;
+int64_t slim_t_54201 = {0};
+slim_t_54201 = slim_v_next;
+slim_v_manifest_95source = slim_t_54197;
+slim_v_index = slim_t_54201;
 goto slim_recur;
 }
 }
@@ -25285,18 +25423,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_53921 = {0};
-slim_t_53921 = slim_v_manifest_95source;
-int64_t slim_t_53923 = {0};
-slim_t_53923 = slim_v_next;
-SlimBytes slim_t_53924 = {0};
-slim_t_53924 = slim_v_module_95source;
-int64_t slim_t_53926 = {0};
-slim_t_53926 = slim_v_module_95items;
-slim_v_manifest_95source = slim_t_53921;
-slim_v_cursor = slim_t_53923;
-slim_v_module_95source = slim_t_53924;
-slim_v_module_95items = slim_t_53926;
+SlimBytes slim_t_54337 = {0};
+slim_t_54337 = slim_v_manifest_95source;
+int64_t slim_t_54339 = {0};
+slim_t_54339 = slim_v_next;
+SlimBytes slim_t_54340 = {0};
+slim_t_54340 = slim_v_module_95source;
+int64_t slim_t_54342 = {0};
+slim_t_54342 = slim_v_module_95items;
+slim_v_manifest_95source = slim_t_54337;
+slim_v_cursor = slim_t_54339;
+slim_v_module_95source = slim_t_54340;
+slim_v_module_95items = slim_t_54342;
 goto slim_recur;
 }
 }
@@ -25401,12 +25539,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_54182 = {0};
-slim_t_54182 = slim_v_manifest_95source;
-int64_t slim_t_54186 = {0};
-slim_t_54186 = slim_v_next;
-slim_v_manifest_95source = slim_t_54182;
-slim_v_index = slim_t_54186;
+SlimBytes slim_t_54598 = {0};
+slim_t_54598 = slim_v_manifest_95source;
+int64_t slim_t_54602 = {0};
+slim_t_54602 = slim_v_next;
+slim_v_manifest_95source = slim_t_54598;
+slim_v_index = slim_t_54602;
 goto slim_recur;
 }
 }
@@ -25466,15 +25604,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_54309 = {0};
-slim_t_54309 = slim_v_source;
-int64_t slim_t_54311 = {0};
-slim_t_54311 = slim_v_next;
-SlimBytes slim_t_54312 = {0};
-slim_t_54312 = slim_v_name;
-slim_v_source = slim_t_54309;
-slim_v_cursor = slim_t_54311;
-slim_v_name = slim_t_54312;
+SlimBytes slim_t_54725 = {0};
+slim_t_54725 = slim_v_source;
+int64_t slim_t_54727 = {0};
+slim_t_54727 = slim_v_next;
+SlimBytes slim_t_54728 = {0};
+slim_t_54728 = slim_v_name;
+slim_v_source = slim_t_54725;
+slim_v_cursor = slim_t_54727;
+slim_v_name = slim_t_54728;
 goto slim_recur;
 }
 }
@@ -25583,15 +25721,15 @@ if (slim_v_has_95main) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_54588 = {0};
-slim_t_54588 = slim_v_manifest_95source;
-int64_t slim_t_54590 = {0};
-slim_t_54590 = slim_v_entry;
-int64_t slim_t_54593 = {0};
-slim_t_54593 = slim_v_next;
-slim_v_manifest_95source = slim_t_54588;
-slim_v_entry = slim_t_54590;
-slim_v_index = slim_t_54593;
+SlimBytes slim_t_55004 = {0};
+slim_t_55004 = slim_v_manifest_95source;
+int64_t slim_t_55006 = {0};
+slim_t_55006 = slim_v_entry;
+int64_t slim_t_55009 = {0};
+slim_t_55009 = slim_v_next;
+slim_v_manifest_95source = slim_t_55004;
+slim_v_entry = slim_t_55006;
+slim_v_index = slim_t_55009;
 goto slim_recur;
 }
 }
@@ -25632,15 +25770,15 @@ if (!slim_v_has_95main) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_54684 = {0};
-slim_t_54684 = slim_v_manifest_95source;
-int64_t slim_t_54686 = {0};
-slim_t_54686 = slim_v_entry;
-int64_t slim_t_54689 = {0};
-slim_t_54689 = slim_v_next;
-slim_v_manifest_95source = slim_t_54684;
-slim_v_entry = slim_t_54686;
-slim_v_index = slim_t_54689;
+SlimBytes slim_t_55100 = {0};
+slim_t_55100 = slim_v_manifest_95source;
+int64_t slim_t_55102 = {0};
+slim_t_55102 = slim_v_entry;
+int64_t slim_t_55105 = {0};
+slim_t_55105 = slim_v_next;
+slim_v_manifest_95source = slim_t_55100;
+slim_v_entry = slim_t_55102;
+slim_v_index = slim_t_55105;
 goto slim_recur;
 }
 }
@@ -25747,21 +25885,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_54933 = {0};
-slim_t_54933 = slim_v_manifest_95source;
-SlimBytes slim_t_54936 = {0};
-slim_t_54936 = slim_v_reference_95source;
-int64_t slim_t_54937 = {0};
-slim_t_54937 = slim_v_segment_95start;
-int64_t slim_t_54938 = {0};
-slim_t_54938 = slim_v_segment_95end;
-int64_t slim_t_54939 = {0};
-slim_t_54939 = slim_v_next;
-slim_v_manifest_95source = slim_t_54933;
-slim_v_reference_95source = slim_t_54936;
-slim_v_segment_95start = slim_t_54937;
-slim_v_segment_95end = slim_t_54938;
-slim_v_index = slim_t_54939;
+SlimBytes slim_t_55349 = {0};
+slim_t_55349 = slim_v_manifest_95source;
+SlimBytes slim_t_55352 = {0};
+slim_t_55352 = slim_v_reference_95source;
+int64_t slim_t_55353 = {0};
+slim_t_55353 = slim_v_segment_95start;
+int64_t slim_t_55354 = {0};
+slim_t_55354 = slim_v_segment_95end;
+int64_t slim_t_55355 = {0};
+slim_t_55355 = slim_v_next;
+slim_v_manifest_95source = slim_t_55349;
+slim_v_reference_95source = slim_t_55352;
+slim_v_segment_95start = slim_t_55353;
+slim_v_segment_95end = slim_t_55354;
+slim_v_index = slim_t_55355;
 goto slim_recur;
 }
 }
@@ -25824,21 +25962,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_55086 = {0};
-slim_t_55086 = slim_v_declaration_95source;
-int64_t slim_t_55088 = {0};
-slim_t_55088 = slim_v_next;
-SlimBytes slim_t_55089 = {0};
-slim_t_55089 = slim_v_reference_95source;
-int64_t slim_t_55090 = {0};
-slim_t_55090 = slim_v_segment_95start;
-int64_t slim_t_55091 = {0};
-slim_t_55091 = slim_v_segment_95end;
-slim_v_declaration_95source = slim_t_55086;
-slim_v_cursor = slim_t_55088;
-slim_v_reference_95source = slim_t_55089;
-slim_v_segment_95start = slim_t_55090;
-slim_v_segment_95end = slim_t_55091;
+SlimBytes slim_t_55502 = {0};
+slim_t_55502 = slim_v_declaration_95source;
+int64_t slim_t_55504 = {0};
+slim_t_55504 = slim_v_next;
+SlimBytes slim_t_55505 = {0};
+slim_t_55505 = slim_v_reference_95source;
+int64_t slim_t_55506 = {0};
+slim_t_55506 = slim_v_segment_95start;
+int64_t slim_t_55507 = {0};
+slim_t_55507 = slim_v_segment_95end;
+slim_v_declaration_95source = slim_t_55502;
+slim_v_cursor = slim_t_55504;
+slim_v_reference_95source = slim_t_55505;
+slim_v_segment_95start = slim_t_55506;
+slim_v_segment_95end = slim_t_55507;
 goto slim_recur;
 }
 }
@@ -26133,18 +26271,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_55831 = {0};
-slim_t_55831 = slim_v_manifest_95source;
-Slim_type_project_95LoadedModule slim_t_55835 = {0};
-slim_t_55835 = slim_v_current;
-int64_t slim_t_55836 = {0};
-slim_t_55836 = slim_v_next;
-int64_t slim_t_55837 = {0};
-slim_t_55837 = slim_v_end;
-slim_v_manifest_95source = slim_t_55831;
-slim_v_current = slim_t_55835;
-slim_v_cursor = slim_t_55836;
-slim_v_end = slim_t_55837;
+SlimBytes slim_t_56247 = {0};
+slim_t_56247 = slim_v_manifest_95source;
+Slim_type_project_95LoadedModule slim_t_56251 = {0};
+slim_t_56251 = slim_v_current;
+int64_t slim_t_56252 = {0};
+slim_t_56252 = slim_v_next;
+int64_t slim_t_56253 = {0};
+slim_t_56253 = slim_v_end;
+slim_v_manifest_95source = slim_t_56247;
+slim_v_current = slim_t_56251;
+slim_v_cursor = slim_t_56252;
+slim_v_end = slim_t_56253;
 goto slim_recur;
 }
 }
@@ -26213,12 +26351,12 @@ if (!slim_v_found) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_56006 = {0};
-slim_t_56006 = slim_v_manifest_95source;
-int64_t slim_t_56010 = {0};
-slim_t_56010 = slim_v_next;
-slim_v_manifest_95source = slim_t_56006;
-slim_v_index = slim_t_56010;
+SlimBytes slim_t_56422 = {0};
+slim_t_56422 = slim_v_manifest_95source;
+int64_t slim_t_56426 = {0};
+slim_t_56426 = slim_v_next;
+slim_v_manifest_95source = slim_t_56422;
+slim_v_index = slim_t_56426;
 goto slim_recur;
 }
 }
@@ -26583,33 +26721,33 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-SlimBytes slim_t_56898 = {0};
-slim_t_56898 = slim_v_manifest_95source;
-int64_t slim_t_56900 = {0};
-slim_t_56900 = slim_v_first_95export;
-SlimBytes slim_t_56901 = {0};
-slim_t_56901 = slim_v_module_95name;
-SlimBytes slim_t_56902 = {0};
-slim_t_56902 = slim_v_module_95source;
-int64_t slim_t_56904 = {0};
-slim_t_56904 = slim_v_module_95items;
-int64_t slim_t_56905 = {0};
-slim_t_56905 = slim_v_next;
-int64_t slim_t_56906 = {0};
-slim_t_56906 = slim_v_diagnostic_95start;
-int64_t slim_t_56907 = {0};
-slim_t_56907 = slim_v_diagnostic_95end;
-int64_t slim_t_56908 = {0};
-slim_t_56908 = slim_v_total;
-slim_v_manifest_95source = slim_t_56898;
-slim_v_first_95export = slim_t_56900;
-slim_v_module_95name = slim_t_56901;
-slim_v_module_95source = slim_t_56902;
-slim_v_module_95items = slim_t_56904;
-slim_v_cursor = slim_t_56905;
-slim_v_diagnostic_95start = slim_t_56906;
-slim_v_diagnostic_95end = slim_t_56907;
-slim_v_count = slim_t_56908;
+SlimBytes slim_t_57314 = {0};
+slim_t_57314 = slim_v_manifest_95source;
+int64_t slim_t_57316 = {0};
+slim_t_57316 = slim_v_first_95export;
+SlimBytes slim_t_57317 = {0};
+slim_t_57317 = slim_v_module_95name;
+SlimBytes slim_t_57318 = {0};
+slim_t_57318 = slim_v_module_95source;
+int64_t slim_t_57320 = {0};
+slim_t_57320 = slim_v_module_95items;
+int64_t slim_t_57321 = {0};
+slim_t_57321 = slim_v_next;
+int64_t slim_t_57322 = {0};
+slim_t_57322 = slim_v_diagnostic_95start;
+int64_t slim_t_57323 = {0};
+slim_t_57323 = slim_v_diagnostic_95end;
+int64_t slim_t_57324 = {0};
+slim_t_57324 = slim_v_total;
+slim_v_manifest_95source = slim_t_57314;
+slim_v_first_95export = slim_t_57316;
+slim_v_module_95name = slim_t_57317;
+slim_v_module_95source = slim_t_57318;
+slim_v_module_95items = slim_t_57320;
+slim_v_cursor = slim_t_57321;
+slim_v_diagnostic_95start = slim_t_57322;
+slim_v_diagnostic_95end = slim_t_57323;
+slim_v_count = slim_t_57324;
 goto slim_recur;
 }
 }
@@ -26668,33 +26806,33 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-SlimBytes slim_t_57055 = {0};
-slim_t_57055 = slim_v_manifest_95source;
-int64_t slim_t_57057 = {0};
-slim_t_57057 = slim_v_first_95export;
-SlimBytes slim_t_57058 = {0};
-slim_t_57058 = slim_v_module_95name;
-SlimBytes slim_t_57059 = {0};
-slim_t_57059 = slim_v_module_95source;
-int64_t slim_t_57061 = {0};
-slim_t_57061 = slim_v_module_95items;
-int64_t slim_t_57062 = {0};
-slim_t_57062 = slim_v_next;
-int64_t slim_t_57063 = {0};
-slim_t_57063 = slim_v_diagnostic_95start;
-int64_t slim_t_57064 = {0};
-slim_t_57064 = slim_v_diagnostic_95end;
-int64_t slim_t_57065 = {0};
-slim_t_57065 = slim_v_total;
-slim_v_manifest_95source = slim_t_57055;
-slim_v_first_95export = slim_t_57057;
-slim_v_module_95name = slim_t_57058;
-slim_v_module_95source = slim_t_57059;
-slim_v_module_95items = slim_t_57061;
-slim_v_cursor = slim_t_57062;
-slim_v_diagnostic_95start = slim_t_57063;
-slim_v_diagnostic_95end = slim_t_57064;
-slim_v_count = slim_t_57065;
+SlimBytes slim_t_57471 = {0};
+slim_t_57471 = slim_v_manifest_95source;
+int64_t slim_t_57473 = {0};
+slim_t_57473 = slim_v_first_95export;
+SlimBytes slim_t_57474 = {0};
+slim_t_57474 = slim_v_module_95name;
+SlimBytes slim_t_57475 = {0};
+slim_t_57475 = slim_v_module_95source;
+int64_t slim_t_57477 = {0};
+slim_t_57477 = slim_v_module_95items;
+int64_t slim_t_57478 = {0};
+slim_t_57478 = slim_v_next;
+int64_t slim_t_57479 = {0};
+slim_t_57479 = slim_v_diagnostic_95start;
+int64_t slim_t_57480 = {0};
+slim_t_57480 = slim_v_diagnostic_95end;
+int64_t slim_t_57481 = {0};
+slim_t_57481 = slim_v_total;
+slim_v_manifest_95source = slim_t_57471;
+slim_v_first_95export = slim_t_57473;
+slim_v_module_95name = slim_t_57474;
+slim_v_module_95source = slim_t_57475;
+slim_v_module_95items = slim_t_57477;
+slim_v_cursor = slim_t_57478;
+slim_v_diagnostic_95start = slim_t_57479;
+slim_v_diagnostic_95end = slim_t_57480;
+slim_v_count = slim_t_57481;
 goto slim_recur;
 }
 }
@@ -26753,33 +26891,33 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_module_95tokens, slim_v_cursor
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-SlimBytes slim_t_57219 = {0};
-slim_t_57219 = slim_v_manifest_95source;
-int64_t slim_t_57221 = {0};
-slim_t_57221 = slim_v_first_95export;
-SlimBytes slim_t_57222 = {0};
-slim_t_57222 = slim_v_module_95name;
-SlimBytes slim_t_57223 = {0};
-slim_t_57223 = slim_v_module_95source;
-int64_t slim_t_57225 = {0};
-slim_t_57225 = slim_v_module_95items;
-int64_t slim_t_57226 = {0};
-slim_t_57226 = slim_v_next;
-int64_t slim_t_57227 = {0};
-slim_t_57227 = slim_v_diagnostic_95start;
-int64_t slim_t_57228 = {0};
-slim_t_57228 = slim_v_diagnostic_95end;
-int64_t slim_t_57229 = {0};
-slim_t_57229 = slim_v_total;
-slim_v_manifest_95source = slim_t_57219;
-slim_v_first_95export = slim_t_57221;
-slim_v_module_95name = slim_t_57222;
-slim_v_module_95source = slim_t_57223;
-slim_v_module_95items = slim_t_57225;
-slim_v_cursor = slim_t_57226;
-slim_v_diagnostic_95start = slim_t_57227;
-slim_v_diagnostic_95end = slim_t_57228;
-slim_v_count = slim_t_57229;
+SlimBytes slim_t_57635 = {0};
+slim_t_57635 = slim_v_manifest_95source;
+int64_t slim_t_57637 = {0};
+slim_t_57637 = slim_v_first_95export;
+SlimBytes slim_t_57638 = {0};
+slim_t_57638 = slim_v_module_95name;
+SlimBytes slim_t_57639 = {0};
+slim_t_57639 = slim_v_module_95source;
+int64_t slim_t_57641 = {0};
+slim_t_57641 = slim_v_module_95items;
+int64_t slim_t_57642 = {0};
+slim_t_57642 = slim_v_next;
+int64_t slim_t_57643 = {0};
+slim_t_57643 = slim_v_diagnostic_95start;
+int64_t slim_t_57644 = {0};
+slim_t_57644 = slim_v_diagnostic_95end;
+int64_t slim_t_57645 = {0};
+slim_t_57645 = slim_v_total;
+slim_v_manifest_95source = slim_t_57635;
+slim_v_first_95export = slim_t_57637;
+slim_v_module_95name = slim_t_57638;
+slim_v_module_95source = slim_t_57639;
+slim_v_module_95items = slim_t_57641;
+slim_v_cursor = slim_t_57642;
+slim_v_diagnostic_95start = slim_t_57643;
+slim_v_diagnostic_95end = slim_t_57644;
+slim_v_count = slim_t_57645;
 goto slim_recur;
 }
 }
@@ -26902,27 +27040,27 @@ slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-SlimBytes slim_t_57560 = {0};
-slim_t_57560 = slim_v_manifest_95source;
-int64_t slim_t_57562 = {0};
-slim_t_57562 = slim_v_first_95export;
-SlimBytes slim_t_57563 = {0};
-slim_t_57563 = slim_v_module_95name;
-SlimBytes slim_t_57564 = {0};
-slim_t_57564 = slim_v_module_95source;
-int64_t slim_t_57566 = {0};
-slim_t_57566 = slim_v_module_95items;
-int64_t slim_t_57567 = {0};
-slim_t_57567 = slim_v_next;
-int64_t slim_t_57568 = {0};
-slim_t_57568 = slim_v_total;
-slim_v_manifest_95source = slim_t_57560;
-slim_v_first_95export = slim_t_57562;
-slim_v_module_95name = slim_t_57563;
-slim_v_module_95source = slim_t_57564;
-slim_v_module_95items = slim_t_57566;
-slim_v_cursor = slim_t_57567;
-slim_v_count = slim_t_57568;
+SlimBytes slim_t_57976 = {0};
+slim_t_57976 = slim_v_manifest_95source;
+int64_t slim_t_57978 = {0};
+slim_t_57978 = slim_v_first_95export;
+SlimBytes slim_t_57979 = {0};
+slim_t_57979 = slim_v_module_95name;
+SlimBytes slim_t_57980 = {0};
+slim_t_57980 = slim_v_module_95source;
+int64_t slim_t_57982 = {0};
+slim_t_57982 = slim_v_module_95items;
+int64_t slim_t_57983 = {0};
+slim_t_57983 = slim_v_next;
+int64_t slim_t_57984 = {0};
+slim_t_57984 = slim_v_total;
+slim_v_manifest_95source = slim_t_57976;
+slim_v_first_95export = slim_t_57978;
+slim_v_module_95name = slim_t_57979;
+slim_v_module_95source = slim_t_57980;
+slim_v_module_95items = slim_t_57982;
+slim_v_cursor = slim_t_57983;
+slim_v_count = slim_t_57984;
 goto slim_recur;
 }
 }
@@ -27017,15 +27155,15 @@ slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 int64_t slim_v_total = {0};
 slim_v_total = slim_i64_add(slim_v_count, slim_v_reported);
 (void)slim_v_total;
-SlimBytes slim_t_57794 = {0};
-slim_t_57794 = slim_v_manifest_95source;
-int64_t slim_t_57798 = {0};
-slim_t_57798 = slim_v_next;
-int64_t slim_t_57799 = {0};
-slim_t_57799 = slim_v_total;
-slim_v_manifest_95source = slim_t_57794;
-slim_v_index = slim_t_57798;
-slim_v_count = slim_t_57799;
+SlimBytes slim_t_58210 = {0};
+slim_t_58210 = slim_v_manifest_95source;
+int64_t slim_t_58214 = {0};
+slim_t_58214 = slim_v_next;
+int64_t slim_t_58215 = {0};
+slim_t_58215 = slim_v_total;
+slim_v_manifest_95source = slim_t_58210;
+slim_v_index = slim_t_58214;
+slim_v_count = slim_t_58215;
 goto slim_recur;
 }
 }
@@ -27217,15 +27355,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_58229 = {0};
-slim_t_58229 = slim_v_source;
-int64_t slim_t_58231 = {0};
-slim_t_58231 = slim_v_next;
-int64_t slim_t_58232 = {0};
-slim_t_58232 = slim_v_next_95remaining;
-slim_v_source = slim_t_58229;
-slim_v_cursor = slim_t_58231;
-slim_v_remaining = slim_t_58232;
+SlimBytes slim_t_58645 = {0};
+slim_t_58645 = slim_v_source;
+int64_t slim_t_58647 = {0};
+slim_t_58647 = slim_v_next;
+int64_t slim_t_58648 = {0};
+slim_t_58648 = slim_v_next_95remaining;
+slim_v_source = slim_t_58645;
+slim_v_cursor = slim_t_58647;
+slim_v_remaining = slim_t_58648;
 goto slim_recur;
 }
 }
@@ -27544,23 +27682,23 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 Slim_type_quality_95Metrics slim_result = {0};
 {
-int64_t slim_t_58922 = {0};
-slim_t_58922 = INT64_C(0);
-int64_t slim_t_58926 = {0};
-slim_t_58926 = INT64_C(0);
-int64_t slim_t_58930 = {0};
-slim_t_58930 = INT64_C(0);
-int64_t slim_t_58934 = {0};
-slim_t_58934 = INT64_C(0);
-int64_t slim_t_58938 = {0};
-slim_t_58938 = INT64_C(0);
-int64_t slim_t_58942 = {0};
-slim_t_58942 = INT64_C(0);
-int64_t slim_t_58946 = {0};
-slim_t_58946 = INT64_C(0);
-int64_t slim_t_58950 = {0};
-slim_t_58950 = INT64_C(0);
-slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_58922, .slim_field_calls = slim_t_58926, .slim_field_matches = slim_t_58930, .slim_field_mutations = slim_t_58934, .slim_field_recurs = slim_t_58938, .slim_field_allocations = slim_t_58942, .slim_field_traps = slim_t_58946, .slim_field_rewrites = slim_t_58950};
+int64_t slim_t_59338 = {0};
+slim_t_59338 = INT64_C(0);
+int64_t slim_t_59342 = {0};
+slim_t_59342 = INT64_C(0);
+int64_t slim_t_59346 = {0};
+slim_t_59346 = INT64_C(0);
+int64_t slim_t_59350 = {0};
+slim_t_59350 = INT64_C(0);
+int64_t slim_t_59354 = {0};
+slim_t_59354 = INT64_C(0);
+int64_t slim_t_59358 = {0};
+slim_t_59358 = INT64_C(0);
+int64_t slim_t_59362 = {0};
+slim_t_59362 = INT64_C(0);
+int64_t slim_t_59366 = {0};
+slim_t_59366 = INT64_C(0);
+slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_59338, .slim_field_calls = slim_t_59342, .slim_field_matches = slim_t_59346, .slim_field_mutations = slim_t_59350, .slim_field_recurs = slim_t_59354, .slim_field_allocations = slim_t_59358, .slim_field_traps = slim_t_59362, .slim_field_rewrites = slim_t_59366};
 }
 slim_region_destroy(&slim_function_region);
 return slim_result;
@@ -27576,55 +27714,55 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 Slim_type_quality_95Metrics slim_result = {0};
 {
-int64_t slim_t_58976 = {0};
-int64_t slim_t_58981 = {0};
-slim_t_58981 = slim_v_left.slim_field_nodes;
-int64_t slim_t_58986 = {0};
-slim_t_58986 = slim_v_right.slim_field_nodes;
-slim_t_58976 = slim_i64_add(slim_t_58981, slim_t_58986);
-int64_t slim_t_58993 = {0};
-int64_t slim_t_58998 = {0};
-slim_t_58998 = slim_v_left.slim_field_calls;
-int64_t slim_t_59003 = {0};
-slim_t_59003 = slim_v_right.slim_field_calls;
-slim_t_58993 = slim_i64_add(slim_t_58998, slim_t_59003);
-int64_t slim_t_59010 = {0};
-int64_t slim_t_59015 = {0};
-slim_t_59015 = slim_v_left.slim_field_matches;
-int64_t slim_t_59020 = {0};
-slim_t_59020 = slim_v_right.slim_field_matches;
-slim_t_59010 = slim_i64_add(slim_t_59015, slim_t_59020);
-int64_t slim_t_59027 = {0};
-int64_t slim_t_59032 = {0};
-slim_t_59032 = slim_v_left.slim_field_mutations;
-int64_t slim_t_59037 = {0};
-slim_t_59037 = slim_v_right.slim_field_mutations;
-slim_t_59027 = slim_i64_add(slim_t_59032, slim_t_59037);
-int64_t slim_t_59044 = {0};
-int64_t slim_t_59049 = {0};
-slim_t_59049 = slim_v_left.slim_field_recurs;
-int64_t slim_t_59054 = {0};
-slim_t_59054 = slim_v_right.slim_field_recurs;
-slim_t_59044 = slim_i64_add(slim_t_59049, slim_t_59054);
-int64_t slim_t_59061 = {0};
-int64_t slim_t_59066 = {0};
-slim_t_59066 = slim_v_left.slim_field_allocations;
-int64_t slim_t_59071 = {0};
-slim_t_59071 = slim_v_right.slim_field_allocations;
-slim_t_59061 = slim_i64_add(slim_t_59066, slim_t_59071);
-int64_t slim_t_59078 = {0};
-int64_t slim_t_59083 = {0};
-slim_t_59083 = slim_v_left.slim_field_traps;
-int64_t slim_t_59088 = {0};
-slim_t_59088 = slim_v_right.slim_field_traps;
-slim_t_59078 = slim_i64_add(slim_t_59083, slim_t_59088);
-int64_t slim_t_59095 = {0};
-int64_t slim_t_59100 = {0};
-slim_t_59100 = slim_v_left.slim_field_rewrites;
-int64_t slim_t_59105 = {0};
-slim_t_59105 = slim_v_right.slim_field_rewrites;
-slim_t_59095 = slim_i64_add(slim_t_59100, slim_t_59105);
-slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_58976, .slim_field_calls = slim_t_58993, .slim_field_matches = slim_t_59010, .slim_field_mutations = slim_t_59027, .slim_field_recurs = slim_t_59044, .slim_field_allocations = slim_t_59061, .slim_field_traps = slim_t_59078, .slim_field_rewrites = slim_t_59095};
+int64_t slim_t_59392 = {0};
+int64_t slim_t_59397 = {0};
+slim_t_59397 = slim_v_left.slim_field_nodes;
+int64_t slim_t_59402 = {0};
+slim_t_59402 = slim_v_right.slim_field_nodes;
+slim_t_59392 = slim_i64_add(slim_t_59397, slim_t_59402);
+int64_t slim_t_59409 = {0};
+int64_t slim_t_59414 = {0};
+slim_t_59414 = slim_v_left.slim_field_calls;
+int64_t slim_t_59419 = {0};
+slim_t_59419 = slim_v_right.slim_field_calls;
+slim_t_59409 = slim_i64_add(slim_t_59414, slim_t_59419);
+int64_t slim_t_59426 = {0};
+int64_t slim_t_59431 = {0};
+slim_t_59431 = slim_v_left.slim_field_matches;
+int64_t slim_t_59436 = {0};
+slim_t_59436 = slim_v_right.slim_field_matches;
+slim_t_59426 = slim_i64_add(slim_t_59431, slim_t_59436);
+int64_t slim_t_59443 = {0};
+int64_t slim_t_59448 = {0};
+slim_t_59448 = slim_v_left.slim_field_mutations;
+int64_t slim_t_59453 = {0};
+slim_t_59453 = slim_v_right.slim_field_mutations;
+slim_t_59443 = slim_i64_add(slim_t_59448, slim_t_59453);
+int64_t slim_t_59460 = {0};
+int64_t slim_t_59465 = {0};
+slim_t_59465 = slim_v_left.slim_field_recurs;
+int64_t slim_t_59470 = {0};
+slim_t_59470 = slim_v_right.slim_field_recurs;
+slim_t_59460 = slim_i64_add(slim_t_59465, slim_t_59470);
+int64_t slim_t_59477 = {0};
+int64_t slim_t_59482 = {0};
+slim_t_59482 = slim_v_left.slim_field_allocations;
+int64_t slim_t_59487 = {0};
+slim_t_59487 = slim_v_right.slim_field_allocations;
+slim_t_59477 = slim_i64_add(slim_t_59482, slim_t_59487);
+int64_t slim_t_59494 = {0};
+int64_t slim_t_59499 = {0};
+slim_t_59499 = slim_v_left.slim_field_traps;
+int64_t slim_t_59504 = {0};
+slim_t_59504 = slim_v_right.slim_field_traps;
+slim_t_59494 = slim_i64_add(slim_t_59499, slim_t_59504);
+int64_t slim_t_59511 = {0};
+int64_t slim_t_59516 = {0};
+slim_t_59516 = slim_v_left.slim_field_rewrites;
+int64_t slim_t_59521 = {0};
+slim_t_59521 = slim_v_right.slim_field_rewrites;
+slim_t_59511 = slim_i64_add(slim_t_59516, slim_t_59521);
+slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_59392, .slim_field_calls = slim_t_59409, .slim_field_matches = slim_t_59426, .slim_field_mutations = slim_t_59443, .slim_field_recurs = slim_t_59460, .slim_field_allocations = slim_t_59477, .slim_field_traps = slim_t_59494, .slim_field_rewrites = slim_t_59511};
 }
 slim_region_destroy(&slim_function_region);
 return slim_result;
@@ -27646,39 +27784,39 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 Slim_type_quality_95Metrics slim_result = {0};
 {
-int64_t slim_t_59158 = {0};
-int64_t slim_t_59163 = {0};
-slim_t_59163 = slim_v_children.slim_field_nodes;
-slim_t_59158 = slim_i64_add(slim_t_59163, INT64_C(1));
-int64_t slim_t_59171 = {0};
-int64_t slim_t_59176 = {0};
-slim_t_59176 = slim_v_children.slim_field_calls;
-slim_t_59171 = slim_i64_add(slim_t_59176, slim_v_calls);
-int64_t slim_t_59184 = {0};
-int64_t slim_t_59189 = {0};
-slim_t_59189 = slim_v_children.slim_field_matches;
-slim_t_59184 = slim_i64_add(slim_t_59189, slim_v_matches);
-int64_t slim_t_59197 = {0};
-int64_t slim_t_59202 = {0};
-slim_t_59202 = slim_v_children.slim_field_mutations;
-slim_t_59197 = slim_i64_add(slim_t_59202, slim_v_mutations);
-int64_t slim_t_59210 = {0};
-int64_t slim_t_59215 = {0};
-slim_t_59215 = slim_v_children.slim_field_recurs;
-slim_t_59210 = slim_i64_add(slim_t_59215, slim_v_recurs);
-int64_t slim_t_59223 = {0};
-int64_t slim_t_59228 = {0};
-slim_t_59228 = slim_v_children.slim_field_allocations;
-slim_t_59223 = slim_i64_add(slim_t_59228, slim_v_allocations);
-int64_t slim_t_59236 = {0};
-int64_t slim_t_59241 = {0};
-slim_t_59241 = slim_v_children.slim_field_traps;
-slim_t_59236 = slim_i64_add(slim_t_59241, slim_v_traps);
-int64_t slim_t_59249 = {0};
-int64_t slim_t_59254 = {0};
-slim_t_59254 = slim_v_children.slim_field_rewrites;
-slim_t_59249 = slim_i64_add(slim_t_59254, slim_v_rewrites);
-slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_59158, .slim_field_calls = slim_t_59171, .slim_field_matches = slim_t_59184, .slim_field_mutations = slim_t_59197, .slim_field_recurs = slim_t_59210, .slim_field_allocations = slim_t_59223, .slim_field_traps = slim_t_59236, .slim_field_rewrites = slim_t_59249};
+int64_t slim_t_59574 = {0};
+int64_t slim_t_59579 = {0};
+slim_t_59579 = slim_v_children.slim_field_nodes;
+slim_t_59574 = slim_i64_add(slim_t_59579, INT64_C(1));
+int64_t slim_t_59587 = {0};
+int64_t slim_t_59592 = {0};
+slim_t_59592 = slim_v_children.slim_field_calls;
+slim_t_59587 = slim_i64_add(slim_t_59592, slim_v_calls);
+int64_t slim_t_59600 = {0};
+int64_t slim_t_59605 = {0};
+slim_t_59605 = slim_v_children.slim_field_matches;
+slim_t_59600 = slim_i64_add(slim_t_59605, slim_v_matches);
+int64_t slim_t_59613 = {0};
+int64_t slim_t_59618 = {0};
+slim_t_59618 = slim_v_children.slim_field_mutations;
+slim_t_59613 = slim_i64_add(slim_t_59618, slim_v_mutations);
+int64_t slim_t_59626 = {0};
+int64_t slim_t_59631 = {0};
+slim_t_59631 = slim_v_children.slim_field_recurs;
+slim_t_59626 = slim_i64_add(slim_t_59631, slim_v_recurs);
+int64_t slim_t_59639 = {0};
+int64_t slim_t_59644 = {0};
+slim_t_59644 = slim_v_children.slim_field_allocations;
+slim_t_59639 = slim_i64_add(slim_t_59644, slim_v_allocations);
+int64_t slim_t_59652 = {0};
+int64_t slim_t_59657 = {0};
+slim_t_59657 = slim_v_children.slim_field_traps;
+slim_t_59652 = slim_i64_add(slim_t_59657, slim_v_traps);
+int64_t slim_t_59665 = {0};
+int64_t slim_t_59670 = {0};
+slim_t_59670 = slim_v_children.slim_field_rewrites;
+slim_t_59665 = slim_i64_add(slim_t_59670, slim_v_rewrites);
+slim_result = (Slim_type_quality_95Metrics){.slim_field_nodes = slim_t_59574, .slim_field_calls = slim_t_59587, .slim_field_matches = slim_t_59600, .slim_field_mutations = slim_t_59613, .slim_field_recurs = slim_t_59626, .slim_field_allocations = slim_t_59639, .slim_field_traps = slim_t_59652, .slim_field_rewrites = slim_t_59665};
 }
 slim_region_destroy(&slim_function_region);
 return slim_result;
@@ -27709,12 +27847,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-int64_t slim_t_59332 = {0};
-slim_t_59332 = slim_v_next;
-int64_t slim_t_59333 = {0};
-slim_t_59333 = slim_v_cursor;
-slim_v_cursor = slim_t_59332;
-slim_v_previous = slim_t_59333;
+int64_t slim_t_59748 = {0};
+slim_t_59748 = slim_v_next;
+int64_t slim_t_59749 = {0};
+slim_t_59749 = slim_v_cursor;
+slim_v_cursor = slim_t_59748;
+slim_v_previous = slim_t_59749;
 goto slim_recur;
 }
 }
@@ -27757,15 +27895,15 @@ slim_v_next_95total = slim_fn_quality_95add(slim_v_total, slim_v_current, slim_a
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_59433 = {0};
-slim_t_59433 = slim_v_source;
-int64_t slim_t_59435 = {0};
-slim_t_59435 = slim_v_next;
-Slim_type_quality_95Metrics slim_t_59436 = {0};
-slim_t_59436 = slim_v_next_95total;
-slim_v_source = slim_t_59433;
-slim_v_cursor = slim_t_59435;
-slim_v_total = slim_t_59436;
+SlimBytes slim_t_59849 = {0};
+slim_t_59849 = slim_v_source;
+int64_t slim_t_59851 = {0};
+slim_t_59851 = slim_v_next;
+Slim_type_quality_95Metrics slim_t_59852 = {0};
+slim_t_59852 = slim_v_next_95total;
+slim_v_source = slim_t_59849;
+slim_v_cursor = slim_t_59851;
+slim_v_total = slim_t_59852;
 goto slim_recur;
 }
 }
@@ -27831,15 +27969,15 @@ slim_v_next_95total = slim_fn_quality_95add(slim_v_total, slim_v_current, slim_a
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_59592 = {0};
-slim_t_59592 = slim_v_source;
-int64_t slim_t_59594 = {0};
-slim_t_59594 = slim_v_next;
-Slim_type_quality_95Metrics slim_t_59595 = {0};
-slim_t_59595 = slim_v_next_95total;
-slim_v_source = slim_t_59592;
-slim_v_cursor = slim_t_59594;
-slim_v_total = slim_t_59595;
+SlimBytes slim_t_60008 = {0};
+slim_t_60008 = slim_v_source;
+int64_t slim_t_60010 = {0};
+slim_t_60010 = slim_v_next;
+Slim_type_quality_95Metrics slim_t_60011 = {0};
+slim_t_60011 = slim_v_next_95total;
+slim_v_source = slim_t_60008;
+slim_v_cursor = slim_t_60010;
+slim_v_total = slim_t_60011;
 goto slim_recur;
 }
 }
@@ -27910,15 +28048,15 @@ slim_v_next_95total = slim_fn_quality_95add(slim_v_total, slim_v_current, slim_a
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_59763 = {0};
-slim_t_59763 = slim_v_source;
-int64_t slim_t_59765 = {0};
-slim_t_59765 = slim_v_next;
-Slim_type_quality_95Metrics slim_t_59766 = {0};
-slim_t_59766 = slim_v_next_95total;
-slim_v_source = slim_t_59763;
-slim_v_cursor = slim_t_59765;
-slim_v_total = slim_t_59766;
+SlimBytes slim_t_60179 = {0};
+slim_t_60179 = slim_v_source;
+int64_t slim_t_60181 = {0};
+slim_t_60181 = slim_v_next;
+Slim_type_quality_95Metrics slim_t_60182 = {0};
+slim_t_60182 = slim_v_next_95total;
+slim_v_source = slim_t_60179;
+slim_v_cursor = slim_t_60181;
+slim_v_total = slim_t_60182;
 goto slim_recur;
 }
 }
@@ -27972,11 +28110,11 @@ slim_v_arena_95new = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens
 bool slim_v_arena_95add = {0};
 slim_v_arena_95add = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"arena.add", (int64_t)(sizeof("arena.add") - 1)), slim_allocation_region);
 (void)slim_v_arena_95add;
-bool slim_t_59900 = {0};
-bool slim_t_59904 = {0};
-slim_t_59904 = slim_v_arena_95new || slim_v_arena_95add;
-slim_t_59900 = slim_v_vector_95push || slim_t_59904;
-slim_result = slim_v_vector_95new || slim_t_59900;
+bool slim_t_60316 = {0};
+bool slim_t_60320 = {0};
+slim_t_60320 = slim_v_arena_95new || slim_v_arena_95add;
+slim_t_60316 = slim_v_vector_95push || slim_t_60320;
+slim_result = slim_v_vector_95new || slim_t_60316;
 }
 }
 }
@@ -28032,23 +28170,23 @@ slim_v_vec_95set = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, 
 bool slim_v_arena_95get = {0};
 slim_v_arena_95get = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"arena.get", (int64_t)(sizeof("arena.get") - 1)), slim_allocation_region);
 (void)slim_v_arena_95get;
-bool slim_t_60067 = {0};
-bool slim_t_60071 = {0};
-bool slim_t_60075 = {0};
-bool slim_t_60079 = {0};
-bool slim_t_60083 = {0};
-bool slim_t_60087 = {0};
-bool slim_t_60091 = {0};
-bool slim_t_60095 = {0};
-slim_t_60095 = slim_v_vec_95set || slim_v_arena_95get;
-slim_t_60091 = slim_v_vec_95get || slim_t_60095;
-slim_t_60087 = slim_v_bytes_95get || slim_t_60091;
-slim_t_60083 = slim_v_to_95byte || slim_t_60087;
-slim_t_60079 = slim_v_rem_95call || slim_t_60083;
-slim_t_60075 = slim_v_div_95call || slim_t_60079;
-slim_t_60071 = slim_v_mul_95call || slim_t_60075;
-slim_t_60067 = slim_v_sub_95call || slim_t_60071;
-slim_result = slim_v_add_95call || slim_t_60067;
+bool slim_t_60483 = {0};
+bool slim_t_60487 = {0};
+bool slim_t_60491 = {0};
+bool slim_t_60495 = {0};
+bool slim_t_60499 = {0};
+bool slim_t_60503 = {0};
+bool slim_t_60507 = {0};
+bool slim_t_60511 = {0};
+slim_t_60511 = slim_v_vec_95set || slim_v_arena_95get;
+slim_t_60507 = slim_v_vec_95get || slim_t_60511;
+slim_t_60503 = slim_v_bytes_95get || slim_t_60507;
+slim_t_60499 = slim_v_to_95byte || slim_t_60503;
+slim_t_60495 = slim_v_rem_95call || slim_t_60499;
+slim_t_60491 = slim_v_div_95call || slim_t_60495;
+slim_t_60487 = slim_v_mul_95call || slim_t_60491;
+slim_t_60483 = slim_v_sub_95call || slim_t_60487;
+slim_result = slim_v_add_95call || slim_t_60483;
 }
 }
 }
@@ -28098,28 +28236,28 @@ slim_v_reduction = slim_fn_reduce_95reduction_95kind(slim_v_source, slim_v_token
 bool slim_v_reducible = {0};
 slim_v_reducible = slim_v_reduction > INT64_C(0);
 (void)slim_v_reducible;
-int64_t slim_t_60228 = {0};
+int64_t slim_t_60644 = {0};
 if (slim_v_alloc) {
-slim_t_60228 = INT64_C(1);
+slim_t_60644 = INT64_C(1);
 }
 else {
-slim_t_60228 = INT64_C(0);
+slim_t_60644 = INT64_C(0);
 }
-int64_t slim_t_60240 = {0};
+int64_t slim_t_60656 = {0};
 if (slim_v_trap) {
-slim_t_60240 = INT64_C(1);
+slim_t_60656 = INT64_C(1);
 }
 else {
-slim_t_60240 = INT64_C(0);
+slim_t_60656 = INT64_C(0);
 }
-int64_t slim_t_60252 = {0};
+int64_t slim_t_60668 = {0};
 if (slim_v_reducible) {
-slim_t_60252 = INT64_C(1);
+slim_t_60668 = INT64_C(1);
 }
 else {
-slim_t_60252 = INT64_C(0);
+slim_t_60668 = INT64_C(0);
 }
-slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(1), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60228, slim_t_60240, slim_t_60252, slim_allocation_region);
+slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(1), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60644, slim_t_60656, slim_t_60668, slim_allocation_region);
 }
 }
 }
@@ -28170,14 +28308,14 @@ slim_v_reduction = slim_fn_reduce_95reduction_95kind(slim_v_source, slim_v_token
 bool slim_v_reducible = {0};
 slim_v_reducible = slim_v_reduction > INT64_C(0);
 (void)slim_v_reducible;
-int64_t slim_t_60392 = {0};
+int64_t slim_t_60808 = {0};
 if (slim_v_reducible) {
-slim_t_60392 = INT64_C(1);
+slim_t_60808 = INT64_C(1);
 }
 else {
-slim_t_60392 = INT64_C(0);
+slim_t_60808 = INT64_C(0);
 }
-slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60392, slim_allocation_region);
+slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60808, slim_allocation_region);
 }
 }
 }
@@ -28225,14 +28363,14 @@ slim_v_reduction = slim_fn_reduce_95reduction_95kind(slim_v_source, slim_v_token
 bool slim_v_reducible = {0};
 slim_v_reducible = slim_v_reduction > INT64_C(0);
 (void)slim_v_reducible;
-int64_t slim_t_60523 = {0};
+int64_t slim_t_60939 = {0};
 if (slim_v_reducible) {
-slim_t_60523 = INT64_C(1);
+slim_t_60939 = INT64_C(1);
 }
 else {
-slim_t_60523 = INT64_C(0);
+slim_t_60939 = INT64_C(0);
 }
-slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(0), INT64_C(1), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60523, slim_allocation_region);
+slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(0), INT64_C(1), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_t_60939, slim_allocation_region);
 }
 }
 }
@@ -28321,9 +28459,9 @@ slim_result = slim_fn_quality_95add_95node(slim_v_children, INT64_C(0), INT64_C(
 }
 }
 else {
-Slim_type_quality_95Metrics slim_t_60775 = {0};
-slim_t_60775 = slim_fn_quality_95zero(slim_allocation_region);
-slim_result = slim_fn_quality_95add_95node(slim_t_60775, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_allocation_region);
+Slim_type_quality_95Metrics slim_t_61191 = {0};
+slim_t_61191 = slim_fn_quality_95zero(slim_allocation_region);
+slim_result = slim_fn_quality_95add_95node(slim_t_61191, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_allocation_region);
 }
 }
 }
@@ -28350,9 +28488,9 @@ bool slim_v_composite = {0};
 slim_v_composite = slim_v_kind == INT64_C(0);
 (void)slim_v_composite;
 if (!slim_v_composite) {
-Slim_type_quality_95Metrics slim_t_60851 = {0};
-slim_t_60851 = slim_fn_quality_95zero(slim_allocation_region);
-slim_result = slim_fn_quality_95add_95node(slim_t_60851, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_allocation_region);
+Slim_type_quality_95Metrics slim_t_61267 = {0};
+slim_t_61267 = slim_fn_quality_95zero(slim_allocation_region);
+slim_result = slim_fn_quality_95add_95node(slim_t_61267, INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), INT64_C(0), slim_allocation_region);
 }
 else {
 {
@@ -28522,15 +28660,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_61301 = {0};
-slim_t_61301 = slim_v_source;
-int64_t slim_t_61303 = {0};
-slim_t_61303 = slim_v_next;
-SlimBytes slim_t_61304 = {0};
-slim_t_61304 = slim_v_name;
-slim_v_source = slim_t_61301;
-slim_v_cursor = slim_t_61303;
-slim_v_name = slim_t_61304;
+SlimBytes slim_t_61717 = {0};
+slim_t_61717 = slim_v_source;
+int64_t slim_t_61719 = {0};
+slim_t_61719 = slim_v_next;
+SlimBytes slim_t_61720 = {0};
+slim_t_61720 = slim_v_name;
+slim_v_source = slim_t_61717;
+slim_v_cursor = slim_t_61719;
+slim_v_name = slim_t_61720;
 goto slim_recur;
 }
 }
@@ -28590,15 +28728,15 @@ SlimUnit slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 bool slim_v_no_95calls = {0};
-int64_t slim_t_61423 = {0};
-slim_t_61423 = slim_v_metrics.slim_field_calls;
-slim_v_no_95calls = slim_t_61423 == INT64_C(0);
+int64_t slim_t_61839 = {0};
+slim_t_61839 = slim_v_metrics.slim_field_calls;
+slim_v_no_95calls = slim_t_61839 == INT64_C(0);
 (void)slim_v_no_95calls;
 {
 bool slim_v_no_95recurs = {0};
-int64_t slim_t_61437 = {0};
-slim_t_61437 = slim_v_metrics.slim_field_recurs;
-slim_v_no_95recurs = slim_t_61437 == INT64_C(0);
+int64_t slim_t_61853 = {0};
+slim_t_61853 = slim_v_metrics.slim_field_recurs;
+slim_v_no_95recurs = slim_t_61853 == INT64_C(0);
 (void)slim_v_no_95recurs;
 {
 bool slim_v_proven = {0};
@@ -28731,51 +28869,51 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_effects_95close;
 {
 SlimUnit slim_v_nodes = {0};
-int64_t slim_t_61755 = {0};
-slim_t_61755 = slim_v_metrics.slim_field_nodes;
-slim_v_nodes = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"expression-nodes", (int64_t)(sizeof("expression-nodes") - 1)), slim_t_61755, slim_v_output, slim_allocation_region);
+int64_t slim_t_62171 = {0};
+slim_t_62171 = slim_v_metrics.slim_field_nodes;
+slim_v_nodes = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"expression-nodes", (int64_t)(sizeof("expression-nodes") - 1)), slim_t_62171, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_nodes;
 {
 SlimUnit slim_v_calls = {0};
-int64_t slim_t_61770 = {0};
-slim_t_61770 = slim_v_metrics.slim_field_calls;
-slim_v_calls = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"calls", (int64_t)(sizeof("calls") - 1)), slim_t_61770, slim_v_output, slim_allocation_region);
+int64_t slim_t_62186 = {0};
+slim_t_62186 = slim_v_metrics.slim_field_calls;
+slim_v_calls = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"calls", (int64_t)(sizeof("calls") - 1)), slim_t_62186, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_calls;
 {
 SlimUnit slim_v_matches = {0};
-int64_t slim_t_61785 = {0};
-slim_t_61785 = slim_v_metrics.slim_field_matches;
-slim_v_matches = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"matches", (int64_t)(sizeof("matches") - 1)), slim_t_61785, slim_v_output, slim_allocation_region);
+int64_t slim_t_62201 = {0};
+slim_t_62201 = slim_v_metrics.slim_field_matches;
+slim_v_matches = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"matches", (int64_t)(sizeof("matches") - 1)), slim_t_62201, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_matches;
 {
 SlimUnit slim_v_mutations = {0};
-int64_t slim_t_61800 = {0};
-slim_t_61800 = slim_v_metrics.slim_field_mutations;
-slim_v_mutations = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"mutations", (int64_t)(sizeof("mutations") - 1)), slim_t_61800, slim_v_output, slim_allocation_region);
+int64_t slim_t_62216 = {0};
+slim_t_62216 = slim_v_metrics.slim_field_mutations;
+slim_v_mutations = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"mutations", (int64_t)(sizeof("mutations") - 1)), slim_t_62216, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_mutations;
 {
 SlimUnit slim_v_recurs = {0};
-int64_t slim_t_61815 = {0};
-slim_t_61815 = slim_v_metrics.slim_field_recurs;
-slim_v_recurs = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"recurs", (int64_t)(sizeof("recurs") - 1)), slim_t_61815, slim_v_output, slim_allocation_region);
+int64_t slim_t_62231 = {0};
+slim_t_62231 = slim_v_metrics.slim_field_recurs;
+slim_v_recurs = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"recurs", (int64_t)(sizeof("recurs") - 1)), slim_t_62231, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_recurs;
 {
 SlimUnit slim_v_allocations = {0};
-int64_t slim_t_61830 = {0};
-slim_t_61830 = slim_v_metrics.slim_field_allocations;
-slim_v_allocations = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"allocation-sites", (int64_t)(sizeof("allocation-sites") - 1)), slim_t_61830, slim_v_output, slim_allocation_region);
+int64_t slim_t_62246 = {0};
+slim_t_62246 = slim_v_metrics.slim_field_allocations;
+slim_v_allocations = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"allocation-sites", (int64_t)(sizeof("allocation-sites") - 1)), slim_t_62246, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_allocations;
 {
 SlimUnit slim_v_traps = {0};
-int64_t slim_t_61845 = {0};
-slim_t_61845 = slim_v_metrics.slim_field_traps;
-slim_v_traps = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"trap-sites", (int64_t)(sizeof("trap-sites") - 1)), slim_t_61845, slim_v_output, slim_allocation_region);
+int64_t slim_t_62261 = {0};
+slim_t_62261 = slim_v_metrics.slim_field_traps;
+slim_v_traps = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"trap-sites", (int64_t)(sizeof("trap-sites") - 1)), slim_t_62261, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_traps;
 {
@@ -28785,9 +28923,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_totality;
 {
 SlimUnit slim_v_rewrites = {0};
-int64_t slim_t_61870 = {0};
-slim_t_61870 = slim_v_metrics.slim_field_rewrites;
-slim_v_rewrites = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"rewrite-sites", (int64_t)(sizeof("rewrite-sites") - 1)), slim_t_61870, slim_v_output, slim_allocation_region);
+int64_t slim_t_62286 = {0};
+slim_t_62286 = slim_v_metrics.slim_field_rewrites;
+slim_v_rewrites = slim_fn_quality_95emit_95metric(slim_bytes_static((const uint8_t *)"rewrite-sites", (int64_t)(sizeof("rewrite-sites") - 1)), slim_t_62286, slim_v_output, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_rewrites;
 slim_result = slim_fn_text_95append_95text(slim_v_output, slim_bytes_static((const uint8_t *)")", (int64_t)(sizeof(")") - 1)), slim_allocation_region);
@@ -28865,12 +29003,12 @@ slim_v_emitted = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_62023 = {0};
-slim_t_62023 = slim_v_source;
-int64_t slim_t_62025 = {0};
-slim_t_62025 = slim_v_next;
-slim_v_source = slim_t_62023;
-slim_v_cursor = slim_t_62025;
+SlimBytes slim_t_62439 = {0};
+slim_t_62439 = slim_v_source;
+int64_t slim_t_62441 = {0};
+slim_t_62441 = slim_v_next;
+slim_v_source = slim_t_62439;
+slim_v_cursor = slim_t_62441;
 goto slim_recur;
 }
 }
@@ -28980,15 +29118,15 @@ slim_v_next_95total = slim_i64_add(slim_v_total, slim_v_bits);
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_62281 = {0};
-slim_t_62281 = slim_v_source;
-int64_t slim_t_62283 = {0};
-slim_t_62283 = slim_v_next;
-int64_t slim_t_62284 = {0};
-slim_t_62284 = slim_v_next_95total;
-slim_v_source = slim_t_62281;
-slim_v_cursor = slim_t_62283;
-slim_v_total = slim_t_62284;
+SlimBytes slim_t_62697 = {0};
+slim_t_62697 = slim_v_source;
+int64_t slim_t_62699 = {0};
+slim_t_62699 = slim_v_next;
+int64_t slim_t_62700 = {0};
+slim_t_62700 = slim_v_next_95total;
+slim_v_source = slim_t_62697;
+slim_v_cursor = slim_t_62699;
+slim_v_total = slim_t_62700;
 goto slim_recur;
 }
 }
@@ -29043,12 +29181,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_62406 = {0};
-slim_t_62406 = slim_v_source;
-int64_t slim_t_62408 = {0};
-slim_t_62408 = slim_v_next;
-slim_v_source = slim_t_62406;
-slim_v_cursor = slim_t_62408;
+SlimBytes slim_t_62822 = {0};
+slim_t_62822 = slim_v_source;
+int64_t slim_t_62824 = {0};
+slim_t_62824 = slim_v_next;
+slim_v_source = slim_t_62822;
+slim_v_cursor = slim_t_62824;
 goto slim_recur;
 }
 }
@@ -29103,15 +29241,15 @@ slim_v_next_95total = slim_i64_add(slim_v_total, slim_v_bits);
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_62532 = {0};
-slim_t_62532 = slim_v_source;
-int64_t slim_t_62534 = {0};
-slim_t_62534 = slim_v_next;
-int64_t slim_t_62535 = {0};
-slim_t_62535 = slim_v_next_95total;
-slim_v_source = slim_t_62532;
-slim_v_cursor = slim_t_62534;
-slim_v_total = slim_t_62535;
+SlimBytes slim_t_62948 = {0};
+slim_t_62948 = slim_v_source;
+int64_t slim_t_62950 = {0};
+slim_t_62950 = slim_v_next;
+int64_t slim_t_62951 = {0};
+slim_t_62951 = slim_v_next_95total;
+slim_v_source = slim_t_62948;
+slim_v_cursor = slim_t_62950;
+slim_v_total = slim_t_62951;
 goto slim_recur;
 }
 }
@@ -29174,12 +29312,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_62676 = {0};
-slim_t_62676 = slim_v_source;
-int64_t slim_t_62678 = {0};
-slim_t_62678 = slim_v_next;
-slim_v_source = slim_t_62676;
-slim_v_cursor = slim_t_62678;
+SlimBytes slim_t_63092 = {0};
+slim_t_63092 = slim_v_source;
+int64_t slim_t_63094 = {0};
+slim_t_63094 = slim_v_next;
+slim_v_source = slim_t_63092;
+slim_v_cursor = slim_t_63094;
 goto slim_recur;
 }
 }
@@ -29405,12 +29543,12 @@ slim_v_emitted = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_63201 = {0};
-slim_t_63201 = slim_v_source;
-int64_t slim_t_63203 = {0};
-slim_t_63203 = slim_v_next;
-slim_v_source = slim_t_63201;
-slim_v_cursor = slim_t_63203;
+SlimBytes slim_t_63617 = {0};
+slim_t_63617 = slim_v_source;
+int64_t slim_t_63619 = {0};
+slim_t_63619 = slim_v_next;
+slim_v_source = slim_t_63617;
+slim_v_cursor = slim_t_63619;
 goto slim_recur;
 }
 }
@@ -29464,18 +29602,18 @@ slim_v_next_95total = slim_v_total;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_63324 = {0};
-slim_t_63324 = slim_v_source;
-int64_t slim_t_63326 = {0};
-slim_t_63326 = slim_v_next;
-SlimBytes slim_t_63327 = {0};
-slim_t_63327 = slim_v_kind_95name;
-int64_t slim_t_63328 = {0};
-slim_t_63328 = slim_v_next_95total;
-slim_v_source = slim_t_63324;
-slim_v_cursor = slim_t_63326;
-slim_v_kind_95name = slim_t_63327;
-slim_v_total = slim_t_63328;
+SlimBytes slim_t_63740 = {0};
+slim_t_63740 = slim_v_source;
+int64_t slim_t_63742 = {0};
+slim_t_63742 = slim_v_next;
+SlimBytes slim_t_63743 = {0};
+slim_t_63743 = slim_v_kind_95name;
+int64_t slim_t_63744 = {0};
+slim_t_63744 = slim_v_next_95total;
+slim_v_source = slim_t_63740;
+slim_v_cursor = slim_t_63742;
+slim_v_kind_95name = slim_t_63743;
+slim_v_total = slim_t_63744;
 goto slim_recur;
 }
 }
@@ -29650,18 +29788,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_63816 = {0};
-slim_t_63816 = slim_v_left;
-SlimBytes slim_t_63817 = {0};
-slim_t_63817 = slim_v_right;
-int64_t slim_t_63818 = {0};
-slim_t_63818 = slim_v_next;
-int64_t slim_t_63819 = {0};
-slim_t_63819 = slim_v_length;
-slim_v_left = slim_t_63816;
-slim_v_right = slim_t_63817;
-slim_v_index = slim_t_63818;
-slim_v_length = slim_t_63819;
+SlimBytes slim_t_64232 = {0};
+slim_t_64232 = slim_v_left;
+SlimBytes slim_t_64233 = {0};
+slim_t_64233 = slim_v_right;
+int64_t slim_t_64234 = {0};
+slim_t_64234 = slim_v_next;
+int64_t slim_t_64235 = {0};
+slim_t_64235 = slim_v_length;
+slim_v_left = slim_t_64232;
+slim_v_right = slim_t_64233;
+slim_v_index = slim_t_64234;
+slim_v_length = slim_t_64235;
 goto slim_recur;
 }
 }
@@ -29873,43 +30011,43 @@ slim_v_end = slim_fn_syntax_95token_95end(slim_v_module_95tokens, slim_v_closing
 {
 Slim_type_query_95Snapshot slim_v_snapshot = {0};
 {
-SlimBytes slim_t_64316 = {0};
-slim_t_64316 = slim_v_module_95name;
-int64_t slim_t_64320 = {0};
-slim_t_64320 = slim_v_query_95declaration_95kind;
-SlimBytes slim_t_64324 = {0};
-slim_t_64324 = slim_v_name;
-SlimBytes slim_t_64328 = {0};
-slim_t_64328 = slim_v_source;
-int64_t slim_t_64332 = {0};
-slim_t_64332 = slim_v_cursor;
-int64_t slim_t_64336 = {0};
-slim_t_64336 = slim_v_next;
-int64_t slim_t_64340 = {0};
-slim_t_64340 = slim_v_start;
-int64_t slim_t_64344 = {0};
-slim_t_64344 = slim_v_interface_95end;
-int64_t slim_t_64348 = {0};
-slim_t_64348 = slim_v_end;
-slim_v_snapshot = (Slim_type_query_95Snapshot){.slim_field_module = slim_t_64316, .slim_field_kind = slim_t_64320, .slim_field_name = slim_t_64324, .slim_field_source = slim_t_64328, .slim_field_form = slim_t_64332, .slim_field_next = slim_t_64336, .slim_field_start = slim_t_64340, .slim_field_interface_95end = slim_t_64344, .slim_field_end = slim_t_64348};
+SlimBytes slim_t_64732 = {0};
+slim_t_64732 = slim_v_module_95name;
+int64_t slim_t_64736 = {0};
+slim_t_64736 = slim_v_query_95declaration_95kind;
+SlimBytes slim_t_64740 = {0};
+slim_t_64740 = slim_v_name;
+SlimBytes slim_t_64744 = {0};
+slim_t_64744 = slim_v_source;
+int64_t slim_t_64748 = {0};
+slim_t_64748 = slim_v_cursor;
+int64_t slim_t_64752 = {0};
+slim_t_64752 = slim_v_next;
+int64_t slim_t_64756 = {0};
+slim_t_64756 = slim_v_start;
+int64_t slim_t_64760 = {0};
+slim_t_64760 = slim_v_interface_95end;
+int64_t slim_t_64764 = {0};
+slim_t_64764 = slim_v_end;
+slim_v_snapshot = (Slim_type_query_95Snapshot){.slim_field_module = slim_t_64732, .slim_field_kind = slim_t_64736, .slim_field_name = slim_t_64740, .slim_field_source = slim_t_64744, .slim_field_form = slim_t_64748, .slim_field_next = slim_t_64752, .slim_field_start = slim_t_64756, .slim_field_interface_95end = slim_t_64760, .slim_field_end = slim_t_64764};
 }
 (void)slim_v_snapshot;
 {
 SlimUnit slim_v_pushed = {0};
 if (!slim_vec_push(slim_v_output, &slim_v_snapshot)) goto slim_allocation_failed; slim_v_pushed = (SlimUnit){0};
 (void)slim_v_pushed;
-SlimBytes slim_t_64365 = {0};
-slim_t_64365 = slim_v_manifest_95source;
-Slim_type_project_95LoadedModule slim_t_64368 = {0};
-slim_t_64368 = slim_v_module;
-int64_t slim_t_64369 = {0};
-slim_t_64369 = slim_v_next;
-SlimBytes slim_t_64370 = {0};
-slim_t_64370 = slim_v_module_95name;
-slim_v_manifest_95source = slim_t_64365;
-slim_v_module = slim_t_64368;
-slim_v_cursor = slim_t_64369;
-slim_v_module_95name = slim_t_64370;
+SlimBytes slim_t_64781 = {0};
+slim_t_64781 = slim_v_manifest_95source;
+Slim_type_project_95LoadedModule slim_t_64784 = {0};
+slim_t_64784 = slim_v_module;
+int64_t slim_t_64785 = {0};
+slim_t_64785 = slim_v_next;
+SlimBytes slim_t_64786 = {0};
+slim_t_64786 = slim_v_module_95name;
+slim_v_manifest_95source = slim_t_64781;
+slim_v_module = slim_t_64784;
+slim_v_cursor = slim_t_64785;
+slim_v_module_95name = slim_t_64786;
 goto slim_recur;
 }
 }
@@ -29994,12 +30132,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_64566 = {0};
-slim_t_64566 = slim_v_manifest_95source;
-int64_t slim_t_64570 = {0};
-slim_t_64570 = slim_v_next;
-slim_v_manifest_95source = slim_t_64566;
-slim_v_index = slim_t_64570;
+SlimBytes slim_t_64982 = {0};
+slim_t_64982 = slim_v_manifest_95source;
+int64_t slim_t_64986 = {0};
+slim_t_64986 = slim_v_next;
+slim_v_manifest_95source = slim_t_64982;
+slim_v_index = slim_t_64986;
 goto slim_recur;
 }
 }
@@ -30208,12 +30346,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-Slim_type_query_95Snapshot slim_t_65016 = {0};
-slim_t_65016 = slim_v_candidate;
-int64_t slim_t_65017 = {0};
-slim_t_65017 = slim_v_next;
-slim_v_candidate = slim_t_65016;
-slim_v_index = slim_t_65017;
+Slim_type_query_95Snapshot slim_t_65432 = {0};
+slim_t_65432 = slim_v_candidate;
+int64_t slim_t_65433 = {0};
+slim_t_65433 = slim_v_next;
+slim_v_candidate = slim_t_65432;
+slim_v_index = slim_t_65433;
 goto slim_recur;
 }
 }
@@ -30283,24 +30421,24 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_65171 = {0};
-slim_t_65171 = slim_v_left;
-int64_t slim_t_65172 = {0};
-slim_t_65172 = slim_v_left_95start;
-SlimBytes slim_t_65173 = {0};
-slim_t_65173 = slim_v_right;
-int64_t slim_t_65174 = {0};
-slim_t_65174 = slim_v_right_95start;
-int64_t slim_t_65175 = {0};
-slim_t_65175 = slim_v_next;
-int64_t slim_t_65176 = {0};
-slim_t_65176 = slim_v_length;
-slim_v_left = slim_t_65171;
-slim_v_left_95start = slim_t_65172;
-slim_v_right = slim_t_65173;
-slim_v_right_95start = slim_t_65174;
-slim_v_index = slim_t_65175;
-slim_v_length = slim_t_65176;
+SlimBytes slim_t_65587 = {0};
+slim_t_65587 = slim_v_left;
+int64_t slim_t_65588 = {0};
+slim_t_65588 = slim_v_left_95start;
+SlimBytes slim_t_65589 = {0};
+slim_t_65589 = slim_v_right;
+int64_t slim_t_65590 = {0};
+slim_t_65590 = slim_v_right_95start;
+int64_t slim_t_65591 = {0};
+slim_t_65591 = slim_v_next;
+int64_t slim_t_65592 = {0};
+slim_t_65592 = slim_v_length;
+slim_v_left = slim_t_65587;
+slim_v_left_95start = slim_t_65588;
+slim_v_right = slim_t_65589;
+slim_v_right_95start = slim_t_65590;
+slim_v_index = slim_t_65591;
+slim_v_length = slim_t_65592;
 goto slim_recur;
 }
 }
@@ -30443,12 +30581,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_65479 = {0};
-slim_t_65479 = slim_v_atom;
-int64_t slim_t_65481 = {0};
-slim_t_65481 = slim_v_next;
-slim_v_atom = slim_t_65479;
-slim_v_index = slim_t_65481;
+SlimBytes slim_t_65895 = {0};
+slim_t_65895 = slim_v_atom;
+int64_t slim_t_65897 = {0};
+slim_t_65897 = slim_v_next;
+slim_v_atom = slim_t_65895;
+slim_v_index = slim_t_65897;
 goto slim_recur;
 }
 }
@@ -30514,15 +30652,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_65631 = {0};
-slim_t_65631 = slim_v_consumer;
-int64_t slim_t_65632 = {0};
-slim_t_65632 = slim_v_provider;
-int64_t slim_t_65633 = {0};
-slim_t_65633 = slim_v_next;
-slim_v_consumer = slim_t_65631;
-slim_v_provider = slim_t_65632;
-slim_v_index = slim_t_65633;
+int64_t slim_t_66047 = {0};
+slim_t_66047 = slim_v_consumer;
+int64_t slim_t_66048 = {0};
+slim_t_66048 = slim_v_provider;
+int64_t slim_t_66049 = {0};
+slim_t_66049 = slim_v_next;
+slim_v_consumer = slim_t_66047;
+slim_v_provider = slim_t_66048;
+slim_v_index = slim_t_66049;
 goto slim_recur;
 }
 }
@@ -30650,11 +30788,11 @@ if (slim_v_append) {
 {
 Slim_type_query_95Dependency slim_v_dependency = {0};
 {
-int64_t slim_t_65939 = {0};
-slim_t_65939 = slim_v_consumer;
-int64_t slim_t_65943 = {0};
-slim_t_65943 = slim_v_provider;
-slim_v_dependency = (Slim_type_query_95Dependency){.slim_field_consumer = slim_t_65939, .slim_field_provider = slim_t_65943};
+int64_t slim_t_66355 = {0};
+slim_t_66355 = slim_v_consumer;
+int64_t slim_t_66359 = {0};
+slim_t_66359 = slim_v_provider;
+slim_v_dependency = (Slim_type_query_95Dependency){.slim_field_consumer = slim_t_66355, .slim_field_provider = slim_t_66359};
 }
 (void)slim_v_dependency;
 if (!slim_vec_push(slim_v_output, &slim_v_dependency)) goto slim_allocation_failed; slim_v_pushed = (SlimUnit){0};
@@ -30668,15 +30806,15 @@ slim_v_pushed = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_65975 = {0};
-slim_t_65975 = slim_v_consumer;
-int64_t slim_t_65976 = {0};
-slim_t_65976 = slim_v_next;
-int64_t slim_t_65977 = {0};
-slim_t_65977 = slim_v_end;
-slim_v_consumer = slim_t_65975;
-slim_v_cursor = slim_t_65976;
-slim_v_end = slim_t_65977;
+int64_t slim_t_66391 = {0};
+slim_t_66391 = slim_v_consumer;
+int64_t slim_t_66392 = {0};
+slim_t_66392 = slim_v_next;
+int64_t slim_t_66393 = {0};
+slim_t_66393 = slim_v_end;
+slim_v_consumer = slim_t_66391;
+slim_v_cursor = slim_t_66392;
+slim_v_end = slim_t_66393;
 goto slim_recur;
 }
 }
@@ -30746,9 +30884,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_66125 = {0};
-slim_t_66125 = slim_v_next;
-slim_v_index = slim_t_66125;
+int64_t slim_t_66541 = {0};
+slim_t_66541 = slim_v_next;
+slim_v_index = slim_t_66541;
 goto slim_recur;
 }
 }
@@ -30807,11 +30945,11 @@ slim_v_dependencies = slim_fn_query_95build_95dependencies(slim_v_module_95token
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_dependencies;
 {
-SlimVec slim_t_66265 = {0};
-slim_t_66265 = slim_v_snapshots;
-SlimVec slim_t_66269 = {0};
-slim_t_66269 = slim_v_dependencies;
-slim_result = (Slim_type_query_95State){.slim_field_snapshots = slim_t_66265, .slim_field_dependencies = slim_t_66269};
+SlimVec slim_t_66681 = {0};
+slim_t_66681 = slim_v_snapshots;
+SlimVec slim_t_66685 = {0};
+slim_t_66685 = slim_v_dependencies;
+slim_result = (Slim_type_query_95State){.slim_field_snapshots = slim_t_66681, .slim_field_dependencies = slim_t_66685};
 }
 }
 }
@@ -30913,12 +31051,12 @@ if (!slim_vec_push(slim_v_flags, &slim_v_initial)) goto slim_allocation_failed; 
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_66483 = {0};
-slim_t_66483 = slim_v_length;
-int64_t slim_t_66484 = {0};
-slim_t_66484 = slim_v_next;
-slim_v_length = slim_t_66483;
-slim_v_index = slim_t_66484;
+int64_t slim_t_66899 = {0};
+slim_t_66899 = slim_v_length;
+int64_t slim_t_66900 = {0};
+slim_t_66900 = slim_v_next;
+slim_v_length = slim_t_66899;
+slim_v_index = slim_t_66900;
 goto slim_recur;
 }
 }
@@ -31086,12 +31224,12 @@ slim_v_total = slim_i64_add(slim_v_count, slim_v_increment);
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_66876 = {0};
-slim_t_66876 = slim_v_next;
-int64_t slim_t_66877 = {0};
-slim_t_66877 = slim_v_total;
-slim_v_index = slim_t_66876;
-slim_v_count = slim_t_66877;
+int64_t slim_t_67292 = {0};
+slim_t_67292 = slim_v_next;
+int64_t slim_t_67293 = {0};
+slim_t_67293 = slim_v_total;
+slim_v_index = slim_t_67292;
+slim_v_count = slim_t_67293;
 goto slim_recur;
 }
 }
@@ -31189,12 +31327,12 @@ slim_v_enqueued = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_67096 = {0};
-slim_t_67096 = slim_v_provider;
-int64_t slim_t_67097 = {0};
-slim_t_67097 = slim_v_next;
-slim_v_provider = slim_t_67096;
-slim_v_index = slim_t_67097;
+int64_t slim_t_67512 = {0};
+slim_t_67512 = slim_v_provider;
+int64_t slim_t_67513 = {0};
+slim_t_67513 = slim_v_next;
+slim_v_provider = slim_t_67512;
+slim_v_index = slim_t_67513;
 goto slim_recur;
 }
 }
@@ -31249,9 +31387,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_67220 = {0};
-slim_t_67220 = slim_v_next;
-slim_v_cursor = slim_t_67220;
+int64_t slim_t_67636 = {0};
+slim_t_67636 = slim_v_next;
+slim_v_cursor = slim_t_67636;
 goto slim_recur;
 }
 }
@@ -31305,12 +31443,12 @@ slim_v_total = slim_i64_add(slim_v_count, slim_v_increment);
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_67334 = {0};
-slim_t_67334 = slim_v_next;
-int64_t slim_t_67335 = {0};
-slim_t_67335 = slim_v_total;
-slim_v_index = slim_t_67334;
-slim_v_count = slim_t_67335;
+int64_t slim_t_67750 = {0};
+slim_t_67750 = slim_v_next;
+int64_t slim_t_67751 = {0};
+slim_t_67751 = slim_v_total;
+slim_v_index = slim_t_67750;
+slim_v_count = slim_t_67751;
 goto slim_recur;
 }
 }
@@ -31342,11 +31480,11 @@ SlimVec slim_v_dependencies = {0};
 slim_v_dependencies = slim_vec_new(sizeof(Slim_type_query_95Dependency), slim_allocation_region);
 (void)slim_v_dependencies;
 {
-SlimVec slim_t_67414 = {0};
-slim_t_67414 = slim_v_snapshots;
-SlimVec slim_t_67418 = {0};
-slim_t_67418 = slim_v_dependencies;
-slim_result = (Slim_type_query_95State){.slim_field_snapshots = slim_t_67414, .slim_field_dependencies = slim_t_67418};
+SlimVec slim_t_67830 = {0};
+slim_t_67830 = slim_v_snapshots;
+SlimVec slim_t_67834 = {0};
+slim_t_67834 = slim_v_dependencies;
+slim_result = (Slim_type_query_95State){.slim_field_snapshots = slim_t_67830, .slim_field_dependencies = slim_t_67834};
 }
 }
 }
@@ -31395,15 +31533,15 @@ int64_t slim_v_checked = {0};
 slim_v_checked = slim_fn_query_95count_95flags(&slim_v_invalidated, INT64_C(0), INT64_C(0), slim_allocation_region);
 (void)slim_v_checked;
 {
-int64_t slim_t_67543 = {0};
-slim_t_67543 = slim_v_parsed;
-int64_t slim_t_67547 = {0};
-slim_t_67547 = slim_v_parsed;
-int64_t slim_t_67551 = {0};
-slim_t_67551 = slim_v_checked;
-int64_t slim_t_67555 = {0};
-slim_t_67555 = slim_v_checked;
-slim_result = (Slim_type_query_95Work){.slim_field_parsed = slim_t_67543, .slim_field_lowered = slim_t_67547, .slim_field_checked = slim_t_67551, .slim_field_generated = slim_t_67555};
+int64_t slim_t_67959 = {0};
+slim_t_67959 = slim_v_parsed;
+int64_t slim_t_67963 = {0};
+slim_t_67963 = slim_v_parsed;
+int64_t slim_t_67967 = {0};
+slim_t_67967 = slim_v_checked;
+int64_t slim_t_67971 = {0};
+slim_t_67971 = slim_v_checked;
+slim_result = (Slim_type_query_95Work){.slim_field_parsed = slim_t_67959, .slim_field_lowered = slim_t_67963, .slim_field_checked = slim_t_67967, .slim_field_generated = slim_t_67971};
 }
 }
 }
@@ -31544,15 +31682,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_67879 = {0};
-slim_t_67879 = slim_v_source;
-int64_t slim_t_67880 = {0};
-slim_t_67880 = slim_v_next;
-int64_t slim_t_67881 = {0};
-slim_t_67881 = slim_v_end;
-slim_v_source = slim_t_67879;
-slim_v_index = slim_t_67880;
-slim_v_end = slim_t_67881;
+SlimBytes slim_t_68295 = {0};
+slim_t_68295 = slim_v_source;
+int64_t slim_t_68296 = {0};
+slim_t_68296 = slim_v_next;
+int64_t slim_t_68297 = {0};
+slim_t_68297 = slim_v_end;
+slim_v_source = slim_t_68295;
+slim_v_index = slim_t_68296;
+slim_v_end = slim_t_68297;
 goto slim_recur;
 }
 }
@@ -31756,18 +31894,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_68366 = {0};
-slim_t_68366 = slim_v_source;
-int64_t slim_t_68368 = {0};
-slim_t_68368 = slim_v_name;
-int64_t slim_t_68369 = {0};
-slim_t_68369 = slim_v_next;
-int64_t slim_t_68370 = {0};
-slim_t_68370 = slim_v_end;
-slim_v_source = slim_t_68366;
-slim_v_name = slim_t_68368;
-slim_v_cursor = slim_t_68369;
-slim_v_end = slim_t_68370;
+SlimBytes slim_t_68782 = {0};
+slim_t_68782 = slim_v_source;
+int64_t slim_t_68784 = {0};
+slim_t_68784 = slim_v_name;
+int64_t slim_t_68785 = {0};
+slim_t_68785 = slim_v_next;
+int64_t slim_t_68786 = {0};
+slim_t_68786 = slim_v_end;
+slim_v_source = slim_t_68782;
+slim_v_name = slim_t_68784;
+slim_v_cursor = slim_t_68785;
+slim_v_end = slim_t_68786;
 goto slim_recur;
 }
 }
@@ -31804,12 +31942,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-int64_t slim_t_68450 = {0};
-slim_t_68450 = slim_v_next;
-int64_t slim_t_68451 = {0};
-slim_t_68451 = slim_v_cursor;
-slim_v_cursor = slim_t_68450;
-slim_v_previous = slim_t_68451;
+int64_t slim_t_68866 = {0};
+slim_t_68866 = slim_v_next;
+int64_t slim_t_68867 = {0};
+slim_t_68867 = slim_v_cursor;
+slim_v_cursor = slim_t_68866;
+slim_v_previous = slim_t_68867;
 goto slim_recur;
 }
 }
@@ -31860,15 +31998,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_68570 = {0};
-slim_t_68570 = slim_v_source;
-int64_t slim_t_68572 = {0};
-slim_t_68572 = slim_v_next;
-int64_t slim_t_68573 = {0};
-slim_t_68573 = slim_v_wanted;
-slim_v_source = slim_t_68570;
-slim_v_cursor = slim_t_68572;
-slim_v_wanted = slim_t_68573;
+SlimBytes slim_t_68986 = {0};
+slim_t_68986 = slim_v_source;
+int64_t slim_t_68988 = {0};
+slim_t_68988 = slim_v_next;
+int64_t slim_t_68989 = {0};
+slim_t_68989 = slim_v_wanted;
+slim_v_source = slim_t_68986;
+slim_v_cursor = slim_t_68988;
+slim_v_wanted = slim_t_68989;
 goto slim_recur;
 }
 }
@@ -32067,18 +32205,18 @@ if (slim_v_both_95known) {
 {
 bool slim_v_result = {0};
 if (slim_v_and_95call) {
-bool slim_t_69055 = {0};
-slim_t_69055 = slim_v_left == INT64_C(1);
-bool slim_t_69061 = {0};
-slim_t_69061 = slim_v_right == INT64_C(1);
-slim_v_result = slim_t_69055 && slim_t_69061;
+bool slim_t_69471 = {0};
+slim_t_69471 = slim_v_left == INT64_C(1);
+bool slim_t_69477 = {0};
+slim_t_69477 = slim_v_right == INT64_C(1);
+slim_v_result = slim_t_69471 && slim_t_69477;
 }
 else {
-bool slim_t_69074 = {0};
-slim_t_69074 = slim_v_left == INT64_C(1);
-bool slim_t_69080 = {0};
-slim_t_69080 = slim_v_right == INT64_C(1);
-slim_v_result = slim_t_69074 || slim_t_69080;
+bool slim_t_69490 = {0};
+slim_t_69490 = slim_v_left == INT64_C(1);
+bool slim_t_69496 = {0};
+slim_t_69496 = slim_v_right == INT64_C(1);
+slim_v_result = slim_t_69490 || slim_t_69496;
 }
 (void)slim_v_result;
 if (slim_v_result) {
@@ -32197,9 +32335,9 @@ slim_v_mul_95call = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens,
 (void)slim_v_mul_95call;
 {
 bool slim_v_arithmetic = {0};
-bool slim_t_69352 = {0};
-slim_t_69352 = slim_v_sub_95call || slim_v_mul_95call;
-slim_v_arithmetic = slim_v_add_95call || slim_t_69352;
+bool slim_t_69768 = {0};
+slim_t_69768 = slim_v_sub_95call || slim_v_mul_95call;
+slim_v_arithmetic = slim_v_add_95call || slim_t_69768;
 (void)slim_v_arithmetic;
 if (!slim_v_arithmetic) {
 slim_result = INT64_C(0);
@@ -32323,15 +32461,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_69622 = {0};
-slim_t_69622 = slim_v_source;
-int64_t slim_t_69624 = {0};
-slim_t_69624 = slim_v_next;
-bool slim_t_69625 = {0};
-slim_t_69625 = false;
-slim_v_source = slim_t_69622;
-slim_v_cursor = slim_t_69624;
-slim_v_first = slim_t_69625;
+SlimBytes slim_t_70038 = {0};
+slim_t_70038 = slim_v_source;
+int64_t slim_t_70040 = {0};
+slim_t_70040 = slim_v_next;
+bool slim_t_70041 = {0};
+slim_t_70041 = false;
+slim_v_source = slim_t_70038;
+slim_v_cursor = slim_t_70040;
+slim_v_first = slim_t_70041;
 goto slim_recur;
 }
 }
@@ -32429,12 +32567,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_69852 = {0};
-slim_t_69852 = slim_v_source;
-int64_t slim_t_69854 = {0};
-slim_t_69854 = slim_v_next;
-slim_v_source = slim_t_69852;
-slim_v_cursor = slim_t_69854;
+SlimBytes slim_t_70268 = {0};
+slim_t_70268 = slim_v_source;
+int64_t slim_t_70270 = {0};
+slim_t_70270 = slim_v_next;
+slim_v_source = slim_t_70268;
+slim_v_cursor = slim_t_70270;
 goto slim_recur;
 }
 }
@@ -32723,18 +32861,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_70517 = {0};
-slim_t_70517 = slim_v_source;
-int64_t slim_t_70519 = {0};
-slim_t_70519 = slim_v_next;
-int64_t slim_t_70520 = {0};
-slim_t_70520 = slim_v_body;
-bool slim_t_70521 = {0};
-slim_t_70521 = false;
-slim_v_source = slim_t_70517;
-slim_v_cursor = slim_t_70519;
-slim_v_body = slim_t_70520;
-slim_v_first = slim_t_70521;
+SlimBytes slim_t_70933 = {0};
+slim_t_70933 = slim_v_source;
+int64_t slim_t_70935 = {0};
+slim_t_70935 = slim_v_next;
+int64_t slim_t_70936 = {0};
+slim_t_70936 = slim_v_body;
+bool slim_t_70937 = {0};
+slim_t_70937 = false;
+slim_v_source = slim_t_70933;
+slim_v_cursor = slim_t_70935;
+slim_v_body = slim_t_70936;
+slim_v_first = slim_t_70937;
 goto slim_recur;
 }
 }
@@ -32782,12 +32920,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_70629 = {0};
-slim_t_70629 = slim_v_source;
-int64_t slim_t_70631 = {0};
-slim_t_70631 = slim_v_next;
-slim_v_source = slim_t_70629;
-slim_v_cursor = slim_t_70631;
+SlimBytes slim_t_71045 = {0};
+slim_t_71045 = slim_v_source;
+int64_t slim_t_71047 = {0};
+slim_t_71047 = slim_v_next;
+slim_v_source = slim_t_71045;
+slim_v_cursor = slim_t_71047;
 goto slim_recur;
 }
 }
@@ -32919,12 +33057,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_70934 = {0};
-slim_t_70934 = slim_v_source;
-int64_t slim_t_70936 = {0};
-slim_t_70936 = slim_v_next;
-slim_v_source = slim_t_70934;
-slim_v_cursor = slim_t_70936;
+SlimBytes slim_t_71350 = {0};
+slim_t_71350 = slim_v_source;
+int64_t slim_t_71352 = {0};
+slim_t_71352 = slim_v_next;
+slim_v_source = slim_t_71350;
+slim_v_cursor = slim_t_71352;
 goto slim_recur;
 }
 }
@@ -33453,12 +33591,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_72169 = {0};
-slim_t_72169 = slim_v_source;
-int64_t slim_t_72171 = {0};
-slim_t_72171 = slim_v_next;
-slim_v_source = slim_t_72169;
-slim_v_cursor = slim_t_72171;
+SlimBytes slim_t_72585 = {0};
+slim_t_72585 = slim_v_source;
+int64_t slim_t_72587 = {0};
+slim_t_72587 = slim_v_next;
+slim_v_source = slim_t_72585;
+slim_v_cursor = slim_t_72587;
 goto slim_recur;
 }
 }
@@ -33611,15 +33749,15 @@ else {
 int64_t slim_v_next_95remaining = {0};
 slim_v_next_95remaining = slim_i64_sub(slim_v_remaining, INT64_C(1));
 (void)slim_v_next_95remaining;
-SlimBytes slim_t_72493 = {0};
-slim_t_72493 = slim_v_next;
-SlimBytes slim_t_72494 = {0};
-slim_t_72494 = slim_v_fallback;
-int64_t slim_t_72495 = {0};
-slim_t_72495 = slim_v_next_95remaining;
-slim_v_source = slim_t_72493;
-slim_v_fallback = slim_t_72494;
-slim_v_remaining = slim_t_72495;
+SlimBytes slim_t_72909 = {0};
+slim_t_72909 = slim_v_next;
+SlimBytes slim_t_72910 = {0};
+slim_t_72910 = slim_v_fallback;
+int64_t slim_t_72911 = {0};
+slim_t_72911 = slim_v_next_95remaining;
+slim_v_source = slim_t_72909;
+slim_v_fallback = slim_t_72910;
+slim_v_remaining = slim_t_72911;
 goto slim_recur;
 }
 }
@@ -33859,9 +33997,9 @@ if (!slim_vec_push(slim_v_modules, &slim_v_cursor)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-int64_t slim_t_73088 = {0};
-slim_t_73088 = slim_v_next;
-slim_v_cursor = slim_t_73088;
+int64_t slim_t_73504 = {0};
+slim_t_73504 = slim_v_next;
+slim_v_cursor = slim_t_73504;
 goto slim_recur;
 }
 }
@@ -33902,12 +34040,12 @@ if (!slim_vec_push(slim_v_scheduled, &slim_v_value)) goto slim_allocation_failed
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_73171 = {0};
-slim_t_73171 = slim_v_length;
-int64_t slim_t_73172 = {0};
-slim_t_73172 = slim_v_next;
-slim_v_length = slim_t_73171;
-slim_v_index = slim_t_73172;
+int64_t slim_t_73587 = {0};
+slim_t_73587 = slim_v_length;
+int64_t slim_t_73588 = {0};
+slim_t_73588 = slim_v_next;
+slim_v_length = slim_t_73587;
+slim_v_index = slim_t_73588;
 goto slim_recur;
 }
 }
@@ -33977,15 +34115,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_73342 = {0};
-slim_t_73342 = slim_v_source;
-int64_t slim_t_73345 = {0};
-slim_t_73345 = slim_v_name;
-int64_t slim_t_73346 = {0};
-slim_t_73346 = slim_v_next;
-slim_v_source = slim_t_73342;
-slim_v_name = slim_t_73345;
-slim_v_index = slim_t_73346;
+SlimBytes slim_t_73758 = {0};
+slim_t_73758 = slim_v_source;
+int64_t slim_t_73761 = {0};
+slim_t_73761 = slim_v_name;
+int64_t slim_t_73762 = {0};
+slim_t_73762 = slim_v_next;
+slim_v_source = slim_t_73758;
+slim_v_name = slim_t_73761;
+slim_v_index = slim_t_73762;
 goto slim_recur;
 }
 }
@@ -34049,12 +34187,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_73497 = {0};
-slim_t_73497 = slim_v_source;
-int64_t slim_t_73501 = {0};
-slim_t_73501 = slim_v_next;
-slim_v_source = slim_t_73497;
-slim_v_cursor = slim_t_73501;
+SlimBytes slim_t_73913 = {0};
+slim_t_73913 = slim_v_source;
+int64_t slim_t_73917 = {0};
+slim_t_73917 = slim_v_next;
+slim_v_source = slim_t_73913;
+slim_v_cursor = slim_t_73917;
 goto slim_recur;
 }
 }
@@ -34134,12 +34272,12 @@ slim_v_pushed = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_73700 = {0};
-slim_t_73700 = slim_v_source;
-int64_t slim_t_73704 = {0};
-slim_t_73704 = slim_v_next;
-slim_v_source = slim_t_73700;
-slim_v_index = slim_t_73704;
+SlimBytes slim_t_74116 = {0};
+slim_t_74116 = slim_v_source;
+int64_t slim_t_74120 = {0};
+slim_t_74120 = slim_v_next;
+slim_v_source = slim_t_74116;
+slim_v_index = slim_t_74120;
 goto slim_recur;
 }
 }
@@ -34187,11 +34325,11 @@ slim_v_module = ((int64_t *)((*slim_v_ready)).data)[slim_vec_check_index(&((*sli
 {
 Slim_type_scheduler_95Task slim_v_task = {0};
 {
-int64_t slim_t_73801 = {0};
-slim_t_73801 = slim_v_module;
-int64_t slim_t_73805 = {0};
-slim_t_73805 = slim_v_layer;
-slim_v_task = (Slim_type_scheduler_95Task){.slim_field_module = slim_t_73801, .slim_field_layer = slim_t_73805};
+int64_t slim_t_74217 = {0};
+slim_t_74217 = slim_v_module;
+int64_t slim_t_74221 = {0};
+slim_t_74221 = slim_v_layer;
+slim_v_task = (Slim_type_scheduler_95Task){.slim_field_module = slim_t_74217, .slim_field_layer = slim_t_74221};
 }
 (void)slim_v_task;
 {
@@ -34202,12 +34340,12 @@ if (!slim_vec_push(slim_v_tasks, &slim_v_task)) goto slim_allocation_failed; sli
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_73833 = {0};
-slim_t_73833 = slim_v_next;
-int64_t slim_t_73834 = {0};
-slim_t_73834 = slim_v_layer;
-slim_v_index = slim_t_73833;
-slim_v_layer = slim_t_73834;
+int64_t slim_t_74249 = {0};
+slim_t_74249 = slim_v_next;
+int64_t slim_t_74250 = {0};
+slim_t_74250 = slim_v_layer;
+slim_v_index = slim_t_74249;
+slim_v_layer = slim_t_74250;
 goto slim_recur;
 }
 }
@@ -34259,26 +34397,26 @@ slim_v_batch_95end = slim_v_candidate_95end;
 {
 Slim_type_scheduler_95Batch slim_v_batch = {0};
 {
-int64_t slim_t_73939 = {0};
-slim_t_73939 = slim_v_start;
-int64_t slim_t_73943 = {0};
-slim_t_73943 = slim_v_batch_95end;
-slim_v_batch = (Slim_type_scheduler_95Batch){.slim_field_start = slim_t_73939, .slim_field_end = slim_t_73943};
+int64_t slim_t_74355 = {0};
+slim_t_74355 = slim_v_start;
+int64_t slim_t_74359 = {0};
+slim_t_74359 = slim_v_batch_95end;
+slim_v_batch = (Slim_type_scheduler_95Batch){.slim_field_start = slim_t_74355, .slim_field_end = slim_t_74359};
 }
 (void)slim_v_batch;
 {
 SlimUnit slim_v_pushed = {0};
 if (!slim_vec_push(slim_v_batches, &slim_v_batch)) goto slim_allocation_failed; slim_v_pushed = (SlimUnit){0};
 (void)slim_v_pushed;
-int64_t slim_t_73960 = {0};
-slim_t_73960 = slim_v_batch_95end;
-int64_t slim_t_73961 = {0};
-slim_t_73961 = slim_v_end;
-int64_t slim_t_73962 = {0};
-slim_t_73962 = slim_v_workers;
-slim_v_start = slim_t_73960;
-slim_v_end = slim_t_73961;
-slim_v_workers = slim_t_73962;
+int64_t slim_t_74376 = {0};
+slim_t_74376 = slim_v_batch_95end;
+int64_t slim_t_74377 = {0};
+slim_t_74377 = slim_v_end;
+int64_t slim_t_74378 = {0};
+slim_t_74378 = slim_v_workers;
+slim_v_start = slim_t_74376;
+slim_v_end = slim_t_74377;
+slim_v_workers = slim_t_74378;
 goto slim_recur;
 }
 }
@@ -34328,9 +34466,9 @@ slim_vec_set(slim_v_scheduled, slim_v_module, &slim_v_value); slim_v_marked = (S
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_74071 = {0};
-slim_t_74071 = slim_v_next;
-slim_v_index = slim_t_74071;
+int64_t slim_t_74487 = {0};
+slim_t_74487 = slim_v_next;
+slim_v_index = slim_t_74487;
 goto slim_recur;
 }
 }
@@ -34421,18 +34559,18 @@ slim_v_next_95completed = slim_i64_add(slim_v_completed, slim_v_ready_95count);
 int64_t slim_v_next_95layer = {0};
 slim_v_next_95layer = slim_i64_add(slim_v_layer, INT64_C(1));
 (void)slim_v_next_95layer;
-SlimBytes slim_t_74306 = {0};
-slim_t_74306 = slim_v_source;
-int64_t slim_t_74310 = {0};
-slim_t_74310 = slim_v_next_95completed;
-int64_t slim_t_74311 = {0};
-slim_t_74311 = slim_v_next_95layer;
-int64_t slim_t_74312 = {0};
-slim_t_74312 = slim_v_workers;
-slim_v_source = slim_t_74306;
-slim_v_completed = slim_t_74310;
-slim_v_layer = slim_t_74311;
-slim_v_workers = slim_t_74312;
+SlimBytes slim_t_74722 = {0};
+slim_t_74722 = slim_v_source;
+int64_t slim_t_74726 = {0};
+slim_t_74726 = slim_v_next_95completed;
+int64_t slim_t_74727 = {0};
+slim_t_74727 = slim_v_next_95layer;
+int64_t slim_t_74728 = {0};
+slim_t_74728 = slim_v_workers;
+slim_v_source = slim_t_74722;
+slim_v_completed = slim_t_74726;
+slim_v_layer = slim_t_74727;
+slim_v_workers = slim_t_74728;
 goto slim_recur;
 }
 }
@@ -34517,15 +34655,15 @@ SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 Slim_type_scheduler_95Schedule slim_result = {0};
 {
-bool slim_t_74465 = {0};
-slim_t_74465 = slim_v_valid;
-int64_t slim_t_74469 = {0};
-slim_t_74469 = slim_v_workers;
-SlimVec slim_t_74473 = {0};
-slim_t_74473 = slim_v_tasks;
-SlimVec slim_t_74477 = {0};
-slim_t_74477 = slim_v_batches;
-slim_result = (Slim_type_scheduler_95Schedule){.slim_field_valid = slim_t_74465, .slim_field_workers = slim_t_74469, .slim_field_tasks = slim_t_74473, .slim_field_batches = slim_t_74477};
+bool slim_t_74881 = {0};
+slim_t_74881 = slim_v_valid;
+int64_t slim_t_74885 = {0};
+slim_t_74885 = slim_v_workers;
+SlimVec slim_t_74889 = {0};
+slim_t_74889 = slim_v_tasks;
+SlimVec slim_t_74893 = {0};
+slim_t_74893 = slim_v_batches;
+slim_result = (Slim_type_scheduler_95Schedule){.slim_field_valid = slim_t_74881, .slim_field_workers = slim_t_74885, .slim_field_tasks = slim_t_74889, .slim_field_batches = slim_t_74893};
 }
 return slim_result;
 }
@@ -34688,18 +34826,18 @@ slim_v_next_95value = slim_v_candidate;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_74843 = {0};
-slim_t_74843 = slim_v_input;
-int64_t slim_t_74844 = {0};
-slim_t_74844 = slim_v_next;
-int64_t slim_t_74845 = {0};
-slim_t_74845 = slim_v_length;
-int64_t slim_t_74846 = {0};
-slim_t_74846 = slim_v_next_95value;
-slim_v_input = slim_t_74843;
-slim_v_index = slim_t_74844;
-slim_v_length = slim_t_74845;
-slim_v_value = slim_t_74846;
+SlimBytes slim_t_75259 = {0};
+slim_t_75259 = slim_v_input;
+int64_t slim_t_75260 = {0};
+slim_t_75260 = slim_v_next;
+int64_t slim_t_75261 = {0};
+slim_t_75261 = slim_v_length;
+int64_t slim_t_75262 = {0};
+slim_t_75262 = slim_v_next_95value;
+slim_v_input = slim_t_75259;
+slim_v_index = slim_t_75260;
+slim_v_length = slim_t_75261;
+slim_v_value = slim_t_75262;
 goto slim_recur;
 }
 }
@@ -35172,15 +35310,15 @@ slim_v_token = ((Slim_type_syntax_95Token *)((*slim_v_tokens)).data)[slim_vec_ch
 {
 Slim_type_syntax_95Token slim_v_updated = {0};
 {
-int64_t slim_t_75890 = {0};
-slim_t_75890 = slim_v_token.slim_field_kind;
-int64_t slim_t_75898 = {0};
-slim_t_75898 = slim_v_token.slim_field_start;
-int64_t slim_t_75906 = {0};
-slim_t_75906 = slim_v_token.slim_field_end;
-int64_t slim_t_75914 = {0};
-slim_t_75914 = slim_v_link;
-slim_v_updated = (Slim_type_syntax_95Token){.slim_field_kind = slim_t_75890, .slim_field_start = slim_t_75898, .slim_field_end = slim_t_75906, .slim_field_link = slim_t_75914};
+int64_t slim_t_76306 = {0};
+slim_t_76306 = slim_v_token.slim_field_kind;
+int64_t slim_t_76314 = {0};
+slim_t_76314 = slim_v_token.slim_field_start;
+int64_t slim_t_76322 = {0};
+slim_t_76322 = slim_v_token.slim_field_end;
+int64_t slim_t_76330 = {0};
+slim_t_76330 = slim_v_link;
+slim_v_updated = (Slim_type_syntax_95Token){.slim_field_kind = slim_t_76306, .slim_field_start = slim_t_76314, .slim_field_end = slim_t_76322, .slim_field_link = slim_t_76330};
 }
 (void)slim_v_updated;
 slim_vec_set(slim_v_tokens, slim_v_index, &slim_v_updated); slim_result = (SlimUnit){0};
@@ -35239,21 +35377,21 @@ if (slim_v_same) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_76053 = {0};
-slim_t_76053 = slim_v_source;
-int64_t slim_t_76054 = {0};
-slim_t_76054 = slim_v_start;
-SlimBytes slim_t_76055 = {0};
-slim_t_76055 = slim_v_text;
-int64_t slim_t_76056 = {0};
-slim_t_76056 = slim_v_next;
-int64_t slim_t_76057 = {0};
-slim_t_76057 = slim_v_length;
-slim_v_source = slim_t_76053;
-slim_v_start = slim_t_76054;
-slim_v_text = slim_t_76055;
-slim_v_index = slim_t_76056;
-slim_v_length = slim_t_76057;
+SlimBytes slim_t_76469 = {0};
+slim_t_76469 = slim_v_source;
+int64_t slim_t_76470 = {0};
+slim_t_76470 = slim_v_start;
+SlimBytes slim_t_76471 = {0};
+slim_t_76471 = slim_v_text;
+int64_t slim_t_76472 = {0};
+slim_t_76472 = slim_v_next;
+int64_t slim_t_76473 = {0};
+slim_t_76473 = slim_v_length;
+slim_v_source = slim_t_76469;
+slim_v_start = slim_t_76470;
+slim_v_text = slim_t_76471;
+slim_v_index = slim_t_76472;
+slim_v_length = slim_t_76473;
 goto slim_recur;
 }
 }
@@ -35362,21 +35500,21 @@ if (slim_v_same) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_76289 = {0};
-slim_t_76289 = slim_v_source;
-int64_t slim_t_76290 = {0};
-slim_t_76290 = slim_v_left_95start;
-int64_t slim_t_76291 = {0};
-slim_t_76291 = slim_v_right_95start;
-int64_t slim_t_76292 = {0};
-slim_t_76292 = slim_v_next;
-int64_t slim_t_76293 = {0};
-slim_t_76293 = slim_v_length;
-slim_v_source = slim_t_76289;
-slim_v_left_95start = slim_t_76290;
-slim_v_right_95start = slim_t_76291;
-slim_v_index = slim_t_76292;
-slim_v_length = slim_t_76293;
+SlimBytes slim_t_76705 = {0};
+slim_t_76705 = slim_v_source;
+int64_t slim_t_76706 = {0};
+slim_t_76706 = slim_v_left_95start;
+int64_t slim_t_76707 = {0};
+slim_t_76707 = slim_v_right_95start;
+int64_t slim_t_76708 = {0};
+slim_t_76708 = slim_v_next;
+int64_t slim_t_76709 = {0};
+slim_t_76709 = slim_v_length;
+slim_v_source = slim_t_76705;
+slim_v_left_95start = slim_t_76706;
+slim_v_right_95start = slim_t_76707;
+slim_v_index = slim_t_76708;
+slim_v_length = slim_t_76709;
 goto slim_recur;
 }
 }
@@ -35525,15 +35663,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_76595 = {0};
-slim_t_76595 = slim_v_input;
-int64_t slim_t_76596 = {0};
-slim_t_76596 = slim_v_next;
-int64_t slim_t_76597 = {0};
-slim_t_76597 = slim_v_length;
-slim_v_input = slim_t_76595;
-slim_v_index = slim_t_76596;
-slim_v_length = slim_t_76597;
+SlimBytes slim_t_77011 = {0};
+slim_t_77011 = slim_v_input;
+int64_t slim_t_77012 = {0};
+slim_t_77012 = slim_v_next;
+int64_t slim_t_77013 = {0};
+slim_t_77013 = slim_v_length;
+slim_v_input = slim_t_77011;
+slim_v_index = slim_t_77012;
+slim_v_length = slim_t_77013;
 goto slim_recur;
 }
 }
@@ -35582,15 +35720,15 @@ if (slim_v_escape) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(2));
 (void)slim_v_next;
-SlimBytes slim_t_76696 = {0};
-slim_t_76696 = slim_v_input;
-int64_t slim_t_76697 = {0};
-slim_t_76697 = slim_v_next;
-int64_t slim_t_76698 = {0};
-slim_t_76698 = slim_v_length;
-slim_v_input = slim_t_76696;
-slim_v_index = slim_t_76697;
-slim_v_length = slim_t_76698;
+SlimBytes slim_t_77112 = {0};
+slim_t_77112 = slim_v_input;
+int64_t slim_t_77113 = {0};
+slim_t_77113 = slim_v_next;
+int64_t slim_t_77114 = {0};
+slim_t_77114 = slim_v_length;
+slim_v_input = slim_t_77112;
+slim_v_index = slim_t_77113;
+slim_v_length = slim_t_77114;
 goto slim_recur;
 }
 }
@@ -35607,15 +35745,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_76740 = {0};
-slim_t_76740 = slim_v_input;
-int64_t slim_t_76741 = {0};
-slim_t_76741 = slim_v_next;
-int64_t slim_t_76742 = {0};
-slim_t_76742 = slim_v_length;
-slim_v_input = slim_t_76740;
-slim_v_index = slim_t_76741;
-slim_v_length = slim_t_76742;
+SlimBytes slim_t_77156 = {0};
+slim_t_77156 = slim_v_input;
+int64_t slim_t_77157 = {0};
+slim_t_77157 = slim_v_next;
+int64_t slim_t_77158 = {0};
+slim_t_77158 = slim_v_length;
+slim_v_input = slim_t_77156;
+slim_v_index = slim_t_77157;
+slim_v_length = slim_t_77158;
 goto slim_recur;
 }
 }
@@ -35669,15 +35807,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_76853 = {0};
-slim_t_76853 = slim_v_input;
-int64_t slim_t_76854 = {0};
-slim_t_76854 = slim_v_next;
-int64_t slim_t_76855 = {0};
-slim_t_76855 = slim_v_length;
-slim_v_input = slim_t_76853;
-slim_v_index = slim_t_76854;
-slim_v_length = slim_t_76855;
+SlimBytes slim_t_77269 = {0};
+slim_t_77269 = slim_v_input;
+int64_t slim_t_77270 = {0};
+slim_t_77270 = slim_v_next;
+int64_t slim_t_77271 = {0};
+slim_t_77271 = slim_v_length;
+slim_v_input = slim_t_77269;
+slim_v_index = slim_t_77270;
+slim_v_length = slim_t_77271;
 goto slim_recur;
 }
 }
@@ -35703,15 +35841,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_syntax_95Token slim_v_token = {0};
 {
-int64_t slim_t_76904 = {0};
-slim_t_76904 = slim_v_kind;
-int64_t slim_t_76908 = {0};
-slim_t_76908 = slim_v_start;
-int64_t slim_t_76912 = {0};
-slim_t_76912 = slim_v_end;
-int64_t slim_t_76916 = {0};
-slim_t_76916 = INT64_C(-1);
-slim_v_token = (Slim_type_syntax_95Token){.slim_field_kind = slim_t_76904, .slim_field_start = slim_t_76908, .slim_field_end = slim_t_76912, .slim_field_link = slim_t_76916};
+int64_t slim_t_77320 = {0};
+slim_t_77320 = slim_v_kind;
+int64_t slim_t_77324 = {0};
+slim_t_77324 = slim_v_start;
+int64_t slim_t_77328 = {0};
+slim_t_77328 = slim_v_end;
+int64_t slim_t_77332 = {0};
+slim_t_77332 = INT64_C(-1);
+slim_v_token = (Slim_type_syntax_95Token){.slim_field_kind = slim_t_77320, .slim_field_start = slim_t_77324, .slim_field_end = slim_t_77328, .slim_field_link = slim_t_77332};
 }
 (void)slim_v_token;
 if (!slim_vec_push(slim_v_tokens, &slim_v_token)) goto slim_allocation_failed; slim_result = (SlimUnit){0};
@@ -35759,12 +35897,12 @@ if (slim_v_whitespace) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_77030 = {0};
-slim_t_77030 = slim_v_input;
-int64_t slim_t_77031 = {0};
-slim_t_77031 = slim_v_next;
-slim_v_input = slim_t_77030;
-slim_v_index = slim_t_77031;
+SlimBytes slim_t_77446 = {0};
+slim_t_77446 = slim_v_input;
+int64_t slim_t_77447 = {0};
+slim_t_77447 = slim_v_next;
+slim_v_input = slim_t_77446;
+slim_v_index = slim_t_77447;
 goto slim_recur;
 }
 }
@@ -35782,12 +35920,12 @@ slim_v_content_95start = slim_i64_add(slim_v_index, INT64_C(1));
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95scan_95comment(slim_v_input, slim_v_content_95start, slim_v_length, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_77076 = {0};
-slim_t_77076 = slim_v_input;
-int64_t slim_t_77077 = {0};
-slim_t_77077 = slim_v_next;
-slim_v_input = slim_t_77076;
-slim_v_index = slim_t_77077;
+SlimBytes slim_t_77492 = {0};
+slim_t_77492 = slim_v_input;
+int64_t slim_t_77493 = {0};
+slim_t_77493 = slim_v_next;
+slim_v_input = slim_t_77492;
+slim_v_index = slim_t_77493;
 goto slim_recur;
 }
 }
@@ -35807,12 +35945,12 @@ SlimUnit slim_v_pushed = {0};
 slim_v_pushed = slim_fn_syntax_95push_95token(slim_v_tokens, INT64_C(0), slim_v_index, slim_v_next, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_pushed;
-SlimBytes slim_t_77124 = {0};
-slim_t_77124 = slim_v_input;
-int64_t slim_t_77125 = {0};
-slim_t_77125 = slim_v_next;
-slim_v_input = slim_t_77124;
-slim_v_index = slim_t_77125;
+SlimBytes slim_t_77540 = {0};
+slim_t_77540 = slim_v_input;
+int64_t slim_t_77541 = {0};
+slim_t_77541 = slim_v_next;
+slim_v_input = slim_t_77540;
+slim_v_index = slim_t_77541;
 goto slim_recur;
 }
 }
@@ -35832,12 +35970,12 @@ SlimUnit slim_v_pushed = {0};
 slim_v_pushed = slim_fn_syntax_95push_95token(slim_v_tokens, INT64_C(1), slim_v_index, slim_v_next, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_pushed;
-SlimBytes slim_t_77172 = {0};
-slim_t_77172 = slim_v_input;
-int64_t slim_t_77173 = {0};
-slim_t_77173 = slim_v_next;
-slim_v_input = slim_t_77172;
-slim_v_index = slim_t_77173;
+SlimBytes slim_t_77588 = {0};
+slim_t_77588 = slim_v_input;
+int64_t slim_t_77589 = {0};
+slim_t_77589 = slim_v_next;
+slim_v_input = slim_t_77588;
+slim_v_index = slim_t_77589;
 goto slim_recur;
 }
 }
@@ -35861,12 +35999,12 @@ SlimUnit slim_v_pushed = {0};
 slim_v_pushed = slim_fn_syntax_95push_95token(slim_v_tokens, INT64_C(3), slim_v_index, slim_v_next, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_pushed;
-SlimBytes slim_t_77231 = {0};
-slim_t_77231 = slim_v_input;
-int64_t slim_t_77232 = {0};
-slim_t_77232 = slim_v_next;
-slim_v_input = slim_t_77231;
-slim_v_index = slim_t_77232;
+SlimBytes slim_t_77647 = {0};
+slim_t_77647 = slim_v_input;
+int64_t slim_t_77648 = {0};
+slim_t_77648 = slim_v_next;
+slim_v_input = slim_t_77647;
+slim_v_index = slim_t_77648;
 goto slim_recur;
 }
 }
@@ -35882,12 +36020,12 @@ SlimUnit slim_v_pushed = {0};
 slim_v_pushed = slim_fn_syntax_95push_95token(slim_v_tokens, INT64_C(2), slim_v_index, slim_v_next, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_pushed;
-SlimBytes slim_t_77266 = {0};
-slim_t_77266 = slim_v_input;
-int64_t slim_t_77267 = {0};
-slim_t_77267 = slim_v_next;
-slim_v_input = slim_t_77266;
-slim_v_index = slim_t_77267;
+SlimBytes slim_t_77682 = {0};
+slim_t_77682 = slim_v_input;
+int64_t slim_t_77683 = {0};
+slim_t_77683 = slim_v_next;
+slim_v_input = slim_t_77682;
+slim_v_index = slim_t_77683;
 goto slim_recur;
 }
 }
@@ -35975,12 +36113,12 @@ slim_v_next_95depth = slim_i64_add(slim_v_depth, INT64_C(1));
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_77467 = {0};
-slim_t_77467 = slim_v_next;
-int64_t slim_t_77468 = {0};
-slim_t_77468 = slim_v_next_95depth;
-slim_v_index = slim_t_77467;
-slim_v_depth = slim_t_77468;
+int64_t slim_t_77883 = {0};
+slim_t_77883 = slim_v_next;
+int64_t slim_t_77884 = {0};
+slim_t_77884 = slim_v_next_95depth;
+slim_v_index = slim_t_77883;
+slim_v_depth = slim_t_77884;
 goto slim_recur;
 }
 }
@@ -36003,12 +36141,12 @@ if (slim_v_done) {
 slim_result = slim_v_next;
 }
 else {
-int64_t slim_t_77522 = {0};
-slim_t_77522 = slim_v_next;
-int64_t slim_t_77523 = {0};
-slim_t_77523 = slim_v_next_95depth;
-slim_v_index = slim_t_77522;
-slim_v_depth = slim_t_77523;
+int64_t slim_t_77938 = {0};
+slim_t_77938 = slim_v_next;
+int64_t slim_t_77939 = {0};
+slim_t_77939 = slim_v_next_95depth;
+slim_v_index = slim_t_77938;
+slim_v_depth = slim_t_77939;
 goto slim_recur;
 }
 }
@@ -36020,12 +36158,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_77546 = {0};
-slim_t_77546 = slim_v_next;
-int64_t slim_t_77547 = {0};
-slim_t_77547 = slim_v_depth;
-slim_v_index = slim_t_77546;
-slim_v_depth = slim_t_77547;
+int64_t slim_t_77962 = {0};
+slim_t_77962 = slim_v_next;
+int64_t slim_t_77963 = {0};
+slim_t_77963 = slim_v_depth;
+slim_v_index = slim_t_77962;
+slim_v_depth = slim_t_77963;
 goto slim_recur;
 }
 }
@@ -36145,21 +36283,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_77849 = {0};
-slim_t_77849 = slim_v_source;
-int64_t slim_t_77851 = {0};
-slim_t_77851 = slim_v_params;
-int64_t slim_t_77852 = {0};
-slim_t_77852 = slim_v_next;
-int64_t slim_t_77853 = {0};
-slim_t_77853 = slim_v_name_95start;
-int64_t slim_t_77854 = {0};
-slim_t_77854 = slim_v_name_95end;
-slim_v_source = slim_t_77849;
-slim_v_params = slim_t_77851;
-slim_v_cursor = slim_t_77852;
-slim_v_name_95start = slim_t_77853;
-slim_v_name_95end = slim_t_77854;
+SlimBytes slim_t_78265 = {0};
+slim_t_78265 = slim_v_source;
+int64_t slim_t_78267 = {0};
+slim_t_78267 = slim_v_params;
+int64_t slim_t_78268 = {0};
+slim_t_78268 = slim_v_next;
+int64_t slim_t_78269 = {0};
+slim_t_78269 = slim_v_name_95start;
+int64_t slim_t_78270 = {0};
+slim_t_78270 = slim_v_name_95end;
+slim_v_source = slim_t_78265;
+slim_v_params = slim_t_78267;
+slim_v_cursor = slim_t_78268;
+slim_v_name_95start = slim_t_78269;
+slim_v_name_95end = slim_t_78270;
 goto slim_recur;
 }
 }
@@ -36173,21 +36311,21 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_77878 = {0};
-slim_t_77878 = slim_v_source;
-int64_t slim_t_77880 = {0};
-slim_t_77880 = slim_v_params;
-int64_t slim_t_77881 = {0};
-slim_t_77881 = slim_v_next;
-int64_t slim_t_77882 = {0};
-slim_t_77882 = slim_v_name_95start;
-int64_t slim_t_77883 = {0};
-slim_t_77883 = slim_v_name_95end;
-slim_v_source = slim_t_77878;
-slim_v_params = slim_t_77880;
-slim_v_cursor = slim_t_77881;
-slim_v_name_95start = slim_t_77882;
-slim_v_name_95end = slim_t_77883;
+SlimBytes slim_t_78294 = {0};
+slim_t_78294 = slim_v_source;
+int64_t slim_t_78296 = {0};
+slim_t_78296 = slim_v_params;
+int64_t slim_t_78297 = {0};
+slim_t_78297 = slim_v_next;
+int64_t slim_t_78298 = {0};
+slim_t_78298 = slim_v_name_95start;
+int64_t slim_t_78299 = {0};
+slim_t_78299 = slim_v_name_95end;
+slim_v_source = slim_t_78294;
+slim_v_params = slim_t_78296;
+slim_v_cursor = slim_t_78297;
+slim_v_name_95start = slim_t_78298;
+slim_v_name_95end = slim_t_78299;
 goto slim_recur;
 }
 }
@@ -36345,21 +36483,21 @@ slim_v_next_95count = slim_v_count;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_78243 = {0};
-slim_t_78243 = slim_v_source;
-int64_t slim_t_78244 = {0};
-slim_t_78244 = slim_v_next;
-int64_t slim_t_78245 = {0};
-slim_t_78245 = slim_v_end;
-int64_t slim_t_78246 = {0};
-slim_t_78246 = slim_v_code;
-int64_t slim_t_78247 = {0};
-slim_t_78247 = slim_v_next_95count;
-slim_v_source = slim_t_78243;
-slim_v_index = slim_t_78244;
-slim_v_end = slim_t_78245;
-slim_v_code = slim_t_78246;
-slim_v_count = slim_t_78247;
+SlimBytes slim_t_78659 = {0};
+slim_t_78659 = slim_v_source;
+int64_t slim_t_78660 = {0};
+slim_t_78660 = slim_v_next;
+int64_t slim_t_78661 = {0};
+slim_t_78661 = slim_v_end;
+int64_t slim_t_78662 = {0};
+slim_t_78662 = slim_v_code;
+int64_t slim_t_78663 = {0};
+slim_t_78663 = slim_v_next_95count;
+slim_v_source = slim_t_78659;
+slim_v_index = slim_t_78660;
+slim_v_end = slim_t_78661;
+slim_v_code = slim_t_78662;
+slim_v_count = slim_t_78663;
 goto slim_recur;
 }
 }
@@ -36507,11 +36645,11 @@ slim_v_index = ((*slim_v_nodes)).len;
 {
 Slim_type_syntax_95NameNode slim_v_node = {0};
 {
-int64_t slim_t_78561 = {0};
-slim_t_78561 = slim_v_value;
-int64_t slim_t_78565 = {0};
-slim_t_78565 = INT64_C(-1);
-slim_v_node = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_78561, .slim_field_first_95edge = slim_t_78565};
+int64_t slim_t_78977 = {0};
+slim_t_78977 = slim_v_value;
+int64_t slim_t_78981 = {0};
+slim_t_78981 = INT64_C(-1);
+slim_v_node = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_78977, .slim_field_first_95edge = slim_t_78981};
 }
 (void)slim_v_node;
 {
@@ -36549,20 +36687,20 @@ slim_v_edge = ((Slim_type_syntax_95NameEdge *)((*slim_v_edges)).data)[slim_vec_c
 (void)slim_v_edge;
 {
 bool slim_v_same = {0};
-int64_t slim_t_78647 = {0};
-slim_t_78647 = slim_v_edge.slim_field_code;
-slim_v_same = slim_t_78647 == slim_v_code;
+int64_t slim_t_79063 = {0};
+slim_t_79063 = slim_v_edge.slim_field_code;
+slim_v_same = slim_t_79063 == slim_v_code;
 (void)slim_v_same;
 if (slim_v_same) {
 slim_result = slim_v_edge.slim_field_child;
 }
 else {
-int64_t slim_t_78670 = {0};
-slim_t_78670 = slim_v_edge.slim_field_next_95edge;
-int64_t slim_t_78675 = {0};
-slim_t_78675 = slim_v_code;
-slim_v_cursor = slim_t_78670;
-slim_v_code = slim_t_78675;
+int64_t slim_t_79086 = {0};
+slim_t_79086 = slim_v_edge.slim_field_next_95edge;
+int64_t slim_t_79091 = {0};
+slim_t_79091 = slim_v_code;
+slim_v_cursor = slim_t_79086;
+slim_v_code = slim_t_79091;
 goto slim_recur;
 }
 }
@@ -36588,9 +36726,9 @@ slim_v_node = ((Slim_type_syntax_95NameNode *)((*slim_v_nodes)).data)[slim_vec_c
 (void)slim_v_node;
 {
 int64_t slim_v_found = {0};
-int64_t slim_t_78738 = {0};
-slim_t_78738 = slim_v_node.slim_field_first_95edge;
-slim_v_found = slim_fn_syntax_95find_95name_95edge(slim_v_edges, slim_t_78738, slim_v_code, slim_allocation_region);
+int64_t slim_t_79154 = {0};
+slim_t_79154 = slim_v_node.slim_field_first_95edge;
+slim_v_found = slim_fn_syntax_95find_95name_95edge(slim_v_edges, slim_t_79154, slim_v_code, slim_allocation_region);
 (void)slim_v_found;
 {
 bool slim_v_present = {0};
@@ -36612,13 +36750,13 @@ slim_v_edge_95index = ((*slim_v_edges)).len;
 {
 Slim_type_syntax_95NameEdge slim_v_edge = {0};
 {
-int64_t slim_t_78790 = {0};
-slim_t_78790 = slim_v_code;
-int64_t slim_t_78794 = {0};
-slim_t_78794 = slim_v_child;
-int64_t slim_t_78798 = {0};
-slim_t_78798 = slim_v_node.slim_field_first_95edge;
-slim_v_edge = (Slim_type_syntax_95NameEdge){.slim_field_code = slim_t_78790, .slim_field_child = slim_t_78794, .slim_field_next_95edge = slim_t_78798};
+int64_t slim_t_79206 = {0};
+slim_t_79206 = slim_v_code;
+int64_t slim_t_79210 = {0};
+slim_t_79210 = slim_v_child;
+int64_t slim_t_79214 = {0};
+slim_t_79214 = slim_v_node.slim_field_first_95edge;
+slim_v_edge = (Slim_type_syntax_95NameEdge){.slim_field_code = slim_t_79206, .slim_field_child = slim_t_79210, .slim_field_next_95edge = slim_t_79214};
 }
 (void)slim_v_edge;
 {
@@ -36628,11 +36766,11 @@ if (!slim_vec_push(slim_v_edges, &slim_v_edge)) goto slim_allocation_failed; sli
 {
 Slim_type_syntax_95NameNode slim_v_updated = {0};
 {
-int64_t slim_t_78824 = {0};
-slim_t_78824 = slim_v_node.slim_field_value;
-int64_t slim_t_78832 = {0};
-slim_t_78832 = slim_v_edge_95index;
-slim_v_updated = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_78824, .slim_field_first_95edge = slim_t_78832};
+int64_t slim_t_79240 = {0};
+slim_t_79240 = slim_v_node.slim_field_value;
+int64_t slim_t_79248 = {0};
+slim_t_79248 = slim_v_edge_95index;
+slim_v_updated = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_79240, .slim_field_first_95edge = slim_t_79248};
 }
 (void)slim_v_updated;
 {
@@ -36680,11 +36818,11 @@ slim_v_current = ((Slim_type_syntax_95NameNode *)((*slim_v_nodes)).data)[slim_ve
 {
 Slim_type_syntax_95NameNode slim_v_updated = {0};
 {
-int64_t slim_t_78940 = {0};
-slim_t_78940 = slim_v_value;
-int64_t slim_t_78944 = {0};
-slim_t_78944 = slim_v_current.slim_field_first_95edge;
-slim_v_updated = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_78940, .slim_field_first_95edge = slim_t_78944};
+int64_t slim_t_79356 = {0};
+slim_t_79356 = slim_v_value;
+int64_t slim_t_79360 = {0};
+slim_t_79360 = slim_v_current.slim_field_first_95edge;
+slim_v_updated = (Slim_type_syntax_95NameNode){.slim_field_value = slim_t_79356, .slim_field_first_95edge = slim_t_79360};
 }
 (void)slim_v_updated;
 slim_vec_set(slim_v_nodes, slim_v_node, &slim_v_updated); slim_result = (SlimUnit){0};
@@ -36709,21 +36847,21 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_79008 = {0};
-slim_t_79008 = slim_v_source;
-int64_t slim_t_79009 = {0};
-slim_t_79009 = slim_v_next;
-int64_t slim_t_79010 = {0};
-slim_t_79010 = slim_v_end;
-int64_t slim_t_79011 = {0};
-slim_t_79011 = slim_v_value;
-int64_t slim_t_79012 = {0};
-slim_t_79012 = slim_v_child;
-slim_v_source = slim_t_79008;
-slim_v_index = slim_t_79009;
-slim_v_end = slim_t_79010;
-slim_v_value = slim_t_79011;
-slim_v_node = slim_t_79012;
+SlimBytes slim_t_79424 = {0};
+slim_t_79424 = slim_v_source;
+int64_t slim_t_79425 = {0};
+slim_t_79425 = slim_v_next;
+int64_t slim_t_79426 = {0};
+slim_t_79426 = slim_v_end;
+int64_t slim_t_79427 = {0};
+slim_t_79427 = slim_v_value;
+int64_t slim_t_79428 = {0};
+slim_t_79428 = slim_v_child;
+slim_v_source = slim_t_79424;
+slim_v_index = slim_t_79425;
+slim_v_end = slim_t_79426;
+slim_v_value = slim_t_79427;
+slim_v_node = slim_t_79428;
 goto slim_recur;
 }
 }
@@ -36812,12 +36950,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_79241 = {0};
-slim_t_79241 = slim_v_source;
-int64_t slim_t_79243 = {0};
-slim_t_79243 = slim_v_next;
-slim_v_source = slim_t_79241;
-slim_v_cursor = slim_t_79243;
+SlimBytes slim_t_79657 = {0};
+slim_t_79657 = slim_v_source;
+int64_t slim_t_79659 = {0};
+slim_t_79659 = slim_v_next;
+slim_v_source = slim_t_79657;
+slim_v_cursor = slim_t_79659;
 goto slim_recur;
 }
 }
@@ -36871,9 +37009,9 @@ slim_v_current = ((Slim_type_syntax_95NameNode *)((*slim_v_nodes)).data)[slim_ve
 (void)slim_v_current;
 {
 int64_t slim_v_child = {0};
-int64_t slim_t_79372 = {0};
-slim_t_79372 = slim_v_current.slim_field_first_95edge;
-slim_v_child = slim_fn_syntax_95find_95name_95edge(slim_v_edges, slim_t_79372, slim_v_code, slim_allocation_region);
+int64_t slim_t_79788 = {0};
+slim_t_79788 = slim_v_current.slim_field_first_95edge;
+slim_v_child = slim_fn_syntax_95find_95name_95edge(slim_v_edges, slim_t_79788, slim_v_code, slim_allocation_region);
 (void)slim_v_child;
 {
 bool slim_v_missing = {0};
@@ -36887,18 +37025,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_79410 = {0};
-slim_t_79410 = slim_v_source;
-int64_t slim_t_79411 = {0};
-slim_t_79411 = slim_v_next;
-int64_t slim_t_79412 = {0};
-slim_t_79412 = slim_v_end;
-int64_t slim_t_79413 = {0};
-slim_t_79413 = slim_v_child;
-slim_v_source = slim_t_79410;
-slim_v_index = slim_t_79411;
-slim_v_end = slim_t_79412;
-slim_v_node = slim_t_79413;
+SlimBytes slim_t_79826 = {0};
+slim_t_79826 = slim_v_source;
+int64_t slim_t_79827 = {0};
+slim_t_79827 = slim_v_next;
+int64_t slim_t_79828 = {0};
+slim_t_79828 = slim_v_end;
+int64_t slim_t_79829 = {0};
+slim_t_79829 = slim_v_child;
+slim_v_source = slim_t_79826;
+slim_v_index = slim_t_79827;
+slim_v_end = slim_t_79828;
+slim_v_node = slim_t_79829;
 goto slim_recur;
 }
 }
@@ -36990,15 +37128,15 @@ slim_v_linked = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_79657 = {0};
-slim_t_79657 = slim_v_source;
-int64_t slim_t_79659 = {0};
-slim_t_79659 = slim_v_next;
-int64_t slim_t_79660 = {0};
-slim_t_79660 = slim_v_end;
-slim_v_source = slim_t_79657;
-slim_v_index = slim_t_79659;
-slim_v_end = slim_t_79660;
+SlimBytes slim_t_80073 = {0};
+slim_t_80073 = slim_v_source;
+int64_t slim_t_80075 = {0};
+slim_t_80075 = slim_v_next;
+int64_t slim_t_80076 = {0};
+slim_t_80076 = slim_v_end;
+slim_v_source = slim_t_80073;
+slim_v_index = slim_t_80075;
+slim_v_end = slim_t_80076;
 goto slim_recur;
 }
 }
@@ -37103,12 +37241,12 @@ if (!slim_v_form) {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_cursor, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_79905 = {0};
-slim_t_79905 = slim_v_source;
-int64_t slim_t_79907 = {0};
-slim_t_79907 = slim_v_next;
-slim_v_source = slim_t_79905;
-slim_v_cursor = slim_t_79907;
+SlimBytes slim_t_80321 = {0};
+slim_t_80321 = slim_v_source;
+int64_t slim_t_80323 = {0};
+slim_t_80323 = slim_v_next;
+slim_v_source = slim_t_80321;
+slim_v_cursor = slim_t_80323;
 goto slim_recur;
 }
 }
@@ -37128,27 +37266,27 @@ slim_v_kind = slim_fn_syntax_95declaration_95kind(slim_v_source, slim_v_tokens, 
 {
 Slim_type_ir_95Declaration slim_v_declaration = {0};
 {
-Slim_type_ir_95DeclarationKind slim_t_79952 = {0};
-slim_t_79952 = slim_v_kind;
-int64_t slim_t_79956 = {0};
-slim_t_79956 = slim_v_cursor;
-int64_t slim_t_79960 = {0};
-slim_t_79960 = slim_v_name;
-int64_t slim_t_79964 = {0};
-slim_t_79964 = slim_v_next;
-slim_v_declaration = (Slim_type_ir_95Declaration){.slim_field_kind = slim_t_79952, .slim_field_form = slim_t_79956, .slim_field_name = slim_t_79960, .slim_field_next = slim_t_79964};
+Slim_type_ir_95DeclarationKind slim_t_80368 = {0};
+slim_t_80368 = slim_v_kind;
+int64_t slim_t_80372 = {0};
+slim_t_80372 = slim_v_cursor;
+int64_t slim_t_80376 = {0};
+slim_t_80376 = slim_v_name;
+int64_t slim_t_80380 = {0};
+slim_t_80380 = slim_v_next;
+slim_v_declaration = (Slim_type_ir_95Declaration){.slim_field_kind = slim_t_80368, .slim_field_form = slim_t_80372, .slim_field_name = slim_t_80376, .slim_field_next = slim_t_80380};
 }
 (void)slim_v_declaration;
 {
 SlimUnit slim_v_pushed = {0};
 if (!slim_vec_push(slim_v_declarations, &slim_v_declaration)) goto slim_allocation_failed; slim_v_pushed = (SlimUnit){0};
 (void)slim_v_pushed;
-SlimBytes slim_t_79981 = {0};
-slim_t_79981 = slim_v_source;
-int64_t slim_t_79983 = {0};
-slim_t_79983 = slim_v_next;
-slim_v_source = slim_t_79981;
-slim_v_cursor = slim_t_79983;
+SlimBytes slim_t_80397 = {0};
+slim_t_80397 = slim_v_source;
+int64_t slim_t_80399 = {0};
+slim_t_80399 = slim_v_next;
+slim_v_source = slim_t_80397;
+slim_v_cursor = slim_t_80399;
 goto slim_recur;
 }
 }
@@ -37219,15 +37357,15 @@ if (!slim_vec_push(slim_v_output, &slim_v_byte)) goto slim_allocation_failed; sl
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_80134 = {0};
-slim_t_80134 = slim_v_source;
-int64_t slim_t_80135 = {0};
-slim_t_80135 = slim_v_next;
-int64_t slim_t_80136 = {0};
-slim_t_80136 = slim_v_end;
-slim_v_source = slim_t_80134;
-slim_v_index = slim_t_80135;
-slim_v_end = slim_t_80136;
+SlimBytes slim_t_80550 = {0};
+slim_t_80550 = slim_v_source;
+int64_t slim_t_80551 = {0};
+slim_t_80551 = slim_v_next;
+int64_t slim_t_80552 = {0};
+slim_t_80552 = slim_v_end;
+slim_v_source = slim_t_80550;
+slim_v_index = slim_t_80551;
+slim_v_end = slim_t_80552;
 goto slim_recur;
 }
 }
@@ -37269,15 +37407,15 @@ if (!slim_vec_push(slim_v_output, &slim_v_byte)) goto slim_allocation_failed; sl
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_80228 = {0};
-slim_t_80228 = slim_v_text;
-int64_t slim_t_80229 = {0};
-slim_t_80229 = slim_v_next;
-int64_t slim_t_80230 = {0};
-slim_t_80230 = slim_v_length;
-slim_v_text = slim_t_80228;
-slim_v_index = slim_t_80229;
-slim_v_length = slim_t_80230;
+SlimBytes slim_t_80644 = {0};
+slim_t_80644 = slim_v_text;
+int64_t slim_t_80645 = {0};
+slim_t_80645 = slim_v_next;
+int64_t slim_t_80646 = {0};
+slim_t_80646 = slim_v_length;
+slim_v_text = slim_t_80644;
+slim_v_index = slim_t_80645;
+slim_v_length = slim_t_80646;
 goto slim_recur;
 }
 }
@@ -37407,11 +37545,11 @@ SlimVec slim_v_issues = {0};
 slim_v_issues = slim_vec_new(sizeof(Slim_type_typing_95Issue), slim_allocation_region);
 (void)slim_v_issues;
 {
-SlimVec slim_t_80678 = {0};
-slim_t_80678 = slim_v_facts;
-SlimVec slim_t_80682 = {0};
-slim_t_80682 = slim_v_issues;
-slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_80678, .slim_field_issues = slim_t_80682};
+SlimVec slim_t_81094 = {0};
+slim_t_81094 = slim_v_facts;
+SlimVec slim_t_81098 = {0};
+slim_t_81098 = slim_v_issues;
+slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_81094, .slim_field_issues = slim_t_81098};
 }
 }
 }
@@ -37434,11 +37572,11 @@ slim_v_index = ((*slim_v_nodes)).len;
 {
 Slim_type_typing_95ScopeNode slim_v_node = {0};
 {
-int64_t slim_t_80728 = {0};
-slim_t_80728 = slim_v_value;
-int64_t slim_t_80732 = {0};
-slim_t_80732 = INT64_C(-1);
-slim_v_node = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_80728, .slim_field_first_95edge = slim_t_80732};
+int64_t slim_t_81144 = {0};
+slim_t_81144 = slim_v_value;
+int64_t slim_t_81148 = {0};
+slim_t_81148 = INT64_C(-1);
+slim_v_node = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_81144, .slim_field_first_95edge = slim_t_81148};
 }
 (void)slim_v_node;
 {
@@ -37476,20 +37614,20 @@ slim_v_edge = ((Slim_type_typing_95ScopeEdge *)((*slim_v_edges)).data)[slim_vec_
 (void)slim_v_edge;
 {
 bool slim_v_same = {0};
-int64_t slim_t_80814 = {0};
-slim_t_80814 = slim_v_edge.slim_field_code;
-slim_v_same = slim_t_80814 == slim_v_code;
+int64_t slim_t_81230 = {0};
+slim_t_81230 = slim_v_edge.slim_field_code;
+slim_v_same = slim_t_81230 == slim_v_code;
 (void)slim_v_same;
 if (slim_v_same) {
 slim_result = slim_v_edge.slim_field_child;
 }
 else {
-int64_t slim_t_80837 = {0};
-slim_t_80837 = slim_v_edge.slim_field_next_95edge;
-int64_t slim_t_80842 = {0};
-slim_t_80842 = slim_v_code;
-slim_v_cursor = slim_t_80837;
-slim_v_code = slim_t_80842;
+int64_t slim_t_81253 = {0};
+slim_t_81253 = slim_v_edge.slim_field_next_95edge;
+int64_t slim_t_81258 = {0};
+slim_t_81258 = slim_v_code;
+slim_v_cursor = slim_t_81253;
+slim_v_code = slim_t_81258;
 goto slim_recur;
 }
 }
@@ -37515,9 +37653,9 @@ slim_v_node = ((Slim_type_typing_95ScopeNode *)((*slim_v_nodes)).data)[slim_vec_
 (void)slim_v_node;
 {
 int64_t slim_v_found = {0};
-int64_t slim_t_80905 = {0};
-slim_t_80905 = slim_v_node.slim_field_first_95edge;
-slim_v_found = slim_fn_typing_95find_95scope_95edge(slim_v_edges, slim_t_80905, slim_v_code, slim_allocation_region);
+int64_t slim_t_81321 = {0};
+slim_t_81321 = slim_v_node.slim_field_first_95edge;
+slim_v_found = slim_fn_typing_95find_95scope_95edge(slim_v_edges, slim_t_81321, slim_v_code, slim_allocation_region);
 (void)slim_v_found;
 {
 bool slim_v_present = {0};
@@ -37539,13 +37677,13 @@ slim_v_edge_95index = ((*slim_v_edges)).len;
 {
 Slim_type_typing_95ScopeEdge slim_v_edge = {0};
 {
-int64_t slim_t_80957 = {0};
-slim_t_80957 = slim_v_code;
-int64_t slim_t_80961 = {0};
-slim_t_80961 = slim_v_child;
-int64_t slim_t_80965 = {0};
-slim_t_80965 = slim_v_node.slim_field_first_95edge;
-slim_v_edge = (Slim_type_typing_95ScopeEdge){.slim_field_code = slim_t_80957, .slim_field_child = slim_t_80961, .slim_field_next_95edge = slim_t_80965};
+int64_t slim_t_81373 = {0};
+slim_t_81373 = slim_v_code;
+int64_t slim_t_81377 = {0};
+slim_t_81377 = slim_v_child;
+int64_t slim_t_81381 = {0};
+slim_t_81381 = slim_v_node.slim_field_first_95edge;
+slim_v_edge = (Slim_type_typing_95ScopeEdge){.slim_field_code = slim_t_81373, .slim_field_child = slim_t_81377, .slim_field_next_95edge = slim_t_81381};
 }
 (void)slim_v_edge;
 {
@@ -37555,11 +37693,11 @@ if (!slim_vec_push(slim_v_edges, &slim_v_edge)) goto slim_allocation_failed; sli
 {
 Slim_type_typing_95ScopeNode slim_v_updated = {0};
 {
-int64_t slim_t_80991 = {0};
-slim_t_80991 = slim_v_node.slim_field_value;
-int64_t slim_t_80999 = {0};
-slim_t_80999 = slim_v_edge_95index;
-slim_v_updated = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_80991, .slim_field_first_95edge = slim_t_80999};
+int64_t slim_t_81407 = {0};
+slim_t_81407 = slim_v_node.slim_field_value;
+int64_t slim_t_81415 = {0};
+slim_t_81415 = slim_v_edge_95index;
+slim_v_updated = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_81407, .slim_field_first_95edge = slim_t_81415};
 }
 (void)slim_v_updated;
 {
@@ -37619,18 +37757,18 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_81133 = {0};
-slim_t_81133 = slim_v_source;
-int64_t slim_t_81134 = {0};
-slim_t_81134 = slim_v_next;
-int64_t slim_t_81135 = {0};
-slim_t_81135 = slim_v_end;
-int64_t slim_t_81136 = {0};
-slim_t_81136 = slim_v_child;
-slim_v_source = slim_t_81133;
-slim_v_index = slim_t_81134;
-slim_v_end = slim_t_81135;
-slim_v_node = slim_t_81136;
+SlimBytes slim_t_81549 = {0};
+slim_t_81549 = slim_v_source;
+int64_t slim_t_81550 = {0};
+slim_t_81550 = slim_v_next;
+int64_t slim_t_81551 = {0};
+slim_t_81551 = slim_v_end;
+int64_t slim_t_81552 = {0};
+slim_t_81552 = slim_v_child;
+slim_v_source = slim_t_81549;
+slim_v_index = slim_t_81550;
+slim_v_end = slim_t_81551;
+slim_v_node = slim_t_81552;
 goto slim_recur;
 }
 }
@@ -37681,9 +37819,9 @@ slim_v_current = ((Slim_type_typing_95ScopeNode *)((*slim_v_nodes)).data)[slim_v
 (void)slim_v_current;
 {
 int64_t slim_v_child = {0};
-int64_t slim_t_81261 = {0};
-slim_t_81261 = slim_v_current.slim_field_first_95edge;
-slim_v_child = slim_fn_typing_95find_95scope_95edge(slim_v_edges, slim_t_81261, slim_v_code, slim_allocation_region);
+int64_t slim_t_81677 = {0};
+slim_t_81677 = slim_v_current.slim_field_first_95edge;
+slim_v_child = slim_fn_typing_95find_95scope_95edge(slim_v_edges, slim_t_81677, slim_v_code, slim_allocation_region);
 (void)slim_v_child;
 {
 bool slim_v_missing = {0};
@@ -37697,18 +37835,18 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_81299 = {0};
-slim_t_81299 = slim_v_source;
-int64_t slim_t_81300 = {0};
-slim_t_81300 = slim_v_next;
-int64_t slim_t_81301 = {0};
-slim_t_81301 = slim_v_end;
-int64_t slim_t_81302 = {0};
-slim_t_81302 = slim_v_child;
-slim_v_source = slim_t_81299;
-slim_v_index = slim_t_81300;
-slim_v_end = slim_t_81301;
-slim_v_node = slim_t_81302;
+SlimBytes slim_t_81715 = {0};
+slim_t_81715 = slim_v_source;
+int64_t slim_t_81716 = {0};
+slim_t_81716 = slim_v_next;
+int64_t slim_t_81717 = {0};
+slim_t_81717 = slim_v_end;
+int64_t slim_t_81718 = {0};
+slim_t_81718 = slim_v_child;
+slim_v_source = slim_t_81715;
+slim_v_index = slim_t_81716;
+slim_v_end = slim_t_81717;
+slim_v_node = slim_t_81718;
 goto slim_recur;
 }
 }
@@ -37779,11 +37917,11 @@ slim_v_node = ((Slim_type_typing_95ScopeNode *)((*slim_v_nodes)).data)[slim_vec_
 {
 Slim_type_typing_95ScopeChange slim_v_change = {0};
 {
-int64_t slim_t_81499 = {0};
-slim_t_81499 = slim_v_node_95index;
-int64_t slim_t_81503 = {0};
-slim_t_81503 = slim_v_node.slim_field_value;
-slim_v_change = (Slim_type_typing_95ScopeChange){.slim_field_node = slim_t_81499, .slim_field_previous = slim_t_81503};
+int64_t slim_t_81915 = {0};
+slim_t_81915 = slim_v_node_95index;
+int64_t slim_t_81919 = {0};
+slim_t_81919 = slim_v_node.slim_field_value;
+slim_v_change = (Slim_type_typing_95ScopeChange){.slim_field_node = slim_t_81915, .slim_field_previous = slim_t_81919};
 }
 (void)slim_v_change;
 {
@@ -37805,9 +37943,9 @@ slim_v_type_95value = INT64_C(0);
 (void)slim_v_type_95value;
 {
 int64_t slim_v_base = {0};
-int64_t slim_t_81555 = {0};
-slim_t_81555 = ((*slim_v_tokens)).len;
-slim_v_base = slim_i64_add(slim_t_81555, INT64_C(1));
+int64_t slim_t_81971 = {0};
+slim_t_81971 = ((*slim_v_tokens)).len;
+slim_v_base = slim_i64_add(slim_t_81971, INT64_C(1));
 (void)slim_v_base;
 {
 int64_t slim_v_scaled = {0};
@@ -37820,11 +37958,11 @@ slim_v_packed = slim_i64_add(slim_v_scaled, slim_v_token);
 {
 Slim_type_typing_95ScopeNode slim_v_updated = {0};
 {
-int64_t slim_t_81589 = {0};
-slim_t_81589 = slim_v_packed;
-int64_t slim_t_81593 = {0};
-slim_t_81593 = slim_v_node.slim_field_first_95edge;
-slim_v_updated = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_81589, .slim_field_first_95edge = slim_t_81593};
+int64_t slim_t_82005 = {0};
+slim_t_82005 = slim_v_packed;
+int64_t slim_t_82009 = {0};
+slim_t_82009 = slim_v_node.slim_field_first_95edge;
+slim_v_updated = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_82005, .slim_field_first_95edge = slim_t_82009};
 }
 (void)slim_v_updated;
 slim_vec_set(slim_v_nodes, slim_v_node_95index, &slim_v_updated); slim_result = (SlimUnit){0};
@@ -37881,23 +38019,23 @@ slim_v_node = ((Slim_type_typing_95ScopeNode *)((*slim_v_nodes)).data)[slim_vec_
 {
 Slim_type_typing_95ScopeNode slim_v_restored = {0};
 {
-int64_t slim_t_81721 = {0};
-slim_t_81721 = slim_v_change.slim_field_previous;
-int64_t slim_t_81729 = {0};
-slim_t_81729 = slim_v_node.slim_field_first_95edge;
-slim_v_restored = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_81721, .slim_field_first_95edge = slim_t_81729};
+int64_t slim_t_82137 = {0};
+slim_t_82137 = slim_v_change.slim_field_previous;
+int64_t slim_t_82145 = {0};
+slim_t_82145 = slim_v_node.slim_field_first_95edge;
+slim_v_restored = (Slim_type_typing_95ScopeNode){.slim_field_value = slim_t_82137, .slim_field_first_95edge = slim_t_82145};
 }
 (void)slim_v_restored;
 {
 SlimUnit slim_v_stored = {0};
 slim_vec_set(slim_v_nodes, slim_v_node_95index, &slim_v_restored); slim_v_stored = (SlimUnit){0};
 (void)slim_v_stored;
-int64_t slim_t_81751 = {0};
-slim_t_81751 = slim_v_mark;
-int64_t slim_t_81752 = {0};
-slim_t_81752 = slim_v_previous_95index;
-slim_v_mark = slim_t_81751;
-slim_v_index = slim_t_81752;
+int64_t slim_t_82167 = {0};
+slim_t_82167 = slim_v_mark;
+int64_t slim_t_82168 = {0};
+slim_t_82168 = slim_v_previous_95index;
+slim_v_mark = slim_t_82167;
+slim_v_index = slim_t_82168;
 goto slim_recur;
 }
 }
@@ -37978,12 +38116,12 @@ slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_al
 int64_t slim_v_old = {0};
 slim_v_old = slim_v_cursor;
 (void)slim_v_old;
-int64_t slim_t_81947 = {0};
-slim_t_81947 = slim_v_next;
-int64_t slim_t_81948 = {0};
-slim_t_81948 = slim_v_old;
-slim_v_cursor = slim_t_81947;
-slim_v_previous = slim_t_81948;
+int64_t slim_t_82363 = {0};
+slim_t_82363 = slim_v_next;
+int64_t slim_t_82364 = {0};
+slim_t_82364 = slim_v_old;
+slim_v_cursor = slim_t_82363;
+slim_v_previous = slim_t_82364;
 goto slim_recur;
 }
 }
@@ -38027,12 +38165,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_82063 = {0};
-slim_t_82063 = slim_v_source;
-int64_t slim_t_82065 = {0};
-slim_t_82065 = slim_v_next;
-slim_v_source = slim_t_82063;
-slim_v_cursor = slim_t_82065;
+SlimBytes slim_t_82479 = {0};
+slim_t_82479 = slim_v_source;
+int64_t slim_t_82481 = {0};
+slim_t_82481 = slim_v_next;
+slim_v_source = slim_t_82479;
+slim_v_cursor = slim_t_82481;
 goto slim_recur;
 }
 }
@@ -38081,12 +38219,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_82193 = {0};
-slim_t_82193 = slim_v_source;
-int64_t slim_t_82195 = {0};
-slim_t_82195 = slim_v_next;
-slim_v_source = slim_t_82193;
-slim_v_cursor = slim_t_82195;
+SlimBytes slim_t_82609 = {0};
+slim_t_82609 = slim_v_source;
+int64_t slim_t_82611 = {0};
+slim_t_82611 = slim_v_next;
+slim_v_source = slim_t_82609;
+slim_v_cursor = slim_t_82611;
 goto slim_recur;
 }
 }
@@ -38132,12 +38270,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_82315 = {0};
-slim_t_82315 = slim_v_source;
-int64_t slim_t_82317 = {0};
-slim_t_82317 = slim_v_next;
-slim_v_source = slim_t_82315;
-slim_v_cursor = slim_t_82317;
+SlimBytes slim_t_82731 = {0};
+slim_t_82731 = slim_v_source;
+int64_t slim_t_82733 = {0};
+slim_t_82733 = slim_v_next;
+slim_v_source = slim_t_82731;
+slim_v_cursor = slim_t_82733;
 goto slim_recur;
 }
 }
@@ -38195,9 +38333,9 @@ if (!slim_v_payload) {
 slim_v_shadowed = (SlimUnit){0};
 }
 else {
-int64_t slim_t_82467 = {0};
-slim_t_82467 = slim_i64_add(slim_v_first, INT64_C(1));
-slim_v_shadowed = slim_fn_typing_95shadow_95payload_95names(slim_v_source, slim_v_tokens, slim_t_82467, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_82883 = {0};
+slim_t_82883 = slim_i64_add(slim_v_first, INT64_C(1));
+slim_v_shadowed = slim_fn_typing_95shadow_95payload_95names(slim_v_source, slim_v_tokens, slim_t_82883, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 (void)slim_v_shadowed;
@@ -38218,12 +38356,12 @@ slim_v_restored = slim_fn_typing_95rollback_95scopes(slim_v_mark, slim_v_end, sl
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_82526 = {0};
-slim_t_82526 = slim_v_source;
-int64_t slim_t_82528 = {0};
-slim_t_82528 = slim_v_next;
-slim_v_source = slim_t_82526;
-slim_v_cursor = slim_t_82528;
+SlimBytes slim_t_82942 = {0};
+slim_t_82942 = slim_v_source;
+int64_t slim_t_82944 = {0};
+slim_t_82944 = slim_v_next;
+slim_v_source = slim_t_82942;
+slim_v_cursor = slim_t_82944;
 goto slim_recur;
 }
 }
@@ -38368,9 +38506,9 @@ bool slim_v_make_95form = {0};
 slim_v_make_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"make", (int64_t)(sizeof("make") - 1)), slim_allocation_region);
 (void)slim_v_make_95form;
 if (slim_v_make_95form) {
-int64_t slim_t_82918 = {0};
-slim_t_82918 = slim_i64_add(slim_v_expr, INT64_C(3));
-slim_result = slim_fn_typing_95link_95local_95fields(slim_v_source, slim_v_tokens, slim_t_82918, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_83334 = {0};
+slim_t_83334 = slim_i64_add(slim_v_expr, INT64_C(3));
+slim_result = slim_fn_typing_95link_95local_95fields(slim_v_source, slim_v_tokens, slim_t_83334, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -38379,9 +38517,9 @@ bool slim_v_get_95form = {0};
 slim_v_get_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"get", (int64_t)(sizeof("get") - 1)), slim_allocation_region);
 (void)slim_v_get_95form;
 if (slim_v_get_95form) {
-int64_t slim_t_82953 = {0};
-slim_t_82953 = slim_i64_add(slim_v_expr, INT64_C(2));
-slim_result = slim_fn_typing_95link_95local_95expr(slim_v_source, slim_v_tokens, slim_t_82953, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_83369 = {0};
+slim_t_83369 = slim_i64_add(slim_v_expr, INT64_C(2));
+slim_result = slim_fn_typing_95link_95local_95expr(slim_v_source, slim_v_tokens, slim_t_83369, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -38390,9 +38528,9 @@ bool slim_v_case_95form = {0};
 slim_v_case_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"case", (int64_t)(sizeof("case") - 1)), slim_allocation_region);
 (void)slim_v_case_95form;
 if (slim_v_case_95form) {
-int64_t slim_t_82988 = {0};
-slim_t_82988 = slim_i64_add(slim_v_expr, INT64_C(4));
-slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_82988, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_83404 = {0};
+slim_t_83404 = slim_i64_add(slim_v_expr, INT64_C(4));
+slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_83404, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -38421,9 +38559,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 else {
-int64_t slim_t_83073 = {0};
-slim_t_83073 = slim_i64_add(slim_v_expr, INT64_C(2));
-slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_83073, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_83489 = {0};
+slim_t_83489 = slim_i64_add(slim_v_expr, INT64_C(2));
+slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_83489, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -38476,9 +38614,9 @@ bool slim_v_call_95form = {0};
 slim_v_call_95form = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_head, slim_bytes_static((const uint8_t *)"call", (int64_t)(sizeof("call") - 1)), slim_allocation_region);
 (void)slim_v_call_95form;
 if (slim_v_call_95form) {
-int64_t slim_t_83239 = {0};
-slim_t_83239 = slim_i64_add(slim_v_expr, INT64_C(3));
-slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_83239, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
+int64_t slim_t_83655 = {0};
+slim_t_83655 = slim_i64_add(slim_v_expr, INT64_C(3));
+slim_result = slim_fn_typing_95link_95local_95forms(slim_v_source, slim_v_tokens, slim_t_83655, slim_v_nodes, slim_v_edges, slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
@@ -38580,12 +38718,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_83528 = {0};
-slim_t_83528 = slim_v_source;
-int64_t slim_t_83530 = {0};
-slim_t_83530 = slim_v_next;
-slim_v_source = slim_t_83528;
-slim_v_cursor = slim_t_83530;
+SlimBytes slim_t_83944 = {0};
+slim_t_83944 = slim_v_source;
+int64_t slim_t_83946 = {0};
+slim_t_83946 = slim_v_next;
+slim_v_source = slim_t_83944;
+slim_v_cursor = slim_t_83946;
 goto slim_recur;
 }
 }
@@ -38630,9 +38768,9 @@ slim_v_params = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_params;
 {
 SlimUnit slim_v_bound = {0};
-int64_t slim_t_83633 = {0};
-slim_t_83633 = slim_i64_add(slim_v_params, INT64_C(1));
-slim_v_bound = slim_fn_typing_95bind_95link_95parameters(slim_v_source, slim_v_tokens, slim_t_83633, &slim_v_nodes, &slim_v_edges, &slim_v_changes, slim_allocation_region);
+int64_t slim_t_84049 = {0};
+slim_t_84049 = slim_i64_add(slim_v_params, INT64_C(1));
+slim_v_bound = slim_fn_typing_95bind_95link_95parameters(slim_v_source, slim_v_tokens, slim_t_84049, &slim_v_nodes, &slim_v_edges, &slim_v_changes, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_bound;
 {
@@ -38711,12 +38849,12 @@ slim_v_linked = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_83821 = {0};
-slim_t_83821 = slim_v_source;
-int64_t slim_t_83824 = {0};
-slim_t_83824 = slim_v_next;
-slim_v_source = slim_t_83821;
-slim_v_index = slim_t_83824;
+SlimBytes slim_t_84237 = {0};
+slim_t_84237 = slim_v_source;
+int64_t slim_t_84240 = {0};
+slim_t_84240 = slim_v_next;
+slim_v_source = slim_t_84237;
+slim_v_index = slim_t_84240;
 goto slim_recur;
 }
 }
@@ -38739,11 +38877,11 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 Slim_type_typing_95TypeRef slim_result = {0};
 {
-int64_t slim_t_83852 = {0};
-slim_t_83852 = INT64_C(-2);
-int64_t slim_t_83856 = {0};
-slim_t_83856 = slim_v_token;
-slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_83852, .slim_field_form = slim_t_83856};
+int64_t slim_t_84268 = {0};
+slim_t_84268 = INT64_C(-2);
+int64_t slim_t_84272 = {0};
+slim_t_84272 = slim_v_token;
+slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_84268, .slim_field_form = slim_t_84272};
 }
 slim_region_destroy(&slim_function_region);
 return slim_result;
@@ -38778,9 +38916,9 @@ slim_v_type = slim_fn_typing_95invalid_95type(slim_v_expr, slim_allocation_regio
 {
 Slim_type_typing_95Fact slim_v_fact = {0};
 {
-Slim_type_typing_95TypeRef slim_t_83937 = {0};
-slim_t_83937 = slim_v_type;
-slim_v_fact = (Slim_type_typing_95Fact){.slim_field_type = slim_t_83937};
+Slim_type_typing_95TypeRef slim_t_84353 = {0};
+slim_t_84353 = slim_v_type;
+slim_v_fact = (Slim_type_typing_95Fact){.slim_field_type = slim_t_84353};
 }
 (void)slim_v_fact;
 {
@@ -38791,9 +38929,9 @@ if (!slim_vec_push(slim_v_facts, &slim_v_fact)) goto slim_allocation_failed; sli
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_expr, INT64_C(1));
 (void)slim_v_next;
-int64_t slim_t_83965 = {0};
-slim_t_83965 = slim_v_next;
-slim_v_expr = slim_t_83965;
+int64_t slim_t_84381 = {0};
+slim_t_84381 = slim_v_next;
+slim_v_expr = slim_t_84381;
 goto slim_recur;
 }
 }
@@ -38857,11 +38995,11 @@ SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 Slim_type_typing_95TypeRef slim_result = {0};
 {
-int64_t slim_t_84094 = {0};
-slim_t_84094 = slim_v_kind;
-int64_t slim_t_84098 = {0};
-slim_t_84098 = slim_v_token;
-slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_84094, .slim_field_form = slim_t_84098};
+int64_t slim_t_84510 = {0};
+slim_t_84510 = slim_v_kind;
+int64_t slim_t_84514 = {0};
+slim_t_84514 = slim_v_token;
+slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_84510, .slim_field_form = slim_t_84514};
 }
 slim_region_destroy(&slim_function_region);
 return slim_result;
@@ -38880,11 +39018,11 @@ int64_t slim_v_kind = {0};
 slim_v_kind = slim_fn_syntax_95scalar_95type_95kind(slim_v_source, slim_v_tokens, slim_v_form, slim_allocation_region);
 (void)slim_v_kind;
 {
-int64_t slim_t_84144 = {0};
-slim_t_84144 = slim_v_kind;
-int64_t slim_t_84148 = {0};
-slim_t_84148 = slim_v_form;
-slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_84144, .slim_field_form = slim_t_84148};
+int64_t slim_t_84560 = {0};
+slim_t_84560 = slim_v_kind;
+int64_t slim_t_84564 = {0};
+slim_t_84564 = slim_v_form;
+slim_result = (Slim_type_typing_95TypeRef){.slim_field_kind = slim_t_84560, .slim_field_form = slim_t_84564};
 }
 }
 return slim_result;
@@ -38898,9 +39036,9 @@ slim_region_init(&slim_function_region, slim_region);
 SlimRegion *slim_allocation_region = &slim_function_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
-int64_t slim_t_84171 = {0};
-slim_t_84171 = slim_v_type.slim_field_kind;
-slim_result = slim_t_84171 >= INT64_C(-1);
+int64_t slim_t_84587 = {0};
+slim_t_84587 = slim_v_type.slim_field_kind;
+slim_result = slim_t_84587 >= INT64_C(-1);
 slim_region_destroy(&slim_function_region);
 return slim_result;
 }
@@ -38918,15 +39056,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_typing_95Issue slim_v_issue = {0};
 {
-SlimBytes slim_t_84216 = {0};
-slim_t_84216 = slim_v_code;
-int64_t slim_t_84220 = {0};
-slim_t_84220 = slim_v_start;
-int64_t slim_t_84224 = {0};
-slim_t_84224 = slim_v_end;
-bool slim_t_84228 = {0};
-slim_t_84228 = true;
-slim_v_issue = (Slim_type_typing_95Issue){.slim_field_code = slim_t_84216, .slim_field_start = slim_t_84220, .slim_field_end = slim_t_84224, .slim_field_blocks_95inference = slim_t_84228};
+SlimBytes slim_t_84632 = {0};
+slim_t_84632 = slim_v_code;
+int64_t slim_t_84636 = {0};
+slim_t_84636 = slim_v_start;
+int64_t slim_t_84640 = {0};
+slim_t_84640 = slim_v_end;
+bool slim_t_84644 = {0};
+slim_t_84644 = true;
+slim_v_issue = (Slim_type_typing_95Issue){.slim_field_code = slim_t_84632, .slim_field_start = slim_t_84636, .slim_field_end = slim_t_84640, .slim_field_blocks_95inference = slim_t_84644};
 }
 (void)slim_v_issue;
 if (!slim_vec_push(slim_v_issues, &slim_v_issue)) goto slim_allocation_failed; slim_result = (SlimUnit){0};
@@ -38947,15 +39085,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 Slim_type_typing_95Issue slim_v_issue = {0};
 {
-SlimBytes slim_t_84274 = {0};
-slim_t_84274 = slim_v_code;
-int64_t slim_t_84278 = {0};
-slim_t_84278 = slim_v_token;
-int64_t slim_t_84282 = {0};
-slim_t_84282 = slim_v_token;
-bool slim_t_84286 = {0};
-slim_t_84286 = false;
-slim_v_issue = (Slim_type_typing_95Issue){.slim_field_code = slim_t_84274, .slim_field_start = slim_t_84278, .slim_field_end = slim_t_84282, .slim_field_blocks_95inference = slim_t_84286};
+SlimBytes slim_t_84690 = {0};
+slim_t_84690 = slim_v_code;
+int64_t slim_t_84694 = {0};
+slim_t_84694 = slim_v_token;
+int64_t slim_t_84698 = {0};
+slim_t_84698 = slim_v_token;
+bool slim_t_84702 = {0};
+slim_t_84702 = false;
+slim_v_issue = (Slim_type_typing_95Issue){.slim_field_code = slim_t_84690, .slim_field_start = slim_t_84694, .slim_field_end = slim_t_84698, .slim_field_blocks_95inference = slim_t_84702};
 }
 (void)slim_v_issue;
 if (!slim_vec_push(slim_v_issues, &slim_v_issue)) goto slim_allocation_failed; slim_result = (SlimUnit){0};
@@ -39054,11 +39192,11 @@ bool slim_v_form = {0};
 slim_v_form = slim_v_left_95kind == INT64_C(0);
 (void)slim_v_form;
 if (slim_v_form) {
-int64_t slim_t_84523 = {0};
-slim_t_84523 = slim_i64_add(slim_v_left, INT64_C(1));
-int64_t slim_t_84529 = {0};
-slim_t_84529 = slim_i64_add(slim_v_right, INT64_C(1));
-slim_result = slim_fn_typing_95type_95lists_95equal(slim_v_source, slim_v_tokens, slim_t_84523, slim_t_84529, slim_allocation_region);
+int64_t slim_t_84939 = {0};
+slim_t_84939 = slim_i64_add(slim_v_left, INT64_C(1));
+int64_t slim_t_84945 = {0};
+slim_t_84945 = slim_i64_add(slim_v_right, INT64_C(1));
+slim_result = slim_fn_typing_95type_95lists_95equal(slim_v_source, slim_v_tokens, slim_t_84939, slim_t_84945, slim_allocation_region);
 }
 else {
 {
@@ -39141,15 +39279,15 @@ slim_v_next_95left = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_left, sl
 int64_t slim_v_next_95right = {0};
 slim_v_next_95right = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_right, slim_allocation_region);
 (void)slim_v_next_95right;
-SlimBytes slim_t_84738 = {0};
-slim_t_84738 = slim_v_source;
-int64_t slim_t_84740 = {0};
-slim_t_84740 = slim_v_next_95left;
-int64_t slim_t_84741 = {0};
-slim_t_84741 = slim_v_next_95right;
-slim_v_source = slim_t_84738;
-slim_v_left = slim_t_84740;
-slim_v_right = slim_t_84741;
+SlimBytes slim_t_85154 = {0};
+slim_t_85154 = slim_v_source;
+int64_t slim_t_85156 = {0};
+slim_t_85156 = slim_v_next_95left;
+int64_t slim_t_85157 = {0};
+slim_t_85157 = slim_v_next_95right;
+slim_v_source = slim_t_85154;
+slim_v_left = slim_t_85156;
+slim_v_right = slim_t_85157;
 goto slim_recur;
 }
 }
@@ -39207,11 +39345,11 @@ slim_result = slim_v_both && slim_v_same;
 }
 }
 else {
-int64_t slim_t_84875 = {0};
-slim_t_84875 = slim_v_left.slim_field_form;
-int64_t slim_t_84880 = {0};
-slim_t_84880 = slim_v_right.slim_field_form;
-slim_result = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_t_84875, slim_t_84880, slim_allocation_region);
+int64_t slim_t_85291 = {0};
+slim_t_85291 = slim_v_left.slim_field_form;
+int64_t slim_t_85296 = {0};
+slim_t_85296 = slim_v_right.slim_field_form;
+slim_result = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_t_85291, slim_t_85296, slim_allocation_region);
 }
 }
 }
@@ -39255,9 +39393,9 @@ if (slim_v_valid) {
 {
 Slim_type_typing_95Fact slim_v_fact = {0};
 {
-Slim_type_typing_95TypeRef slim_t_84993 = {0};
-slim_t_84993 = slim_v_type;
-slim_v_fact = (Slim_type_typing_95Fact){.slim_field_type = slim_t_84993};
+Slim_type_typing_95TypeRef slim_t_85409 = {0};
+slim_t_85409 = slim_v_type;
+slim_v_fact = (Slim_type_typing_95Fact){.slim_field_type = slim_t_85409};
 }
 (void)slim_v_fact;
 slim_vec_set(slim_v_facts, slim_v_expr, &slim_v_fact); slim_result = (SlimUnit){0};
@@ -39338,9 +39476,9 @@ static bool slim_fn_typing_95parameter_95is_95inout(SlimBytes slim_v_source, Sli
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
-int64_t slim_t_85198 = {0};
-slim_t_85198 = slim_i64_add(slim_v_parameter, INT64_C(1));
-slim_result = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_85198, slim_bytes_static((const uint8_t *)"inout", (int64_t)(sizeof("inout") - 1)), slim_allocation_region);
+int64_t slim_t_85614 = {0};
+slim_t_85614 = slim_i64_add(slim_v_parameter, INT64_C(1));
+slim_result = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_85614, slim_bytes_static((const uint8_t *)"inout", (int64_t)(sizeof("inout") - 1)), slim_allocation_region);
 return slim_result;
 }
 
@@ -39411,17 +39549,17 @@ slim_v_linked = slim_fn_syntax_95set_95token_95link(slim_v_tokens, slim_v_name, 
 {
 Slim_type_typing_95Binding slim_v_binding = {0};
 {
-int64_t slim_t_85399 = {0};
-slim_t_85399 = slim_v_name;
-int64_t slim_t_85403 = {0};
-slim_t_85403 = slim_v_type;
-bool slim_t_85407 = {0};
-slim_t_85407 = slim_v_borrowed;
-bool slim_t_85411 = {0};
-slim_t_85411 = false;
-int64_t slim_t_85415 = {0};
-slim_t_85415 = slim_v_parent;
-slim_v_binding = (Slim_type_typing_95Binding){.slim_field_name = slim_t_85399, .slim_field_type = slim_t_85403, .slim_field_borrowed = slim_t_85407, .slim_field_moved = slim_t_85411, .slim_field_parent = slim_t_85415};
+int64_t slim_t_85815 = {0};
+slim_t_85815 = slim_v_name;
+int64_t slim_t_85819 = {0};
+slim_t_85819 = slim_v_type;
+bool slim_t_85823 = {0};
+slim_t_85823 = slim_v_borrowed;
+bool slim_t_85827 = {0};
+slim_t_85827 = false;
+int64_t slim_t_85831 = {0};
+slim_t_85831 = slim_v_parent;
+slim_v_binding = (Slim_type_typing_95Binding){.slim_field_name = slim_t_85815, .slim_field_type = slim_t_85819, .slim_field_borrowed = slim_t_85823, .slim_field_moved = slim_t_85827, .slim_field_parent = slim_t_85831};
 }
 (void)slim_v_binding;
 {
@@ -39482,15 +39620,15 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_85563 = {0};
-slim_t_85563 = slim_v_source;
-int64_t slim_t_85565 = {0};
-slim_t_85565 = slim_v_next;
-int64_t slim_t_85566 = {0};
-slim_t_85566 = slim_v_next_95parent;
-slim_v_source = slim_t_85563;
-slim_v_cursor = slim_t_85565;
-slim_v_parent = slim_t_85566;
+SlimBytes slim_t_85979 = {0};
+slim_t_85979 = slim_v_source;
+int64_t slim_t_85981 = {0};
+slim_t_85981 = slim_v_next;
+int64_t slim_t_85982 = {0};
+slim_t_85982 = slim_v_next_95parent;
+slim_v_source = slim_t_85979;
+slim_v_cursor = slim_t_85981;
+slim_v_parent = slim_t_85982;
 goto slim_recur;
 }
 }
@@ -39536,9 +39674,9 @@ slim_v_packed = slim_i64_sub(slim_v_positive, INT64_C(2));
 (void)slim_v_packed;
 {
 int64_t slim_v_base = {0};
-int64_t slim_t_85673 = {0};
-slim_t_85673 = ((*slim_v_tokens)).len;
-slim_v_base = slim_i64_add(slim_t_85673, INT64_C(1));
+int64_t slim_t_86089 = {0};
+slim_t_86089 = ((*slim_v_tokens)).len;
+slim_v_base = slim_i64_add(slim_t_86089, INT64_C(1));
 (void)slim_v_base;
 slim_v_decoded_95type = slim_i64_div(slim_v_packed, slim_v_base);
 }
@@ -39597,15 +39735,15 @@ if (slim_v_same) {
 slim_result = slim_v_binding.slim_field_type;
 }
 else {
-SlimBytes slim_t_85820 = {0};
-slim_t_85820 = slim_v_source;
-int64_t slim_t_85823 = {0};
-slim_t_85823 = slim_v_binding.slim_field_parent;
-int64_t slim_t_85828 = {0};
-slim_t_85828 = slim_v_name;
-slim_v_source = slim_t_85820;
-slim_v_parent = slim_t_85823;
-slim_v_name = slim_t_85828;
+SlimBytes slim_t_86236 = {0};
+slim_t_86236 = slim_v_source;
+int64_t slim_t_86239 = {0};
+slim_t_86239 = slim_v_binding.slim_field_parent;
+int64_t slim_t_86244 = {0};
+slim_t_86244 = slim_v_name;
+slim_v_source = slim_t_86236;
+slim_v_parent = slim_t_86239;
+slim_v_name = slim_t_86244;
 goto slim_recur;
 }
 }
@@ -39669,9 +39807,9 @@ slim_v_packed = slim_i64_sub(slim_v_positive, INT64_C(2));
 (void)slim_v_packed;
 {
 int64_t slim_v_base = {0};
-int64_t slim_t_85973 = {0};
-slim_t_85973 = ((*slim_v_tokens)).len;
-slim_v_base = slim_i64_add(slim_t_85973, INT64_C(1));
+int64_t slim_t_86389 = {0};
+slim_t_86389 = ((*slim_v_tokens)).len;
+slim_v_base = slim_i64_add(slim_t_86389, INT64_C(1));
 (void)slim_v_base;
 {
 int64_t slim_v_declaration = {0};
@@ -39724,17 +39862,17 @@ else {
 {
 Slim_type_typing_95Binding slim_v_updated = {0};
 {
-int64_t slim_t_86096 = {0};
-slim_t_86096 = slim_v_binding.slim_field_name;
-int64_t slim_t_86104 = {0};
-slim_t_86104 = slim_v_binding.slim_field_type;
-bool slim_t_86112 = {0};
-slim_t_86112 = slim_v_borrowed;
-bool slim_t_86116 = {0};
-slim_t_86116 = true;
-int64_t slim_t_86120 = {0};
-slim_t_86120 = slim_v_binding.slim_field_parent;
-slim_v_updated = (Slim_type_typing_95Binding){.slim_field_name = slim_t_86096, .slim_field_type = slim_t_86104, .slim_field_borrowed = slim_t_86112, .slim_field_moved = slim_t_86116, .slim_field_parent = slim_t_86120};
+int64_t slim_t_86512 = {0};
+slim_t_86512 = slim_v_binding.slim_field_name;
+int64_t slim_t_86520 = {0};
+slim_t_86520 = slim_v_binding.slim_field_type;
+bool slim_t_86528 = {0};
+slim_t_86528 = slim_v_borrowed;
+bool slim_t_86532 = {0};
+slim_t_86532 = true;
+int64_t slim_t_86536 = {0};
+slim_t_86536 = slim_v_binding.slim_field_parent;
+slim_v_updated = (Slim_type_typing_95Binding){.slim_field_name = slim_t_86512, .slim_field_type = slim_t_86520, .slim_field_borrowed = slim_t_86528, .slim_field_moved = slim_t_86532, .slim_field_parent = slim_t_86536};
 }
 (void)slim_v_updated;
 {
@@ -39791,12 +39929,12 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-int64_t slim_t_86235 = {0};
-slim_t_86235 = slim_v_next;
-int64_t slim_t_86236 = {0};
-slim_t_86236 = slim_i64_add(slim_v_count, INT64_C(1));
-slim_v_cursor = slim_t_86235;
-slim_v_count = slim_t_86236;
+int64_t slim_t_86651 = {0};
+slim_t_86651 = slim_v_next;
+int64_t slim_t_86652 = {0};
+slim_t_86652 = slim_i64_add(slim_v_count, INT64_C(1));
+slim_v_cursor = slim_t_86651;
+slim_v_count = slim_t_86652;
 goto slim_recur;
 }
 }
@@ -39858,9 +39996,9 @@ slim_v_valid = slim_fn_typing_95type_95valid(slim_v_actual, slim_allocation_regi
 (void)slim_v_valid;
 {
 bool slim_v_same_95kind = {0};
-int64_t slim_t_86383 = {0};
-slim_t_86383 = slim_v_actual.slim_field_kind;
-slim_v_same_95kind = slim_t_86383 == slim_v_kind;
+int64_t slim_t_86799 = {0};
+slim_t_86799 = slim_v_actual.slim_field_kind;
+slim_v_same_95kind = slim_t_86799 == slim_v_kind;
 (void)slim_v_same_95kind;
 {
 bool slim_v_same = {0};
@@ -39913,13 +40051,13 @@ slim_v_d = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_c
 bool slim_v_e = {0};
 slim_v_e = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"i64.rem", (int64_t)(sizeof("i64.rem") - 1)), slim_allocation_region);
 (void)slim_v_e;
-bool slim_t_86517 = {0};
-slim_t_86517 = slim_v_a || slim_v_b;
-bool slim_t_86523 = {0};
-bool slim_t_86526 = {0};
-slim_t_86526 = slim_v_c || slim_v_d;
-slim_t_86523 = slim_t_86526 || slim_v_e;
-slim_result = slim_t_86517 || slim_t_86523;
+bool slim_t_86933 = {0};
+slim_t_86933 = slim_v_a || slim_v_b;
+bool slim_t_86939 = {0};
+bool slim_t_86942 = {0};
+slim_t_86942 = slim_v_c || slim_v_d;
+slim_t_86939 = slim_t_86942 || slim_v_e;
+slim_result = slim_t_86933 || slim_t_86939;
 }
 }
 }
@@ -39956,13 +40094,13 @@ slim_v_d = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_c
 bool slim_v_e = {0};
 slim_v_e = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"i64.ge", (int64_t)(sizeof("i64.ge") - 1)), slim_allocation_region);
 (void)slim_v_e;
-bool slim_t_86630 = {0};
-slim_t_86630 = slim_v_a || slim_v_b;
-bool slim_t_86636 = {0};
-bool slim_t_86639 = {0};
-slim_t_86639 = slim_v_c || slim_v_d;
-slim_t_86636 = slim_t_86639 || slim_v_e;
-slim_result = slim_t_86630 || slim_t_86636;
+bool slim_t_87046 = {0};
+slim_t_87046 = slim_v_a || slim_v_b;
+bool slim_t_87052 = {0};
+bool slim_t_87055 = {0};
+slim_t_87055 = slim_v_c || slim_v_d;
+slim_t_87052 = slim_t_87055 || slim_v_e;
+slim_result = slim_t_87046 || slim_t_87052;
 }
 }
 }
@@ -39999,13 +40137,13 @@ slim_v_d = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_c
 bool slim_v_e = {0};
 slim_v_e = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"i64.to-u8", (int64_t)(sizeof("i64.to-u8") - 1)), slim_allocation_region);
 (void)slim_v_e;
-bool slim_t_86743 = {0};
-slim_t_86743 = slim_v_a || slim_v_b;
-bool slim_t_86749 = {0};
-bool slim_t_86752 = {0};
-slim_t_86752 = slim_v_c || slim_v_d;
-slim_t_86749 = slim_t_86752 || slim_v_e;
-slim_result = slim_t_86743 || slim_t_86749;
+bool slim_t_87159 = {0};
+slim_t_87159 = slim_v_a || slim_v_b;
+bool slim_t_87165 = {0};
+bool slim_t_87168 = {0};
+slim_t_87168 = slim_v_c || slim_v_d;
+slim_t_87165 = slim_t_87168 || slim_v_e;
+slim_result = slim_t_87159 || slim_t_87165;
 }
 }
 }
@@ -40050,17 +40188,17 @@ slim_v_f = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_c
 bool slim_v_g = {0};
 slim_v_g = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"io.read-file", (int64_t)(sizeof("io.read-file") - 1)), slim_allocation_region);
 (void)slim_v_g;
-bool slim_t_86880 = {0};
-slim_t_86880 = slim_v_a || slim_v_b;
-bool slim_t_86886 = {0};
-bool slim_t_86889 = {0};
-slim_t_86889 = slim_v_c || slim_v_d;
-bool slim_t_86895 = {0};
-bool slim_t_86898 = {0};
-slim_t_86898 = slim_v_e || slim_v_f;
-slim_t_86895 = slim_t_86898 || slim_v_g;
-slim_t_86886 = slim_t_86889 || slim_t_86895;
-slim_result = slim_t_86880 || slim_t_86886;
+bool slim_t_87296 = {0};
+slim_t_87296 = slim_v_a || slim_v_b;
+bool slim_t_87302 = {0};
+bool slim_t_87305 = {0};
+slim_t_87305 = slim_v_c || slim_v_d;
+bool slim_t_87311 = {0};
+bool slim_t_87314 = {0};
+slim_t_87314 = slim_v_e || slim_v_f;
+slim_t_87311 = slim_t_87314 || slim_v_g;
+slim_t_87302 = slim_t_87305 || slim_t_87311;
+slim_result = slim_t_87296 || slim_t_87302;
 }
 }
 }
@@ -40111,19 +40249,19 @@ slim_v_g = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_c
 bool slim_v_h = {0};
 slim_v_h = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"arena.get", (int64_t)(sizeof("arena.get") - 1)), slim_allocation_region);
 (void)slim_v_h;
-bool slim_t_87041 = {0};
-slim_t_87041 = slim_v_a || slim_v_b;
-bool slim_t_87047 = {0};
-bool slim_t_87050 = {0};
-slim_t_87050 = slim_v_c || slim_v_d;
-bool slim_t_87056 = {0};
-bool slim_t_87059 = {0};
-slim_t_87059 = slim_v_e || slim_v_f;
-bool slim_t_87065 = {0};
-slim_t_87065 = slim_v_g || slim_v_h;
-slim_t_87056 = slim_t_87059 || slim_t_87065;
-slim_t_87047 = slim_t_87050 || slim_t_87056;
-slim_result = slim_t_87041 || slim_t_87047;
+bool slim_t_87457 = {0};
+slim_t_87457 = slim_v_a || slim_v_b;
+bool slim_t_87463 = {0};
+bool slim_t_87466 = {0};
+slim_t_87466 = slim_v_c || slim_v_d;
+bool slim_t_87472 = {0};
+bool slim_t_87475 = {0};
+slim_t_87475 = slim_v_e || slim_v_f;
+bool slim_t_87481 = {0};
+slim_t_87481 = slim_v_g || slim_v_h;
+slim_t_87472 = slim_t_87475 || slim_t_87481;
+slim_t_87463 = slim_t_87466 || slim_t_87472;
+slim_result = slim_t_87457 || slim_t_87463;
 }
 }
 }
@@ -40163,13 +40301,13 @@ slim_v_bytes_95io = slim_fn_typing_95builtin_95group_95bytes_95io(slim_v_source,
 bool slim_v_storage = {0};
 slim_v_storage = slim_fn_typing_95builtin_95group_95storage(slim_v_source, slim_v_tokens, slim_v_callee, slim_allocation_region);
 (void)slim_v_storage;
-bool slim_t_87167 = {0};
-slim_t_87167 = slim_v_math || slim_v_compare;
-bool slim_t_87173 = {0};
-bool slim_t_87177 = {0};
-slim_t_87177 = slim_v_bytes_95io || slim_v_storage;
-slim_t_87173 = slim_v_scalar || slim_t_87177;
-slim_result = slim_t_87167 || slim_t_87173;
+bool slim_t_87583 = {0};
+slim_t_87583 = slim_v_math || slim_v_compare;
+bool slim_t_87589 = {0};
+bool slim_t_87593 = {0};
+slim_t_87593 = slim_v_bytes_95io || slim_v_storage;
+slim_t_87589 = slim_v_scalar || slim_t_87593;
+slim_result = slim_t_87583 || slim_t_87589;
 }
 }
 }
@@ -40193,9 +40331,9 @@ slim_v_valid = slim_fn_typing_95type_95valid(slim_v_type, slim_allocation_region
 (void)slim_v_valid;
 {
 bool slim_v_source_95kind = {0};
-int64_t slim_t_87237 = {0};
-slim_t_87237 = slim_v_type.slim_field_kind;
-slim_v_source_95kind = slim_t_87237 == INT64_C(-1);
+int64_t slim_t_87653 = {0};
+slim_t_87653 = slim_v_type.slim_field_kind;
+slim_v_source_95kind = slim_t_87653 == INT64_C(-1);
 (void)slim_v_source_95kind;
 {
 bool slim_v_possible = {0};
@@ -40221,9 +40359,9 @@ if (!slim_v_composite) {
 slim_result = false;
 }
 else {
-int64_t slim_t_87306 = {0};
-slim_t_87306 = slim_i64_add(slim_v_form, INT64_C(1));
-slim_result = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_87306, slim_v_head, slim_allocation_region);
+int64_t slim_t_87722 = {0};
+slim_t_87722 = slim_i64_add(slim_v_form, INT64_C(1));
+slim_result = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_87722, slim_v_head, slim_allocation_region);
 }
 }
 }
@@ -40323,15 +40461,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_87558 = {0};
-slim_t_87558 = slim_v_source;
-int64_t slim_t_87560 = {0};
-slim_t_87560 = slim_v_next;
-int64_t slim_t_87561 = {0};
-slim_t_87561 = slim_v_name;
-slim_v_source = slim_t_87558;
-slim_v_cursor = slim_t_87560;
-slim_v_name = slim_t_87561;
+SlimBytes slim_t_87974 = {0};
+slim_t_87974 = slim_v_source;
+int64_t slim_t_87976 = {0};
+slim_t_87976 = slim_v_next;
+int64_t slim_t_87977 = {0};
+slim_t_87977 = slim_v_name;
+slim_v_source = slim_t_87974;
+slim_v_cursor = slim_t_87976;
+slim_v_name = slim_t_87977;
 goto slim_recur;
 }
 }
@@ -40488,9 +40626,9 @@ Slim_type_typing_95TypeRef slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 bool slim_v_arity = {0};
-int64_t slim_t_88012 = {0};
-slim_t_88012 = slim_i64_add(slim_v_expr, INT64_C(2));
-slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(2), slim_t_88012, slim_v_issues, slim_allocation_region);
+int64_t slim_t_88428 = {0};
+slim_t_88428 = slim_i64_add(slim_v_expr, INT64_C(2));
+slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(2), slim_t_88428, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_arity;
 if (!slim_v_arity) {
@@ -40551,9 +40689,9 @@ Slim_type_typing_95TypeRef slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 bool slim_v_arity = {0};
-int64_t slim_t_88203 = {0};
-slim_t_88203 = slim_i64_add(slim_v_expr, INT64_C(2));
-slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(1), slim_t_88203, slim_v_issues, slim_allocation_region);
+int64_t slim_t_88619 = {0};
+slim_t_88619 = slim_i64_add(slim_v_expr, INT64_C(2));
+slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(1), slim_t_88619, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_arity;
 if (!slim_v_arity) {
@@ -40593,9 +40731,9 @@ Slim_type_typing_95TypeRef slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 bool slim_v_arity = {0};
-int64_t slim_t_88325 = {0};
-slim_t_88325 = slim_i64_add(slim_v_expr, INT64_C(2));
-slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(0), slim_t_88325, slim_v_issues, slim_allocation_region);
+int64_t slim_t_88741 = {0};
+slim_t_88741 = slim_i64_add(slim_v_expr, INT64_C(2));
+slim_v_arity = slim_fn_typing_95expect_95arity(slim_v_tokens, slim_v_arguments, INT64_C(0), slim_t_88741, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_arity;
 {
@@ -40737,9 +40875,9 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr, slim_allocation_regio
 else {
 {
 int64_t slim_v_element_95type = {0};
-int64_t slim_t_88716 = {0};
-slim_t_88716 = slim_v_vector.slim_field_form;
-slim_v_element_95type = slim_i64_add(slim_t_88716, INT64_C(2));
+int64_t slim_t_89132 = {0};
+slim_t_89132 = slim_v_vector.slim_field_form;
+slim_v_element_95type = slim_i64_add(slim_t_89132, INT64_C(2));
 (void)slim_v_element_95type;
 if (slim_v_len_95call) {
 slim_result = slim_fn_typing_95scalar_95type(INT64_C(3), slim_v_expr, slim_allocation_region);
@@ -40895,9 +41033,9 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr, slim_allocation_regio
 else {
 {
 int64_t slim_v_element_95type = {0};
-int64_t slim_t_89163 = {0};
-slim_t_89163 = slim_v_arena.slim_field_form;
-slim_v_element_95type = slim_i64_add(slim_t_89163, INT64_C(2));
+int64_t slim_t_89579 = {0};
+slim_t_89579 = slim_v_arena.slim_field_form;
+slim_v_element_95type = slim_i64_add(slim_t_89579, INT64_C(2));
 (void)slim_v_element_95type;
 {
 int64_t slim_v_second = {0};
@@ -40942,9 +41080,9 @@ slim_v_id_95ok = false;
 {
 bool slim_v_same_95inner = {0};
 if (slim_v_id_95ok) {
-int64_t slim_t_89298 = {0};
-slim_t_89298 = slim_i64_add(slim_v_expected, INT64_C(2));
-slim_v_same_95inner = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_v_element_95type, slim_t_89298, slim_allocation_region);
+int64_t slim_t_89714 = {0};
+slim_t_89714 = slim_i64_add(slim_v_expected, INT64_C(2));
+slim_v_same_95inner = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_v_element_95type, slim_t_89714, slim_allocation_region);
 }
 else {
 slim_v_same_95inner = false;
@@ -40987,11 +41125,11 @@ slim_v_id_95ok = slim_fn_typing_95result_95is_95composite(slim_v_source, slim_v_
 {
 bool slim_v_same_95inner = {0};
 if (slim_v_id_95ok) {
-int64_t slim_t_89404 = {0};
-int64_t slim_t_89407 = {0};
-slim_t_89407 = slim_v_identity.slim_field_form;
-slim_t_89404 = slim_i64_add(slim_t_89407, INT64_C(2));
-slim_v_same_95inner = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_v_element_95type, slim_t_89404, slim_allocation_region);
+int64_t slim_t_89820 = {0};
+int64_t slim_t_89823 = {0};
+slim_t_89823 = slim_v_identity.slim_field_form;
+slim_t_89820 = slim_i64_add(slim_t_89823, INT64_C(2));
+slim_v_same_95inner = slim_fn_typing_95type_95forms_95equal(slim_v_source, slim_v_tokens, slim_v_element_95type, slim_t_89820, slim_allocation_region);
 }
 else {
 slim_v_same_95inner = false;
@@ -41065,9 +41203,9 @@ slim_v_vector_95ok = slim_fn_typing_95result_95is_95composite(slim_v_source, sli
 {
 int64_t slim_v_inner = {0};
 if (slim_v_vector_95ok) {
-int64_t slim_t_89613 = {0};
-slim_t_89613 = slim_v_vector.slim_field_form;
-slim_v_inner = slim_i64_add(slim_t_89613, INT64_C(2));
+int64_t slim_t_90029 = {0};
+slim_t_90029 = slim_v_vector.slim_field_form;
+slim_v_inner = slim_i64_add(slim_t_90029, INT64_C(2));
 }
 else {
 slim_v_inner = INT64_C(-1);
@@ -41172,9 +41310,9 @@ slim_v_vector_95ok = slim_fn_typing_95result_95is_95composite(slim_v_source, sli
 {
 int64_t slim_v_inner = {0};
 if (slim_v_vector_95ok) {
-int64_t slim_t_89906 = {0};
-slim_t_89906 = slim_v_output.slim_field_form;
-slim_v_inner = slim_i64_add(slim_t_89906, INT64_C(2));
+int64_t slim_t_90322 = {0};
+slim_t_90322 = slim_v_output.slim_field_form;
+slim_v_inner = slim_i64_add(slim_t_90322, INT64_C(2));
 }
 else {
 slim_v_inner = INT64_C(-1);
@@ -41275,11 +41413,11 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 else {
 {
 bool slim_v_bool_95binary = {0};
-bool slim_t_90205 = {0};
-slim_t_90205 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"bool.and", (int64_t)(sizeof("bool.and") - 1)), slim_allocation_region);
-bool slim_t_90213 = {0};
-slim_t_90213 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"bool.or", (int64_t)(sizeof("bool.or") - 1)), slim_allocation_region);
-slim_v_bool_95binary = slim_t_90205 || slim_t_90213;
+bool slim_t_90621 = {0};
+slim_t_90621 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"bool.and", (int64_t)(sizeof("bool.and") - 1)), slim_allocation_region);
+bool slim_t_90629 = {0};
+slim_t_90629 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"bool.or", (int64_t)(sizeof("bool.or") - 1)), slim_allocation_region);
+slim_v_bool_95binary = slim_t_90621 || slim_t_90629;
 (void)slim_v_bool_95binary;
 if (slim_v_bool_95binary) {
 slim_result = slim_fn_typing_95infer_95two_95scalar_95builtin(slim_v_source, slim_v_tokens, slim_v_expr, slim_v_arguments, INT64_C(1), INT64_C(1), slim_v_parent, slim_v_params, slim_v_return_95type, slim_v_bindings, slim_v_facts, slim_v_issues, slim_allocation_region);
@@ -41405,23 +41543,23 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 else {
 {
 bool slim_v_vector_95call = {0};
-bool slim_t_90655 = {0};
-slim_t_90655 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.new", (int64_t)(sizeof("vec.new") - 1)), slim_allocation_region);
-bool slim_t_90663 = {0};
-bool slim_t_90666 = {0};
-slim_t_90666 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.len", (int64_t)(sizeof("vec.len") - 1)), slim_allocation_region);
-bool slim_t_90674 = {0};
-bool slim_t_90677 = {0};
-slim_t_90677 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.get", (int64_t)(sizeof("vec.get") - 1)), slim_allocation_region);
-bool slim_t_90685 = {0};
-bool slim_t_90688 = {0};
-slim_t_90688 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
-bool slim_t_90696 = {0};
-slim_t_90696 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
-slim_t_90685 = slim_t_90688 || slim_t_90696;
-slim_t_90674 = slim_t_90677 || slim_t_90685;
-slim_t_90663 = slim_t_90666 || slim_t_90674;
-slim_v_vector_95call = slim_t_90655 || slim_t_90663;
+bool slim_t_91071 = {0};
+slim_t_91071 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.new", (int64_t)(sizeof("vec.new") - 1)), slim_allocation_region);
+bool slim_t_91079 = {0};
+bool slim_t_91082 = {0};
+slim_t_91082 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.len", (int64_t)(sizeof("vec.len") - 1)), slim_allocation_region);
+bool slim_t_91090 = {0};
+bool slim_t_91093 = {0};
+slim_t_91093 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.get", (int64_t)(sizeof("vec.get") - 1)), slim_allocation_region);
+bool slim_t_91101 = {0};
+bool slim_t_91104 = {0};
+slim_t_91104 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
+bool slim_t_91112 = {0};
+slim_t_91112 = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_v_callee, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
+slim_t_91101 = slim_t_91104 || slim_t_91112;
+slim_t_91090 = slim_t_91093 || slim_t_91101;
+slim_t_91079 = slim_t_91082 || slim_t_91090;
+slim_v_vector_95call = slim_t_91071 || slim_t_91079;
 (void)slim_v_vector_95call;
 if (slim_v_vector_95call) {
 slim_result = slim_fn_typing_95infer_95vector_95builtin(slim_v_source, slim_v_tokens, slim_v_expr, slim_v_callee, slim_v_arguments, slim_v_expected, slim_v_parent, slim_v_params, slim_v_return_95type, slim_v_bindings, slim_v_facts, slim_v_issues, slim_allocation_region);
@@ -41692,9 +41830,9 @@ slim_v_move_95valid = true;
 (void)slim_v_move_95valid;
 {
 bool slim_v_valid = {0};
-bool slim_t_91389 = {0};
-slim_t_91389 = slim_v_identity && slim_v_move_95valid;
-slim_v_valid = slim_v_actual_95valid && slim_t_91389;
+bool slim_t_91805 = {0};
+slim_t_91805 = slim_v_identity && slim_v_move_95valid;
+slim_v_valid = slim_v_actual_95valid && slim_t_91805;
 (void)slim_v_valid;
 {
 int64_t slim_v_next_95argument = {0};
@@ -41706,27 +41844,27 @@ slim_v_next_95parameter = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_par
 (void)slim_v_next_95parameter;
 {
 bool slim_v_remaining = {0};
-SlimBytes slim_t_91422 = {0};
-slim_t_91422 = slim_v_source;
-int64_t slim_t_91424 = {0};
-slim_t_91424 = slim_v_next_95argument;
-int64_t slim_t_91425 = {0};
-slim_t_91425 = slim_v_next_95parameter;
-int64_t slim_t_91426 = {0};
-slim_t_91426 = slim_v_parent;
-int64_t slim_t_91427 = {0};
-slim_t_91427 = slim_v_params;
-int64_t slim_t_91428 = {0};
-slim_t_91428 = slim_v_return_95type;
-int64_t slim_t_91429 = {0};
-slim_t_91429 = slim_v_callee;
-slim_v_source = slim_t_91422;
-slim_v_argument = slim_t_91424;
-slim_v_parameter = slim_t_91425;
-slim_v_parent = slim_t_91426;
-slim_v_params = slim_t_91427;
-slim_v_return_95type = slim_t_91428;
-slim_v_callee = slim_t_91429;
+SlimBytes slim_t_91838 = {0};
+slim_t_91838 = slim_v_source;
+int64_t slim_t_91840 = {0};
+slim_t_91840 = slim_v_next_95argument;
+int64_t slim_t_91841 = {0};
+slim_t_91841 = slim_v_next_95parameter;
+int64_t slim_t_91842 = {0};
+slim_t_91842 = slim_v_parent;
+int64_t slim_t_91843 = {0};
+slim_t_91843 = slim_v_params;
+int64_t slim_t_91844 = {0};
+slim_t_91844 = slim_v_return_95type;
+int64_t slim_t_91845 = {0};
+slim_t_91845 = slim_v_callee;
+slim_v_source = slim_t_91838;
+slim_v_argument = slim_t_91840;
+slim_v_parameter = slim_t_91841;
+slim_v_parent = slim_t_91842;
+slim_v_params = slim_t_91843;
+slim_v_return_95type = slim_t_91844;
+slim_v_callee = slim_t_91845;
 goto slim_recur;
 (void)slim_v_remaining;
 slim_result = slim_v_valid && slim_v_remaining;
@@ -41989,27 +42127,27 @@ slim_v_next_95definition = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_de
 (void)slim_v_next_95definition;
 {
 bool slim_v_remaining = {0};
-SlimBytes slim_t_92145 = {0};
-slim_t_92145 = slim_v_source;
-int64_t slim_t_92147 = {0};
-slim_t_92147 = slim_v_next_95cursor;
-int64_t slim_t_92148 = {0};
-slim_t_92148 = slim_v_next_95definition;
-int64_t slim_t_92149 = {0};
-slim_t_92149 = slim_v_parent;
-int64_t slim_t_92150 = {0};
-slim_t_92150 = slim_v_params;
-int64_t slim_t_92151 = {0};
-slim_t_92151 = slim_v_return_95type;
-int64_t slim_t_92152 = {0};
-slim_t_92152 = slim_v_record_95name;
-slim_v_source = slim_t_92145;
-slim_v_cursor = slim_t_92147;
-slim_v_definition = slim_t_92148;
-slim_v_parent = slim_t_92149;
-slim_v_params = slim_t_92150;
-slim_v_return_95type = slim_t_92151;
-slim_v_record_95name = slim_t_92152;
+SlimBytes slim_t_92561 = {0};
+slim_t_92561 = slim_v_source;
+int64_t slim_t_92563 = {0};
+slim_t_92563 = slim_v_next_95cursor;
+int64_t slim_t_92564 = {0};
+slim_t_92564 = slim_v_next_95definition;
+int64_t slim_t_92565 = {0};
+slim_t_92565 = slim_v_parent;
+int64_t slim_t_92566 = {0};
+slim_t_92566 = slim_v_params;
+int64_t slim_t_92567 = {0};
+slim_t_92567 = slim_v_return_95type;
+int64_t slim_t_92568 = {0};
+slim_t_92568 = slim_v_record_95name;
+slim_v_source = slim_t_92561;
+slim_v_cursor = slim_t_92563;
+slim_v_definition = slim_t_92564;
+slim_v_parent = slim_t_92565;
+slim_v_params = slim_t_92566;
+slim_v_return_95type = slim_t_92567;
+slim_v_record_95name = slim_t_92568;
 goto slim_recur;
 (void)slim_v_remaining;
 slim_result = slim_v_valid && slim_v_remaining;
@@ -42141,9 +42279,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_owner;
 {
 bool slim_v_typing_95source_95type = {0};
-int64_t slim_t_92497 = {0};
-slim_t_92497 = slim_v_owner.slim_field_kind;
-slim_v_typing_95source_95type = slim_t_92497 == INT64_C(-1);
+int64_t slim_t_92913 = {0};
+slim_t_92913 = slim_v_owner.slim_field_kind;
+slim_v_typing_95source_95type = slim_t_92913 == INT64_C(-1);
 (void)slim_v_typing_95source_95type;
 if (!slim_v_typing_95source_95type) {
 {
@@ -42157,9 +42295,9 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr, slim_allocation_regio
 else {
 {
 int64_t slim_v_item = {0};
-int64_t slim_t_92537 = {0};
-slim_t_92537 = slim_v_owner.slim_field_form;
-slim_v_item = slim_fn_typing_95linked_95item(slim_v_tokens, slim_t_92537, slim_allocation_region);
+int64_t slim_t_92953 = {0};
+slim_t_92953 = slim_v_owner.slim_field_form;
+slim_v_item = slim_fn_typing_95linked_95item(slim_v_tokens, slim_t_92953, slim_allocation_region);
 (void)slim_v_item;
 {
 bool slim_v_record = {0};
@@ -42181,9 +42319,9 @@ slim_v_fields_95form = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_fields_95form;
 {
 int64_t slim_v_definition = {0};
-int64_t slim_t_92599 = {0};
-slim_t_92599 = slim_i64_add(slim_v_fields_95form, INT64_C(1));
-slim_v_definition = slim_fn_typing_95find_95named_95form(slim_v_source, slim_v_tokens, slim_t_92599, slim_v_field, slim_allocation_region);
+int64_t slim_t_93015 = {0};
+slim_t_93015 = slim_i64_add(slim_v_fields_95form, INT64_C(1));
+slim_v_definition = slim_fn_typing_95find_95named_95form(slim_v_source, slim_v_tokens, slim_t_93015, slim_v_field, slim_allocation_region);
 (void)slim_v_definition;
 {
 bool slim_v_known = {0};
@@ -42199,9 +42337,9 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr, slim_allocation_regio
 }
 }
 else {
-int64_t slim_t_92647 = {0};
-slim_t_92647 = slim_i64_add(slim_v_definition, INT64_C(2));
-slim_result = slim_fn_typing_95source_95type(slim_v_source, slim_v_tokens, slim_t_92647, slim_allocation_region);
+int64_t slim_t_93063 = {0};
+slim_t_93063 = slim_i64_add(slim_v_definition, INT64_C(2));
+slim_result = slim_fn_typing_95source_95type(slim_v_source, slim_v_tokens, slim_t_93063, slim_allocation_region);
 }
 }
 }
@@ -42295,27 +42433,27 @@ slim_v_next_95type = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_type, sl
 (void)slim_v_next_95type;
 {
 bool slim_v_remaining = {0};
-SlimBytes slim_t_92887 = {0};
-slim_t_92887 = slim_v_source;
-int64_t slim_t_92889 = {0};
-slim_t_92889 = slim_v_next_95value;
-int64_t slim_t_92890 = {0};
-slim_t_92890 = slim_v_next_95type;
-int64_t slim_t_92891 = {0};
-slim_t_92891 = slim_v_parent;
-int64_t slim_t_92892 = {0};
-slim_t_92892 = slim_v_params;
-int64_t slim_t_92893 = {0};
-slim_t_92893 = slim_v_return_95type;
-int64_t slim_t_92894 = {0};
-slim_t_92894 = slim_v_case_95name;
-slim_v_source = slim_t_92887;
-slim_v_value = slim_t_92889;
-slim_v_type = slim_t_92890;
-slim_v_parent = slim_t_92891;
-slim_v_params = slim_t_92892;
-slim_v_return_95type = slim_t_92893;
-slim_v_case_95name = slim_t_92894;
+SlimBytes slim_t_93303 = {0};
+slim_t_93303 = slim_v_source;
+int64_t slim_t_93305 = {0};
+slim_t_93305 = slim_v_next_95value;
+int64_t slim_t_93306 = {0};
+slim_t_93306 = slim_v_next_95type;
+int64_t slim_t_93307 = {0};
+slim_t_93307 = slim_v_parent;
+int64_t slim_t_93308 = {0};
+slim_t_93308 = slim_v_params;
+int64_t slim_t_93309 = {0};
+slim_t_93309 = slim_v_return_95type;
+int64_t slim_t_93310 = {0};
+slim_t_93310 = slim_v_case_95name;
+slim_v_source = slim_t_93303;
+slim_v_value = slim_t_93305;
+slim_v_type = slim_t_93306;
+slim_v_parent = slim_t_93307;
+slim_v_params = slim_t_93308;
+slim_v_return_95type = slim_t_93309;
+slim_v_case_95name = slim_t_93310;
 goto slim_recur;
 (void)slim_v_remaining;
 slim_result = slim_v_valid && slim_v_remaining;
@@ -42381,9 +42519,9 @@ slim_v_cases_95form = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_cases_95form;
 {
 int64_t slim_v_case_95form = {0};
-int64_t slim_t_93067 = {0};
-slim_t_93067 = slim_i64_add(slim_v_cases_95form, INT64_C(1));
-slim_v_case_95form = slim_fn_typing_95find_95named_95form(slim_v_source, slim_v_tokens, slim_t_93067, slim_v_case_95name, slim_allocation_region);
+int64_t slim_t_93483 = {0};
+slim_t_93483 = slim_i64_add(slim_v_cases_95form, INT64_C(1));
+slim_v_case_95form = slim_fn_typing_95find_95named_95form(slim_v_source, slim_v_tokens, slim_t_93483, slim_v_case_95name, slim_allocation_region);
 (void)slim_v_case_95form;
 {
 bool slim_v_known = {0};
@@ -42507,21 +42645,21 @@ slim_v_next_95name = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_name, sl
 int64_t slim_v_next_95type = {0};
 slim_v_next_95type = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_type, slim_allocation_region);
 (void)slim_v_next_95type;
-SlimBytes slim_t_93382 = {0};
-slim_t_93382 = slim_v_source;
-int64_t slim_t_93384 = {0};
-slim_t_93384 = slim_v_next_95name;
-int64_t slim_t_93385 = {0};
-slim_t_93385 = slim_v_next_95type;
-int64_t slim_t_93386 = {0};
-slim_t_93386 = slim_v_next_95parent;
-int64_t slim_t_93387 = {0};
-slim_t_93387 = slim_v_case_95name;
-slim_v_source = slim_t_93382;
-slim_v_name = slim_t_93384;
-slim_v_type = slim_t_93385;
-slim_v_parent = slim_t_93386;
-slim_v_case_95name = slim_t_93387;
+SlimBytes slim_t_93798 = {0};
+slim_t_93798 = slim_v_source;
+int64_t slim_t_93800 = {0};
+slim_t_93800 = slim_v_next_95name;
+int64_t slim_t_93801 = {0};
+slim_t_93801 = slim_v_next_95type;
+int64_t slim_t_93802 = {0};
+slim_t_93802 = slim_v_next_95parent;
+int64_t slim_t_93803 = {0};
+slim_t_93803 = slim_v_case_95name;
+slim_v_source = slim_t_93798;
+slim_v_name = slim_t_93800;
+slim_v_type = slim_t_93801;
+slim_v_parent = slim_t_93802;
+slim_v_case_95name = slim_t_93803;
 goto slim_recur;
 }
 }
@@ -42631,9 +42769,9 @@ else {
 int64_t slim_v_names_95form = {0};
 slim_v_names_95form = slim_i64_add(slim_v_cursor, INT64_C(2));
 (void)slim_v_names_95form;
-int64_t slim_t_93663 = {0};
-slim_t_93663 = slim_i64_add(slim_v_names_95form, INT64_C(1));
-slim_result = slim_fn_typing_95bind_95payload_95names(slim_v_source, slim_v_tokens, slim_t_93663, slim_v_payload_95type, slim_v_parent, slim_v_pattern, slim_v_bindings, slim_v_issues, slim_allocation_region);
+int64_t slim_t_94079 = {0};
+slim_t_94079 = slim_i64_add(slim_v_names_95form, INT64_C(1));
+slim_result = slim_fn_typing_95bind_95payload_95names(slim_v_source, slim_v_tokens, slim_t_94079, slim_v_payload_95type, slim_v_parent, slim_v_pattern, slim_v_bindings, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -42677,9 +42815,9 @@ if (slim_v_empty) {
 slim_result = slim_i64_add(slim_v_cursor, INT64_C(2));
 }
 else {
-int64_t slim_t_93780 = {0};
-slim_t_93780 = slim_i64_add(slim_v_cursor, INT64_C(2));
-slim_result = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_t_93780, slim_allocation_region);
+int64_t slim_t_94196 = {0};
+slim_t_94196 = slim_i64_add(slim_v_cursor, INT64_C(2));
+slim_result = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_t_94196, slim_allocation_region);
 }
 }
 }
@@ -42757,9 +42895,9 @@ slim_result = slim_v_first;
 else {
 {
 SlimUnit slim_v_noted = {0};
-int64_t slim_t_93999 = {0};
-slim_t_93999 = slim_i64_add(slim_v_match_95expr, INT64_C(1));
-slim_v_noted = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_93999, slim_v_issues, slim_allocation_region);
+int64_t slim_t_94415 = {0};
+slim_t_94415 = slim_i64_add(slim_v_match_95expr, INT64_C(1));
+slim_v_noted = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_94415, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_noted;
 slim_result = slim_fn_typing_95invalid_95type(slim_v_match_95expr, slim_allocation_region);
@@ -42771,16 +42909,16 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_match_95expr, slim_allocati
 else {
 {
 bool slim_v_extra_95variant = {0};
-bool slim_t_94027 = {0};
-slim_t_94027 = !slim_v_boolean_95match;
-slim_v_extra_95variant = slim_t_94027 && slim_v_cases_95done;
+bool slim_t_94443 = {0};
+slim_t_94443 = !slim_v_boolean_95match;
+slim_v_extra_95variant = slim_t_94443 && slim_v_cases_95done;
 (void)slim_v_extra_95variant;
 if (slim_v_extra_95variant) {
 {
 SlimUnit slim_v_noted = {0};
-int64_t slim_t_94047 = {0};
-slim_t_94047 = slim_i64_add(slim_v_match_95expr, INT64_C(1));
-slim_v_noted = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_94047, slim_v_issues, slim_allocation_region);
+int64_t slim_t_94463 = {0};
+slim_t_94463 = slim_i64_add(slim_v_match_95expr, INT64_C(1));
+slim_v_noted = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_94463, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_noted;
 slim_result = slim_fn_typing_95invalid_95type(slim_v_match_95expr, slim_allocation_region);
@@ -42836,9 +42974,9 @@ slim_v_duplicate = slim_v_duplicate_95true || slim_v_duplicate_95false;
 (void)slim_v_duplicate;
 {
 bool slim_v_pattern_95valid = {0};
-bool slim_t_94191 = {0};
-slim_t_94191 = !slim_v_duplicate;
-slim_v_pattern_95valid = slim_v_pattern_95known && slim_t_94191;
+bool slim_t_94607 = {0};
+slim_t_94607 = !slim_v_duplicate;
+slim_v_pattern_95valid = slim_v_pattern_95known && slim_t_94607;
 (void)slim_v_pattern_95valid;
 {
 SlimBytes slim_v_pattern_95code = {0};
@@ -42883,9 +43021,9 @@ slim_v_actual_95valid = slim_fn_typing_95type_95valid(slim_v_actual, slim_alloca
 (void)slim_v_actual_95valid;
 {
 bool slim_v_compare_95first = {0};
-bool slim_t_94309 = {0};
-slim_t_94309 = slim_v_expected < INT64_C(0);
-slim_v_compare_95first = slim_v_has_95first && slim_t_94309;
+bool slim_t_94725 = {0};
+slim_t_94725 = slim_v_expected < INT64_C(0);
+slim_v_compare_95first = slim_v_has_95first && slim_t_94725;
 (void)slim_v_compare_95first;
 {
 bool slim_v_same_95type = {0};
@@ -42938,54 +43076,54 @@ slim_v_next_95seen_95false = slim_v_seen_95false || slim_v_false_95pattern;
 (void)slim_v_next_95seen_95false;
 {
 Slim_type_typing_95TypeRef slim_v_remaining = {0};
-SlimBytes slim_t_94434 = {0};
-slim_t_94434 = slim_v_source;
-int64_t slim_t_94436 = {0};
-slim_t_94436 = slim_v_next_95arm;
-int64_t slim_t_94437 = {0};
-slim_t_94437 = slim_v_variant_95item;
-int64_t slim_t_94438 = {0};
-slim_t_94438 = slim_v_next_95case;
-int64_t slim_t_94439 = {0};
-slim_t_94439 = slim_v_match_95expr;
-int64_t slim_t_94440 = {0};
-slim_t_94440 = slim_v_expected;
-int64_t slim_t_94441 = {0};
-slim_t_94441 = slim_v_parent;
-int64_t slim_t_94442 = {0};
-slim_t_94442 = slim_v_params;
-int64_t slim_t_94443 = {0};
-slim_t_94443 = slim_v_return_95type;
-bool slim_t_94444 = {0};
-slim_t_94444 = true;
-Slim_type_typing_95TypeRef slim_t_94445 = {0};
-slim_t_94445 = slim_v_next_95first;
-bool slim_t_94446 = {0};
-slim_t_94446 = slim_v_next_95seen_95true;
-bool slim_t_94447 = {0};
-slim_t_94447 = slim_v_next_95seen_95false;
-slim_v_source = slim_t_94434;
-slim_v_cursor = slim_t_94436;
-slim_v_variant_95item = slim_t_94437;
-slim_v_case_95cursor = slim_t_94438;
-slim_v_match_95expr = slim_t_94439;
-slim_v_expected = slim_t_94440;
-slim_v_parent = slim_t_94441;
-slim_v_params = slim_t_94442;
-slim_v_return_95type = slim_t_94443;
-slim_v_has_95first = slim_t_94444;
-slim_v_first = slim_t_94445;
-slim_v_seen_95true = slim_t_94446;
-slim_v_seen_95false = slim_t_94447;
+SlimBytes slim_t_94850 = {0};
+slim_t_94850 = slim_v_source;
+int64_t slim_t_94852 = {0};
+slim_t_94852 = slim_v_next_95arm;
+int64_t slim_t_94853 = {0};
+slim_t_94853 = slim_v_variant_95item;
+int64_t slim_t_94854 = {0};
+slim_t_94854 = slim_v_next_95case;
+int64_t slim_t_94855 = {0};
+slim_t_94855 = slim_v_match_95expr;
+int64_t slim_t_94856 = {0};
+slim_t_94856 = slim_v_expected;
+int64_t slim_t_94857 = {0};
+slim_t_94857 = slim_v_parent;
+int64_t slim_t_94858 = {0};
+slim_t_94858 = slim_v_params;
+int64_t slim_t_94859 = {0};
+slim_t_94859 = slim_v_return_95type;
+bool slim_t_94860 = {0};
+slim_t_94860 = true;
+Slim_type_typing_95TypeRef slim_t_94861 = {0};
+slim_t_94861 = slim_v_next_95first;
+bool slim_t_94862 = {0};
+slim_t_94862 = slim_v_next_95seen_95true;
+bool slim_t_94863 = {0};
+slim_t_94863 = slim_v_next_95seen_95false;
+slim_v_source = slim_t_94850;
+slim_v_cursor = slim_t_94852;
+slim_v_variant_95item = slim_t_94853;
+slim_v_case_95cursor = slim_t_94854;
+slim_v_match_95expr = slim_t_94855;
+slim_v_expected = slim_t_94856;
+slim_v_parent = slim_t_94857;
+slim_v_params = slim_t_94858;
+slim_v_return_95type = slim_t_94859;
+slim_v_has_95first = slim_t_94860;
+slim_v_first = slim_t_94861;
+slim_v_seen_95true = slim_t_94862;
+slim_v_seen_95false = slim_t_94863;
 goto slim_recur;
 (void)slim_v_remaining;
 {
 bool slim_v_valid = {0};
-bool slim_t_94460 = {0};
-bool slim_t_94464 = {0};
-slim_t_94464 = slim_v_actual_95valid && slim_v_same_95type;
-slim_t_94460 = slim_v_parent_95valid && slim_t_94464;
-slim_v_valid = slim_v_pattern_95valid && slim_t_94460;
+bool slim_t_94876 = {0};
+bool slim_t_94880 = {0};
+slim_t_94880 = slim_v_actual_95valid && slim_v_same_95type;
+slim_t_94876 = slim_v_parent_95valid && slim_t_94880;
+slim_v_valid = slim_v_pattern_95valid && slim_t_94876;
 (void)slim_v_valid;
 if (slim_v_valid) {
 slim_result = slim_v_remaining;
@@ -43058,9 +43196,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_scrutinee;
 {
 bool slim_v_boolean_95match = {0};
-int64_t slim_t_94627 = {0};
-slim_t_94627 = slim_v_scrutinee.slim_field_kind;
-slim_v_boolean_95match = slim_t_94627 == INT64_C(1);
+int64_t slim_t_95043 = {0};
+slim_t_95043 = slim_v_scrutinee.slim_field_kind;
+slim_v_boolean_95match = slim_t_95043 == INT64_C(1);
 (void)slim_v_boolean_95match;
 {
 int64_t slim_v_variant_95item = {0};
@@ -43068,9 +43206,9 @@ if (slim_v_boolean_95match) {
 slim_v_variant_95item = INT64_C(-1);
 }
 else {
-int64_t slim_t_94651 = {0};
-slim_t_94651 = slim_v_scrutinee.slim_field_form;
-slim_v_variant_95item = slim_fn_typing_95linked_95item(slim_v_tokens, slim_t_94651, slim_allocation_region);
+int64_t slim_t_95067 = {0};
+slim_t_95067 = slim_v_scrutinee.slim_field_form;
+slim_v_variant_95item = slim_fn_typing_95linked_95item(slim_v_tokens, slim_t_95067, slim_allocation_region);
 }
 (void)slim_v_variant_95item;
 {
@@ -43102,9 +43240,9 @@ if (slim_v_boolean_95match) {
 slim_v_first_95case = INT64_C(-1);
 }
 else {
-int64_t slim_t_94733 = {0};
-slim_t_94733 = slim_i64_add(slim_v_variant_95item, INT64_C(3));
-slim_v_first_95case = slim_i64_add(slim_t_94733, INT64_C(1));
+int64_t slim_t_95149 = {0};
+slim_t_95149 = slim_i64_add(slim_v_variant_95item, INT64_C(3));
+slim_v_first_95case = slim_i64_add(slim_t_95149, INT64_C(1));
 }
 (void)slim_v_first_95case;
 {
@@ -43151,9 +43289,9 @@ slim_v_first_95parameter = slim_i64_add(slim_v_params, INT64_C(1));
 (void)slim_v_first_95parameter;
 {
 bool slim_v_valid = {0};
-int64_t slim_t_94881 = {0};
-slim_t_94881 = slim_i64_add(slim_v_expr, INT64_C(1));
-slim_v_valid = slim_fn_typing_95check_95call_95arguments(slim_v_source, slim_v_tokens, slim_v_arguments, slim_v_first_95parameter, slim_v_parent, slim_v_params, slim_v_return_95type, slim_t_94881, slim_v_bindings, slim_v_facts, slim_v_issues, slim_allocation_region);
+int64_t slim_t_95297 = {0};
+slim_t_95297 = slim_i64_add(slim_v_expr, INT64_C(1));
+slim_v_valid = slim_fn_typing_95check_95call_95arguments(slim_v_source, slim_v_tokens, slim_v_arguments, slim_v_first_95parameter, slim_v_parent, slim_v_params, slim_v_return_95type, slim_t_95297, slim_v_bindings, slim_v_facts, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_valid;
 if (slim_v_valid) {
@@ -43306,11 +43444,11 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_body_95type;
 {
 bool slim_v_valid = {0};
-bool slim_t_95317 = {0};
-slim_t_95317 = slim_fn_typing_95type_95valid(slim_v_value_95type, slim_allocation_region);
-bool slim_t_95322 = {0};
-slim_t_95322 = slim_fn_typing_95type_95valid(slim_v_body_95type, slim_allocation_region);
-slim_v_valid = slim_t_95317 && slim_t_95322;
+bool slim_t_95733 = {0};
+slim_t_95733 = slim_fn_typing_95type_95valid(slim_v_value_95type, slim_allocation_region);
+bool slim_t_95738 = {0};
+slim_t_95738 = slim_fn_typing_95type_95valid(slim_v_body_95type, slim_allocation_region);
+slim_v_valid = slim_t_95733 && slim_t_95738;
 (void)slim_v_valid;
 if (slim_v_valid) {
 slim_result = slim_v_body_95type;
@@ -43562,9 +43700,9 @@ slim_v_id_95type = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, 
 (void)slim_v_id_95type;
 {
 bool slim_v_constructor = {0};
-bool slim_t_96068 = {0};
-slim_t_96068 = slim_v_arena_95type || slim_v_id_95type;
-slim_v_constructor = slim_v_vec_95type || slim_t_96068;
+bool slim_t_96484 = {0};
+slim_t_96484 = slim_v_arena_95type || slim_v_id_95type;
+slim_v_constructor = slim_v_vec_95type || slim_t_96484;
 (void)slim_v_constructor;
 {
 int64_t slim_v_inner = {0};
@@ -43586,9 +43724,9 @@ slim_v_next_95kind = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_next, s
 bool slim_v_exact = {0};
 slim_v_exact = slim_v_next_95kind == INT64_C(1);
 (void)slim_v_exact;
-bool slim_t_96130 = {0};
-slim_t_96130 = slim_v_inner_95valid && slim_v_exact;
-slim_result = slim_v_constructor && slim_t_96130;
+bool slim_t_96546 = {0};
+slim_t_96546 = slim_v_inner_95valid && slim_v_exact;
+slim_result = slim_v_constructor && slim_t_96546;
 }
 }
 }
@@ -43673,12 +43811,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_96319 = {0};
-slim_t_96319 = slim_v_source;
-int64_t slim_t_96321 = {0};
-slim_t_96321 = slim_v_next;
-slim_v_source = slim_t_96319;
-slim_v_cursor = slim_t_96321;
+SlimBytes slim_t_96735 = {0};
+slim_t_96735 = slim_v_source;
+int64_t slim_t_96737 = {0};
+slim_t_96737 = slim_v_next;
+slim_v_source = slim_t_96735;
+slim_v_cursor = slim_t_96737;
 goto slim_recur;
 }
 }
@@ -43725,12 +43863,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_96430 = {0};
-slim_t_96430 = slim_v_source;
-int64_t slim_t_96432 = {0};
-slim_t_96432 = slim_v_next;
-slim_v_source = slim_t_96430;
-slim_v_cursor = slim_t_96432;
+SlimBytes slim_t_96846 = {0};
+slim_t_96846 = slim_v_source;
+int64_t slim_t_96848 = {0};
+slim_t_96848 = slim_v_next;
+slim_v_source = slim_t_96846;
+slim_v_cursor = slim_t_96848;
 goto slim_recur;
 }
 }
@@ -43778,12 +43916,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_96541 = {0};
-slim_t_96541 = slim_v_source;
-int64_t slim_t_96543 = {0};
-slim_t_96543 = slim_v_next;
-slim_v_source = slim_t_96541;
-slim_v_cursor = slim_t_96543;
+SlimBytes slim_t_96957 = {0};
+slim_t_96957 = slim_v_source;
+int64_t slim_t_96959 = {0};
+slim_t_96959 = slim_v_next;
+slim_v_source = slim_t_96957;
+slim_v_cursor = slim_t_96959;
 goto slim_recur;
 }
 }
@@ -43831,12 +43969,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_96652 = {0};
-slim_t_96652 = slim_v_source;
-int64_t slim_t_96654 = {0};
-slim_t_96654 = slim_v_next;
-slim_v_source = slim_t_96652;
-slim_v_cursor = slim_t_96654;
+SlimBytes slim_t_97068 = {0};
+slim_t_97068 = slim_v_source;
+int64_t slim_t_97070 = {0};
+slim_t_97070 = slim_v_next;
+slim_v_source = slim_t_97068;
+slim_v_cursor = slim_t_97070;
 goto slim_recur;
 }
 }
@@ -43900,9 +44038,9 @@ slim_v_next_95kind = slim_fn_syntax_95token_95kind(slim_v_tokens, slim_v_next, s
 bool slim_v_exact = {0};
 slim_v_exact = slim_v_next_95kind == INT64_C(1);
 (void)slim_v_exact;
-bool slim_t_96807 = {0};
-slim_t_96807 = slim_v_bytes_95type && slim_v_exact;
-slim_result = slim_v_vector && slim_t_96807;
+bool slim_t_97223 = {0};
+slim_t_97223 = slim_v_bytes_95type && slim_v_exact;
+slim_result = slim_v_vector && slim_t_97223;
 }
 }
 }
@@ -43981,11 +44119,11 @@ slim_v_return_95kind = slim_fn_syntax_95scalar_95type_95kind(slim_v_source, slim
 bool slim_v_returns_95i64 = {0};
 slim_v_returns_95i64 = slim_v_return_95kind == INT64_C(3);
 (void)slim_v_returns_95i64;
-bool slim_t_97003 = {0};
-bool slim_t_97007 = {0};
-slim_t_97007 = slim_v_vector && slim_v_returns_95i64;
-slim_t_97003 = slim_v_named && slim_t_97007;
-slim_result = slim_v_plain && slim_t_97003;
+bool slim_t_97419 = {0};
+bool slim_t_97423 = {0};
+slim_t_97423 = slim_v_vector && slim_v_returns_95i64;
+slim_t_97419 = slim_v_named && slim_t_97423;
+slim_result = slim_v_plain && slim_t_97419;
 }
 }
 }
@@ -44052,9 +44190,9 @@ slim_v_params = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_params;
 {
 SlimUnit slim_v_parameter_95types = {0};
-int64_t slim_t_97173 = {0};
-slim_t_97173 = slim_i64_add(slim_v_params, INT64_C(1));
-slim_v_parameter_95types = slim_fn_typing_95check_95parameter_95types(slim_v_source, slim_v_tokens, slim_t_97173, slim_v_issues, slim_allocation_region);
+int64_t slim_t_97589 = {0};
+slim_t_97589 = slim_i64_add(slim_v_params, INT64_C(1));
+slim_v_parameter_95types = slim_fn_typing_95check_95parameter_95types(slim_v_source, slim_v_tokens, slim_t_97589, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_parameter_95types;
 {
@@ -44104,9 +44242,9 @@ if (slim_v_record) {
 int64_t slim_v_fields = {0};
 slim_v_fields = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_fields;
-int64_t slim_t_97295 = {0};
-slim_t_97295 = slim_i64_add(slim_v_fields, INT64_C(1));
-slim_v_checked = slim_fn_typing_95check_95record_95types(slim_v_source, slim_v_tokens, slim_t_97295, slim_v_issues, slim_allocation_region);
+int64_t slim_t_97711 = {0};
+slim_t_97711 = slim_i64_add(slim_v_fields, INT64_C(1));
+slim_v_checked = slim_fn_typing_95check_95record_95types(slim_v_source, slim_v_tokens, slim_t_97711, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -44115,9 +44253,9 @@ else {
 int64_t slim_v_cases = {0};
 slim_v_cases = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_cases;
-int64_t slim_t_97322 = {0};
-slim_t_97322 = slim_i64_add(slim_v_cases, INT64_C(1));
-slim_v_checked = slim_fn_typing_95check_95variant_95types(slim_v_source, slim_v_tokens, slim_t_97322, slim_v_issues, slim_allocation_region);
+int64_t slim_t_97738 = {0};
+slim_t_97738 = slim_i64_add(slim_v_cases, INT64_C(1));
+slim_v_checked = slim_fn_typing_95check_95variant_95types(slim_v_source, slim_v_tokens, slim_t_97738, slim_v_issues, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
@@ -44127,12 +44265,12 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_97347 = {0};
-slim_t_97347 = slim_v_source;
-int64_t slim_t_97350 = {0};
-slim_t_97350 = slim_v_next;
-slim_v_source = slim_t_97347;
-slim_v_index = slim_t_97350;
+SlimBytes slim_t_97763 = {0};
+slim_t_97763 = slim_v_source;
+int64_t slim_t_97766 = {0};
+slim_t_97766 = slim_v_next;
+slim_v_source = slim_t_97763;
+slim_v_index = slim_t_97766;
 goto slim_recur;
 }
 }
@@ -44189,12 +44327,12 @@ slim_v_value = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_type_95index, 
 int64_t slim_v_body = {0};
 slim_v_body = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_value, slim_allocation_region);
 (void)slim_v_body;
-SlimBytes slim_t_97478 = {0};
-slim_t_97478 = slim_v_source;
-int64_t slim_t_97480 = {0};
-slim_t_97480 = slim_v_body;
-slim_v_source = slim_t_97478;
-slim_v_expr = slim_t_97480;
+SlimBytes slim_t_97894 = {0};
+slim_t_97894 = slim_v_source;
+int64_t slim_t_97896 = {0};
+slim_t_97896 = slim_v_body;
+slim_v_source = slim_t_97894;
+slim_v_expr = slim_t_97896;
 goto slim_recur;
 }
 }
@@ -44214,12 +44352,12 @@ slim_v_value = slim_i64_add(slim_v_expr, INT64_C(3));
 int64_t slim_v_body = {0};
 slim_v_body = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_value, slim_allocation_region);
 (void)slim_v_body;
-SlimBytes slim_t_97527 = {0};
-slim_t_97527 = slim_v_source;
-int64_t slim_t_97529 = {0};
-slim_t_97529 = slim_v_body;
-slim_v_source = slim_t_97527;
-slim_v_expr = slim_t_97529;
+SlimBytes slim_t_97943 = {0};
+slim_t_97943 = slim_v_source;
+int64_t slim_t_97945 = {0};
+slim_t_97945 = slim_v_body;
+slim_v_source = slim_t_97943;
+slim_v_expr = slim_t_97945;
 goto slim_recur;
 }
 }
@@ -44358,9 +44496,9 @@ slim_v_params = slim_i64_add(slim_v_item, INT64_C(3));
 (void)slim_v_params;
 {
 int64_t slim_v_parent = {0};
-int64_t slim_t_97872 = {0};
-slim_t_97872 = slim_i64_add(slim_v_params, INT64_C(1));
-slim_v_parent = slim_fn_typing_95bind_95parameters(slim_v_source, slim_v_tokens, slim_t_97872, INT64_C(-1), slim_v_bindings, slim_allocation_region);
+int64_t slim_t_98288 = {0};
+slim_t_98288 = slim_i64_add(slim_v_params, INT64_C(1));
+slim_v_parent = slim_fn_typing_95bind_95parameters(slim_v_source, slim_v_tokens, slim_t_98288, INT64_C(-1), slim_v_bindings, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_parent;
 {
@@ -44409,12 +44547,12 @@ slim_v_checked = (SlimUnit){0};
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_97986 = {0};
-slim_t_97986 = slim_v_source;
-int64_t slim_t_97989 = {0};
-slim_t_97989 = slim_v_next;
-slim_v_source = slim_t_97986;
-slim_v_index = slim_t_97989;
+SlimBytes slim_t_98402 = {0};
+slim_t_98402 = slim_v_source;
+int64_t slim_t_98405 = {0};
+slim_t_98405 = slim_v_next;
+slim_v_source = slim_t_98402;
+slim_v_index = slim_t_98405;
 goto slim_recur;
 }
 }
@@ -44477,11 +44615,11 @@ slim_v_functions_95checked = slim_fn_typing_95check_95functions(slim_v_source, s
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_functions_95checked;
 {
-SlimVec slim_t_98134 = {0};
-slim_t_98134 = slim_v_facts;
-SlimVec slim_t_98138 = {0};
-slim_t_98138 = slim_v_issues;
-slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_98134, .slim_field_issues = slim_t_98138};
+SlimVec slim_t_98550 = {0};
+slim_t_98550 = slim_v_facts;
+SlimVec slim_t_98554 = {0};
+slim_t_98554 = slim_v_issues;
+slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_98550, .slim_field_issues = slim_t_98554};
 }
 }
 }
@@ -44618,15 +44756,15 @@ else {
 int64_t slim_v_next = {0};
 slim_v_next = slim_i64_add(slim_v_index, INT64_C(1));
 (void)slim_v_next;
-SlimBytes slim_t_98447 = {0};
-slim_t_98447 = slim_v_source;
-int64_t slim_t_98449 = {0};
-slim_t_98449 = slim_v_next;
-int64_t slim_t_98450 = {0};
-slim_t_98450 = slim_v_length;
-slim_v_source = slim_t_98447;
-slim_v_index = slim_t_98449;
-slim_v_length = slim_t_98450;
+SlimBytes slim_t_98863 = {0};
+slim_t_98863 = slim_v_source;
+int64_t slim_t_98865 = {0};
+slim_t_98865 = slim_v_next;
+int64_t slim_t_98866 = {0};
+slim_t_98866 = slim_v_length;
+slim_v_source = slim_t_98863;
+slim_v_index = slim_t_98865;
+slim_v_length = slim_t_98866;
 goto slim_recur;
 }
 }
@@ -44682,15 +44820,15 @@ else {
 int64_t slim_v_next_95count = {0};
 slim_v_next_95count = slim_i64_add(slim_v_count, INT64_C(1));
 (void)slim_v_next_95count;
-int64_t slim_t_98585 = {0};
-slim_t_98585 = slim_v_next;
-int64_t slim_t_98586 = {0};
-slim_t_98586 = slim_v_next_95count;
-int64_t slim_t_98587 = {0};
-slim_t_98587 = slim_v_minimum;
-slim_v_cursor = slim_t_98585;
-slim_v_count = slim_t_98586;
-slim_v_minimum = slim_t_98587;
+int64_t slim_t_99001 = {0};
+slim_t_99001 = slim_v_next;
+int64_t slim_t_99002 = {0};
+slim_t_99002 = slim_v_next_95count;
+int64_t slim_t_99003 = {0};
+slim_t_99003 = slim_v_minimum;
+slim_v_cursor = slim_t_99001;
+slim_v_count = slim_t_99002;
+slim_v_minimum = slim_t_99003;
 goto slim_recur;
 }
 }
@@ -45246,15 +45384,15 @@ if (!slim_v_progressed) {
 slim_result = false;
 }
 else {
-SlimBytes slim_t_99889 = {0};
-slim_t_99889 = slim_v_source;
-int64_t slim_t_99891 = {0};
-slim_t_99891 = slim_v_next;
-int64_t slim_t_99892 = {0};
-slim_t_99892 = slim_v_closing;
-slim_v_source = slim_t_99889;
-slim_v_cursor = slim_t_99891;
-slim_v_closing = slim_t_99892;
+SlimBytes slim_t_100305 = {0};
+slim_t_100305 = slim_v_source;
+int64_t slim_t_100307 = {0};
+slim_t_100307 = slim_v_next;
+int64_t slim_t_100308 = {0};
+slim_t_100308 = slim_v_closing;
+slim_v_source = slim_t_100305;
+slim_v_cursor = slim_t_100307;
+slim_v_closing = slim_t_100308;
 goto slim_recur;
 }
 }
@@ -45317,18 +45455,18 @@ slim_v_next_95count = slim_v_count;
 int64_t slim_v_next = {0};
 slim_v_next = slim_fn_syntax_95skip_95form(slim_v_tokens, slim_v_cursor, slim_allocation_region);
 (void)slim_v_next;
-SlimBytes slim_t_100039 = {0};
-slim_t_100039 = slim_v_source;
-int64_t slim_t_100041 = {0};
-slim_t_100041 = slim_v_next;
-int64_t slim_t_100042 = {0};
-slim_t_100042 = slim_v_closing;
-int64_t slim_t_100043 = {0};
-slim_t_100043 = slim_v_next_95count;
-slim_v_source = slim_t_100039;
-slim_v_cursor = slim_t_100041;
-slim_v_closing = slim_t_100042;
-slim_v_count = slim_t_100043;
+SlimBytes slim_t_100455 = {0};
+slim_t_100455 = slim_v_source;
+int64_t slim_t_100457 = {0};
+slim_t_100457 = slim_v_next;
+int64_t slim_t_100458 = {0};
+slim_t_100458 = slim_v_closing;
+int64_t slim_t_100459 = {0};
+slim_t_100459 = slim_v_next_95count;
+slim_v_source = slim_t_100455;
+slim_v_cursor = slim_t_100457;
+slim_v_closing = slim_t_100458;
+slim_v_count = slim_t_100459;
 goto slim_recur;
 }
 }
@@ -45383,15 +45521,15 @@ slim_v_root_95form = slim_v_root_95kind == INT64_C(0);
 (void)slim_v_root_95form;
 {
 bool slim_v_module_95head = {0};
-int64_t slim_t_100172 = {0};
-slim_t_100172 = slim_i64_add(slim_v_root, INT64_C(1));
-slim_v_module_95head = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_100172, slim_bytes_static((const uint8_t *)"module", (int64_t)(sizeof("module") - 1)), slim_allocation_region);
+int64_t slim_t_100588 = {0};
+slim_t_100588 = slim_i64_add(slim_v_root, INT64_C(1));
+slim_v_module_95head = slim_fn_syntax_95token_95equal(slim_v_source, slim_v_tokens, slim_t_100588, slim_bytes_static((const uint8_t *)"module", (int64_t)(sizeof("module") - 1)), slim_allocation_region);
 (void)slim_v_module_95head;
 {
 bool slim_v_module_95name = {0};
-int64_t slim_t_100188 = {0};
-slim_t_100188 = slim_i64_add(slim_v_root, INT64_C(2));
-slim_v_module_95name = slim_fn_validate_95atom_95at(slim_v_tokens, slim_t_100188, slim_allocation_region);
+int64_t slim_t_100604 = {0};
+slim_t_100604 = slim_i64_add(slim_v_root, INT64_C(2));
+slim_v_module_95name = slim_fn_validate_95atom_95at(slim_v_tokens, slim_t_100604, slim_allocation_region);
 (void)slim_v_module_95name;
 {
 int64_t slim_v_close_95kind = {0};
@@ -45425,9 +45563,9 @@ if (!slim_v_strings) {
 slim_result = false;
 }
 else {
-int64_t slim_t_100280 = {0};
-slim_t_100280 = slim_i64_add(slim_v_root, INT64_C(3));
-slim_result = slim_fn_validate_95item_95list_95valid(slim_v_source, slim_v_tokens, slim_t_100280, slim_v_closing, slim_allocation_region);
+int64_t slim_t_100696 = {0};
+slim_t_100696 = slim_i64_add(slim_v_root, INT64_C(3));
+slim_result = slim_fn_validate_95item_95list_95valid(slim_v_source, slim_v_tokens, slim_t_100696, slim_v_closing, slim_allocation_region);
 }
 }
 }

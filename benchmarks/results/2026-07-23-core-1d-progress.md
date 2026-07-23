@@ -481,3 +481,25 @@ the scaling evidence, and the noisy point is not hidden. The complete gate
 passes all budgets, 99 fixtures, 2,000 mutations, sanitizers,
 allocation-failure injection, native challenges, and deterministic bootstrap
 verification.
+
+## Retained call allocation boundaries
+
+D0055 removes the last per-user-call effect-list read from C generation.
+`AllocationPlan` entries remain sparse and lexically sorted; a bounded binary
+query maps an exact call-form token to its retained region, so nested arguments
+may be emitted before their enclosing call without relying on a sequential
+cursor. Generated C remains byte-identical to D0054 across the representative
+compiler corpus and a new nested allocation-call fixture.
+
+The permanent `generated-planned-allocation-calls` series emits 125, 250, 500,
+and 1,000 nested allocation-capable user calls. D0054 measured 3.200, 5.265,
+12.718, and 38.013 milliseconds, endpoint exponent 1.190. The candidate's clean
+run measured 3.065, 5.334, 12.934, and 39.125 milliseconds, exponent 1.225 under
+the unchanged 1.25 budget. A preceding candidate pass stopped on the existing
+computed-argument gate at 1.251; the budget was preserved and the rerun passed.
+The portable fixed point is 1,628,984 generated C bytes with SHA-256
+`eb1c5062d43c4a5fdf5e41572235b7d439a91deac8f4698b0684888e4bfcac97`.
+The authoritative release run measures 3.229, 5.366, 12.737, and 38.688
+milliseconds, exponent 1.194. The complete gate passes all budgets, 100
+fixtures, 2,000 mutations, sanitizers, allocation-failure injection, native
+challenges, and deterministic bootstrap verification.

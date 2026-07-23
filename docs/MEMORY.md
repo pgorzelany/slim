@@ -73,10 +73,12 @@ a region. There is no Rust-owned lifetime IR and no source annotation.
 
 Allocation plans include every call boundary that can propagate allocation
 failure: allocating built-ins and user functions declaring `alloc`. The shared
-SLIM `effects` module is the single classifier used by diagnostics, memory
-planning, and call emission. A function's generated failure boundary is present
-exactly when its retained plan has at least one such site; the backend does not
-reparse that function's effect declaration.
+SLIM `effects` module is the single classifier used by diagnostics and memory
+planning. A function's generated failure boundary is present exactly when its
+retained plan has at least one such site. User-call emission binary-searches
+that sparse, lexically ordered site vector by exact call-form token, so nested
+evaluation order does not require a second effect read or a sequential cursor.
+The backend does not reparse function or callee effect declarations.
 
 Analysis is conservative. An unknown call or recursive component may lengthen
 a lifetime to the caller or process region, but may never shorten it. Planning
