@@ -1,7 +1,7 @@
 # Core 1D typed-view progress
 
 Date: 2026-07-23
-Status: progress checkpoint, not milestone completion
+Status: milestone complete
 Host: Apple Silicon arm64, macOS 26.3 (25D125), Apple Clang 21.0.0
 
 ## What changed
@@ -209,18 +209,28 @@ The durable quick scaling series places `Payload` after 125, 250, 500, and
 1.25 limit. This adversarial declaration order would expose restoration of the
 old per-reference declaration scan.
 
-## Remaining Core 1D blockers
+## Core 1D acceptance audit
 
-- Project checking, scheduling, ordinary emission, and cache misses now share
-  one prepared artifact. Each flattened token retains its module and original
-  byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Boolean recovery and ownership diagnostics now use the finalized structured
-  channel; every accepted project semantic diagnostic uses the same origin
-  projection.
-- Code generation still derives per-call allocation-effect and expression
-  facts from token structure instead of consuming bounded typed-view queries.
-- Adversarial expression tests and geometric source-shape budgets still need to
-  join the existing aggregate, allocation-failure, sanitizer, and release gates.
+- Project checking, scheduling, ordinary emission, and cache misses share one
+  prepared checked artifact. Each flattened token retains its module and exact
+  original byte span.
+- Every finalized type, effect, match, recurrence, and ownership issue uses the
+  same interval channel and project-origin projection.
+- Code generation consumes exact declaration/member/local links, dense
+  expression facts, retained recurrence and region summaries, and sparse
+  allocation sites. It has no semantic fallback scan for those decisions.
+- Source form dispatch, literal classification, declared layout traversal, and
+  parameter declaration traversal remain canonical lowering and ABI inputs.
+  The memory planner's sole `syntax/name_is_inout` use constructs its separate
+  escape plan and cannot depend on typing without a module cycle.
+- Adversarial expression shapes, geometric scaling, same-host regression,
+  allocation-failure, sanitizer, native challenge, agent feedback, and
+  bootstrap checks are all permanent release gates.
+
+D0058 freezes this boundary after the final release run passes 101 fixtures,
+2,000 mutations, every 1.25 source-shape budget, and the byte-identical
+1,629,310-byte portable seed. Later optimization may derive new facts from this
+artifact, but may not introduce a second semantic authority.
 
 ## Retained memory plan
 

@@ -1,8 +1,8 @@
 # SLIM Roadmap
 
-Status: Core 1D shared typed compiler view in progress
-Current milestone: unify checking and generation on bounded typed facts
-Last updated: 2026-07-22
+Status: Core 1D shared typed compiler view complete
+Current milestone: define the Core 1E typed optimization boundary
+Last updated: 2026-07-23
 
 ## Direction
 
@@ -628,7 +628,7 @@ results are recorded in `benchmarks/results/2026-07-22-core-1c.md`.
 
 ### Core 1D: complete typed compiler view
 
-Status: in progress
+Status: complete
 
 D0031 makes one derived typed view authoritative for expression semantics, and
 D0032 gives record construction and variant matching one canonical declared
@@ -838,13 +838,17 @@ series use balanced ascending/descending sampling so drift cannot masquerade
 as input-size growth. Generated programs remain byte-identical, and the
 fixed-point seed is 1,629,310 C bytes.
 
-This is not yet a completed milestone. Explicit let types, match destinations,
-and pattern bindings remain legitimate source or caller contracts rather than
-redundant analysis. All accepted
-type, effect, match, recurrence, and
-ownership diagnostic families now use structured project source projection.
-Core 1D acceptance requires bounded expression-fact lookup, removal of the
-remaining redundant ordinary-generation analysis, complete project
-diagnostic projection, adversarial deep/wide tests, geometric scaling and
-same-host regression budgets, allocation-failure and sanitizer coverage, and
-the complete release/bootstrap gate.
+Core 1D is accepted by D0058. Explicit let types, match destinations, pattern
+bindings, source forms, literals, declared layouts, and parameter declarations
+remain lowering or ABI contracts rather than redundant semantic analysis. The
+final audit finds no ordinary-generation relinking, spelling-based binding
+lookup, aggregate-member search, effect-list read, recurrence scan, region
+inference, or match-type reconstruction. All accepted type, effect, match,
+recurrence, and ownership diagnostics use the finalized interval stream and
+structured project source projection.
+
+The acceptance boundary is enforced by governance and the complete release
+gate: dense bounded facts, checked links and plans, adversarial deep/wide
+fixtures, geometric and same-host budgets, 101 fixtures, 2,000 malformed-input
+mutations, allocation-failure injection, sanitizers, native challenges, agent
+feedback checks, and the byte-identical 1,629,310-byte bootstrap seed all pass.

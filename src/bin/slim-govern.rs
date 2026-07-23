@@ -74,11 +74,65 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_rust_budget(root, &mut errors);
     check_toolchain_cutover(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
+    check_core_1d_acceptance(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_core_1d_acceptance(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0058") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => {
+            errors.push("Core 1D acceptance requires accepted D0058 scoring at least 60".to_owned())
+        }
+        None => errors.push("Core 1D acceptance decision D0058 is missing".to_owned()),
+    }
+
+    let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
+    for required in [
+        "Status: Core 1D shared typed compiler view complete",
+        "### Core 1D: complete typed compiler view\n\nStatus: complete",
+        "Core 1D is accepted by D0058.",
+    ] {
+        if !roadmap.contains(required) {
+            errors.push(format!("Core 1D roadmap freeze is missing `{required}`"));
+        }
+    }
+
+    let evidence =
+        fs::read_to_string(root.join("benchmarks/results/2026-07-23-core-1d-progress.md"))
+            .unwrap_or_default();
+    if !evidence.contains("Status: milestone complete")
+        || !evidence.contains("## Core 1D acceptance audit")
+    {
+        errors.push("Core 1D acceptance evidence is not frozen as complete".to_owned());
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for forbidden in [
+        "link_declaration_names",
+        "syntax/name_is_inout",
+        "effects/",
+        "(fn find_parameter_type",
+        "(fn find_record_item",
+        "(fn find_variant_item",
+        "(fn find_variant_case",
+        "(fn find_record_field",
+        "(fn linked_source_type",
+    ] {
+        if codegen.contains(forbidden) {
+            errors.push(format!(
+                "Core 1D code generation restored semantic rediscovery `{forbidden}`"
+            ));
+        }
+    }
 }
 
 fn check_performance_architecture(

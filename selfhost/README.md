@@ -34,8 +34,10 @@ integer. Code generation and borrowed-return checking query that mode directly
 instead of rescanning parameter names.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
-Core 1D can be frozen after its final acceptance audit and complete release
-gate.
+D0058 freezes Core 1D after its final audit and complete release gate: ordinary
+generation has one checked semantic authority while source forms, literals,
+declared layouts, and parameter declarations remain canonical lowering and ABI
+inputs.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction
