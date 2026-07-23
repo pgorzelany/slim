@@ -131,6 +131,22 @@ but generalized nested-expression lowering pushed self-validation beyond 12
 seconds. It was reverted completely. This checkpoint claims bounded scrutinees,
 not arbitrary expression lowering.
 
+## Aggregate construction links
+
+D0038 removes record construction's whole-declaration scan by consuming the
+record type token's checked declaration link. Canonical field checking now also
+publishes the matching field definition on the supplied field form. A new
+`record-wide` executable fixture constructs sixteen ordered fields, projects
+the last, and prints `42`.
+
+Two consumers of the field link were tested and reverted. Advancing record
+definitions in lockstep and directly reading the retained link from the
+recursive emitter each pushed self-validation beyond the five-second abort
+guard, versus about 0.21 seconds of user CPU time for the accepted producer.
+The compatibility field-name scan therefore remains and no bounded-field-lookup
+claim is made. The byte-identical seed is 1,647,978 C bytes; 91 fixtures and
+2,000 malformed mutations pass.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share

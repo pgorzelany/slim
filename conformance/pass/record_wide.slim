@@ -1,0 +1,16 @@
+(module record-wide
+  (record Wide ((f00 I64) (f01 I64) (f02 I64) (f03 I64)
+                (f04 I64) (f05 I64) (f06 I64) (f07 I64)
+                (f08 I64) (f09 I64) (f10 I64) (f11 I64)
+                (f12 I64) (f13 I64) (f14 I64) (f15 I64)))
+  (fn main ((args (Vec Bytes))) I64 (effects io)
+    (let value Wide
+      (make Wide
+        (f00 0) (f01 1) (f02 2) (f03 3)
+        (f04 4) (f05 5) (f06 6) (f07 7)
+        (f08 8) (f09 9) (f10 10) (f11 11)
+        (f12 12) (f13 13) (f14 14) (f15 42))
+      (let answer I64 (get value f15)
+        (let shown Unit (call io.print-i64 answer)
+          (let newline Unit (call io.println "") 0)))))
+)

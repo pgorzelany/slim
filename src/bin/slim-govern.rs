@@ -891,6 +891,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(record Checked ((status I64) (view View) (issues (Vec Issue))))",
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end))",
+        "(call syntax/set_token_link tokens cursor definition)",
     ] {
         if !typing.contains(required) {
             errors.push(format!(
@@ -978,6 +979,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn linked_source_type",
         "(call syntax/token_link tokens value)",
         "(let variant_type I64 (call linked_source_type tokens value)",
+        "(let item I64 (call syntax/token_link tokens record)",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
@@ -987,6 +989,21 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     if codegen.contains("(fn find_parameter_type") {
         errors.push("self-host code generation restored parameter-only type lookup".to_owned());
+    }
+    if codegen.contains("(fn find_record_item") {
+        errors.push("self-host code generation restored record declaration scans".to_owned());
+    }
+    for required in [
+        "record-wide\trun\tconformance/pass/record_wide.slim",
+        "backend:aggregate-links",
+    ] {
+        let manifest =
+            fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+        if !manifest.contains(required) {
+            errors.push(format!(
+                "aggregate-link conformance evidence is missing `{required}`"
+            ));
+        }
     }
     for superseded in [
         "(fn report_private_modules",

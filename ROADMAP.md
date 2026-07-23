@@ -686,12 +686,21 @@ lexical `let` and still compile and run. The obsolete scan was removed, shrinkin
 the fixed-point seed to 1,650,892 C bytes; all 90 fixtures and 2,000 malformed
 mutations pass at the approximately 0.22-second self-check boundary.
 
+The eighth slice adopts D0038's aggregate-construction links. Record emission
+uses the checked record declaration link instead of scanning all declarations,
+and canonical field checking publishes each validated field definition on the
+field form. The `record-wide` fixture exercises sixteen ordered fields. Direct
+field-link and lockstep backend consumers were reverted after crossing the
+five-second self-check guard, so the compatibility field scan remains an
+explicit Core 1D blocker. The fixed-point seed is 1,647,978 C bytes and all 91
+fixtures plus 2,000 malformed mutations pass.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
 source projection, while legacy exhaustiveness, recursive-inout, and move
 reports have not yet joined that channel. Core 1D
-acceptance requires bounded expression-fact and name/member lookup, removal of
+acceptance requires bounded expression-fact and remaining member lookup, removal of
 the remaining redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and
 same-host regression budgets, allocation-failure and sanitizer coverage, and
