@@ -134,7 +134,7 @@ test("agent summary and dependency boundary remain explicit", async () => {
   ]);
 
   assert.match(llms, /Small Language for Intelligent Machines/);
-  assert.match(llms, /Core 1H bounded-resource evidence in progress/);
+  assert.match(llms, /Core 1H bounded-resource evidence complete/);
   assert.match(llms, /\/reference\/surface\.json/);
   assert.doesNotMatch(rootCargo, /website|vinext|react|marked/);
   assert.match(websitePackage, /"marked": "16\.4\.2"/);

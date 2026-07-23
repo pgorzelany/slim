@@ -1,8 +1,8 @@
 # SLIM Status
 
-Status: Core 1H bounded-resource evidence in progress
+Status: Core 1H bounded-resource evidence complete
 Compiler version: 0.0.1
-Next milestone: Core 1H bounded resources and application evidence
+Next milestone: Core 1I safe typed host boundary
 Updated: 2026-07-23
 
 SLIM is experimental. The production compiler is written in SLIM, bootstraps
@@ -68,12 +68,12 @@ yet a stable public release.
 
 ## Next boundary
 
-Core 1H through Core 1L are the planned path to 1.0. Core 1H's first slice
-publishes recurrence profiles and call-work evidence and maintains a
-14-application baseline. It does not pre-approve resource syntax. Next, the
-baseline must justify any stronger execution, allocation, or peak-memory proof.
-Every durable mechanism still requires a weighted decision, measured cost,
-diagnostics, specifications, and permanent tests.
+Core 1I through Core 1L are the remaining path to 1.0. D0074 closes Core 1H
+without resource syntax: the 14-application baseline did not justify treating
+structural counts as physical time or bytes. Core 1I now measures and defines
+the smallest typed capability boundary needed for clocks, networking, process,
+and other host services. Every durable mechanism still requires a weighted
+decision, measured cost, diagnostics, specifications, and permanent tests.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,

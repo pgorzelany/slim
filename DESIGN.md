@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1H bounded-resource evidence in progress
+Status: Core 1H bounded-resource evidence complete
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -232,7 +232,7 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-Core 1H in progress has affine ownership, immutable bindings, exclusive mutation,
+Core 1H has affine ownership, immutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic fork/join.
@@ -244,15 +244,15 @@ or unrestricted foreign boundary.
 The Core 1H through Core 1L sequence in `ROADMAP.md` focuses the remaining
 design work:
 
-1. Which resource bounds can be derived, and which require one explicit
-   contract?
-2. How should bounded internal state interact with indefinite external event
+1. How should bounded internal state interact with indefinite external event
    streams?
-3. What is the smallest safe host-capability boundary for real applications?
-4. Can one structured effectful-concurrency form cover demonstrated needs while
+2. What is the smallest safe host-capability boundary for real applications?
+3. Can one structured effectful-concurrency form cover demonstrated needs while
    preserving race and deadlock freedom?
-5. Which invariants and cost models make state-space comparison and reduction
+4. Which invariants and cost models make state-space comparison and reduction
    useful without claiming one universal quality score?
+5. Which currently unknown physical resource bounds eventually justify one
+   explicit contract?
 6. Which behaviors and artifacts must be frozen for a credible 1.0
    compatibility promise?
 

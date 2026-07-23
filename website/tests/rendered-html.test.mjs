@@ -65,7 +65,7 @@ test("home exposes the current boundary and tested hello source", async () => {
   const response = await render("/");
   const html = await response.text();
 
-  assert.match(html, /Core 1H bounded-resource evidence in progress/);
+  assert.match(html, /Core 1H bounded-resource evidence complete/);
   assert.match(html, /examples\/hello\.slim/);
   assert.match(html, /hello from SLIM/);
   assert.match(html, /Small language\./);

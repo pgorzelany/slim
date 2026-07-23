@@ -1,8 +1,8 @@
 # Core 1H bounded resource evidence
 
 Date: 2026-07-23
-Decision: D0073
-Status: accepted first slice
+Decisions: D0073, D0074
+Status: accepted milestone
 
 ## Boundary
 
@@ -21,17 +21,18 @@ Command:
 Every maintained application is analyzed twice, must produce byte-identical
 balanced reports, and must match `benchmarks/resource-baseline.tsv`.
 
-| corpus | source bytes | profiles | profiled calls | exact calls | unknown calls | allocation sites | trap sites | owned bindings | exact total functions |
-| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| 14 applications | 20,282 | 2 | 4 | 4 | 0 | 24 | 142 | 27 | 5 |
+| corpus | source bytes | expression nodes | profiles | profiled calls | exact calls | allocation sites | trap sites | effectful functions | partial functions | exact total functions |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 14 applications | 20,282 | 1,488 | 2 | 4 | 4 | 24 | 142 | 53 | 52 | 5 |
 
 `state_machine` and `signal_network` each expose one profile and two exact
 2,000,000-iteration calls. The other 12 applications expose no recurrence in
 the supported canonical shape.
 
 That negative result matters: zero retained profiles does not mean zero work,
-and a structural allocation site is not an allocation-volume or peak-byte
-bound. This slice therefore does not justify source resource syntax.
+and structural expression or allocation sites do not determine physical time,
+allocation volume, or peak bytes. D0074 therefore closes Core 1H without
+source resource syntax.
 
 ## Permanent evidence
 

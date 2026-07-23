@@ -924,10 +924,14 @@ struct ResourceEvidence {
     exact_call_work_sites: usize,
     unknown_call_work_sites: usize,
     maximum_exact_iterations: usize,
+    expression_nodes: usize,
     allocation_sites: usize,
     trap_sites: usize,
     owned_bindings: usize,
     max_live_owned: usize,
+    effectful_functions: usize,
+    allocation_effect_functions: usize,
+    partial_functions: usize,
     total_functions: usize,
 }
 
@@ -959,21 +963,25 @@ fn run_resource_evidence() {
     }
 
     println!(
-        "challenge\tsource_bytes\trecurrence_profiles\tprofiled_call_sites\texact_call_work_sites\tunknown_call_work_sites\tmaximum_exact_iterations\tallocation_sites\ttrap_sites\towned_bindings\tmax_live_owned\ttotal_functions"
+        "challenge\tsource_bytes\trecurrence_profiles\tprofiled_call_sites\texact_call_work_sites\tunknown_call_work_sites\tmaximum_exact_iterations\texpression_nodes\tallocation_sites\ttrap_sites\towned_bindings\tmax_live_owned\teffectful_functions\tallocation_effect_functions\tpartial_functions\ttotal_functions"
     );
     for (challenge, evidence) in &measured {
         println!(
-            "{challenge}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+            "{challenge}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
             evidence.source_bytes,
             evidence.recurrence_profiles,
             evidence.profiled_call_sites,
             evidence.exact_call_work_sites,
             evidence.unknown_call_work_sites,
             evidence.maximum_exact_iterations,
+            evidence.expression_nodes,
             evidence.allocation_sites,
             evidence.trap_sites,
             evidence.owned_bindings,
             evidence.max_live_owned,
+            evidence.effectful_functions,
+            evidence.allocation_effect_functions,
+            evidence.partial_functions,
             evidence.total_functions
         );
     }
@@ -999,6 +1007,14 @@ fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {
     assert!(report.starts_with("(analysis 6 "));
     let resources = report_section(report, "(resource-evidence ", " (quality ");
     let quality = report_section(report, "(quality ", " (parallelism ");
+    let functions = report_number(quality, "(quality (guarantee exact) (functions ");
+    let (effectful_functions, allocation_effect_functions, partial_functions) =
+        report_effect_counts(quality);
+    assert_eq!(
+        report_numbers(quality, "(expression-nodes ").len(),
+        functions,
+        "every application function must report expression nodes"
+    );
     let total_functions = quality.matches("(status total)").count();
     ResourceEvidence {
         source_bytes: fs::metadata(path)
@@ -1009,6 +1025,9 @@ fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {
         exact_call_work_sites: report_number(resources, "(exact-call-work-sites "),
         unknown_call_work_sites: report_number(resources, "(unknown-call-work-sites "),
         maximum_exact_iterations: report_number(resources, "(maximum-exact-iterations "),
+        expression_nodes: report_numbers(quality, "(expression-nodes ")
+            .into_iter()
+            .sum(),
         allocation_sites: report_numbers(quality, "(allocation-sites ")
             .into_iter()
             .sum(),
@@ -1018,6 +1037,9 @@ fn measure_resource_evidence(path: &Path, report: &str) -> ResourceEvidence {
             .into_iter()
             .max()
             .unwrap_or(0),
+        effectful_functions,
+        allocation_effect_functions,
+        partial_functions,
         total_functions,
     }
 }
@@ -1033,8 +1055,8 @@ fn resource_baseline() -> BTreeMap<String, ResourceEvidence> {
         let columns: Vec<_> = line.split('\t').collect();
         assert_eq!(
             columns.len(),
-            12,
-            "resource baseline line {} must have twelve columns",
+            16,
+            "resource baseline line {} must have sixteen columns",
             line_number + 1
         );
         let number = |index: usize| {
@@ -1053,11 +1075,15 @@ fn resource_baseline() -> BTreeMap<String, ResourceEvidence> {
             exact_call_work_sites: number(4),
             unknown_call_work_sites: number(5),
             maximum_exact_iterations: number(6),
-            allocation_sites: number(7),
-            trap_sites: number(8),
-            owned_bindings: number(9),
-            max_live_owned: number(10),
-            total_functions: number(11),
+            expression_nodes: number(7),
+            allocation_sites: number(8),
+            trap_sites: number(9),
+            owned_bindings: number(10),
+            max_live_owned: number(11),
+            effectful_functions: number(12),
+            allocation_effect_functions: number(13),
+            partial_functions: number(14),
+            total_functions: number(15),
         };
         assert!(
             baseline.insert(columns[0].to_owned(), evidence).is_none(),
@@ -1335,6 +1361,29 @@ fn report_numbers(report: &str, marker: &str) -> Vec<usize> {
         remaining = &tail[digits..];
     }
     numbers
+}
+
+fn report_effect_counts(report: &str) -> (usize, usize, usize) {
+    let mut remaining = report;
+    let mut effectful = 0;
+    let mut allocation = 0;
+    let mut partial = 0;
+    while let Some(index) = remaining.find("(effects") {
+        let tail = &remaining[index + "(effects".len()..];
+        let end = tail.find(')').expect("declared effects must be closed");
+        let effects = tail[..end].split_ascii_whitespace().collect::<Vec<_>>();
+        if !effects.is_empty() {
+            effectful += 1;
+        }
+        if effects.contains(&"alloc") {
+            allocation += 1;
+        }
+        if effects.contains(&"partial") {
+            partial += 1;
+        }
+        remaining = &tail[end + 1..];
+    }
+    (effectful, allocation, partial)
 }
 
 fn report_parentheses_are_balanced(report: &[u8]) -> bool {

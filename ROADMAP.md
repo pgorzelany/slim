@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1H bounded-resource evidence in progress
-Current milestone: Core 1H bounded resources and application evidence
+Status: Core 1H bounded-resource evidence complete
+Current milestone: Core 1I safe typed host boundary
 Last updated: 2026-07-23
 
 ## Direction
@@ -90,12 +90,14 @@ serial. The exact boundary is in `docs/PARALLELISM.md`.
 
 ## Core 1H: bounded resources and application evidence
 
-Status: in progress
+Status: complete
 
 Core 1H should make physical limits useful without pretending arbitrary
-programs are decidable. D0073's first slice advances analysis to schema 6,
+programs are decidable. D0073 advances analysis to schema 6,
 publishes bounded recurrence profiles and exact-or-unknown call workloads, and
 locks a 14-application resource baseline without adding language surface.
+D0074 closes the milestone without resource syntax because the corpus does not
+justify physical time, allocation-volume, or peak-byte contracts.
 
 ### Work
 

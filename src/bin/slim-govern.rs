@@ -294,6 +294,17 @@ fn check_resource_evidence(
         ),
         None => errors.push("Core 1H resource evidence decision D0073 is missing".to_owned()),
     }
+    match decisions.get("D0074") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1H closure requires accepted primitive-free D0074 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("Core 1H closure decision D0074 is missing".to_owned()),
+    }
 
     for required in [
         "docs/RESOURCE_BOUNDS.md",
@@ -352,6 +363,10 @@ fn check_resource_evidence(
         "\"resources\" => run_resource_evidence()",
         "benchmarks/resource-baseline.tsv",
         "unknown_call_work_sites",
+        "expression_nodes",
+        "allocation_effect_functions",
+        "partial_functions",
+        "resource baseline line {} must have sixteen columns",
         "resource evidence changed; record the reason",
     ] {
         if !benchmark.contains(required) {
@@ -381,8 +396,20 @@ fn check_resource_evidence(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0073") {
-        errors.push("D0073 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("D0073") || surface.contains("D0074") {
+        errors.push(
+            "D0073 and D0074 have Primitive: none and must not add Core language surface"
+                .to_owned(),
+        );
+    }
+
+    let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
+    let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
+    if !status.contains("Status: Core 1H bounded-resource evidence complete")
+        || !status.contains("Next milestone: Core 1I safe typed host boundary")
+        || !roadmap.contains("Current milestone: Core 1I safe typed host boundary")
+    {
+        errors.push("Core 1H closure and Core 1I boundary are not canonical".to_owned());
     }
 }
 
