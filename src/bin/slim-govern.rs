@@ -894,6 +894,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call syntax/set_token_link tokens cursor definition)",
         "(call syntax/set_token_link tokens expr case_form)",
         "(call syntax/set_token_link tokens cursor case_cursor)",
+        "(fn check_recursive_argument_identity",
+        "(call append_issue \"E0350\" argument argument issues)",
     ] {
         if !typing.contains(required) {
             errors.push(format!(
@@ -922,13 +924,32 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    for code in ["E0343", "E0348", "E0349"] {
+    for code in ["E0343", "E0348", "E0349", "E0350"] {
         let direct = format!("(call report_diagnostic \"{code}\"");
         if check.contains(&direct) {
             errors.push(format!(
                 "self-host checker directly prints finalized issue {code}"
             ));
         }
+    }
+    for superseded in [
+        "(fn report_recur_arguments",
+        "(fn report_recur_span",
+        "(fn report_recur_items",
+        "(fn check_path_recur",
+    ] {
+        if check.contains(superseded) {
+            errors.push(format!(
+                "self-host checker retains superseded recursive-inout pipeline `{superseded}`"
+            ));
+        }
+    }
+    let project_manifest =
+        fs::read_to_string(root.join("conformance/projects/manifest.tsv")).unwrap_or_default();
+    if !project_manifest.contains(
+        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@99:104,E0350@app@105:109",
+    ) {
+        errors.push("recursive-inout project projection fixture is missing".to_owned());
     }
 
     let project_path = directory.join("project.slim");

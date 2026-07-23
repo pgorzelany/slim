@@ -709,11 +709,18 @@ case-name scanner and making variant member lookup independent of case count.
 The producer seed builds the consumer normally, self-validation remains about
 0.22 seconds, and the fixed-point seed shrinks to 1,643,001 C bytes.
 
+The eleventh slice adopts D0041's typed recursive-inout diagnostics. The
+existing typed argument traversal checks `recur` identity and appends every
+`E0350` interval; four legacy reporting functions and their whole-body walk are
+removed. A project fixture pins two module-local intervals, self-validation
+stays near 0.22 seconds, and the fixed-point seed shrinks to 1,634,840 C bytes;
+93 fixtures and 2,000 malformed mutations pass.
+
 This is not yet a completed milestone. Code generation and memory planning
 still rediscover some semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
-source projection, while legacy exhaustiveness, recursive-inout, and move
-reports have not yet joined that channel. Core 1D
+source projection, while legacy exhaustiveness and move reports have not yet
+joined that channel. Core 1D
 acceptance requires bounded expression-fact and remaining member lookup, removal of
 the remaining redundant ordinary-generation analysis, complete project
 diagnostic projection, adversarial deep/wide tests, geometric scaling and

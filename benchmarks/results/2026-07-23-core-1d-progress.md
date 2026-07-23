@@ -174,12 +174,26 @@ fixtures and 2,000 malformed mutations pass, and the byte-identical seed shrinks
 again to 1,643,001 C bytes. Record-field lookup remains the only aggregate
 member scan and retains D0038's explicit negative result.
 
+## Typed recursive-inout diagnostics
+
+D0041 moves `E0350` into the existing typed call-argument traversal. A small
+non-recursive leaf compares recursive `inout` arguments with their parameters;
+the traversal appends every mismatch before normal type recovery. This avoids
+the measured issue-vector recursion cliff and removes the legacy recur argument,
+body, declaration, and direct-reporting functions.
+
+The standalone fixture retains two diagnostics and the project fixture pins
+`E0350@app@99:104` plus `E0350@app@105:109`. Self-validation remains about 0.22
+seconds of user CPU time, and the byte-identical seed shrinks from 1,643,001 to
+1,634,840 C bytes. Multiple structured issues retain exit status one; all 93
+fixtures and 2,000 malformed mutations pass.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy exhaustiveness, recursive-inout, and move diagnostics still need to
+- Legacy exhaustiveness and move diagnostics still need to
   move into the structured issue channel so every project semantic diagnostic
   uses the same projection.
 - Code generation and memory planning still rediscover some facts from token
