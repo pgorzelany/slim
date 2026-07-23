@@ -759,10 +759,20 @@ unchanged, while a prepared-project fixture pins all four module-local ranges.
 The corpus grows to 96, self-validation remains near 0.11 seconds, and the
 byte-identical fixed-point seed is 1,631,074 C bytes.
 
+The eighteenth slice adopts D0049's typed ownership diagnostics. Typed lexical
+bindings retain borrowed and moved state, and one packed local link carries the
+checked type plus exact declaration identity without enlarging syntax tokens.
+User calls, `bytes.freeze`, and borrowed returns append non-blocking `E0315` and
+`E0347` intervals during the authoritative typed traversal. The spelling-based
+post-type move walk and its quadratic moved-name vector are removed. A prepared
+project fixture pins four ordered ownership findings, and a permanent geometric
+gate protects owned-transfer scaling. The corpus grows to 97 fixtures while
+self-validation remains near 0.10 seconds. Removing the duplicate scanner
+shrinks the byte-identical fixed-point seed to 1,619,795 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
-semantic facts from tokens. Allocation, partial, and I/O
-effect failures and exclusive-borrow call rules now use structured project
-source projection, while legacy move reports have not yet joined that channel.
+semantic facts from tokens. All accepted type, effect, match, recurrence, and
+ownership diagnostic families now use structured project source projection.
 Core 1D
 acceptance requires bounded expression-fact lookup, removal of the remaining
 redundant ordinary-generation analysis, complete project

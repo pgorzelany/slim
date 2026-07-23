@@ -226,6 +226,52 @@ fn run_performance() {
         );
         std::process::exit(1);
     }
+
+    println!("owned_transfers\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
+    let mut first_owned = None;
+    let mut last_owned = None;
+    for size in nested_sizes {
+        let source = generated_owned_transfer_program(*size);
+        let path = directory.path.join(format!("owned-transfers-{size}.slim"));
+        fs::write(&path, &source).expect("write owned-transfer scaling source");
+        require_clean_output(
+            compiler_output(&compiler, "check", &path),
+            "owned-transfer scaling warmup",
+        );
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) = timed_output(
+                Command::new(&compiler).arg("check").arg(&path),
+                "SLIM owned-transfer check",
+            );
+            require_clean_output(output, "owned-transfer scaling check");
+            times.push(elapsed);
+        }
+        times.sort();
+        let elapsed = times[samples / 2];
+        println!(
+            "{size}\t{}\t{}\t{:.2}",
+            source.len(),
+            elapsed.as_micros(),
+            elapsed.as_nanos() as f64 / source.len() as f64
+        );
+        if first_owned.is_none() {
+            first_owned = Some((*size, elapsed));
+        }
+        last_owned = Some((*size, elapsed));
+    }
+    let (first_size, first_time) = first_owned.expect("owned-transfer series has a first sample");
+    let (last_size, last_time) = last_owned.expect("owned-transfer series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("check-exponent", "generated-owned-transfers");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: owned-transfer check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} transfers"
+        );
+        std::process::exit(1);
+    }
 }
 
 fn run_reduction() {
@@ -985,6 +1031,32 @@ fn generated_named_type_program(functions: usize) -> String {
     source.push_str(
         "(record Payload ((bytes Bytes))) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n",
     );
+    source
+}
+
+fn generated_owned_transfer_program(transfers: usize) -> String {
+    let mut source = String::with_capacity(transfers * 100);
+    source.push_str(
+        "(module owned-transfers (fn consume ((value (Vec I64))) Unit (effects) unit) (fn transfer (",
+    );
+    for index in 0..transfers {
+        source.push_str("(value-");
+        source.push_str(&index.to_string());
+        source.push_str(" (Vec I64))");
+    }
+    source.push_str(") I64 (effects) ");
+    for index in 0..transfers {
+        source.push_str("(let moved-");
+        source.push_str(&index.to_string());
+        source.push_str(" Unit (call consume value-");
+        source.push_str(&index.to_string());
+        source.push_str(") ");
+    }
+    source.push('0');
+    for _ in 0..transfers {
+        source.push(')');
+    }
+    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
     source
 }
 

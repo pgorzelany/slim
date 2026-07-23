@@ -214,9 +214,9 @@ old per-reference declaration scan.
 - Project checking, scheduling, ordinary emission, and cache misses now share
   one prepared artifact. Each flattened token retains its module and original
   byte span; the `project-type-error` fixture pins `E0344@app@56:60`.
-- Legacy move and secondary Boolean-recovery diagnostics still need to move
-  into the structured issue channel so every project semantic diagnostic uses
-  the same projection.
+- Boolean recovery and ownership diagnostics now use the finalized structured
+  channel; every accepted project semantic diagnostic uses the same origin
+  projection.
 - Code generation still derives allocation-effect, recurrence, and expression
   facts from token structure instead of consuming bounded typed-view queries.
 - Adversarial expression tests and geometric source-shape budgets still need to
@@ -273,9 +273,11 @@ classification followed by mutation is fast when split across helpers, while
 branching and mutation in the same function crosses the cliff; recursively
 converting events while carrying both event and issue vectors also crosses it.
 All candidates were reverted. No token sentinel, overloaded issue field, or
-rendered-diagnostic shortcut was retained. Move diagnostics remain an explicit
-Core 1D blocker until their structure has a durable geometric reproducer and a
-bounded implementation.
+rendered-diagnostic shortcut was retained. D0049 later resolved the blocker by
+placing state on the existing typed binding, distinguishing non-blocking issues
+explicitly, and packing type plus declaration identity into the existing local
+link. Its permanent owned-transfer series is the required geometric
+reproducer.
 
 A separate compact-plan experiment replaced the existing `local_region Bool`
 with a same-width `summary I64` intended to retain the allocation effect. Even
@@ -343,3 +345,26 @@ collector. Self-validation remains around 0.10--0.11 seconds.
 All 96 fixtures and 2,000 deterministic mutations pass. The complete release
 gate records a byte-identical 1,631,074-byte generated C seed. Move diagnostics
 are now the remaining legacy semantic family outside project projection.
+
+## Typed ownership diagnostics
+
+D0049 moves aggregate transfer state onto the typed lexical `Binding`. Local
+links pack the checked type token and exact declaration token, and declaration
+tokens point to their binding record during inference. User-call transfers and
+`bytes.freeze` therefore update move state in constant time without a second
+token walk or a name-spelling vector. Borrowed owned returns are checked at the
+same typed function boundary.
+
+`Issue.blocks_inference` distinguishes ownership findings from type failures:
+move errors do not hide later type or ownership diagnostics, while the existing
+first blocking type error still prevents cascades. The old `report_*move*`,
+`moved_has`, and direct `E0315`/`E0347` paths are removed.
+
+`project-ownership` retains four ordered module-local ranges covering repeated
+user-call transfer, transfer from `inout`, repeated `bytes.freeze`, and returning
+an owned value through `inout`. The new permanent owned-transfer scaling series
+measured 4.836, 8.102, 14.275, and 26.535 milliseconds for 125, 250, 500, and
+1,000 transfers, below its 1.25 exponent budget. All 97 fixtures and 2,000
+deterministic malformed-input mutations pass. The release checkpoint records a
+byte-identical 1,619,795-byte fixed point with SHA-256
+`f4021a1524dcb4dcfaa45aff76d0875b3df0ec9bcc7e55d7f447e10bbd4e5f71`.

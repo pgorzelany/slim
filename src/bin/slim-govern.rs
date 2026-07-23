@@ -204,6 +204,7 @@ fn check_performance_architecture(
         "check-exponent/generated-declarations",
         "check-exponent/generated-nested-bindings",
         "check-exponent/generated-named-type-parameters",
+        "check-exponent/generated-owned-transfers",
         "emit-exponent/generated-declarations",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
@@ -278,7 +279,9 @@ fn check_performance_architecture(
         "performance_budget(\"native-runtime-ratio\"",
         "performance_budget(\"check-exponent\", \"generated-nested-bindings\")",
         "performance_budget(\"check-exponent\", \"generated-named-type-parameters\")",
+        "performance_budget(\"check-exponent\", \"generated-owned-transfers\")",
         "fn generated_named_type_program(functions: usize)",
+        "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
     ] {
         if !benchmark.contains(required) {
@@ -891,10 +894,10 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for required in [
-        "(record Issue ((code Bytes) (start I64) (end I64)))",
+        "(record Issue ((code Bytes) (start I64) (end I64) (blocks_inference Bool)))",
         "(record Checked ((status I64) (view View) (issues (Vec Issue)) (plan memory/Plan)))",
         "(fn append_issue",
-        "(make Issue (code code) (start start) (end end))",
+        "(make Issue (code code) (start start) (end end) (blocks_inference true))",
         "(call syntax/set_token_link tokens cursor definition)",
         "(call syntax/set_token_link tokens expr case_form)",
         "(call syntax/set_token_link tokens cursor case_cursor)",
@@ -932,8 +935,28 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
+    for required in [
+        "(record Issue ((code Bytes) (start I64) (end I64) (blocks_inference Bool)))",
+        "(record Binding ((name I64) (type I64) (borrowed Bool) (moved Bool) (parent I64)))",
+        "(fn append_ownership_issue",
+        "(fn issues_block_inference",
+        "(fn mark_named_move",
+        "(fn check_owned_argument",
+        "(fn append_inout_return_issue",
+        "(call i64.mul type_value base)",
+        "(call i64.rem packed base)",
+        "(call append_ownership_issue \"E0315\" argument issues)",
+        "(call append_ownership_issue \"E0347\" argument issues)",
+        "(call append_ownership_issue \"E0347\" result issues)",
+    ] {
+        if !typing.contains(required) {
+            errors.push(format!(
+                "self-host typed ownership diagnostics are missing `{required}`"
+            ));
+        }
+    }
     for code in [
-        "E0314", "E0335", "E0336", "E0343", "E0344", "E0348", "E0349", "E0350",
+        "E0314", "E0315", "E0335", "E0336", "E0343", "E0344", "E0347", "E0348", "E0349", "E0350",
     ] {
         let direct = format!("(call report_diagnostic \"{code}\"");
         if check.contains(&direct) {
@@ -950,6 +973,16 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn report_boolean_match_arms",
         "(fn report_boolean_match_span",
         "(fn report_boolean_match_items",
+        "(fn ownership_type_is_copy",
+        "(fn ownership_parameter_type",
+        "(fn moved_has",
+        "(fn report_owned_arguments",
+        "(fn report_builtin_move",
+        "(fn report_call_move",
+        "(fn report_moves_span",
+        "(fn report_inout_return",
+        "(fn report_move_items",
+        "(fn check_path_moves",
     ] {
         if check.contains(superseded) {
             errors.push(format!(
@@ -973,6 +1006,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "project-boolean-recovery\tcheck-fail\tconformance/projects/boolean-recovery/slim.project\tparity\tE0336@app@56:96,E0314@app@74:81,E0335@app@83:95,E0344@app@89:94",
     ) {
         errors.push("Boolean recovery project projection fixture is missing".to_owned());
+    }
+    if !project_manifest.contains(
+        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@248:254,E0347@app@329:335,E0315@app@482:488,E0347@app@576:582",
+    ) {
+        errors.push("ownership project projection fixture is missing".to_owned());
     }
 
     let project_path = directory.join("project.slim");

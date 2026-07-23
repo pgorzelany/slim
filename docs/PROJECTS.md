@@ -222,11 +222,11 @@ origin per flattened token. Scheduling, ordinary C emission, and persistent
 cache misses consume that same checked artifact. Structured issues retain an
 inclusive token interval, allowing point and whole-expression ranges to project
 back to module-local byte spans. Missing-effect, exclusive-inout-call,
-recursive-inout, nonexhaustive-Boolean, and secondary Boolean-recovery
-diagnostics use the finalized checked issue stream. Recovery retains its
-standalone order while projecting unknown names, duplicate arms, and arm-type
-mismatches to their original module. Legacy move diagnostics remain to be
-migrated to the same structured channel.
+recursive-inout, nonexhaustive-Boolean, secondary Boolean-recovery,
+aggregate-move, and borrowed-return diagnostics use the finalized checked issue
+stream. Recovery retains its standalone order while projecting unknown names,
+duplicate arms, arm-type mismatches, repeated moves, borrowed transfers, and
+borrowed returns to their original module.
 
 ## Non-goals
 

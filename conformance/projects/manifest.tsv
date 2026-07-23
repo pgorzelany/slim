@@ -34,3 +34,4 @@ project-effect-error	check-fail	conformance/projects/effect-error/slim.project	p
 project-inout-temporary	check-fail	conformance/projects/inout-temporary/slim.project	parity	E0348@app@164:178	project:diagnostics,ownership:named-inout
 project-inout-alias	check-fail	conformance/projects/inout-alias/slim.project	parity	E0349@app@211:217	project:diagnostics,ownership:no-alias
 project-recur-rebind	check-fail	conformance/projects/recur-rebind/slim.project	parity	E0350@app@99:104,E0350@app@105:109	project:diagnostics,ownership:recur-preserves-inout
+project-ownership	check-fail	conformance/projects/ownership/slim.project	parity	E0315@app@248:254,E0347@app@329:335,E0315@app@482:488,E0347@app@576:582	project:diagnostics,ownership:move,ownership:inout-return
