@@ -66,9 +66,10 @@ The typed plan uses four concepts:
 
 `selfhost/memory.slim` owns `ValuePlan`, `AllocationPlan`,
 `DestructionPlan`, `FunctionPlan`, and `Plan`. The checker executes the plan
-query after creating its one structured declaration index, and the code
-generator consumes the same storage classifier and function summary. There is
-no Rust-owned lifetime IR and no source annotation.
+query after type linking and retains that exact plan in its checked artifact.
+Standalone and prepared-project code generation consume the retained function
+plans in declaration order and verify their function identity before selecting
+a region. There is no Rust-owned lifetime IR and no source annotation.
 
 Analysis is conservative. An unknown call or recursive component may lengthen
 a lifetime to the caller or process region, but may never shorten it. Planning

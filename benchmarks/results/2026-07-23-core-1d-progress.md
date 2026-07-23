@@ -217,7 +217,25 @@ old per-reference declaration scan.
 - Legacy exhaustiveness and move diagnostics still need to
   move into the structured issue channel so every project semantic diagnostic
   uses the same projection.
-- Code generation and memory planning still rediscover some facts from token
-  structure instead of consuming dense typed-view queries.
+- Code generation still derives allocation-effect, recurrence, and expression
+  facts from token structure instead of consuming bounded typed-view queries.
 - Member lookup, adversarial aggregate tests, allocation-failure checks,
   sanitizers, and the complete release gate remain to be frozen together.
+
+## Retained memory plan
+
+D0043 makes the memory plan a field of `typing/Checked` and carries it into the
+prepared project. Ordinary code generation now requires that plan and consumes
+function summaries in declaration order. The consumer verifies the stored
+function token before using its `local_region` decision; the direct backend
+call to `memory/function_uses_local_region` is gone.
+
+This removes a second authority for region placement rather than claiming a
+large latency win. The quick 250/500/1,000/2,000-declaration series emitted in
+8,735, 11,008, 21,777, and 41,141 microseconds, with a 1.410 emit/check ratio at
+2,000 declarations. Self-validation remains about 0.11 seconds. All 93 fixtures
+and 2,000 mutations pass, and the fixed-point seed is 1,635,534 C bytes.
+
+The plan does not yet retain allocation-effect or recurrence facts, and
+expression lowering still reads token structure. Those remain bounded
+typed-view work rather than being hidden inside this checkpoint.

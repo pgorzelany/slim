@@ -891,7 +891,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     };
     for required in [
         "(record Issue ((code Bytes) (start I64) (end I64)))",
-        "(record Checked ((status I64) (view View) (issues (Vec Issue))))",
+        "(record Checked ((status I64) (view View) (issues (Vec Issue)) (plan memory/Plan)))",
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end))",
         "(call syntax/set_token_link tokens cursor definition)",
@@ -1160,9 +1160,14 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(record AllocationPlan",
         "(record DestructionPlan",
         "(record FunctionPlan",
+        "(fn empty_plan",
         "(fn function_uses_local_region",
         "(call syntax/token_link tokens type_index)",
         "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
+        "(make typing/Checked (status status) (view view) (issues issues) (plan plan))",
+        "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (plan memory/Plan)",
+        "(get function_plan function)",
+        "(get function_plan local_region)",
         "slim_region_destroy(&slim_function_region)",
         "slim_allocation_failed",
     ] {
@@ -1177,6 +1182,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "slim_find_allocation",
         "slim_rt_trap(\"out of memory\")",
         "(fn find_type_item",
+        "(call memory/function_uses_local_region source tokens item)",
     ] {
         if joined.contains(forbidden) {
             errors.push(format!(

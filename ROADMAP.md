@@ -723,8 +723,15 @@ items by name. The fixed-point seed shrinks to 1,631,678 C bytes without a new
 plan field, pass, or source feature. Nine warm self-checks have a 0.11-second
 median user time, about twice as fast as the preceding 0.22-second boundary.
 
-This is not yet a completed milestone. Code generation and memory planning
-still rediscover some semantic facts from tokens. Allocation, partial, and I/O
+The thirteenth slice adopts D0043's retained memory plan. `typing/Checked` and
+`PreparedProject` now carry the one plan already produced during checking, and
+ordinary standalone and project emission require that plan. Function plans are
+consumed in declaration order with an identity check, and region selection no
+longer has a backend-owned inference path. The self-check remains near 0.11
+seconds and the byte-identical seed is 1,635,534 C bytes.
+
+This is not yet a completed milestone. Code generation still rediscovers some
+semantic facts from tokens. Allocation, partial, and I/O
 effect failures and exclusive-borrow call rules now use structured project
 source projection, while legacy exhaustiveness and move reports have not yet
 joined that channel. Core 1D
