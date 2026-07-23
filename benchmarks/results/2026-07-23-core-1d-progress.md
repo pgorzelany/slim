@@ -147,6 +147,20 @@ The compatibility field-name scan therefore remains and no bounded-field-lookup
 claim is made. The byte-identical seed is 1,647,978 C bytes; 91 fixtures and
 2,000 malformed mutations pass.
 
+## Variant construction links
+
+D0039 removes both remaining whole-declaration scans from variant construction
+and match emission. The checker now publishes validated constructor and match
+case definitions on their structural opening tokens. This producer-first
+checkpoint retains the case-name scan for one bootstrap generation so the
+checked-in seed can build the future link consumer normally.
+
+`variant-wide` constructs the last of sixteen cases, passes it through exhaustive
+ordered matching, and prints `42`. Self-validation remains about 0.21 seconds
+of user CPU time, all 92 fixtures plus 2,000 malformed mutations pass, and the
+fixed-point seed shrinks to 1,645,415 C bytes. The case-link consumer is recorded
+in the next checkpoint.
+
 ## Remaining Core 1D blockers
 
 - Project checking, scheduling, ordinary emission, and cache misses now share

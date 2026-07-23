@@ -892,6 +892,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end))",
         "(call syntax/set_token_link tokens cursor definition)",
+        "(call syntax/set_token_link tokens expr case_form)",
+        "(call syntax/set_token_link tokens cursor case_cursor)",
     ] {
         if !typing.contains(required) {
             errors.push(format!(
@@ -980,6 +982,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call syntax/token_link tokens value)",
         "(let variant_type I64 (call linked_source_type tokens value)",
         "(let item I64 (call syntax/token_link tokens record)",
+        "(let variant_link I64 (call syntax/token_link tokens variant)",
+        "(let variant_link I64 (call syntax/token_link tokens variant_type)",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
@@ -993,8 +997,12 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if codegen.contains("(fn find_record_item") {
         errors.push("self-host code generation restored record declaration scans".to_owned());
     }
+    if codegen.contains("(fn find_variant_item") {
+        errors.push("self-host code generation restored variant declaration scans".to_owned());
+    }
     for required in [
         "record-wide\trun\tconformance/pass/record_wide.slim",
+        "variant-wide\trun\tconformance/pass/variant_wide.slim",
         "backend:aggregate-links",
     ] {
         let manifest =

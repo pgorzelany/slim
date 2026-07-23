@@ -6,6 +6,7 @@ file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:record,syntax:make,syntax:get,syntax:variant,syntax:case,syntax:match,syntax:set
 record-wide	run	conformance/pass/record_wide.slim	parity	exit=0;stdout=42\n;stderr=	backend:aggregate-links,syntax:record,syntax:make,syntax:get,type:canonical-record-fields
 variant-local-match	run	conformance/pass/variant_local_match.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-links,syntax:let,syntax:match,type:variant
+variant-wide	run	conformance/pass/variant_wide.slim	parity	exit=0;stdout=42\n;stderr=	backend:aggregate-links,syntax:variant,syntax:case,syntax:match,type:canonical-variant-order
 recur	run	conformance/pass/recur.slim	parity	exit=0;stdout=55\n;stderr=	syntax:recur,effect:partial
 inout	run	conformance/pass/inout.slim	parity	exit=0;stdout=42\n;stderr=	syntax:inout,ownership:exclusive-borrow
 lifetimes	run	conformance/pass/lifetimes.slim	parity	exit=0;stdout=OK\n;stderr=	ownership:lifetime,ownership:aggregate-move,ownership:frozen-view,runtime:region
