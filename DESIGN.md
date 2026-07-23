@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: Core 1J deterministic structured concurrency in progress
+Status: Core 1J complete; Core 1K semantic quality in progress
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-23
 
@@ -86,6 +86,12 @@ leading `let` chain, and exact work above the measured `posix-v1` threshold.
 One child and one parent-owned join guarantee bounded, deadlock-free structure;
 spawn failure runs the identical task inline. Unknown, unsupported, and
 unprofitable sites remain serial, and unselected programs pay no worker cost.
+
+Core 1J adds one explicit leading two-call wrapper for independent bounded host
+effects whose intent cannot be inferred. Both tasks are leaf calls, every child
+is joined, allocation regions stay separate during execution, and results
+install in lexical order after adoption. The form introduces no handle,
+cancellation state, lock, channel, detached lifetime, or second scheduler.
 
 ### 6. Systems-level performance
 

@@ -102,17 +102,22 @@ instead of exposing a failed handle, and leaves output unchanged on failure.
 
 <!-- slim-example: conformance/pass/tcp_exchange.slim -->
 
-## Automatic parallelism
+## Structured parallelism
 
-SLIM has no source-level concurrency form. Core 1G may automatically fork two
-adjacent computations only when the checked program proves them independent,
-total, reorder-safe, supported by lowering, and profitable under the current
-target model. One computation runs on a child and one on the parent; both join
-before the original continuation.
+Core 1G may automatically fork two adjacent computations when it proves them
+independent, total, reorder-safe, supported by lowering, and profitable.
+Unknown or too-small work remains serial.
 
-Unknown, effectful, trapping, mutating, allocating, unsupported, or too-small
-work remains serial. Spawn failure runs the same task inline, and unselected
-programs contain no worker machinery.
+Core 1J adds one explicit wrapper for independent bounded host calls. It reuses
+ordinary `let` and `call`; there are no futures, task handles, locks, or
+detached work. One call may run on a child, the other on the parent, and both
+join before the continuation. Spawn failure executes the same calls serially.
+
+<!-- slim-example: conformance/pass/structured_fork.slim | output: OK -->
+
+Effectful tasks are checked leaf functions with scalar or byte-view inputs, no
+`inout`, no `partial`, and a bounded clock or TCP operation. Task allocation
+regions are isolated and ownership transfers only after join.
 
 Continue with `docs/CORE.md` for the grammar and `docs/STATUS.md` for the exact
 current boundary.

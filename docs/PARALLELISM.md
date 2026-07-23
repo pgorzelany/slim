@@ -1,11 +1,12 @@
 # Deterministic parallelism
 
-Status: Core 1G guarded automatic execution
+Status: Core 1J guarded automatic and explicit structured execution
 
-SLIM has no language-level concurrency primitive and no program runtime
-scheduler. Core 1F first establishes which checked computations could be placed
-in a structured fork/join plan without changing observable behavior. This is a
-proof boundary, not an execution claim.
+SLIM has no general concurrency scheduler. Core 1F establishes which checked
+computations can enter a structured fork/join plan without changing observable
+behavior. Core 1G executes one proven pure subset automatically. Core 1J adds
+one explicit lexical wrapper for independent bounded host operations whose
+effect independence cannot be inferred.
 
 ## Reorder-safety
 
@@ -198,3 +199,43 @@ positive applications. On the acceptance host the accepted quick ratios were
 0.724 and 0.695. Permanent same-host budgets prevent silent regressions.
 Unselected programs, including `hello`, contain no task macro, context,
 wrapper, environment parsing, thread include, or worker link flag.
+
+## Core 1J explicit bounded host work
+
+D0078 accepts exactly:
+
+```text
+(fork
+  (let first T (call f ...)
+    (let second U (call g ...)
+      body)))
+```
+
+The wrapper is allowed only on a function's leading immutable `let` chain.
+Both initializers are direct calls to checked leaf functions. Parameters are
+scalars or `Bytes`, never `inout`; neither function declares `partial`; the
+checked body contains at least one `io.monotonic-ms` or bounded
+`io.tcp-exchange` operation and no nested user call, mutation, recurrence, or
+fork. Pure work uses Core 1G instead.
+
+The compiler starts at most one child, runs the other call on the parent, joins
+the child, and installs `first` then `second` before evaluating `body`.
+Unsupported targets and failed spawns execute the identical calls serially.
+There is no task handle, detached lifetime, worker-to-worker wait, lock,
+channel, or observable scheduling order.
+
+Allocating tasks receive separate child regions. Their allocation status is
+shared through C11 atomics, but their allocation lists are not shared. After
+join, the parent adopts both lists before exposing owned results. Allocation
+failure is then propagated through the existing typed `alloc` path.
+
+Analysis schema 6 labels every site `(intent explicit)`, keeps race-free and
+deadlock-free proofs visible, and distinguishes explicit selection from Core
+1G's target profitability model. The `dual_fetch` and `dual_health`
+applications retain forced-serial and POSIX-worker builds. Their accepted
+same-host ratios are 0.529 and 0.534 under permanent 0.75 limits.
+
+D0079 closes Core 1J without cancellation state. Admitted operations already
+have explicit response and timeout bounds; every started call completes with a
+value or typed failure and is then joined. A future cancellation mechanism
+would add states and failure composition not required by the applications.

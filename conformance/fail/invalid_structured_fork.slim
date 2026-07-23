@@ -1,0 +1,1 @@
+(module invalid-structured-fork (fn identity ((value I64)) I64 (effects) value) (fn main ((args (Vec Bytes))) I64 (effects) (fork (let first I64 (call identity 20) (let second I64 (call identity 22) (call i64.add first second))))))

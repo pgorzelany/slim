@@ -1,8 +1,8 @@
 # SLIM Status
 
-Status: Core 1J deterministic structured concurrency in progress
+Status: Core 1J deterministic structured concurrency complete
 Compiler version: 0.0.1
-Next milestone: Core 1J deterministic structured concurrency
+Next milestone: Core 1K semantic quality and reduction
 Updated: 2026-07-23
 
 SLIM is experimental. The production compiler is written in SLIM, bootstraps
@@ -30,6 +30,9 @@ yet a stable public release.
   edits.
 - Guarded automatic fork/join execution for the exact Core 1G subset, with
   serial fallback, one parent-owned join, and no nested worker expansion.
+- One explicit leading two-call `fork` for independent bounded host work.
+  Tasks have isolated allocation regions, one lexical join, deterministic
+  result installation, serial fallback, and no locks or detached lifetime.
 - One effect-gated, allocation-free monotonic millisecond clock with no
   wall-clock or timer alias.
 - One bounded whole TCP byte exchange with numeric addresses, explicit response
@@ -58,8 +61,8 @@ yet a stable public release.
 
 ## Not implemented
 
-- Source-level tasks, futures, async/await, locks, channels, explicit
-  parallelism, or a general concurrency scheduler.
+- Futures, async/await, task handles, cancellation state, locks, channels,
+  detached tasks, or a general concurrency scheduler.
 - DNS, TLS, raw socket handles, timers, foreign-function, or unsafe source
   interfaces.
 - General profitable automatic parallelization, a worker pool, cancellation,
@@ -73,13 +76,11 @@ yet a stable public release.
 
 ## Next boundary
 
-Core 1J through Core 1L are the remaining path to 1.0. D0077 closes Core 1I
-without host handles: file input, arguments, stdout, a monotonic clock, and one
-bounded TCP exchange cover maintained applications, while process and
-filesystem orchestration stay with the external launcher. The dual-endpoint
-fetch now provides the evidence for one explicit structured effectful
-concurrency form. Every durable mechanism still requires a weighted decision,
-measured cost, diagnostics, specifications, and permanent tests.
+Core 1K and Core 1L remain on the path to 1.0. D0079 closes Core 1J on one
+explicit two-call form after two loopback applications demonstrate material
+latency reduction. Broader concurrency remains out of scope. Core 1K now
+strengthens specification-backed quality and reduction without assuming that
+arbitrary program equivalence or global optimality is decidable.
 
 The detailed contracts remain in `docs/CORE.md`, `docs/MEMORY.md`,
 `docs/PROJECTS.md`, `docs/REDUCTION.md`, `docs/QUALITY.md`,

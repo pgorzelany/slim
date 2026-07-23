@@ -1,9 +1,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::hint::black_box;
+#[cfg(unix)]
+use std::io::{Read, Write};
+#[cfg(unix)]
+use std::net::TcpListener;
 use std::path::{Path, PathBuf};
 use std::process::{Command, Output};
 use std::sync::atomic::{AtomicU64, Ordering};
+#[cfg(unix)]
+use std::thread;
 use std::time::{Duration, Instant};
 
 fn main() {
@@ -1004,6 +1010,122 @@ fn run_resource_evidence() {
     );
 }
 
+#[cfg(unix)]
+fn structured_host_server(
+    listener: TcpListener,
+    expected: &'static [u8],
+    response: &'static [u8],
+    requests: usize,
+    delay: Duration,
+) -> thread::JoinHandle<()> {
+    thread::spawn(move || {
+        for _ in 0..requests {
+            let (mut stream, _) = listener.accept().expect("accept loopback request");
+            let mut request = Vec::new();
+            stream
+                .read_to_end(&mut request)
+                .expect("read loopback request");
+            assert_eq!(request, expected);
+            thread::sleep(delay);
+            stream.write_all(response).expect("write loopback response");
+        }
+    })
+}
+
+#[cfg(unix)]
+fn run_structured_host_application(
+    root: &Path,
+    build: &TemporaryDirectory,
+    application: &str,
+    left_request: &'static [u8],
+    right_request: &'static [u8],
+    response: &'static [u8],
+) {
+    let left = TcpListener::bind("127.0.0.1:0").expect("bind left loopback listener");
+    let right = TcpListener::bind("127.0.0.1:0").expect("bind right loopback listener");
+    let left_port = left.local_addr().unwrap().port();
+    let right_port = right.local_addr().unwrap().port();
+    let template = fs::read_to_string(
+        root.join("benchmarks/host")
+            .join(format!("{application}.slim")),
+    )
+    .expect("read structured host application");
+    let source = build.path.join(format!("{application}.slim"));
+    fs::write(
+        &source,
+        template
+            .replace("8080", &left_port.to_string())
+            .replace("8081", &right_port.to_string()),
+    )
+    .expect("write structured host application");
+
+    let serial = build.path.join(format!("{application}-serial"));
+    let parallel = build.path.join(format!("{application}-parallel"));
+    require_success(
+        Command::new(root.join("slimc"))
+            .env("SLIM_WORKER_TIER", "serial")
+            .arg("build")
+            .arg(&source)
+            .arg("-o")
+            .arg(&serial),
+        "structured host serial build",
+    );
+    require_success(
+        Command::new(root.join("slimc"))
+            .env("SLIM_WORKER_TIER", "posix")
+            .arg("build")
+            .arg(&source)
+            .arg("-o")
+            .arg(&parallel),
+        "structured host parallel build",
+    );
+
+    let samples = 5;
+    let runs = 2 * (samples + 1);
+    let delay = Duration::from_millis(80);
+    let left_server = structured_host_server(left, left_request, response, runs, delay);
+    let right_server = structured_host_server(right, right_request, response, runs, delay);
+    assert_eq!(run_output(&serial, &[]), b"OK\n");
+    assert_eq!(run_output(&parallel, &[]), b"OK\n");
+    let mut serial_times = Vec::with_capacity(samples);
+    let mut parallel_times = Vec::with_capacity(samples);
+    for _ in 0..samples {
+        let (serial_time, serial_output) =
+            timed_output(&mut Command::new(&serial), "structured host serial run");
+        assert!(serial_output.status.success());
+        assert_eq!(serial_output.stdout, b"OK\n");
+        assert!(serial_output.stderr.is_empty());
+        serial_times.push(serial_time);
+
+        let (parallel_time, parallel_output) =
+            timed_output(&mut Command::new(&parallel), "structured host parallel run");
+        assert!(parallel_output.status.success());
+        assert_eq!(parallel_output.stdout, b"OK\n");
+        assert!(parallel_output.stderr.is_empty());
+        parallel_times.push(parallel_time);
+    }
+    left_server.join().unwrap();
+    right_server.join().unwrap();
+    serial_times.sort();
+    parallel_times.sort();
+    let serial_time = serial_times[samples / 2];
+    let parallel_time = parallel_times[samples / 2];
+    let ratio = parallel_time.as_nanos() as f64 / serial_time.as_nanos() as f64;
+    println!("structured_host\tserial_us\tparallel_us\tparallel_over_serial");
+    println!(
+        "{application}\t{}\t{}\t{ratio:.3}",
+        serial_time.as_micros(),
+        parallel_time.as_micros()
+    );
+    let limit = performance_budget("structured-host-runtime-ratio", application);
+    if ratio > limit {
+        eprintln!(
+            "performance gate: structured host {application} parallel/serial ratio {ratio:.3} exceeds {limit:.3}"
+        );
+        std::process::exit(1);
+    }
+}
+
 fn run_host_evidence() {
     let root = repository_root();
     let build = TemporaryDirectory::new("host-clock");
@@ -1110,6 +1232,12 @@ fn run_host_evidence() {
             "performance gate: unused host network binary ratio {binary_ratio:.3} exceeds {binary_limit:.3}"
         );
         std::process::exit(1);
+    }
+
+    #[cfg(unix)]
+    {
+        run_structured_host_application(&root, &build, "dual_fetch", b"LEFT", b"RIGHT", b"PONG");
+        run_structured_host_application(&root, &build, "dual_health", b"A", b"B", b"OK");
     }
 }
 

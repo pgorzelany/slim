@@ -11,6 +11,7 @@ syntax	case	variant-construction	D0004
 syntax	match	branching	D0005
 syntax	recur	repetition	D0006
 syntax	set	unique-mutation	D0007
+syntax	fork	lexical-two-call-fork	D0078
 syntax	inout	exclusive-borrow-parameter	D0007
 syntax	qualified-reference	cross-module-declaration-reference	D0018
 type	Bool	boolean-value	D0008

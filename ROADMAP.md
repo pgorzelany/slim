@@ -1,7 +1,7 @@
 # SLIM Roadmap
 
-Status: Core 1J deterministic structured concurrency in progress
-Current milestone: Core 1J deterministic structured concurrency
+Status: Core 1J deterministic structured concurrency complete
+Current milestone: Core 1K semantic quality and reduction
 Last updated: 2026-07-23
 
 ## Direction
@@ -44,6 +44,9 @@ summary rather than a second copy of those records.
 | Core 1E | Safety-preserving native efficiency with the portable C11 backend. |
 | Core 1F | Bounded totality, reorder-safety, and deterministic parallel-plan evidence. |
 | Core 1G | Guarded automatic fork/join for one proven, profitable, race-free, and deadlock-free subset. |
+| Core 1H | Bounded resource evidence over fourteen maintained applications without new source contracts. |
+| Core 1I | One monotonic clock and one bounded TCP exchange without source handles or FFI. |
+| Core 1J | One lexical two-call fork for bounded host work, isolated task regions, and deterministic join. |
 
 Core 0.3 evidence is summarized in
 `benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
@@ -161,12 +164,12 @@ justify their state and authority surface.
 
 ## Core 1J: deterministic structured concurrency
 
-Status: in progress
+Status: complete
 
 Automatic parallelism is suitable for proven pure CPU work, but effectful host
-operations have observable intent that cannot generally be inferred. Core 1J
-will evaluate one explicit structured form only if Core 1I applications prove
-the need.
+operations have observable intent that cannot generally be inferred. D0078
+therefore admits one leading two-call `fork`; D0079 closes the milestone
+without general task state.
 
 ### Work
 
@@ -176,8 +179,8 @@ the need.
   explicit effect and failure composition.
 - Preserve race freedom and deadlock freedom by construction; do not add
   detached tasks, locks, or worker-to-worker waits.
-- Define cancellation, timeout, resource exhaustion, and deterministic result
-  ordering before execution.
+- Keep operations bounded by typed timeout and response limits; every started
+  task completes and joins, so no user-visible cancellation state is needed.
 - Reuse Core 1G analysis and the host boundary instead of creating an unrelated
   scheduler type system.
 
@@ -188,8 +191,13 @@ the need.
 - Every spawn is bounded and every started task is joined or cancelled within
   its lexical scope.
 - Scheduling variance cannot change accepted deterministic behavior.
-- Serial fallback, partial failure, cancellation, timeout, and limit exhaustion
-  have permanent tests.
+- Serial fallback, partial failure, timeout, limit exhaustion, and the absence
+  of detached or cancellable state have permanent tests.
+
+The maintained `dual_fetch` and `dual_health` applications show 0.529 and
+0.534 parallel/serial latency ratios under permanent 0.75 budgets. Owned
+results transfer only after join. Spawn, join, allocation, timeout, and
+unsupported-tier behavior have permanent tests.
 
 ## Core 1K: semantic quality and reduction
 

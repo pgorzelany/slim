@@ -79,6 +79,31 @@ void slim_region_init(SlimRegion *region, SlimRegion *parent) {
     slim_active_region = region;
 }
 
+void slim_region_adopt(SlimRegion *parent, SlimRegion *child) {
+    if (parent == NULL || child == NULL || child->parent != parent ||
+        child->status != parent->status) {
+        slim_rt_trap("cannot adopt an unrelated region");
+    }
+    SlimAllocation *allocation = child->newest;
+    SlimAllocation *oldest = NULL;
+    while (allocation != NULL) {
+        allocation->region = parent;
+        oldest = allocation;
+        allocation = allocation->next;
+    }
+    if (oldest != NULL) {
+        oldest->next = parent->newest;
+        if (parent->newest != NULL) {
+            parent->newest->previous = oldest;
+        }
+        parent->newest = child->newest;
+        child->newest = NULL;
+    }
+    if (slim_active_region == child) {
+        slim_active_region = parent;
+    }
+}
+
 void slim_region_destroy(SlimRegion *region) {
     if (region == NULL) {
         return;
@@ -96,7 +121,10 @@ void slim_region_destroy(SlimRegion *region) {
 }
 
 void slim_alloc_status_init(SlimAllocStatus *status) {
-    *status = (SlimAllocStatus){.code = SLIM_ALLOC_OK};
+    atomic_init(&status->code, SLIM_ALLOC_OK);
+    atomic_init(&status->attempts, 0);
+    atomic_init(&status->failure_at, 0);
+    status->fail_at = 0;
     const char *setting = getenv("SLIM_ALLOC_FAIL_AT");
     if (setting == NULL || setting[0] == 0) {
         return;
@@ -112,7 +140,7 @@ void slim_alloc_status_init(SlimAllocStatus *status) {
 void slim_alloc_report(const SlimAllocStatus *status) {
     fprintf(stderr,
             "SLIM allocation failure: exhausted at allocation %" PRIu64 "\n",
-            status->failure_at);
+            atomic_load(&status->failure_at));
 }
 
 void slim_rt_init(SlimRegion *root, SlimAllocStatus *status) {
@@ -213,6 +241,16 @@ static SlimAllocation *slim_allocation_from_data(void *pointer) {
     return (SlimAllocation *)((uint8_t *)pointer - offsetof(SlimAllocation, data));
 }
 
+static void slim_alloc_fail(SlimAllocStatus *status, uint64_t attempt) {
+    uint64_t unset = 0;
+    (void)atomic_compare_exchange_strong(
+        &status->failure_at,
+        &unset,
+        attempt
+    );
+    atomic_store(&status->code, SLIM_ALLOC_EXHAUSTED);
+}
+
 void *slim_rt_alloc(SlimRegion *region, size_t size) {
     if (region == NULL) {
         slim_rt_trap("allocation requires a region");
@@ -221,13 +259,15 @@ void *slim_rt_alloc(SlimRegion *region, size_t size) {
     if (status == NULL) {
         slim_rt_trap("allocation region has no status");
     }
-    if (status->code != SLIM_ALLOC_OK) {
+    if (atomic_load(&status->code) != SLIM_ALLOC_OK) {
         return NULL;
     }
-    status->attempts += 1;
-    if (status->attempts == 0 || status->attempts == status->fail_at) {
-        status->code = SLIM_ALLOC_EXHAUSTED;
-        status->failure_at = status->attempts;
+    uint64_t attempt = atomic_fetch_add(&status->attempts, 1) + 1;
+    if (attempt == 0 || attempt == status->fail_at) {
+        slim_alloc_fail(status, attempt);
+        return NULL;
+    }
+    if (atomic_load(&status->code) != SLIM_ALLOC_OK) {
         return NULL;
     }
     if (size == 0) {
@@ -238,8 +278,7 @@ void *slim_rt_alloc(SlimRegion *region, size_t size) {
     }
     SlimAllocation *allocation = calloc(1, offsetof(SlimAllocation, data) + size);
     if (allocation == NULL) {
-        status->code = SLIM_ALLOC_EXHAUSTED;
-        status->failure_at = status->attempts;
+        slim_alloc_fail(status, attempt);
         return NULL;
     }
     allocation->next = region->newest;

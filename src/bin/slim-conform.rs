@@ -1185,12 +1185,17 @@ fn compile_and_run_in(
     fs::write(&runtime_h, RUNTIME_H)
         .map_err(|error| format!("cannot write {}: {error}", runtime_h.display()))?;
     let native_compiler = env::var_os("CC").unwrap_or_else(|| OsString::from("clang"));
-    let build = Command::new(&native_compiler)
+    let mut build_command = Command::new(&native_compiler);
+    build_command
         .arg("-std=c11")
         .arg("-O2")
         .arg("-Wall")
         .arg("-Wextra")
-        .arg("-Werror")
+        .arg("-Werror");
+    if generated.starts_with("#define SLIM_PARALLEL 1\n") {
+        build_command.arg("-DSLIM_PARALLEL=1");
+    }
+    let build = build_command
         .arg("-I")
         .arg(directory)
         .arg(&source)

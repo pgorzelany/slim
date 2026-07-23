@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
 #include <string.h>
 
 #if defined(SLIM_PARALLEL) && defined(SLIM_POSIX_WORKERS)
@@ -27,9 +28,9 @@ typedef enum {
 } SlimAllocCode;
 
 typedef struct {
-    SlimAllocCode code;
-    uint64_t attempts;
-    uint64_t failure_at;
+    _Atomic SlimAllocCode code;
+    _Atomic uint64_t attempts;
+    _Atomic uint64_t failure_at;
     uint64_t fail_at;
 } SlimAllocStatus;
 
@@ -69,6 +70,7 @@ void slim_rt_shutdown(void);
 _Noreturn void slim_rt_trap(const char *message);
 
 void slim_region_init(SlimRegion *region, SlimRegion *parent);
+void slim_region_adopt(SlimRegion *parent, SlimRegion *child);
 void slim_region_destroy(SlimRegion *region);
 void *slim_rt_alloc(SlimRegion *region, size_t size);
 void *slim_rt_realloc(SlimRegion *region, void *pointer, size_t old_size, size_t new_size);
@@ -95,7 +97,7 @@ SlimUnit slim_print_bytes(SlimBytes value);
 SlimUnit slim_println(SlimBytes value);
 
 static inline bool slim_region_failed(const SlimRegion *region) {
-    return region->status->code != SLIM_ALLOC_OK;
+    return atomic_load(&region->status->code) != SLIM_ALLOC_OK;
 }
 
 static inline int64_t slim_i64_add(int64_t left, int64_t right) {

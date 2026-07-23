@@ -212,6 +212,101 @@ fn bounded_tcp_exchange_preserves_failure_state_and_closes_connections() {
     fs::remove_dir_all(directory).unwrap();
 }
 
+#[cfg(unix)]
+#[test]
+fn explicit_structured_fork_joins_loopback_requests_and_adopts_owned_results() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("explicit-fork");
+    let left = TcpListener::bind("127.0.0.1:0").unwrap();
+    let right = TcpListener::bind("127.0.0.1:0").unwrap();
+    let left_port = left.local_addr().unwrap().port();
+    let right_port = right.local_addr().unwrap().port();
+
+    let template = fs::read_to_string(root.join("benchmarks/host/dual_fetch.slim")).unwrap();
+    let source = write_source(
+        &directory,
+        &template
+            .replace("8080", &left_port.to_string())
+            .replace("8081", &right_port.to_string()),
+    );
+    let serial = directory.join("serial");
+    let parallel = directory.join("parallel");
+    for (tier, executable) in [("serial", &serial), ("posix", &parallel)] {
+        let build = Command::new(slimc())
+            .env("SLIM_WORKER_TIER", tier)
+            .arg("build")
+            .arg(&source)
+            .arg("-o")
+            .arg(executable)
+            .output()
+            .unwrap();
+        assert!(
+            build.status.success(),
+            "{}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+    }
+
+    let serve = |listener: TcpListener, expected: &'static [u8]| {
+        thread::spawn(move || {
+            for _ in 0..4 {
+                let (mut stream, _) = listener.accept().unwrap();
+                let mut request = Vec::new();
+                stream.read_to_end(&mut request).unwrap();
+                assert_eq!(request, expected);
+                thread::sleep(Duration::from_millis(120));
+                stream.write_all(b"PONG").unwrap();
+            }
+        })
+    };
+    let left_server = serve(left, b"LEFT");
+    let right_server = serve(right, b"RIGHT");
+
+    let serial_run = Command::new(&serial).output().unwrap();
+    let parallel_run = Command::new(&parallel).output().unwrap();
+    let fallback = Command::new(&parallel)
+        .env("SLIM_TASK_DISABLE", "1")
+        .output()
+        .unwrap();
+    let allocation_failure = Command::new(&parallel)
+        .env("SLIM_ALLOC_FAIL_AT", "2")
+        .output()
+        .unwrap();
+
+    left_server.join().unwrap();
+    right_server.join().unwrap();
+    for output in [&serial_run, &parallel_run, &fallback] {
+        assert!(output.status.success());
+        assert_eq!(output.stdout, b"OK\n");
+        assert!(output.stderr.is_empty());
+    }
+    assert_eq!(allocation_failure.status.code(), Some(71));
+    assert!(allocation_failure.stdout.is_empty());
+    assert_eq!(
+        allocation_failure.stderr,
+        b"SLIM allocation failure: exhausted at allocation 2\n"
+    );
+
+    let generated = fs::read_to_string(directory.join("program.slim")).unwrap();
+    assert!(generated.contains("(fork (let first Reply"));
+    let emitted = Command::new(slimc()).arg(&source).output().unwrap();
+    assert!(emitted.status.success());
+    let emitted = String::from_utf8(emitted.stdout).unwrap();
+    for required in [
+        "#define SLIM_PARALLEL 1",
+        "slim_parallel_first_region",
+        "slim_parallel_second_region",
+        "slim_region_adopt(slim_allocation_region, &slim_parallel_first_region)",
+        "slim_region_adopt(slim_allocation_region, &slim_parallel_second_region)",
+    ] {
+        assert!(
+            emitted.contains(required),
+            "generated C is missing {required}"
+        );
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
 #[test]
 fn unsupported_network_target_returns_typed_failure() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -323,6 +418,37 @@ fn structured_worker_runtime_falls_back_and_prevents_nesting() {
         );
     }
 
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn adopted_region_storage_remains_parent_owned_and_resizable() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("region-adoption");
+    let executable = directory.join("region-adoption");
+    let build = Command::new(native_compiler())
+        .arg("-std=c11")
+        .arg("-O2")
+        .arg("-Wall")
+        .arg("-Wextra")
+        .arg("-Werror")
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(root.join("tests/fixtures/region_adoption.c"))
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let run = Command::new(&executable).output().unwrap();
+    assert!(run.status.success());
+    assert_eq!(run.stdout, b"OK\n");
+    assert!(run.stderr.is_empty());
     fs::remove_dir_all(directory).unwrap();
 }
 

@@ -88,11 +88,165 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_deterministic_parallel_schedule(root, &decisions, &mut errors);
     check_total_task_failure_semantics(root, &decisions, &mut errors);
     check_parallel_execution_boundary(root, &decisions, &mut errors);
+    check_core_1j_acceptance(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_core_1j_acceptance(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0078") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "language"
+                && decision.primitive == "structured-fork"
+                && decision.score >= 40 => {}
+        Some(_) => errors.push(
+            "Core 1J requires accepted language decision D0078 for structured-fork scoring at least 40"
+                .to_owned(),
+        ),
+        None => errors.push("Core 1J structured-fork decision D0078 is missing".to_owned()),
+    }
+    match decisions.get("D0079") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "Core 1J closure requires accepted primitive-free D0079 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("Core 1J closure decision D0079 is missing".to_owned()),
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    let fork_rows: Vec<_> = surface
+        .lines()
+        .filter(|line| line.ends_with("\tD0078"))
+        .collect();
+    if fork_rows != ["syntax\tfork\tlexical-two-call-fork\tD0078"] {
+        errors.push("D0078 must own exactly one canonical `fork` syntax row".to_owned());
+    }
+
+    for required in [
+        "benchmarks/host/dual_fetch.slim",
+        "benchmarks/host/dual_health.slim",
+        "benchmarks/results/2026-07-23-core-1j-structured-concurrency.md",
+        "conformance/pass/structured_fork.slim",
+        "conformance/fail/invalid_structured_fork.slim",
+        "conformance/fail/nonleading_structured_fork.slim",
+        "tests/fixtures/region_adoption.c",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("Core 1J artifact is missing {required}"));
+        }
+    }
+
+    let checker = fs::read_to_string(root.join("selfhost/check.slim")).unwrap_or_default();
+    for required in [
+        "(fn fork-task-valid",
+        "(fn fork-leading-items",
+        "\"E0356\"",
+        "\"io.tcp-exchange\"",
+        "\"io.monotonic-ms\"",
+    ] {
+        if !checker.contains(required) {
+            errors.push(format!("Core 1J checker is missing `{required}`"));
+        }
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(explicit Bool)",
+        "(intent explicit)",
+        "(profitability explicit)",
+        "(race-free true) (deadlock-free true)",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!("Core 1J analysis is missing `{required}`"));
+        }
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for required in [
+        "(fn emit_parallel_region_declarations",
+        "(fn emit_parallel_region_adoption",
+        "slim_parallel_first_region",
+        "slim_region_adopt(slim_allocation_region",
+        "(get site explicit)",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!("Core 1J lowering is missing `{required}`"));
+        }
+    }
+
+    let runtime_h = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
+    let runtime_c = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap_or_default();
+    for required in ["_Atomic SlimAllocCode code", "void slim_region_adopt"] {
+        if !runtime_h.contains(required) {
+            errors.push(format!("Core 1J runtime interface is missing `{required}`"));
+        }
+    }
+    for required in [
+        "atomic_fetch_add",
+        "void slim_region_adopt",
+        "allocation->region = parent",
+    ] {
+        if !runtime_c.contains(required) {
+            errors.push(format!(
+                "Core 1J runtime implementation is missing `{required}`"
+            ));
+        }
+    }
+
+    let conformance = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+    for required in ["syntax:fork", "diagnostic:E0356", "parallel:explicit-fork"] {
+        if !conformance.contains(required) {
+            errors.push(format!("Core 1J conformance is missing `{required}`"));
+        }
+    }
+
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    for required in [
+        "structured-host-runtime-ratio\tdual_fetch\t0.75\tparallel-over-serial\tD0078",
+        "structured-host-runtime-ratio\tdual_health\t0.75\tparallel-over-serial\tD0078",
+    ] {
+        if !budgets.contains(required) {
+            errors.push(format!(
+                "Core 1J performance budget is missing `{required}`"
+            ));
+        }
+    }
+
+    let e2e = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "explicit_structured_fork_joins_loopback_requests_and_adopts_owned_results",
+        "adopted_region_storage_remains_parent_owned_and_resizable",
+        "SLIM_TASK_DISABLE",
+        "SLIM_ALLOC_FAIL_AT",
+    ] {
+        if !e2e.contains(required) {
+            errors.push(format!(
+                "Core 1J integration evidence is missing `{required}`"
+            ));
+        }
+    }
+
+    let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();
+    if !benchmark.contains("fn run_structured_host_application")
+        || !benchmark.contains("structured-host-runtime-ratio")
+    {
+        errors.push(
+            "Core 1J loopback applications are absent from the permanent host gate".to_owned(),
+        );
+    }
 }
 
 fn check_parallelism_evidence(
@@ -406,14 +560,14 @@ fn check_resource_evidence(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: Core 1J deterministic structured concurrency in progress")
-        || !status.contains("Next milestone: Core 1J deterministic structured concurrency")
-        || !roadmap.contains("Current milestone: Core 1J deterministic structured concurrency")
+    if !status.contains("Status: Core 1J deterministic structured concurrency complete")
+        || !status.contains("Next milestone: Core 1K semantic quality and reduction")
+        || !roadmap.contains("Current milestone: Core 1K semantic quality and reduction")
         || !roadmap
             .contains("## Core 1H: bounded resources and application evidence\n\nStatus: complete")
         || !roadmap.contains("## Core 1I: safe typed host boundary\n\nStatus: complete")
     {
-        errors.push("Core 1H/1I closure and current Core 1J boundary are not canonical".to_owned());
+        errors.push("Core 1H through Core 1J closure boundary is not canonical".to_owned());
     }
 }
 
@@ -1113,7 +1267,7 @@ fn check_parallel_execution_boundary(
 
     let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
     for required in [
-        "(record Site ((site I64) (first I64) (second I64) (join I64) (first-work I64) (second-work I64) (executable Bool)))",
+        "(record Site ((site I64) (first I64) (second I64) (join I64) (first-work I64) (second-work I64) (allocates Bool) (explicit Bool) (executable Bool)))",
         "(fn call-work",
         "(call ranges/recurrence-work",
         "(fn leading-let-site",

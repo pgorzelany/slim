@@ -130,3 +130,15 @@ D0076 separately compiles unrelated Hello executables with the supported
 network implementation enabled and disabled. Their same-host binary-size ratio
 must not exceed 1.03. The gate bounds inactive host support without pretending
 that loopback timing predicts real network latency.
+
+## Core 1J structured-host contract
+
+D0078 adds two maintained loopback applications to `slim-bench host`.
+`dual_fetch` returns owned byte vectors across the join; `dual_health` returns
+scalar facts. Each generated program is built once with forced serial fallback
+and once with the POSIX worker tier. Output is checked before five warmed
+same-host medians are compared.
+
+Each parallel/serial ratio must not exceed 0.75. The accepted measurements were
+0.529 and 0.534. This is a latency regression gate for demonstrably independent
+bounded operations, not a claim about public-network performance.

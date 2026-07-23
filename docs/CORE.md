@@ -1,6 +1,6 @@
 # SLIM Core 0
 
-Status: implemented Core 1G language surface
+Status: implemented Core 1J language surface
 
 SLIM Core is the only compilable source representation. Whitespace and comments
 are insignificant, and `slimc fmt` emits the unique canonical layout.
@@ -29,8 +29,8 @@ type     = Unit | Bool | U8 | I64 | Bytes | NAME | (Vec TYPE)
 ```
 
 The bootstrap expression forms are literals, names, `let`, `call`, `make`,
-`get`, `case`, `match`, `recur`, and `set`. Each maps directly to one AST form;
-there is no desugaring layer.
+`get`, `case`, `match`, `recur`, `set`, and `fork`. Each maps directly to one
+AST form; there is no desugaring layer.
 
 Every executable defines exactly `(fn main ((args (Vec Bytes))) I64 ... )`.
 Element zero is the executable path and remaining values are process arguments.
@@ -77,6 +77,11 @@ type arguments are rejected before code generation.
 - `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout (Vec U8)) -> Bool`
   requires `alloc io`; response size and elapsed wait are explicit, every
   descriptor is runtime-lexical, and failure leaves output unchanged.
+- `(fork (let first T (call f ...) (let second U (call g ...) body)))` is the
+  one explicit concurrency form. It admits two independent leading direct
+  leaf calls with bounded host effects, scalar or byte-view inputs, no
+  `inout`, and no `partial`. Both calls finish before `body`; results install
+  in lexical order. Spawn failure uses the same serial execution.
 - Allocation exhaustion is the typed failure outcome of the existing `alloc`
   effect. Generated code propagates it immediately, destroys active regions,
   and handles it once at the executable boundary with exit code 71. Core 0.4
