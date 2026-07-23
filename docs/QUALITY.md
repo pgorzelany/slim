@@ -59,11 +59,12 @@ boundary are specified in `docs/PARALLELISM.md`.
 
 Version 4 adds D0063's bounded integer interval and operation-totality facts.
 The quality report now calls a function total only when the shared fact for its
-body is positive and recurrence is absent. Exact literal flow, selected guarded
-arithmetic, bounded multiplication and nonzero division/remainder, and valid
-I64-to-U8 conversion can be proved. The fixed ±1,000,000,000 domain, 64
-comparison refinements, checked-site output limit, and conservative unknown
-cases are specified in `docs/INTEGER_PROOFS.md`.
+body is positive. Exact literal flow, selected guarded arithmetic, bounded
+multiplication, denominator-proven division/remainder, valid I64-to-U8
+conversion, and D0066's canonical strictly decreasing tail recurrence can be
+proved. The fixed ±1,000,000,000 domain, 64 comparison refinements,
+checked-site output limit, and conservative unknown cases are specified in
+`docs/INTEGER_PROOFS.md`.
 
 ## Reduction evidence and replay
 

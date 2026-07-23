@@ -78,6 +78,14 @@ These rules apply to every change in this repository.
 - Preserve every discovered parallel blocker even when an earlier blocker is
   already sufficient. Safe functions require an exact empty blocker set; graph
   uncertainty must remain explicit at the function boundary.
+- Treat a declared effect list as a checked capability ceiling, not proof that
+  an event occurred. Discharge an unused capability only from the complete
+  checked body and call graph; missing or bounded-away implementation evidence
+  remains unknown.
+- Prove recurrence total only from a complete structural descent argument:
+  exact guard, the same linked controller, positive exact step, total update,
+  total recurrent arguments, total base and prefix, and one tail recurrence.
+  Direction alone is never a termination proof.
 - Equivalence results apply only to the complete domain named in the report. A
   supported mismatch must include the first deterministic counterexample.
 - Proof records are explanatory data. Replay must recompute the accepted result

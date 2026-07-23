@@ -12,16 +12,21 @@ proof boundary, not an execution claim.
 A function is currently `safe` for concurrent reordering only when the checked
 compiler view proves all of the following:
 
-- its declared effect list is empty;
-- it has no `inout` parameter, lexical mutation, or recurrence;
+- its complete checked implementation has no observed allocation, I/O, or
+  partial operation;
+- it has no `inout` parameter or lexical mutation;
 - it contains no allocating, I/O, or checked-trapping operation; and
-- every user function it calls has the same property.
+- every user function it calls has the same property; and
+- any recurrence has D0066's complete finite-descent proof.
 
 Defined overflow and bounds traps remain observable even in an `(effects)`
-function, so declared effects alone never establish reorder-safety. A checked
-integer operation stops being a hazard only when D0063's fact for that exact
-source node positively proves totality. Cyclic call graphs and facts beyond a
-fixed bound are `unknown`. Unknown never means safe.
+function, so declared effects alone never establish reorder-safety. Conversely,
+an effect declaration is a capability ceiling, not an event: an unused
+capability does not block a function when its complete checked body and call
+graph are available. A checked integer operation stops being a hazard only
+when D0063/D0066's fact for that exact source node positively proves totality.
+Cyclic call graphs and facts beyond a fixed bound are `unknown`. Unknown never
+means safe.
 
 The analysis recognizes an independent fork site when two adjacent immutable
 `let` initializers are reorder-safe user computations and the second does not
@@ -52,7 +57,7 @@ Its fixed domain and refinement limits are described in
 
 ## Application baseline
 
-D0064 makes the twelve native algorithm challenges a permanent analysis
+D0064 makes the native algorithm challenges a permanent analysis
 corpus. `slim-bench parallelism` runs every report twice and compares source
 size, proof counts, primary safety reasons, and eligible sites with
 `benchmarks/parallelism-baseline.tsv`. The command runs in every full release
@@ -76,6 +81,17 @@ In the application corpus, all 49 functions have declared effects, 40 have an
 unproved checked trap, 31 recur, 30 borrow exclusively, 22 allocate or perform
 I/O, and 22 call an unsafe function. Every function has between two and five
 blockers. Removing any single category would therefore unlock zero functions.
+
+D0066 advances the baseline to schema 3 and thirteen applications. Declared
+effects remain reported for compatibility but no longer block a function when
+the complete implementation proves that no granted capability is exercised.
+The shared integer view also proves one canonical, strictly decreasing tail
+recurrence total. The new `state_machine` application performs two independent
+two-million-step recurrences: both are total and reorder-safe, and their
+adjacent calls produce one exact positive fork candidate. The original
+`variants/command` helper also becomes safe. Real allocation, I/O, unchecked
+traps, unsupported recurrence, exclusive access, and graph uncertainty remain
+blockers.
 
 The SLIM compiler project is a permanent dogfood input. Its current 661-function
 checked artifact exceeds the 64-function evidence bound and therefore reports a

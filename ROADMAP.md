@@ -979,11 +979,23 @@ analysis exponent is 0.870 under the unchanged 1.25 budget, and the
 1,854,768-byte seed reproduces exactly. Detailed evidence is in
 `benchmarks/results/2026-07-23-core-1f-blocker-sets.md`.
 
-Before any execution decision, Core 1F still needs substantial application
-evidence using these positive range/totality proofs, collection-bounds and
-interprocedural precision only where applications justify them, a deterministic
-trap and cancellation model, and measured task-cost thresholds that beat
-serial execution after creation and join overhead. Candidate sites may overlap,
-so schedule selection also requires a deterministic bounded policy. A later
-scored decision must demonstrate all of these without adding locks, hidden
-synchronization, or cost to unselected code.
+D0066 removes two evidence-only false blockers without changing language
+surface or execution. Effect declarations are capability ceilings rather than
+proof that an event occurred, so the complete checked body and graph determine
+observed effects. The shared integer view proves one exact-bound, positive-step,
+strictly decreasing tail recurrence total. Denominator-only division and
+remainder proofs also retain totality when numerator bounds are unnecessary.
+The permanent `state_machine` challenge performs two independent
+two-million-step computations; both are safe, and their adjacent calls create
+the first substantial application fork candidate. Schema 3 covers thirteen
+applications, analysis scales at exponent 0.890 under the 1.25 budget, and the
+1,880,430-byte seed reproduces exactly. Detailed evidence is in
+`benchmarks/results/2026-07-23-core-1f-total-recurrence.md`.
+
+Before any execution decision, Core 1F still needs a deterministic bounded
+policy for overlapping candidates, a source-order trap/failure and cancellation
+model, and measured task-cost thresholds that beat serial execution after
+creation and join overhead. The scored acceptance decision must demonstrate
+those requirements without adding locks, hidden synchronization, or cost to
+unselected code; otherwise Core 1F must retain an explicit non-execution
+boundary rather than speculate.

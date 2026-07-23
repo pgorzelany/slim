@@ -82,6 +82,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_integer_proof_evidence(root, &decisions, &mut errors);
     check_parallelism_application_baseline(root, &decisions, &mut errors);
     check_complete_parallel_blockers(root, &decisions, &mut errors);
+    check_total_recurrence_evidence(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
@@ -317,15 +318,15 @@ fn check_parallelism_application_baseline(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
-    if !baseline.contains("# schema=2")
+    if !baseline.contains("# schema=3")
         || baseline
             .lines()
             .filter(|line| !line.starts_with('#') && !line.is_empty())
             .count()
-            != 12
+            != 13
     {
         errors.push(
-            "parallelism baseline must retain schema 2 and all twelve applications".to_owned(),
+            "parallelism baseline must retain schema 3 and all thirteen applications".to_owned(),
         );
     }
     for challenge in [
@@ -339,6 +340,7 @@ fn check_parallelism_application_baseline(
         "prefix_sum",
         "records",
         "variants",
+        "state_machine",
         "arena_sum",
         "knapsack",
     ] {
@@ -420,8 +422,8 @@ fn check_complete_parallel_blockers(
     let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for required in [
         "safe-left (guarantee exact) (status safe) (blockers)",
-        "(blockers declared-effects allocation-or-io)",
-        "(blockers declared-effects recurrence)",
+        "(blockers allocation-or-io)",
+        "(blockers recurrence)",
         "(blockers callee-not-safe)",
         "(blockers call-cycle)",
         "(blockers function-limit)",
@@ -435,7 +437,7 @@ fn check_complete_parallel_blockers(
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     for required in [
-        "# schema=2",
+        "# schema=3",
         "blocker_declared_effects",
         "blocker_checked_trap",
         "blocker_recurrence",
@@ -449,6 +451,105 @@ fn check_complete_parallel_blockers(
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     if surface.contains("D0065") {
         errors.push("D0065 has Primitive: none and must not add Core language surface".to_owned());
+    }
+}
+
+fn check_total_recurrence_evidence(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0066") {
+        Some(decision)
+            if decision.status == "accepted"
+                && decision.kind == "architecture"
+                && decision.primitive == "none"
+                && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "total recurrence evidence requires accepted primitive-free D0066 scoring at least 60"
+                .to_owned(),
+        ),
+        None => errors.push("total recurrence evidence decision D0066 is missing".to_owned()),
+    }
+
+    for required in [
+        "benchmarks/challenges/state_machine/program.slim",
+        "benchmarks/challenges/state_machine/program.c",
+        "benchmarks/challenges/state_machine/program.rs",
+        "benchmarks/results/2026-07-23-core-1f-total-recurrence.md",
+    ] {
+        if !root.join(required).is_file() {
+            errors.push(format!("total recurrence artifact is missing {required}"));
+        }
+    }
+
+    let ranges = fs::read_to_string(root.join("selfhost/ranges.slim")).unwrap_or_default();
+    for required in [
+        "(fn divide-facts",
+        "(fn remainder-fact",
+        "(fn prove-tail-recurrence",
+        "(fn decreasing-controller",
+        "(call promote-total facts tail)",
+        "(call promote-total facts body)",
+    ] {
+        if !ranges.contains(required) {
+            errors.push(format!("total recurrence proof is missing `{required}`"));
+        }
+    }
+
+    let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
+    for required in [
+        "(let recur_total Bool",
+        "(call ranges/fact-total range_facts index)",
+        "(let unsafe_recur Bool",
+    ] {
+        if !parallel.contains(required) {
+            errors.push(format!(
+                "parallel recurrence discharge is missing `{required}`"
+            ));
+        }
+    }
+    if parallel.contains("(call add_blocker scanned_blockers 1)") {
+        errors.push(
+            "declared capability presence must not masquerade as an observed runtime effect"
+                .to_owned(),
+        );
+    }
+
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    for required in [
+        "constant-remainder (guarantee exact) (status safe)",
+        "possible-division-overflow (guarantee exact) (status unavailable)",
+        "total-countdown (guarantee exact) (status safe)",
+        "overdeclared (guarantee exact) (status safe)",
+        "countdown-pair (guarantee exact) (status safe)",
+        "(eligible-sites 2)",
+    ] {
+        if !tests.contains(required) {
+            errors.push(format!("total recurrence evidence is missing `{required}`"));
+        }
+    }
+
+    let baseline =
+        fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    if !baseline
+        .lines()
+        .any(|line| line.starts_with("state_machine\t1423\t3\t1\t1\t2\t2\t"))
+    {
+        errors.push(
+            "schema-3 baseline must retain the positive state_machine application".to_owned(),
+        );
+    }
+
+    let budgets =
+        fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
+    if !budgets.contains("native-runtime-ratio\tstate_machine\t2.50\tslim-over-c\tD0066") {
+        errors.push("state_machine lacks a durable native runtime budget".to_owned());
+    }
+
+    let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
+    if surface.contains("D0066") {
+        errors.push("D0066 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 

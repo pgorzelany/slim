@@ -49,6 +49,9 @@ for user programs, runtime behavior, and language surface do not change.
 
 The application baseline advances to schema 2 with eleven additional blocker
 incidence columns. Every report still runs twice and every row remains exact.
+D0066 later refines the meaning of `declared-effects`: the category remains in
+the schema, but a granted capability is not itself an observed event when the
+complete checked implementation is available.
 
 ## Evidence
 
