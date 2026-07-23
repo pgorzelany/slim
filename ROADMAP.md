@@ -787,6 +787,14 @@ the same spelling. The isolated plan field stays at the approximately
 preserve. No source or runtime surface is added.
 The byte-identical fixed-point seed is 1,622,521 C bytes.
 
+The twenty-first slice adopts D0052's dense expression facts. The typed view
+uses token identity as the direct vector index, stores only the compact type,
+and returns an invalid sentinel for an out-of-range query. Every successful
+inference writes and rereads its fact through the constant-time interface, so
+the permanent source-shape scaling workloads exercise the lookup. This is the
+bounded storage boundary; ordinary code-generation consumers remain the next
+migration cut. The byte-identical fixed-point seed is 1,625,465 C bytes.
+
 This is not yet a completed milestone. Code generation still rediscovers some
 semantic facts from tokens. All accepted type, effect, match, recurrence, and
 ownership diagnostic families now use structured project source projection.

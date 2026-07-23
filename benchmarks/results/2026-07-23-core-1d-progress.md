@@ -405,3 +405,27 @@ pass. The portable fixed point is 1,622,521 C bytes with SHA-256
 The complete release gate passes geometric and same-host performance budgets,
 sanitizers, allocation-failure injection, native challenges, and deterministic
 bootstrap verification.
+
+## Dense expression facts
+
+D0052 replaces the typed view's sparse postorder fact bag with a dense table
+indexed directly by token identity. Each slot stores only its `TypeRef`;
+non-expression tokens begin with the invalid sentinel, and successful inference
+updates the slot in constant time. `finish_type` rereads each result through the
+guarded `fact_type` query, exercising the permanent path throughout self-hosting
+and geometric performance workloads.
+
+The self-check remains near 0.10 seconds, the candidate reaches a byte-identical
+fixed point, and all 98 fixtures plus 2,000 mutations pass. A repeat quick run
+measured 2.471, 2.816, 4.221, and 6.184 milliseconds for named-type parameters
+and 4.404, 6.398, 11.333, and 22.383 milliseconds for nested bindings at 125,
+250, 500, and 1,000 units. A noisy first final named-type sample of 34.162
+milliseconds tripped the 1.25 budget at 1.269; the budget was preserved and the
+complete release run remains the acceptance measurement.
+The portable fixed point is 1,625,465 generated C bytes with SHA-256
+`d57893e96f6321aa3b5b1df6a66d28ce31ff9ced4393b3956fa642494ee3adf0`.
+The authoritative release run measures 2.665, 2.994, 3.975, and 6.309
+milliseconds for named-type parameters and 4.222, 6.752, 11.723, and 22.265
+milliseconds for nested bindings. The complete gate passes all performance
+budgets, sanitizers, allocation-failure injection, native challenges, and
+deterministic bootstrap verification.

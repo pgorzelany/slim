@@ -866,11 +866,12 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     for required in [
         "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
+        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue empty_view fact_type))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
     ] {
         if !project.contains(required) {
             errors.push(format!(
-                "selfhost/slim.project is missing project validation boundary `{required}`"
+                "selfhost/slim.project is missing compiler architecture clause `{required}`"
             ));
         }
     }
@@ -904,8 +905,13 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for required in [
+        "(record Fact ((type TypeRef)))",
         "(record Issue ((code Bytes) (start I64) (end I64) (blocks_inference Bool)))",
         "(record Checked ((status I64) (view View) (issues (Vec Issue)) (plan memory/Plan)))",
+        "(fn initialize_facts",
+        "(fn fact_type",
+        "(call vec.set facts expr fact)",
+        "(call fact_type facts expr)",
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end) (blocks_inference true))",
         "(call syntax/set_token_link tokens cursor definition)",
