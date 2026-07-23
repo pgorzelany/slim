@@ -42,6 +42,11 @@ D0059 begins Core 1E without changing that boundary. Header-visible checked
 integer, byte, and vector fast paths preserve all traps while allowing the C
 optimizer to specialize the self-hosted compiler's hot operations; five warm
 self-checks consume 0.05 seconds of user CPU each.
+D0060 then combines the retained placement and allocation-site facts: a
+function with no direct or transitive allocation forwards the caller region
+without initializing an empty child. Allocation-capable functions keep their
+planned child/caller region, failure label, and reverse destruction path. Five
+warm self-checks now consume 0.03 seconds of user CPU each.
 
 The `memory` module owns recursive storage classification, bounded value
 liveness and escape summaries, allocation-site plans, and reverse destruction

@@ -888,6 +888,14 @@ gain. Five warm self-checks consume 0.05 seconds of user CPU each, improving the
 approximately 0.11-second Core 1D compiler boundary without changing the
 portable generated seed.
 
+The second slice adopts D0060's allocation-free region elision. Code generation
+creates a child region only when the retained plan proves both child placement
+and at least one direct or transitive allocation site. Uniform region ABI and
+every allocating failure/destruction path remain unchanged. Records improve
+2.75x and variants 5.10x, reaching measured SLIM/C ratios of 1.437 and 1.037;
+their durable limits tighten to 3.0 and 2.0. Five warm self-checks consume 0.03
+seconds of user CPU, and the fixed-point seed shrinks to 1,622,580 C bytes.
+
 Core 1E acceptance will require a profiled explanation of remaining gaps,
 proof-carrying removal of any dynamic check, no material compiler-latency or
 binary-size regression, tightened durable challenge budgets, the complete

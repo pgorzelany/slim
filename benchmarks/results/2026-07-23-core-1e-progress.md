@@ -39,3 +39,23 @@ approximately 0.11-second Core 1D self-check boundary. The complete release
 gate passes 109 fixtures, 2,000 mutations, tightened native ratios, sanitizers,
 allocation-failure injection, and the unchanged byte-identical 1,629,310-byte
 bootstrap seed.
+
+## Allocation-free region elision
+
+Profiling the two remaining aggregate gaps showed that every small helper paid
+for child-region initialization and destruction even when its retained plan had
+zero allocation sites. D0060 combines the existing placement and allocation
+facts; it does not infer effects again or change the uniform region ABI.
+
+| Challenge | D0059 SLIM us | D0060 SLIM us | D0060 C us | D0060 SLIM/C | Speedup |
+|---|---:|---:|---:|---:|---:|
+| records | 5,080 | 1,844 | 1,283 | 1.437 | 2.75x |
+| variants | 17,280 | 3,387 | 3,265 | 1.037 | 5.10x |
+
+Their permanent ratio limits tighten from 5.0 to 3.0 and from 6.0 to 2.0. Five
+warm self-checks each consume 0.03 seconds of user CPU. The byte-identical seed
+is 1,622,580 C bytes with SHA-256
+`a22b64129cd5e4808c4aa4bc256218e894589933452474a5aa3b2fde82365796`.
+The authoritative complete release run measures records at 2.104/1.369
+milliseconds SLIM/C and variants at 3.421/3.542 milliseconds SLIM/C, with every
+correctness, safety, performance, and bootstrap gate passing.

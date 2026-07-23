@@ -76,11 +76,45 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_selfhost_architecture(root, &mut errors);
     check_core_1d_acceptance(root, &decisions, &mut errors);
     check_runtime_fast_paths(root, &decisions, &mut errors);
+    check_allocation_free_region_elision(root, &decisions, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
     check_performance_architecture(root, &decisions, &mut errors);
     errors
+}
+
+fn check_allocation_free_region_elision(
+    root: &Path,
+    decisions: &BTreeMap<String, Decision>,
+    errors: &mut Vec<String>,
+) {
+    match decisions.get("D0060") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "allocation-free region elision requires accepted D0060 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("allocation-free region decision D0060 is missing".to_owned()),
+    }
+
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for required in [
+        "(let allocation_effect Bool (call memory/function_plan_allocates function_plan)",
+        "(let uses_child_region Bool (call bool.and local_region allocation_effect)",
+        "(let region Unit (match uses_child_region",
+        "(let destroyed Unit (match uses_child_region",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "allocation-free region elision is missing `{required}`"
+            ));
+        }
+    }
+    if codegen.contains("(let region Unit (match local_region")
+        || codegen.contains("(let destroyed Unit (match local_region")
+    {
+        errors.push("code generation restored unconditional empty child regions".to_owned());
+    }
 }
 
 fn check_runtime_fast_paths(

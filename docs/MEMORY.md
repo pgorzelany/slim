@@ -114,15 +114,16 @@ through a result or `inout` output is allocated in or transferred to the
 destination region selected by the compiler.
 
 Core 0.4 implements the first conservative placement boundary at function
-granularity. A function whose result contains no storage and which has no
-`inout` output receives a child region; all transitive allocation in that
-function uses the child and generated code destroys it on normal and
-allocation-failure exits. Other functions allocate in their caller-provided
-destination region. This safely covers returned vectors and byte views,
-aggregate ownership, recursion, and output mutation without promotion or
-reference counting. Per-binding early destruction and stack promotion of
-dynamic buffers remain later precision work; ordinary scalar and aggregate C
-values are already stack-resident.
+granularity. A function whose result contains no storage, which has no `inout`
+output, and whose retained plan contains direct or transitive allocation uses a
+child region. Generated code destroys that child on normal and
+allocation-failure exits. If the plan contains no allocation site, D0060 elides
+the empty child and forwards the caller region through the uniform ABI. Other
+functions allocate in their caller-provided destination region. This safely
+covers returned vectors and byte views, aggregate ownership, recursion, and
+output mutation without promotion or reference counting. Per-binding early
+destruction and stack promotion of dynamic buffers remain later precision
+work; ordinary scalar and aggregate C values are already stack-resident.
 
 No allocation means no allocation record. Regions do not expose pointers or
 handles to SLIM source and cannot be selected dynamically by a program.

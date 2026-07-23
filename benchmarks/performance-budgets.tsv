@@ -26,7 +26,7 @@ native-runtime-ratio	merge_sort	3.00	slim-over-c	D0059
 native-runtime-ratio	bytefreq	3.00	slim-over-c	D0059
 native-runtime-ratio	binary_search	2.50	slim-over-c	D0059
 native-runtime-ratio	prefix_sum	2.50	slim-over-c	D0059
-native-runtime-ratio	records	5.00	slim-over-c	D0059
-native-runtime-ratio	variants	6.00	slim-over-c	D0059
+native-runtime-ratio	records	3.00	slim-over-c	D0060
+native-runtime-ratio	variants	2.00	slim-over-c	D0060
 native-runtime-ratio	arena_sum	2.50	slim-over-c	D0059
 native-runtime-ratio	knapsack	2.50	slim-over-c	D0059
