@@ -73,6 +73,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_rust_safety(&root.join("src"), &mut errors);
     check_rust_budget(root, &mut errors);
     check_toolchain_cutover(root, &mut errors);
+    check_ast_boundary(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
     check_core_1d_acceptance(root, &decisions, &mut errors);
     check_runtime_fast_paths(root, &decisions, &mut errors);
@@ -1064,7 +1065,7 @@ fn check_host_boundary(
         ),
         (
             "selfhost/effects.slim",
-            "(call syntax/token_equal source tokens callee \"io.monotonic-ms\")",
+            "(call syntax/ast_node_text_is source tokens callee \"io.monotonic-ms\")",
         ),
         ("selfhost/codegen.slim", "(true \"slim_monotonic_ms\")"),
         ("runtime/slim_rt.h", "int64_t slim_monotonic_ms(void);"),
@@ -2853,6 +2854,78 @@ fn check_rust_budget(root: &Path, errors: &mut Vec<String>) {
     }
 }
 
+fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
+    let decision_path = root.join("design/decisions/D0103-canonical-ast-boundary.md");
+    let decision = fs::read_to_string(&decision_path).unwrap_or_default();
+    for required in ["# D0103: Canonical AST module boundary", "Status: accepted"] {
+        if !decision.contains(required) {
+            errors.push(format!(
+                "canonical AST boundary is missing accepted decision evidence `{required}`"
+            ));
+        }
+    }
+
+    let syntax_path = root.join("selfhost/syntax.slim");
+    let syntax = fs::read_to_string(&syntax_path).unwrap_or_default();
+    for required in [
+        "(fn ast_node_kind",
+        "(fn ast_node_start",
+        "(fn ast_node_end",
+        "(fn ast_node_link",
+        "(fn ast_node_text_is",
+        "(fn ast_next",
+        "(fn ast_module_items",
+        "(fn ast_item_is_function",
+        "(fn ast_function_body",
+        "(fn ast_binding_type",
+        "(fn ast_expression_is_call",
+    ] {
+        if !syntax.contains(required) {
+            errors.push(format!(
+                "canonical AST boundary is missing semantic accessor `{required}`"
+            ));
+        }
+    }
+
+    let forbidden = [
+        "syntax/token_kind",
+        "syntax/token_start",
+        "syntax/token_end",
+        "syntax/token_link",
+        "syntax/token_equal",
+        "syntax/set_token_link",
+        "syntax/skip_form",
+    ];
+    let selfhost = root.join("selfhost");
+    let Ok(entries) = fs::read_dir(&selfhost) else {
+        errors.push("cannot inspect selfhost sources for AST boundary".to_owned());
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("slim")
+            || path.file_name().and_then(|value| value.to_str()) == Some("syntax.slim")
+        {
+            continue;
+        }
+        let Ok(source) = fs::read_to_string(&path) else {
+            errors.push(format!(
+                "cannot inspect {} for AST boundary",
+                path.display()
+            ));
+            continue;
+        };
+        for operation in forbidden {
+            if source.contains(operation) {
+                errors.push(format!(
+                    "{} bypasses the canonical AST boundary through `{operation}`",
+                    path.display()
+                ));
+            }
+        }
+    }
+}
+
 fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let directory = root.join("selfhost");
     let project_path = directory.join("slim.project");
@@ -2950,9 +3023,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call fact_type facts expr)",
         "(fn append_issue",
         "(make Issue (code code) (start start) (end end) (blocks_inference true))",
-        "(call syntax/set_token_link tokens cursor definition)",
-        "(call syntax/set_token_link tokens expr case_form)",
-        "(call syntax/set_token_link tokens cursor case_cursor)",
+        "(call syntax/ast_node_set_link tokens cursor definition)",
+        "(call syntax/ast_node_set_link tokens expr case_form)",
+        "(call syntax/ast_node_set_link tokens cursor case_cursor)",
         "(fn check_recursive_argument_identity",
         "(call append_issue \"E0350\" argument argument issues)",
     ] {
@@ -3162,9 +3235,9 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     for required in [
         "(let variant_type I64 (call fact_type_index facts value)",
-        "(let item I64 (call syntax/token_link tokens record)",
-        "(let variant_link I64 (call syntax/token_link tokens variant)",
-        "(let variant_link I64 (call syntax/token_link tokens variant_type)",
+        "(let item I64 (call syntax/ast_node_link tokens record)",
+        "(let variant_link I64 (call syntax/ast_node_link tokens variant)",
+        "(let variant_link I64 (call syntax/ast_node_link tokens variant_type)",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
@@ -3222,8 +3295,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("self-host typing restored borrowed-return parameter scans".to_owned());
     }
     for required in [
-        "(let case_link I64 (call syntax/token_link tokens expr)",
-        "(let case_link I64 (call syntax/token_link tokens cursor)",
+        "(let case_link I64 (call syntax/ast_node_link tokens expr)",
+        "(let case_link I64 (call syntax/ast_node_link tokens cursor)",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
@@ -3233,7 +3306,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     for required in [
         "(fn checked_record_field_link",
-        "(call syntax/token_link tokens field_form)",
+        "(call syntax/ast_node_link tokens field_form)",
         "(call checked_record_field_link source tokens cursor definition name_start name_end)",
     ] {
         if !codegen.contains(required) {
@@ -3379,7 +3452,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call span_has_form source tokens body body_end \"recur\")",
         "(fn call_requires",
         "(call effects/call_requires source tokens callee 1)",
-        "(call syntax/token_link tokens type_index)",
+        "(call syntax/ast_node_link tokens type_index)",
         "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
         "(make typing/Checked (status status) (view view) (issues issues) (plan plan))",
         "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (plan memory/Plan)",
@@ -3391,7 +3464,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn emit_variant_match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(let variant_type I64 (call fact_type_index facts value)",
         "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
-        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
+        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(get view facts)",
         "(get prepared facts)",
