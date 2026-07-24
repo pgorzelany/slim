@@ -3206,7 +3206,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     for required in [
         "(fn module_shape_valid_from",
         "(let length I64 (call i64.sub end root)",
-        "(call item_list_valid source tokens (call i64.add root 3) closing)",
+        "(call item_list_valid source tokens (call syntax/ast_module_items root) closing)",
         "(call module_shape_valid_from source tokens 0 end)",
     ] {
         if !validate.contains(required) {
@@ -3448,8 +3448,8 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn allocation_site_region",
         "(recur allocations site low middle)",
         "(recur allocations site next high)",
-        "(fn span_has_form",
-        "(call span_has_form source tokens body body_end \"recur\")",
+        "(fn span_has_recur",
+        "(call span_has_recur source tokens body body_end)",
         "(fn call_requires",
         "(call effects/call_requires source tokens callee 1)",
         "(call syntax/ast_node_link tokens type_index)",
