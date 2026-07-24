@@ -808,11 +808,33 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .unwrap()
             .success()
     );
+    let conflicting_generated = fs::read_to_string(conflicting_c).unwrap();
     assert!(
-        fs::read_to_string(conflicting_c)
+        conflicting_generated.contains("slim_result = slim_v_value / slim_v_divisor;"),
+        "a joined positive divisor interval should prove division total"
+    );
+    assert!(!conflicting_generated.contains("slim_i64_div"));
+
+    let possible_zero = write_source(
+        &directory,
+        "(module possible-zero-parameter (fn quotient ((value I64) (divisor I64)) I64 (effects partial) (call i64.div value divisor)) (fn main ((args (Vec Bytes))) I64 (effects partial) (match true (true (call quotient 84 2)) (false (call quotient 84 0)))))\n",
+    );
+    let possible_zero_c = directory.join("possible-zero.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(possible_zero)
+            .arg("-o")
+            .arg(&possible_zero_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        fs::read_to_string(possible_zero_c)
             .unwrap()
             .contains("slim_result = slim_i64_div(slim_v_value, slim_v_divisor);"),
-        "conflicting call-site constants must retain the checked operation"
+        "a divisor interval containing zero must retain the checked operation"
     );
 
     let changed_recurrence = write_source(
@@ -830,11 +852,32 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .unwrap()
             .success()
     );
+    let changed_recurrence_generated = fs::read_to_string(changed_recurrence_c).unwrap();
     assert!(
-        fs::read_to_string(changed_recurrence_c)
+        changed_recurrence_generated.contains("slim_v_quotient = slim_v_index / slim_v_divisor;"),
+        "a positively bounded recurrence accumulator should prove division total"
+    );
+
+    let decreasing_divisor = write_source(
+        &directory,
+        "(module decreasing-divisor (fn quotient-loop ((index I64) (limit I64) (divisor I64)) I64 (effects partial) (match (call i64.eq index limit) (true index) (false (let quotient I64 (call i64.div index divisor) (recur (call i64.add index 1) limit (call i64.sub divisor 1)))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call quotient-loop 0 10 2)))\n",
+    );
+    let decreasing_divisor_c = directory.join("decreasing-divisor.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(decreasing_divisor)
+            .arg("-o")
+            .arg(&decreasing_divisor_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        fs::read_to_string(decreasing_divisor_c)
             .unwrap()
             .contains("slim_v_quotient = slim_i64_div(slim_v_index, slim_v_divisor);"),
-        "a changed recurrent parameter must never be treated as invariant"
+        "an unsupported decreasing recurrence must retain checked division"
     );
 
     let bounded = write_source(
@@ -863,6 +906,287 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 }
 
 #[test]
+fn exact_counted_recurrences_expand_only_under_complete_proof() {
+    let directory = temporary_directory("counted-recurrence-expansion");
+
+    let early_result = write_source(
+        &directory,
+        "(module counted-stages (fn count ((index I64) (total I64)) I64 (effects partial) (match (call i64.eq index 4) (true total) (false (match (call i64.eq index 2) (true (recur (call i64.add index 1) total)) (false (match (call i64.eq index 3) (true 42) (false (recur (call i64.add index 1) (call i64.add total 1))))))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call count 0 0)))\n",
+    );
+    let early_c = directory.join("early.c");
+    let emitted = Command::new(slimc())
+        .arg("emit-c")
+        .arg(&early_result)
+        .arg("-o")
+        .arg(&early_c)
+        .output()
+        .unwrap();
+    assert!(
+        emitted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&emitted.stderr)
+    );
+    let early_generated = fs::read_to_string(&early_c).unwrap();
+    assert_eq!(
+        early_generated
+            .matches("if (slim_v_index < INT64_C(4)) do {")
+            .count(),
+        4
+    );
+    assert!(!early_generated.contains("while (slim_v_index"));
+
+    let analysis = Command::new(slimc())
+        .arg("analyze")
+        .arg(&early_result)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success());
+    let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains("(counted-loops (fact-limit 64)"));
+    assert!(report.contains("(start 0) (bound 4) (step 1) (iterations 4)"));
+    assert!(report.contains(
+        "(counted-loop-count 1) (reported-facts 1) (facts-truncated false) (guarantee exact)"
+    ));
+
+    let executable = directory.join("early");
+    assert!(
+        Command::new(slimc())
+            .arg("build")
+            .arg(&early_result)
+            .arg("-o")
+            .arg(&executable)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert_eq!(Command::new(executable).status().unwrap().code(), Some(42));
+
+    let maximum = write_source(
+        &directory,
+        "(module maximum-counted-stages (fn count ((index I64)) I64 (effects partial) (match (call i64.eq index 16) (true index) (false (recur (call i64.add index 1))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call count 0)))\n",
+    );
+    let maximum_c = directory.join("maximum.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&maximum)
+            .arg("-o")
+            .arg(&maximum_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert_eq!(
+        fs::read_to_string(maximum_c)
+            .unwrap()
+            .matches("if (slim_v_index < INT64_C(16)) do {")
+            .count(),
+        16
+    );
+
+    let conflicting = write_source(
+        &directory,
+        "(module conflicting-counted-starts (fn count ((index I64)) I64 (effects partial) (match (call i64.eq index 4) (true index) (false (recur (call i64.add index 1))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (let first I64 (call count 0) (call count 1))))\n",
+    );
+    let conflicting_c = directory.join("conflicting.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&conflicting)
+            .arg("-o")
+            .arg(&conflicting_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let conflicting_generated = fs::read_to_string(conflicting_c).unwrap();
+    assert!(!conflicting_generated.contains("do {"));
+    assert!(conflicting_generated.contains("slim_recur: ;"));
+
+    let over_budget = write_source(
+        &directory,
+        "(module over-budget-counted-stages (fn count ((index I64)) I64 (effects partial) (match (call i64.eq index 17) (true index) (false (recur (call i64.add index 1))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call count 0)))\n",
+    );
+    let over_budget_c = directory.join("over-budget.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&over_budget)
+            .arg("-o")
+            .arg(&over_budget_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let over_budget_generated = fs::read_to_string(over_budget_c).unwrap();
+    assert!(!over_budget_generated.contains("do {"));
+    assert!(over_budget_generated.contains("slim_recur: ;"));
+
+    let explicit_fork = write_source(
+        &directory,
+        "(module forked-counted-stages (fn count ((index I64)) I64 (effects partial) (match (call i64.eq index 4) (true index) (false (fork (recur (call i64.add index 1)))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call count 0)))\n",
+    );
+    let fork_check = Command::new(slimc())
+        .arg("check")
+        .arg(&explicit_fork)
+        .output()
+        .unwrap();
+    assert!(!fork_check.status.success());
+    assert!(
+        String::from_utf8(fork_check.stderr)
+            .unwrap()
+            .contains("E0356")
+    );
+
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
+    let directory = temporary_directory("versioned-collection-checks");
+
+    let propagated = write_source(
+        &directory,
+        "(module bounded-call-ranges (fn consume ((value I64)) I64 (effects partial) (call i64.add value 1)) (fn normalize ((value I64)) I64 (effects partial) (let bounded I64 (call i64.rem value 10) (call consume bounded))) (fn main ((args (Vec Bytes))) I64 (effects partial) (match true (true (call normalize 0)) (false (call normalize 100)))))\n",
+    );
+    let propagated_c = directory.join("propagated.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&propagated)
+            .arg("-o")
+            .arg(&propagated_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let propagated_generated = fs::read_to_string(propagated_c).unwrap();
+    assert!(propagated_generated.contains("slim_v_value % INT64_C(10)"));
+    assert!(propagated_generated.contains("slim_v_value + INT64_C(1)"));
+    assert!(!propagated_generated.contains("slim_i64_add(slim_v_value"));
+    let propagated_report = Command::new(slimc())
+        .arg("analyze")
+        .arg(&propagated)
+        .output()
+        .unwrap();
+    assert!(propagated_report.status.success());
+    let propagated_report = String::from_utf8(propagated_report.stdout).unwrap();
+    assert!(propagated_report.contains("(status total) (lower 0) (upper 9)"));
+    assert!(propagated_report.contains("(status total) (lower 1) (upper 10)"));
+
+    let fallback_success = write_source(
+        &directory,
+        "(module versioned-get-fallback (fn read ((inout values (Vec I64)) (index I64)) I64 (effects partial) (call vec.get values index)) (fn main ((args (Vec Bytes))) I64 (effects alloc partial) (let values (Vec I64) (call vec.new) (let pushed Unit (call vec.push values 42) (match true (true (call read values 0)) (false (call read values 9)))))))\n",
+    );
+    let fallback_c = directory.join("fallback.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&fallback_success)
+            .arg("-o")
+            .arg(&fallback_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let fallback_generated = fs::read_to_string(&fallback_c).unwrap();
+    assert!(fallback_generated.contains(".len > INT64_C(9) ? slim_v_index"));
+    assert!(fallback_generated.contains("slim_vec_check_index"));
+    let fallback_executable = directory.join("fallback");
+    assert!(
+        Command::new(slimc())
+            .arg("build")
+            .arg(&fallback_success)
+            .arg("-o")
+            .arg(&fallback_executable)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert_eq!(
+        Command::new(fallback_executable).status().unwrap().code(),
+        Some(42)
+    );
+
+    let fallback_trap = write_source(
+        &directory,
+        "(module versioned-get-trap (fn read ((inout values (Vec I64)) (index I64)) I64 (effects partial) (call vec.get values index)) (fn main ((args (Vec Bytes))) I64 (effects alloc partial) (let values (Vec I64) (call vec.new) (let pushed Unit (call vec.push values 42) (match false (true (call read values 0)) (false (call read values 9)))))))\n",
+    );
+    let trap_executable = directory.join("trap");
+    assert!(
+        Command::new(slimc())
+            .arg("build")
+            .arg(&fallback_trap)
+            .arg("-o")
+            .arg(&trap_executable)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let trapped = Command::new(trap_executable).output().unwrap();
+    assert!(!trapped.status.success());
+    assert!(
+        String::from_utf8(trapped.stderr)
+            .unwrap()
+            .contains("index out of bounds")
+    );
+
+    let versioned_set = write_source(
+        &directory,
+        "(module versioned-set-fallback (fn store ((inout values (Vec I64)) (index I64) (value I64)) Unit (effects partial) (call vec.set values index value)) (fn main ((args (Vec Bytes))) I64 (effects alloc partial) (let values (Vec I64) (call vec.new) (let pushed Unit (call vec.push values 0) (let stored Unit (match true (true (call store values 0 42)) (false (call store values 9 42))) (call vec.get values 0))))))\n",
+    );
+    let set_c = directory.join("set.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&versioned_set)
+            .arg("-o")
+            .arg(&set_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let set_generated = fs::read_to_string(&set_c).unwrap();
+    assert!(set_generated.contains(".len > INT64_C(9) ? slim_v_index"));
+    let set_executable = directory.join("set");
+    assert!(
+        Command::new(slimc())
+            .arg("build")
+            .arg(&versioned_set)
+            .arg("-o")
+            .arg(&set_executable)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert_eq!(
+        Command::new(set_executable).status().unwrap().code(),
+        Some(42)
+    );
+
+    let negative = write_source(
+        &directory,
+        "(module negative-index (fn read ((inout values (Vec I64)) (index I64)) I64 (effects partial) (call vec.get values index)) (fn main ((args (Vec Bytes))) I64 (effects alloc partial) (let values (Vec I64) (call vec.new) (let pushed Unit (call vec.push values 42) (call read values -1)))))\n",
+    );
+    let negative_c = directory.join("negative.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&negative)
+            .arg("-o")
+            .arg(&negative_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let negative_generated = fs::read_to_string(negative_c).unwrap();
+    assert!(!negative_generated.contains(".len > INT64_C("));
+    assert!(negative_generated.contains("slim_vec_check_index"));
+
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
     let directory = temporary_directory("typed-vector-set");
     let source = write_source(
@@ -882,8 +1206,9 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
     );
     let generated = fs::read_to_string(generated).unwrap();
     assert!(!generated.contains("slim_vec_set("));
-    assert!(generated.contains("[slim_vec_check_index("));
-    assert!(generated.contains(")] = slim_v_second;"));
+    assert!(generated.contains(".len > INT64_C(0)"));
+    assert!(generated.contains("slim_vec_check_index"));
+    assert!(generated.contains("] = slim_v_second;"));
 
     let executable = directory.join("program");
     assert!(

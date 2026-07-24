@@ -1952,6 +1952,13 @@ fn check_runtime_fast_paths(
         ),
         None => errors.push("typed vector-set lowering decision D0087 is missing".to_owned()),
     }
+    match decisions.get("D0098") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "versioned collection access requires accepted D0098 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("versioned collection access decision D0098 is missing".to_owned()),
+    }
 
     let header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
     for required in [
@@ -1988,9 +1995,11 @@ fn check_runtime_fast_paths(
     for required in [
         "(fn emit_vec_set_call ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(let vector-type I64 (call fact_type_index facts arguments)",
-        "\").data)[slim_vec_check_index(\"",
-        "(call emit_binding_address source tokens params arguments output)",
-        "\")] = \"",
+        "(fn emit_versioned_index ",
+        "\").len > INT64_C(\"",
+        "\" : slim_vec_check_index(&(\"",
+        "(call emit_versioned_index source tokens params arguments index output range-facts)",
+        "\"] = \"",
     ] {
         if !codegen.contains(required) {
             errors.push(format!(
