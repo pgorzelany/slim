@@ -152,6 +152,17 @@ The first full candidate improves the expanded SLIM/C geometric mean from
 parity claim: acceptance still requires an all-application full-run mean at or
 below 1.00 with every safety and regression gate intact.
 
+D0086 makes `-O3` the one canonical native application build, matching the
+portable optimization level used by the C and Rust references. It adds no
+profile, LTO, target-specific flag, or safety difference. The full ratio
+improves to 1.335 overall and 1.412 on serial work.
+
+D0087 lowers `vec.set` as a typed assignment guarded by the same canonical
+bounds checker already used for typed reads. Generic element-size arithmetic
+and `memcpy` leave the hot successful path; the bounds trap remains. The full
+ratio improves to 1.273 overall and 1.337 on serial work, with
+`merge_sort` at 1.152 and `edit_distance` at 1.037 versus C.
+
 ## Core 1J structured-host contract
 
 D0078 adds two maintained loopback applications to `slim-bench host`.

@@ -90,13 +90,13 @@ slim_compile_c() {
         fi
         case "$slim_worker_tier" in
             posix)
-                "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+                "$slim_cc" -std=c11 -O3 -DNDEBUG -Wall -Wextra -Werror \
                     -DSLIM_PARALLEL=1 -DSLIM_POSIX_WORKERS=1 -pthread \
                     -I "$slim_root/runtime" "$slim_c_source" \
                     "$slim_root/runtime/slim_rt.c" -o "$slim_output"
                 ;;
             serial)
-                "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+                "$slim_cc" -std=c11 -O3 -DNDEBUG -Wall -Wextra -Werror \
                     -DSLIM_PARALLEL=1 -I "$slim_root/runtime" \
                     "$slim_c_source" "$slim_root/runtime/slim_rt.c" \
                     -o "$slim_output"
@@ -107,7 +107,7 @@ slim_compile_c() {
                 ;;
         esac
     else
-        "$slim_cc" -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror \
+        "$slim_cc" -std=c11 -O3 -DNDEBUG -Wall -Wextra -Werror \
             -I "$slim_root/runtime" "$slim_c_source" \
             "$slim_root/runtime/slim_rt.c" -o "$slim_output"
     fi

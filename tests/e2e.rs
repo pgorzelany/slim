@@ -863,6 +863,48 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 }
 
 #[test]
+fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
+    let directory = temporary_directory("typed-vector-set");
+    let source = write_source(
+        &directory,
+        "(module typed-vector-set (record Pair ((left I64) (right I64))) (fn main ((args (Vec Bytes))) I64 (effects alloc partial) (let pairs (Vec Pair) (call vec.new) (let first Pair (make Pair (left 1) (right 2)) (let pushed Unit (call vec.push pairs first) (let second Pair (make Pair (left 20) (right 22)) (let stored Unit (call vec.set pairs 0 second) (let result Pair (call vec.get pairs 0) (call i64.add (get result left) (get result right))))))))))\n",
+    );
+    let generated = directory.join("program.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(&source)
+            .arg("-o")
+            .arg(&generated)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let generated = fs::read_to_string(generated).unwrap();
+    assert!(!generated.contains("slim_vec_set("));
+    assert!(generated.contains("[slim_vec_check_index("));
+    assert!(generated.contains(")] = slim_v_second;"));
+
+    let executable = directory.join("program");
+    assert!(
+        Command::new(slimc())
+            .arg("build")
+            .arg(source)
+            .arg("-o")
+            .arg(&executable)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let run = Command::new(executable).output().unwrap();
+    assert_eq!(run.status.code(), Some(42));
+    assert!(run.stdout.is_empty());
+    assert!(run.stderr.is_empty());
+
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn propagates_typed_allocation_failure() {
     let directory = temporary_directory("allocation-failure");
     let source = write_source(

@@ -31,6 +31,8 @@ by an explicit compatibility contract.
   numeric addresses, explicit limits, typed failure, and no source handle.
 - A permanent twenty-application SLIM/C/Rust performance corpus with
   proof-directed direct arithmetic lowering for exact total checked nodes.
+- One canonical portable `-O3` native build and typed `vec.set` lowering that
+  retains the shared bounds check while avoiding generic byte copies.
 
 ## Deliberate bounds
 
@@ -63,8 +65,8 @@ The normative language, compatibility, diagnostics, and release contracts are
 `docs/RELEASE.md`. Detailed subsystem evidence remains in the other documents,
 decisions, and dated benchmark results.
 
-Post-1.0 safe performance work is active under D0084 and D0085. The first
-expanded full candidate measures 1.359× C overall and 1.439× across serial
+Post-1.0 safe performance work is active under D0084 through D0087. The current
+expanded full candidate measures 1.273× C overall and 1.337× across serial
 applications, so the repository does not yet claim C parity. The next material
-boundary is proof-backed collection access or safe partitioning; no new
-language feature has been accepted for it.
+boundary is proof-backed collection reads or safe partitioning; no new language
+feature has been accepted for it.

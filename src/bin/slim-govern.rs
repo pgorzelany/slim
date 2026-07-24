@@ -1889,7 +1889,7 @@ fn check_core_1e_acceptance(
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
     for required in [
         "native-runtime-ratio\tsieve\t2.50\tslim-over-c\tD0061",
-        "native-runtime-ratio\tmatrix\t2.50\tslim-over-c\tD0061",
+        "native-runtime-ratio\tmatrix\t2.00\tslim-over-c\tD0087",
         "native-runtime-ratio\tbytefreq\t2.50\tslim-over-c\tD0061",
         "native-runtime-ratio\trecords\t2.50\tslim-over-c\tD0061",
         "native-runtime-ratio\tvariants\t1.75\tslim-over-c\tD0061",
@@ -1945,6 +1945,13 @@ fn check_runtime_fast_paths(
         ),
         None => errors.push("checked runtime fast-path decision D0059 is missing".to_owned()),
     }
+    match decisions.get("D0087") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "typed vector-set lowering requires accepted D0087 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("typed vector-set lowering decision D0087 is missing".to_owned()),
+    }
 
     let header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
     for required in [
@@ -1977,6 +1984,21 @@ fn check_runtime_fast_paths(
         }
     }
 
+    let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
+    for required in [
+        "(fn emit_vec_set_call ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "(let vector-type I64 (call fact_type_index facts arguments)",
+        "\").data)[slim_vec_check_index(\"",
+        "(call emit_binding_address source tokens params arguments output)",
+        "\")] = \"",
+    ] {
+        if !codegen.contains(required) {
+            errors.push(format!(
+                "typed vector-set lowering is missing checked fact use `{required}`"
+            ));
+        }
+    }
+
     let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
     for fixture in [
         "subtraction-overflow\ttrap\t",
@@ -1993,6 +2015,10 @@ fn check_runtime_fast_paths(
                 "checked runtime trap fixture is missing `{fixture}`"
             ));
         }
+    }
+    let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
+    if !tests.contains("typed_vector_set_preserves_aggregate_values_and_bounds_checks") {
+        errors.push("typed vector-set aggregate fixture is missing".to_owned());
     }
 }
 
@@ -2053,6 +2079,22 @@ fn check_performance_architecture(
     decisions: &BTreeMap<String, Decision>,
     errors: &mut Vec<String>,
 ) {
+    match decisions.get("D0086") {
+        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+        Some(_) => errors.push(
+            "canonical O3 native builds require accepted D0086 scoring at least 60".to_owned(),
+        ),
+        None => errors.push("canonical O3 native-build decision D0086 is missing".to_owned()),
+    }
+    let launcher = fs::read_to_string(root.join("slimc")).unwrap_or_default();
+    if launcher.matches("-std=c11 -O3 -DNDEBUG").count() != 3
+        || launcher.contains("-std=c11 -O2 -DNDEBUG")
+    {
+        errors.push(
+            "slimc build/run must retain one canonical O3 native optimization level".to_owned(),
+        );
+    }
+
     for relative in [
         "docs/PERFORMANCE.md",
         "design/decisions/D0030-durable-performance-evidence.md",

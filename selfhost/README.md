@@ -81,7 +81,9 @@ workloads or an explicit unknown result. D0085 also gives this same view to C
 emission: an exact checked arithmetic node lowers directly only when its fact
 is total. Exact scalar parameters propagate through agreeing calls and
 unchanged recurrence for four fixed passes; unsupported or deeper paths remain
-unknown. This adds no source or runtime contract.
+unknown. D0087 consumes the retained checked element type for `vec.set`,
+emitting a typed assignment through the canonical vector bounds checker rather
+than a generic byte copy. This adds no source or runtime contract.
 
 The `quality`, `proof`, `equivalence`, and `edit` modules implement D0029.
 They classify bounded evidence, record and independently replay reduction,
