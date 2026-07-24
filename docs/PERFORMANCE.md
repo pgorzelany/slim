@@ -131,6 +131,27 @@ network implementation enabled and disabled. Their same-host binary-size ratio
 must not exceed 1.03. The gate bounds inactive host support without pretending
 that loopback timing predicts real network latency.
 
+## Post-1.0 safe C-parity program
+
+D0084 expands the matched native corpus from fourteen to twenty applications
+before optimizing it. The suite now covers dense graphs, backtracking,
+disjoint-set mutation, cellular and image stencils, and byte dynamic
+programming in addition to the retained workloads. The runner reports separate
+all-corpus and serial-only geometric means; per-application rows remain
+authoritative.
+
+D0085 lets C emission consume exact-node integer totality. Direct `+`, `-`,
+`*`, `/`, and `%` appear only for an operation already proved total; unknown
+facts retain the checked helper. Closed-program exact scalar parameters
+propagate for four fixed passes when every call agrees and recurrence preserves
+the value.
+
+The first full candidate improves the expanded SLIM/C geometric mean from
+1.371 to 1.359 and the serial mean from 1.450 to 1.439.
+`image_convolution` improves from 1.596 to 1.171. This is progress, not a C
+parity claim: acceptance still requires an all-application full-run mean at or
+below 1.00 with every safety and regression gate intact.
+
 ## Core 1J structured-host contract
 
 D0078 adds two maintained loopback applications to `slim-bench host`.

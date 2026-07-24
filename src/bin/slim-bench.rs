@@ -701,6 +701,11 @@ fn run_comparison() {
     let build = ComparisonBuild::new();
     let challenges = challenge_manifest();
     let samples = if quick { 5 } else { 15 };
+    let mut all_c_log_sum = 0.0f64;
+    let mut all_rust_log_sum = 0.0f64;
+    let mut serial_c_log_sum = 0.0f64;
+    let mut serial_rust_log_sum = 0.0f64;
+    let mut serial_count = 0usize;
     println!("challenge\tlanguage\tcompile_ms\truntime_us\tbinary_bytes");
     for challenge in &challenges {
         let directory = root.join("benchmarks/challenges").join(challenge);
@@ -760,6 +765,14 @@ fn run_comparison() {
         let rust_runtime = median_runtime(&rust_output, &arguments, samples);
         let slim_runtime = median_runtime(&slim_output, &arguments, samples);
         let runtime_ratio = slim_runtime.as_nanos() as f64 / c_runtime.as_nanos() as f64;
+        let rust_ratio = slim_runtime.as_nanos() as f64 / rust_runtime.as_nanos() as f64;
+        all_c_log_sum += runtime_ratio.ln();
+        all_rust_log_sum += rust_ratio.ln();
+        if !challenge_has_feature(challenge, "parallel-candidate") {
+            serial_c_log_sum += runtime_ratio.ln();
+            serial_rust_log_sum += rust_ratio.ln();
+            serial_count += 1;
+        }
         let runtime_limit = performance_budget("native-runtime-ratio", challenge);
         if runtime_ratio > runtime_limit {
             eprintln!(
@@ -781,6 +794,33 @@ fn run_comparison() {
                 compile_time.as_secs_f64() * 1_000.0,
                 runtime.as_micros()
             );
+        }
+    }
+    assert!(
+        serial_count > 0,
+        "comparison corpus must retain serial work"
+    );
+    let all_count = challenges.len() as f64;
+    let all_c_geomean = (all_c_log_sum / all_count).exp();
+    let all_rust_geomean = (all_rust_log_sum / all_count).exp();
+    let serial_c_geomean = (serial_c_log_sum / serial_count as f64).exp();
+    let serial_rust_geomean = (serial_rust_log_sum / serial_count as f64).exp();
+    println!("aggregate\tapplications\tslim_over_c\tslim_over_rust");
+    println!(
+        "all\t{}\t{all_c_geomean:.3}\t{all_rust_geomean:.3}",
+        challenges.len()
+    );
+    println!("serial\t{serial_count}\t{serial_c_geomean:.3}\t{serial_rust_geomean:.3}");
+    for (workload, ratio) in [
+        ("expanded-all", all_c_geomean),
+        ("expanded-serial", serial_c_geomean),
+    ] {
+        let limit = performance_budget("native-runtime-geomean", workload);
+        if ratio > limit {
+            eprintln!(
+                "performance gate: {workload} SLIM/C runtime geometric mean {ratio:.3} exceeds {limit:.3}"
+            );
+            std::process::exit(1);
         }
     }
 }
@@ -1368,6 +1408,7 @@ fn run_parallelism_evidence() {
             .collect::<Vec<_>>()
             .join("\t")
     );
+    let mut measured = Vec::with_capacity(challenges.len());
     for challenge in &challenges {
         let path = root
             .join("benchmarks/challenges")
@@ -1388,14 +1429,17 @@ fn run_parallelism_evidence() {
         );
         let report = std::str::from_utf8(&first).expect("analysis report must be UTF-8");
         let evidence = measure_parallelism_evidence(&path, report);
+        print_parallelism_evidence(challenge, &evidence);
+        measured.push((challenge.clone(), evidence));
+    }
+    for (challenge, evidence) in &measured {
         let expected = baseline
             .get(challenge)
             .unwrap_or_else(|| panic!("missing parallelism baseline for {challenge}"));
         assert_eq!(
-            &evidence, expected,
+            evidence, expected,
             "{challenge}: parallelism evidence changed; record the reason and update the durable baseline"
         );
-        print_parallelism_evidence(challenge, &evidence);
     }
     assert_eq!(
         baseline.len(),
@@ -1679,6 +1723,21 @@ fn challenge_manifest() -> Vec<String> {
         "challenge manifest must not be empty"
     );
     challenges
+}
+
+fn challenge_has_feature(challenge: &str, feature: &str) -> bool {
+    let path = repository_root().join("benchmarks/challenges/manifest.tsv");
+    let contents = fs::read_to_string(path).expect("read challenge manifest");
+    for line in contents.lines() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        if columns.len() == 2 && columns[0] == challenge {
+            return columns[1].split(',').any(|candidate| candidate == feature);
+        }
+    }
+    panic!("challenge {challenge} is absent from the manifest")
 }
 
 fn performance_budget(metric: &str, workload: &str) -> f64 {

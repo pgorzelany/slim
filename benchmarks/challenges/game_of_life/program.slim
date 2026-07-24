@@ -1,0 +1,77 @@
+(module game-of-life
+  (fn fill ((inout current (Vec Bool)) (inout next (Vec Bool)) (index I64) (count I64)) Unit
+    (effects alloc partial)
+    (match (call i64.eq index count)
+      (true unit)
+      (false
+        (let seed I64 (call i64.rem (call i64.add (call i64.mul index 17) 3) 3)
+          (let alive Bool (call i64.eq seed 0)
+            (let pushed-current Unit (call vec.push current alive)
+              (let pushed-next Unit (call vec.push next false)
+                (recur current next (call i64.add index 1) count))))))))
+  (fn neighbor-count ((inout current (Vec Bool)) (row I64) (column I64) (offset I64) (size I64) (total I64)) I64
+    (effects partial)
+    (match (call i64.eq offset 9)
+      (true total)
+      (false
+        (match (call i64.eq offset 4)
+          (true (recur current row column (call i64.add offset 1) size total))
+          (false
+            (let row-delta I64 (call i64.sub (call i64.div offset 3) 1)
+              (let column-delta I64 (call i64.sub (call i64.rem offset 3) 1)
+                (let neighbor-row I64 (call i64.rem (call i64.add (call i64.add row row-delta) size) size)
+                  (let neighbor-column I64 (call i64.rem (call i64.add (call i64.add column column-delta) size) size)
+                    (let neighbor-index I64 (call i64.add (call i64.mul neighbor-row size) neighbor-column)
+                      (let alive Bool (call vec.get current neighbor-index)
+                        (let increment I64 (match alive (true 1) (false 0))
+                          (recur current row column (call i64.add offset 1) size (call i64.add total increment))))))))))))))
+  (fn step ((inout current (Vec Bool)) (inout next (Vec Bool)) (index I64) (count I64) (size I64)) Unit
+    (effects partial)
+    (match (call i64.eq index count)
+      (true unit)
+      (false
+        (let row I64 (call i64.div index size)
+          (let column I64 (call i64.rem index size)
+            (let neighbors I64 (call neighbor-count current row column 0 size 0)
+              (let alive Bool (call vec.get current index)
+                (let born Bool (call i64.eq neighbors 3)
+                  (let survives Bool (call bool.and alive (call i64.eq neighbors 2))
+                    (let value Bool (call bool.or born survives)
+                      (let stored Unit (call vec.set next index value)
+                        (recur current next (call i64.add index 1) count size))))))))))))
+  (fn copy-grid ((inout current (Vec Bool)) (inout next (Vec Bool)) (index I64) (count I64)) Unit
+    (effects partial)
+    (match (call i64.eq index count)
+      (true unit)
+      (false
+        (let value Bool (call vec.get next index)
+          (let stored Unit (call vec.set current index value)
+            (recur current next (call i64.add index 1) count))))))
+  (fn generations ((inout current (Vec Bool)) (inout next (Vec Bool)) (generation I64) (rounds I64) (count I64) (size I64)) Unit
+    (effects partial)
+    (match (call i64.eq generation rounds)
+      (true unit)
+      (false
+        (let evolved Unit (call step current next 0 count size)
+          (let copied Unit (call copy-grid current next 0 count)
+            (recur current next (call i64.add generation 1) rounds count size))))))
+  (fn checksum ((inout current (Vec Bool)) (index I64) (count I64) (total I64)) I64
+    (effects partial)
+    (match (call i64.eq index count)
+      (true total)
+      (false
+        (let alive Bool (call vec.get current index)
+          (let increment I64 (match alive (true 1) (false 0))
+            (recur current (call i64.add index 1) count (call i64.add total increment)))))))
+  (fn main ((args (Vec Bytes))) I64
+    (effects alloc io partial)
+    (let size I64 128
+      (let count I64 (call i64.mul size size)
+        (let current (Vec Bool) (call vec.new)
+          (let next (Vec Bool) (call vec.new)
+            (let filled Unit (call fill current next 0 count)
+              (let evolved Unit (call generations current next 0 100 count size)
+                (let result I64 (call checksum current 0 count 0)
+                  (let shown Unit (call io.print-i64 result)
+                    (let newline Unit (call io.println "") 0))))))))))
+)

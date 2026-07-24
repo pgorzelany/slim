@@ -744,8 +744,121 @@ fn emits_c_deterministically() {
     }
     assert_eq!(fs::read(first).unwrap(), fs::read(&second).unwrap());
     let generated = fs::read_to_string(&second).unwrap();
-    assert!(generated.contains("slim_i64_add"));
+    assert!(generated.contains("slim_result = INT64_C(40) + INT64_C(2);"));
+    assert!(!generated.contains("slim_i64_add"));
     assert!(generated.contains("slim_fn_main"));
+
+    let unknown = write_source(
+        &directory,
+        "(module unknown-arithmetic (fn add-one ((value I64)) I64 (effects partial) (call i64.add value 1)) (fn main ((args (Vec Bytes))) I64 (effects partial) (let first I64 (call add-one 41) (call add-one first))))\n",
+    );
+    let unknown_generated = directory.join("unknown.c");
+    let status = Command::new(slimc())
+        .arg("emit-c")
+        .arg(unknown)
+        .arg("-o")
+        .arg(&unknown_generated)
+        .status()
+        .unwrap();
+    assert!(status.success());
+    assert!(
+        fs::read_to_string(unknown_generated)
+            .unwrap()
+            .contains("slim_result = slim_i64_add(slim_v_value, INT64_C(1));"),
+        "unknown arithmetic must retain its checked runtime operation"
+    );
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
+    let directory = temporary_directory("parameter-constants");
+
+    let exact = write_source(
+        &directory,
+        "(module exact-parameter (fn quotient ((value I64) (divisor I64)) I64 (effects partial) (call i64.div value divisor)) (fn main ((args (Vec Bytes))) I64 (effects partial) (call quotient 84 2)))\n",
+    );
+    let exact_c = directory.join("exact.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(exact)
+            .arg("-o")
+            .arg(&exact_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    let exact_generated = fs::read_to_string(exact_c).unwrap();
+    assert!(exact_generated.contains("slim_result = slim_v_value / slim_v_divisor;"));
+    assert!(!exact_generated.contains("slim_i64_div"));
+
+    let conflicting = write_source(
+        &directory,
+        "(module conflicting-parameters (fn quotient ((value I64) (divisor I64)) I64 (effects partial) (call i64.div value divisor)) (fn main ((args (Vec Bytes))) I64 (effects partial) (let first I64 (call quotient 84 2) (call quotient first 3))))\n",
+    );
+    let conflicting_c = directory.join("conflicting.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(conflicting)
+            .arg("-o")
+            .arg(&conflicting_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        fs::read_to_string(conflicting_c)
+            .unwrap()
+            .contains("slim_result = slim_i64_div(slim_v_value, slim_v_divisor);"),
+        "conflicting call-site constants must retain the checked operation"
+    );
+
+    let changed_recurrence = write_source(
+        &directory,
+        "(module changed-recurrence (fn quotient-loop ((index I64) (limit I64) (divisor I64)) I64 (effects partial) (match (call i64.eq index limit) (true index) (false (let quotient I64 (call i64.div index divisor) (recur (call i64.add index 1) limit (call i64.add divisor 1)))))) (fn main ((args (Vec Bytes))) I64 (effects partial) (call quotient-loop 0 10 2)))\n",
+    );
+    let changed_recurrence_c = directory.join("changed-recurrence.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(changed_recurrence)
+            .arg("-o")
+            .arg(&changed_recurrence_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        fs::read_to_string(changed_recurrence_c)
+            .unwrap()
+            .contains("slim_v_quotient = slim_i64_div(slim_v_index, slim_v_divisor);"),
+        "a changed recurrent parameter must never be treated as invariant"
+    );
+
+    let bounded = write_source(
+        &directory,
+        "(module bounded-parameter-propagation (fn deepest ((value I64) (divisor I64)) I64 (effects partial) (call i64.div value divisor)) (fn level-four ((value I64) (divisor I64)) I64 (effects partial) (call deepest value divisor)) (fn level-three ((value I64) (divisor I64)) I64 (effects partial) (call level-four value divisor)) (fn level-two ((value I64) (divisor I64)) I64 (effects partial) (call level-three value divisor)) (fn level-one ((value I64) (divisor I64)) I64 (effects partial) (call level-two value divisor)) (fn main ((args (Vec Bytes))) I64 (effects partial) (call level-one 84 2)))\n",
+    );
+    let bounded_c = directory.join("bounded.c");
+    assert!(
+        Command::new(slimc())
+            .arg("emit-c")
+            .arg(bounded)
+            .arg("-o")
+            .arg(&bounded_c)
+            .status()
+            .unwrap()
+            .success()
+    );
+    assert!(
+        fs::read_to_string(bounded_c)
+            .unwrap()
+            .contains("slim_result = slim_i64_div(slim_v_value, slim_v_divisor);"),
+        "facts beyond the fixed propagation budget must remain unknown"
+    );
+
     fs::remove_dir_all(directory).unwrap();
 }
 
@@ -1063,8 +1176,9 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
     for required in [
         "(analysis 7 (module integer-ranges)",
         "(integer-proofs (domain -1000000000 1000000000)",
+        "(refinement-limit 64) (parameter-pass-limit 4)",
         "(refinements 6) (refinements-truncated false)",
-        "(checked-site 26 (status total) (lower unknown) (upper 10))",
+        "(checked-site 26 (status total) (lower 6) (upper 6))",
         "(checked-site 62 (status total) (lower -10) (upper unknown))",
         "(checked-site 84 (status total) (lower 44) (upper 44))",
         "(checked-site 105 (status total) (lower 42) (upper 42))",
@@ -1214,7 +1328,7 @@ fn integer_range_refinement_limit_is_explicit_and_deterministic() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.contains("(refinement-limit 64) (refinements 64)"));
+    assert!(report.contains("(refinement-limit 64) (parameter-pass-limit 4) (refinements 64)"));
     assert!(report.contains("(refinements-truncated true)"));
     fs::remove_dir_all(directory).unwrap();
 }

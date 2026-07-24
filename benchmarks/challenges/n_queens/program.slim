@@ -1,0 +1,61 @@
+(module n-queens
+  (fn absolute-difference ((left I64) (right I64)) I64
+    (effects)
+    (match (call i64.ge left right)
+      (true (call i64.sub left right))
+      (false (call i64.sub right left))))
+  (fn safe ((inout columns (Vec I64)) (row I64) (column I64) (prior I64)) Bool
+    (effects partial)
+    (match (call i64.eq prior row)
+      (true true)
+      (false
+        (let occupied I64 (call vec.get columns prior)
+          (let same-column Bool (call i64.eq occupied column)
+            (let row-distance I64 (call i64.sub row prior)
+              (let column-distance I64 (call absolute-difference occupied column)
+                (let same-diagonal Bool (call i64.eq row-distance column-distance)
+                  (let conflict Bool (call bool.or same-column same-diagonal)
+                    (match conflict
+                      (true false)
+                      (false (recur columns row column (call i64.add prior 1)))))))))))))
+  (fn fill ((inout columns (Vec I64)) (index I64) (size I64)) Unit
+    (effects alloc partial)
+    (match (call i64.eq index size)
+      (true unit)
+      (false
+        (let pushed Unit (call vec.push columns -1)
+          (recur columns (call i64.add index 1) size)))))
+  (fn search ((inout columns (Vec I64)) (row I64) (column I64) (size I64) (total I64)) I64
+    (effects partial)
+    (match (call i64.lt row 0)
+      (true total)
+      (false
+        (let exhausted Bool (call i64.ge column size)
+          (match exhausted
+            (true
+              (match (call i64.eq row 0)
+                (true total)
+                (false
+                  (let previous-row I64 (call i64.sub row 1)
+                    (let previous-column I64 (call vec.get columns previous-row)
+                      (let cleared Unit (call vec.set columns row -1)
+                        (recur columns previous-row (call i64.add previous-column 1) size total)))))))
+            (false
+              (let allowed Bool (call safe columns row column 0)
+                (match allowed
+                  (false (recur columns row (call i64.add column 1) size total))
+                  (true
+                    (let placed Unit (call vec.set columns row column)
+                      (let last Bool (call i64.eq row (call i64.sub size 1))
+                        (match last
+                          (true (recur columns row (call i64.add column 1) size (call i64.add total 1)))
+                          (false (recur columns (call i64.add row 1) 0 size total))))))))))))))
+  (fn main ((args (Vec Bytes))) I64
+    (effects alloc io partial)
+    (let size I64 13
+      (let columns (Vec I64) (call vec.new)
+        (let filled Unit (call fill columns 0 size)
+          (let result I64 (call search columns 0 0 size 0)
+            (let shown Unit (call io.print-i64 result)
+              (let newline Unit (call io.println "") 0)))))))
+)

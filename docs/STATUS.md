@@ -3,7 +3,7 @@
 Status: SLIM 1.0 released
 Compiler version: 1.0.0
 Next milestone: Post-1.0 evidence-driven development
-Updated: 2026-07-23
+Updated: 2026-07-24
 
 SLIM is the Small Language for Intelligent Machines: a compact systems
 language for AI-generated programs. Its production compiler is written in
@@ -29,11 +29,14 @@ by an explicit compatibility contract.
   detached tasks.
 - One monotonic millisecond clock and one bounded whole TCP exchange with
   numeric addresses, explicit limits, typed failure, and no source handle.
+- A permanent twenty-application SLIM/C/Rust performance corpus with
+  proof-directed direct arithmetic lowering for exact total checked nodes.
 
 ## Deliberate bounds
 
 - Integer proofs use a fixed `-1,000,000,000..1,000,000,000` domain; retained
-  proof, lifetime, graph, report, and rewrite tables have documented limits.
+  parameter propagation uses four passes; retained proof, lifetime, graph,
+  report, and rewrite tables have documented limits.
 - Exact equivalence covers at most eight Boolean parameters or one `U8`.
   Reduction is a small terminating, idempotent rule set, not global
   optimization.
@@ -59,3 +62,9 @@ The normative language, compatibility, diagnostics, and release contracts are
 `docs/CORE.md`, `docs/COMPATIBILITY.md`, `docs/DIAGNOSTICS.md`, and
 `docs/RELEASE.md`. Detailed subsystem evidence remains in the other documents,
 decisions, and dated benchmark results.
+
+Post-1.0 safe performance work is active under D0084 and D0085. The first
+expanded full candidate measures 1.359× C overall and 1.439× across serial
+applications, so the repository does not yet claim C parity. The next material
+boundary is proof-backed collection access or safe partitioning; no new
+language feature has been accepted for it.

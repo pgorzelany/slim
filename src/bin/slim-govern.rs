@@ -913,15 +913,25 @@ fn check_resource_evidence(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/resource-baseline.tsv")).unwrap_or_default();
+    let baseline_challenges: BTreeSet<_> = baseline
+        .lines()
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .filter_map(|line| line.split('\t').next())
+        .collect();
+    let manifest =
+        fs::read_to_string(root.join("benchmarks/challenges/manifest.tsv")).unwrap_or_default();
+    let manifest_challenges: BTreeSet<_> = manifest
+        .lines()
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .filter_map(|line| line.split('\t').next())
+        .collect();
     if !baseline.contains("# schema=1")
-        || baseline
-            .lines()
-            .filter(|line| !line.starts_with('#') && !line.is_empty())
-            .count()
-            != 14
+        || baseline_challenges.len() < 20
+        || baseline_challenges != manifest_challenges
     {
         errors.push(
-            "resource baseline must retain schema 1 and all fourteen applications".to_owned(),
+            "resource baseline must retain schema 1 and every application in the expanded corpus"
+                .to_owned(),
         );
     }
 
@@ -1182,15 +1192,25 @@ fn check_parallelism_application_baseline(
 
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
+    let baseline_challenges: BTreeSet<_> = baseline
+        .lines()
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .filter_map(|line| line.split('\t').next())
+        .collect();
+    let manifest =
+        fs::read_to_string(root.join("benchmarks/challenges/manifest.tsv")).unwrap_or_default();
+    let manifest_challenges: BTreeSet<_> = manifest
+        .lines()
+        .filter(|line| !line.starts_with('#') && !line.is_empty())
+        .filter_map(|line| line.split('\t').next())
+        .collect();
     if !baseline.contains("# schema=5")
-        || baseline
-            .lines()
-            .filter(|line| !line.starts_with('#') && !line.is_empty())
-            .count()
-            != 14
+        || baseline_challenges.len() < 20
+        || baseline_challenges != manifest_challenges
     {
         errors.push(
-            "parallelism baseline must retain schema 5 and all fourteen applications".to_owned(),
+            "parallelism baseline must retain schema 5 and every application in the expanded corpus"
+                .to_owned(),
         );
     }
     for challenge in [
@@ -3315,12 +3335,12 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn fact_type_index",
         "(call typing/fact_type facts expr)",
         "(call fact_type_index facts argument)",
-        "(fn emit_match_value_binding ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (value I64) (inout output (Vec U8)))",
+        "(fn emit_match_value_binding ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (value I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact)))",
         "(let type_index I64 (call fact_type_index facts value) (let boolean_match Bool (call i64.eq type_index -2)",
         "(fn emit_variant_match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(let variant_type I64 (call fact_type_index facts value)",
         "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
-        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
+        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/token_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(get view facts)",
         "(get prepared facts)",

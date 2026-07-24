@@ -14,3 +14,9 @@ state_machine	1423	1	2	2	0	2000000	115	0	1	1	1	2	0	2	2
 signal_network	2338	1	2	2	0	2000000	200	0	1	1	1	2	0	2	2
 arena_sum	1016	0	0	0	0	0	68	4	7	3	2	3	2	3	0
 knapsack	1555	0	0	0	0	0	113	2	15	2	1	4	2	4	0
+floyd_warshall	2504	0	0	0	0	0	183	2	25	3	1	6	2	6	0
+n_queens	2872	0	0	0	0	0	171	2	16	2	1	4	2	4	0
+union_find	2328	0	0	0	0	0	135	2	11	2	1	7	2	7	0
+game_of_life	4194	0	0	0	0	0	264	4	33	3	2	7	2	7	0
+image_convolution	3928	0	0	0	0	0	241	4	45	3	2	6	2	6	0
+edit_distance	4527	0	0	0	0	0	251	4	26	3	3	7	2	7	1

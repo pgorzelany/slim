@@ -77,8 +77,11 @@ generation.
 The shared `ranges` view supplies integer totality, canonical tail-recurrence,
 and Core 1H resource evidence. Analysis schema 7 retains at most 16 recurrence
 profiles and prints at most 64 profiled calls, reporting exact literal
-workloads or an explicit unknown result. This adds no source or runtime
-contract.
+workloads or an explicit unknown result. D0085 also gives this same view to C
+emission: an exact checked arithmetic node lowers directly only when its fact
+is total. Exact scalar parameters propagate through agreeing calls and
+unchanged recurrence for four fixed passes; unsupported or deeper paths remain
+unknown. This adds no source or runtime contract.
 
 The `quality`, `proof`, `equivalence`, and `edit` modules implement D0029.
 They classify bounded evidence, record and independently replay reduction,

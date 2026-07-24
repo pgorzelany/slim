@@ -2,9 +2,9 @@
 
 Status: Core 1G bounded totality evidence
 
-SLIM analysis derives integer facts from the normal checked token and type
-view. These facts are evidence for quality and parallelism; they do not alter
-source semantics or generated C.
+SLIM derives integer facts from the normal checked token and type view. These
+facts are shared evidence for quality, parallelism, and proof-directed C
+lowering; they never alter source semantics.
 
 ## Abstract domain
 
@@ -28,6 +28,12 @@ The first transfer set understands:
 - one-sided refinements from direct `i64.lt`, `i64.le`, `i64.gt`, and `i64.ge`
   comparisons against an exact constant in Boolean match arms.
 
+For closed checked programs, exact total scalar arguments propagate into a
+parameter only when every user call supplies the same value and every
+recurrence passes that parameter unchanged. This propagation has four fixed
+passes. Conflicting calls, computed unknowns, changed recurrent arguments, and
+deeper call chains remain unknown.
+
 Unknown values, mutation, collection indices, user-call return ranges, and
 values outside the proof domain remain unknown. Unknown is never permission to
 remove a check or reorder a trap.
@@ -44,10 +50,10 @@ branches, non-tail recurrence, and incomplete argument proofs remain unknown.
 ## Bounded reports
 
 `slimc analyze SOURCE_OR_PROJECT` emits an `integer-proofs` section. It records
-the fixed domain, the 64-refinement limit, whether that limit saturated, and up
-to 64 checked-operation sites with their node identity, totality status, and
-known bounds. The checked-site count covers the whole input even when printed
-facts are bounded.
+the fixed domain, the four-pass parameter limit, the 64-refinement limit,
+whether that limit saturated, and up to 64 checked-operation sites with their
+node identity, totality status, and known bounds. The checked-site count covers
+the whole input even when printed facts are bounded.
 
 Quality reports a function as total only when the shared body fact is positive;
 that fact may now include the canonical recurrence proof above. Parallelism
@@ -55,5 +61,8 @@ ignores a checked-trap or recurrence hazard only when the shared fact for that
 exact node or function is positive; call-graph, observed-effect, ownership,
 mutation, race, and deadlock rules still apply independently.
 
-No ordinary check, C emission, or generated program pays for this analysis.
-Only the explicit analysis command constructs the interval view.
+Ordinary checking and generated programs do not pay for this analysis. C
+emission constructs the same bounded view. It emits a direct C arithmetic
+operator only when the fact for that exact checked call node is total;
+otherwise it retains the checked runtime helper. This removes no collection
+bounds check and creates no unchecked build profile.

@@ -14,3 +14,9 @@ state_machine	record,finite-state,recursion,parallel-candidate
 signal_network	record,finite-state,boolean-network,recursion,parallel-candidate
 arena_sum	arena,typed-id,allocation
 knapsack	vector,dynamic-programming,mutation
+floyd_warshall	graph,dense-matrix,dynamic-programming,vector,mutation,checked-arithmetic
+n_queens	search,backtracking,vector,mutation,checked-arithmetic
+union_find	graph,disjoint-set,vector,mutation,recursion
+game_of_life	cellular-automaton,stencil,vector,mutation,checked-arithmetic
+image_convolution	image,stencil,vector,mutation,checked-arithmetic
+edit_distance	bytes,dynamic-programming,vector,mutation,checked-arithmetic
