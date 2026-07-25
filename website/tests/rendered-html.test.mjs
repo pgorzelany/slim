@@ -72,6 +72,19 @@ test("home exposes the current boundary and tested hello source", async () => {
   assert.match(html, /Explicit guarantees\./);
 });
 
+test("learn renders multiline examples as valid standalone figures", async () => {
+  const response = await render("/learn");
+  const html = await response.text();
+  const hello = html.match(
+    /<figure class="code-example" data-example-source="examples\/hello\.slim">[\s\S]*?<\/figure>/,
+  );
+
+  assert.ok(hello, "missing rendered Hello example");
+  assert.match(hello[0], /module hello\n\nfn main/);
+  assert.doesNotMatch(hello[0], /<p>/);
+  assert.doesNotMatch(html, /<p><figure class="code-example"/);
+});
+
 test("reference renders the generated surface and canonical documents", async () => {
   const response = await render("/reference");
   const html = await response.text();

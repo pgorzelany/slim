@@ -165,8 +165,9 @@ async function expandExamples(markdown) {
     /<!--\s*slim-example:\s*([^|]+?)(?:\s*\|\s*output:\s*(.*?))?\s*-->/g;
   const matches = [...markdown.matchAll(pattern)];
   let expanded = markdown;
+  const replacements = [];
 
-  for (const match of matches) {
+  for (const [index, match] of matches.entries()) {
     const sourcePath = match[1].trim();
     const output = match[2]?.trim() ?? null;
     if (!sourcePath.endsWith(".slim") || sourcePath.includes("..")) {
@@ -188,23 +189,41 @@ async function expandExamples(markdown) {
       outputMarkup,
       `</figure>`,
     ].join("");
-    expanded = expanded.replace(match[0], markup);
+    const placeholder = `SLIMEXAMPLEPLACEHOLDER${index}END`;
+    if (expanded.includes(placeholder)) {
+      throw new Error(`content generation: reserved example placeholder ${placeholder}`);
+    }
+    expanded = expanded.replace(match[0], placeholder);
+    replacements.push({ placeholder, markup });
   }
 
-  return { markdown: expanded, examples: matches.map((match) => match[1].trim()) };
+  return {
+    markdown: expanded,
+    examples: matches.map((match) => match[1].trim()),
+    replacements,
+  };
 }
 
 async function renderDocument(sourcePath, options = {}) {
   const source = await readFile(path.join(repositoryRoot, sourcePath), "utf8");
   const { title, body } = splitTitle(source, sourcePath);
-  const expanded = options.examples ? await expandExamples(body) : { markdown: body, examples: [] };
+  const expanded = options.examples
+    ? await expandExamples(body)
+    : { markdown: body, examples: [], replacements: [] };
   const shifted = shiftHeadings(expanded.markdown, options.headingShift ?? 0);
-  const parsed = await marked.parse(shifted, {
+  let parsed = await marked.parse(shifted, {
     async: true,
     gfm: true,
     mangle: false,
     headerIds: false,
   });
+  for (const { placeholder, markup } of expanded.replacements) {
+    const paragraph = `<p>${placeholder}</p>`;
+    if (!parsed.includes(paragraph)) {
+      throw new Error(`content generation: example placeholder ${placeholder} was not preserved`);
+    }
+    parsed = parsed.replace(paragraph, markup);
+  }
   const linked = rewriteLinks(parsed);
   return {
     title,
