@@ -1,1 +1,8 @@
-(module agent-match (fn main ((args (Vec Bytes))) I64 (effects) (match true (true 0) (false 1))))
+module agent-match
+
+fn main(args: Vec[Bytes]) -> I64:
+  match true:
+    true:
+      0
+    false:
+      1

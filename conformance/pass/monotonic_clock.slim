@@ -1,1 +1,11 @@
-(module monotonic-clock (fn main ((args (Vec Bytes))) I64 (effects io) (let first I64 (call io.monotonic-ms) (let second I64 (call io.monotonic-ms) (match (call i64.ge second first) (true (let shown Unit (call io.println "OK") 0)) (false 1))))))
+module monotonic-clock
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let first: I64 = io.monotonic-ms()
+  let second: I64 = io.monotonic-ms()
+  match i64.ge(second first):
+    true:
+      let shown: Unit = io.println("OK")
+      0
+    false:
+      1

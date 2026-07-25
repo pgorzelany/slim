@@ -1,4 +1,9 @@
-(module variant-payload-arity
-  (variant Maybe ((None) (Some I64)))
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let value Maybe (case Maybe Some) 0)))
+module variant-payload-arity
+
+variant Maybe:
+  None
+  Some(I64)
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: Maybe = case Maybe::Some()
+  0

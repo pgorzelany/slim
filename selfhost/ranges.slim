@@ -1,1 +1,2011 @@
-(module ranges (record Fact ((analyzed Bool) (lower-known Bool) (lower I64) (upper-known Bool) (upper I64) (total Bool))) (record Parsed ((valid Bool) (value I64))) (record Refinement ((declaration I64) (fact Fact) (parent I64))) (record Summary ((total Bool))) (record ArmSummary ((present Bool) (fact Fact))) (record Constraint ((valid Bool) (declaration I64) (true-kind I64) (true-bound I64) (false-kind I64) (false-bound I64))) (record Descent ((valid Bool) (position I64) (step I64))) (record Recurrence ((item I64) (position I64) (bound I64) (step I64))) (record CountScan ((valid Bool) (count I64))) (record AccScan ((valid Bool) (changed Bool) (maximum I64))) (record Counted ((item I64) (controller I64) (start I64) (bound I64) (step I64) (iterations I64) (base I64) (body I64))) (record Work ((known Bool) (iterations I64))) (record View ((facts (Vec Fact)) (refinements I64) (refinements-truncated Bool) (recurrences (Vec Recurrence)) (counted (Vec Counted)))) (record ResourceScan ((profiled I64) (reported I64) (exact-sites I64) (unknown-sites I64) (maximum I64))) (fn unknown ((analyzed Bool) (total Bool)) Fact (effects) (make Fact (analyzed analyzed) (lower-known false) (lower 0) (upper-known false) (upper 0) (total total))) (fn bounded ((lower-known Bool) (lower I64) (upper-known Bool) (upper I64) (total Bool)) Fact (effects) (make Fact (analyzed true) (lower-known lower-known) (lower lower) (upper-known upper-known) (upper upper) (total total))) (fn exact ((value I64)) Fact (effects) (call bounded true value true value true)) (fn initialize-facts ((length I64) (index I64) (inout facts (Vec Fact))) Unit (effects alloc partial) (let done Bool (call i64.ge index length) (match done (true unit) (false (let fact Fact (call unknown false false) (let pushed Unit (call vec.push facts fact) (let next I64 (call i64.add index 1) (recur length next facts)))))))) (fn fact-at ((inout facts (Vec Fact)) (index I64)) Fact (effects partial) (let nonnegative Bool (call i64.ge index 0) (let length I64 (call vec.len facts) (let below Bool (call i64.lt index length) (let valid Bool (call bool.and nonnegative below) (match valid (true (call vec.get facts index)) (false (call unknown false false)))))))) (fn set-fact ((index I64) (fact Fact) (inout facts (Vec Fact))) Fact (effects partial) (let stored Unit (call vec.set facts index fact) fact)) (fn fact-total ((inout facts (Vec Fact)) (expr I64)) Bool (effects partial) (let fact Fact (call fact-at facts expr) (call bool.and (get fact analyzed) (get fact total)))) (fn fact-exact ((fact Fact)) Bool (effects) (let both Bool (call bool.and (get fact lower-known) (get fact upper-known)) (let same Bool (call i64.eq (get fact lower) (get fact upper)) (call bool.and both same)))) (fn minimum ((left I64) (right I64)) I64 (effects) (match (call i64.le left right) (true left) (false right))) (fn maximum ((left I64) (right I64)) I64 (effects) (match (call i64.ge left right) (true left) (false right))) (fn parse-digits ((source Bytes) (index I64) (end I64) (value I64)) Parsed (effects partial) (let done Bool (call i64.ge index end) (match done (true (make Parsed (valid true) (value value))) (false (let byte U8 (call bytes.get source index) (let code I64 (call u8.to-i64 byte) (let lower Bool (call i64.ge code 48) (let upper Bool (call i64.le code 57) (let digit Bool (call bool.and lower upper) (match digit (false (make Parsed (valid false) (value 0))) (true (let numeric I64 (call i64.sub code 48) (let prefix-too-large Bool (call i64.gt value 100000000) (let prefix-at-limit Bool (call i64.eq value 100000000) (let nonzero-digit Bool (call i64.gt numeric 0) (let limit-tail Bool (call bool.and prefix-at-limit nonzero-digit) (let too-large Bool (call bool.or prefix-too-large limit-tail) (match too-large (true (make Parsed (valid false) (value 0))) (false (let shifted I64 (call i64.mul value 10) (let next-value I64 (call i64.add shifted numeric) (let next I64 (call i64.add index 1) (recur source next end next-value))))))))))))))))))))))) (fn parse-literal ((source Bytes) (inout tokens (Vec syntax/Token)) (token I64)) Parsed (effects partial) (let start I64 (call syntax/ast_node_start tokens token) (let end I64 (call syntax/ast_node_end tokens token) (let first U8 (call bytes.get source start) (let code I64 (call u8.to-i64 first) (let negative Bool (call i64.eq code 45) (let digit-start I64 (match negative (true (call i64.add start 1)) (false start)) (let present Bool (call i64.lt digit-start end) (match present (false (make Parsed (valid false) (value 0))) (true (let parsed Parsed (call parse-digits source digit-start end 0) (let valid Bool (get parsed valid) (match valid (false parsed) (true (let magnitude I64 (get parsed value) (let value I64 (match negative (true (call i64.sub 0 magnitude)) (false magnitude)) (make Parsed (valid true) (value value)))))))))))))))))) (fn lookup-refinement ((inout refinements (Vec Refinement)) (parent I64) (declaration I64)) Fact (effects partial) (let done Bool (call i64.lt parent 0) (match done (true (call unknown false false)) (false (let refinement Refinement (call vec.get refinements parent) (let same Bool (call i64.eq (get refinement declaration) declaration) (match same (true (get refinement fact)) (false (recur refinements (get refinement parent) declaration))))))))) (fn lookup-binding ((inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (atom I64)) Fact (effects partial) (let declaration I64 (call typing/linked_binding_declaration tokens atom) (let refined Fact (call lookup-refinement refinements parent declaration) (let present Bool (get refined analyzed) (match present (true refined) (false (call fact-at facts declaration))))))) (fn parameter-name ((source Bytes) (inout tokens (Vec syntax/Token)) (parameter I64)) I64 (effects partial) (call syntax/ast_binding_name source tokens parameter)) (fn initialize-booleans ((length I64) (index I64) (value Bool) (inout values (Vec Bool))) Unit (effects alloc partial) (match (call i64.ge index length) (true unit) (false (let pushed Unit (call vec.push values value) (recur length (call i64.add index 1) value values))))) (fn mark-parameter-invariants ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (inout invariants (Vec Bool))) Unit (effects partial) (match (call i64.eq (call syntax/ast_node_kind tokens cursor) 1) (true unit) (false (let name I64 (call parameter-name source tokens cursor) (let marked Unit (call vec.set invariants name true) (recur source tokens (call syntax/ast_next tokens cursor) invariants)))))) (fn invalidate-recur-arguments ((source Bytes) (inout tokens (Vec syntax/Token)) (parameter I64) (argument I64) (inout invariants (Vec Bool))) Unit (effects partial) (match (call i64.eq (call syntax/ast_node_kind tokens parameter) 1) (true unit) (false (let name I64 (call parameter-name source tokens parameter) (let argument-kind I64 (call syntax/ast_node_kind tokens argument) (let atom Bool (call i64.eq argument-kind 2) (let linked I64 (match atom (true (call typing/linked_binding_declaration tokens argument)) (false -1)) (let unchanged Bool (call i64.eq linked name) (let invalidated Unit (match unchanged (true unit) (false (call vec.set invariants name false))) (recur source tokens (call syntax/ast_next tokens parameter) (call syntax/ast_next tokens argument) invariants)))))))))) (fn scan-recur-invariants ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (end I64) (params I64) (inout invariants (Vec Bool))) Unit (effects partial) (match (call i64.ge cursor end) (true unit) (false (let recur-form Bool (call syntax/ast_expression_is_recur source tokens cursor) (let invalidated Unit (match recur-form (true (call invalidate-recur-arguments source tokens (call syntax/ast_parameters_first params) (call syntax/ast_recur_arguments cursor) invariants)) (false unit)) (recur source tokens (call syntax/ast_node_after cursor) end params invariants)))))) (fn collect-function-invariants ((source Bytes) (inout tokens (Vec syntax/Token)) (item I64) (inout invariants (Vec Bool))) Unit (effects partial) (let params I64 (call syntax/ast_function_parameters item) (let marked Unit (call mark-parameter-invariants source tokens (call syntax/ast_parameters_first params) invariants) (let return-type I64 (call syntax/ast_function_return_type tokens item) (let effects-form I64 (call syntax/ast_function_effects tokens item) (let body I64 (call syntax/ast_next tokens effects-form) (call scan-recur-invariants source tokens body (call syntax/ast_next tokens body) params invariants))))))) (fn collect-parameter-invariants ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (inout invariants (Vec Bool))) Unit (effects partial) (match (call i64.eq (call syntax/ast_node_kind tokens cursor) 1) (true unit) (false (let function-item Bool (call syntax/ast_item_is_function source tokens cursor) (let collected Unit (match function-item (true (call collect-function-invariants source tokens cursor invariants)) (false unit)) (recur source tokens (call syntax/ast_next tokens cursor) invariants)))))) (fn merge-parameter-fact ((existing Fact) (candidate Fact) (invariant Bool)) Fact (effects) (match invariant (false (call unknown true true)) (true (let candidate-bounded Bool (call all-bounded candidate) (let candidate-total Bool (get candidate total) (let usable Bool (call bool.and candidate-bounded candidate-total) (match usable (false (call unknown true true)) (true (match (get existing analyzed) (false candidate) (true (let existing-bounded Bool (call all-bounded existing) (match existing-bounded (true (call join-facts existing candidate true)) (false (call unknown true true)))))))))))))) (fn collect-call-arguments ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (inout invariants (Vec Bool)) (parameter I64) (argument I64) (inout parameter-facts (Vec Fact))) Unit (effects partial) (match (call i64.eq (call syntax/ast_node_kind tokens parameter) 1) (true unit) (false (let name I64 (call parameter-name source tokens parameter) (let invariant Bool (call vec.get invariants name) (let existing Fact (call fact-at parameter-facts name) (let candidate Fact (call fact-at facts argument) (let merged Fact (call merge-parameter-fact existing candidate invariant) (let stored Unit (call vec.set parameter-facts name merged) (let next-parameter I64 (call syntax/ast_next tokens parameter) (let last Bool (call i64.eq (call syntax/ast_node_kind tokens next-parameter) 1) (match last (true unit) (false (let next-argument I64 (call syntax/ast_next tokens argument) (recur source tokens facts invariants next-parameter next-argument parameter-facts))))))))))))))) (fn scan-parameter-calls ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (inout invariants (Vec Bool)) (cursor I64) (length I64) (inout parameter-facts (Vec Fact))) Unit (effects partial) (match (call i64.ge cursor length) (true unit) (false (let kind I64 (call syntax/ast_node_kind tokens cursor) (let form Bool (call i64.eq kind 0) (let head I64 (call syntax/ast_list_first cursor) (let call-form Bool (match form (true (call syntax/ast_expression_is_call source tokens cursor)) (false false)) (let callee I64 (call syntax/ast_call_callee cursor) (let declaration I64 (match call-form (true (call syntax/ast_node_link tokens callee)) (false -1)) (let user Bool (call i64.ge declaration 0) (let collected Unit (match user (true (call collect-call-arguments source tokens facts invariants (call syntax/ast_parameters_first (call syntax/ast_function_parameters declaration)) (call syntax/ast_call_arguments cursor) parameter-facts)) (false unit)) (recur source tokens facts invariants (call syntax/ast_node_after cursor) length parameter-facts)))))))))))) (fn initialize-parameters ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (inout facts (Vec Fact)) (inout parameter-facts (Vec Fact))) Unit (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let head I64 (call syntax/ast_list_first cursor) (let borrowed Bool (call syntax/ast_binding_is_inout source tokens cursor) (let name I64 (call syntax/ast_binding_name source tokens cursor) (let candidate Fact (call fact-at parameter-facts name) (let known Bool (call all-bounded candidate) (let binding Fact (match known (true candidate) (false (call unknown true true))) (let stored Unit (call vec.set facts name binding) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens next facts parameter-facts)))))))))))))) (fn all-bounded ((fact Fact)) Bool (effects) (call bool.and (get fact lower-known) (get fact upper-known))) (fn in-domain ((value I64)) Bool (effects) (let lower Bool (call i64.ge value -1000000000) (let upper Bool (call i64.le value 1000000000) (call bool.and lower upper)))) (fn add-exact ((base Fact) (constant I64) (arguments-total Bool)) Fact (effects) (let positive Bool (call i64.ge constant 0) (let safety-bound I64 (match positive (true (call i64.sub 1000000000 constant)) (false (call i64.sub -1000000000 constant))) (let safe Bool (match positive (true (call bool.and (get base upper-known) (call i64.le (get base upper) safety-bound))) (false (call bool.and (get base lower-known) (call i64.ge (get base lower) safety-bound)))) (let lower-known Bool (get base lower-known) (let upper-known Bool (get base upper-known) (let lower I64 (match lower-known (true (call i64.add (get base lower) constant)) (false 0)) (let upper I64 (match upper-known (true (call i64.add (get base upper) constant)) (false 0)) (let lower-inside Bool (match lower-known (true (call in-domain lower)) (false false)) (let upper-inside Bool (match upper-known (true (call in-domain upper)) (false false)) (let total Bool (call bool.and arguments-total safe) (call bounded lower-inside lower upper-inside upper total)))))))))))) (fn add-bounded ((left Fact) (right Fact) (arguments-total Bool)) Fact (effects) (let bounded-operands Bool (call bool.and (call all-bounded left) (call all-bounded right)) (let left-lower-inside Bool (call in-domain (get left lower)) (let left-upper-inside Bool (call in-domain (get left upper)) (let right-lower-inside Bool (call in-domain (get right lower)) (let right-upper-inside Bool (call in-domain (get right upper)) (let left-inside Bool (call bool.and left-lower-inside left-upper-inside) (let right-inside Bool (call bool.and right-lower-inside right-upper-inside) (let ready Bool (call bool.and bounded-operands (call bool.and left-inside right-inside)) (let lower I64 (match ready (true (call i64.add (get left lower) (get right lower))) (false 0)) (let upper I64 (match ready (true (call i64.add (get left upper) (get right upper))) (false 0)) (let result-inside Bool (match ready (true (call bool.and (call in-domain lower) (call in-domain upper))) (false false)) (match result-inside (true (call bounded true lower true upper arguments-total)) (false (call unknown true false))))))))))))))) (fn add-facts ((left Fact) (right Fact) (arguments-total Bool)) Fact (effects) (let right-exact Bool (call fact-exact right) (match right-exact (true (call add-exact left (get right lower) arguments-total)) (false (let left-exact Bool (call fact-exact left) (match left-exact (true (call add-exact right (get left lower) arguments-total)) (false (call add-bounded left right arguments-total)))))))) (fn subtract-facts ((left Fact) (right Fact) (arguments-total Bool)) Fact (effects) (let right-exact Bool (call fact-exact right) (match right-exact (true (let constant I64 (call i64.sub 0 (get right lower)) (call add-exact left constant arguments-total))) (false (call unknown true false))))) (fn min-four ((a I64) (b I64) (c I64) (d I64)) I64 (effects) (call minimum (call minimum a b) (call minimum c d))) (fn max-four ((a I64) (b I64) (c I64) (d I64)) I64 (effects) (call maximum (call maximum a b) (call maximum c d))) (fn multiply-facts ((left Fact) (right Fact) (arguments-total Bool)) Fact (effects) (let bounded-left Bool (call all-bounded left) (let bounded-right Bool (call all-bounded right) (let ready Bool (call bool.and bounded-left bounded-right) (match ready (false (call unknown true false)) (true (let a I64 (call i64.mul (get left lower) (get right lower)) (let b I64 (call i64.mul (get left lower) (get right upper)) (let c I64 (call i64.mul (get left upper) (get right lower)) (let d I64 (call i64.mul (get left upper) (get right upper)) (let lower I64 (call min-four a b c d) (let upper I64 (call max-four a b c d) (let inside Bool (call bool.and (call in-domain lower) (call in-domain upper)) (let total Bool (call bool.and arguments-total inside) (match inside (true (call bounded true lower true upper total)) (false (call unknown true false))))))))))))))))) (fn absolute-domain-value ((value I64)) I64 (effects) (match (call i64.lt value 0) (true (call i64.sub 0 value)) (false value))) (fn quotient-fact ((left Fact) (right Fact) (total Bool)) Fact (effects partial) (let a I64 (call i64.div (get left lower) (get right lower)) (let b I64 (call i64.div (get left lower) (get right upper)) (let c I64 (call i64.div (get left upper) (get right lower)) (let d I64 (call i64.div (get left upper) (get right upper)) (let lower I64 (call min-four a b c d) (let upper I64 (call max-four a b c d) (call bounded true lower true upper total)))))))) (fn remainder-fact ((left Fact) (right Fact) (total Bool)) Fact (effects) (let lower-magnitude I64 (call absolute-domain-value (get right lower)) (let upper-magnitude I64 (call absolute-domain-value (get right upper)) (let magnitude I64 (call maximum lower-magnitude upper-magnitude) (let limit I64 (call i64.sub magnitude 1) (let left-nonnegative Bool (match (get left lower-known) (true (call i64.ge (get left lower) 0)) (false false)) (let left-nonpositive Bool (match (get left upper-known) (true (call i64.le (get left upper) 0)) (false false)) (let lower I64 (match left-nonnegative (true 0) (false (call i64.sub 0 limit))) (let upper I64 (match left-nonpositive (true 0) (false limit)) (call bounded true lower true upper total)))))))))) (fn divide-facts ((left Fact) (right Fact) (arguments-total Bool) (remainder Bool)) Fact (effects partial) (let bounded-left Bool (call all-bounded left) (let bounded-right Bool (call all-bounded right) (let positive Bool (match bounded-right (true (call i64.gt (get right lower) 0)) (false false)) (let negative Bool (match bounded-right (true (call i64.lt (get right upper) 0)) (false false)) (let nonzero Bool (call bool.or positive negative) (let minus-one-lower Bool (match bounded-right (true (call i64.le (get right lower) -1)) (false true)) (let minus-one-upper Bool (match bounded-right (true (call i64.ge (get right upper) -1)) (false true)) (let minus-one-possible Bool (call bool.and minus-one-lower minus-one-upper) (let overflow-safe Bool (call bool.or (call bool.not minus-one-possible) bounded-left) (let safe Bool (call bool.and bounded-right (call bool.and nonzero overflow-safe)) (let total Bool (call bool.and arguments-total safe) (let left-exact Bool (call fact-exact left) (let right-exact Bool (call fact-exact right) (let exact-both Bool (call bool.and left-exact right-exact) (let computable Bool (call bool.and safe exact-both) (match computable (true (let value I64 (match remainder (true (call i64.rem (get left lower) (get right lower))) (false (call i64.div (get left lower) (get right lower)))) (call bounded true value true value total))) (false (match safe (false (call unknown true false)) (true (match remainder (true (call remainder-fact left right total)) (false (match bounded-left (true (call quotient-fact left right total)) (false (call unknown true total))))))))))))))))))))))))) (fn to-u8-fact ((argument Fact) (arguments-total Bool)) Fact (effects) (let bounded-argument Bool (call all-bounded argument) (let nonnegative Bool (match bounded-argument (true (call i64.ge (get argument lower) 0)) (false false)) (let byte-sized Bool (match bounded-argument (true (call i64.le (get argument upper) 255)) (false false)) (let safe Bool (call bool.and nonnegative byte-sized) (call unknown true (call bool.and arguments-total safe))))))) (fn callee-is-checked-trap ((source Bytes) (inout tokens (Vec syntax/Token)) (callee I64)) Bool (effects partial) (let add-call Bool (call syntax/ast_node_text_is source tokens callee "i64.add") (let sub-call Bool (call syntax/ast_node_text_is source tokens callee "i64.sub") (let mul-call Bool (call syntax/ast_node_text_is source tokens callee "i64.mul") (let div-call Bool (call syntax/ast_node_text_is source tokens callee "i64.div") (let rem-call Bool (call syntax/ast_node_text_is source tokens callee "i64.rem") (let to-byte Bool (call syntax/ast_node_text_is source tokens callee "i64.to-u8") (let bytes-get Bool (call syntax/ast_node_text_is source tokens callee "bytes.get") (let vec-get Bool (call syntax/ast_node_text_is source tokens callee "vec.get") (let vec-set Bool (call syntax/ast_node_text_is source tokens callee "vec.set") (let arena-get Bool (call syntax/ast_node_text_is source tokens callee "arena.get") (call bool.or add-call (call bool.or sub-call (call bool.or mul-call (call bool.or div-call (call bool.or rem-call (call bool.or to-byte (call bool.or bytes-get (call bool.or vec-get (call bool.or vec-set arena-get)))))))))))))))))))) (fn expression-atom ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects partial) (let typed typing/TypeRef (call typing/fact_type typed-facts expr) (let integer Bool (call i64.eq (get typed kind) 3) (match integer (false (call set-fact expr (call unknown true true) facts)) (true (let numeric Bool (call syntax/first_byte_is_number source tokens expr) (match numeric (true (let parsed Parsed (call parse-literal source tokens expr) (let fact Fact (match (get parsed valid) (true (call exact (get parsed value))) (false (call unknown true true))) (call set-fact expr fact facts)))) (false (let binding Fact (call lookup-binding tokens facts refinements parent expr) (let lower-known Bool (get binding lower-known) (let lower I64 (get binding lower) (let upper-known Bool (get binding upper-known) (let upper I64 (get binding upper) (let fact Fact (call bounded lower-known lower upper-known upper true) (call set-fact expr fact facts))))))))))))))) (fn analyze-forms ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (cursor I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (total Bool)) Summary (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true (make Summary (total total))) (false (let fact Fact (call analyze-expression source tokens typed-facts cursor facts refinements parent) (let next-total Bool (call bool.and total (get fact total)) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens typed-facts next facts refinements parent next-total))))))))) (fn analyze-fields ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (cursor I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (total Bool)) Summary (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true (make Summary (total total))) (false (let value I64 (call syntax/ast_member_value cursor) (let fact Fact (call analyze-expression source tokens typed-facts value facts refinements parent) (let next-total Bool (call bool.and total (get fact total)) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens typed-facts next facts refinements parent next-total)))))))))) (fn call-fact ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (expr I64) (callee I64) (arguments I64) (arguments-total Bool)) Fact (effects partial) (let add-call Bool (call syntax/ast_node_text_is source tokens callee "i64.add") (let sub-call Bool (call syntax/ast_node_text_is source tokens callee "i64.sub") (let mul-call Bool (call syntax/ast_node_text_is source tokens callee "i64.mul") (let div-call Bool (call syntax/ast_node_text_is source tokens callee "i64.div") (let rem-call Bool (call syntax/ast_node_text_is source tokens callee "i64.rem") (let arithmetic-left Bool (call bool.or add-call sub-call) (let arithmetic-right Bool (call bool.or mul-call (call bool.or div-call rem-call)) (let arithmetic Bool (call bool.or arithmetic-left arithmetic-right) (match arithmetic (true (let second I64 (call syntax/ast_next tokens arguments) (let left Fact (call fact-at facts arguments) (let right Fact (call fact-at facts second) (match add-call (true (call add-facts left right arguments-total)) (false (match sub-call (true (call subtract-facts left right arguments-total)) (false (match mul-call (true (call multiply-facts left right arguments-total)) (false (match div-call (true (call divide-facts left right arguments-total false)) (false (call divide-facts left right arguments-total true))))))))))))) (false (let to-byte Bool (call syntax/ast_node_text_is source tokens callee "i64.to-u8") (match to-byte (true (let left Fact (call fact-at facts arguments) (call to-u8-fact left arguments-total))) (false (let checked Bool (call callee-is-checked-trap source tokens callee) (match checked (true (call unknown true false)) (false (let builtin Bool (call typing/builtin_known source tokens callee) (let alloc Bool (call effects/call_requires source tokens callee 1) (let io Bool (call effects/call_requires source tokens callee 2) (let effectful Bool (call bool.or alloc io) (let safe Bool (call bool.and builtin (call bool.not effectful)) (let total Bool (call bool.and arguments-total safe) (let u8-to-i64 Bool (call syntax/ast_node_text_is source tokens callee "u8.to-i64") (match u8-to-i64 (true (call bounded true 0 true 255 total)) (false (call unknown true total))))))))))))))))))))))))))) (fn analyze-user-call-arguments ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (parameter I64) (argument I64) (total Bool)) Summary (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens parameter) (let done Bool (call i64.eq kind 1) (match done (true (make Summary (total total))) (false (let fact Fact (call analyze-expression source tokens typed-facts argument facts refinements parent) (let next-total Bool (call bool.and total (get fact total)) (let next-parameter I64 (call syntax/ast_next tokens parameter) (let last Bool (call i64.eq (call syntax/ast_node_kind tokens next-parameter) 1) (match last (true (make Summary (total next-total))) (false (let next-argument I64 (call syntax/ast_next tokens argument) (recur source tokens typed-facts facts refinements parent next-parameter next-argument next-total))))))))))))) (fn analyze-call ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects alloc partial) (let callee I64 (call syntax/ast_call_callee expr) (let arguments I64 (call syntax/ast_call_arguments expr) (let declaration I64 (call syntax/ast_node_link tokens callee) (let user Bool (call i64.ge declaration 0) (let summary Summary (match user (true (let params I64 (call syntax/ast_function_parameters declaration) (let first-parameter I64 (call syntax/ast_parameters_first params) (call analyze-user-call-arguments source tokens typed-facts facts refinements parent first-parameter arguments true)))) (false (call analyze-forms source tokens typed-facts arguments facts refinements parent true))) (let fact Fact (call call-fact source tokens facts expr callee arguments (get summary total)) (call set-fact expr fact facts)))))))) (fn analyze-let ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects alloc partial) (let name I64 (call syntax/ast_let_name expr) (let type-index I64 (call syntax/ast_let_type expr) (let value I64 (call syntax/ast_let_value tokens expr) (let body I64 (call syntax/ast_let_body tokens expr) (let value-fact Fact (call analyze-expression source tokens typed-facts value facts refinements parent) (let binding Fact (call bounded (get value-fact lower-known) (get value-fact lower) (get value-fact upper-known) (get value-fact upper) true) (let stored Unit (call vec.set facts name binding) (let body-fact Fact (call analyze-expression source tokens typed-facts body facts refinements parent) (let total Bool (call bool.and (get value-fact total) (get body-fact total)) (let fact Fact (call bounded (get body-fact lower-known) (get body-fact lower) (get body-fact upper-known) (get body-fact upper) total) (call set-fact expr fact facts)))))))))))) (fn last-child ((inout tokens (Vec syntax/Token)) (cursor I64) (previous I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true previous) (false (let next I64 (call syntax/ast_next tokens cursor) (recur tokens next cursor))))))) (fn invalid-constraint () Constraint (effects) (make Constraint (valid false) (declaration -1) (true-kind -1) (true-bound 0) (false-kind -1) (false-bound 0))) (fn comparison-constraint ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (expr I64)) Constraint (effects partial) (let kind I64 (call syntax/ast_node_kind tokens expr) (let form Bool (call i64.eq kind 0) (match form (false (call invalid-constraint)) (true (let call-form Bool (call syntax/ast_expression_is_call source tokens expr) (match call-form (false (call invalid-constraint)) (true (let callee I64 (call syntax/ast_call_callee expr) (let left I64 (call syntax/ast_call_arguments expr) (let right I64 (call syntax/ast_next tokens left) (let declaration I64 (call typing/linked_binding_declaration tokens left) (let linked Bool (call i64.ge declaration 0) (let right-fact Fact (call fact-at facts right) (let exact-right Bool (call fact-exact right-fact) (let ready Bool (call bool.and linked exact-right) (match ready (false (call invalid-constraint)) (true (let bound I64 (get right-fact lower) (let lt-call Bool (call syntax/ast_node_text_is source tokens callee "i64.lt") (match lt-call (true (match (call i64.gt bound -1000000000) (true (make Constraint (valid true) (declaration declaration) (true-kind 1) (true-bound (call i64.sub bound 1)) (false-kind 0) (false-bound bound))) (false (call invalid-constraint)))) (false (let le-call Bool (call syntax/ast_node_text_is source tokens callee "i64.le") (match le-call (true (match (call i64.lt bound 1000000000) (true (make Constraint (valid true) (declaration declaration) (true-kind 1) (true-bound bound) (false-kind 0) (false-bound (call i64.add bound 1)))) (false (call invalid-constraint)))) (false (let gt-call Bool (call syntax/ast_node_text_is source tokens callee "i64.gt") (match gt-call (true (match (call i64.lt bound 1000000000) (true (make Constraint (valid true) (declaration declaration) (true-kind 0) (true-bound (call i64.add bound 1)) (false-kind 1) (false-bound bound))) (false (call invalid-constraint)))) (false (let ge-call Bool (call syntax/ast_node_text_is source tokens callee "i64.ge") (match ge-call (true (match (call i64.gt bound -1000000000) (true (make Constraint (valid true) (declaration declaration) (true-kind 0) (true-bound bound) (false-kind 1) (false-bound (call i64.sub bound 1)))) (false (call invalid-constraint)))) (false (call invalid-constraint)))))))))))))))))))))))))))))))) (fn refine-fact ((base Fact) (kind I64) (bound I64)) Fact (effects) (let lower-refinement Bool (call i64.eq kind 0) (match lower-refinement (true (let had-lower Bool (get base lower-known) (let lower I64 (match had-lower (true (call maximum (get base lower) bound)) (false bound)) (call bounded true lower (get base upper-known) (get base upper) true)))) (false (let upper-refinement Bool (call i64.eq kind 1) (match upper-refinement (true (let had-upper Bool (get base upper-known) (let upper I64 (match had-upper (true (call minimum (get base upper) bound)) (false bound)) (call bounded (get base lower-known) (get base lower) true upper true)))) (false base))))))) (fn push-refinement ((inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (declaration I64) (kind I64) (bound I64)) I64 (effects alloc partial) (let count I64 (call vec.len refinements) (let room Bool (call i64.lt count 64) (match room (false parent) (true (let base-refined Fact (call lookup-refinement refinements parent declaration) (let has-refined Bool (get base-refined analyzed) (let base Fact (match has-refined (true base-refined) (false (call fact-at facts declaration))) (let next-fact Fact (call refine-fact base kind bound) (let refinement Refinement (make Refinement (declaration declaration) (fact next-fact) (parent parent)) (let pushed Unit (call vec.push refinements refinement) count))))))))))) (fn arm-parent ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (pattern I64) (constraint Constraint)) I64 (effects alloc partial) (let valid Bool (get constraint valid) (match valid (false parent) (true (let true-pattern Bool (call syntax/ast_node_text_is source tokens pattern "true") (let false-pattern Bool (call syntax/ast_node_text_is source tokens pattern "false") (let applicable Bool (call bool.or true-pattern false-pattern) (match applicable (false parent) (true (let refinement-kind I64 (match true-pattern (true (get constraint true-kind)) (false (get constraint false-kind))) (let refinement-bound I64 (match true-pattern (true (get constraint true-bound)) (false (get constraint false-bound))) (call push-refinement facts refinements parent (get constraint declaration) refinement-kind refinement-bound)))))))))))) (fn join-facts ((left Fact) (right Fact) (total Bool)) Fact (effects) (let lower-known Bool (call bool.and (get left lower-known) (get right lower-known)) (let lower I64 (match lower-known (true (call minimum (get left lower) (get right lower))) (false 0)) (let upper-known Bool (call bool.and (get left upper-known) (get right upper-known)) (let upper I64 (match upper-known (true (call maximum (get left upper) (get right upper))) (false 0)) (call bounded lower-known lower upper-known upper total)))))) (fn analyze-arms ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (cursor I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (constraint Constraint) (summary ArmSummary)) ArmSummary (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true summary) (false (let pattern I64 (call syntax/ast_arm_pattern cursor) (let first I64 (call syntax/ast_arm_pattern cursor) (let body I64 (call last-child tokens first first) (let scoped-parent I64 (call arm-parent source tokens facts refinements parent pattern constraint) (let body-fact Fact (call analyze-expression source tokens typed-facts body facts refinements scoped-parent) (let next-fact Fact (match (get summary present) (true (let prior Fact (get summary fact) (let both-total Bool (call bool.and (get prior total) (get body-fact total)) (call join-facts prior body-fact both-total)))) (false body-fact)) (let next-summary ArmSummary (make ArmSummary (present true) (fact next-fact)) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens typed-facts next facts refinements parent constraint next-summary)))))))))))))) (fn analyze-match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects alloc partial) (let value I64 (call syntax/ast_match_value expr) (let value-fact Fact (call analyze-expression source tokens typed-facts value facts refinements parent) (let constraint Constraint (call comparison-constraint source tokens facts value) (let first-arm I64 (call syntax/ast_match_arms tokens expr) (let initial Fact (call unknown true true) (let initial-summary ArmSummary (make ArmSummary (present false) (fact initial)) (let summary ArmSummary (call analyze-arms source tokens typed-facts first-arm facts refinements parent constraint initial-summary) (let arms-fact Fact (get summary fact) (let total Bool (call bool.and (get value-fact total) (get arms-fact total)) (let fact Fact (call bounded (get arms-fact lower-known) (get arms-fact lower) (get arms-fact upper-known) (get arms-fact upper) total) (call set-fact expr fact facts)))))))))))) (fn analyze-set ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects alloc partial) (let value I64 (call syntax/ast_set_value expr) (let body I64 (call syntax/ast_set_body tokens expr) (let value-fact Fact (call analyze-expression source tokens typed-facts value facts refinements parent) (let body-fact Fact (call analyze-expression source tokens typed-facts body facts refinements parent) (let total Bool (call bool.and (get value-fact total) (get body-fact total)) (let fact Fact (call bounded (get body-fact lower-known) (get body-fact lower) (get body-fact upper-known) (get body-fact upper) total) (call set-fact expr fact facts)))))))) (fn analyze-data ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64) (expr I64)) Fact (effects alloc partial) (let make-form Bool (call syntax/ast_expression_is_make source tokens expr) (let summary Summary (match make-form   (true (call analyze-fields source tokens typed-facts (call syntax/ast_make_fields expr) facts refinements parent true))   (false     (let get-form Bool (call syntax/ast_expression_is_get source tokens expr)     (match get-form       (true         (let value I64 (call syntax/ast_get_value expr)         (let fact Fact (call analyze-expression source tokens typed-facts value facts refinements parent)           (make Summary (total (get fact total))))))       (false         (let case-form Bool (call syntax/ast_expression_is_case source tokens expr)         (let first I64           (match case-form             (true (call syntax/ast_case_payload tokens expr))             (false (call syntax/ast_fork_body expr)))           (call analyze-forms source tokens typed-facts first facts refinements parent true))))))))   (call set-fact expr (call unknown true (get summary total)) facts)))) (fn analyze-expression ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (expr I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (parent I64)) Fact (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens expr) (let form Bool (call i64.eq kind 0) (match form (false (call expression-atom source tokens typed-facts facts refinements parent expr)) (true (let let-form Bool (call syntax/ast_expression_is_let source tokens expr) (match let-form (true (call analyze-let source tokens typed-facts facts refinements parent expr)) (false (let call-form Bool (call syntax/ast_expression_is_call source tokens expr) (match call-form (true (call analyze-call source tokens typed-facts facts refinements parent expr)) (false (let match-form Bool (call syntax/ast_expression_is_match source tokens expr) (match match-form (true (call analyze-match source tokens typed-facts facts refinements parent expr)) (false (let set-form Bool (call syntax/ast_expression_is_set source tokens expr) (match set-form (true (call analyze-set source tokens typed-facts facts refinements parent expr)) (false (let recur-form Bool (call syntax/ast_expression_is_recur source tokens expr) (match recur-form (true (let summary Summary (call analyze-forms source tokens typed-facts (call syntax/ast_recur_arguments expr) facts refinements parent true) (call set-fact expr (call unknown true false) facts))) (false (call analyze-data source tokens typed-facts facts refinements parent expr))))))))))))))))))))) (fn boolean-arm-body ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (pattern Bytes)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true -1) (false (let pattern-token I64 (call syntax/ast_arm_pattern cursor) (let same Bool (call syntax/ast_node_text_is source tokens pattern-token pattern) (match same (true (call last-child tokens pattern-token pattern-token)) (false (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens next pattern))))))))))) (fn tail-expression ((source Bytes) (inout tokens (Vec syntax/Token)) (expr I64)) I64 (effects partial) (let let-form Bool (call syntax/ast_expression_is_let source tokens expr) (match let-form (false expr) (true (recur source tokens (call syntax/ast_let_body tokens expr)))))) (fn prefix-total-to-tail ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (expr I64) (tail I64)) Bool (effects partial) (let done Bool (call i64.eq expr tail) (match done (true true) (false (let let-form Bool (call syntax/ast_expression_is_let source tokens expr) (match let-form (false false) (true (let value I64 (call syntax/ast_let_value tokens expr) (let body I64 (call syntax/ast_let_body tokens expr) (let value-total Bool (call fact-total facts value) (let rest-total Bool (recur source tokens facts body tail) (call bool.and value-total rest-total)))))))))))) (fn forms-total ((inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (cursor I64)) Bool (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true true) (false (let current-total Bool (call fact-total facts cursor) (let next I64 (call syntax/ast_next tokens cursor) (let rest-total Bool (recur tokens facts next) (call bool.and current-total rest-total))))))))) (fn parameter-position ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (declaration I64) (position I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true -1) (false (let head I64 (call syntax/ast_list_first cursor) (let borrowed Bool (call syntax/ast_binding_is_inout source tokens cursor) (let name I64 (call syntax/ast_binding_name source tokens cursor) (let same Bool (call i64.eq name declaration) (match same (true position) (false (let next I64 (call syntax/ast_next tokens cursor) (let next-position I64 (call i64.add position 1) (recur source tokens next declaration next-position)))))))))))))) (fn form-at ((inout tokens (Vec syntax/Token)) (cursor I64) (position I64)) I64 (effects partial) (let done Bool (call i64.eq position 0) (match done (true cursor) (false (let next I64 (call syntax/ast_next tokens cursor) (let next-position I64 (call i64.sub position 1) (recur tokens next next-position))))))) (fn promote-total ((inout facts (Vec Fact)) (expr I64)) Fact (effects partial) (let prior Fact (call fact-at facts expr) (let promoted Fact (call bounded (get prior lower-known) (get prior lower) (get prior upper-known) (get prior upper) true) (call set-fact expr promoted facts)))) (fn decreasing-controller ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (params I64) (declaration I64) (recur-expr I64)) Descent (effects partial) (let first-param I64 (call syntax/ast_parameters_first params) (let position I64 (call parameter-position source tokens first-param declaration 0) (let found Bool (call i64.ge position 0) (match found (false (make Descent (valid false) (position -1) (step 0))) (true (let first-argument I64 (call syntax/ast_recur_arguments recur-expr) (let update I64 (call form-at tokens first-argument position) (let subtraction Bool (call syntax/ast_expression_is_call source tokens update) (let callee I64 (call syntax/ast_call_callee update) (let sub-call Bool (call syntax/ast_node_text_is source tokens callee "i64.sub") (let left I64 (call syntax/ast_call_arguments update) (let right I64 (call syntax/ast_next tokens left) (let linked I64 (call typing/linked_binding_declaration tokens left) (let same-controller Bool (call i64.eq linked declaration) (let step Fact (call fact-at facts right) (let exact-step Bool (call fact-exact step) (let positive-step Bool (match exact-step (true (call i64.gt (get step lower) 0)) (false false)) (let update-total Bool (call fact-total facts update) (let arguments-total Bool (call forms-total tokens facts first-argument) (let valid Bool (call bool.and subtraction (call bool.and sub-call (call bool.and same-controller (call bool.and positive-step (call bool.and update-total arguments-total))))) (let step-value I64 (match valid (true (get step lower)) (false 0)) (make Descent (valid valid) (position position) (step step-value)))))))))))))))))))))))) (fn counted-update-valid ((source Bytes) (inout tokens (Vec syntax/Token)) (controller I64) (position I64) (recur-form I64)) Bool (effects partial) (let arguments I64 (call syntax/ast_recur_arguments recur-form) (let argument I64 (call form-at tokens arguments position) (let call-form Bool (call syntax/ast_expression_is_call source tokens argument) (let callee I64 (call syntax/ast_call_callee argument) (let addition Bool (match call-form (true (call syntax/ast_node_text_is source tokens callee "i64.add")) (false false)) (let left I64 (call syntax/ast_call_arguments argument) (let right I64 (call syntax/ast_next tokens left) (let linked I64 (match addition (true (call typing/linked_binding_declaration tokens left)) (false -1)) (let same Bool (call i64.eq linked controller) (let parsed Parsed (call parse-literal source tokens right) (let one Bool (match (get parsed valid) (true (call i64.eq (get parsed value) 1)) (false false)) (call bool.and addition (call bool.and same one)))))))))))))) (fn scan-counted-recurrences ((source Bytes) (inout tokens (Vec syntax/Token)) (controller I64) (position I64) (cursor I64) (end I64) (count I64)) CountScan (effects partial) (let done Bool (call i64.ge cursor end) (match done (true (make CountScan (valid true) (count count))) (false (let recur-form Bool (call syntax/ast_expression_is_recur source tokens cursor) (let fork-form Bool (call syntax/ast_expression_is_fork source tokens cursor) (let supported Bool (call bool.not fork-form) (let valid Bool (match recur-form (true (call counted-update-valid source tokens controller position cursor)) (false supported)) (match valid (false (make CountScan (valid false) (count count))) (true (let increment I64 (match recur-form (true 1) (false 0)) (let next-count I64 (call i64.add count increment) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens controller position next end next-count)))))))))))))) (fn mark-counted-updates ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (position I64) (cursor I64) (end I64)) Unit (effects partial) (let done Bool (call i64.ge cursor end) (match done (true unit) (false (let recur-form Bool (call syntax/ast_expression_is_recur source tokens cursor) (let marked Unit (match recur-form (false unit) (true (let arguments I64 (call syntax/ast_recur_arguments cursor) (let update I64 (call form-at tokens arguments position) (let promoted Fact (call promote-total facts update) unit))))) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens facts position next end)))))))) (fn counted-accumulator-update ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (declaration I64) (position I64) (recur-form I64)) AccScan (effects partial) (let arguments I64 (call syntax/ast_recur_arguments recur-form) (let argument I64 (call form-at tokens arguments position) (let kind I64 (call syntax/ast_node_kind tokens argument) (let atom Bool (call i64.eq kind 2) (match atom (true (let linked I64 (call typing/linked_binding_declaration tokens argument) (let same Bool (call i64.eq linked declaration) (make AccScan (valid same) (changed false) (maximum 0))))) (false (let call-form Bool (call syntax/ast_expression_is_call source tokens argument) (let callee I64 (call syntax/ast_call_callee argument) (let addition Bool (match call-form (true (call syntax/ast_node_text_is source tokens callee "i64.add")) (false false)) (let left I64 (call syntax/ast_call_arguments argument) (let right I64 (call syntax/ast_next tokens left) (let linked I64 (match addition (true (call typing/linked_binding_declaration tokens left)) (false -1)) (let same Bool (call i64.eq linked declaration) (let delta Fact (call fact-at facts right) (let known Bool (call bool.and (get delta lower-known) (get delta upper-known)) (let total Bool (get delta total) (let nonnegative Bool (call i64.ge (get delta lower) 0) (let ordered Bool (call i64.le (get delta lower) (get delta upper)) (let small Bool (call i64.le (get delta upper) 16) (let valid Bool (call bool.and addition (call bool.and same (call bool.and known (call bool.and total (call bool.and nonnegative (call bool.and ordered small)))))) (make AccScan (valid valid) (changed valid) (maximum (get delta upper)))))))))))))))))))))))) (fn scan-counted-accumulator ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (declaration I64) (position I64) (cursor I64) (end I64) (valid Bool) (changed Bool) (maximum I64)) AccScan (effects partial) (let done Bool (call i64.ge cursor end) (match done (true (make AccScan (valid valid) (changed changed) (maximum maximum))) (false (let recur-form Bool (call syntax/ast_expression_is_recur source tokens cursor) (let update AccScan (match recur-form (true (call counted-accumulator-update source tokens facts declaration position cursor)) (false (make AccScan (valid true) (changed false) (maximum 0)))) (let next-valid Bool (call bool.and valid (get update valid)) (let next-changed Bool (call bool.or changed (get update changed)) (let larger Bool (call i64.gt (get update maximum) maximum) (let next-maximum I64 (match larger (true (get update maximum)) (false maximum)) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens facts declaration position next end next-valid next-changed next-maximum)))))))))))) (fn promote-counted-accumulators ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (inout entry-facts (Vec Fact)) (params I64) (cursor I64) (position I64) (controller I64) (iterations I64) (body I64) (end I64)) Unit (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let params-done Bool (call i64.eq kind 1) (let budget-done Bool (call i64.ge position 16) (let done Bool (call bool.or params-done budget-done) (match done (true unit) (false (let name I64 (call parameter-name source tokens cursor) (let type-index I64 (call syntax/ast_next tokens name) (let integer Bool (call syntax/ast_node_text_is source tokens type-index "I64") (let same-controller Bool (call i64.eq name controller) (let not-controller Bool (call bool.not same-controller) (let entry Fact (call fact-at entry-facts name) (let exact-entry Bool (call fact-exact entry) (let total-entry Bool (get entry total) (let start I64 (get entry lower) (let nonnegative Bool (call i64.ge start 0) (let scan AccScan (call scan-counted-accumulator source tokens facts name position body end true false 0) (let scan-valid Bool (call bool.and (get scan valid) (get scan changed)) (let shape Bool (call bool.and integer (call bool.and not-controller (call bool.and exact-entry (call bool.and total-entry (call bool.and nonnegative scan-valid))))) (let product I64 (match shape (true (call i64.mul iterations (get scan maximum))) (false 0)) (let upper I64 (match shape (true (call i64.add start product)) (false 0)) (let domain Bool (match shape (true (call in-domain upper)) (false false)) (let promoted Unit (match domain (false unit) (true (let fact Fact (call bounded true start true upper true) (let stored Fact (call set-fact name fact facts) unit)))) (let next I64 (call syntax/ast_next tokens cursor) (let next-position I64 (call i64.add position 1) (recur source tokens facts entry-facts params next next-position controller iterations body end))))))))))))))))))))))))))) (fn prove-counted-recurrence ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (inout entry-facts (Vec Fact)) (params I64) (item I64) (body I64) (inout counted (Vec Counted))) Bool (effects alloc partial) (let match-form Bool (call syntax/ast_expression_is_match source tokens body) (match match-form (false false) (true (let condition I64 (call syntax/ast_match_value body) (let call-form Bool (call syntax/ast_expression_is_call source tokens condition) (let callee I64 (call syntax/ast_call_callee condition) (let equality Bool (match call-form (true (call syntax/ast_node_text_is source tokens callee "i64.eq")) (false false)) (let left I64 (call syntax/ast_call_arguments condition) (let right I64 (call syntax/ast_next tokens left) (let controller I64 (match equality (true (call typing/linked_binding_declaration tokens left)) (false -1)) (let position I64 (match (call i64.ge controller 0) (true (call parameter-position source tokens (call syntax/ast_parameters_first params) controller 0)) (false -1)) (let parsed-bound Parsed (call parse-literal source tokens right) (let literal-bound-known Bool (get parsed-bound valid) (let bound-declaration I64 (call typing/linked_binding_declaration tokens right) (let bound-fact Fact (match (call i64.ge bound-declaration 0) (true (call fact-at entry-facts bound-declaration)) (false (call unknown false false))) (let parameter-bound-known Bool (call fact-exact bound-fact) (let bound-known Bool (call bool.or literal-bound-known parameter-bound-known) (let bound I64 (match literal-bound-known (true (get parsed-bound value)) (false (match parameter-bound-known (true (get bound-fact lower)) (false -1)))) (let first-arm I64 (call syntax/ast_match_arms tokens body) (let base I64 (call boolean-arm-body source tokens first-arm "true") (let iterative I64 (call boolean-arm-body source tokens first-arm "false") (let arms Bool (call bool.and (call i64.ge base 0) (call i64.ge iterative 0)) (let shape Bool (call bool.and equality (call bool.and (call i64.ge position 0) arms)) (let start-fact Fact (match (call i64.ge position 0) (true (call fact-at entry-facts controller)) (false (call unknown false false))) (let start-known Bool (call fact-exact start-fact) (let start I64 (match start-known (true (get start-fact lower)) (false -1)) (let base-end I64 (match arms (true (call syntax/ast_next tokens base)) (false base)) (let iterative-end I64 (match arms (true (call syntax/ast_next tokens iterative)) (false iterative)) (let base-scan CountScan (match shape (true (call scan-counted-recurrences source tokens controller position base base-end 0)) (false (make CountScan (valid false) (count 0)))) (let iterative-scan CountScan (match shape (true (call scan-counted-recurrences source tokens controller position iterative iterative-end 0)) (false (make CountScan (valid false) (count 0)))) (let base-empty Bool (call i64.eq (get base-scan count) 0) (let iterative-present Bool (call i64.gt (get iterative-scan count) 0) (let scans-valid Bool (call bool.and (get base-scan valid) (call bool.and base-empty (call bool.and (get iterative-scan valid) iterative-present))) (let nonnegative Bool (call bool.and (call i64.ge start 0) (call i64.ge bound 0)) (let ordered Bool (call i64.le start bound) (let numeric Bool (call bool.and start-known (call bool.and bound-known (call bool.and nonnegative ordered))) (let distance I64 (match numeric (true (call i64.sub bound start)) (false 17)) (let small Bool (call i64.le distance 16) (let within-domain Bool (call bool.and (call i64.le start 1000000000) (call i64.le bound 1000000000)) (let condition-total Bool (call fact-total facts condition) (let proven Bool (call bool.and shape (call bool.and scans-valid (call bool.and numeric (call bool.and within-domain condition-total)))) (match proven (false false) (true (let controller-fact Fact (call bounded true start true bound true) (let iterative-upper I64 (match (call i64.gt distance 0) (true (call i64.sub bound 1)) (false bound)) (let iterative-fact Fact (call bounded true start true iterative-upper true) (let stored-iterative Fact (call set-fact controller iterative-fact facts) (let marked Unit (call mark-counted-updates source tokens facts position iterative iterative-end) (let refined Fact (call analyze-expression source tokens typed-facts iterative facts refinements -1) (let promoted Unit (match small (true (call promote-counted-accumulators source tokens facts entry-facts params (call syntax/ast_parameters_first params) 0 controller distance iterative iterative-end)) (false unit)) (let refined-accumulators Fact (call analyze-expression source tokens typed-facts iterative facts refinements -1) (let restored-controller Fact (call set-fact controller controller-fact facts) (let fact Counted (make Counted (item item) (controller controller) (start start) (bound bound) (step 1) (iterations distance) (base base) (body iterative)) (let stored Unit (match small (true (call vec.push counted fact)) (false unit)) true))))))))))))))))))))))))))))))))))))))))))))))))))))))) (fn find-counted ((inout counted (Vec Counted)) (item I64) (index I64)) I64 (effects partial) (let count I64 (call vec.len counted) (let done Bool (call i64.ge index count) (match done (true -1) (false (let fact Counted (call vec.get counted index) (let same Bool (call i64.eq (get fact item) item) (match same (true index) (false (let next I64 (call i64.add index 1) (recur counted item next))))))))))) (fn prove-tail-recurrence ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (params I64) (item I64) (body I64) (inout recurrences (Vec Recurrence))) Bool (effects alloc partial) (let match-form Bool (call syntax/ast_expression_is_match source tokens body) (match match-form (false false) (true (let condition I64 (call syntax/ast_match_value body) (let call-form Bool (call syntax/ast_expression_is_call source tokens condition) (let callee I64 (call syntax/ast_call_callee condition) (let bounded-below Bool (call syntax/ast_node_text_is source tokens callee "i64.le") (let left I64 (call syntax/ast_call_arguments condition) (let right I64 (call syntax/ast_next tokens left) (let declaration I64 (call typing/linked_binding_declaration tokens left) (let parameter Bool (call i64.ge declaration 0) (let bound Fact (call fact-at facts right) (let exact-bound Bool (call fact-exact bound) (let first-arm I64 (call syntax/ast_match_arms tokens body) (let true-body I64 (call boolean-arm-body source tokens first-arm "true") (let false-body I64 (call boolean-arm-body source tokens first-arm "false") (let arms-present Bool (call bool.and (call i64.ge true-body 0) (call i64.ge false-body 0)) (let tail I64 (match arms-present (true (call tail-expression source tokens false-body)) (false -1)) (let recur-form Bool (match arms-present (true (call syntax/ast_expression_is_recur source tokens tail)) (false false)) (let condition-total Bool (call fact-total facts condition) (let base-total Bool (match arms-present (true (call fact-total facts true-body)) (false false)) (let prefix-total Bool (match arms-present (true (call prefix-total-to-tail source tokens facts false-body tail)) (false false)) (let descent Descent (match recur-form (true (call decreasing-controller source tokens facts params declaration tail)) (false (make Descent (valid false) (position -1) (step 0)))) (let proven Bool (call bool.and match-form (call bool.and call-form (call bool.and bounded-below (call bool.and parameter (call bool.and exact-bound (call bool.and arms-present (call bool.and recur-form (call bool.and condition-total (call bool.and base-total (call bool.and prefix-total (get descent valid))))))))))) (match proven (false false) (true (let recurrence Recurrence (make Recurrence (item item) (position (get descent position)) (bound (get bound lower)) (step (get descent step))) (let stored Unit (call vec.push recurrences recurrence) (let recur-total Fact (call promote-total facts tail) (let body-total Fact (call promote-total facts body) true))))))))))))))))))))))))))))))) (fn analyze-function ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (item I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (inout recurrences (Vec Recurrence)) (inout counted (Vec Counted)) (inout parameter-facts (Vec Fact)) (inout entry-facts (Vec Fact))) Unit (effects alloc partial) (let params I64 (call syntax/ast_function_parameters item) (let initialized Unit (call initialize-parameters source tokens (call syntax/ast_parameters_first params) facts parameter-facts) (let return-type I64 (call syntax/ast_function_return_type tokens item) (let effects-form I64 (call syntax/ast_function_effects tokens item) (let body I64 (call syntax/ast_next tokens effects-form) (let analyzed Fact (call analyze-expression source tokens typed-facts body facts refinements -1) (let counted-proof Bool (call prove-counted-recurrence source tokens typed-facts facts refinements entry-facts params item body counted) (let recurrence-total Bool (match (get analyzed total) (true true) (false (call prove-tail-recurrence source tokens facts params item body recurrences))) unit))))))))) (fn analyze-functions ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (cursor I64) (inout facts (Vec Fact)) (inout refinements (Vec Refinement)) (inout recurrences (Vec Recurrence)) (inout counted (Vec Counted)) (inout parameter-facts (Vec Fact)) (inout entry-facts (Vec Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let function-item Bool (call syntax/ast_item_is_function source tokens cursor) (let analyzed Unit (match function-item (true (call analyze-function source tokens typed-facts cursor facts refinements recurrences counted parameter-facts entry-facts)) (false unit)) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens typed-facts next facts refinements recurrences counted parameter-facts entry-facts))))))))) (fn analyze-pass ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact)) (inout invariants (Vec Bool)) (inout entry-invariants (Vec Bool)) (parameter-facts (Vec Fact)) (entry-facts (Vec Fact)) (pass I64) (limit I64)) View (effects alloc partial) (let facts (Vec Fact) (call vec.new) (let length I64 (call vec.len tokens) (let initialized Unit (call initialize-facts length 0 facts) (let refinements (Vec Refinement) (call vec.new) (let recurrences (Vec Recurrence) (call vec.new) (let counted (Vec Counted) (call vec.new) (let analyzed Unit (call analyze-functions source tokens typed-facts 3 facts refinements recurrences counted parameter-facts entry-facts) (let done Bool (call i64.ge pass limit) (match done (true (let refinement-count I64 (call vec.len refinements) (let refinement-limit Bool (call i64.ge refinement-count 64) (make View (facts facts) (refinements refinement-count) (refinements-truncated refinement-limit) (recurrences recurrences) (counted counted))))) (false (let next-parameters (Vec Fact) (call vec.new) (let next-initialized Unit (call initialize-facts length 0 next-parameters) (let next-entry (Vec Fact) (call vec.new) (let next-entry-initialized Unit (call initialize-facts length 0 next-entry) (let collected Unit (call scan-parameter-calls source tokens facts invariants 0 length next-parameters) (let entries Unit (call scan-parameter-calls source tokens facts entry-invariants 0 length next-entry) (recur source tokens typed-facts invariants entry-invariants next-parameters next-entry (call i64.add pass 1) limit)))))))))))))))))) (fn analyze ((source Bytes) (inout tokens (Vec syntax/Token)) (inout typed-facts (Vec typing/Fact))) View (effects alloc partial) (let length I64 (call vec.len tokens) (let invariants (Vec Bool) (call vec.new) (let invariants-initialized Unit (call initialize-booleans length 0 false invariants) (let collected Unit (call collect-parameter-invariants source tokens 3 invariants) (let entry-invariants (Vec Bool) (call vec.new) (let entry-invariants-initialized Unit (call initialize-booleans length 0 true entry-invariants) (let parameter-facts (Vec Fact) (call vec.new) (let parameters-initialized Unit (call initialize-facts length 0 parameter-facts) (let entry-facts (Vec Fact) (call vec.new) (let entries-initialized Unit (call initialize-facts length 0 entry-facts) (call analyze-pass source tokens typed-facts invariants entry-invariants parameter-facts entry-facts 0 4)))))))))))) (fn find-recurrence ((inout recurrences (Vec Recurrence)) (item I64) (index I64)) I64 (effects partial) (let count I64 (call vec.len recurrences) (let done Bool (call i64.ge index count) (match done (true -1) (false (let recurrence Recurrence (call vec.get recurrences index) (let same Bool (call i64.eq (get recurrence item) item) (match same (true index) (false (let next I64 (call i64.add index 1) (recur recurrences item next))))))))))) (fn recurrence-work ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (item I64) (arguments I64)) Work (effects partial) (let recurrences (Vec Recurrence) (get view recurrences) (let index I64 (call find-recurrence recurrences item 0) (let found Bool (call i64.ge index 0) (match found (false (make Work (known false) (iterations 0))) (true (let recurrence Recurrence (call vec.get recurrences index) (let argument I64 (call form-at tokens arguments (get recurrence position)) (let parsed Parsed (call parse-literal source tokens argument) (let known Bool (get parsed valid) (match known (false (make Work (known false) (iterations 0))) (true (let value I64 (get parsed value) (let bound I64 (get recurrence bound) (let done Bool (call i64.le value bound) (match done (true (make Work (known true) (iterations 0))) (false (let distance I64 (call i64.sub value bound) (let adjusted I64 (call i64.add distance (call i64.sub (get recurrence step) 1)) (let iterations I64 (call i64.div adjusted (get recurrence step)) (make Work (known true) (iterations iterations)))))))))))))))))))))) (fn append-i64 ((value I64) (inout output (Vec U8))) Unit (effects alloc partial) (let negative Bool (call i64.lt value 0) (match negative (true (let minus Unit (call text/append_text output "-") (let magnitude I64 (call i64.sub 0 value) (call text/append_nonnegative_i64 magnitude output)))) (false (call text/append_nonnegative_i64 value output))))) (fn emit-bound ((known Bool) (value I64) (inout output (Vec U8))) Unit (effects alloc partial) (match known (true (call append-i64 value output)) (false (call text/append_text output "unknown")))) (fn emit-site ((expr I64) (fact Fact) (inout output (Vec U8))) Unit (effects alloc partial) (let open Unit (call text/append_text output " (checked-site ") (let id Unit (call append-i64 expr output) (let status Unit (match (get fact total) (true (call text/append_text output " (status total) (lower ")) (false (call text/append_text output " (status unknown) (lower "))) (let lower Unit (call emit-bound (get fact lower-known) (get fact lower) output) (let middle Unit (call text/append_text output ") (upper ") (let upper Unit (call emit-bound (get fact upper-known) (get fact upper) output) (call text/append_text output "))")))))))) (fn emit-sites ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec Fact)) (index I64) (inout output (Vec U8)) (count I64) (reported I64)) I64 (effects alloc partial) (let length I64 (call vec.len tokens) (let done Bool (call i64.ge index length) (match done (true count) (false (let kind I64 (call syntax/ast_node_kind tokens index) (let form Bool (call i64.eq kind 0) (let head I64 (call syntax/ast_list_first index) (let call-form Bool (match form (true (call syntax/ast_expression_is_call source tokens index)) (false false)) (let callee I64 (call syntax/ast_call_callee index) (let checked Bool (match call-form (true (call callee-is-checked-trap source tokens callee)) (false false)) (let next-count I64 (match checked (true (call i64.add count 1)) (false count)) (let room Bool (call i64.lt reported 64) (let emit Bool (call bool.and checked room) (let emitted Unit (match emit (true (let fact Fact (call fact-at facts index) (call emit-site index fact output))) (false unit)) (let next-reported I64 (match emit (true (call i64.add reported 1)) (false reported)) (let next I64 (call i64.add index 1) (recur source tokens facts next output next-count next-reported)))))))))))))))))) (fn emit-counted-fact ((source Bytes) (inout tokens (Vec syntax/Token)) (fact Counted) (inout output (Vec U8))) Unit (effects alloc partial) (let open Unit (call text/append_text output " (counted-loop ") (let item Unit (call append-i64 (get fact item) output) (let name_space Unit (call text/append_text output " ") (let name_index I64 (call i64.add (get fact item) 2) (let name Unit (call text/append_token source tokens name_index output) (let guarantee Unit (call text/append_text output " (guarantee exact) (controller ") (let controller Unit (call append-i64 (get fact controller) output) (let start_prefix Unit (call text/append_text output ") (start ") (let start Unit (call append-i64 (get fact start) output) (let bound_prefix Unit (call text/append_text output ") (bound ") (let bound Unit (call append-i64 (get fact bound) output) (let step_prefix Unit (call text/append_text output ") (step ") (let step Unit (call append-i64 (get fact step) output) (let iterations_prefix Unit (call text/append_text output ") (iterations ") (let iterations Unit (call append-i64 (get fact iterations) output) (let body_prefix Unit (call text/append_text output ") (body ") (let body Unit (call append-i64 (get fact body) output) (let base_prefix Unit (call text/append_text output ") (base ") (let base Unit (call append-i64 (get fact base) output) (call text/append_text output "))"))))))))))))))))))))) (fn emit-counted-facts ((source Bytes) (inout tokens (Vec syntax/Token)) (inout counted (Vec Counted)) (index I64) (limit I64) (inout output (Vec U8))) Unit (effects alloc partial) (let done Bool (call i64.ge index limit) (match done (true unit) (false (let fact Counted (call vec.get counted index) (let emitted Unit (call emit-counted-fact source tokens fact output) (let next I64 (call i64.add index 1) (recur source tokens counted next limit output)))))))) (fn emit-counted-evidence ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (inout output (Vec U8))) Unit (effects alloc partial) (let counted (Vec Counted) (get view counted) (let count I64 (call vec.len counted) (let within_limit Bool (call i64.le count 64) (let limit I64 (match within_limit (true count) (false 64)) (let open Unit (call text/append_text output " (counted-loops (fact-limit 64) (facts") (let emitted Unit (call emit-counted-facts source tokens counted 0 limit output) (let count_prefix Unit (call text/append_text output ") (counted-loop-count ") (let count_text Unit (call append-i64 count output) (let reported_prefix Unit (call text/append_text output ") (reported-facts ") (let reported Unit (call append-i64 limit output) (let truncated_prefix Unit (call text/append_text output ") (facts-truncated ") (let truncated Unit (match within_limit (true (call text/append_text output "false")) (false (call text/append_text output "true"))) (let guarantee_prefix Unit (call text/append_text output ") (guarantee ") (let guarantee Unit (match within_limit (true (call text/append_text output "exact")) (false (call text/append_text output "bounded"))) (call text/append_text output "))")))))))))))))))) (fn emit-module-facts ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (inout output (Vec U8))) Unit (effects alloc partial) (let facts (Vec Fact) (get view facts) (let open Unit (call text/append_text output " (integer-proofs (domain -1000000000 1000000000) (refinement-limit 64) (parameter-pass-limit 4) (refinements ") (let refinements Unit (call append-i64 (get view refinements) output) (let truncation-prefix Unit (call text/append_text output ") (refinements-truncated ") (let truncation Unit (match (get view refinements-truncated) (true (call text/append_text output "true")) (false (call text/append_text output "false"))) (let sites-open Unit (call text/append_text output ") (checked-site-report-limit 64) (checked-sites") (let site-count I64 (call emit-sites source tokens facts 0 output 0 0) (let sites-close Unit (call text/append_text output ") (checked-site-count ") (let count Unit (call append-i64 site-count output) (let guarantee Unit (match (call i64.le site-count 64) (true (call text/append_text output ") (guarantee exact))")) (false (call text/append_text output ") (guarantee bounded))"))) (let counted_evidence Unit (call emit-counted-evidence source tokens view output) (call emit-resource-evidence source tokens view output))))))))))))) (fn retained-profile-count ((inout recurrences (Vec Recurrence))) I64 (effects partial) (let count I64 (call vec.len recurrences) (let bounded Bool (call i64.le count 16) (match bounded (true count) (false 16))))) (fn find-retained-profile ((inout recurrences (Vec Recurrence)) (item I64) (index I64) (limit I64)) I64 (effects partial) (let done Bool (call i64.ge index limit) (match done (true -1) (false (let profile Recurrence (call vec.get recurrences index) (let same Bool (call i64.eq (get profile item) item) (match same (true index) (false (let next I64 (call i64.add index 1) (recur recurrences item next limit)))))))))) (fn emit-resource-profile ((source Bytes) (inout tokens (Vec syntax/Token)) (profile Recurrence) (inout output (Vec U8))) Unit (effects alloc partial) (let open Unit (call text/append_text output " (recurrence-profile ") (let item Unit (call append-i64 (get profile item) output) (let name-space Unit (call text/append_text output " ") (let name-index I64 (call i64.add (get profile item) 2) (let name Unit (call text/append_token source tokens name-index output) (let guarantee Unit (call text/append_text output " (guarantee exact) (controller-position ") (let position Unit (call append-i64 (get profile position) output) (let bound-prefix Unit (call text/append_text output ") (stop-bound ") (let bound Unit (call append-i64 (get profile bound) output) (let step-prefix Unit (call text/append_text output ") (step ") (let step Unit (call append-i64 (get profile step) output) (call text/append_text output "))"))))))))))))) (fn emit-resource-profiles ((source Bytes) (inout tokens (Vec syntax/Token)) (inout recurrences (Vec Recurrence)) (index I64) (limit I64) (inout output (Vec U8))) Unit (effects alloc partial) (let done Bool (call i64.ge index limit) (match done (true unit) (false (let profile Recurrence (call vec.get recurrences index) (let emitted Unit (call emit-resource-profile source tokens profile output) (let next I64 (call i64.add index 1) (recur source tokens recurrences next limit output)))))))) (fn emit-resource-call-work ((source Bytes) (inout tokens (Vec syntax/Token)) (expr I64) (item I64) (work Work) (inout output (Vec U8))) Unit (effects alloc partial) (let open Unit (call text/append_text output " (call-work ") (let site Unit (call append-i64 expr output) (let item-space Unit (call text/append_text output " ") (let item-text Unit (call append-i64 item output) (let name-space Unit (call text/append_text output " ") (let name-index I64 (call syntax/ast_item_name item) (let name Unit (call text/append_token source tokens name-index output) (match (get work known) (true (let guarantee Unit (call text/append_text output " (guarantee exact) (iterations ") (let iterations Unit (call append-i64 (get work iterations) output) (call text/append_text output "))")))) (false (call text/append_text output " (guarantee unknown) (reason nonliteral-controller))"))))))))))) (fn advance-resource-scan ((scan ResourceScan) (work Work) (reported Bool)) ResourceScan (effects) (let next-profiled I64 (call i64.add (get scan profiled) 1) (let next-reported I64 (match reported (true (call i64.add (get scan reported) 1)) (false (get scan reported))) (let known Bool (get work known) (let next-exact I64 (match known (true (call i64.add (get scan exact-sites) 1)) (false (get scan exact-sites))) (let next-unknown I64 (match known (true (get scan unknown-sites)) (false (call i64.add (get scan unknown-sites) 1))) (let iterations I64 (get work iterations) (let larger Bool (match known (true (call i64.gt iterations (get scan maximum))) (false false)) (let next-maximum I64 (match larger (true iterations) (false (get scan maximum))) (make ResourceScan (profiled next-profiled) (reported next-reported) (exact-sites next-exact) (unknown-sites next-unknown) (maximum next-maximum))))))))))) (fn scan-resource-call ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (inout recurrences (Vec Recurrence)) (profile-limit I64) (expr I64) (scan ResourceScan) (inout output (Vec U8))) ResourceScan (effects alloc partial) (let callee I64 (call syntax/ast_call_callee expr) (let builtin Bool (call typing/builtin_known source tokens callee) (match builtin (true scan) (false (let item I64 (call syntax/ast_node_link tokens callee) (let linked Bool (call i64.ge item 0) (match linked (false scan) (true (let profile-index I64 (call find-retained-profile recurrences item 0 profile-limit) (let profiled Bool (call i64.ge profile-index 0) (match profiled (false scan) (true (let arguments I64 (call syntax/ast_call_arguments expr) (let work Work (call recurrence-work source tokens view item arguments) (let room Bool (call i64.lt (get scan reported) 64) (let emitted Unit (match room (true (call emit-resource-call-work source tokens expr item work output)) (false unit)) (call advance-resource-scan scan work room)))))))))))))))))) (fn scan-resource-calls ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (inout recurrences (Vec Recurrence)) (profile-limit I64) (index I64) (scan ResourceScan) (inout output (Vec U8))) ResourceScan (effects alloc partial) (let length I64 (call vec.len tokens) (let done Bool (call i64.ge index length) (match done (true scan) (false (let kind I64 (call syntax/ast_node_kind tokens index) (let form Bool (call i64.eq kind 0) (let head I64 (call syntax/ast_list_first index) (let call-form Bool (match form (true (call syntax/ast_expression_is_call source tokens index)) (false false)) (let next-scan ResourceScan (match call-form (true (call scan-resource-call source tokens view recurrences profile-limit index scan output)) (false scan)) (let next I64 (call syntax/ast_node_after index) (recur source tokens view recurrences profile-limit next next-scan output)))))))))))) (fn emit-resource-bool ((value Bool) (inout output (Vec U8))) Unit (effects alloc partial) (match value (true (call text/append_text output "true")) (false (call text/append_text output "false")))) (fn emit-resource-evidence ((source Bytes) (inout tokens (Vec syntax/Token)) (inout view View) (inout output (Vec U8))) Unit (effects alloc partial) (let recurrences (Vec Recurrence) (get view recurrences) (let profile-count I64 (call vec.len recurrences) (let retained I64 (call retained-profile-count recurrences) (let profiles-truncated Bool (call i64.gt profile-count retained) (let open Unit (call text/append_text output " (resource-evidence (profile-limit 16) (call-site-report-limit 64) (recurrence-profiles") (let profiles Unit (call emit-resource-profiles source tokens recurrences 0 retained output) (let profile-count-prefix Unit (call text/append_text output ") (recurrence-profile-count ") (let profile-count-text Unit (call append-i64 profile-count output) (let retained-prefix Unit (call text/append_text output ") (reported-recurrence-profiles ") (let retained-text Unit (call append-i64 retained output) (let truncated-prefix Unit (call text/append_text output ") (recurrence-profiles-truncated ") (let truncated-text Unit (call emit-resource-bool profiles-truncated output) (let range-truncated-prefix Unit (call text/append_text output ") (range-refinements-truncated ") (let range-truncated-text Unit (call emit-resource-bool (get view refinements-truncated) output) (let calls-open Unit (call text/append_text output ") (call-work-sites") (let initial ResourceScan (make ResourceScan (profiled 0) (reported 0) (exact-sites 0) (unknown-sites 0) (maximum 0)) (let scan ResourceScan (call scan-resource-calls source tokens view recurrences retained 0 initial output) (let profiled-prefix Unit (call text/append_text output ") (profiled-call-site-count ") (let profiled-text Unit (call append-i64 (get scan profiled) output) (let reported-prefix Unit (call text/append_text output ") (reported-call-site-count ") (let reported-text Unit (call append-i64 (get scan reported) output) (let exact-prefix Unit (call text/append_text output ") (exact-call-work-sites ") (let exact-text Unit (call append-i64 (get scan exact-sites) output) (let unknown-prefix Unit (call text/append_text output ") (unknown-call-work-sites ") (let unknown-text Unit (call append-i64 (get scan unknown-sites) output) (let maximum-prefix Unit (call text/append_text output ") (maximum-exact-iterations ") (let maximum-text Unit (call append-i64 (get scan maximum) output) (let calls-truncated Bool (call i64.gt (get scan profiled) (get scan reported)) (let bounded Bool (call bool.or (get view refinements-truncated) (call bool.or profiles-truncated calls-truncated)) (let guarantee-prefix Unit (call text/append_text output ") (guarantee ") (let guarantee Unit (match bounded (true (call text/append_text output "bounded")) (false (call text/append_text output "exact"))) (call text/append_text output "))"))))))))))))))))))))))))))))))))))
+module ranges
+
+record Fact:
+  analyzed: Bool
+  lower-known: Bool
+  lower: I64
+  upper-known: Bool
+  upper: I64
+  total: Bool
+
+record Parsed:
+  valid: Bool
+  value: I64
+
+record Refinement:
+  declaration: I64
+  fact: Fact
+  parent: I64
+
+record Summary:
+  total: Bool
+
+record ArmSummary:
+  present: Bool
+  fact: Fact
+
+record Constraint:
+  valid: Bool
+  declaration: I64
+  true-kind: I64
+  true-bound: I64
+  false-kind: I64
+  false-bound: I64
+
+record Descent:
+  valid: Bool
+  position: I64
+  step: I64
+
+record Recurrence:
+  item: I64
+  position: I64
+  bound: I64
+  step: I64
+
+record CountScan:
+  valid: Bool
+  count: I64
+
+record AccScan:
+  valid: Bool
+  changed: Bool
+  maximum: I64
+
+record Counted:
+  item: I64
+  controller: I64
+  start: I64
+  bound: I64
+  step: I64
+  iterations: I64
+  base: I64
+  body: I64
+
+record Work:
+  known: Bool
+  iterations: I64
+
+record View:
+  facts: Vec[Fact]
+  refinements: I64
+  refinements-truncated: Bool
+  recurrences: Vec[Recurrence]
+  counted: Vec[Counted]
+
+record ResourceScan:
+  profiled: I64
+  reported: I64
+  exact-sites: I64
+  unknown-sites: I64
+  maximum: I64
+
+fn unknown(analyzed: Bool total: Bool) -> Fact:
+  make Fact(analyzed = analyzed lower-known = false lower = 0 upper-known = false upper = 0 total = total)
+
+fn bounded(lower-known: Bool lower: I64 upper-known: Bool upper: I64 total: Bool) -> Fact:
+  make Fact(analyzed = true lower-known = lower-known lower = lower upper-known = upper-known upper = upper total = total)
+
+fn exact(value: I64) -> Fact:
+  bounded(true value true value true)
+
+fn initialize-facts(length: I64 index: I64 inout facts: Vec[Fact]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      unit
+    false:
+      let fact: Fact = unknown(false false)
+      let pushed: Unit = vec.push(facts fact)
+      let next: I64 = i64.add(index 1)
+      recur(length next facts)
+
+fn fact-at(inout facts: Vec[Fact] index: I64) -> Fact effects[partial]:
+  let nonnegative: Bool = i64.ge(index 0)
+  let length: I64 = vec.len(facts)
+  let below: Bool = i64.lt(index length)
+  let valid: Bool = bool.and(nonnegative below)
+  match valid:
+    true:
+      vec.get(facts index)
+    false:
+      unknown(false false)
+
+fn set-fact(index: I64 fact: Fact inout facts: Vec[Fact]) -> Fact effects[partial]:
+  let stored: Unit = vec.set(facts index fact)
+  fact
+
+fn fact-total(inout facts: Vec[Fact] expr: I64) -> Bool effects[partial]:
+  let fact: Fact = fact-at(facts expr)
+  bool.and(get(fact analyzed) get(fact total))
+
+fn fact-exact(fact: Fact) -> Bool:
+  let both: Bool = bool.and(get(fact lower-known) get(fact upper-known))
+  let same: Bool = i64.eq(get(fact lower) get(fact upper))
+  bool.and(both same)
+
+fn minimum(left: I64 right: I64) -> I64:
+  match i64.le(left right):
+    true:
+      left
+    false:
+      right
+
+fn maximum(left: I64 right: I64) -> I64:
+  match i64.ge(left right):
+    true:
+      left
+    false:
+      right
+
+fn parse-digits(source: Bytes index: I64 end: I64 value: I64) -> Parsed effects[partial]:
+  let done: Bool = i64.ge(index end)
+  match done:
+    true:
+      make Parsed(valid = true value = value)
+    false:
+      let byte: U8 = bytes.get(source index)
+      let code: I64 = u8.to-i64(byte)
+      let lower: Bool = i64.ge(code 48)
+      let upper: Bool = i64.le(code 57)
+      let digit: Bool = bool.and(lower upper)
+      match digit:
+        false:
+          make Parsed(valid = false value = 0)
+        true:
+          let numeric: I64 = i64.sub(code 48)
+          let prefix-too-large: Bool = i64.gt(value 100000000)
+          let prefix-at-limit: Bool = i64.eq(value 100000000)
+          let nonzero-digit: Bool = i64.gt(numeric 0)
+          let limit-tail: Bool = bool.and(prefix-at-limit nonzero-digit)
+          let too-large: Bool = bool.or(prefix-too-large limit-tail)
+          match too-large:
+            true:
+              make Parsed(valid = false value = 0)
+            false:
+              let shifted: I64 = i64.mul(value 10)
+              let next-value: I64 = i64.add(shifted numeric)
+              let next: I64 = i64.add(index 1)
+              recur(source next end next-value)
+
+fn parse-literal(source: Bytes inout tokens: Vec[syntax/Token] token: I64) -> Parsed effects[partial]:
+  let start: I64 = syntax/ast_node_start(tokens token)
+  let end: I64 = syntax/ast_node_end(tokens token)
+  let first: U8 = bytes.get(source start)
+  let code: I64 = u8.to-i64(first)
+  let negative: Bool = i64.eq(code 45)
+  let digit-start: I64 = match negative:
+    true:
+      i64.add(start 1)
+    false:
+      start
+  let present: Bool = i64.lt(digit-start end)
+  match present:
+    false:
+      make Parsed(valid = false value = 0)
+    true:
+      let parsed: Parsed = parse-digits(source digit-start end 0)
+      let valid: Bool = get(parsed valid)
+      match valid:
+        false:
+          parsed
+        true:
+          let magnitude: I64 = get(parsed value)
+          let value: I64 = match negative:
+            true:
+              i64.sub(0 magnitude)
+            false:
+              magnitude
+          make Parsed(valid = true value = value)
+
+fn lookup-refinement(inout refinements: Vec[Refinement] parent: I64 declaration: I64) -> Fact effects[partial]:
+  let done: Bool = i64.lt(parent 0)
+  match done:
+    true:
+      unknown(false false)
+    false:
+      let refinement: Refinement = vec.get(refinements parent)
+      let same: Bool = i64.eq(get(refinement declaration) declaration)
+      match same:
+        true:
+          get(refinement fact)
+        false:
+          recur(refinements get(refinement parent) declaration)
+
+fn lookup-binding(inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 atom: I64) -> Fact effects[partial]:
+  let declaration: I64 = typing/linked_binding_declaration(tokens atom)
+  let refined: Fact = lookup-refinement(refinements parent declaration)
+  let present: Bool = get(refined analyzed)
+  match present:
+    true:
+      refined
+    false:
+      fact-at(facts declaration)
+
+fn parameter-name(source: Bytes inout tokens: Vec[syntax/Token] parameter: I64) -> I64 effects[partial]:
+  syntax/ast_binding_name(source tokens parameter)
+
+fn initialize-booleans(length: I64 index: I64 value: Bool inout values: Vec[Bool]) -> Unit effects[alloc partial]:
+  match i64.ge(index length):
+    true:
+      unit
+    false:
+      let pushed: Unit = vec.push(values value)
+      recur(length i64.add(index 1) value values)
+
+fn mark-parameter-invariants(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout invariants: Vec[Bool]) -> Unit effects[partial]:
+  match i64.eq(syntax/ast_node_kind(tokens cursor) 1):
+    true:
+      unit
+    false:
+      let name: I64 = parameter-name(source tokens cursor)
+      let marked: Unit = vec.set(invariants name true)
+      recur(source tokens syntax/ast_next(tokens cursor) invariants)
+
+fn invalidate-recur-arguments(source: Bytes inout tokens: Vec[syntax/Token] parameter: I64 argument: I64 inout invariants: Vec[Bool]) -> Unit effects[partial]:
+  match i64.eq(syntax/ast_node_kind(tokens parameter) 1):
+    true:
+      unit
+    false:
+      let name: I64 = parameter-name(source tokens parameter)
+      let argument-kind: I64 = syntax/ast_node_kind(tokens argument)
+      let atom: Bool = i64.eq(argument-kind 2)
+      let linked: I64 = match atom:
+        true:
+          typing/linked_binding_declaration(tokens argument)
+        false:
+          -1
+      let unchanged: Bool = i64.eq(linked name)
+      let invalidated: Unit = match unchanged:
+        true:
+          unit
+        false:
+          vec.set(invariants name false)
+      recur(source tokens syntax/ast_next(tokens parameter) syntax/ast_next(tokens argument) invariants)
+
+fn scan-recur-invariants(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 end: I64 params: I64 inout invariants: Vec[Bool]) -> Unit effects[partial]:
+  match i64.ge(cursor end):
+    true:
+      unit
+    false:
+      let recur-form: Bool = syntax/ast_expression_is_recur(source tokens cursor)
+      let invalidated: Unit = match recur-form:
+        true:
+          invalidate-recur-arguments(source tokens syntax/ast_parameters_first(params) syntax/ast_recur_arguments(cursor) invariants)
+        false:
+          unit
+      recur(source tokens syntax/ast_node_after(cursor) end params invariants)
+
+fn collect-function-invariants(source: Bytes inout tokens: Vec[syntax/Token] item: I64 inout invariants: Vec[Bool]) -> Unit effects[partial]:
+  let params: I64 = syntax/ast_function_parameters(item)
+  let marked: Unit = mark-parameter-invariants(source tokens syntax/ast_parameters_first(params) invariants)
+  let return-type: I64 = syntax/ast_function_return_type(tokens item)
+  let effects-form: I64 = syntax/ast_function_effects(tokens item)
+  let body: I64 = syntax/ast_next(tokens effects-form)
+  scan-recur-invariants(source tokens body syntax/ast_next(tokens body) params invariants)
+
+fn collect-parameter-invariants(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout invariants: Vec[Bool]) -> Unit effects[partial]:
+  match i64.eq(syntax/ast_node_kind(tokens cursor) 1):
+    true:
+      unit
+    false:
+      let function-item: Bool = syntax/ast_item_is_function(source tokens cursor)
+      let collected: Unit = match function-item:
+        true:
+          collect-function-invariants(source tokens cursor invariants)
+        false:
+          unit
+      recur(source tokens syntax/ast_next(tokens cursor) invariants)
+
+fn merge-parameter-fact(existing: Fact candidate: Fact invariant: Bool) -> Fact:
+  match invariant:
+    false:
+      unknown(true true)
+    true:
+      let candidate-bounded: Bool = all-bounded(candidate)
+      let candidate-total: Bool = get(candidate total)
+      let usable: Bool = bool.and(candidate-bounded candidate-total)
+      match usable:
+        false:
+          unknown(true true)
+        true:
+          match get(existing analyzed):
+            false:
+              candidate
+            true:
+              let existing-bounded: Bool = all-bounded(existing)
+              match existing-bounded:
+                true:
+                  join-facts(existing candidate true)
+                false:
+                  unknown(true true)
+
+fn collect-call-arguments(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] inout invariants: Vec[Bool] parameter: I64 argument: I64 inout parameter-facts: Vec[Fact]) -> Unit effects[partial]:
+  match i64.eq(syntax/ast_node_kind(tokens parameter) 1):
+    true:
+      unit
+    false:
+      let name: I64 = parameter-name(source tokens parameter)
+      let invariant: Bool = vec.get(invariants name)
+      let existing: Fact = fact-at(parameter-facts name)
+      let candidate: Fact = fact-at(facts argument)
+      let merged: Fact = merge-parameter-fact(existing candidate invariant)
+      let stored: Unit = vec.set(parameter-facts name merged)
+      let next-parameter: I64 = syntax/ast_next(tokens parameter)
+      let last: Bool = i64.eq(syntax/ast_node_kind(tokens next-parameter) 1)
+      match last:
+        true:
+          unit
+        false:
+          let next-argument: I64 = syntax/ast_next(tokens argument)
+          recur(source tokens facts invariants next-parameter next-argument parameter-facts)
+
+fn scan-parameter-calls(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] inout invariants: Vec[Bool] cursor: I64 length: I64 inout parameter-facts: Vec[Fact]) -> Unit effects[partial]:
+  match i64.ge(cursor length):
+    true:
+      unit
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens cursor)
+      let form: Bool = i64.eq(kind 0)
+      let head: I64 = syntax/ast_list_first(cursor)
+      let call-form: Bool = match form:
+        true:
+          syntax/ast_expression_is_call(source tokens cursor)
+        false:
+          false
+      let callee: I64 = syntax/ast_call_callee(cursor)
+      let declaration: I64 = match call-form:
+        true:
+          syntax/ast_node_link(tokens callee)
+        false:
+          -1
+      let user: Bool = i64.ge(declaration 0)
+      let collected: Unit = match user:
+        true:
+          collect-call-arguments(source tokens facts invariants syntax/ast_parameters_first(syntax/ast_function_parameters(declaration)) syntax/ast_call_arguments(cursor) parameter-facts)
+        false:
+          unit
+      recur(source tokens facts invariants syntax/ast_node_after(cursor) length parameter-facts)
+
+fn initialize-parameters(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout facts: Vec[Fact] inout parameter-facts: Vec[Fact]) -> Unit effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      unit
+    false:
+      let head: I64 = syntax/ast_list_first(cursor)
+      let borrowed: Bool = syntax/ast_binding_is_inout(source tokens cursor)
+      let name: I64 = syntax/ast_binding_name(source tokens cursor)
+      let candidate: Fact = fact-at(parameter-facts name)
+      let known: Bool = all-bounded(candidate)
+      let binding: Fact = match known:
+        true:
+          candidate
+        false:
+          unknown(true true)
+      let stored: Unit = vec.set(facts name binding)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens next facts parameter-facts)
+
+fn all-bounded(fact: Fact) -> Bool:
+  bool.and(get(fact lower-known) get(fact upper-known))
+
+fn in-domain(value: I64) -> Bool:
+  let lower: Bool = i64.ge(value -1000000000)
+  let upper: Bool = i64.le(value 1000000000)
+  bool.and(lower upper)
+
+fn add-exact(base: Fact constant: I64 arguments-total: Bool) -> Fact:
+  let positive: Bool = i64.ge(constant 0)
+  let safety-bound: I64 = match positive:
+    true:
+      i64.sub(1000000000 constant)
+    false:
+      i64.sub(-1000000000 constant)
+  let safe: Bool = match positive:
+    true:
+      bool.and(get(base upper-known) i64.le(get(base upper) safety-bound))
+    false:
+      bool.and(get(base lower-known) i64.ge(get(base lower) safety-bound))
+  let lower-known: Bool = get(base lower-known)
+  let upper-known: Bool = get(base upper-known)
+  let lower: I64 = match lower-known:
+    true:
+      i64.add(get(base lower) constant)
+    false:
+      0
+  let upper: I64 = match upper-known:
+    true:
+      i64.add(get(base upper) constant)
+    false:
+      0
+  let lower-inside: Bool = match lower-known:
+    true:
+      in-domain(lower)
+    false:
+      false
+  let upper-inside: Bool = match upper-known:
+    true:
+      in-domain(upper)
+    false:
+      false
+  let total: Bool = bool.and(arguments-total safe)
+  bounded(lower-inside lower upper-inside upper total)
+
+fn add-bounded(left: Fact right: Fact arguments-total: Bool) -> Fact:
+  let bounded-operands: Bool = bool.and(all-bounded(left) all-bounded(right))
+  let left-lower-inside: Bool = in-domain(get(left lower))
+  let left-upper-inside: Bool = in-domain(get(left upper))
+  let right-lower-inside: Bool = in-domain(get(right lower))
+  let right-upper-inside: Bool = in-domain(get(right upper))
+  let left-inside: Bool = bool.and(left-lower-inside left-upper-inside)
+  let right-inside: Bool = bool.and(right-lower-inside right-upper-inside)
+  let ready: Bool = bool.and(bounded-operands bool.and(left-inside right-inside))
+  let lower: I64 = match ready:
+    true:
+      i64.add(get(left lower) get(right lower))
+    false:
+      0
+  let upper: I64 = match ready:
+    true:
+      i64.add(get(left upper) get(right upper))
+    false:
+      0
+  let result-inside: Bool = match ready:
+    true:
+      bool.and(in-domain(lower) in-domain(upper))
+    false:
+      false
+  match result-inside:
+    true:
+      bounded(true lower true upper arguments-total)
+    false:
+      unknown(true false)
+
+fn add-facts(left: Fact right: Fact arguments-total: Bool) -> Fact:
+  let right-exact: Bool = fact-exact(right)
+  match right-exact:
+    true:
+      add-exact(left get(right lower) arguments-total)
+    false:
+      let left-exact: Bool = fact-exact(left)
+      match left-exact:
+        true:
+          add-exact(right get(left lower) arguments-total)
+        false:
+          add-bounded(left right arguments-total)
+
+fn subtract-facts(left: Fact right: Fact arguments-total: Bool) -> Fact:
+  let right-exact: Bool = fact-exact(right)
+  match right-exact:
+    true:
+      let constant: I64 = i64.sub(0 get(right lower))
+      add-exact(left constant arguments-total)
+    false:
+      unknown(true false)
+
+fn min-four(a: I64 b: I64 c: I64 d: I64) -> I64:
+  minimum(minimum(a b) minimum(c d))
+
+fn max-four(a: I64 b: I64 c: I64 d: I64) -> I64:
+  maximum(maximum(a b) maximum(c d))
+
+fn multiply-facts(left: Fact right: Fact arguments-total: Bool) -> Fact:
+  let bounded-left: Bool = all-bounded(left)
+  let bounded-right: Bool = all-bounded(right)
+  let ready: Bool = bool.and(bounded-left bounded-right)
+  match ready:
+    false:
+      unknown(true false)
+    true:
+      let a: I64 = i64.mul(get(left lower) get(right lower))
+      let b: I64 = i64.mul(get(left lower) get(right upper))
+      let c: I64 = i64.mul(get(left upper) get(right lower))
+      let d: I64 = i64.mul(get(left upper) get(right upper))
+      let lower: I64 = min-four(a b c d)
+      let upper: I64 = max-four(a b c d)
+      let inside: Bool = bool.and(in-domain(lower) in-domain(upper))
+      let total: Bool = bool.and(arguments-total inside)
+      match inside:
+        true:
+          bounded(true lower true upper total)
+        false:
+          unknown(true false)
+
+fn absolute-domain-value(value: I64) -> I64:
+  match i64.lt(value 0):
+    true:
+      i64.sub(0 value)
+    false:
+      value
+
+fn quotient-fact(left: Fact right: Fact total: Bool) -> Fact effects[partial]:
+  let a: I64 = i64.div(get(left lower) get(right lower))
+  let b: I64 = i64.div(get(left lower) get(right upper))
+  let c: I64 = i64.div(get(left upper) get(right lower))
+  let d: I64 = i64.div(get(left upper) get(right upper))
+  let lower: I64 = min-four(a b c d)
+  let upper: I64 = max-four(a b c d)
+  bounded(true lower true upper total)
+
+fn remainder-fact(left: Fact right: Fact total: Bool) -> Fact:
+  let lower-magnitude: I64 = absolute-domain-value(get(right lower))
+  let upper-magnitude: I64 = absolute-domain-value(get(right upper))
+  let magnitude: I64 = maximum(lower-magnitude upper-magnitude)
+  let limit: I64 = i64.sub(magnitude 1)
+  let left-nonnegative: Bool = match get(left lower-known):
+    true:
+      i64.ge(get(left lower) 0)
+    false:
+      false
+  let left-nonpositive: Bool = match get(left upper-known):
+    true:
+      i64.le(get(left upper) 0)
+    false:
+      false
+  let lower: I64 = match left-nonnegative:
+    true:
+      0
+    false:
+      i64.sub(0 limit)
+  let upper: I64 = match left-nonpositive:
+    true:
+      0
+    false:
+      limit
+  bounded(true lower true upper total)
+
+fn divide-facts(left: Fact right: Fact arguments-total: Bool remainder: Bool) -> Fact effects[partial]:
+  let bounded-left: Bool = all-bounded(left)
+  let bounded-right: Bool = all-bounded(right)
+  let positive: Bool = match bounded-right:
+    true:
+      i64.gt(get(right lower) 0)
+    false:
+      false
+  let negative: Bool = match bounded-right:
+    true:
+      i64.lt(get(right upper) 0)
+    false:
+      false
+  let nonzero: Bool = bool.or(positive negative)
+  let minus-one-lower: Bool = match bounded-right:
+    true:
+      i64.le(get(right lower) -1)
+    false:
+      true
+  let minus-one-upper: Bool = match bounded-right:
+    true:
+      i64.ge(get(right upper) -1)
+    false:
+      true
+  let minus-one-possible: Bool = bool.and(minus-one-lower minus-one-upper)
+  let overflow-safe: Bool = bool.or(bool.not(minus-one-possible) bounded-left)
+  let safe: Bool = bool.and(bounded-right bool.and(nonzero overflow-safe))
+  let total: Bool = bool.and(arguments-total safe)
+  let left-exact: Bool = fact-exact(left)
+  let right-exact: Bool = fact-exact(right)
+  let exact-both: Bool = bool.and(left-exact right-exact)
+  let computable: Bool = bool.and(safe exact-both)
+  match computable:
+    true:
+      let value: I64 = match remainder:
+        true:
+          i64.rem(get(left lower) get(right lower))
+        false:
+          i64.div(get(left lower) get(right lower))
+      bounded(true value true value total)
+    false:
+      match safe:
+        false:
+          unknown(true false)
+        true:
+          match remainder:
+            true:
+              remainder-fact(left right total)
+            false:
+              match bounded-left:
+                true:
+                  quotient-fact(left right total)
+                false:
+                  unknown(true total)
+
+fn to-u8-fact(argument: Fact arguments-total: Bool) -> Fact:
+  let bounded-argument: Bool = all-bounded(argument)
+  let nonnegative: Bool = match bounded-argument:
+    true:
+      i64.ge(get(argument lower) 0)
+    false:
+      false
+  let byte-sized: Bool = match bounded-argument:
+    true:
+      i64.le(get(argument upper) 255)
+    false:
+      false
+  let safe: Bool = bool.and(nonnegative byte-sized)
+  unknown(true bool.and(arguments-total safe))
+
+fn callee-is-checked-trap(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
+  let add-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.add")
+  let sub-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.sub")
+  let mul-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.mul")
+  let div-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.div")
+  let rem-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.rem")
+  let to-byte: Bool = syntax/ast_node_text_is(source tokens callee "i64.to-u8")
+  let bytes-get: Bool = syntax/ast_node_text_is(source tokens callee "bytes.get")
+  let vec-get: Bool = syntax/ast_node_text_is(source tokens callee "vec.get")
+  let vec-set: Bool = syntax/ast_node_text_is(source tokens callee "vec.set")
+  let arena-get: Bool = syntax/ast_node_text_is(source tokens callee "arena.get")
+  bool.or(add-call bool.or(sub-call bool.or(mul-call bool.or(div-call bool.or(rem-call bool.or(to-byte bool.or(bytes-get bool.or(vec-get bool.or(vec-set arena-get)))))))))
+
+fn expression-atom(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[partial]:
+  let typed: typing/TypeRef = typing/fact_type(typed-facts expr)
+  let integer: Bool = i64.eq(get(typed kind) 3)
+  match integer:
+    false:
+      set-fact(expr unknown(true true) facts)
+    true:
+      let numeric: Bool = syntax/first_byte_is_number(source tokens expr)
+      match numeric:
+        true:
+          let parsed: Parsed = parse-literal(source tokens expr)
+          let fact: Fact = match get(parsed valid):
+            true:
+              exact(get(parsed value))
+            false:
+              unknown(true true)
+          set-fact(expr fact facts)
+        false:
+          let binding: Fact = lookup-binding(tokens facts refinements parent expr)
+          let lower-known: Bool = get(binding lower-known)
+          let lower: I64 = get(binding lower)
+          let upper-known: Bool = get(binding upper-known)
+          let upper: I64 = get(binding upper)
+          let fact: Fact = bounded(lower-known lower upper-known upper true)
+          set-fact(expr fact facts)
+
+fn analyze-forms(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] cursor: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 total: Bool) -> Summary effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      make Summary(total = total)
+    false:
+      let fact: Fact = analyze-expression(source tokens typed-facts cursor facts refinements parent)
+      let next-total: Bool = bool.and(total get(fact total))
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens typed-facts next facts refinements parent next-total)
+
+fn analyze-fields(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] cursor: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 total: Bool) -> Summary effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      make Summary(total = total)
+    false:
+      let value: I64 = syntax/ast_member_value(cursor)
+      let fact: Fact = analyze-expression(source tokens typed-facts value facts refinements parent)
+      let next-total: Bool = bool.and(total get(fact total))
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens typed-facts next facts refinements parent next-total)
+
+fn call-fact(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] expr: I64 callee: I64 arguments: I64 arguments-total: Bool) -> Fact effects[partial]:
+  let add-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.add")
+  let sub-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.sub")
+  let mul-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.mul")
+  let div-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.div")
+  let rem-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.rem")
+  let arithmetic-left: Bool = bool.or(add-call sub-call)
+  let arithmetic-right: Bool = bool.or(mul-call bool.or(div-call rem-call))
+  let arithmetic: Bool = bool.or(arithmetic-left arithmetic-right)
+  match arithmetic:
+    true:
+      let second: I64 = syntax/ast_next(tokens arguments)
+      let left: Fact = fact-at(facts arguments)
+      let right: Fact = fact-at(facts second)
+      match add-call:
+        true:
+          add-facts(left right arguments-total)
+        false:
+          match sub-call:
+            true:
+              subtract-facts(left right arguments-total)
+            false:
+              match mul-call:
+                true:
+                  multiply-facts(left right arguments-total)
+                false:
+                  match div-call:
+                    true:
+                      divide-facts(left right arguments-total false)
+                    false:
+                      divide-facts(left right arguments-total true)
+    false:
+      let to-byte: Bool = syntax/ast_node_text_is(source tokens callee "i64.to-u8")
+      match to-byte:
+        true:
+          let left: Fact = fact-at(facts arguments)
+          to-u8-fact(left arguments-total)
+        false:
+          let checked: Bool = callee-is-checked-trap(source tokens callee)
+          match checked:
+            true:
+              unknown(true false)
+            false:
+              let builtin: Bool = typing/builtin_known(source tokens callee)
+              let alloc: Bool = effects/call_requires(source tokens callee 1)
+              let io: Bool = effects/call_requires(source tokens callee 2)
+              let effectful: Bool = bool.or(alloc io)
+              let safe: Bool = bool.and(builtin bool.not(effectful))
+              let total: Bool = bool.and(arguments-total safe)
+              let u8-to-i64: Bool = syntax/ast_node_text_is(source tokens callee "u8.to-i64")
+              match u8-to-i64:
+                true:
+                  bounded(true 0 true 255 total)
+                false:
+                  unknown(true total)
+
+fn analyze-user-call-arguments(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 parameter: I64 argument: I64 total: Bool) -> Summary effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens parameter)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      make Summary(total = total)
+    false:
+      let fact: Fact = analyze-expression(source tokens typed-facts argument facts refinements parent)
+      let next-total: Bool = bool.and(total get(fact total))
+      let next-parameter: I64 = syntax/ast_next(tokens parameter)
+      let last: Bool = i64.eq(syntax/ast_node_kind(tokens next-parameter) 1)
+      match last:
+        true:
+          make Summary(total = next-total)
+        false:
+          let next-argument: I64 = syntax/ast_next(tokens argument)
+          recur(source tokens typed-facts facts refinements parent next-parameter next-argument next-total)
+
+fn analyze-call(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[alloc partial]:
+  let callee: I64 = syntax/ast_call_callee(expr)
+  let arguments: I64 = syntax/ast_call_arguments(expr)
+  let declaration: I64 = syntax/ast_node_link(tokens callee)
+  let user: Bool = i64.ge(declaration 0)
+  let summary: Summary = match user:
+    true:
+      let params: I64 = syntax/ast_function_parameters(declaration)
+      let first-parameter: I64 = syntax/ast_parameters_first(params)
+      analyze-user-call-arguments(source tokens typed-facts facts refinements parent first-parameter arguments true)
+    false:
+      analyze-forms(source tokens typed-facts arguments facts refinements parent true)
+  let fact: Fact = call-fact(source tokens facts expr callee arguments get(summary total))
+  set-fact(expr fact facts)
+
+fn analyze-let(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[alloc partial]:
+  let name: I64 = syntax/ast_let_name(expr)
+  let type-index: I64 = syntax/ast_let_type(expr)
+  let value: I64 = syntax/ast_let_value(tokens expr)
+  let body: I64 = syntax/ast_let_body(tokens expr)
+  let value-fact: Fact = analyze-expression(source tokens typed-facts value facts refinements parent)
+  let binding: Fact = bounded(get(value-fact lower-known) get(value-fact lower) get(value-fact upper-known) get(value-fact upper) true)
+  let stored: Unit = vec.set(facts name binding)
+  let body-fact: Fact = analyze-expression(source tokens typed-facts body facts refinements parent)
+  let total: Bool = bool.and(get(value-fact total) get(body-fact total))
+  let fact: Fact = bounded(get(body-fact lower-known) get(body-fact lower) get(body-fact upper-known) get(body-fact upper) total)
+  set-fact(expr fact facts)
+
+fn last-child(inout tokens: Vec[syntax/Token] cursor: I64 previous: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      previous
+    false:
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(tokens next cursor)
+
+fn invalid-constraint() -> Constraint:
+  make Constraint(valid = false declaration = -1 true-kind = -1 true-bound = 0 false-kind = -1 false-bound = 0)
+
+fn comparison-constraint(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] expr: I64) -> Constraint effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens expr)
+  let form: Bool = i64.eq(kind 0)
+  match form:
+    false:
+      invalid-constraint()
+    true:
+      let call-form: Bool = syntax/ast_expression_is_call(source tokens expr)
+      match call-form:
+        false:
+          invalid-constraint()
+        true:
+          let callee: I64 = syntax/ast_call_callee(expr)
+          let left: I64 = syntax/ast_call_arguments(expr)
+          let right: I64 = syntax/ast_next(tokens left)
+          let declaration: I64 = typing/linked_binding_declaration(tokens left)
+          let linked: Bool = i64.ge(declaration 0)
+          let right-fact: Fact = fact-at(facts right)
+          let exact-right: Bool = fact-exact(right-fact)
+          let ready: Bool = bool.and(linked exact-right)
+          match ready:
+            false:
+              invalid-constraint()
+            true:
+              let bound: I64 = get(right-fact lower)
+              let lt-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.lt")
+              match lt-call:
+                true:
+                  match i64.gt(bound -1000000000):
+                    true:
+                      make Constraint(valid = true declaration = declaration true-kind = 1 true-bound = i64.sub(bound 1) false-kind = 0 false-bound = bound)
+                    false:
+                      invalid-constraint()
+                false:
+                  let le-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.le")
+                  match le-call:
+                    true:
+                      match i64.lt(bound 1000000000):
+                        true:
+                          make Constraint(valid = true declaration = declaration true-kind = 1 true-bound = bound false-kind = 0 false-bound = i64.add(bound 1))
+                        false:
+                          invalid-constraint()
+                    false:
+                      let gt-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.gt")
+                      match gt-call:
+                        true:
+                          match i64.lt(bound 1000000000):
+                            true:
+                              make Constraint(valid = true declaration = declaration true-kind = 0 true-bound = i64.add(bound 1) false-kind = 1 false-bound = bound)
+                            false:
+                              invalid-constraint()
+                        false:
+                          let ge-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.ge")
+                          match ge-call:
+                            true:
+                              match i64.gt(bound -1000000000):
+                                true:
+                                  make Constraint(valid = true declaration = declaration true-kind = 0 true-bound = bound false-kind = 1 false-bound = i64.sub(bound 1))
+                                false:
+                                  invalid-constraint()
+                            false:
+                              invalid-constraint()
+
+fn refine-fact(base: Fact kind: I64 bound: I64) -> Fact:
+  let lower-refinement: Bool = i64.eq(kind 0)
+  match lower-refinement:
+    true:
+      let had-lower: Bool = get(base lower-known)
+      let lower: I64 = match had-lower:
+        true:
+          maximum(get(base lower) bound)
+        false:
+          bound
+      bounded(true lower get(base upper-known) get(base upper) true)
+    false:
+      let upper-refinement: Bool = i64.eq(kind 1)
+      match upper-refinement:
+        true:
+          let had-upper: Bool = get(base upper-known)
+          let upper: I64 = match had-upper:
+            true:
+              minimum(get(base upper) bound)
+            false:
+              bound
+          bounded(get(base lower-known) get(base lower) true upper true)
+        false:
+          base
+
+fn push-refinement(inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 declaration: I64 kind: I64 bound: I64) -> I64 effects[alloc partial]:
+  let count: I64 = vec.len(refinements)
+  let room: Bool = i64.lt(count 64)
+  match room:
+    false:
+      parent
+    true:
+      let base-refined: Fact = lookup-refinement(refinements parent declaration)
+      let has-refined: Bool = get(base-refined analyzed)
+      let base: Fact = match has-refined:
+        true:
+          base-refined
+        false:
+          fact-at(facts declaration)
+      let next-fact: Fact = refine-fact(base kind bound)
+      let refinement: Refinement = make Refinement(declaration = declaration fact = next-fact parent = parent)
+      let pushed: Unit = vec.push(refinements refinement)
+      count
+
+fn arm-parent(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 pattern: I64 constraint: Constraint) -> I64 effects[alloc partial]:
+  let valid: Bool = get(constraint valid)
+  match valid:
+    false:
+      parent
+    true:
+      let true-pattern: Bool = syntax/ast_node_text_is(source tokens pattern "true")
+      let false-pattern: Bool = syntax/ast_node_text_is(source tokens pattern "false")
+      let applicable: Bool = bool.or(true-pattern false-pattern)
+      match applicable:
+        false:
+          parent
+        true:
+          let refinement-kind: I64 = match true-pattern:
+            true:
+              get(constraint true-kind)
+            false:
+              get(constraint false-kind)
+          let refinement-bound: I64 = match true-pattern:
+            true:
+              get(constraint true-bound)
+            false:
+              get(constraint false-bound)
+          push-refinement(facts refinements parent get(constraint declaration) refinement-kind refinement-bound)
+
+fn join-facts(left: Fact right: Fact total: Bool) -> Fact:
+  let lower-known: Bool = bool.and(get(left lower-known) get(right lower-known))
+  let lower: I64 = match lower-known:
+    true:
+      minimum(get(left lower) get(right lower))
+    false:
+      0
+  let upper-known: Bool = bool.and(get(left upper-known) get(right upper-known))
+  let upper: I64 = match upper-known:
+    true:
+      maximum(get(left upper) get(right upper))
+    false:
+      0
+  bounded(lower-known lower upper-known upper total)
+
+fn analyze-arms(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] cursor: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 constraint: Constraint summary: ArmSummary) -> ArmSummary effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      summary
+    false:
+      let pattern: I64 = syntax/ast_arm_pattern(cursor)
+      let first: I64 = syntax/ast_arm_pattern(cursor)
+      let body: I64 = last-child(tokens first first)
+      let scoped-parent: I64 = arm-parent(source tokens facts refinements parent pattern constraint)
+      let body-fact: Fact = analyze-expression(source tokens typed-facts body facts refinements scoped-parent)
+      let next-fact: Fact = match get(summary present):
+        true:
+          let prior: Fact = get(summary fact)
+          let both-total: Bool = bool.and(get(prior total) get(body-fact total))
+          join-facts(prior body-fact both-total)
+        false:
+          body-fact
+      let next-summary: ArmSummary = make ArmSummary(present = true fact = next-fact)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens typed-facts next facts refinements parent constraint next-summary)
+
+fn analyze-match(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[alloc partial]:
+  let value: I64 = syntax/ast_match_value(expr)
+  let value-fact: Fact = analyze-expression(source tokens typed-facts value facts refinements parent)
+  let constraint: Constraint = comparison-constraint(source tokens facts value)
+  let first-arm: I64 = syntax/ast_match_arms(tokens expr)
+  let initial: Fact = unknown(true true)
+  let initial-summary: ArmSummary = make ArmSummary(present = false fact = initial)
+  let summary: ArmSummary = analyze-arms(source tokens typed-facts first-arm facts refinements parent constraint initial-summary)
+  let arms-fact: Fact = get(summary fact)
+  let total: Bool = bool.and(get(value-fact total) get(arms-fact total))
+  let fact: Fact = bounded(get(arms-fact lower-known) get(arms-fact lower) get(arms-fact upper-known) get(arms-fact upper) total)
+  set-fact(expr fact facts)
+
+fn analyze-set(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[alloc partial]:
+  let value: I64 = syntax/ast_set_value(expr)
+  let body: I64 = syntax/ast_set_body(tokens expr)
+  let value-fact: Fact = analyze-expression(source tokens typed-facts value facts refinements parent)
+  let body-fact: Fact = analyze-expression(source tokens typed-facts body facts refinements parent)
+  let total: Bool = bool.and(get(value-fact total) get(body-fact total))
+  let fact: Fact = bounded(get(body-fact lower-known) get(body-fact lower) get(body-fact upper-known) get(body-fact upper) total)
+  set-fact(expr fact facts)
+
+fn analyze-data(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64 expr: I64) -> Fact effects[alloc partial]:
+  let make-form: Bool = syntax/ast_expression_is_make(source tokens expr)
+  let summary: Summary = match make-form:
+    true:
+      analyze-fields(source tokens typed-facts syntax/ast_make_fields(expr) facts refinements parent true)
+    false:
+      let get-form: Bool = syntax/ast_expression_is_get(source tokens expr)
+      match get-form:
+        true:
+          let value: I64 = syntax/ast_get_value(expr)
+          let fact: Fact = analyze-expression(source tokens typed-facts value facts refinements parent)
+          make Summary(total = get(fact total))
+        false:
+          let case-form: Bool = syntax/ast_expression_is_case(source tokens expr)
+          let first: I64 = match case-form:
+            true:
+              syntax/ast_case_payload(tokens expr)
+            false:
+              syntax/ast_fork_body(expr)
+          analyze-forms(source tokens typed-facts first facts refinements parent true)
+  set-fact(expr unknown(true get(summary total)) facts)
+
+fn analyze-expression(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] expr: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] parent: I64) -> Fact effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens expr)
+  let form: Bool = i64.eq(kind 0)
+  match form:
+    false:
+      expression-atom(source tokens typed-facts facts refinements parent expr)
+    true:
+      let let-form: Bool = syntax/ast_expression_is_let(source tokens expr)
+      match let-form:
+        true:
+          analyze-let(source tokens typed-facts facts refinements parent expr)
+        false:
+          let call-form: Bool = syntax/ast_expression_is_call(source tokens expr)
+          match call-form:
+            true:
+              analyze-call(source tokens typed-facts facts refinements parent expr)
+            false:
+              let match-form: Bool = syntax/ast_expression_is_match(source tokens expr)
+              match match-form:
+                true:
+                  analyze-match(source tokens typed-facts facts refinements parent expr)
+                false:
+                  let set-form: Bool = syntax/ast_expression_is_set(source tokens expr)
+                  match set-form:
+                    true:
+                      analyze-set(source tokens typed-facts facts refinements parent expr)
+                    false:
+                      let recur-form: Bool = syntax/ast_expression_is_recur(source tokens expr)
+                      match recur-form:
+                        true:
+                          let summary: Summary = analyze-forms(source tokens typed-facts syntax/ast_recur_arguments(expr) facts refinements parent true)
+                          set-fact(expr unknown(true false) facts)
+                        false:
+                          analyze-data(source tokens typed-facts facts refinements parent expr)
+
+fn boolean-arm-body(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 pattern: Bytes) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      -1
+    false:
+      let pattern-token: I64 = syntax/ast_arm_pattern(cursor)
+      let same: Bool = syntax/ast_node_text_is(source tokens pattern-token pattern)
+      match same:
+        true:
+          last-child(tokens pattern-token pattern-token)
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          recur(source tokens next pattern)
+
+fn tail-expression(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
+  let let-form: Bool = syntax/ast_expression_is_let(source tokens expr)
+  match let-form:
+    false:
+      expr
+    true:
+      recur(source tokens syntax/ast_let_body(tokens expr))
+
+fn prefix-total-to-tail(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] expr: I64 tail: I64) -> Bool effects[partial]:
+  let done: Bool = i64.eq(expr tail)
+  match done:
+    true:
+      true
+    false:
+      let let-form: Bool = syntax/ast_expression_is_let(source tokens expr)
+      match let-form:
+        false:
+          false
+        true:
+          let value: I64 = syntax/ast_let_value(tokens expr)
+          let body: I64 = syntax/ast_let_body(tokens expr)
+          let value-total: Bool = fact-total(facts value)
+          let rest-total: Bool = recur(source tokens facts body tail)
+          bool.and(value-total rest-total)
+
+fn forms-total(inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] cursor: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      true
+    false:
+      let current-total: Bool = fact-total(facts cursor)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      let rest-total: Bool = recur(tokens facts next)
+      bool.and(current-total rest-total)
+
+fn parameter-position(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 declaration: I64 position: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      -1
+    false:
+      let head: I64 = syntax/ast_list_first(cursor)
+      let borrowed: Bool = syntax/ast_binding_is_inout(source tokens cursor)
+      let name: I64 = syntax/ast_binding_name(source tokens cursor)
+      let same: Bool = i64.eq(name declaration)
+      match same:
+        true:
+          position
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          let next-position: I64 = i64.add(position 1)
+          recur(source tokens next declaration next-position)
+
+fn form-at(inout tokens: Vec[syntax/Token] cursor: I64 position: I64) -> I64 effects[partial]:
+  let done: Bool = i64.eq(position 0)
+  match done:
+    true:
+      cursor
+    false:
+      let next: I64 = syntax/ast_next(tokens cursor)
+      let next-position: I64 = i64.sub(position 1)
+      recur(tokens next next-position)
+
+fn promote-total(inout facts: Vec[Fact] expr: I64) -> Fact effects[partial]:
+  let prior: Fact = fact-at(facts expr)
+  let promoted: Fact = bounded(get(prior lower-known) get(prior lower) get(prior upper-known) get(prior upper) true)
+  set-fact(expr promoted facts)
+
+fn decreasing-controller(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] params: I64 declaration: I64 recur-expr: I64) -> Descent effects[partial]:
+  let first-param: I64 = syntax/ast_parameters_first(params)
+  let position: I64 = parameter-position(source tokens first-param declaration 0)
+  let found: Bool = i64.ge(position 0)
+  match found:
+    false:
+      make Descent(valid = false position = -1 step = 0)
+    true:
+      let first-argument: I64 = syntax/ast_recur_arguments(recur-expr)
+      let update: I64 = form-at(tokens first-argument position)
+      let subtraction: Bool = syntax/ast_expression_is_call(source tokens update)
+      let callee: I64 = syntax/ast_call_callee(update)
+      let sub-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.sub")
+      let left: I64 = syntax/ast_call_arguments(update)
+      let right: I64 = syntax/ast_next(tokens left)
+      let linked: I64 = typing/linked_binding_declaration(tokens left)
+      let same-controller: Bool = i64.eq(linked declaration)
+      let step: Fact = fact-at(facts right)
+      let exact-step: Bool = fact-exact(step)
+      let positive-step: Bool = match exact-step:
+        true:
+          i64.gt(get(step lower) 0)
+        false:
+          false
+      let update-total: Bool = fact-total(facts update)
+      let arguments-total: Bool = forms-total(tokens facts first-argument)
+      let valid: Bool = bool.and(subtraction bool.and(sub-call bool.and(same-controller bool.and(positive-step bool.and(update-total arguments-total)))))
+      let step-value: I64 = match valid:
+        true:
+          get(step lower)
+        false:
+          0
+      make Descent(valid = valid position = position step = step-value)
+
+fn counted-update-valid(source: Bytes inout tokens: Vec[syntax/Token] controller: I64 position: I64 recur-form: I64) -> Bool effects[partial]:
+  let arguments: I64 = syntax/ast_recur_arguments(recur-form)
+  let argument: I64 = form-at(tokens arguments position)
+  let call-form: Bool = syntax/ast_expression_is_call(source tokens argument)
+  let callee: I64 = syntax/ast_call_callee(argument)
+  let addition: Bool = match call-form:
+    true:
+      syntax/ast_node_text_is(source tokens callee "i64.add")
+    false:
+      false
+  let left: I64 = syntax/ast_call_arguments(argument)
+  let right: I64 = syntax/ast_next(tokens left)
+  let linked: I64 = match addition:
+    true:
+      typing/linked_binding_declaration(tokens left)
+    false:
+      -1
+  let same: Bool = i64.eq(linked controller)
+  let parsed: Parsed = parse-literal(source tokens right)
+  let one: Bool = match get(parsed valid):
+    true:
+      i64.eq(get(parsed value) 1)
+    false:
+      false
+  bool.and(addition bool.and(same one))
+
+fn scan-counted-recurrences(source: Bytes inout tokens: Vec[syntax/Token] controller: I64 position: I64 cursor: I64 end: I64 count: I64) -> CountScan effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      make CountScan(valid = true count = count)
+    false:
+      let recur-form: Bool = syntax/ast_expression_is_recur(source tokens cursor)
+      let fork-form: Bool = syntax/ast_expression_is_fork(source tokens cursor)
+      let supported: Bool = bool.not(fork-form)
+      let valid: Bool = match recur-form:
+        true:
+          counted-update-valid(source tokens controller position cursor)
+        false:
+          supported
+      match valid:
+        false:
+          make CountScan(valid = false count = count)
+        true:
+          let increment: I64 = match recur-form:
+            true:
+              1
+            false:
+              0
+          let next-count: I64 = i64.add(count increment)
+          let next: I64 = syntax/ast_node_after(cursor)
+          recur(source tokens controller position next end next-count)
+
+fn mark-counted-updates(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] position: I64 cursor: I64 end: I64) -> Unit effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      unit
+    false:
+      let recur-form: Bool = syntax/ast_expression_is_recur(source tokens cursor)
+      let marked: Unit = match recur-form:
+        false:
+          unit
+        true:
+          let arguments: I64 = syntax/ast_recur_arguments(cursor)
+          let update: I64 = form-at(tokens arguments position)
+          let promoted: Fact = promote-total(facts update)
+          unit
+      let next: I64 = syntax/ast_node_after(cursor)
+      recur(source tokens facts position next end)
+
+fn counted-accumulator-update(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] declaration: I64 position: I64 recur-form: I64) -> AccScan effects[partial]:
+  let arguments: I64 = syntax/ast_recur_arguments(recur-form)
+  let argument: I64 = form-at(tokens arguments position)
+  let kind: I64 = syntax/ast_node_kind(tokens argument)
+  let atom: Bool = i64.eq(kind 2)
+  match atom:
+    true:
+      let linked: I64 = typing/linked_binding_declaration(tokens argument)
+      let same: Bool = i64.eq(linked declaration)
+      make AccScan(valid = same changed = false maximum = 0)
+    false:
+      let call-form: Bool = syntax/ast_expression_is_call(source tokens argument)
+      let callee: I64 = syntax/ast_call_callee(argument)
+      let addition: Bool = match call-form:
+        true:
+          syntax/ast_node_text_is(source tokens callee "i64.add")
+        false:
+          false
+      let left: I64 = syntax/ast_call_arguments(argument)
+      let right: I64 = syntax/ast_next(tokens left)
+      let linked: I64 = match addition:
+        true:
+          typing/linked_binding_declaration(tokens left)
+        false:
+          -1
+      let same: Bool = i64.eq(linked declaration)
+      let delta: Fact = fact-at(facts right)
+      let known: Bool = bool.and(get(delta lower-known) get(delta upper-known))
+      let total: Bool = get(delta total)
+      let nonnegative: Bool = i64.ge(get(delta lower) 0)
+      let ordered: Bool = i64.le(get(delta lower) get(delta upper))
+      let small: Bool = i64.le(get(delta upper) 16)
+      let valid: Bool = bool.and(addition bool.and(same bool.and(known bool.and(total bool.and(nonnegative bool.and(ordered small))))))
+      make AccScan(valid = valid changed = valid maximum = get(delta upper))
+
+fn scan-counted-accumulator(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] declaration: I64 position: I64 cursor: I64 end: I64 valid: Bool changed: Bool maximum: I64) -> AccScan effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      make AccScan(valid = valid changed = changed maximum = maximum)
+    false:
+      let recur-form: Bool = syntax/ast_expression_is_recur(source tokens cursor)
+      let update: AccScan = match recur-form:
+        true:
+          counted-accumulator-update(source tokens facts declaration position cursor)
+        false:
+          make AccScan(valid = true changed = false maximum = 0)
+      let next-valid: Bool = bool.and(valid get(update valid))
+      let next-changed: Bool = bool.or(changed get(update changed))
+      let larger: Bool = i64.gt(get(update maximum) maximum)
+      let next-maximum: I64 = match larger:
+        true:
+          get(update maximum)
+        false:
+          maximum
+      let next: I64 = syntax/ast_node_after(cursor)
+      recur(source tokens facts declaration position next end next-valid next-changed next-maximum)
+
+fn promote-counted-accumulators(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] inout entry-facts: Vec[Fact] params: I64 cursor: I64 position: I64 controller: I64 iterations: I64 body: I64 end: I64) -> Unit effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let params-done: Bool = i64.eq(kind 1)
+  let budget-done: Bool = i64.ge(position 16)
+  let done: Bool = bool.or(params-done budget-done)
+  match done:
+    true:
+      unit
+    false:
+      let name: I64 = parameter-name(source tokens cursor)
+      let type-index: I64 = syntax/ast_next(tokens name)
+      let integer: Bool = syntax/ast_node_text_is(source tokens type-index "I64")
+      let same-controller: Bool = i64.eq(name controller)
+      let not-controller: Bool = bool.not(same-controller)
+      let entry: Fact = fact-at(entry-facts name)
+      let exact-entry: Bool = fact-exact(entry)
+      let total-entry: Bool = get(entry total)
+      let start: I64 = get(entry lower)
+      let nonnegative: Bool = i64.ge(start 0)
+      let scan: AccScan = scan-counted-accumulator(source tokens facts name position body end true false 0)
+      let scan-valid: Bool = bool.and(get(scan valid) get(scan changed))
+      let shape: Bool = bool.and(integer bool.and(not-controller bool.and(exact-entry bool.and(total-entry bool.and(nonnegative scan-valid)))))
+      let product: I64 = match shape:
+        true:
+          i64.mul(iterations get(scan maximum))
+        false:
+          0
+      let upper: I64 = match shape:
+        true:
+          i64.add(start product)
+        false:
+          0
+      let domain: Bool = match shape:
+        true:
+          in-domain(upper)
+        false:
+          false
+      let promoted: Unit = match domain:
+        false:
+          unit
+        true:
+          let fact: Fact = bounded(true start true upper true)
+          let stored: Fact = set-fact(name fact facts)
+          unit
+      let next: I64 = syntax/ast_next(tokens cursor)
+      let next-position: I64 = i64.add(position 1)
+      recur(source tokens facts entry-facts params next next-position controller iterations body end)
+
+fn prove-counted-recurrence(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout facts: Vec[Fact] inout refinements: Vec[Refinement] inout entry-facts: Vec[Fact] params: I64 item: I64 body: I64 inout counted: Vec[Counted]) -> Bool effects[alloc partial]:
+  let match-form: Bool = syntax/ast_expression_is_match(source tokens body)
+  match match-form:
+    false:
+      false
+    true:
+      let condition: I64 = syntax/ast_match_value(body)
+      let call-form: Bool = syntax/ast_expression_is_call(source tokens condition)
+      let callee: I64 = syntax/ast_call_callee(condition)
+      let equality: Bool = match call-form:
+        true:
+          syntax/ast_node_text_is(source tokens callee "i64.eq")
+        false:
+          false
+      let left: I64 = syntax/ast_call_arguments(condition)
+      let right: I64 = syntax/ast_next(tokens left)
+      let controller: I64 = match equality:
+        true:
+          typing/linked_binding_declaration(tokens left)
+        false:
+          -1
+      let position: I64 = match i64.ge(controller 0):
+        true:
+          parameter-position(source tokens syntax/ast_parameters_first(params) controller 0)
+        false:
+          -1
+      let parsed-bound: Parsed = parse-literal(source tokens right)
+      let literal-bound-known: Bool = get(parsed-bound valid)
+      let bound-declaration: I64 = typing/linked_binding_declaration(tokens right)
+      let bound-fact: Fact = match i64.ge(bound-declaration 0):
+        true:
+          fact-at(entry-facts bound-declaration)
+        false:
+          unknown(false false)
+      let parameter-bound-known: Bool = fact-exact(bound-fact)
+      let bound-known: Bool = bool.or(literal-bound-known parameter-bound-known)
+      let bound: I64 = match literal-bound-known:
+        true:
+          get(parsed-bound value)
+        false:
+          match parameter-bound-known:
+            true:
+              get(bound-fact lower)
+            false:
+              -1
+      let first-arm: I64 = syntax/ast_match_arms(tokens body)
+      let base: I64 = boolean-arm-body(source tokens first-arm "true")
+      let iterative: I64 = boolean-arm-body(source tokens first-arm "false")
+      let arms: Bool = bool.and(i64.ge(base 0) i64.ge(iterative 0))
+      let shape: Bool = bool.and(equality bool.and(i64.ge(position 0) arms))
+      let start-fact: Fact = match i64.ge(position 0):
+        true:
+          fact-at(entry-facts controller)
+        false:
+          unknown(false false)
+      let start-known: Bool = fact-exact(start-fact)
+      let start: I64 = match start-known:
+        true:
+          get(start-fact lower)
+        false:
+          -1
+      let base-end: I64 = match arms:
+        true:
+          syntax/ast_next(tokens base)
+        false:
+          base
+      let iterative-end: I64 = match arms:
+        true:
+          syntax/ast_next(tokens iterative)
+        false:
+          iterative
+      let base-scan: CountScan = match shape:
+        true:
+          scan-counted-recurrences(source tokens controller position base base-end 0)
+        false:
+          make CountScan(valid = false count = 0)
+      let iterative-scan: CountScan = match shape:
+        true:
+          scan-counted-recurrences(source tokens controller position iterative iterative-end 0)
+        false:
+          make CountScan(valid = false count = 0)
+      let base-empty: Bool = i64.eq(get(base-scan count) 0)
+      let iterative-present: Bool = i64.gt(get(iterative-scan count) 0)
+      let scans-valid: Bool = bool.and(get(base-scan valid) bool.and(base-empty bool.and(get(iterative-scan valid) iterative-present)))
+      let nonnegative: Bool = bool.and(i64.ge(start 0) i64.ge(bound 0))
+      let ordered: Bool = i64.le(start bound)
+      let numeric: Bool = bool.and(start-known bool.and(bound-known bool.and(nonnegative ordered)))
+      let distance: I64 = match numeric:
+        true:
+          i64.sub(bound start)
+        false:
+          17
+      let small: Bool = i64.le(distance 16)
+      let within-domain: Bool = bool.and(i64.le(start 1000000000) i64.le(bound 1000000000))
+      let condition-total: Bool = fact-total(facts condition)
+      let proven: Bool = bool.and(shape bool.and(scans-valid bool.and(numeric bool.and(within-domain condition-total))))
+      match proven:
+        false:
+          false
+        true:
+          let controller-fact: Fact = bounded(true start true bound true)
+          let iterative-upper: I64 = match i64.gt(distance 0):
+            true:
+              i64.sub(bound 1)
+            false:
+              bound
+          let iterative-fact: Fact = bounded(true start true iterative-upper true)
+          let stored-iterative: Fact = set-fact(controller iterative-fact facts)
+          let marked: Unit = mark-counted-updates(source tokens facts position iterative iterative-end)
+          let refined: Fact = analyze-expression(source tokens typed-facts iterative facts refinements -1)
+          let promoted: Unit = match small:
+            true:
+              promote-counted-accumulators(source tokens facts entry-facts params syntax/ast_parameters_first(params) 0 controller distance iterative iterative-end)
+            false:
+              unit
+          let refined-accumulators: Fact = analyze-expression(source tokens typed-facts iterative facts refinements -1)
+          let restored-controller: Fact = set-fact(controller controller-fact facts)
+          let fact: Counted = make Counted(item = item controller = controller start = start bound = bound step = 1 iterations = distance base = base body = iterative)
+          let stored: Unit = match small:
+            true:
+              vec.push(counted fact)
+            false:
+              unit
+          true
+
+fn find-counted(inout counted: Vec[Counted] item: I64 index: I64) -> I64 effects[partial]:
+  let count: I64 = vec.len(counted)
+  let done: Bool = i64.ge(index count)
+  match done:
+    true:
+      -1
+    false:
+      let fact: Counted = vec.get(counted index)
+      let same: Bool = i64.eq(get(fact item) item)
+      match same:
+        true:
+          index
+        false:
+          let next: I64 = i64.add(index 1)
+          recur(counted item next)
+
+fn prove-tail-recurrence(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] params: I64 item: I64 body: I64 inout recurrences: Vec[Recurrence]) -> Bool effects[alloc partial]:
+  let match-form: Bool = syntax/ast_expression_is_match(source tokens body)
+  match match-form:
+    false:
+      false
+    true:
+      let condition: I64 = syntax/ast_match_value(body)
+      let call-form: Bool = syntax/ast_expression_is_call(source tokens condition)
+      let callee: I64 = syntax/ast_call_callee(condition)
+      let bounded-below: Bool = syntax/ast_node_text_is(source tokens callee "i64.le")
+      let left: I64 = syntax/ast_call_arguments(condition)
+      let right: I64 = syntax/ast_next(tokens left)
+      let declaration: I64 = typing/linked_binding_declaration(tokens left)
+      let parameter: Bool = i64.ge(declaration 0)
+      let bound: Fact = fact-at(facts right)
+      let exact-bound: Bool = fact-exact(bound)
+      let first-arm: I64 = syntax/ast_match_arms(tokens body)
+      let true-body: I64 = boolean-arm-body(source tokens first-arm "true")
+      let false-body: I64 = boolean-arm-body(source tokens first-arm "false")
+      let arms-present: Bool = bool.and(i64.ge(true-body 0) i64.ge(false-body 0))
+      let tail: I64 = match arms-present:
+        true:
+          tail-expression(source tokens false-body)
+        false:
+          -1
+      let recur-form: Bool = match arms-present:
+        true:
+          syntax/ast_expression_is_recur(source tokens tail)
+        false:
+          false
+      let condition-total: Bool = fact-total(facts condition)
+      let base-total: Bool = match arms-present:
+        true:
+          fact-total(facts true-body)
+        false:
+          false
+      let prefix-total: Bool = match arms-present:
+        true:
+          prefix-total-to-tail(source tokens facts false-body tail)
+        false:
+          false
+      let descent: Descent = match recur-form:
+        true:
+          decreasing-controller(source tokens facts params declaration tail)
+        false:
+          make Descent(valid = false position = -1 step = 0)
+      let proven: Bool = bool.and(match-form bool.and(call-form bool.and(bounded-below bool.and(parameter bool.and(exact-bound bool.and(arms-present bool.and(recur-form bool.and(condition-total bool.and(base-total bool.and(prefix-total get(descent valid)))))))))))
+      match proven:
+        false:
+          false
+        true:
+          let recurrence: Recurrence = make Recurrence(item = item position = get(descent position) bound = get(bound lower) step = get(descent step))
+          let stored: Unit = vec.push(recurrences recurrence)
+          let recur-total: Fact = promote-total(facts tail)
+          let body-total: Fact = promote-total(facts body)
+          true
+
+fn analyze-function(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] item: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] inout recurrences: Vec[Recurrence] inout counted: Vec[Counted] inout parameter-facts: Vec[Fact] inout entry-facts: Vec[Fact]) -> Unit effects[alloc partial]:
+  let params: I64 = syntax/ast_function_parameters(item)
+  let initialized: Unit = initialize-parameters(source tokens syntax/ast_parameters_first(params) facts parameter-facts)
+  let return-type: I64 = syntax/ast_function_return_type(tokens item)
+  let effects-form: I64 = syntax/ast_function_effects(tokens item)
+  let body: I64 = syntax/ast_next(tokens effects-form)
+  let analyzed: Fact = analyze-expression(source tokens typed-facts body facts refinements -1)
+  let counted-proof: Bool = prove-counted-recurrence(source tokens typed-facts facts refinements entry-facts params item body counted)
+  let recurrence-total: Bool = match get(analyzed total):
+    true:
+      true
+    false:
+      prove-tail-recurrence(source tokens facts params item body recurrences)
+  unit
+
+fn analyze-functions(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] cursor: I64 inout facts: Vec[Fact] inout refinements: Vec[Refinement] inout recurrences: Vec[Recurrence] inout counted: Vec[Counted] inout parameter-facts: Vec[Fact] inout entry-facts: Vec[Fact]) -> Unit effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      unit
+    false:
+      let function-item: Bool = syntax/ast_item_is_function(source tokens cursor)
+      let analyzed: Unit = match function-item:
+        true:
+          analyze-function(source tokens typed-facts cursor facts refinements recurrences counted parameter-facts entry-facts)
+        false:
+          unit
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens typed-facts next facts refinements recurrences counted parameter-facts entry-facts)
+
+fn analyze-pass(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact] inout invariants: Vec[Bool] inout entry-invariants: Vec[Bool] parameter-facts: Vec[Fact] entry-facts: Vec[Fact] pass: I64 limit: I64) -> View effects[alloc partial]:
+  let facts: Vec[Fact] = vec.new()
+  let length: I64 = vec.len(tokens)
+  let initialized: Unit = initialize-facts(length 0 facts)
+  let refinements: Vec[Refinement] = vec.new()
+  let recurrences: Vec[Recurrence] = vec.new()
+  let counted: Vec[Counted] = vec.new()
+  let analyzed: Unit = analyze-functions(source tokens typed-facts 3 facts refinements recurrences counted parameter-facts entry-facts)
+  let done: Bool = i64.ge(pass limit)
+  match done:
+    true:
+      let refinement-count: I64 = vec.len(refinements)
+      let refinement-limit: Bool = i64.ge(refinement-count 64)
+      make View(facts = facts refinements = refinement-count refinements-truncated = refinement-limit recurrences = recurrences counted = counted)
+    false:
+      let next-parameters: Vec[Fact] = vec.new()
+      let next-initialized: Unit = initialize-facts(length 0 next-parameters)
+      let next-entry: Vec[Fact] = vec.new()
+      let next-entry-initialized: Unit = initialize-facts(length 0 next-entry)
+      let collected: Unit = scan-parameter-calls(source tokens facts invariants 0 length next-parameters)
+      let entries: Unit = scan-parameter-calls(source tokens facts entry-invariants 0 length next-entry)
+      recur(source tokens typed-facts invariants entry-invariants next-parameters next-entry i64.add(pass 1) limit)
+
+fn analyze(source: Bytes inout tokens: Vec[syntax/Token] inout typed-facts: Vec[typing/Fact]) -> View effects[alloc partial]:
+  let length: I64 = vec.len(tokens)
+  let invariants: Vec[Bool] = vec.new()
+  let invariants-initialized: Unit = initialize-booleans(length 0 false invariants)
+  let collected: Unit = collect-parameter-invariants(source tokens 3 invariants)
+  let entry-invariants: Vec[Bool] = vec.new()
+  let entry-invariants-initialized: Unit = initialize-booleans(length 0 true entry-invariants)
+  let parameter-facts: Vec[Fact] = vec.new()
+  let parameters-initialized: Unit = initialize-facts(length 0 parameter-facts)
+  let entry-facts: Vec[Fact] = vec.new()
+  let entries-initialized: Unit = initialize-facts(length 0 entry-facts)
+  analyze-pass(source tokens typed-facts invariants entry-invariants parameter-facts entry-facts 0 4)
+
+fn find-recurrence(inout recurrences: Vec[Recurrence] item: I64 index: I64) -> I64 effects[partial]:
+  let count: I64 = vec.len(recurrences)
+  let done: Bool = i64.ge(index count)
+  match done:
+    true:
+      -1
+    false:
+      let recurrence: Recurrence = vec.get(recurrences index)
+      let same: Bool = i64.eq(get(recurrence item) item)
+      match same:
+        true:
+          index
+        false:
+          let next: I64 = i64.add(index 1)
+          recur(recurrences item next)
+
+fn recurrence-work(source: Bytes inout tokens: Vec[syntax/Token] inout view: View item: I64 arguments: I64) -> Work effects[partial]:
+  let recurrences: Vec[Recurrence] = get(view recurrences)
+  let index: I64 = find-recurrence(recurrences item 0)
+  let found: Bool = i64.ge(index 0)
+  match found:
+    false:
+      make Work(known = false iterations = 0)
+    true:
+      let recurrence: Recurrence = vec.get(recurrences index)
+      let argument: I64 = form-at(tokens arguments get(recurrence position))
+      let parsed: Parsed = parse-literal(source tokens argument)
+      let known: Bool = get(parsed valid)
+      match known:
+        false:
+          make Work(known = false iterations = 0)
+        true:
+          let value: I64 = get(parsed value)
+          let bound: I64 = get(recurrence bound)
+          let done: Bool = i64.le(value bound)
+          match done:
+            true:
+              make Work(known = true iterations = 0)
+            false:
+              let distance: I64 = i64.sub(value bound)
+              let adjusted: I64 = i64.add(distance i64.sub(get(recurrence step) 1))
+              let iterations: I64 = i64.div(adjusted get(recurrence step))
+              make Work(known = true iterations = iterations)
+
+fn append-i64(value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let negative: Bool = i64.lt(value 0)
+  match negative:
+    true:
+      let minus: Unit = text/append_text(output "-")
+      let magnitude: I64 = i64.sub(0 value)
+      text/append_nonnegative_i64(magnitude output)
+    false:
+      text/append_nonnegative_i64(value output)
+
+fn emit-bound(known: Bool value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  match known:
+    true:
+      append-i64(value output)
+    false:
+      text/append_text(output "unknown")
+
+fn emit-site(expr: I64 fact: Fact inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let open: Unit = text/append_text(output " (checked-site ")
+  let id: Unit = append-i64(expr output)
+  let status: Unit = match get(fact total):
+    true:
+      text/append_text(output " (status total) (lower ")
+    false:
+      text/append_text(output " (status unknown) (lower ")
+  let lower: Unit = emit-bound(get(fact lower-known) get(fact lower) output)
+  let middle: Unit = text/append_text(output ") (upper ")
+  let upper: Unit = emit-bound(get(fact upper-known) get(fact upper) output)
+  text/append_text(output "))")
+
+fn emit-sites(source: Bytes inout tokens: Vec[syntax/Token] inout facts: Vec[Fact] index: I64 inout output: Vec[U8] count: I64 reported: I64) -> I64 effects[alloc partial]:
+  let length: I64 = vec.len(tokens)
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      count
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens index)
+      let form: Bool = i64.eq(kind 0)
+      let head: I64 = syntax/ast_list_first(index)
+      let call-form: Bool = match form:
+        true:
+          syntax/ast_expression_is_call(source tokens index)
+        false:
+          false
+      let callee: I64 = syntax/ast_call_callee(index)
+      let checked: Bool = match call-form:
+        true:
+          callee-is-checked-trap(source tokens callee)
+        false:
+          false
+      let next-count: I64 = match checked:
+        true:
+          i64.add(count 1)
+        false:
+          count
+      let room: Bool = i64.lt(reported 64)
+      let emit: Bool = bool.and(checked room)
+      let emitted: Unit = match emit:
+        true:
+          let fact: Fact = fact-at(facts index)
+          emit-site(index fact output)
+        false:
+          unit
+      let next-reported: I64 = match emit:
+        true:
+          i64.add(reported 1)
+        false:
+          reported
+      let next: I64 = i64.add(index 1)
+      recur(source tokens facts next output next-count next-reported)
+
+fn emit-counted-fact(source: Bytes inout tokens: Vec[syntax/Token] fact: Counted inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let open: Unit = text/append_text(output " (counted-loop ")
+  let item: Unit = append-i64(get(fact item) output)
+  let name_space: Unit = text/append_text(output " ")
+  let name_index: I64 = i64.add(get(fact item) 2)
+  let name: Unit = text/append_token(source tokens name_index output)
+  let guarantee: Unit = text/append_text(output " (guarantee exact) (controller ")
+  let controller: Unit = append-i64(get(fact controller) output)
+  let start_prefix: Unit = text/append_text(output ") (start ")
+  let start: Unit = append-i64(get(fact start) output)
+  let bound_prefix: Unit = text/append_text(output ") (bound ")
+  let bound: Unit = append-i64(get(fact bound) output)
+  let step_prefix: Unit = text/append_text(output ") (step ")
+  let step: Unit = append-i64(get(fact step) output)
+  let iterations_prefix: Unit = text/append_text(output ") (iterations ")
+  let iterations: Unit = append-i64(get(fact iterations) output)
+  let body_prefix: Unit = text/append_text(output ") (body ")
+  let body: Unit = append-i64(get(fact body) output)
+  let base_prefix: Unit = text/append_text(output ") (base ")
+  let base: Unit = append-i64(get(fact base) output)
+  text/append_text(output "))")
+
+fn emit-counted-facts(source: Bytes inout tokens: Vec[syntax/Token] inout counted: Vec[Counted] index: I64 limit: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(index limit)
+  match done:
+    true:
+      unit
+    false:
+      let fact: Counted = vec.get(counted index)
+      let emitted: Unit = emit-counted-fact(source tokens fact output)
+      let next: I64 = i64.add(index 1)
+      recur(source tokens counted next limit output)
+
+fn emit-counted-evidence(source: Bytes inout tokens: Vec[syntax/Token] inout view: View inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let counted: Vec[Counted] = get(view counted)
+  let count: I64 = vec.len(counted)
+  let within_limit: Bool = i64.le(count 64)
+  let limit: I64 = match within_limit:
+    true:
+      count
+    false:
+      64
+  let open: Unit = text/append_text(output " (counted-loops (fact-limit 64) (facts")
+  let emitted: Unit = emit-counted-facts(source tokens counted 0 limit output)
+  let count_prefix: Unit = text/append_text(output ") (counted-loop-count ")
+  let count_text: Unit = append-i64(count output)
+  let reported_prefix: Unit = text/append_text(output ") (reported-facts ")
+  let reported: Unit = append-i64(limit output)
+  let truncated_prefix: Unit = text/append_text(output ") (facts-truncated ")
+  let truncated: Unit = match within_limit:
+    true:
+      text/append_text(output "false")
+    false:
+      text/append_text(output "true")
+  let guarantee_prefix: Unit = text/append_text(output ") (guarantee ")
+  let guarantee: Unit = match within_limit:
+    true:
+      text/append_text(output "exact")
+    false:
+      text/append_text(output "bounded")
+  text/append_text(output "))")
+
+fn emit-module-facts(source: Bytes inout tokens: Vec[syntax/Token] inout view: View inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let facts: Vec[Fact] = get(view facts)
+  let open: Unit = text/append_text(output " (integer-proofs (domain -1000000000 1000000000) (refinement-limit 64) (parameter-pass-limit 4) (refinements ")
+  let refinements: Unit = append-i64(get(view refinements) output)
+  let truncation-prefix: Unit = text/append_text(output ") (refinements-truncated ")
+  let truncation: Unit = match get(view refinements-truncated):
+    true:
+      text/append_text(output "true")
+    false:
+      text/append_text(output "false")
+  let sites-open: Unit = text/append_text(output ") (checked-site-report-limit 64) (checked-sites")
+  let site-count: I64 = emit-sites(source tokens facts 0 output 0 0)
+  let sites-close: Unit = text/append_text(output ") (checked-site-count ")
+  let count: Unit = append-i64(site-count output)
+  let guarantee: Unit = match i64.le(site-count 64):
+    true:
+      text/append_text(output ") (guarantee exact))")
+    false:
+      text/append_text(output ") (guarantee bounded))")
+  let counted_evidence: Unit = emit-counted-evidence(source tokens view output)
+  emit-resource-evidence(source tokens view output)
+
+fn retained-profile-count(inout recurrences: Vec[Recurrence]) -> I64 effects[partial]:
+  let count: I64 = vec.len(recurrences)
+  let bounded: Bool = i64.le(count 16)
+  match bounded:
+    true:
+      count
+    false:
+      16
+
+fn find-retained-profile(inout recurrences: Vec[Recurrence] item: I64 index: I64 limit: I64) -> I64 effects[partial]:
+  let done: Bool = i64.ge(index limit)
+  match done:
+    true:
+      -1
+    false:
+      let profile: Recurrence = vec.get(recurrences index)
+      let same: Bool = i64.eq(get(profile item) item)
+      match same:
+        true:
+          index
+        false:
+          let next: I64 = i64.add(index 1)
+          recur(recurrences item next limit)
+
+fn emit-resource-profile(source: Bytes inout tokens: Vec[syntax/Token] profile: Recurrence inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let open: Unit = text/append_text(output " (recurrence-profile ")
+  let item: Unit = append-i64(get(profile item) output)
+  let name-space: Unit = text/append_text(output " ")
+  let name-index: I64 = i64.add(get(profile item) 2)
+  let name: Unit = text/append_token(source tokens name-index output)
+  let guarantee: Unit = text/append_text(output " (guarantee exact) (controller-position ")
+  let position: Unit = append-i64(get(profile position) output)
+  let bound-prefix: Unit = text/append_text(output ") (stop-bound ")
+  let bound: Unit = append-i64(get(profile bound) output)
+  let step-prefix: Unit = text/append_text(output ") (step ")
+  let step: Unit = append-i64(get(profile step) output)
+  text/append_text(output "))")
+
+fn emit-resource-profiles(source: Bytes inout tokens: Vec[syntax/Token] inout recurrences: Vec[Recurrence] index: I64 limit: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(index limit)
+  match done:
+    true:
+      unit
+    false:
+      let profile: Recurrence = vec.get(recurrences index)
+      let emitted: Unit = emit-resource-profile(source tokens profile output)
+      let next: I64 = i64.add(index 1)
+      recur(source tokens recurrences next limit output)
+
+fn emit-resource-call-work(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 item: I64 work: Work inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let open: Unit = text/append_text(output " (call-work ")
+  let site: Unit = append-i64(expr output)
+  let item-space: Unit = text/append_text(output " ")
+  let item-text: Unit = append-i64(item output)
+  let name-space: Unit = text/append_text(output " ")
+  let name-index: I64 = syntax/ast_item_name(item)
+  let name: Unit = text/append_token(source tokens name-index output)
+  match get(work known):
+    true:
+      let guarantee: Unit = text/append_text(output " (guarantee exact) (iterations ")
+      let iterations: Unit = append-i64(get(work iterations) output)
+      text/append_text(output "))")
+    false:
+      text/append_text(output " (guarantee unknown) (reason nonliteral-controller))")
+
+fn advance-resource-scan(scan: ResourceScan work: Work reported: Bool) -> ResourceScan:
+  let next-profiled: I64 = i64.add(get(scan profiled) 1)
+  let next-reported: I64 = match reported:
+    true:
+      i64.add(get(scan reported) 1)
+    false:
+      get(scan reported)
+  let known: Bool = get(work known)
+  let next-exact: I64 = match known:
+    true:
+      i64.add(get(scan exact-sites) 1)
+    false:
+      get(scan exact-sites)
+  let next-unknown: I64 = match known:
+    true:
+      get(scan unknown-sites)
+    false:
+      i64.add(get(scan unknown-sites) 1)
+  let iterations: I64 = get(work iterations)
+  let larger: Bool = match known:
+    true:
+      i64.gt(iterations get(scan maximum))
+    false:
+      false
+  let next-maximum: I64 = match larger:
+    true:
+      iterations
+    false:
+      get(scan maximum)
+  make ResourceScan(profiled = next-profiled reported = next-reported exact-sites = next-exact unknown-sites = next-unknown maximum = next-maximum)
+
+fn scan-resource-call(source: Bytes inout tokens: Vec[syntax/Token] inout view: View inout recurrences: Vec[Recurrence] profile-limit: I64 expr: I64 scan: ResourceScan inout output: Vec[U8]) -> ResourceScan effects[alloc partial]:
+  let callee: I64 = syntax/ast_call_callee(expr)
+  let builtin: Bool = typing/builtin_known(source tokens callee)
+  match builtin:
+    true:
+      scan
+    false:
+      let item: I64 = syntax/ast_node_link(tokens callee)
+      let linked: Bool = i64.ge(item 0)
+      match linked:
+        false:
+          scan
+        true:
+          let profile-index: I64 = find-retained-profile(recurrences item 0 profile-limit)
+          let profiled: Bool = i64.ge(profile-index 0)
+          match profiled:
+            false:
+              scan
+            true:
+              let arguments: I64 = syntax/ast_call_arguments(expr)
+              let work: Work = recurrence-work(source tokens view item arguments)
+              let room: Bool = i64.lt(get(scan reported) 64)
+              let emitted: Unit = match room:
+                true:
+                  emit-resource-call-work(source tokens expr item work output)
+                false:
+                  unit
+              advance-resource-scan(scan work room)
+
+fn scan-resource-calls(source: Bytes inout tokens: Vec[syntax/Token] inout view: View inout recurrences: Vec[Recurrence] profile-limit: I64 index: I64 scan: ResourceScan inout output: Vec[U8]) -> ResourceScan effects[alloc partial]:
+  let length: I64 = vec.len(tokens)
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      scan
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens index)
+      let form: Bool = i64.eq(kind 0)
+      let head: I64 = syntax/ast_list_first(index)
+      let call-form: Bool = match form:
+        true:
+          syntax/ast_expression_is_call(source tokens index)
+        false:
+          false
+      let next-scan: ResourceScan = match call-form:
+        true:
+          scan-resource-call(source tokens view recurrences profile-limit index scan output)
+        false:
+          scan
+      let next: I64 = syntax/ast_node_after(index)
+      recur(source tokens view recurrences profile-limit next next-scan output)
+
+fn emit-resource-bool(value: Bool inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  match value:
+    true:
+      text/append_text(output "true")
+    false:
+      text/append_text(output "false")
+
+fn emit-resource-evidence(source: Bytes inout tokens: Vec[syntax/Token] inout view: View inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let recurrences: Vec[Recurrence] = get(view recurrences)
+  let profile-count: I64 = vec.len(recurrences)
+  let retained: I64 = retained-profile-count(recurrences)
+  let profiles-truncated: Bool = i64.gt(profile-count retained)
+  let open: Unit = text/append_text(output " (resource-evidence (profile-limit 16) (call-site-report-limit 64) (recurrence-profiles")
+  let profiles: Unit = emit-resource-profiles(source tokens recurrences 0 retained output)
+  let profile-count-prefix: Unit = text/append_text(output ") (recurrence-profile-count ")
+  let profile-count-text: Unit = append-i64(profile-count output)
+  let retained-prefix: Unit = text/append_text(output ") (reported-recurrence-profiles ")
+  let retained-text: Unit = append-i64(retained output)
+  let truncated-prefix: Unit = text/append_text(output ") (recurrence-profiles-truncated ")
+  let truncated-text: Unit = emit-resource-bool(profiles-truncated output)
+  let range-truncated-prefix: Unit = text/append_text(output ") (range-refinements-truncated ")
+  let range-truncated-text: Unit = emit-resource-bool(get(view refinements-truncated) output)
+  let calls-open: Unit = text/append_text(output ") (call-work-sites")
+  let initial: ResourceScan = make ResourceScan(profiled = 0 reported = 0 exact-sites = 0 unknown-sites = 0 maximum = 0)
+  let scan: ResourceScan = scan-resource-calls(source tokens view recurrences retained 0 initial output)
+  let profiled-prefix: Unit = text/append_text(output ") (profiled-call-site-count ")
+  let profiled-text: Unit = append-i64(get(scan profiled) output)
+  let reported-prefix: Unit = text/append_text(output ") (reported-call-site-count ")
+  let reported-text: Unit = append-i64(get(scan reported) output)
+  let exact-prefix: Unit = text/append_text(output ") (exact-call-work-sites ")
+  let exact-text: Unit = append-i64(get(scan exact-sites) output)
+  let unknown-prefix: Unit = text/append_text(output ") (unknown-call-work-sites ")
+  let unknown-text: Unit = append-i64(get(scan unknown-sites) output)
+  let maximum-prefix: Unit = text/append_text(output ") (maximum-exact-iterations ")
+  let maximum-text: Unit = append-i64(get(scan maximum) output)
+  let calls-truncated: Bool = i64.gt(get(scan profiled) get(scan reported))
+  let bounded: Bool = bool.or(get(view refinements-truncated) bool.or(profiles-truncated calls-truncated))
+  let guarantee-prefix: Unit = text/append_text(output ") (guarantee ")
+  let guarantee: Unit = match bounded:
+    true:
+      text/append_text(output "bounded")
+    false:
+      text/append_text(output "exact")
+  text/append_text(output "))")

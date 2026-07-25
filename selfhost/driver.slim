@@ -1,1 +1,4 @@
-(module driver (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (call compiler/run args)))
+module driver
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  compiler/run(args)

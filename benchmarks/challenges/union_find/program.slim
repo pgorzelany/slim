@@ -1,53 +1,61 @@
-(module union-find
-  (fn fill ((inout parents (Vec I64)) (index I64) (count I64)) Unit
-    (effects alloc partial)
-    (match (call i64.eq index count)
-      (true unit)
-      (false
-        (let pushed Unit (call vec.push parents index)
-          (recur parents (call i64.add index 1) count)))))
-  (fn find-root ((inout parents (Vec I64)) (node I64)) I64
-    (effects partial)
-    (let parent I64 (call vec.get parents node)
-      (match (call i64.eq parent node)
-        (true node)
-        (false (recur parents parent)))))
-  (fn unite ((inout parents (Vec I64)) (left I64) (right I64)) Unit
-    (effects partial)
-    (let left-root I64 (call find-root parents left)
-      (let right-root I64 (call find-root parents right)
-        (match (call i64.eq left-root right-root)
-          (true unit)
-          (false (call vec.set parents right-root left-root))))))
-  (fn build ((inout parents (Vec I64)) (index I64) (count I64)) Unit
-    (effects partial)
-    (match (call i64.eq index count)
-      (true unit)
-      (false
-        (let partner I64 (call i64.rem (call i64.add (call i64.mul index 17) 23) count)
-          (let joined Unit (call unite parents index partner)
-            (recur parents (call i64.add index 1) count))))))
-  (fn checksum ((inout parents (Vec I64)) (index I64) (count I64) (total I64)) I64
-    (effects partial)
-    (match (call i64.eq index count)
-      (true total)
-      (false
-        (let root I64 (call find-root parents index)
-          (recur parents (call i64.add index 1) count (call i64.add total root))))))
-  (fn query-rounds ((inout parents (Vec I64)) (round I64) (rounds I64) (count I64) (total I64)) I64
-    (effects partial)
-    (match (call i64.eq round rounds)
-      (true total)
-      (false
-        (let value I64 (call checksum parents 0 count 0)
-          (recur parents (call i64.add round 1) rounds count (call i64.add total value))))))
-  (fn main ((args (Vec Bytes))) I64
-    (effects alloc io partial)
-    (let count I64 200000
-      (let parents (Vec I64) (call vec.new)
-        (let filled Unit (call fill parents 0 count)
-          (let built Unit (call build parents 0 count)
-            (let result I64 (call query-rounds parents 0 10 count 0)
-              (let shown Unit (call io.print-i64 result)
-                (let newline Unit (call io.println "") 0))))))))
-)
+module union-find
+
+fn fill(inout parents: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
+  match i64.eq(index count):
+    true:
+      unit
+    false:
+      let pushed: Unit = vec.push(parents index)
+      recur(parents i64.add(index 1) count)
+
+fn find-root(inout parents: Vec[I64] node: I64) -> I64 effects[partial]:
+  let parent: I64 = vec.get(parents node)
+  match i64.eq(parent node):
+    true:
+      node
+    false:
+      recur(parents parent)
+
+fn unite(inout parents: Vec[I64] left: I64 right: I64) -> Unit effects[partial]:
+  let left-root: I64 = find-root(parents left)
+  let right-root: I64 = find-root(parents right)
+  match i64.eq(left-root right-root):
+    true:
+      unit
+    false:
+      vec.set(parents right-root left-root)
+
+fn build(inout parents: Vec[I64] index: I64 count: I64) -> Unit effects[partial]:
+  match i64.eq(index count):
+    true:
+      unit
+    false:
+      let partner: I64 = i64.rem(i64.add(i64.mul(index 17) 23) count)
+      let joined: Unit = unite(parents index partner)
+      recur(parents i64.add(index 1) count)
+
+fn checksum(inout parents: Vec[I64] index: I64 count: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(index count):
+    true:
+      total
+    false:
+      let root: I64 = find-root(parents index)
+      recur(parents i64.add(index 1) count i64.add(total root))
+
+fn query-rounds(inout parents: Vec[I64] round: I64 rounds: I64 count: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(round rounds):
+    true:
+      total
+    false:
+      let value: I64 = checksum(parents 0 count 0)
+      recur(parents i64.add(round 1) rounds count i64.add(total value))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let count: I64 = 200000
+  let parents: Vec[I64] = vec.new()
+  let filled: Unit = fill(parents 0 count)
+  let built: Unit = build(parents 0 count)
+  let result: I64 = query-rounds(parents 0 10 count 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

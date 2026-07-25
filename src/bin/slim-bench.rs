@@ -2084,113 +2084,109 @@ fn median_runtime_with_env(
 
 fn generated_program(declarations: usize) -> String {
     let mut source = String::with_capacity(declarations * 80);
-    source.push_str("(module scaling ");
+    source.push_str("module scaling\n\n");
     for index in 0..declarations {
-        source.push_str("(fn function-");
+        source.push_str("fn function-");
         source.push_str(&index.to_string());
         if index == 0 {
-            source.push_str(" ((value I64)) I64 (effects) (call i64.add value 0)) ");
+            source.push_str("(value: I64) -> I64:\n  i64.add(value 0)\n\n");
         } else {
-            source.push_str(" ((value I64)) I64 (effects) (call function-0 value)) ");
+            source.push_str("(value: I64) -> I64:\n  function-0(value)\n\n");
         }
     }
-    source.push_str("(fn main ((args (Vec Bytes))) I64 (effects) (call function-0 0)))\n");
+    source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  function-0(0)\n");
     source
 }
 
 fn generated_nested_program(bindings: usize) -> String {
     let mut source = String::with_capacity(bindings * 58);
     source.push_str(
-        "(module nested (fn identity ((value I64)) I64 (effects) value) (fn deep ((seed I64)) I64 (effects) ",
+        "module nested\n\nfn identity(value: I64) -> I64:\n  value\n\nfn deep(seed: I64) -> I64:\n",
     );
     for index in 0..bindings {
-        source.push_str("(let value-");
+        source.push_str("  let value-");
         source.push_str(&index.to_string());
-        source.push_str(" I64 (call identity seed) ");
+        source.push_str(": I64 = identity(seed)\n");
     }
-    source.push_str("seed");
-    for _ in 0..bindings {
-        source.push(')');
-    }
-    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call deep 0)))\n");
+    source.push_str("  seed\n\nfn main(args: Vec[Bytes]) -> I64:\n  deep(0)\n");
     source
 }
 
 fn generated_computed_argument_program(calls: usize) -> String {
     let mut source = String::with_capacity(calls * 16);
     source.push_str(
-        "(module computed-arguments (fn identity ((value I64)) I64 (effects) value) (fn chain ((seed I64)) I64 (effects) ",
+        "module computed-arguments\n\nfn identity(value: I64) -> I64:\n  value\n\nfn chain(seed: I64) -> I64:\n  ",
     );
     for _ in 0..calls {
-        source.push_str("(call identity ");
+        source.push_str("identity(");
     }
     source.push_str("seed");
     for _ in 0..calls {
         source.push(')');
     }
-    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) (call chain 0)))\n");
+    source.push_str("\n\nfn main(args: Vec[Bytes]) -> I64:\n  chain(0)\n");
     source
 }
 
 fn generated_aggregate_temporary_program(fields: usize) -> String {
     let mut source = String::with_capacity(fields * 110);
-    source.push_str("(module aggregate-temporaries (record Wide (");
+    source.push_str("module aggregate-temporaries\n\nrecord Wide:\n");
     for index in 0..fields {
-        source.push_str("(field-");
+        source.push_str("  field-");
         source.push_str(&index.to_string());
-        source.push_str(" I64)");
+        source.push_str(": I64\n");
     }
-    source.push_str(")) (variant Payload ((Values");
+    source.push_str("\nvariant Payload:\n  Values(");
     for _ in 0..fields {
-        source.push_str(" I64");
+        source.push_str("I64 ");
     }
     source.push_str(
-        "))) (fn identity ((value I64)) I64 (effects) value) (fn build () I64 (effects) (let record-value Wide (make Wide ",
+        ")\n\nfn identity(value: I64) -> I64:\n  value\n\nfn build() -> I64:\n  let record-value: Wide = make Wide(",
     );
     for index in 0..fields {
-        source.push_str("(field-");
+        source.push_str("field-");
         source.push_str(&index.to_string());
-        source.push_str(" (call identity ");
+        source.push_str(" = identity(");
         source.push_str(&index.to_string());
-        source.push_str("))");
+        source.push_str(") ");
     }
-    source.push_str(" ) (let variant-value Payload (case Payload Values");
+    source.push_str(")\n  let variant-value: Payload = case Payload::Values(");
     for index in 0..fields {
-        source.push_str(" (call identity ");
+        source.push_str("identity(");
         source.push_str(&index.to_string());
-        source.push(')');
+        source.push_str(") ");
     }
-    source.push_str(") 0))) (fn main ((args (Vec Bytes))) I64 (effects) (call build)))\n");
+    source.push_str(")\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  build()\n");
     source
 }
 
 fn generated_planned_allocation_call_program(calls: usize) -> String {
     let mut source = String::with_capacity(calls * 17);
     source.push_str(
-        "(module planned-allocation-calls (fn allocate ((value I64)) I64 (effects alloc) (let values (Vec I64) (call vec.new) value)) (fn chain ((seed I64)) I64 (effects alloc) ",
+        "module planned-allocation-calls\n\nfn allocate(value: I64) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  value\n\nfn chain(seed: I64) -> I64 effects[alloc]:\n  ",
     );
     for _ in 0..calls {
-        source.push_str("(call allocate ");
+        source.push_str("allocate(");
     }
     source.push_str("seed");
     for _ in 0..calls {
         source.push(')');
     }
-    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects alloc) (call chain 0)))\n");
+    source.push_str("\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  chain(0)\n");
     source
 }
 
 fn generated_inout_read_program(parameters: usize) -> String {
     let mut source = String::with_capacity(parameters * 58);
-    source.push_str("(module inout-reads (fn read (");
+    source.push_str("module inout-reads\n\nfn read(");
     for index in 0..parameters {
-        source.push_str("(inout value-");
+        source.push_str("inout value-");
         source.push_str(&index.to_string());
-        source.push_str(" I64)");
+        source.push_str(": I64 ");
     }
-    source.push_str(") I64 (effects partial) ");
+    source.push_str(") -> I64 effects[partial]:\n  ");
     for index in 0..parameters {
-        source.push_str("(call i64.add value-");
+        source.push_str("i64.add(value-");
         source.push_str(&index.to_string());
         source.push(' ');
     }
@@ -2198,47 +2194,41 @@ fn generated_inout_read_program(parameters: usize) -> String {
     for _ in 0..parameters {
         source.push(')');
     }
-    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    source.push_str("\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     source
 }
 
 fn generated_named_type_program(functions: usize) -> String {
     let mut source = String::with_capacity(functions * 70);
-    source.push_str("(module named-types ");
+    source.push_str("module named-types\n\n");
     for index in 0..functions {
-        source.push_str("(fn worker-");
+        source.push_str("fn worker-");
         source.push_str(&index.to_string());
-        source.push_str(" ((value Payload)) I64 (effects) 0) ");
+        source.push_str("(value: Payload) -> I64:\n  0\n\n");
     }
-    source.push_str(
-        "(record Payload ((bytes Bytes))) (fn main ((args (Vec Bytes))) I64 (effects) 0))\n",
-    );
+    source.push_str("record Payload:\n  bytes: Bytes\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     source
 }
 
 fn generated_owned_transfer_program(transfers: usize) -> String {
     let mut source = String::with_capacity(transfers * 100);
     source.push_str(
-        "(module owned-transfers (fn consume ((value (Vec I64))) Unit (effects) unit) (fn transfer (",
+        "module owned-transfers\n\nfn consume(value: Vec[I64]) -> Unit:\n  unit\n\nfn transfer(",
     );
     for index in 0..transfers {
-        source.push_str("(value-");
+        source.push_str("value-");
         source.push_str(&index.to_string());
-        source.push_str(" (Vec I64))");
+        source.push_str(": Vec[I64] ");
     }
-    source.push_str(") I64 (effects) ");
+    source.push_str(") -> I64:\n");
     for index in 0..transfers {
-        source.push_str("(let moved-");
+        source.push_str("  let moved-");
         source.push_str(&index.to_string());
-        source.push_str(" Unit (call consume value-");
+        source.push_str(": Unit = consume(value-");
         source.push_str(&index.to_string());
-        source.push_str(") ");
+        source.push_str(")\n");
     }
-    source.push('0');
-    for _ in 0..transfers {
-        source.push(')');
-    }
-    source.push_str(") (fn main ((args (Vec Bytes))) I64 (effects) 0))\n");
+    source.push_str("  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     source
 }
 
@@ -2307,9 +2297,11 @@ impl SnapshotPair {
             IncrementalScenario::PrivateBody => {
                 replace_in_first_module(&updated, "input 1", "input 2")
             }
-            IncrementalScenario::PublicInterface => {
-                replace_in_first_module(&updated, "((value I64))", "((value I64) (valid Bool))")
-            }
+            IncrementalScenario::PublicInterface => replace_in_first_module(
+                &updated,
+                "fn value(input: I64)",
+                "fn value(input: I64 valid: Bool)",
+            ),
         }
         Self { directory }
     }
@@ -2339,9 +2331,7 @@ fn write_project(root: &Path, graph: ProjectGraph, modules: usize) {
     };
     fs::write(
         root.join("app.slim"),
-        format!(
-            "(module app (fn main ((args (Vec Bytes))) I64 (effects) (call {app_dependency}/value 40)))\n"
-        ),
+        format!("module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  {app_dependency}/value(40)\n"),
     )
     .expect("write benchmark entry module");
     for index in 0..modules {
@@ -2356,14 +2346,14 @@ fn write_project(root: &Path, graph: ProjectGraph, modules: usize) {
         ));
         let body = match graph {
             ProjectGraph::Deep if index > 0 => {
-                format!("(call {}/value input)", module_name(index - 1))
+                format!("{}/value(input)", module_name(index - 1))
             }
-            ProjectGraph::Wide | ProjectGraph::Deep => "(call i64.add input 1)".to_owned(),
+            ProjectGraph::Wide | ProjectGraph::Deep => "i64.add(input 1)".to_owned(),
         };
         fs::write(
             root.join(format!("{module}.slim")),
             format!(
-                "(module {module} (record Marker ((value I64))) (fn value ((input I64)) I64 (effects) {body}))\n"
+                "module {module}\n\nrecord Marker:\n  value: I64\n\nfn value(input: I64) -> I64:\n  {body}\n"
             ),
         )
         .expect("write benchmark module");

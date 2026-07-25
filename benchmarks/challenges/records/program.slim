@@ -1,1 +1,25 @@
-(module records (record State ((x I64) (y I64) (vx I64) (vy I64))) (fn step ((state State)) State (effects partial) (make State (x (call i64.add (get state x) (get state vx))) (y (call i64.add (get state y) (get state vy))) (vx (call i64.add (get state vx) 3)) (vy (call i64.sub (get state vy) 2)))) (fn simulate ((remaining I64) (state State)) State (effects partial) (match (call i64.eq remaining 0) (true state) (false (recur (call i64.sub remaining 1) (call step state))))) (fn main ((args (Vec Bytes))) I64 (effects io partial) (let initial State (make State (x 0) (y 0) (vx 11) (vy 17)) (let result State (call simulate 1000000 initial) (let answer I64 (call i64.add (get result x) (get result y)) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println "") 0)))))))
+module records
+
+record State:
+  x: I64
+  y: I64
+  vx: I64
+  vy: I64
+
+fn step(state: State) -> State effects[partial]:
+  make State(x = i64.add(get(state x) get(state vx)) y = i64.add(get(state y) get(state vy)) vx = i64.add(get(state vx) 3) vy = i64.sub(get(state vy) 2))
+
+fn simulate(remaining: I64 state: State) -> State effects[partial]:
+  match i64.eq(remaining 0):
+    true:
+      state
+    false:
+      recur(i64.sub(remaining 1) step(state))
+
+fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
+  let initial: State = make State(x = 0 y = 0 vx = 11 vy = 17)
+  let result: State = simulate(1000000 initial)
+  let answer: I64 = i64.add(get(result x) get(result y))
+  let shown: Unit = io.print-i64(answer)
+  let newline: Unit = io.println("")
+  0

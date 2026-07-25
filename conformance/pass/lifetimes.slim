@@ -1,42 +1,54 @@
-(module lifetimes
-  (record Pair ((left (Vec I64)) (right (Vec I64))))
-  (variant Choice ((none) (some (Vec I64))))
-  (fn numbers ((first I64) (second I64)) (Vec I64) (effects alloc)
-    (let output (Vec I64) (call vec.new)
-      (let pushed_first Unit (call vec.push output first)
-        (let pushed_second Unit (call vec.push output second)
-          output))))
-  (fn word () Bytes (effects alloc)
-    (let output (Vec U8) (call vec.new)
-      (let o U8 (call i64.to-u8 79)
-        (let k U8 (call i64.to-u8 75)
-          (let pushed_o Unit (call vec.push output o)
-            (let pushed_k Unit (call vec.push output k)
-              (call bytes.freeze output)))))))
-  (fn choose ((present Bool)) Choice (effects alloc)
-    (match present
-      (true (case Choice some (call numbers 5 8)))
-      (false (case Choice none))))
-  (fn choice_length ((value Choice)) I64 (effects)
-    (match value
-      (none 0)
-      (some (items) (call vec.len items))))
-  (fn main ((args (Vec Bytes))) I64 (effects alloc io)
-    (let pair Pair
-      (make Pair
-        (left (call numbers 1 2))
-        (right (call numbers 3 4)))
-      (let left (Vec I64) (get pair left)
-        (let right (Vec I64) (get pair right)
-          (let left_length I64 (call vec.len left)
-            (let right_length I64 (call vec.len right)
-              (let text Bytes (call word)
-                (let text_length I64 (call bytes.len text)
-                  (let selected Choice (call choose true)
-                    (let selected_length I64 (call choice_length selected)
-                      (let first_total I64 (call i64.add left_length right_length)
-                        (let second_total I64 (call i64.add text_length selected_length)
-                          (let total I64 (call i64.add first_total second_total)
-                            (let shown Unit (call io.print-bytes text)
-                              (let newline Unit (call io.println "")
-                                (call i64.sub total 8)))))))))))))))))
+module lifetimes
+
+record Pair:
+  left: Vec[I64]
+  right: Vec[I64]
+
+variant Choice:
+  none
+  some(Vec[I64])
+
+fn numbers(first: I64 second: I64) -> Vec[I64] effects[alloc]:
+  let output: Vec[I64] = vec.new()
+  let pushed_first: Unit = vec.push(output first)
+  let pushed_second: Unit = vec.push(output second)
+  output
+
+fn word() -> Bytes effects[alloc]:
+  let output: Vec[U8] = vec.new()
+  let o: U8 = i64.to-u8(79)
+  let k: U8 = i64.to-u8(75)
+  let pushed_o: Unit = vec.push(output o)
+  let pushed_k: Unit = vec.push(output k)
+  bytes.freeze(output)
+
+fn choose(present: Bool) -> Choice effects[alloc]:
+  match present:
+    true:
+      case Choice::some(numbers(5 8))
+    false:
+      case Choice::none()
+
+fn choice_length(value: Choice) -> I64:
+  match value:
+    none:
+      0
+    some(items):
+      vec.len(items)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+  let pair: Pair = make Pair(left = numbers(1 2) right = numbers(3 4))
+  let left: Vec[I64] = get(pair left)
+  let right: Vec[I64] = get(pair right)
+  let left_length: I64 = vec.len(left)
+  let right_length: I64 = vec.len(right)
+  let text: Bytes = word()
+  let text_length: I64 = bytes.len(text)
+  let selected: Choice = choose(true)
+  let selected_length: I64 = choice_length(selected)
+  let first_total: I64 = i64.add(left_length right_length)
+  let second_total: I64 = i64.add(text_length selected_length)
+  let total: I64 = i64.add(first_total second_total)
+  let shown: Unit = io.print-bytes(text)
+  let newline: Unit = io.println("")
+  i64.sub(total 8)

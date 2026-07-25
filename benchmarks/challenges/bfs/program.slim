@@ -1,2 +1,28 @@
-(module bfs (fn enqueue ((inout queue (Vec I64)) (node I64) (limit I64)) Unit (effects alloc) (match (call i64.le node limit) (true (call vec.push queue node)) (false unit))) (fn visit ((inout queue (Vec I64)) (index I64) (limit I64) (total I64)) I64 (effects alloc partial) (match (call i64.eq index (call vec.len queue)) (true total) (false (let node I64 (call vec.get queue index) (let left I64 (call i64.add (call i64.mul node 2) 1) (let right I64 (call i64.add left 1) (let left-added Unit (call enqueue queue left limit) (let right-added Unit (call enqueue queue right limit) (recur queue (call i64.add index 1) limit (call i64.add total node)))))))))) (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (let queue (Vec I64) (call vec.new) (let root Unit (call vec.push queue 0) (let result I64 (call visit queue 0 100000 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0)))))))
+module bfs
 
+fn enqueue(inout queue: Vec[I64] node: I64 limit: I64) -> Unit effects[alloc]:
+  match i64.le(node limit):
+    true:
+      vec.push(queue node)
+    false:
+      unit
+
+fn visit(inout queue: Vec[I64] index: I64 limit: I64 total: I64) -> I64 effects[alloc partial]:
+  match i64.eq(index vec.len(queue)):
+    true:
+      total
+    false:
+      let node: I64 = vec.get(queue index)
+      let left: I64 = i64.add(i64.mul(node 2) 1)
+      let right: I64 = i64.add(left 1)
+      let left-added: Unit = enqueue(queue left limit)
+      let right-added: Unit = enqueue(queue right limit)
+      recur(queue i64.add(index 1) limit i64.add(total node))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let queue: Vec[I64] = vec.new()
+  let root: Unit = vec.push(queue 0)
+  let result: I64 = visit(queue 0 100000 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

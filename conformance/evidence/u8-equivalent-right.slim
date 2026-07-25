@@ -1,1 +1,8 @@
-(module u8-equivalent-right (fn subject ((state U8)) Bool (effects) (let number I64 (call u8.to-i64 state) (call bool.and (call i64.ge number 1) (call i64.le number 2)))) (fn main ((args (Vec Bytes))) I64 (effects) 0))
+module u8-equivalent-right
+
+fn subject(state: U8) -> Bool:
+  let number: I64 = u8.to-i64(state)
+  bool.and(i64.ge(number 1) i64.le(number 2))
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

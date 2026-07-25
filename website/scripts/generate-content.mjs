@@ -294,7 +294,7 @@ const llms = `# SLIM — ${meta.expansion}
 Current milestone: ${meta.milestone}
 Compiler version: ${meta.compilerVersion}
 
-Canonical source uses one S-expression form for each operation. SLIM has strong static typing, explicit effects, affine ownership, exclusive inout borrows, checked arithmetic and indexing, deterministic C11 generation, no tracing garbage collector, bounded program analysis, and guarded automatic fork/join execution.
+Canonical source uses one two-space significant-indentation form for each operation. Calls use whitespace-separated arguments, pure functions omit the effects clause, and braces, commas, semicolons, tabs, and alternate spellings are rejected. SLIM has strong static typing, explicit effects, affine ownership, exclusive inout borrows, checked arithmetic and indexing, deterministic C11 generation, no tracing garbage collector, bounded program analysis, and guarded automatic fork/join execution.
 
 Start:
 - ./slimc check examples/hello.slim

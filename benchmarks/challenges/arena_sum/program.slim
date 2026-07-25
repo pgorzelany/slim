@@ -1,1 +1,27 @@
-(module arena-sum (fn fill ((inout arena (Arena I64)) (inout ids (Vec (Id I64))) (index I64) (count I64)) Unit (effects alloc partial) (match (call i64.eq index count) (true unit) (false (let identity (Id I64) (call arena.add arena (call i64.rem (call i64.mul index 37) 101)) (let pushed Unit (call vec.push ids identity) (recur arena ids (call i64.add index 1) count)))))) (fn sum ((inout arena (Arena I64)) (inout ids (Vec (Id I64))) (index I64) (total I64)) I64 (effects partial) (match (call i64.eq index (call vec.len ids)) (true total) (false (let identity (Id I64) (call vec.get ids index) (recur arena ids (call i64.add index 1) (call i64.add total (call arena.get arena identity))))))) (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (let arena (Arena I64) (call arena.new) (let ids (Vec (Id I64)) (call vec.new) (let filled Unit (call fill arena ids 0 100000) (let result I64 (call sum arena ids 0 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0))))))))
+module arena-sum
+
+fn fill(inout arena: Arena[I64] inout ids: Vec[Id[I64]] index: I64 count: I64) -> Unit effects[alloc partial]:
+  match i64.eq(index count):
+    true:
+      unit
+    false:
+      let identity: Id[I64] = arena.add(arena i64.rem(i64.mul(index 37) 101))
+      let pushed: Unit = vec.push(ids identity)
+      recur(arena ids i64.add(index 1) count)
+
+fn sum(inout arena: Arena[I64] inout ids: Vec[Id[I64]] index: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(index vec.len(ids)):
+    true:
+      total
+    false:
+      let identity: Id[I64] = vec.get(ids index)
+      recur(arena ids i64.add(index 1) i64.add(total arena.get(arena identity)))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let arena: Arena[I64] = arena.new()
+  let ids: Vec[Id[I64]] = vec.new()
+  let filled: Unit = fill(arena ids 0 100000)
+  let result: I64 = sum(arena ids 0 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

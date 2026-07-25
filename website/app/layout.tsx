@@ -36,7 +36,7 @@ export async function generateMetadata(): Promise<Metadata> {
       follow: false,
     },
     icons: {
-      icon: new URL("/og.png", metadataBase).toString(),
+      icon: new URL("/og-indented.png", metadataBase).toString(),
     },
     openGraph: {
       type: "website",
@@ -46,10 +46,10 @@ export async function generateMetadata(): Promise<Metadata> {
       siteName: "SLIM",
       images: [
         {
-          url: new URL("/og.png", metadataBase).toString(),
+          url: new URL("/og-indented.png", metadataBase).toString(),
           width: 1536,
           height: 1024,
-          alt: "( SLIM ) — Small Language for Intelligent Machines",
+          alt: "SLIM — Small Language for Intelligent Machines",
         },
       ],
     },
@@ -58,7 +58,7 @@ export async function generateMetadata(): Promise<Metadata> {
       title: "SLIM — Small Language for Intelligent Machines",
       description:
         "Canonical syntax, static safety, deterministic memory, bounded analysis.",
-      images: [new URL("/og.png", metadataBase).toString()],
+      images: [new URL("/og-indented.png", metadataBase).toString()],
     },
   };
 }

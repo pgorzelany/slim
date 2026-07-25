@@ -49,7 +49,7 @@ for (const [pathname, title] of routes) {
     assert.match(html, /href="\/reference"/);
     assert.match(html, /href="\/status"/);
     assert.match(html, /name="robots" content="noindex, nofollow"/i);
-    assert.match(html, /http:\/\/localhost(?::3000)?\/og\.png/);
+    assert.match(html, /http:\/\/localhost(?::3000)?\/og-indented\.png/);
     assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 
     for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {

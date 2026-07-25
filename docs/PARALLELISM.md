@@ -19,7 +19,7 @@ compiler view proves all of the following:
 - every user function it calls has the same property; and
 - any recurrence has D0066's complete finite-descent proof.
 
-Defined overflow and bounds traps remain observable even in an `(effects)`
+Defined overflow and bounds traps remain observable even in a pure
 function, so declared effects alone never establish reorder-safety. Conversely,
 an effect declaration is a capability ceiling, not an event: an unused
 capability does not block a function when its complete checked body and call
@@ -205,10 +205,10 @@ wrapper, environment parsing, thread include, or worker link flag.
 D0078 accepts exactly:
 
 ```text
-(fork
-  (let first T (call f ...)
-    (let second U (call g ...)
-      body)))
+fork:
+  let first: T = f(...)
+  let second: U = g(...)
+  body
 ```
 
 The wrapper is allowed only on a function's leading immutable `let` chain.

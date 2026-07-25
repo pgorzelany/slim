@@ -1,1 +1,4 @@
-(module app (fn main ((args (Vec Bytes))) I64 (effects) (call math/answer 40)))
+module app
+
+fn main(args: Vec[Bytes]) -> I64:
+  math/answer(40)

@@ -1,3 +1,5 @@
-(module nested-type-mismatch
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let value I64 true value)))
+module nested-type-mismatch
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: I64 = true
+  value

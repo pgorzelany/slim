@@ -1,6 +1,10 @@
-(module duplicate-boolean-arm
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (match true
-      (true 0)
-      (false 1)
-      (false 2))))
+module duplicate-boolean-arm
+
+fn main(args: Vec[Bytes]) -> I64:
+  match true:
+    true:
+      0
+    false:
+      1
+    false:
+      2

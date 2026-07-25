@@ -1,2 +1,12 @@
-(module inout (fn append-answer ((inout values (Vec I64))) Unit (effects alloc) (call vec.push values 42)) (fn main ((args (Vec Bytes))) I64 (effects alloc io) (let values (Vec I64) (call vec.new) (let appended Unit (call append-answer values) (let answer I64 (call vec.get values 0) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println "") 0)))))))
+module inout
 
+fn append-answer(inout values: Vec[I64]) -> Unit effects[alloc]:
+  vec.push(values 42)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+  let values: Vec[I64] = vec.new()
+  let appended: Unit = append-answer(values)
+  let answer: I64 = vec.get(values 0)
+  let shown: Unit = io.print-i64(answer)
+  let newline: Unit = io.println("")
+  0

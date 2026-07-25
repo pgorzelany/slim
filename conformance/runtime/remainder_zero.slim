@@ -1,1 +1,4 @@
-(module remainder-zero (fn main ((args (Vec Bytes))) I64 (effects) (call i64.rem 1 0)))
+module remainder-zero
+
+fn main(args: Vec[Bytes]) -> I64:
+  i64.rem(1 0)

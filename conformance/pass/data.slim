@@ -1,18 +1,29 @@
-(module data
-  (record Pair ((left I64) (right I64)))
-  (variant Maybe ((None) (Some I64)))
-  (fn unwrap ((value Maybe)) I64 (effects)
-    (match value
-      (None 0)
-      (Some (number) number)))
-  (fn main ((args (Vec Bytes))) I64 (effects io)
-    (let pair Pair (make Pair (left 20) (right 22))
-      (let left I64 (get pair left)
-        (let right I64 (get pair right)
-          (let sum I64 (call i64.add left right)
-            (let changed I64 0
-              (set changed sum
-                (let wrapped Maybe (case Maybe Some changed)
-                  (let answer I64 (call unwrap wrapped)
-                    (let shown Unit (call io.print-i64 answer)
-                      (let newline Unit (call io.println "") 0))))))))))))
+module data
+
+record Pair:
+  left: I64
+  right: I64
+
+variant Maybe:
+  None
+  Some(I64)
+
+fn unwrap(value: Maybe) -> I64:
+  match value:
+    None:
+      0
+    Some(number):
+      number
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let pair: Pair = make Pair(left = 20 right = 22)
+  let left: I64 = get(pair left)
+  let right: I64 = get(pair right)
+  let sum: I64 = i64.add(left right)
+  let changed: I64 = 0
+  set changed = sum
+  let wrapped: Maybe = case Maybe::Some(changed)
+  let answer: I64 = unwrap(wrapped)
+  let shown: Unit = io.print-i64(answer)
+  let newline: Unit = io.println("")
+  0

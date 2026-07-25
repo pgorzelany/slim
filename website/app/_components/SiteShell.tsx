@@ -11,9 +11,7 @@ export function SiteHeader() {
     <header className="site-header">
       <div className="site-header__inner">
         <Link className="wordmark" href="/" aria-label="SLIM home">
-          <span aria-hidden="true">(</span>
           SLIM
-          <span aria-hidden="true">)</span>
         </Link>
         <nav aria-label="Primary navigation">
           {navigation.map((item) => (

@@ -1,8 +1,72 @@
-(module floyd-warshall
-  (fn fill ((inout distances (Vec I64)) (index I64) (size I64)) Unit (effects alloc partial) (let count I64 (call i64.mul size size) (match (call i64.eq index count) (true unit) (false (let row I64 (call i64.div index size) (let column I64 (call i64.rem index size) (let diagonal Bool (call i64.eq row column) (let seed I64 (call i64.add 1 (call i64.rem (call i64.add (call i64.mul row 17) (call i64.mul column 31)) 97)) (let value I64 (match diagonal (true 0) (false seed)) (let pushed Unit (call vec.push distances value) (recur distances (call i64.add index 1) size)))))))))))
-  (fn columns ((inout distances (Vec I64)) (pivot I64) (row I64) (column I64) (size I64)) Unit (effects partial) (match (call i64.eq column size) (true unit) (false (let row-base I64 (call i64.mul row size) (let pivot-base I64 (call i64.mul pivot size) (let left-index I64 (call i64.add row-base pivot) (let right-index I64 (call i64.add pivot-base column) (let target-index I64 (call i64.add row-base column) (let candidate I64 (call i64.add (call vec.get distances left-index) (call vec.get distances right-index)) (let current I64 (call vec.get distances target-index) (let better Bool (call i64.lt candidate current) (let stored Unit (match better (true (call vec.set distances target-index candidate)) (false unit)) (recur distances pivot row (call i64.add column 1) size)))))))))))))
-  (fn rows ((inout distances (Vec I64)) (pivot I64) (row I64) (size I64)) Unit (effects partial) (match (call i64.eq row size) (true unit) (false (let updated Unit (call columns distances pivot row 0 size) (recur distances pivot (call i64.add row 1) size)))))
-  (fn pivots ((inout distances (Vec I64)) (pivot I64) (size I64)) Unit (effects partial) (match (call i64.eq pivot size) (true unit) (false (let updated Unit (call rows distances pivot 0 size) (recur distances (call i64.add pivot 1) size)))))
-  (fn checksum ((distances (Vec I64)) (index I64) (total I64)) I64 (effects partial) (match (call i64.eq index (call vec.len distances)) (true total) (false (recur distances (call i64.add index 1) (call i64.add total (call vec.get distances index))))))
-  (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (let size I64 192 (let distances (Vec I64) (call vec.new) (let filled Unit (call fill distances 0 size) (let solved Unit (call pivots distances 0 size) (let result I64 (call checksum distances 0 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0))))))))
-)
+module floyd-warshall
+
+fn fill(inout distances: Vec[I64] index: I64 size: I64) -> Unit effects[alloc partial]:
+  let count: I64 = i64.mul(size size)
+  match i64.eq(index count):
+    true:
+      unit
+    false:
+      let row: I64 = i64.div(index size)
+      let column: I64 = i64.rem(index size)
+      let diagonal: Bool = i64.eq(row column)
+      let seed: I64 = i64.add(1 i64.rem(i64.add(i64.mul(row 17) i64.mul(column 31)) 97))
+      let value: I64 = match diagonal:
+        true:
+          0
+        false:
+          seed
+      let pushed: Unit = vec.push(distances value)
+      recur(distances i64.add(index 1) size)
+
+fn columns(inout distances: Vec[I64] pivot: I64 row: I64 column: I64 size: I64) -> Unit effects[partial]:
+  match i64.eq(column size):
+    true:
+      unit
+    false:
+      let row-base: I64 = i64.mul(row size)
+      let pivot-base: I64 = i64.mul(pivot size)
+      let left-index: I64 = i64.add(row-base pivot)
+      let right-index: I64 = i64.add(pivot-base column)
+      let target-index: I64 = i64.add(row-base column)
+      let candidate: I64 = i64.add(vec.get(distances left-index) vec.get(distances right-index))
+      let current: I64 = vec.get(distances target-index)
+      let better: Bool = i64.lt(candidate current)
+      let stored: Unit = match better:
+        true:
+          vec.set(distances target-index candidate)
+        false:
+          unit
+      recur(distances pivot row i64.add(column 1) size)
+
+fn rows(inout distances: Vec[I64] pivot: I64 row: I64 size: I64) -> Unit effects[partial]:
+  match i64.eq(row size):
+    true:
+      unit
+    false:
+      let updated: Unit = columns(distances pivot row 0 size)
+      recur(distances pivot i64.add(row 1) size)
+
+fn pivots(inout distances: Vec[I64] pivot: I64 size: I64) -> Unit effects[partial]:
+  match i64.eq(pivot size):
+    true:
+      unit
+    false:
+      let updated: Unit = rows(distances pivot 0 size)
+      recur(distances i64.add(pivot 1) size)
+
+fn checksum(distances: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(index vec.len(distances)):
+    true:
+      total
+    false:
+      recur(distances i64.add(index 1) i64.add(total vec.get(distances index)))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let size: I64 = 192
+  let distances: Vec[I64] = vec.new()
+  let filled: Unit = fill(distances 0 size)
+  let solved: Unit = pivots(distances 0 size)
+  let result: I64 = checksum(distances 0 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

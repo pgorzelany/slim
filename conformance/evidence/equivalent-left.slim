@@ -1,1 +1,7 @@
-(module equivalent-left (fn subject ((a Bool) (b Bool)) Bool (effects) (call bool.and a b)) (fn main ((args (Vec Bytes))) I64 (effects) 0))
+module equivalent-left
+
+fn subject(a: Bool b: Bool) -> Bool:
+  bool.and(a b)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

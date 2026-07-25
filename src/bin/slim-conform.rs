@@ -90,11 +90,11 @@ fn check_malformed_input_robustness(compiler: &Path) -> Result<(), String> {
         b"",
         b"abc",
         b"()",
-        b"(module x)",
+        b"module x\n",
         b"(module x (fn))",
         b"(module x (fn main))",
-        b"(module x (fn main ((args (Vec Bytes))) I64 (effects) (call)))",
-        b"(module x (fn main ((args (Vec Bytes))) I64 (effects) (let)))",
+        b"module x\n\nfn main(args: Vec[Bytes]) -> I64:\n  undefined()\n",
+        b"module x\n\nfn main(args: Vec[Bytes]) -> I64:\n  let undefined: undefined = undefined\n  undefined\n",
         b"(module x))",
         b"(module x (fn main ((args (Vec Bytes))) I64 (effects) \"abc))",
     ];
@@ -597,7 +597,19 @@ fn run_selfhost_project_fixture(fixture: &Fixture, compiler: &Path) -> Result<()
                     format!("{}: cannot run SLIM project formatter: {error}", fixture.id)
                 })?;
             let directory = temporary_directory("project-format-fixed-point")?;
-            let formatted = directory.join("slim.project");
+            copy_tree(
+                fixture
+                    .path
+                    .parent()
+                    .ok_or_else(|| format!("{}: manifest has no parent", fixture.id))?,
+                &directory,
+            )?;
+            let formatted = directory.join(
+                fixture
+                    .path
+                    .file_name()
+                    .ok_or_else(|| format!("{}: manifest has no file name", fixture.id))?,
+            );
             fs::write(&formatted, &first.stdout).map_err(|error| error.to_string())?;
             let second = Command::new(compiler)
                 .arg("fmt")
@@ -1004,7 +1016,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     let invalid_manifest = invalid_directory.join(manifest_name);
     let invalid_module = invalid_directory.join("math.slim");
     let before = fs::read_to_string(&invalid_module).map_err(|error| error.to_string())?;
-    let after = before.replacen("(fn answer ", "(fn broken ", 1);
+    let after = before.replacen("fn answer(", "fn broken(", 1);
     if before == after {
         return Err(format!(
             "{}: incremental fixture lacks recovery edit marker",
@@ -1025,7 +1037,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     let updated_app = updated_directory.join("app.slim");
     for app in [&initial_app, &updated_app] {
         let before = fs::read_to_string(app).map_err(|error| error.to_string())?;
-        let after = before.replacen("(effects io)", "(effects io partial)", 1);
+        let after = before.replacen("effects[io]", "effects[io partial]", 1);
         if before == after {
             return Err(format!(
                 "{}: incremental fixture lacks app effect marker",
@@ -1035,7 +1047,11 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
         fs::write(app, after).map_err(|error| error.to_string())?;
     }
     let before = fs::read_to_string(&updated_module).map_err(|error| error.to_string())?;
-    let after = before.replacen("(effects)", "(effects partial)", 1);
+    let after = before.replacen(
+        "fn answer(value: I64) -> I64:",
+        "fn answer(value: I64) -> I64 effects[partial]:",
+        1,
+    );
     if before == after {
         return Err(format!(
             "{}: incremental fixture lacks interface effect marker",

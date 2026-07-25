@@ -13,8 +13,9 @@ by an explicit compatibility contract.
 
 ## Implemented
 
-- One canonical S-expression source form; strong static types; explicit
-  `alloc`, `io`, and `partial` effects; checked arithmetic and indexing.
+- One canonical two-space significant-indentation source form; strong static
+  types; explicit `alloc`, `io`, and `partial` effects; checked arithmetic and
+  indexing.
 - Records, variants, exhaustive matches, affine ownership, immutable bindings,
   exclusive non-escaping `inout` borrows, compiler-selected regions, and
   deterministic destruction without tracing garbage collection.

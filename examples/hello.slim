@@ -1,1 +1,5 @@
-(module hello (fn main ((args (Vec Bytes))) I64 (effects io) (let printed Unit (call io.println "hello from SLIM") 0)))
+module hello
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let printed: Unit = io.println("hello from SLIM")
+  0

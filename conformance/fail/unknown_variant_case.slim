@@ -1,4 +1,9 @@
-(module unknown-variant-case
-  (variant Maybe ((None) (Some I64)))
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let value Maybe (case Maybe Missing) 0)))
+module unknown-variant-case
+
+variant Maybe:
+  None
+  Some(I64)
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: Maybe = case Maybe::Missing()
+  0

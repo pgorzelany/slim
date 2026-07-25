@@ -1,4 +1,5 @@
-(module missing-alloc
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let values (Vec I64) (call vec.new)
-      0)))
+module missing-alloc
+
+fn main(args: Vec[Bytes]) -> I64:
+  let values: Vec[I64] = vec.new()
+  0

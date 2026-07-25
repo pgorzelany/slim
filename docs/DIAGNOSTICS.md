@@ -31,6 +31,18 @@ are retained within documented analyzer bounds. Project diagnostics use the
 manifest module identity as their source identity. A consumer must treat an
 unknown schema as unsupported rather than inferring a layout.
 
+The canonical parser reserves these stable conditions:
+
+- `E0102`: malformed source structure or block
+- `E0103`: tab indentation
+- `E0104`: odd indentation width
+- `E0105`: skipped indentation level
+- `E0106`: forbidden comma, brace, or semicolon
+- `E0107`: unterminated byte string
+
+Each points at the offending byte interval, or the zero-width location where
+required structure is missing.
+
 The exact code-to-condition mapping is executable: failure fixtures in
 `conformance/manifest.tsv` and `conformance/projects/manifest.tsv` pin codes
 and primary spans. Those manifests, rather than a copied prose catalog, are

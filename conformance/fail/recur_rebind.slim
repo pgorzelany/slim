@@ -1,7 +1,9 @@
-(module recur-rebind
-  (fn spin ((inout left (Vec I64)) (inout right (Vec I64))) I64 (effects partial)
-    (recur right left))
-  (fn main ((args (Vec Bytes))) I64 (effects alloc partial)
-    (let left (Vec I64) (call vec.new)
-      (let right (Vec I64) (call vec.new)
-        (call spin left right)))))
+module recur-rebind
+
+fn spin(inout left: Vec[I64] inout right: Vec[I64]) -> I64 effects[partial]:
+  recur(right left)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:
+  let left: Vec[I64] = vec.new()
+  let right: Vec[I64] = vec.new()
+  spin(left right)

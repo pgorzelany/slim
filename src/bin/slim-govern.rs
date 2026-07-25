@@ -3,6 +3,33 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+fn semantic_pattern_tokens(text: &str) -> Vec<&str> {
+    text.split(|character: char| {
+        !character.is_ascii_alphanumeric()
+            && character != '_'
+            && character != '-'
+            && character != '.'
+            && character != '/'
+    })
+    .filter(|token| !token.is_empty() && *token != "-" && *token != "call")
+    .collect()
+}
+
+fn contains_slim_pattern(source: &str, pattern: &str) -> bool {
+    if source.contains(pattern) {
+        return true;
+    }
+    if !pattern.starts_with('(') {
+        return false;
+    }
+    let source_tokens = semantic_pattern_tokens(source);
+    let pattern_tokens = semantic_pattern_tokens(pattern);
+    !pattern_tokens.is_empty()
+        && source_tokens
+            .windows(pattern_tokens.len())
+            .any(|window| window == pattern_tokens)
+}
+
 const REQUIRED_HEADINGS: [&str; 5] = [
     "## Need",
     "## Alternatives",
@@ -74,6 +101,7 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_rust_budget(root, &mut errors);
     check_toolchain_cutover(root, &mut errors);
     check_ast_boundary(root, &mut errors);
+    check_indented_source(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
     check_core_1d_acceptance(root, &decisions, &mut errors);
     check_runtime_fast_paths(root, &decisions, &mut errors);
@@ -178,7 +206,7 @@ fn check_core_1l_contracts(
         "--help)",
         "\\\"schema\\\":1",
     ] {
-        if !launcher.contains(required) {
+        if !contains_slim_pattern(&launcher, required) {
             errors.push(format!("Core 1L launcher is missing `{required}`"));
         }
     }
@@ -277,7 +305,7 @@ fn check_core_1l_contracts(
         "--uid 0 --gid 0 --uname root --gname root",
         "gzip -n -9",
     ] {
-        if !packager.contains(required) {
+        if !contains_slim_pattern(&packager, required) {
             errors.push(format!("Core 1L packager is missing `{required}`"));
         }
     }
@@ -290,7 +318,7 @@ fn check_core_1l_contracts(
         "./slimc run benchmarks/challenges/sieve/program.slim",
         "mismatched runtime ABI compiled",
     ] {
-        if !release_test.contains(required) {
+        if !contains_slim_pattern(&release_test, required) {
             errors.push(format!(
                 "Core 1L clean-package test is missing `{required}`"
             ));
@@ -303,7 +331,7 @@ fn check_core_1l_contracts(
         "npm test",
         "SLIM 1.0 verification",
     ] {
-        if !release_gate.contains(required) {
+        if !contains_slim_pattern(&release_gate, required) {
             errors.push(format!("Core 1L release gate is missing `{required}`"));
         }
     }
@@ -316,7 +344,7 @@ fn check_core_1l_contracts(
         "conformance/manifest.tsv",
         "conformance/projects/manifest.tsv",
     ] {
-        if !diagnostics.contains(required) {
+        if !contains_slim_pattern(&diagnostics, required) {
             errors.push(format!(
                 "Core 1L diagnostic contract is missing `{required}`"
             ));
@@ -329,7 +357,7 @@ fn check_core_1l_contracts(
         "runtime ABI 1",
         "new major version",
     ] {
-        if !compatibility.contains(required) {
+        if !contains_slim_pattern(&compatibility, required) {
             errors.push(format!(
                 "Core 1L compatibility contract is missing `{required}`"
             ));
@@ -342,7 +370,7 @@ fn check_core_1l_contracts(
         "generated_c_requires_the_exact_runtime_abi",
         "{\\\"schema\\\":1,\\\"code\\\":",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!("Core 1L permanent tests are missing `{required}`"));
         }
     }
@@ -373,7 +401,7 @@ fn check_core_1l_contracts(
         "./scripts/verify-1.0.sh",
         "Darwin/arm64",
     ] {
-        if !release_evidence.contains(required) {
+        if !contains_slim_pattern(&release_evidence, required) {
             errors.push(format!("Core 1L evidence is missing `{required}`"));
         }
     }
@@ -444,7 +472,7 @@ fn check_core_1k_acceptance(
         (&proof, "proof", "boolean-identity-match"),
         (&proof, "proof", "common-match-result"),
     ] {
-        if !contents.contains(required) {
+        if !contains_slim_pattern(contents, required) {
             errors.push(format!("Core 1K {label} is missing `{required}`"));
         }
     }
@@ -461,7 +489,7 @@ fn check_core_1k_acceptance(
         "reduction-nonapplicable.slim",
         "assert_eq!(reduced_again.stdout",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!("Core 1K permanent tests are missing `{required}`"));
         }
     }
@@ -537,7 +565,7 @@ fn check_core_1j_acceptance(
         "\"io.tcp-exchange\"",
         "\"io.monotonic-ms\"",
     ] {
-        if !checker.contains(required) {
+        if !contains_slim_pattern(&checker, required) {
             errors.push(format!("Core 1J checker is missing `{required}`"));
         }
     }
@@ -549,7 +577,7 @@ fn check_core_1j_acceptance(
         "(profitability explicit)",
         "(race-free true) (deadlock-free true)",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!("Core 1J analysis is missing `{required}`"));
         }
     }
@@ -562,7 +590,7 @@ fn check_core_1j_acceptance(
         "slim_region_adopt(slim_allocation_region",
         "(get site explicit)",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!("Core 1J lowering is missing `{required}`"));
         }
     }
@@ -570,7 +598,7 @@ fn check_core_1j_acceptance(
     let runtime_h = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
     let runtime_c = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap_or_default();
     for required in ["_Atomic SlimAllocCode code", "void slim_region_adopt"] {
-        if !runtime_h.contains(required) {
+        if !contains_slim_pattern(&runtime_h, required) {
             errors.push(format!("Core 1J runtime interface is missing `{required}`"));
         }
     }
@@ -579,7 +607,7 @@ fn check_core_1j_acceptance(
         "void slim_region_adopt",
         "allocation->region = parent",
     ] {
-        if !runtime_c.contains(required) {
+        if !contains_slim_pattern(&runtime_c, required) {
             errors.push(format!(
                 "Core 1J runtime implementation is missing `{required}`"
             ));
@@ -588,7 +616,7 @@ fn check_core_1j_acceptance(
 
     let conformance = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
     for required in ["syntax:fork", "diagnostic:E0356", "parallel:explicit-fork"] {
-        if !conformance.contains(required) {
+        if !contains_slim_pattern(&conformance, required) {
             errors.push(format!("Core 1J conformance is missing `{required}`"));
         }
     }
@@ -613,7 +641,7 @@ fn check_core_1j_acceptance(
         "SLIM_TASK_DISABLE",
         "SLIM_ALLOC_FAIL_AT",
     ] {
-        if !e2e.contains(required) {
+        if !contains_slim_pattern(&e2e, required) {
             errors.push(format!(
                 "Core 1J integration evidence is missing `{required}`"
             ));
@@ -672,7 +700,7 @@ fn check_parallelism_evidence(
         "(call typing/fact_type",
         "(call typing/linked_binding_declaration",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!(
                 "Core 1F bounded parallelism evidence is missing `{required}`"
             ));
@@ -686,7 +714,7 @@ fn check_parallelism_evidence(
         "(call parallel/analyze source tokens typed-facts range-view)",
         "(call parallel/emit_module_facts source tokens parallel-view output)",
     ] {
-        if !analysis.contains(required) {
+        if !contains_slim_pattern(&analysis, required) {
             errors.push(format!(
                 "Core 1F analysis does not consume the checked view through `{required}`"
             ));
@@ -694,10 +722,13 @@ fn check_parallelism_evidence(
     }
 
     let compiler = fs::read_to_string(root.join("selfhost/slimc.slim")).unwrap_or_default();
-    if !compiler.contains("(call check/check_source input tokens)")
-        || !compiler.contains("(call analysis/emit_module input tokens typed_facts output)")
-        || !compiler.contains("(fn analyze_project_path")
-        || !compiler.contains("(call project/prepare_project_path path)")
+    if !contains_slim_pattern(&compiler, "(call check/check_source input tokens)")
+        || !contains_slim_pattern(
+            &compiler,
+            "(call analysis/emit_module input tokens typed_facts output)",
+        )
+        || !contains_slim_pattern(&compiler, "(fn analyze_project_path")
+        || !contains_slim_pattern(&compiler, "(call project/prepare_project_path path)")
     {
         errors.push(
             "source and project analysis must consume normal checked artifacts without a second semantic path"
@@ -764,7 +795,7 @@ fn check_integer_proof_evidence(
         "(refinement-limit 64)",
         "(checked-site-report-limit 64)",
     ] {
-        if !ranges.contains(required) {
+        if !contains_slim_pattern(&ranges, required) {
             errors.push(format!(
                 "bounded integer proof implementation is missing `{required}`"
             ));
@@ -777,15 +808,15 @@ fn check_integer_proof_evidence(
         "(call ranges/analyze source tokens typed-facts)",
         "(call ranges/emit-module-facts source tokens range-view output)",
     ] {
-        if !analysis.contains(required) {
+        if !contains_slim_pattern(&analysis, required) {
             errors.push(format!("analysis version 6 is missing `{required}`"));
         }
     }
 
     let quality = fs::read_to_string(root.join("selfhost/quality.slim")).unwrap_or_default();
     let parallel = fs::read_to_string(root.join("selfhost/parallel.slim")).unwrap_or_default();
-    if !quality.contains("(call ranges/fact-total range_facts body)")
-        || !parallel.contains("(call ranges/fact-total range_facts expr)")
+    if !contains_slim_pattern(&quality, "(call ranges/fact-total range_facts body)")
+        || !contains_slim_pattern(&parallel, "(call ranges/fact-total range_facts expr)")
     {
         errors.push(
             "quality and parallelism must consume the same exact-node integer totality facts"
@@ -807,7 +838,7 @@ fn check_integer_proof_evidence(
         "zero-divisor (guarantee exact) (status unavailable)",
         "domain-limit (guarantee exact) (status unavailable)",
     ] {
-        if !e2e.contains(required) {
+        if !contains_slim_pattern(&e2e, required) {
             errors.push(format!("integer proof evidence is missing `{required}`"));
         }
     }
@@ -865,7 +896,7 @@ fn check_resource_evidence(
         "(reason nonliteral-controller)",
         "(false 16)",
     ] {
-        if !ranges.contains(required) {
+        if !contains_slim_pattern(&ranges, required) {
             errors.push(format!(
                 "bounded resource evidence implementation is missing `{required}`"
             ));
@@ -874,7 +905,10 @@ fn check_resource_evidence(
 
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     if !analysis.contains("(analysis 7")
-        || !analysis.contains("(call ranges/emit-module-facts source tokens range-view output)")
+        || !contains_slim_pattern(
+            &analysis,
+            "(call ranges/emit-module-facts source tokens range-view output)",
+        )
     {
         errors.push(
             "analysis schema 7 must emit resource evidence from the shared checked range view"
@@ -889,7 +923,7 @@ fn check_resource_evidence(
         "(recurrence-profile-count 17) (reported-recurrence-profiles 16)",
         "(profiled-call-site-count 65) (reported-call-site-count 64)",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!("resource evidence tests are missing `{required}`"));
         }
     }
@@ -905,7 +939,7 @@ fn check_resource_evidence(
         "resource baseline line {} must have sixteen columns",
         "resource evidence changed; record the reason",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!(
                 "durable resource benchmark is missing `{required}`"
             ));
@@ -1080,7 +1114,7 @@ fn check_host_boundary(
         ("runtime/slim_rt.c", "#if !defined(SLIM_POSIX_NETWORK)"),
     ] {
         let contents = fs::read_to_string(root.join(path)).unwrap_or_default();
-        if !contents.contains(required) {
+        if !contains_slim_pattern(&contents, required) {
             errors.push(format!(
                 "Core 1I clock implementation {path} is missing `{required}`"
             ));
@@ -1096,7 +1130,7 @@ fn check_host_boundary(
         "builtin:io.tcp-exchange,effect:alloc,effect:io,host:bounded-network",
         "missing-tcp-effect\tcheck-fail\tconformance/fail/missing_tcp_effect.slim",
     ] {
-        if !manifest.contains(required) {
+        if !contains_slim_pattern(&manifest, required) {
             errors.push(format!("Core 1I clock conformance is missing `{required}`"));
         }
     }
@@ -1124,7 +1158,7 @@ fn check_host_boundary(
         "child-tool-orchestration\tstart arbitrary executable and capture output\texternal launcher\tdefer",
         "filesystem-output\tpersist generated artifacts\tstdout plus external launcher\tdefer",
     ] {
-        if !needs.contains(required) {
+        if !contains_slim_pattern(&needs, required) {
             errors.push(format!(
                 "Core 1I host application matrix is missing `{required}`"
             ));
@@ -1184,7 +1218,7 @@ fn check_parallelism_application_baseline(
         "benchmarks/parallelism-baseline.tsv",
         "parallelism evidence changed; record the reason",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!(
                 "durable parallelism benchmark is missing `{required}`"
             ));
@@ -1284,7 +1318,7 @@ fn check_complete_parallel_blockers(
         "(call enrich_graph_blockers facts edges 0)",
         " (blockers",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!(
                 "complete SLIM blocker view is missing `{required}`"
             ));
@@ -1298,7 +1332,7 @@ fn check_complete_parallel_blockers(
         "every application function must have one complete blocker set",
         "parallelism baseline line {} must have thirty-five columns",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!(
                 "schema-2 blocker benchmark is missing `{required}`"
             ));
@@ -1315,7 +1349,7 @@ fn check_complete_parallel_blockers(
         "(blockers function-limit)",
         "(blockers edge-limit)",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!("complete blocker evidence is missing `{required}`"));
         }
     }
@@ -1329,7 +1363,7 @@ fn check_complete_parallel_blockers(
         "blocker_recurrence",
         "blocker_callee_not_safe",
     ] {
-        if !baseline.contains(required) {
+        if !contains_slim_pattern(&baseline, required) {
             errors.push(format!("schema-2 blocker baseline is missing `{required}`"));
         }
     }
@@ -1378,7 +1412,7 @@ fn check_total_recurrence_evidence(
         "(call promote-total facts tail)",
         "(call promote-total facts body)",
     ] {
-        if !ranges.contains(required) {
+        if !contains_slim_pattern(&ranges, required) {
             errors.push(format!("total recurrence proof is missing `{required}`"));
         }
     }
@@ -1389,7 +1423,7 @@ fn check_total_recurrence_evidence(
         "(call ranges/fact-total range_facts index)",
         "(let unsafe_recur Bool",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!(
                 "parallel recurrence discharge is missing `{required}`"
             ));
@@ -1411,7 +1445,7 @@ fn check_total_recurrence_evidence(
         "countdown-pair (guarantee exact) (status safe)",
         "(eligible-sites 4)",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!("total recurrence evidence is missing `{required}`"));
         }
     }
@@ -1420,7 +1454,7 @@ fn check_total_recurrence_evidence(
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     if !baseline
         .lines()
-        .any(|line| line.starts_with("state_machine\t1423\t3\t1\t1\t2\t2\t"))
+        .any(|line| line.starts_with("state_machine\t1888\t3\t1\t1\t2\t2\t"))
     {
         errors.push(
             "parallelism baseline must retain the positive state_machine application".to_owned(),
@@ -1475,7 +1509,7 @@ fn check_deterministic_parallel_schedule(
         "(selected-sites ",
         "(reported-sites ",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!(
                 "deterministic SLIM schedule is missing `{required}`"
             ));
@@ -1489,7 +1523,7 @@ fn check_deterministic_parallel_schedule(
         "(candidate-sites 129) (selected-sites 65) (reported-sites 64)",
         "report.matches(\"(fork-site \").count(), 64",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!(
                 "deterministic schedule evidence is missing `{required}`"
             ));
@@ -1505,7 +1539,7 @@ fn check_deterministic_parallel_schedule(
         "executed_sites: usize",
         "parallelism baseline line {} must have thirty-five columns",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!(
                 "schema-5 schedule benchmark is missing `{required}`"
             ));
@@ -1517,9 +1551,9 @@ fn check_deterministic_parallel_schedule(
     for required in [
         "# schema=5",
         "candidate_sites\tselected_sites\treported_sites\texecutable_sites\texecuted_sites\teligible_sites",
-        "state_machine\t1423\t3\t1\t1\t2\t2\t",
+        "state_machine\t1888\t3\t1\t1\t2\t2\t",
     ] {
-        if !baseline.contains(required) {
+        if !contains_slim_pattern(&baseline, required) {
             errors.push(format!(
                 "schema-5 schedule baseline is missing `{required}`"
             ));
@@ -1566,7 +1600,7 @@ fn check_total_task_failure_semantics(
         "the parent owns the only join handle",
         "move each owned input exactly once",
     ] {
-        if !decision.contains(required) {
+        if !contains_slim_pattern(&decision, required) {
             errors.push(format!(
                 "total-task failure contract is missing `{required}`"
             ));
@@ -1580,7 +1614,7 @@ fn check_total_task_failure_semantics(
         "(let independent Bool",
         "(call bool.and adjacent-let",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!("total-task proof is missing `{required}`"));
         }
     }
@@ -1592,7 +1626,7 @@ fn check_total_task_failure_semantics(
         "cancellation and",
         "wait cycles do not exist",
     ] {
-        if !docs.contains(required) {
+        if !contains_slim_pattern(&docs, required) {
             errors.push(format!(
                 "parallel failure specification is missing `{required}`"
             ));
@@ -1675,7 +1709,7 @@ fn check_parallel_execution_boundary(
         "(executed-sites ",
         "(status enabled)",
     ] {
-        if !parallel.contains(required) {
+        if !contains_slim_pattern(&parallel, required) {
             errors.push(format!(
                 "guarded automatic execution analysis is missing `{required}`"
             ));
@@ -1691,7 +1725,7 @@ fn check_parallel_execution_boundary(
         "pthread_join",
         "left.output = run(left.remaining, left.input)",
     ] {
-        if !reference.contains(required) {
+        if !contains_slim_pattern(&reference, required) {
             errors.push(format!("manual parallel reference is missing `{required}`"));
         }
     }
@@ -1707,7 +1741,7 @@ fn check_parallel_execution_boundary(
         "generated parallel execution must preserve serial-fallback output",
         "SLIM_TASK_DISABLE",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!("parallel runtime evidence is missing `{required}`"));
         }
     }
@@ -1723,7 +1757,7 @@ fn check_parallel_execution_boundary(
         "generated-parallel-runtime-ratio\tsignal_network\t1.25\tparallel-over-serial\tD0071",
         "native-runtime-ratio\tsignal_network\t2.50\tslim-over-c\tD0071",
     ] {
-        if !budgets.contains(required) {
+        if !contains_slim_pattern(&budgets, required) {
             errors.push(format!(
                 "guarded automatic execution budget is missing `{required}`"
             ));
@@ -1768,7 +1802,7 @@ fn check_parallel_execution_boundary(
         "slim_parallel_first.slim_result",
         "slim_parallel_second.slim_result",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "guarded automatic execution code generation is missing `{required}`"
             ));
@@ -1780,7 +1814,7 @@ fn check_parallel_execution_boundary(
         "-DSLIM_POSIX_WORKERS=1",
         "-pthread",
     ] {
-        if !driver.contains(required) {
+        if !contains_slim_pattern(&driver, required) {
             errors.push(format!(
                 "tiered generated-program build selection is missing `{required}`"
             ));
@@ -1794,7 +1828,9 @@ fn check_parallel_execution_boundary(
         "void slim_task_join",
         "slim_task_disabled || slim_task_worker",
     ] {
-        if !runtime_header.contains(required) && !runtime_source.contains(required) {
+        if !contains_slim_pattern(&runtime_header, required)
+            && !contains_slim_pattern(&runtime_source, required)
+        {
             errors.push(format!(
                 "tiered structured worker ABI is missing `{required}`"
             ));
@@ -1808,7 +1844,7 @@ fn check_parallel_execution_boundary(
         "-DSLIM_PARALLEL=1",
         "-DSLIM_POSIX_WORKERS=1",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!(
                 "tiered structured worker test is missing `{required}`"
             ));
@@ -1837,7 +1873,7 @@ fn check_parallel_execution_boundary(
         "!fs::read_to_string(nested_generated)",
         "examples/hello.slim",
     ] {
-        if !tests.contains(required) {
+        if !contains_slim_pattern(&tests, required) {
             errors.push(format!(
                 "guarded automatic execution test is missing `{required}`"
             ));
@@ -1872,7 +1908,7 @@ fn check_core_1e_acceptance(
         "### Core 1E: safety-preserving native efficiency\n\nStatus: complete",
         "D0061 accepts Core 1E",
     ] {
-        if !roadmap.contains(required) {
+        if !contains_slim_pattern(&roadmap, required) {
             errors.push(format!("Core 1E roadmap freeze is missing `{required}`"));
         }
     }
@@ -1895,7 +1931,7 @@ fn check_core_1e_acceptance(
         "native-runtime-ratio\trecords\t2.50\tslim-over-c\tD0061",
         "native-runtime-ratio\tvariants\t1.75\tslim-over-c\tD0061",
     ] {
-        if !budgets.contains(required) {
+        if !contains_slim_pattern(&budgets, required) {
             errors.push(format!("Core 1E tightened budget is missing `{required}`"));
         }
     }
@@ -1921,7 +1957,7 @@ fn check_allocation_free_region_elision(
         "(let region Unit (match uses_child_region",
         "(let destroyed Unit (match uses_child_region",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "allocation-free region elision is missing `{required}`"
             ));
@@ -1972,7 +2008,7 @@ fn check_runtime_fast_paths(
         "static inline void slim_vec_set",
         "if (vector->capacity > INT64_MAX / 2)",
     ] {
-        if !header.contains(required) {
+        if !contains_slim_pattern(&header, required) {
             errors.push(format!("checked runtime fast path is missing `{required}`"));
         }
     }
@@ -2002,7 +2038,7 @@ fn check_runtime_fast_paths(
         "(call emit_versioned_index source tokens params arguments index output range-facts)",
         "\"] = \"",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "typed vector-set lowering is missing checked fact use `{required}`"
             ));
@@ -2050,7 +2086,7 @@ fn check_core_1d_acceptance(
         "### Core 1D: complete typed compiler view\n\nStatus: complete",
         "Core 1D is accepted by D0058.",
     ] {
-        if !roadmap.contains(required) {
+        if !contains_slim_pattern(&roadmap, required) {
             errors.push(format!("Core 1D roadmap freeze is missing `{required}`"));
         }
     }
@@ -2319,7 +2355,7 @@ fn check_performance_architecture(
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!(
                 "performance benchmark implementation is missing `{required}`"
             ));
@@ -2858,7 +2894,7 @@ fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
     let decision_path = root.join("design/decisions/D0103-canonical-ast-boundary.md");
     let decision = fs::read_to_string(&decision_path).unwrap_or_default();
     for required in ["# D0103: Canonical AST module boundary", "Status: accepted"] {
-        if !decision.contains(required) {
+        if !contains_slim_pattern(&decision, required) {
             errors.push(format!(
                 "canonical AST boundary is missing accepted decision evidence `{required}`"
             ));
@@ -2880,7 +2916,7 @@ fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
         "(fn ast_binding_type",
         "(fn ast_expression_is_call",
     ] {
-        if !syntax.contains(required) {
+        if !contains_slim_pattern(&syntax, required) {
             errors.push(format!(
                 "canonical AST boundary is missing semantic accessor `{required}`"
             ));
@@ -2926,6 +2962,132 @@ fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
     }
 }
 
+fn check_indented_source(root: &Path, errors: &mut Vec<String>) {
+    let decision =
+        fs::read_to_string(root.join("design/decisions/D0104-indented-canonical-source.md"))
+            .unwrap_or_default();
+    for required in [
+        "# D0104: Indented canonical source",
+        "Status: accepted",
+        "Primitive: none",
+        "two ASCII spaces per level",
+        "803,456",
+        "856,167",
+        "885,268",
+        "1,015,050",
+        "820,377",
+    ] {
+        if !decision.contains(required) {
+            errors.push(format!(
+                "indented canonical source is missing decision evidence `{required}`"
+            ));
+        }
+    }
+
+    let syntax = fs::read_to_string(root.join("selfhost/syntax.slim")).unwrap_or_default();
+    for required in [
+        "(record ProgramParse",
+        "(fn lex_modern",
+        "(fn indentation_jump",
+        "(fn parse_program_result",
+        "\"E0102\"",
+        "\"E0103\"",
+        "\"E0104\"",
+        "\"E0105\"",
+        "\"E0106\"",
+        "\"E0107\"",
+    ] {
+        if !contains_slim_pattern(&syntax, required) {
+            errors.push(format!(
+                "indented parser is missing canonical capability `{required}`"
+            ));
+        }
+    }
+    for forbidden in ["fn lex(", "fn lex_modern_recursive", "parse_legacy_program"] {
+        if syntax.contains(forbidden) {
+            errors.push(format!(
+                "indented parser retains alternate program frontend `{forbidden}`"
+            ));
+        }
+    }
+
+    let formatter = fs::read_to_string(root.join("selfhost/format.slim")).unwrap_or_default();
+    for required in [
+        "(fn emit_module",
+        "(fn emit_function",
+        "(fn emit_expression",
+        "(call text/append_text output \"  \")",
+    ] {
+        if !contains_slim_pattern(&formatter, required) {
+            errors.push(format!(
+                "canonical formatter is missing indented capability `{required}`"
+            ));
+        }
+    }
+
+    let allowed_data_parsers = ["cache.slim", "edit.slim", "project.slim", "session.slim"];
+    let selfhost = root.join("selfhost");
+    let Ok(entries) = fs::read_dir(&selfhost) else {
+        errors.push("cannot inspect non-program data parser scope".to_owned());
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|value| value.to_str()) != Some("slim")
+            || path.file_name().and_then(|value| value.to_str()) == Some("syntax.slim")
+        {
+            continue;
+        }
+        let source = fs::read_to_string(&path).unwrap_or_default();
+        let name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        if source.contains("syntax/lex_data") && !allowed_data_parsers.contains(&name) {
+            errors.push(format!(
+                "{} uses the non-program S-expression parser outside its tooling boundary",
+                path.display()
+            ));
+        }
+    }
+
+    let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
+    for required in [
+        "tab-indentation\tcheck-fail",
+        "\tE0103@",
+        "odd-indentation\tcheck-fail",
+        "\tE0104@",
+        "skipped-indentation\tcheck-fail",
+        "\tE0105@",
+        "comma-syntax\tcheck-fail",
+        "\tE0106@",
+        "unterminated-string\tcheck-fail",
+        "\tE0107@",
+    ] {
+        if !manifest.contains(required) {
+            errors.push(format!(
+                "indented syntax diagnostic fixture is missing `{required}`"
+            ));
+        }
+    }
+
+    let core = fs::read_to_string(root.join("docs/CORE.md")).unwrap_or_default();
+    let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
+    let llms_generator =
+        fs::read_to_string(root.join("website/scripts/generate-content.mjs")).unwrap_or_default();
+    for (name, source) in [
+        ("docs/CORE.md", &core),
+        ("docs/STATUS.md", &status),
+        ("website/scripts/generate-content.mjs", &llms_generator),
+    ] {
+        if source.contains("canonical S-expression source")
+            || source.contains("Canonical source uses one S-expression")
+        {
+            errors.push(format!("{name} retains the superseded program syntax"));
+        }
+    }
+}
+
 fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let directory = root.join("selfhost");
     let project_path = directory.join("slim.project");
@@ -2946,6 +3108,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         ("edit", "edit.slim"),
         ("effects", "effects.slim"),
         ("equivalence", "equivalence.slim"),
+        ("format", "format.slim"),
         ("ir", "ir.slim"),
         ("memory", "memory.slim"),
         ("project", "project.slim"),
@@ -2974,11 +3137,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     for required in [
         "(module codegen \"codegen.slim\" (imports memory parallel ranges syntax text typing) (exports emit_program))",
         "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
-        "(module project \"project.slim\" (imports check codegen memory scheduler syntax text typing validate)",
+        "(module project \"project.slim\" (imports check codegen format memory scheduler syntax text typing validate)",
         "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue builtin_known empty_view fact_type linked_binding_declaration linked_binding_is_inout))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
     ] {
-        if !project.contains(required) {
+        if !contains_slim_pattern(&project, required) {
             errors.push(format!(
                 "selfhost/slim.project is missing compiler architecture clause `{required}`"
             ));
@@ -2990,13 +3153,10 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for (operation, count) in [
+        ("io.read-file(", check.matches("io.read-file(").count()),
         (
-            "(call io.read-file",
-            check.matches("(call io.read-file").count(),
-        ),
-        (
-            "(call syntax/lex",
-            check.matches("(call syntax/lex").count(),
+            "syntax/parse_program_result(",
+            check.matches("syntax/parse_program_result(").count(),
         ),
     ] {
         if count != 1 {
@@ -3005,7 +3165,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    if !check.contains("(Vec ir/Declaration)") {
+    if !check.contains("Vec[ir/Declaration]") {
         errors.push("self-host checker does not consume structured declarations".to_owned());
     }
 
@@ -3029,7 +3189,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn check_recursive_argument_identity",
         "(call append_issue \"E0350\" argument argument issues)",
     ] {
-        if !typing.contains(required) {
+        if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
                 "self-host typed issue channel is missing interval capability `{required}`"
             ));
@@ -3039,7 +3199,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("self-host typed issue channel regressed to point-only spans".to_owned());
     }
     for required in ["(fn report_issue", "(get issue start)", "(get issue end)"] {
-        if !check.contains(required) {
+        if !contains_slim_pattern(&check, required) {
             errors.push(format!(
                 "self-host checker is missing interval diagnostic consumer `{required}`"
             ));
@@ -3054,7 +3214,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call append_form_issue \"E0348\" temporary tokens issues)",
         "(call append_token_issue \"E0349\" duplicate issues)",
     ] {
-        if !check.contains(required) {
+        if !contains_slim_pattern(&check, required) {
             errors.push(format!(
                 "self-host checker is missing finalized semantic issue `{required}`"
             ));
@@ -3074,7 +3234,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call append_ownership_issue \"E0347\" argument issues)",
         "(call append_ownership_issue \"E0347\" result issues)",
     ] {
-        if !typing.contains(required) {
+        if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
                 "self-host typed ownership diagnostics are missing `{required}`"
             ));
@@ -3118,27 +3278,27 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let project_manifest =
         fs::read_to_string(root.join("conformance/projects/manifest.tsv")).unwrap_or_default();
     if !project_manifest.contains(
-        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@99:104,E0350@app@105:109",
+        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@97:102,E0350@app@103:107",
     ) {
         errors.push("recursive-inout project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-nonexhaustive\tcheck-fail\tconformance/projects/nonexhaustive/slim.project\tparity\tE0336@app@56:77",
+        "project-nonexhaustive\tcheck-fail\tconformance/projects/nonexhaustive/slim.project\tparity\tE0336@app@48:77",
     ) {
         errors.push("nonexhaustive project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-boolean-recovery\tcheck-fail\tconformance/projects/boolean-recovery/slim.project\tparity\tE0336@app@56:96,E0314@app@74:81,E0335@app@83:95,E0344@app@89:94",
+        "project-boolean-recovery\tcheck-fail\tconformance/projects/boolean-recovery/slim.project\tparity\tE0336@app@48:105,E0314@app@76:83,E0335@app@88:105,E0344@app@100:105",
     ) {
         errors.push("Boolean recovery project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@248:254,E0347@app@329:335,E0315@app@482:488,E0347@app@576:582",
+        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@190:196,E0347@app@250:256,E0315@app@377:383,E0347@app@448:454",
     ) {
         errors.push("ownership project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-malformed-module\tcheck-fail\tconformance/projects/malformed-module/slim.project\tparity\tE0102@app@0:59\tproject:module-shape,project:diagnostics",
+        "project-malformed-module\tcheck-fail\tconformance/projects/malformed-module/slim.project\tparity\tE0102@app@67:67\tproject:module-shape,project:diagnostics",
     ) {
         errors.push("malformed project module fixture is missing".to_owned());
     }
@@ -3166,20 +3326,20 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn report_private_type_leaks",
         "(call validate/module_shape_valid_from source module_tokens root end)",
     ] {
-        if !project_source.contains(required) {
+        if !contains_slim_pattern(&project_source, required) {
             errors.push(format!(
                 "self-host project checker is missing manifest capability `{required}`"
             ));
         }
     }
     for required in ["(get issue start)", "(get issue end)"] {
-        if !project_source.contains(required) {
+        if !contains_slim_pattern(&project_source, required) {
             errors.push(format!(
                 "self-host project checker is missing interval projection `{required}`"
             ));
         }
     }
-    if !project_source.contains("(get checked issues)") {
+    if !contains_slim_pattern(&project_source, "(get checked issues)") {
         errors.push("self-host project checker does not consume finalized issues".to_owned());
     }
 
@@ -3192,7 +3352,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(let length I64 (call vec.len tokens)",
         "(let exhausted Bool (call i64.ge cursor length)",
     ] {
-        if !syntax.contains(required) {
+        if !contains_slim_pattern(&syntax, required) {
             errors.push(format!(
                 "self-host name indexing is missing its token bound `{required}`"
             ));
@@ -3209,7 +3369,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call item_list_valid source tokens (call syntax/ast_module_items root) closing)",
         "(call module_shape_valid_from source tokens 0 end)",
     ] {
-        if !validate.contains(required) {
+        if !contains_slim_pattern(&validate, required) {
             errors.push(format!(
                 "self-host module validation is missing bounded-slice capability `{required}`"
             ));
@@ -3224,7 +3384,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         fs::read_to_string(root.join("design/decisions/D0046-bounded-record-member-lookup.md"))
             .unwrap_or_default();
     for required in ["# D0046: Bounded record member lookup", "Status: accepted"] {
-        if !bounded_record_decision.contains(required) {
+        if !contains_slim_pattern(&bounded_record_decision, required) {
             errors.push(format!(
                 "bounded record member lookup is missing accepted decision evidence `{required}`"
             ));
@@ -3239,7 +3399,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(let variant_link I64 (call syntax/ast_node_link tokens variant)",
         "(let variant_link I64 (call syntax/ast_node_link tokens variant_type)",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "self-host code generation is missing checked type/member use `{required}`"
             ));
@@ -3268,7 +3428,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn emit_binding_value",
         "(fn emit_binding_address",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "self-host code generation is missing linked binding-mode use `{required}`"
             ));
@@ -3285,7 +3445,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call i64.div type_mode 2)",
         "(call linked_binding_is_inout tokens result)",
     ] {
-        if !typing.contains(required) {
+        if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
                 "self-host typing is missing linked binding-mode capability `{required}`"
             ));
@@ -3298,7 +3458,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(let case_link I64 (call syntax/ast_node_link tokens expr)",
         "(let case_link I64 (call syntax/ast_node_link tokens cursor)",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "self-host code generation is missing bounded variant member query `{required}`"
             ));
@@ -3309,7 +3469,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call syntax/ast_node_link tokens field_form)",
         "(call checked_record_field_link source tokens cursor definition name_start name_end)",
     ] {
-        if !codegen.contains(required) {
+        if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
                 "self-host code generation is missing bounded record member query `{required}`"
             ));
@@ -3322,7 +3482,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     ] {
         let manifest =
             fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
-        if !manifest.contains(required) {
+        if !contains_slim_pattern(&manifest, required) {
             errors.push(format!(
                 "aggregate-link conformance evidence is missing `{required}`"
             ));
@@ -3356,7 +3516,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn build_snapshots",
         "(fn measure_update",
     ] {
-        if !query.contains(required) {
+        if !contains_slim_pattern(&query, required) {
             errors.push(format!(
                 "self-host query engine is missing typed capability `{required}`"
             ));
@@ -3379,7 +3539,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call project/prepare_project_path",
         "(call project/generate_prepared_project",
     ] {
-        if !cache.contains(required) {
+        if !contains_slim_pattern(&cache, required) {
             errors.push(format!(
                 "self-host cache is missing bounded capability `{required}`"
             ));
@@ -3391,7 +3551,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for required in ["(fn state_for_path", "(fn run_recovery"] {
-        if !session.contains(required) {
+        if !contains_slim_pattern(&session, required) {
             errors.push(format!(
                 "self-host session is missing transactional capability `{required}`"
             ));
@@ -3412,7 +3572,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn bounded_workers",
         "(fn plan",
     ] {
-        if !scheduler.contains(required) {
+        if !contains_slim_pattern(&scheduler, required) {
             errors.push(format!(
                 "self-host scheduler is missing bounded capability `{required}`"
             ));
@@ -3463,7 +3623,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(let type_index I64 (call fact_type_index facts value) (let boolean_match Bool (call i64.eq type_index -2)",
         "(fn emit_variant_match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(let variant_type I64 (call fact_type_index facts value)",
-        "checked_record_field_link source tokens cursor definition name_start name_end) (let type_index I64 (call fact_type_index facts value)",
+        "(call checked_record_field_link source tokens cursor definition name_start name_end)",
         "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
         "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
         "(get view facts)",
@@ -3479,7 +3639,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "slim_region_destroy(&slim_function_region)",
         "slim_allocation_failed",
     ] {
-        if !joined.contains(required) {
+        if !contains_slim_pattern(&joined, required) {
             errors.push(format!(
                 "Core 0.4 memory architecture is missing `{required}`"
             ));
@@ -3553,7 +3713,7 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
         fs::read_to_string(root.join("design/decisions/D0028-direct-typed-reduction.md"))
             .unwrap_or_default();
     for required in ["Status: accepted", "Primitive: none"] {
-        if !decision.contains(required) {
+        if !contains_slim_pattern(&decision, required) {
             errors.push(format!(
                 "Core 1A direct reduction requires D0028 field `{required}`"
             ));
@@ -3562,13 +3722,14 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
 
     let reduction = fs::read_to_string(root.join("selfhost/reduce.slim")).unwrap_or_default();
     for required in [
-        "(fn emit_expression",
+        "(fn clone_reduced_node",
+        "(call format/emit_module atoms reduced_tokens output)",
         "(fn normalize_from",
         "(fn normalize",
         "(fn emit_normal_form",
         "(call normalize_from canonical canonical 7)",
     ] {
-        if !reduction.contains(required) {
+        if !contains_slim_pattern(&reduction, required) {
             errors.push(format!(
                 "Core 1A reducer is missing direct-tree capability or exact pass bound `{required}`"
             ));
@@ -3583,7 +3744,7 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
         "(fn dependency_count",
         "(fact-limit 64)",
     ] {
-        if !analysis.contains(required) {
+        if !contains_slim_pattern(&analysis, required) {
             errors.push(format!(
                 "Core 1A semantic analysis is missing bounded fact `{required}`"
             ));
@@ -3655,7 +3816,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         fs::read_to_string(root.join("design/decisions/D0029-bounded-program-evidence.md"))
             .unwrap_or_default();
     for required in ["Status: accepted", "Primitive: none"] {
-        if !decision.contains(required) {
+        if !contains_slim_pattern(&decision, required) {
             errors.push(format!("Core 1B requires D0029 field `{required}`"));
         }
     }
@@ -3668,7 +3829,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "(max-live-owned ",
         "(scope-end ",
     ] {
-        if !analysis.contains(required) {
+        if !contains_slim_pattern(&analysis, required) {
             errors.push(format!("Core 1B analysis is missing `{required}`"));
         }
     }
@@ -3682,7 +3843,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "(totality (guarantee",
         "\"rewrite-sites\"",
     ] {
-        if !quality.contains(required) {
+        if !contains_slim_pattern(&quality, required) {
             errors.push(format!("Core 1B quality evidence is missing `{required}`"));
         }
     }
@@ -3696,7 +3857,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "(call reduce/normalize original)",
         "(call reduce/canonicalize candidate)",
     ] {
-        if !proof.contains(required) {
+        if !contains_slim_pattern(&proof, required) {
             errors.push(format!(
                 "Core 1B reduction evidence is missing `{required}`"
             ));
@@ -3714,7 +3875,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "(status unknown)",
         "(counterexample (inputs",
     ] {
-        if !equivalence.contains(required) {
+        if !contains_slim_pattern(&equivalence, required) {
             errors.push(format!(
                 "Core 1B equivalence checker is missing `{required}`"
             ));
@@ -3725,9 +3886,11 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
     for required in [
         "\"slim-edit\"",
         "(call i64.le replacement_size 64)",
-        "(call emit_form source tokens 0 target",
+        "(call clone_candidate source tokens 0 target",
+        "(call syntax/index_ast_boundaries candidate)",
+        "(call format/emit_module atoms candidate output)",
     ] {
-        if !edit.contains(required) {
+        if !contains_slim_pattern(&edit, required) {
             errors.push(format!("Core 1B structural editor is missing `{required}`"));
         }
     }
@@ -3768,7 +3931,7 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         "fn changed_span",
         "fn agent_manifest",
     ] {
-        if !benchmark.contains(required) {
+        if !contains_slim_pattern(&benchmark, required) {
             errors.push(format!("Core 1B agent benchmark is missing `{required}`"));
         }
     }

@@ -1,1 +1,40 @@
-(module variants (variant Command ((Keep) (Add I64) (Remove I64))) (fn command ((index I64)) Command (effects partial) (let choice I64 (call i64.rem index 3) (match (call i64.eq choice 0) (true (case Command Add (call i64.rem index 17))) (false (match (call i64.eq choice 1) (true (case Command Remove (call i64.rem index 13))) (false (case Command Keep))))))) (fn apply ((value I64) (command Command)) I64 (effects partial) (match command (Keep value) (Add (amount) (call i64.add value amount)) (Remove (amount) (call i64.sub value amount)))) (fn simulate ((index I64) (count I64) (value I64)) I64 (effects partial) (match (call i64.eq index count) (true value) (false (recur (call i64.add index 1) count (call apply value (call command index)))))) (fn main ((args (Vec Bytes))) I64 (effects io partial) (let result I64 (call simulate 0 2000000 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0)))))
+module variants
+
+variant Command:
+  Keep
+  Add(I64)
+  Remove(I64)
+
+fn command(index: I64) -> Command effects[partial]:
+  let choice: I64 = i64.rem(index 3)
+  match i64.eq(choice 0):
+    true:
+      case Command::Add(i64.rem(index 17))
+    false:
+      match i64.eq(choice 1):
+        true:
+          case Command::Remove(i64.rem(index 13))
+        false:
+          case Command::Keep()
+
+fn apply(value: I64 command: Command) -> I64 effects[partial]:
+  match command:
+    Keep:
+      value
+    Add(amount):
+      i64.add(value amount)
+    Remove(amount):
+      i64.sub(value amount)
+
+fn simulate(index: I64 count: I64 value: I64) -> I64 effects[partial]:
+  match i64.eq(index count):
+    true:
+      value
+    false:
+      recur(i64.add(index 1) count apply(value command(index)))
+
+fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
+  let result: I64 = simulate(0 2000000 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

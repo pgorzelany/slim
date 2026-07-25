@@ -1,1 +1,21 @@
-(module host-clock (fn sample ((remaining I64) (previous I64)) Bool (effects io partial) (match (call i64.le remaining 0) (true true) (false (let current I64 (call io.monotonic-ms) (match (call i64.ge current previous) (true (recur (call i64.sub remaining 1) current)) (false false)))))) (fn main ((args (Vec Bytes))) I64 (effects io partial) (let first I64 (call io.monotonic-ms) (match (call sample 100000 first) (true 0) (false 1)))))
+module host-clock
+
+fn sample(remaining: I64 previous: I64) -> Bool effects[io partial]:
+  match i64.le(remaining 0):
+    true:
+      true
+    false:
+      let current: I64 = io.monotonic-ms()
+      match i64.ge(current previous):
+        true:
+          recur(i64.sub(remaining 1) current)
+        false:
+          false
+
+fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
+  let first: I64 = io.monotonic-ms()
+  match sample(100000 first):
+    true:
+      0
+    false:
+      1

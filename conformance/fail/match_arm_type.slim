@@ -1,5 +1,8 @@
-(module match-arm-type
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (match true
-      (true 0)
-      (false false))))
+module match-arm-type
+
+fn main(args: Vec[Bytes]) -> I64:
+  match true:
+    true:
+      0
+    false:
+      false

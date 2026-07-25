@@ -15,18 +15,18 @@ From the repository root:
 
 <!-- slim-example: examples/hello.slim | output: hello from SLIM -->
 
-A program is one `(module ...)` form. Its entry point has one exact signature:
-`main` receives `(Vec Bytes)` and returns `I64`. The `(effects io)` list is a
-checked capability ceiling: this function may perform I/O.
+A program starts with one `module NAME` header. Its entry point has one exact
+signature: `main` receives `Vec[Bytes]` and returns `I64`. An `effects[io]`
+clause is a checked capability ceiling: this function may perform I/O.
 
 ## Functions, types, and effects
 
-Functions declare every parameter, result, and permitted effect. `(effects)`
-means pure. Allocation requires `alloc`, I/O requires `io`, and recurrence that
-has not been proven total requires `partial`. Calls have one canonical form:
-`(call function argument...)`.
+Functions declare every parameter, result, and permitted effect. Omitting the
+effects clause means pure. Allocation requires `alloc`, I/O requires `io`, and
+recurrence that has not been proven total requires `partial`. Calls have one
+canonical form: `function(argument...)`, with whitespace-separated arguments.
 
-`let` introduces an immutable binding. Arithmetic uses named checked built-ins
+`let name: Type = value` introduces an immutable binding. Arithmetic uses named checked built-ins
 such as `i64.add`; overflow is a defined trap rather than undefined behavior.
 Tail-position `recur` repeats the current function without growing the stack.
 
@@ -89,7 +89,7 @@ finite Boolean-product or single-byte domain named in its report.
 ## Host services
 
 Host calls use ordinary types and explicit effects. The monotonic clock has one
-canonical form, `(call io.monotonic-ms)`, and requires `io`. It allocates
+canonical form, `io.monotonic-ms()`, and requires `io`. It allocates
 nothing and returns nondecreasing milliseconds for elapsed-time comparisons;
 it is not wall-clock time.
 
@@ -109,7 +109,7 @@ independent, total, reorder-safe, supported by lowering, and profitable.
 Unknown or too-small work remains serial.
 
 SLIM also has one explicit wrapper for independent bounded host calls. It reuses
-ordinary `let` and `call`; there are no futures, task handles, locks, or
+ordinary `let` bindings and calls; there are no futures, task handles, locks, or
 detached work. One call may run on a child, the other on the parent, and both
 join before the continuation. Spawn failure executes the same calls serially.
 

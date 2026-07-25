@@ -1,1 +1,175 @@
-(module edit (fn parse_digits ((source Bytes) (index I64) (end I64) (value I64)) I64 (effects partial) (let done Bool (call i64.ge index end) (match done (true value) (false (let byte U8 (call bytes.get source index) (let code I64 (call u8.to-i64 byte) (let lower Bool (call i64.ge code 48) (let upper Bool (call i64.le code 57) (let digit Bool (call bool.and lower upper) (let safe_prefix Bool (call i64.le value 6710886) (let safe Bool (call bool.and digit safe_prefix) (match safe (false -1) (true (let shifted I64 (call i64.mul value 10) (let numeric I64 (call i64.sub code 48) (let candidate I64 (call i64.add shifted numeric) (let bounded Bool (call i64.le candidate 67108864) (match bounded (false -1) (true (let next I64 (call i64.add index 1) (recur source next end candidate))))))))))))))))))))) (fn parse_node ((source Bytes) (inout tokens (Vec syntax/Token)) (token I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens token) (let atom Bool (call i64.eq kind 2) (match atom (false -1) (true (let start I64 (call syntax/ast_node_start tokens token) (let end I64 (call syntax/ast_node_end tokens token) (let nonempty Bool (call i64.gt end start) (match nonempty (false -1) (true (call parse_digits source start end 0))))))))))) (fn patch_node ((source Bytes) (inout tokens (Vec syntax/Token))) I64 (effects partial) (let length I64 (call vec.len tokens) (let minimum Bool (call i64.ge length 12) (match minimum (false -1) (true (let root_left Bool (call i64.eq (call syntax/ast_node_kind tokens 0) 0) (let root_name Bool (call syntax/ast_node_text_is source tokens 1 "slim-edit") (let version Bool (call syntax/ast_node_text_is source tokens 2 "1") (let node_left Bool (call i64.eq (call syntax/ast_node_kind tokens 3) 0) (let node_name Bool (call syntax/ast_node_text_is source tokens 4 "node") (let node_close Bool (call i64.eq (call syntax/ast_node_kind tokens 6) 1) (let replace_left Bool (call i64.eq (call syntax/ast_node_kind tokens 7) 0) (let replace_name Bool (call syntax/ast_node_text_is source tokens 8 "replace") (let replacement_end I64 (call syntax/ast_next tokens 9) (let replace_close Bool (call i64.eq (call syntax/ast_node_kind tokens replacement_end) 1) (let root_close I64 (call i64.add replacement_end 1) (let root_closed Bool (call i64.eq (call syntax/ast_node_kind tokens root_close) 1) (let exact_end I64 (call i64.add root_close 1) (let exact Bool (call i64.eq exact_end length) (let replacement_size I64 (call i64.sub replacement_end 9) (let replacement_nonempty Bool (call i64.gt replacement_size 0) (let replacement_bounded Bool (call i64.le replacement_size 64) (let replacement_valid Bool (call bool.and replacement_nonempty replacement_bounded) (let first Bool (call bool.and root_left root_name) (let second Bool (call bool.and version node_left) (let third Bool (call bool.and node_name node_close) (let fourth Bool (call bool.and replace_left replace_name) (let fifth Bool (call bool.and replace_close root_closed) (let left Bool (call bool.and first second) (let middle Bool (call bool.and third fourth) (let right Bool (call bool.and fifth exact) (let prefix Bool (call bool.and left middle) (let suffix Bool (call bool.and right replacement_valid) (let valid Bool (call bool.and prefix suffix) (match valid (false -1) (true (call parse_node source tokens 5))))))))))))))))))))))))))))))))))))) (fn emit_children ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (target I64) (patch Bytes) (inout patch_tokens (Vec syntax/Token)) (replacement I64) (first Bool) (inout output (Vec U8))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let separated Unit (match first (true unit) (false (call text/append_text output " "))) (let emitted Unit (call emit_form source tokens cursor target patch patch_tokens replacement output) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens next target patch patch_tokens replacement false output))))))))) (fn emit_form ((source Bytes) (inout tokens (Vec syntax/Token)) (form I64) (target I64) (patch Bytes) (inout patch_tokens (Vec syntax/Token)) (replacement I64) (inout output (Vec U8))) Unit (effects alloc partial) (let selected Bool (call i64.eq form target) (match selected (true (call reduce/emit_original_form patch patch_tokens replacement output)) (false (let kind I64 (call syntax/ast_node_kind tokens form) (let composite Bool (call i64.eq kind 0) (match composite (false (call text/append_token source tokens form output)) (true (let open Unit (call text/append_text output "(") (let first I64 (call syntax/ast_list_first form) (let children Unit (call emit_children source tokens first target patch patch_tokens replacement true output) (call text/append_text output ")")))))))))))) (fn emit_candidate ((source Bytes) (inout tokens (Vec syntax/Token)) (patch Bytes) (inout output (Vec U8))) Bool (effects alloc partial) (let patch_tokens (Vec syntax/Token) (call vec.new) (let tokenized Unit (call syntax/lex patch 0 patch_tokens) (let target I64 (call patch_node patch patch_tokens) (let nonnegative Bool (call i64.ge target 0) (let source_length I64 (call vec.len tokens) (let in_range Bool (call i64.lt target source_length) (let target_kind I64 (call syntax/ast_node_kind tokens target) (let not_closing Bool (call bool.not (call i64.eq target_kind 1)) (let first_valid Bool (call bool.and nonnegative in_range) (let valid Bool (call bool.and first_valid not_closing) (match valid (false false) (true (let emitted Unit (call emit_form source tokens 0 target patch patch_tokens 9 output) (let newline Unit (call text/append_text output "\n") true))))))))))))))))
+module edit
+
+fn parse_digits(source: Bytes index: I64 end: I64 value: I64) -> I64 effects[partial]:
+  let done: Bool = i64.ge(index end)
+  match done:
+    true:
+      value
+    false:
+      let byte: U8 = bytes.get(source index)
+      let code: I64 = u8.to-i64(byte)
+      let lower: Bool = i64.ge(code 48)
+      let upper: Bool = i64.le(code 57)
+      let digit: Bool = bool.and(lower upper)
+      let safe_prefix: Bool = i64.le(value 6710886)
+      let safe: Bool = bool.and(digit safe_prefix)
+      match safe:
+        false:
+          -1
+        true:
+          let shifted: I64 = i64.mul(value 10)
+          let numeric: I64 = i64.sub(code 48)
+          let candidate: I64 = i64.add(shifted numeric)
+          let bounded: Bool = i64.le(candidate 67108864)
+          match bounded:
+            false:
+              -1
+            true:
+              let next: I64 = i64.add(index 1)
+              recur(source next end candidate)
+
+fn parse_node(source: Bytes inout tokens: Vec[syntax/Token] token: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens token)
+  let atom: Bool = i64.eq(kind 2)
+  match atom:
+    false:
+      -1
+    true:
+      let start: I64 = syntax/ast_node_start(tokens token)
+      let end: I64 = syntax/ast_node_end(tokens token)
+      let nonempty: Bool = i64.gt(end start)
+      match nonempty:
+        false:
+          -1
+        true:
+          parse_digits(source start end 0)
+
+fn patch_node(source: Bytes inout tokens: Vec[syntax/Token]) -> I64 effects[partial]:
+  let length: I64 = vec.len(tokens)
+  let minimum: Bool = i64.ge(length 12)
+  match minimum:
+    false:
+      -1
+    true:
+      let root_left: Bool = i64.eq(syntax/ast_node_kind(tokens 0) 0)
+      let root_name: Bool = syntax/ast_node_text_is(source tokens 1 "slim-edit")
+      let version: Bool = syntax/ast_node_text_is(source tokens 2 "1")
+      let node_left: Bool = i64.eq(syntax/ast_node_kind(tokens 3) 0)
+      let node_name: Bool = syntax/ast_node_text_is(source tokens 4 "node")
+      let node_close: Bool = i64.eq(syntax/ast_node_kind(tokens 6) 1)
+      let replace_left: Bool = i64.eq(syntax/ast_node_kind(tokens 7) 0)
+      let replace_name: Bool = syntax/ast_node_text_is(source tokens 8 "replace")
+      let replacement_end: I64 = syntax/ast_next(tokens 9)
+      let replace_close: Bool = i64.eq(syntax/ast_node_kind(tokens replacement_end) 1)
+      let root_close: I64 = i64.add(replacement_end 1)
+      let root_closed: Bool = i64.eq(syntax/ast_node_kind(tokens root_close) 1)
+      let exact_end: I64 = i64.add(root_close 1)
+      let exact: Bool = i64.eq(exact_end length)
+      let replacement_size: I64 = i64.sub(replacement_end 9)
+      let replacement_nonempty: Bool = i64.gt(replacement_size 0)
+      let replacement_bounded: Bool = i64.le(replacement_size 64)
+      let replacement_valid: Bool = bool.and(replacement_nonempty replacement_bounded)
+      let first: Bool = bool.and(root_left root_name)
+      let second: Bool = bool.and(version node_left)
+      let third: Bool = bool.and(node_name node_close)
+      let fourth: Bool = bool.and(replace_left replace_name)
+      let fifth: Bool = bool.and(replace_close root_closed)
+      let left: Bool = bool.and(first second)
+      let middle: Bool = bool.and(third fourth)
+      let right: Bool = bool.and(fifth exact)
+      let prefix: Bool = bool.and(left middle)
+      let suffix: Bool = bool.and(right replacement_valid)
+      let valid: Bool = bool.and(prefix suffix)
+      match valid:
+        false:
+          -1
+        true:
+          parse_node(source tokens 5)
+
+fn push_candidate_token(kind: I64 tag: I64 start: I64 end: I64 inout candidate: Vec[syntax/Token]) -> Unit effects[alloc]:
+  let token: syntax/Token = make syntax/Token(kind = kind tag = tag start = start end = end link = -1 next = -1)
+  vec.push(candidate token)
+
+fn clone_scalar(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout candidate: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens node)
+  let tag: I64 = syntax/ast_node_tag(tokens node)
+  let start: I64 = vec.len(atom_source)
+  let copied: Unit = text/append_token(source tokens node atom_source)
+  let end: I64 = vec.len(atom_source)
+  push_candidate_token(kind tag start end candidate)
+
+fn clone_tree_children(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout atom_source: Vec[U8] inout candidate: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+  let done: Bool = syntax/ast_list_done(tokens cursor)
+  match done:
+    true:
+      unit
+    false:
+      let copied: Unit = clone_tree(source tokens cursor atom_source candidate)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens next atom_source candidate)
+
+fn clone_tree(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout candidate: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+  let scalar: Bool = syntax/ast_node_is_scalar(tokens node)
+  match scalar:
+    true:
+      clone_scalar(source tokens node atom_source candidate)
+    false:
+      let position: I64 = vec.len(atom_source)
+      let tag: I64 = syntax/ast_node_tag(tokens node)
+      let opened: Unit = push_candidate_token(0 tag position position candidate)
+      let first: I64 = syntax/ast_list_first(node)
+      let children: Unit = clone_tree_children(source tokens first atom_source candidate)
+      let end: I64 = vec.len(atom_source)
+      push_candidate_token(1 0 end end candidate)
+
+fn clone_candidate_children(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 target: I64 patch: Bytes inout patch_tokens: Vec[syntax/Token] replacement: I64 inout atom_source: Vec[U8] inout candidate: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+  let done: Bool = syntax/ast_list_done(tokens cursor)
+  match done:
+    true:
+      unit
+    false:
+      let copied: Unit = clone_candidate(source tokens cursor target patch patch_tokens replacement atom_source candidate)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens next target patch patch_tokens replacement atom_source candidate)
+
+fn clone_candidate(source: Bytes inout tokens: Vec[syntax/Token] node: I64 target: I64 patch: Bytes inout patch_tokens: Vec[syntax/Token] replacement: I64 inout atom_source: Vec[U8] inout candidate: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+  let selected: Bool = i64.eq(node target)
+  match selected:
+    true:
+      clone_tree(patch patch_tokens replacement atom_source candidate)
+    false:
+      let scalar: Bool = syntax/ast_node_is_scalar(tokens node)
+      match scalar:
+        true:
+          clone_scalar(source tokens node atom_source candidate)
+        false:
+          let position: I64 = vec.len(atom_source)
+          let tag: I64 = syntax/ast_node_tag(tokens node)
+          let opened: Unit = push_candidate_token(0 tag position position candidate)
+          let first: I64 = syntax/ast_list_first(node)
+          let children: Unit = clone_candidate_children(source tokens first target patch patch_tokens replacement atom_source candidate)
+          let end: I64 = vec.len(atom_source)
+          push_candidate_token(1 0 end end candidate)
+
+fn emit_candidate(source: Bytes inout tokens: Vec[syntax/Token] patch: Bytes inout output: Vec[U8]) -> Bool effects[alloc partial]:
+  let patch_tokens: Vec[syntax/Token] = vec.new()
+  let tokenized: Unit = syntax/lex_data(patch 0 patch_tokens)
+  let target: I64 = patch_node(patch patch_tokens)
+  let nonnegative: Bool = i64.ge(target 0)
+  let source_length: I64 = vec.len(tokens)
+  let in_range: Bool = i64.lt(target source_length)
+  let target_kind: I64 = syntax/ast_node_kind(tokens target)
+  let not_closing: Bool = bool.not(i64.eq(target_kind 1))
+  let first_valid: Bool = bool.and(nonnegative in_range)
+  let valid: Bool = bool.and(first_valid not_closing)
+  match valid:
+    false:
+      false
+    true:
+      let atom_source: Vec[U8] = vec.new()
+      let candidate: Vec[syntax/Token] = vec.new()
+      let cloned: Unit = clone_candidate(source tokens 0 target patch patch_tokens 9 atom_source candidate)
+      let indexed: Unit = syntax/index_ast_boundaries(candidate)
+      let atoms: Bytes = bytes.freeze(atom_source)
+      let emitted: Unit = format/emit_module(atoms candidate output)
+      true

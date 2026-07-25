@@ -1,5 +1,8 @@
-(module multiple
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (match true
-      (true missing)
-      (true false))))
+module multiple
+
+fn main(args: Vec[Bytes]) -> I64:
+  match true:
+    true:
+      missing
+    true:
+      false

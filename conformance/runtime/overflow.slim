@@ -1,1 +1,4 @@
-(module overflow (fn main ((args (Vec Bytes))) I64 (effects) (call i64.add 9223372036854775807 1)))
+module overflow
+
+fn main(args: Vec[Bytes]) -> I64:
+  i64.add(9223372036854775807 1)

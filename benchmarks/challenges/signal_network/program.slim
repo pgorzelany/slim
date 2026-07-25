@@ -1,1 +1,154 @@
-(module signal-network (record Signals ((a Bool) (b Bool) (c Bool) (d Bool) (e Bool) (f Bool) (g Bool) (h Bool))) (fn run ((remaining I64) (signals Signals)) Signals (effects partial) (match (call i64.le remaining 0) (true signals) (false (let next-a Bool (call bool.not (get signals h)) (let next-b Bool (get signals a) (let next-c Bool (call bool.and (get signals b) (get signals h)) (let next-d Bool (call bool.or (get signals c) (get signals a)) (let next-e Bool (get signals d) (let next-f Bool (call bool.not (get signals e)) (let next-g Bool (call bool.and (get signals f) (get signals c)) (let next-h Bool (call bool.or (get signals g) (get signals b)) (recur (call i64.sub remaining 1) (make Signals (a next-a) (b next-b) (c next-c) (d next-d) (e next-e) (f next-f) (g next-g) (h next-h)))))))))))))) (fn same ((left Signals) (right Signals)) Bool (effects) (call bool.and (call i64.eq (match (get left a) (true 1) (false 0)) (match (get right a) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left b) (true 1) (false 0)) (match (get right b) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left c) (true 1) (false 0)) (match (get right c) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left d) (true 1) (false 0)) (match (get right d) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left e) (true 1) (false 0)) (match (get right e) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left f) (true 1) (false 0)) (match (get right f) (true 1) (false 0))) (call bool.and (call i64.eq (match (get left g) (true 1) (false 0)) (match (get right g) (true 1) (false 0))) (call i64.eq (match (get left h) (true 1) (false 0)) (match (get right h) (true 1) (false 0))))))))))) (fn main ((args (Vec Bytes))) I64 (effects io partial) (let seed Bool (call i64.gt (call vec.len args) 1) (let first Signals (make Signals (a seed) (b false) (c true) (d false) (e true) (f false) (g true) (h false)) (let second Signals (make Signals (a false) (b seed) (c false) (d true) (e false) (f true) (g false) (h true)) (let left Signals (call run 2000000 first) (let right Signals (call run 2000000 second) (let equal Bool (call same left right) (let answer I64 (match equal (true 1) (false 0)) (let shown Unit (call io.print-i64 answer) (let newline Unit (call io.println "") 0)))))))))))
+module signal-network
+
+record Signals:
+  a: Bool
+  b: Bool
+  c: Bool
+  d: Bool
+  e: Bool
+  f: Bool
+  g: Bool
+  h: Bool
+
+fn run(remaining: I64 signals: Signals) -> Signals effects[partial]:
+  match i64.le(remaining 0):
+    true:
+      signals
+    false:
+      let next-a: Bool = bool.not(get(signals h))
+      let next-b: Bool = get(signals a)
+      let next-c: Bool = bool.and(get(signals b) get(signals h))
+      let next-d: Bool = bool.or(get(signals c) get(signals a))
+      let next-e: Bool = get(signals d)
+      let next-f: Bool = bool.not(get(signals e))
+      let next-g: Bool = bool.and(get(signals f) get(signals c))
+      let next-h: Bool = bool.or(get(signals g) get(signals b))
+      recur(i64.sub(remaining 1) make Signals(a = next-a b = next-b c = next-c d = next-d e = next-e f = next-f g = next-g h = next-h))
+
+fn same(left: Signals right: Signals) -> Bool:
+  bool.and(
+    i64.eq(
+      match get(left a):
+        true:
+          1
+        false:
+          0
+      match get(right a):
+        true:
+          1
+        false:
+          0
+    )
+    bool.and(
+      i64.eq(
+        match get(left b):
+          true:
+            1
+          false:
+            0
+        match get(right b):
+          true:
+            1
+          false:
+            0
+      )
+      bool.and(
+        i64.eq(
+          match get(left c):
+            true:
+              1
+            false:
+              0
+          match get(right c):
+            true:
+              1
+            false:
+              0
+        )
+        bool.and(
+          i64.eq(
+            match get(left d):
+              true:
+                1
+              false:
+                0
+            match get(right d):
+              true:
+                1
+              false:
+                0
+          )
+          bool.and(
+            i64.eq(
+              match get(left e):
+                true:
+                  1
+                false:
+                  0
+              match get(right e):
+                true:
+                  1
+                false:
+                  0
+            )
+            bool.and(
+              i64.eq(
+                match get(left f):
+                  true:
+                    1
+                  false:
+                    0
+                match get(right f):
+                  true:
+                    1
+                  false:
+                    0
+              )
+              bool.and(
+                i64.eq(
+                  match get(left g):
+                    true:
+                      1
+                    false:
+                      0
+                  match get(right g):
+                    true:
+                      1
+                    false:
+                      0
+                )
+                i64.eq(
+                  match get(left h):
+                    true:
+                      1
+                    false:
+                      0
+                  match get(right h):
+                    true:
+                      1
+                    false:
+                      0
+                )
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
+fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
+  let seed: Bool = i64.gt(vec.len(args) 1)
+  let first: Signals = make Signals(a = seed b = false c = true d = false e = true f = false g = true h = false)
+  let second: Signals = make Signals(a = false b = seed c = false d = true e = false f = true g = false h = true)
+  let left: Signals = run(2000000 first)
+  let right: Signals = run(2000000 second)
+  let equal: Bool = same(left right)
+  let answer: I64 = match equal:
+    true:
+      1
+    false:
+      0
+  let shown: Unit = io.print-i64(answer)
+  let newline: Unit = io.println("")
+  0

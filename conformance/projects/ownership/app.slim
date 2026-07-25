@@ -1,16 +1,25 @@
-(module app
-  (fn consume ((value (Vec I64))) Unit (effects) unit)
-  (fn take ((value (Vec I64))) I64 (effects)
-    (call vec.len value))
-  (fn moved ((values (Vec I64))) Unit (effects)
-    (let first Unit (call consume values)
-      (call consume values)))
-  (fn borrowed ((inout values (Vec I64))) I64 (effects)
-    (call take values))
-  (fn freeze-twice ((values (Vec U8))) I64 (effects)
-    (let first Bytes (call bytes.freeze values)
-      (let second Bytes (call bytes.freeze values)
-        0)))
-  (fn return-borrowed ((inout values (Vec I64))) (Vec I64) (effects)
-    values)
-  (fn main ((args (Vec Bytes))) I64 (effects) 0))
+module app
+
+fn consume(value: Vec[I64]) -> Unit:
+  unit
+
+fn take(value: Vec[I64]) -> I64:
+  vec.len(value)
+
+fn moved(values: Vec[I64]) -> Unit:
+  let first: Unit = consume(values)
+  consume(values)
+
+fn borrowed(inout values: Vec[I64]) -> I64:
+  take(values)
+
+fn freeze-twice(values: Vec[U8]) -> I64:
+  let first: Bytes = bytes.freeze(values)
+  let second: Bytes = bytes.freeze(values)
+  0
+
+fn return-borrowed(inout values: Vec[I64]) -> Vec[I64]:
+  values
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

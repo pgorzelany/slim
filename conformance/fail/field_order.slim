@@ -1,5 +1,9 @@
-(module field-order
-  (record Pair ((left I64) (right I64)))
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let pair Pair (make Pair (right 2) (left 1))
-      (get pair left))))
+module field-order
+
+record Pair:
+  left: I64
+  right: I64
+
+fn main(args: Vec[Bytes]) -> I64:
+  let pair: Pair = make Pair(right = 2 left = 1)
+  get(pair left)

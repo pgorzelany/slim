@@ -1,3 +1,7 @@
-(module malformed-composite-type
-  (fn consume ((values (Vec I64 Bool))) I64 (effects) 0)
-  (fn main ((args (Vec Bytes))) I64 (effects) 0))
+module malformed-composite-type
+
+fn consume(values: Vec[I64 Bool]) -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

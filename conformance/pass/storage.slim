@@ -1,1 +1,29 @@
-(module storage (fn main ((args (Vec Bytes))) I64 (effects alloc io) (let path Bytes (call vec.get args 1) (let input_bytes (Vec U8) (call vec.new) (let input_read Bool (call io.read-file path input_bytes) (let input Bytes (call bytes.freeze input_bytes) (let input_length I64 (call bytes.len input) (let first U8 (call bytes.get input 0) (let output (Vec U8) (call vec.new) (let o U8 (call i64.to-u8 79) (let k U8 (call i64.to-u8 75) (let pushed_o Unit (call vec.push output o) (let pushed_x Unit (call vec.push output first) (let set_k Unit (call vec.set output 1 k) (let output_length I64 (call vec.len output) (let observed U8 (call vec.get output 1) (let arena (Arena I64) (call arena.new) (let identity (Id I64) (call arena.add arena 42) (let answer I64 (call arena.get arena identity) (let frozen Bytes (call bytes.freeze output) (let shown Unit (call io.print-bytes frozen) (let newline Unit (call io.println "") (let nonempty Bool (call i64.gt input_length 0) (match nonempty (true (call i64.sub answer 42)) (false (call u8.to-i64 observed))))))))))))))))))))))))))
+module storage
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+  let path: Bytes = vec.get(args 1)
+  let input_bytes: Vec[U8] = vec.new()
+  let input_read: Bool = io.read-file(path input_bytes)
+  let input: Bytes = bytes.freeze(input_bytes)
+  let input_length: I64 = bytes.len(input)
+  let first: U8 = bytes.get(input 0)
+  let output: Vec[U8] = vec.new()
+  let o: U8 = i64.to-u8(79)
+  let k: U8 = i64.to-u8(75)
+  let pushed_o: Unit = vec.push(output o)
+  let pushed_x: Unit = vec.push(output first)
+  let set_k: Unit = vec.set(output 1 k)
+  let output_length: I64 = vec.len(output)
+  let observed: U8 = vec.get(output 1)
+  let arena: Arena[I64] = arena.new()
+  let identity: Id[I64] = arena.add(arena 42)
+  let answer: I64 = arena.get(arena identity)
+  let frozen: Bytes = bytes.freeze(output)
+  let shown: Unit = io.print-bytes(frozen)
+  let newline: Unit = io.println("")
+  let nonempty: Bool = i64.gt(input_length 0)
+  match nonempty:
+    true:
+      i64.sub(answer 42)
+    false:
+      u8.to-i64(observed)

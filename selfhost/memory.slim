@@ -1,1 +1,533 @@
-(module memory (record ValuePlan ((name I64) (type_index I64) (storage I64) (borrowed Bool) (declared I64) (last_use I64) (escape I64))) (record AllocationPlan ((site I64) (region I64))) (record DestructionPlan ((region I64) (end I64) (reverse Bool))) (record FunctionPlan ((function I64) (return_storage I64) (local_region Bool) (recursive Bool) (liveness_precise Bool) (values (Vec ValuePlan)) (allocations (Vec AllocationPlan)) (destructions (Vec DestructionPlan)) (escaping_values I64))) (record Plan ((functions (Vec FunctionPlan)))) (fn function_plan_allocates ((plan FunctionPlan)) Bool (effects) (let allocations (Vec AllocationPlan) (get plan allocations) (let count I64 (call vec.len allocations) (call i64.gt count 0)))) (fn allocation_site_region_range ((inout allocations (Vec AllocationPlan)) (site I64) (low I64) (high I64)) I64 (effects partial) (let done Bool (call i64.ge low high) (match done (true -1) (false (let distance I64 (call i64.sub high low) (let half I64 (call i64.div distance 2) (let middle I64 (call i64.add low half) (let plan AllocationPlan (call vec.get allocations middle) (let planned_site I64 (get plan site) (let same Bool (call i64.eq site planned_site) (match same (true (get plan region)) (false (let before Bool (call i64.lt site planned_site) (match before (true (recur allocations site low middle)) (false (let next I64 (call i64.add middle 1) (recur allocations site next high))))))))))))))))) (fn allocation_site_region ((inout allocations (Vec AllocationPlan)) (site I64)) I64 (effects partial) (let count I64 (call vec.len allocations) (call allocation_site_region_range allocations site 0 count))) (fn span_has_recur ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (end I64)) Bool (effects partial) (let done Bool (call i64.ge cursor end) (match done (true false) (false (let same Bool (call syntax/ast_expression_is_recur source tokens cursor) (match same (true true) (false (let next I64 (call syntax/ast_node_after cursor) (recur source tokens next end))))))))) (fn empty_plan () Plan (effects alloc) (let functions (Vec FunctionPlan) (call vec.new) (make Plan (functions functions)))) (fn storage_join ((left I64) (right I64)) I64 (effects) (let left_greater Bool (call i64.gt left right) (match left_greater (true left) (false right)))) (fn record_storage ((source Bytes) (inout tokens (Vec syntax/Token)) (module_items I64) (cursor I64) (depth I64) (current I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true current) (false (let type_index I64 (call syntax/ast_member_value cursor) (let storage I64 (call type_storage_kind_from source tokens module_items type_index depth) (let joined I64 (call storage_join current storage) (let owned Bool (call i64.eq joined 2) (match owned (true 2) (false (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens module_items next depth joined))))))))))))) (fn payload_storage ((source Bytes) (inout tokens (Vec syntax/Token)) (module_items I64) (cursor I64) (depth I64) (current I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true current) (false (let storage I64 (call type_storage_kind_from source tokens module_items cursor depth) (let joined I64 (call storage_join current storage) (let owned Bool (call i64.eq joined 2) (match owned (true 2) (false (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens module_items next depth joined)))))))))))) (fn variant_storage ((source Bytes) (inout tokens (Vec syntax/Token)) (module_items I64) (cursor I64) (depth I64) (current I64)) I64 (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true current) (false (let payload I64 (call syntax/ast_member_value cursor) (let storage I64 (call payload_storage source tokens module_items payload depth current) (let owned Bool (call i64.eq storage 2) (match owned (true 2) (false (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens module_items next depth storage)))))))))))) (fn type_storage_kind_from ((source Bytes) (inout tokens (Vec syntax/Token)) (module_items I64) (type_index I64) (depth I64)) I64 (effects partial) (let too_deep Bool (call i64.ge depth 64) (match too_deep (true 2) (false (let kind I64 (call syntax/ast_node_kind tokens type_index) (let composite Bool (call i64.eq kind 0) (match composite (true (let id_type Bool (call syntax/ast_type_is_id source tokens type_index) (match id_type (true 0) (false 2)))) (false (let scalar_kind I64 (call syntax/scalar_type_kind source tokens type_index) (let scalar Bool (call i64.ge scalar_kind 0) (match scalar (true (let bytes_type Bool (call i64.eq scalar_kind 4) (match bytes_type (true 1) (false 0)))) (false (let item_link I64 (call syntax/ast_node_link tokens type_index) (let link_valid Bool (call i64.ge item_link 0) (let item I64 (match link_valid (true item_link) (false -1)) (let found Bool (call i64.ge item 0) (match found (false 2) (true (let next_depth I64 (call i64.add depth 1) (let first I64 (call syntax/ast_data_members_first item) (let record_item Bool (call syntax/ast_item_is_record source tokens item) (match record_item (true (call record_storage source tokens module_items first next_depth 0)) (false (call variant_storage source tokens module_items first next_depth 0)))))))))))))))))))))))) (fn type_storage_kind ((source Bytes) (inout tokens (Vec syntax/Token)) (type_index I64)) I64 (effects partial) (call type_storage_kind_from source tokens 3 type_index 0)) (fn parameters_have_inout ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64)) Bool (effects partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true false) (false (let head I64 (call syntax/ast_list_first cursor) (let borrowed Bool (call syntax/ast_binding_is_inout source tokens cursor) (match borrowed (true true) (false (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens next))))))))))) (fn function_uses_local_region ((source Bytes) (inout tokens (Vec syntax/Token)) (function I64)) Bool (effects partial) (let params I64 (call syntax/ast_function_parameters function) (let return_type I64 (call syntax/ast_function_return_type tokens function) (let return_storage I64 (call type_storage_kind source tokens return_type) (let no_return_storage Bool (call i64.eq return_storage 0) (let first_parameter I64 (call syntax/ast_parameters_first params) (let output Bool (call parameters_have_inout source tokens first_parameter) (let no_output Bool (call bool.not output) (call bool.and no_return_storage no_output))))))))) (fn last_named_use ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (end I64) (name_start I64) (name_end I64) (last I64)) I64 (effects partial) (let done Bool (call i64.ge cursor end) (match done (true last) (false (let kind I64 (call syntax/ast_node_kind tokens cursor) (let named Bool (call i64.eq kind 2) (let candidate_start I64 (call syntax/ast_node_start tokens cursor) (let candidate_end I64 (call syntax/ast_node_end tokens cursor) (let same Bool (match named (true (call syntax/spans_equal source candidate_start candidate_end name_start name_end)) (false false)) (let next_last I64 (match same (true candidate_end) (false last)) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens next end name_start name_end next_last)))))))))))) (fn span_has_name ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (end I64) (name_start I64) (name_end I64)) Bool (effects partial) (let found I64 (call last_named_use source tokens cursor end name_start name_end -1) (call i64.ge found 0))) (fn result_expression ((source Bytes) (inout tokens (Vec syntax/Token)) (expr I64)) I64 (effects partial) (let let_form Bool (call syntax/ast_expression_is_let source tokens expr) (match let_form (true (recur source tokens (call syntax/ast_let_body tokens expr))) (false (let set_form Bool (call syntax/ast_expression_is_set source tokens expr) (match set_form (true (recur source tokens (call syntax/ast_set_body tokens expr))) (false expr))))))) (fn escapes_to_inout ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (cursor I64) (end I64) (name_start I64) (name_end I64)) Bool (effects partial) (let done Bool (call i64.ge cursor end) (match done (true false) (false (let kind I64 (call syntax/ast_node_kind tokens cursor) (let form Bool (call i64.eq kind 0) (match form (false (let next I64 (call syntax/ast_node_after cursor) (recur source tokens params next end name_start name_end))) (true (let head I64 (call syntax/ast_list_first cursor) (let call_form Bool (call syntax/ast_expression_is_call source tokens cursor) (match call_form (false (let next I64 (call syntax/ast_node_after cursor) (recur source tokens params next end name_start name_end))) (true (let callee I64 (call syntax/ast_call_callee cursor) (let vector_push Bool (call syntax/ast_node_text_is source tokens callee "vec.push") (let arena_add Bool (call syntax/ast_node_text_is source tokens callee "arena.add") (let store Bool (call bool.or vector_push arena_add) (match store (false (let next I64 (call syntax/ast_node_after cursor) (recur source tokens params next end name_start name_end))) (true (let target I64 (call syntax/ast_call_arguments cursor) (let value I64 (call syntax/ast_next tokens target) (let value_start I64 (call syntax/ast_node_start tokens value) (let value_end I64 (call syntax/ast_node_end tokens value) (let same_value Bool (call syntax/spans_equal source value_start value_end name_start name_end) (let target_inout Bool (match same_value (true (call syntax/name_is_inout source tokens params target)) (false false)) (match target_inout (true true) (false (let next I64 (call syntax/ast_node_after cursor) (recur source tokens params next end name_start name_end)))))))))))))))))))))))))))) (fn escape_kind ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (body I64) (body_end I64) (name_start I64) (name_end I64)) I64 (effects partial) (let result I64 (call result_expression source tokens body) (let result_end I64 (call syntax/ast_next tokens result) (let result_escape Bool (call span_has_name source tokens result result_end name_start name_end) (let output_escape Bool (call escapes_to_inout source tokens params body body_end name_start name_end) (match result_escape (true (match output_escape (true 3) (false 1))) (false (match output_escape (true 2) (false 0))))))))) (fn append_value_plan ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (body I64) (body_end I64) (name I64) (type_index I64) (borrowed Bool) (declared I64) (inout values (Vec ValuePlan))) Unit (effects alloc partial) (let name_start I64 (call syntax/ast_node_start tokens name) (let name_end I64 (call syntax/ast_node_end tokens name) (let storage I64 (call type_storage_kind source tokens type_index) (let plan ValuePlan (make ValuePlan (name name) (type_index type_index) (storage storage) (borrowed borrowed) (declared declared) (last_use name_end) (escape 0)) (call vec.push values plan)))))) (fn append_parameter_plans ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (body I64) (body_end I64) (cursor I64) (inout values (Vec ValuePlan))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let head I64 (call syntax/ast_list_first cursor) (let borrowed Bool (call syntax/ast_binding_is_inout source tokens cursor) (let name I64 (call syntax/ast_binding_name source tokens cursor) (let type_index I64 (call syntax/ast_binding_type source tokens cursor) (let appended Unit (call append_value_plan source tokens params body body_end name type_index borrowed cursor values) (let next I64 (call syntax/ast_next tokens cursor) (recur source tokens params body body_end next values)))))))))))) (fn append_local_plans ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (body I64) (body_end I64) (cursor I64) (inout values (Vec ValuePlan))) Unit (effects alloc partial) (let done Bool (call i64.ge cursor body_end) (match done (true unit) (false (let kind I64 (call syntax/ast_node_kind tokens cursor) (let form Bool (call i64.eq kind 0) (let head I64 (call syntax/ast_list_first cursor) (let let_form Bool (match form (true (call syntax/ast_expression_is_let source tokens cursor)) (false false)) (let appended Unit (match let_form (true (let name I64 (call syntax/ast_let_name cursor) (let type_index I64 (call syntax/ast_let_type cursor) (call append_value_plan source tokens params body body_end name type_index false cursor values)))) (false unit)) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens params body body_end next values))))))))))) (fn append_allocation_plans ((source Bytes) (inout tokens (Vec syntax/Token)) (cursor I64) (end I64) (region I64) (inout allocations (Vec AllocationPlan))) Unit (effects alloc partial) (let done Bool (call i64.ge cursor end) (match done (true unit) (false (let kind I64 (call syntax/ast_node_kind tokens cursor) (let form Bool (call i64.eq kind 0) (let allocation Bool (match form (false false) (true (let head I64 (call syntax/ast_list_first cursor) (let call_form Bool (call syntax/ast_expression_is_call source tokens cursor) (match call_form (false false) (true (let callee I64 (call syntax/ast_call_callee cursor) (call effects/call_requires source tokens callee 1)))))))) (let appended Unit (match allocation (true (let plan AllocationPlan (make AllocationPlan (site cursor) (region region)) (call vec.push allocations plan))) (false unit)) (let next I64 (call syntax/ast_node_after cursor) (recur source tokens next end region allocations)))))))))) (fn conservative_escape ((return_storage I64) (output Bool)) I64 (effects) (let returns Bool (call i64.gt return_storage 0) (match returns (true (match output (true 3) (false 1))) (false (match output (true 2) (false 0)))))) (fn finalize_value_plans ((source Bytes) (inout tokens (Vec syntax/Token)) (params I64) (body I64) (body_end I64) (return_storage I64) (output Bool) (inout values (Vec ValuePlan)) (index I64)) Unit (effects alloc partial) (let length I64 (call vec.len values) (let done Bool (call i64.ge index length) (match done (true unit) (false (let value ValuePlan (call vec.get values index) (let name I64 (get value name) (let name_start I64 (call syntax/ast_node_start tokens name) (let name_end I64 (call syntax/ast_node_end tokens name) (let bounded Bool (call i64.lt index 64) (let last_use I64 (match bounded (true (let declared I64 (get value declared) (call last_named_use source tokens declared body_end name_start name_end name_end))) (false body_end)) (let escape I64 (match bounded (true (call escape_kind source tokens params body body_end name_start name_end)) (false (let storage I64 (get value storage) (let stored Bool (call i64.gt storage 0) (match stored (true (call conservative_escape return_storage output)) (false 0)))))) (let updated ValuePlan (make ValuePlan (name name) (type_index (get value type_index)) (storage (get value storage)) (borrowed (get value borrowed)) (declared (get value declared)) (last_use last_use) (escape escape)) (let replaced Unit (call vec.set values index updated) (let next I64 (call i64.add index 1) (recur source tokens params body body_end return_storage output values next)))))))))))))))) (fn count_escaping_values ((inout values (Vec ValuePlan)) (index I64) (count I64)) I64 (effects partial) (let length I64 (call vec.len values) (let done Bool (call i64.ge index length) (match done (true count) (false (let value ValuePlan (call vec.get values index) (let storage I64 (get value storage) (let escape I64 (get value escape) (let stored Bool (call i64.gt storage 0) (let escapes Bool (call i64.gt escape 0) (let escaping Bool (call bool.and stored escapes) (let increment I64 (match escaping (true 1) (false 0)) (let total I64 (call i64.add count increment) (let next I64 (call i64.add index 1) (recur values next total))))))))))))))) (fn build_function_plan ((source Bytes) (inout tokens (Vec syntax/Token)) (function I64)) FunctionPlan (effects alloc partial) (let params I64 (call syntax/ast_function_parameters function) (let return_type I64 (call syntax/ast_function_return_type tokens function) (let return_storage I64 (call type_storage_kind source tokens return_type) (let local_region Bool (call function_uses_local_region source tokens function) (let effects I64 (call syntax/ast_function_effects tokens function) (let body I64 (call syntax/ast_function_body tokens function) (let body_end I64 (call syntax/ast_next tokens body) (let values (Vec ValuePlan) (call vec.new) (let first_parameter I64 (call syntax/ast_parameters_first params) (let parameters Unit (call append_parameter_plans source tokens params body body_end first_parameter values) (let locals Unit (call append_local_plans source tokens params body body_end body values) (let value_count I64 (call vec.len values) (let liveness_precise Bool (call i64.le value_count 64) (let first_parameter_for_output I64 (call syntax/ast_parameters_first params) (let output_escape Bool (call parameters_have_inout source tokens first_parameter_for_output) (let finalized Unit (call finalize_value_plans source tokens params body body_end return_storage output_escape values 0) (let allocations (Vec AllocationPlan) (call vec.new) (let region I64 (match local_region (true 0) (false 1)) (let allocation_plans Unit (call append_allocation_plans source tokens body body_end region allocations) (let destructions (Vec DestructionPlan) (call vec.new) (let destruction Unit (match local_region (true (let plan DestructionPlan (make DestructionPlan (region 0) (end body_end) (reverse true)) (call vec.push destructions plan))) (false unit)) (let escaping I64 (call count_escaping_values values 0 0) (let recursive Bool (call span_has_recur source tokens body body_end) (make FunctionPlan (function function) (return_storage return_storage) (local_region local_region) (recursive recursive) (liveness_precise liveness_precise) (values values) (allocations allocations) (destructions destructions) (escaping_values escaping)))))))))))))))))))))))))) (fn append_function_plans ((source Bytes) (inout tokens (Vec syntax/Token)) (inout declarations (Vec ir/Declaration)) (index I64) (inout functions (Vec FunctionPlan))) Unit (effects alloc partial) (let length I64 (call vec.len declarations) (let done Bool (call i64.ge index length) (match done (true unit) (false (let declaration ir/Declaration (call vec.get declarations index) (let form I64 (get declaration form) (let function_item Bool (call syntax/ast_item_is_function source tokens form) (let appended Unit (match function_item (true (let plan FunctionPlan (call build_function_plan source tokens form) (call vec.push functions plan))) (false unit)) (let next I64 (call i64.add index 1) (recur source tokens declarations next functions))))))))))) (fn analyze ((source Bytes) (inout tokens (Vec syntax/Token)) (inout declarations (Vec ir/Declaration))) Plan (effects alloc partial) (let functions (Vec FunctionPlan) (call vec.new) (let appended Unit (call append_function_plans source tokens declarations 0 functions) (make Plan (functions functions))))))
+module memory
+
+record ValuePlan:
+  name: I64
+  type_index: I64
+  storage: I64
+  borrowed: Bool
+  declared: I64
+  last_use: I64
+  escape: I64
+
+record AllocationPlan:
+  site: I64
+  region: I64
+
+record DestructionPlan:
+  region: I64
+  end: I64
+  reverse: Bool
+
+record FunctionPlan:
+  function: I64
+  return_storage: I64
+  local_region: Bool
+  recursive: Bool
+  liveness_precise: Bool
+  values: Vec[ValuePlan]
+  allocations: Vec[AllocationPlan]
+  destructions: Vec[DestructionPlan]
+  escaping_values: I64
+
+record Plan:
+  functions: Vec[FunctionPlan]
+
+fn function_plan_allocates(plan: FunctionPlan) -> Bool:
+  let allocations: Vec[AllocationPlan] = get(plan allocations)
+  let count: I64 = vec.len(allocations)
+  i64.gt(count 0)
+
+fn allocation_site_region_range(inout allocations: Vec[AllocationPlan] site: I64 low: I64 high: I64) -> I64 effects[partial]:
+  let done: Bool = i64.ge(low high)
+  match done:
+    true:
+      -1
+    false:
+      let distance: I64 = i64.sub(high low)
+      let half: I64 = i64.div(distance 2)
+      let middle: I64 = i64.add(low half)
+      let plan: AllocationPlan = vec.get(allocations middle)
+      let planned_site: I64 = get(plan site)
+      let same: Bool = i64.eq(site planned_site)
+      match same:
+        true:
+          get(plan region)
+        false:
+          let before: Bool = i64.lt(site planned_site)
+          match before:
+            true:
+              recur(allocations site low middle)
+            false:
+              let next: I64 = i64.add(middle 1)
+              recur(allocations site next high)
+
+fn allocation_site_region(inout allocations: Vec[AllocationPlan] site: I64) -> I64 effects[partial]:
+  let count: I64 = vec.len(allocations)
+  allocation_site_region_range(allocations site 0 count)
+
+fn span_has_recur(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 end: I64) -> Bool effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      false
+    false:
+      let same: Bool = syntax/ast_expression_is_recur(source tokens cursor)
+      match same:
+        true:
+          true
+        false:
+          let next: I64 = syntax/ast_node_after(cursor)
+          recur(source tokens next end)
+
+fn empty_plan() -> Plan effects[alloc]:
+  let functions: Vec[FunctionPlan] = vec.new()
+  make Plan(functions = functions)
+
+fn storage_join(left: I64 right: I64) -> I64:
+  let left_greater: Bool = i64.gt(left right)
+  match left_greater:
+    true:
+      left
+    false:
+      right
+
+fn record_storage(source: Bytes inout tokens: Vec[syntax/Token] module_items: I64 cursor: I64 depth: I64 current: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      current
+    false:
+      let type_index: I64 = syntax/ast_member_value(cursor)
+      let storage: I64 = type_storage_kind_from(source tokens module_items type_index depth)
+      let joined: I64 = storage_join(current storage)
+      let owned: Bool = i64.eq(joined 2)
+      match owned:
+        true:
+          2
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          recur(source tokens module_items next depth joined)
+
+fn payload_storage(source: Bytes inout tokens: Vec[syntax/Token] module_items: I64 cursor: I64 depth: I64 current: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      current
+    false:
+      let storage: I64 = type_storage_kind_from(source tokens module_items cursor depth)
+      let joined: I64 = storage_join(current storage)
+      let owned: Bool = i64.eq(joined 2)
+      match owned:
+        true:
+          2
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          recur(source tokens module_items next depth joined)
+
+fn variant_storage(source: Bytes inout tokens: Vec[syntax/Token] module_items: I64 cursor: I64 depth: I64 current: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      current
+    false:
+      let payload: I64 = syntax/ast_member_value(cursor)
+      let storage: I64 = payload_storage(source tokens module_items payload depth current)
+      let owned: Bool = i64.eq(storage 2)
+      match owned:
+        true:
+          2
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          recur(source tokens module_items next depth storage)
+
+fn type_storage_kind_from(source: Bytes inout tokens: Vec[syntax/Token] module_items: I64 type_index: I64 depth: I64) -> I64 effects[partial]:
+  let too_deep: Bool = i64.ge(depth 64)
+  match too_deep:
+    true:
+      2
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens type_index)
+      let composite: Bool = i64.eq(kind 0)
+      match composite:
+        true:
+          let id_type: Bool = syntax/ast_type_is_id(source tokens type_index)
+          match id_type:
+            true:
+              0
+            false:
+              2
+        false:
+          let scalar_kind: I64 = syntax/scalar_type_kind(source tokens type_index)
+          let scalar: Bool = i64.ge(scalar_kind 0)
+          match scalar:
+            true:
+              let bytes_type: Bool = i64.eq(scalar_kind 4)
+              match bytes_type:
+                true:
+                  1
+                false:
+                  0
+            false:
+              let item_link: I64 = syntax/ast_node_link(tokens type_index)
+              let link_valid: Bool = i64.ge(item_link 0)
+              let item: I64 = match link_valid:
+                true:
+                  item_link
+                false:
+                  -1
+              let found: Bool = i64.ge(item 0)
+              match found:
+                false:
+                  2
+                true:
+                  let next_depth: I64 = i64.add(depth 1)
+                  let first: I64 = syntax/ast_data_members_first(item)
+                  let record_item: Bool = syntax/ast_item_is_record(source tokens item)
+                  match record_item:
+                    true:
+                      record_storage(source tokens module_items first next_depth 0)
+                    false:
+                      variant_storage(source tokens module_items first next_depth 0)
+
+fn type_storage_kind(source: Bytes inout tokens: Vec[syntax/Token] type_index: I64) -> I64 effects[partial]:
+  type_storage_kind_from(source tokens 3 type_index 0)
+
+fn parameters_have_inout(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      false
+    false:
+      let head: I64 = syntax/ast_list_first(cursor)
+      let borrowed: Bool = syntax/ast_binding_is_inout(source tokens cursor)
+      match borrowed:
+        true:
+          true
+        false:
+          let next: I64 = syntax/ast_next(tokens cursor)
+          recur(source tokens next)
+
+fn function_uses_local_region(source: Bytes inout tokens: Vec[syntax/Token] function: I64) -> Bool effects[partial]:
+  let params: I64 = syntax/ast_function_parameters(function)
+  let return_type: I64 = syntax/ast_function_return_type(tokens function)
+  let return_storage: I64 = type_storage_kind(source tokens return_type)
+  let no_return_storage: Bool = i64.eq(return_storage 0)
+  let first_parameter: I64 = syntax/ast_parameters_first(params)
+  let output: Bool = parameters_have_inout(source tokens first_parameter)
+  let no_output: Bool = bool.not(output)
+  bool.and(no_return_storage no_output)
+
+fn last_named_use(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 end: I64 name_start: I64 name_end: I64 last: I64) -> I64 effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      last
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens cursor)
+      let named: Bool = i64.eq(kind 2)
+      let candidate_start: I64 = syntax/ast_node_start(tokens cursor)
+      let candidate_end: I64 = syntax/ast_node_end(tokens cursor)
+      let same: Bool = match named:
+        true:
+          syntax/spans_equal(source candidate_start candidate_end name_start name_end)
+        false:
+          false
+      let next_last: I64 = match same:
+        true:
+          candidate_end
+        false:
+          last
+      let next: I64 = syntax/ast_node_after(cursor)
+      recur(source tokens next end name_start name_end next_last)
+
+fn span_has_name(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 end: I64 name_start: I64 name_end: I64) -> Bool effects[partial]:
+  let found: I64 = last_named_use(source tokens cursor end name_start name_end -1)
+  i64.ge(found 0)
+
+fn result_expression(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
+  let let_form: Bool = syntax/ast_expression_is_let(source tokens expr)
+  match let_form:
+    true:
+      recur(source tokens syntax/ast_let_body(tokens expr))
+    false:
+      let set_form: Bool = syntax/ast_expression_is_set(source tokens expr)
+      match set_form:
+        true:
+          recur(source tokens syntax/ast_set_body(tokens expr))
+        false:
+          expr
+
+fn escapes_to_inout(source: Bytes inout tokens: Vec[syntax/Token] params: I64 cursor: I64 end: I64 name_start: I64 name_end: I64) -> Bool effects[partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      false
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens cursor)
+      let form: Bool = i64.eq(kind 0)
+      match form:
+        false:
+          let next: I64 = syntax/ast_node_after(cursor)
+          recur(source tokens params next end name_start name_end)
+        true:
+          let head: I64 = syntax/ast_list_first(cursor)
+          let call_form: Bool = syntax/ast_expression_is_call(source tokens cursor)
+          match call_form:
+            false:
+              let next: I64 = syntax/ast_node_after(cursor)
+              recur(source tokens params next end name_start name_end)
+            true:
+              let callee: I64 = syntax/ast_call_callee(cursor)
+              let vector_push: Bool = syntax/ast_node_text_is(source tokens callee "vec.push")
+              let arena_add: Bool = syntax/ast_node_text_is(source tokens callee "arena.add")
+              let store: Bool = bool.or(vector_push arena_add)
+              match store:
+                false:
+                  let next: I64 = syntax/ast_node_after(cursor)
+                  recur(source tokens params next end name_start name_end)
+                true:
+                  let target: I64 = syntax/ast_call_arguments(cursor)
+                  let value: I64 = syntax/ast_next(tokens target)
+                  let value_start: I64 = syntax/ast_node_start(tokens value)
+                  let value_end: I64 = syntax/ast_node_end(tokens value)
+                  let same_value: Bool = syntax/spans_equal(source value_start value_end name_start name_end)
+                  let target_inout: Bool = match same_value:
+                    true:
+                      syntax/name_is_inout(source tokens params target)
+                    false:
+                      false
+                  match target_inout:
+                    true:
+                      true
+                    false:
+                      let next: I64 = syntax/ast_node_after(cursor)
+                      recur(source tokens params next end name_start name_end)
+
+fn escape_kind(source: Bytes inout tokens: Vec[syntax/Token] params: I64 body: I64 body_end: I64 name_start: I64 name_end: I64) -> I64 effects[partial]:
+  let result: I64 = result_expression(source tokens body)
+  let result_end: I64 = syntax/ast_next(tokens result)
+  let result_escape: Bool = span_has_name(source tokens result result_end name_start name_end)
+  let output_escape: Bool = escapes_to_inout(source tokens params body body_end name_start name_end)
+  match result_escape:
+    true:
+      match output_escape:
+        true:
+          3
+        false:
+          1
+    false:
+      match output_escape:
+        true:
+          2
+        false:
+          0
+
+fn append_value_plan(source: Bytes inout tokens: Vec[syntax/Token] params: I64 body: I64 body_end: I64 name: I64 type_index: I64 borrowed: Bool declared: I64 inout values: Vec[ValuePlan]) -> Unit effects[alloc partial]:
+  let name_start: I64 = syntax/ast_node_start(tokens name)
+  let name_end: I64 = syntax/ast_node_end(tokens name)
+  let storage: I64 = type_storage_kind(source tokens type_index)
+  let plan: ValuePlan = make ValuePlan(name = name type_index = type_index storage = storage borrowed = borrowed declared = declared last_use = name_end escape = 0)
+  vec.push(values plan)
+
+fn append_parameter_plans(source: Bytes inout tokens: Vec[syntax/Token] params: I64 body: I64 body_end: I64 cursor: I64 inout values: Vec[ValuePlan]) -> Unit effects[alloc partial]:
+  let kind: I64 = syntax/ast_node_kind(tokens cursor)
+  let done: Bool = i64.eq(kind 1)
+  match done:
+    true:
+      unit
+    false:
+      let head: I64 = syntax/ast_list_first(cursor)
+      let borrowed: Bool = syntax/ast_binding_is_inout(source tokens cursor)
+      let name: I64 = syntax/ast_binding_name(source tokens cursor)
+      let type_index: I64 = syntax/ast_binding_type(source tokens cursor)
+      let appended: Unit = append_value_plan(source tokens params body body_end name type_index borrowed cursor values)
+      let next: I64 = syntax/ast_next(tokens cursor)
+      recur(source tokens params body body_end next values)
+
+fn append_local_plans(source: Bytes inout tokens: Vec[syntax/Token] params: I64 body: I64 body_end: I64 cursor: I64 inout values: Vec[ValuePlan]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(cursor body_end)
+  match done:
+    true:
+      unit
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens cursor)
+      let form: Bool = i64.eq(kind 0)
+      let head: I64 = syntax/ast_list_first(cursor)
+      let let_form: Bool = match form:
+        true:
+          syntax/ast_expression_is_let(source tokens cursor)
+        false:
+          false
+      let appended: Unit = match let_form:
+        true:
+          let name: I64 = syntax/ast_let_name(cursor)
+          let type_index: I64 = syntax/ast_let_type(cursor)
+          append_value_plan(source tokens params body body_end name type_index false cursor values)
+        false:
+          unit
+      let next: I64 = syntax/ast_node_after(cursor)
+      recur(source tokens params body body_end next values)
+
+fn append_allocation_plans(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 end: I64 region: I64 inout allocations: Vec[AllocationPlan]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(cursor end)
+  match done:
+    true:
+      unit
+    false:
+      let kind: I64 = syntax/ast_node_kind(tokens cursor)
+      let form: Bool = i64.eq(kind 0)
+      let allocation: Bool = match form:
+        false:
+          false
+        true:
+          let head: I64 = syntax/ast_list_first(cursor)
+          let call_form: Bool = syntax/ast_expression_is_call(source tokens cursor)
+          match call_form:
+            false:
+              false
+            true:
+              let callee: I64 = syntax/ast_call_callee(cursor)
+              effects/call_requires(source tokens callee 1)
+      let appended: Unit = match allocation:
+        true:
+          let plan: AllocationPlan = make AllocationPlan(site = cursor region = region)
+          vec.push(allocations plan)
+        false:
+          unit
+      let next: I64 = syntax/ast_node_after(cursor)
+      recur(source tokens next end region allocations)
+
+fn conservative_escape(return_storage: I64 output: Bool) -> I64:
+  let returns: Bool = i64.gt(return_storage 0)
+  match returns:
+    true:
+      match output:
+        true:
+          3
+        false:
+          1
+    false:
+      match output:
+        true:
+          2
+        false:
+          0
+
+fn finalize_value_plans(source: Bytes inout tokens: Vec[syntax/Token] params: I64 body: I64 body_end: I64 return_storage: I64 output: Bool inout values: Vec[ValuePlan] index: I64) -> Unit effects[alloc partial]:
+  let length: I64 = vec.len(values)
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      unit
+    false:
+      let value: ValuePlan = vec.get(values index)
+      let name: I64 = get(value name)
+      let name_start: I64 = syntax/ast_node_start(tokens name)
+      let name_end: I64 = syntax/ast_node_end(tokens name)
+      let bounded: Bool = i64.lt(index 64)
+      let last_use: I64 = match bounded:
+        true:
+          let declared: I64 = get(value declared)
+          last_named_use(source tokens declared body_end name_start name_end name_end)
+        false:
+          body_end
+      let escape: I64 = match bounded:
+        true:
+          escape_kind(source tokens params body body_end name_start name_end)
+        false:
+          let storage: I64 = get(value storage)
+          let stored: Bool = i64.gt(storage 0)
+          match stored:
+            true:
+              conservative_escape(return_storage output)
+            false:
+              0
+      let updated: ValuePlan = make ValuePlan(name = name type_index = get(value type_index) storage = get(value storage) borrowed = get(value borrowed) declared = get(value declared) last_use = last_use escape = escape)
+      let replaced: Unit = vec.set(values index updated)
+      let next: I64 = i64.add(index 1)
+      recur(source tokens params body body_end return_storage output values next)
+
+fn count_escaping_values(inout values: Vec[ValuePlan] index: I64 count: I64) -> I64 effects[partial]:
+  let length: I64 = vec.len(values)
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      count
+    false:
+      let value: ValuePlan = vec.get(values index)
+      let storage: I64 = get(value storage)
+      let escape: I64 = get(value escape)
+      let stored: Bool = i64.gt(storage 0)
+      let escapes: Bool = i64.gt(escape 0)
+      let escaping: Bool = bool.and(stored escapes)
+      let increment: I64 = match escaping:
+        true:
+          1
+        false:
+          0
+      let total: I64 = i64.add(count increment)
+      let next: I64 = i64.add(index 1)
+      recur(values next total)
+
+fn build_function_plan(source: Bytes inout tokens: Vec[syntax/Token] function: I64) -> FunctionPlan effects[alloc partial]:
+  let params: I64 = syntax/ast_function_parameters(function)
+  let return_type: I64 = syntax/ast_function_return_type(tokens function)
+  let return_storage: I64 = type_storage_kind(source tokens return_type)
+  let local_region: Bool = function_uses_local_region(source tokens function)
+  let effects: I64 = syntax/ast_function_effects(tokens function)
+  let body: I64 = syntax/ast_function_body(tokens function)
+  let body_end: I64 = syntax/ast_next(tokens body)
+  let values: Vec[ValuePlan] = vec.new()
+  let first_parameter: I64 = syntax/ast_parameters_first(params)
+  let parameters: Unit = append_parameter_plans(source tokens params body body_end first_parameter values)
+  let locals: Unit = append_local_plans(source tokens params body body_end body values)
+  let value_count: I64 = vec.len(values)
+  let liveness_precise: Bool = i64.le(value_count 64)
+  let first_parameter_for_output: I64 = syntax/ast_parameters_first(params)
+  let output_escape: Bool = parameters_have_inout(source tokens first_parameter_for_output)
+  let finalized: Unit = finalize_value_plans(source tokens params body body_end return_storage output_escape values 0)
+  let allocations: Vec[AllocationPlan] = vec.new()
+  let region: I64 = match local_region:
+    true:
+      0
+    false:
+      1
+  let allocation_plans: Unit = append_allocation_plans(source tokens body body_end region allocations)
+  let destructions: Vec[DestructionPlan] = vec.new()
+  let destruction: Unit = match local_region:
+    true:
+      let plan: DestructionPlan = make DestructionPlan(region = 0 end = body_end reverse = true)
+      vec.push(destructions plan)
+    false:
+      unit
+  let escaping: I64 = count_escaping_values(values 0 0)
+  let recursive: Bool = span_has_recur(source tokens body body_end)
+  make FunctionPlan(function = function return_storage = return_storage local_region = local_region recursive = recursive liveness_precise = liveness_precise values = values allocations = allocations destructions = destructions escaping_values = escaping)
+
+fn append_function_plans(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration] index: I64 inout functions: Vec[FunctionPlan]) -> Unit effects[alloc partial]:
+  let length: I64 = vec.len(declarations)
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      unit
+    false:
+      let declaration: ir/Declaration = vec.get(declarations index)
+      let form: I64 = get(declaration form)
+      let function_item: Bool = syntax/ast_item_is_function(source tokens form)
+      let appended: Unit = match function_item:
+        true:
+          let plan: FunctionPlan = build_function_plan(source tokens form)
+          vec.push(functions plan)
+        false:
+          unit
+      let next: I64 = i64.add(index 1)
+      recur(source tokens declarations next functions)
+
+fn analyze(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration]) -> Plan effects[alloc partial]:
+  let functions: Vec[FunctionPlan] = vec.new()
+  let appended: Unit = append_function_plans(source tokens declarations 0 functions)
+  make Plan(functions = functions)

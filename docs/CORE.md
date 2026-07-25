@@ -2,43 +2,68 @@
 
 Status: stable for major version 1
 
-SLIM source is the only compilable program representation. Whitespace and comments
-are insignificant, and `slimc fmt` emits the unique canonical layout.
+SLIM source is the only compilable program representation. Leading whitespace
+defines blocks, and `slimc fmt` emits the unique canonical layout.
 
 ## Lexical grammar
 
-- Forms are delimited by `(` and `)`.
+- Indentation is exactly two ASCII spaces per level. Tabs, odd indentation,
+  and skipping more than one level are errors. Blank lines and `#` line
+  comments do not change indentation.
+- Calls and payloads use `(` and `)`; composite types and effects use `[` and
+  `]`. Arguments are separated by whitespace, never commas.
+- `:`, `::`, `=`, and `->` have one structural meaning each. Braces, commas,
+  and semicolons are rejected.
 - Identifiers contain ASCII letters, digits, `_`, `-`, `.`, `/`, `?`, or `!`,
   and may not begin with a digit.
 - Integers are base-10 `I64` literals with an optional leading `-`.
 - Byte strings use double quotes and the escapes `\\`, `\"`, `\n`, `\r`,
   `\t`, and `\xNN` for an exact hexadecimal byte.
-- `;` starts a comment extending through the end of the line.
+- `#` starts a comment extending through the end of the line.
 
 ## Program grammar
 
 ```text
-program  = (module NAME item*)
-item     = function | record | variant
-function = (fn NAME (parameter*) TYPE (effects EFFECT*) EXPR)
-parameter = (NAME TYPE) | (inout NAME TYPE)
-record   = (record NAME ((NAME TYPE)*))
-variant  = (variant NAME ((NAME TYPE*)*))
-type     = Unit | Bool | U8 | I64 | Bytes | NAME | (Vec TYPE)
-         | (Arena TYPE) | (Id TYPE)
+program   = "module" NAME NEWLINE item*
+item      = function | record | variant
+function  = "fn" NAME "(" parameter* ")" "->" type effects? ":" block
+parameter = NAME ":" type | "inout" NAME ":" type
+effects   = "effects" "[" EFFECT+ "]"
+record    = "record" NAME ":" NEWLINE INDENT (NAME ":" type NEWLINE)* DEDENT
+variant   = "variant" NAME ":" NEWLINE INDENT
+            (NAME ("(" type* ")")? NEWLINE)* DEDENT
+type      = Unit | Bool | U8 | I64 | Bytes | NAME
+          | "Vec" "[" type "]" | "Arena" "[" type "]" | "Id" "[" type "]"
+block     = ("let" NAME ":" type "=" expression NEWLINE
+           | "set" NAME "=" expression NEWLINE)* expression
 ```
 
-The expression forms are literals, names, `let`, `call`, `make`,
-`get`, `case`, `match`, `recur`, `set`, and `fork`. Each maps directly to one
-AST form; there is no desugaring layer.
+Effects are drawn from `alloc`, `io`, and `partial`, in that order with no
+duplicates. Calls are `name(argument...)`. The remaining compound expressions
+have one spelling:
 
-Every executable defines exactly `(fn main ((args (Vec Bytes))) I64 ... )`.
+```text
+make T(field = value...)
+get(value field)
+case T::Case(payload...)
+recur(argument...)
+match value:
+  Pattern(bindings...):
+    block
+fork:
+  block
+```
+
+Together with literals, names, `let`, and `set`, each maps directly to one AST
+form; there is no desugaring layer, operator alias, or method-call alias.
+
+Every executable defines exactly `fn main(args: Vec[Bytes]) -> I64 ...`.
 Element zero is the executable path and remaining values are process arguments.
 There is no implicit global argument accessor and no alternative entry-point
 signature.
 
 Every type position must contain one scalar type, one declared record or
-variant name, or exactly one of `(Vec TYPE)`, `(Arena TYPE)`, and `(Id TYPE)`.
+variant name, or exactly one of `Vec[TYPE]`, `Arena[TYPE]`, and `Id[TYPE]`.
 Unknown names, function names used as types, malformed constructors, and extra
 type arguments are rejected before code generation.
 
@@ -53,8 +78,9 @@ type arguments are rejected before code generation.
 - Indexing is checked. Arithmetic overflow is a defined trap in checked builds
   and two's-complement wrapping only through explicitly named wrapping
   operations.
-- Pure functions declare `(effects)`. Allocation, I/O, and unproven termination
-  require `alloc`, `io`, and `partial` respectively.
+- Pure functions omit the effects clause. Allocation, I/O, and unproven
+  termination require the ordered `alloc`, `io`, and `partial` capabilities
+  respectively.
 - Record construction names every declared field exactly once and in declaration
   order. Field projection must name a field of the value's record type.
 - Variant construction names one declared case and supplies exactly its payload
@@ -69,19 +95,19 @@ type arguments are rejected before code generation.
   does not grow the stack.
 - Resource failure is returned as an explicit typed value; it is never
   undefined behavior. `io.read-file` has the single total signature
-  `(Bytes, inout (Vec U8)) -> Bool`: success appends the complete file, while
+  `(Bytes, inout Vec[U8]) -> Bool`: success appends the complete file, while
   failure returns `false` and leaves the output unchanged.
 - `io.monotonic-ms() -> I64` requires `io`, allocates nothing, and returns a
   nonnegative reading that does not decrease within one execution thread. Its
   epoch is unspecified.
-- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout (Vec U8)) -> Bool`
+- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout Vec[U8]) -> Bool`
   requires `alloc io`; response size and elapsed wait are explicit, every
   descriptor is runtime-lexical, and failure leaves output unchanged.
-- `(fork (let first T (call f ...) (let second U (call g ...) body)))` is the
-  one explicit concurrency form. It admits two independent leading direct
-  leaf calls with bounded host effects, scalar or byte-view inputs, no
-  `inout`, and no `partial`. Both calls finish before `body`; results install
-  in lexical order. Spawn failure uses the same serial execution.
+- `fork:` is the one explicit concurrency form. Its block admits two
+  independent leading direct leaf-call bindings with bounded host effects,
+  scalar or byte-view inputs, no `inout`, and no `partial`. Both calls finish
+  before the remaining block; results install in lexical order. Spawn failure
+  uses the same serial execution.
 - Allocation exhaustion is the typed failure outcome of the existing `alloc`
   effect. Generated code propagates it immediately, destroys active regions,
   and handles it once at the executable boundary with exit code 71. SLIM 1.0
@@ -90,8 +116,8 @@ type arguments are rejected before code generation.
 
 ## Built-in calls
 
-Built-in calls use the same `call` form as ordinary functions and have exactly
-one canonical name. SLIM 1.0 includes checked integer arithmetic and comparison,
+Built-ins use the same call syntax as ordinary functions and have exactly one
+canonical name. SLIM 1.0 includes checked integer arithmetic and comparison,
 Boolean operations, byte length/access, vector length/access/update, and basic
 I/O required by the compiler. Their concrete signatures are emitted by
 `slimc builtins` and tested as part of the language surface.

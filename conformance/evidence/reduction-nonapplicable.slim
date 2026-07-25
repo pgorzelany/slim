@@ -1,1 +1,21 @@
-(module reduction-nonapplicable (fn repeated-call ((value Bool)) Bool (effects) (call bool.and (call bool.not value) (call bool.not value))) (fn effect-order-shape ((condition Bool) (value Bool)) Bool (effects) (match (call bool.not condition) (true value) (false value))) (fn distinct-results ((condition Bool) (left Bool) (right Bool)) Bool (effects) (match condition (true left) (false right))) (fn main ((args (Vec Bytes))) I64 (effects) 0))
+module reduction-nonapplicable
+
+fn repeated-call(value: Bool) -> Bool:
+  bool.and(bool.not(value) bool.not(value))
+
+fn effect-order-shape(condition: Bool value: Bool) -> Bool:
+  match bool.not(condition):
+    true:
+      value
+    false:
+      value
+
+fn distinct-results(condition: Bool left: Bool right: Bool) -> Bool:
+  match condition:
+    true:
+      left
+    false:
+      right
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

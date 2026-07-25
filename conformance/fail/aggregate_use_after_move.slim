@@ -1,9 +1,15 @@
-(module aggregate-use-after-move
-  (record Pair ((values (Vec I64)) (count I64)))
-  (fn consume ((pair Pair)) Unit (effects) unit)
-  (fn main ((args (Vec Bytes))) I64 (effects alloc)
-    (let values (Vec I64) (call vec.new)
-      (let pair Pair (make Pair (values values) (count 1))
-        (let consumed Unit (call consume pair)
-          (let consumed_again Unit (call consume pair)
-            0))))))
+module aggregate-use-after-move
+
+record Pair:
+  values: Vec[I64]
+  count: I64
+
+fn consume(pair: Pair) -> Unit:
+  unit
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let pair: Pair = make Pair(values = values count = 1)
+  let consumed: Unit = consume(pair)
+  let consumed_again: Unit = consume(pair)
+  0

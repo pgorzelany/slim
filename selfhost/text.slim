@@ -1,1 +1,47 @@
-(module text (fn append_span ((source Bytes) (index I64) (end I64) (inout output (Vec U8))) Unit (effects alloc partial) (let done Bool (call i64.ge index end) (match done (true unit) (false (let byte U8 (call bytes.get source index) (let pushed Unit (call vec.push output byte) (let next I64 (call i64.add index 1) (recur source next end output)))))))) (fn append_text_chars ((text Bytes) (index I64) (length I64) (inout output (Vec U8))) Unit (effects alloc partial) (let done Bool (call i64.ge index length) (match done (true unit) (false (let byte U8 (call bytes.get text index) (let pushed Unit (call vec.push output byte) (let next I64 (call i64.add index 1) (recur text next length output)))))))) (fn append_text ((inout output (Vec U8)) (text Bytes)) Unit (effects alloc partial) (let length I64 (call bytes.len text) (call append_text_chars text 0 length output))) (fn append_nonnegative_i64 ((value I64) (inout output (Vec U8))) Unit (effects alloc partial) (let multiple Bool (call i64.ge value 10) (match multiple (true (let prefix I64 (call i64.div value 10) (let remainder I64 (call i64.rem value 10) (let emitted Unit (call append_nonnegative_i64 prefix output) (let code I64 (call i64.add remainder 48) (let byte U8 (call i64.to-u8 code) (call vec.push output byte))))))) (false (let code I64 (call i64.add value 48) (let byte U8 (call i64.to-u8 code) (call vec.push output byte))))))) (fn append_token ((source Bytes) (inout tokens (Vec syntax/Token)) (index I64) (inout output (Vec U8))) Unit (effects alloc partial) (let start I64 (call syntax/ast_node_start tokens index) (let end I64 (call syntax/ast_node_end tokens index) (call append_span source start end output)))))
+module text
+
+fn append_span(source: Bytes index: I64 end: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(index end)
+  match done:
+    true:
+      unit
+    false:
+      let byte: U8 = bytes.get(source index)
+      let pushed: Unit = vec.push(output byte)
+      let next: I64 = i64.add(index 1)
+      recur(source next end output)
+
+fn append_text_chars(text: Bytes index: I64 length: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let done: Bool = i64.ge(index length)
+  match done:
+    true:
+      unit
+    false:
+      let byte: U8 = bytes.get(text index)
+      let pushed: Unit = vec.push(output byte)
+      let next: I64 = i64.add(index 1)
+      recur(text next length output)
+
+fn append_text(inout output: Vec[U8] text: Bytes) -> Unit effects[alloc partial]:
+  let length: I64 = bytes.len(text)
+  append_text_chars(text 0 length output)
+
+fn append_nonnegative_i64(value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let multiple: Bool = i64.ge(value 10)
+  match multiple:
+    true:
+      let prefix: I64 = i64.div(value 10)
+      let remainder: I64 = i64.rem(value 10)
+      let emitted: Unit = append_nonnegative_i64(prefix output)
+      let code: I64 = i64.add(remainder 48)
+      let byte: U8 = i64.to-u8(code)
+      vec.push(output byte)
+    false:
+      let code: I64 = i64.add(value 48)
+      let byte: U8 = i64.to-u8(code)
+      vec.push(output byte)
+
+fn append_token(source: Bytes inout tokens: Vec[syntax/Token] index: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
+  let start: I64 = syntax/ast_node_start(tokens index)
+  let end: I64 = syntax/ast_node_end(tokens index)
+  append_span(source start end output)

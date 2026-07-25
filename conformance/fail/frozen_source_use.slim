@@ -1,7 +1,9 @@
-(module frozen-source-use
-  (fn length ((values (Vec U8))) I64 (effects)
-    (call vec.len values))
-  (fn main ((args (Vec Bytes))) I64 (effects alloc)
-    (let values (Vec U8) (call vec.new)
-      (let frozen Bytes (call bytes.freeze values)
-        (call length values)))))
+module frozen-source-use
+
+fn length(values: Vec[U8]) -> I64:
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[U8] = vec.new()
+  let frozen: Bytes = bytes.freeze(values)
+  length(values)

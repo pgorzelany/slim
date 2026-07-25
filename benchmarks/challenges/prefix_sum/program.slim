@@ -1,1 +1,27 @@
-(module prefix-sum (fn fill ((inout values (Vec I64)) (index I64) (count I64)) Unit (effects alloc partial) (match (call i64.eq index count) (true unit) (false (let value I64 (call i64.rem (call i64.mul index 31) 97) (let pushed Unit (call vec.push values value) (recur values (call i64.add index 1) count)))))) (fn scan ((inout values (Vec I64)) (index I64) (total I64)) I64 (effects partial) (match (call i64.eq index (call vec.len values)) (true total) (false (let next I64 (call i64.add total (call vec.get values index)) (let stored Unit (call vec.set values index next) (recur values (call i64.add index 1) next)))))) (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (let values (Vec I64) (call vec.new) (let filled Unit (call fill values 0 250000) (let result I64 (call scan values 0 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0)))))))
+module prefix-sum
+
+fn fill(inout values: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
+  match i64.eq(index count):
+    true:
+      unit
+    false:
+      let value: I64 = i64.rem(i64.mul(index 31) 97)
+      let pushed: Unit = vec.push(values value)
+      recur(values i64.add(index 1) count)
+
+fn scan(inout values: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(index vec.len(values)):
+    true:
+      total
+    false:
+      let next: I64 = i64.add(total vec.get(values index))
+      let stored: Unit = vec.set(values index next)
+      recur(values i64.add(index 1) next)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let values: Vec[I64] = vec.new()
+  let filled: Unit = fill(values 0 250000)
+  let result: I64 = scan(values 0 0)
+  let shown: Unit = io.print-i64(result)
+  let newline: Unit = io.println("")
+  0

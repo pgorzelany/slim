@@ -1,1 +1,5 @@
-(module agent-effect (fn main ((args (Vec Bytes))) I64 (effects) (let shown Unit (call io.println "ok") 0)))
+module agent-effect
+
+fn main(args: Vec[Bytes]) -> I64:
+  let shown: Unit = io.println("ok")
+  0

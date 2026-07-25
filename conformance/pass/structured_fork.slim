@@ -1,1 +1,18 @@
-(module structured-fork (fn sample-clock () I64 (effects io) (call io.monotonic-ms)) (fn main ((args (Vec Bytes))) I64 (effects io) (fork (let first I64 (call sample-clock) (let second I64 (call sample-clock) (let first-valid Bool (call i64.ge first 0) (let second-valid Bool (call i64.ge second 0) (let valid Bool (call bool.and first-valid second-valid) (match valid (true (let shown Unit (call io.println "OK") 0)) (false 1))))))))))
+module structured-fork
+
+fn sample-clock() -> I64 effects[io]:
+  io.monotonic-ms()
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  fork:
+    let first: I64 = sample-clock()
+    let second: I64 = sample-clock()
+    let first-valid: Bool = i64.ge(first 0)
+    let second-valid: Bool = i64.ge(second 0)
+    let valid: Bool = bool.and(first-valid second-valid)
+    match valid:
+      true:
+        let shown: Unit = io.println("OK")
+        0
+      false:
+        1

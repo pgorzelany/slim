@@ -1,1 +1,21 @@
-(module tcp-client (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (let output (Vec U8) (call vec.new) (let received Bool (call io.tcp-exchange "127.0.0.1" 8080 "PING" 64 1000 output) (let first_length I64 (call vec.len output) (let invalid Bool (call io.tcp-exchange "not-an-address" 8080 "PING" 64 1000 output) (let second_length I64 (call vec.len output) (let limited Bool (call io.tcp-exchange "127.0.0.1" 8080 "PING" 2 1000 output) (let third_length I64 (call vec.len output) (let first I64 (call u8.to-i64 (call vec.get output 0)) (let last I64 (call u8.to-i64 (call vec.get output 3)) (let failures Bool (call bool.and (call bool.not invalid) (call bool.not limited)) (let lengths Bool (call bool.and (call i64.eq first_length 4) (call bool.and (call i64.eq second_length 4) (call i64.eq third_length 4))) (let bytes Bool (call bool.and (call i64.eq first 80) (call i64.eq last 71)) (let valid Bool (call bool.and received (call bool.and failures (call bool.and lengths bytes))) (match valid (true 0) (false 1)))))))))))))))))
+module tcp-client
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  let output: Vec[U8] = vec.new()
+  let received: Bool = io.tcp-exchange("127.0.0.1" 8080 "PING" 64 1000 output)
+  let first_length: I64 = vec.len(output)
+  let invalid: Bool = io.tcp-exchange("not-an-address" 8080 "PING" 64 1000 output)
+  let second_length: I64 = vec.len(output)
+  let limited: Bool = io.tcp-exchange("127.0.0.1" 8080 "PING" 2 1000 output)
+  let third_length: I64 = vec.len(output)
+  let first: I64 = u8.to-i64(vec.get(output 0))
+  let last: I64 = u8.to-i64(vec.get(output 3))
+  let failures: Bool = bool.and(bool.not(invalid) bool.not(limited))
+  let lengths: Bool = bool.and(i64.eq(first_length 4) bool.and(i64.eq(second_length 4) i64.eq(third_length 4)))
+  let bytes: Bool = bool.and(i64.eq(first 80) i64.eq(last 71))
+  let valid: Bool = bool.and(received bool.and(failures bool.and(lengths bytes)))
+  match valid:
+    true:
+      0
+    false:
+      1

@@ -1,2 +1,9 @@
-(module bytes (fn main ((args (Vec Bytes))) I64 (effects alloc io) (let output (Vec U8) (call vec.new) (let pushed-h Unit (call vec.push output (call i64.to-u8 72)) (let pushed-i Unit (call vec.push output (call i64.to-u8 105)) (let frozen Bytes (call bytes.freeze output) (let shown Unit (call io.println frozen) 0)))))))
+module bytes
 
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+  let output: Vec[U8] = vec.new()
+  let pushed-h: Unit = vec.push(output i64.to-u8(72))
+  let pushed-i: Unit = vec.push(output i64.to-u8(105))
+  let frozen: Bytes = bytes.freeze(output)
+  let shown: Unit = io.println(frozen)
+  0

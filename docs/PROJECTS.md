@@ -53,9 +53,9 @@ are referenced only as `module/name` in every position that currently accepts
 a function or named type:
 
 ```text
-(call math/add left right)
-(let number math/Number value body)
-(make math/Pair (left 1) (right 2))
+fn main(args: Vec[Bytes]) -> I64:
+  let number: math/Number = math/add(20 22)
+  get(number value)
 ```
 
 Unqualified references resolve only to local declarations or built-ins.
@@ -76,9 +76,9 @@ single-pass interface checking and bounded topological parallelism.
 
 ## CLI
 
-Existing compiler operations accept either a `(module ...)` source or a
-`(project ...)` manifest. The first form explicitly selects the input kind;
-file extensions and directory search do not.
+Existing compiler operations accept either an indented `module NAME` source or
+a versioned `(project ...)` manifest. The first token explicitly selects the
+input kind; file extensions and directory search do not.
 
 ```text
 slimc check PATH [--jobs N]

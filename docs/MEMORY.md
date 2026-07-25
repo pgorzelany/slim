@@ -16,7 +16,7 @@ The source checker already establishes these rules:
 - an `inout` parameter is an exclusive, non-escaping lexical borrow;
 - moving an owned binding makes subsequent use or mutation an error;
 - `vec.get` and `arena.get` only return copyable elements; and
-- `bytes.freeze` consumes one unique `(Vec U8)` and returns a copyable immutable
+- `bytes.freeze` consumes one unique `Vec[U8]` and returns a copyable immutable
   view without copying its buffer.
 
 The runtime does not yet exploit those facts. It places all allocations in one

@@ -1,1 +1,4 @@
-(module bytes-bounds (fn main ((args (Vec Bytes))) I64 (effects) (call u8.to-i64 (call bytes.get "x" 1))))
+module bytes-bounds
+
+fn main(args: Vec[Bytes]) -> I64:
+  u8.to-i64(bytes.get("x" 1))

@@ -1,4 +1,6 @@
-(module set-type
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (let value I64 0
-      (set value false value))))
+module set-type
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: I64 = 0
+  set value = false
+  value

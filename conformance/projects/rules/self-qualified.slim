@@ -1,1 +1,7 @@
-(module app (fn helper () I64 (effects) 0) (fn main ((args (Vec Bytes))) I64 (effects) (call app/helper)))
+module app
+
+fn helper() -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  app/helper()

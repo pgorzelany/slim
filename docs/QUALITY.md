@@ -80,7 +80,7 @@ checked standalone modules. Equivalence schema 2 accepts either:
 
 and requires:
 
-- a `Bool` result and an empty `(effects)` declaration;
+- a `Bool` result and no effects clause;
 - at most 256 tokens in the subject expression; and
 - Boolean and bounded integer literals/names; immutable `Bool`, `U8`, or `I64`
   `let`; `bool.not`, `bool.and`, `bool.or`, `u8.to-i64`, integer comparisons,

@@ -1,4 +1,7 @@
-(module call-argument-type
-  (fn identity ((value I64)) I64 (effects) value)
-  (fn main ((args (Vec Bytes))) I64 (effects)
-    (call identity false)))
+module call-argument-type
+
+fn identity(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  identity(false)

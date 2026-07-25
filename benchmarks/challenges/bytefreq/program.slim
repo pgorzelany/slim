@@ -1,1 +1,47 @@
-(module bytefreq (fn initialize ((inout counts (Vec I64)) (index I64)) Unit (effects alloc partial) (match (call i64.eq index 256) (true unit) (false (let pushed Unit (call vec.push counts 0) (recur counts (call i64.add index 1)))))) (fn scan ((inout counts (Vec I64)) (input Bytes) (index I64)) Unit (effects partial) (match (call i64.eq index (call bytes.len input)) (true unit) (false (let byte I64 (call u8.to-i64 (call bytes.get input index)) (let current I64 (call vec.get counts byte) (let updated Unit (call vec.set counts byte (call i64.add current 1)) (recur counts input (call i64.add index 1)))))))) (fn checksum ((inout counts (Vec I64)) (index I64) (total I64)) I64 (effects partial) (match (call i64.eq index 256) (true total) (false (recur counts (call i64.add index 1) (call i64.add total (call i64.mul (call vec.get counts index) (call i64.add index 1))))))) (fn main ((args (Vec Bytes))) I64 (effects alloc io partial) (match (call i64.ge (call vec.len args) 2) (true (let input_bytes (Vec U8) (call vec.new) (let input_read Bool (call io.read-file (call vec.get args 1) input_bytes) (match input_read (false 70) (true (let input Bytes (call bytes.freeze input_bytes) (let counts (Vec I64) (call vec.new) (let initialized Unit (call initialize counts 0) (let scanned Unit (call scan counts input 0) (let result I64 (call checksum counts 0 0) (let shown Unit (call io.print-i64 result) (let newline Unit (call io.println "") 0)))))))))))) (false (let usage Unit (call io.println "usage: bytefreq FILE") 64)))))
+module bytefreq
+
+fn initialize(inout counts: Vec[I64] index: I64) -> Unit effects[alloc partial]:
+  match i64.eq(index 256):
+    true:
+      unit
+    false:
+      let pushed: Unit = vec.push(counts 0)
+      recur(counts i64.add(index 1))
+
+fn scan(inout counts: Vec[I64] input: Bytes index: I64) -> Unit effects[partial]:
+  match i64.eq(index bytes.len(input)):
+    true:
+      unit
+    false:
+      let byte: I64 = u8.to-i64(bytes.get(input index))
+      let current: I64 = vec.get(counts byte)
+      let updated: Unit = vec.set(counts byte i64.add(current 1))
+      recur(counts input i64.add(index 1))
+
+fn checksum(inout counts: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
+  match i64.eq(index 256):
+    true:
+      total
+    false:
+      recur(counts i64.add(index 1) i64.add(total i64.mul(vec.get(counts index) i64.add(index 1))))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+  match i64.ge(vec.len(args) 2):
+    true:
+      let input_bytes: Vec[U8] = vec.new()
+      let input_read: Bool = io.read-file(vec.get(args 1) input_bytes)
+      match input_read:
+        false:
+          70
+        true:
+          let input: Bytes = bytes.freeze(input_bytes)
+          let counts: Vec[I64] = vec.new()
+          let initialized: Unit = initialize(counts 0)
+          let scanned: Unit = scan(counts input 0)
+          let result: I64 = checksum(counts 0 0)
+          let shown: Unit = io.print-i64(result)
+          let newline: Unit = io.println("")
+          0
+    false:
+      let usage: Unit = io.println("usage: bytefreq FILE")
+      64

@@ -1,1 +1,5 @@
-(module division-overflow (fn main ((args (Vec Bytes))) I64 (effects) (let minimum I64 (call i64.sub -9223372036854775807 1) (call i64.div minimum -1))))
+module division-overflow
+
+fn main(args: Vec[Bytes]) -> I64:
+  let minimum: I64 = i64.sub(-9223372036854775807 1)
+  i64.div(minimum -1)

@@ -2,8 +2,8 @@
 
 Status: Core 1I complete
 
-SLIM host operations use ordinary typed `call` forms and explicit effects.
-They cannot appear in a pure `(effects)` function. There is no unsafe source
+SLIM host operations use ordinary typed calls and explicit effects.
+They cannot appear in a pure function. There is no unsafe source
 escape hatch, raw pointer, foreign declaration, ambient lock, or unchecked
 handle.
 
@@ -11,14 +11,14 @@ handle.
 
 - `io.print-i64(I64) -> Unit`, `io.print-bytes(Bytes) -> Unit`, and
   `io.println(Bytes) -> Unit` require `io`.
-- `io.read-file(Bytes, inout (Vec U8)) -> Bool` requires `alloc io`. It appends
+- `io.read-file(Bytes, inout Vec[U8]) -> Bool` requires `alloc io`. It appends
   the complete file on success; transport failure returns `false` and leaves
   the output unchanged.
 - `io.monotonic-ms() -> I64` requires `io`, performs no SLIM allocation, and
   returns a nonnegative millisecond reading. Successive readings on one
   execution thread do not decrease. The epoch is unspecified; only differences
   are meaningful.
-- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout (Vec U8)) -> Bool`
+- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout Vec[U8]) -> Bool`
   requires `alloc io`. It sends one finite request to a numeric IP address and
   port, receives at most the declared response bytes before the positive
   timeout, closes the connection, and appends only a complete response.

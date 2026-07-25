@@ -1,1 +1,5 @@
-(module missing_effect (fn main ((args (Vec Bytes))) I64 (effects) (let shown Unit (call io.println "no") 0)))
+module missing_effect
+
+fn main(args: Vec[Bytes]) -> I64:
+  let shown: Unit = io.println("no")
+  0

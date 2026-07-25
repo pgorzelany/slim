@@ -1,1 +1,10 @@
-(module moved (fn consume ((value (Vec I64))) Unit (effects) unit) (fn main ((args (Vec Bytes))) I64 (effects alloc) (let values (Vec I64) (call vec.new) (let first Unit (call consume values) (let second Unit (call consume values) 0)))))
+module moved
+
+fn consume(value: Vec[I64]) -> Unit:
+  unit
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let first: Unit = consume(values)
+  let second: Unit = consume(values)
+  0
