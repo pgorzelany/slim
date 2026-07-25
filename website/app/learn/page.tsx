@@ -5,7 +5,7 @@ import { content } from "../_lib/content";
 
 export const metadata: Metadata = {
   title: "Learn",
-  description: "A compact, tested introduction to the implemented SLIM language.",
+  description: "A complete, tested tour of the accepted SLIM 1.0 language surface.",
 };
 
 export default function LearnPage() {
@@ -14,7 +14,7 @@ export default function LearnPage() {
       <PageIntro
         eyebrow="Learn"
         title={content.learn.title}
-        description="One tested route from Hello through ownership, projects, analysis, and guarded parallel execution."
+        description="One tested route through the complete accepted language: syntax, types, memory, effects, host services, projects, tools, and parallel execution."
       />
       <RenderedMarkdown html={content.learn.html} />
     </main>

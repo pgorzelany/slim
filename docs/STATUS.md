@@ -3,7 +3,7 @@
 Status: SLIM 1.0 released
 Compiler version: 1.0.0
 Next milestone: Post-1.0 evidence-driven development
-Updated: 2026-07-24
+Updated: 2026-07-26
 
 SLIM is the Small Language for Intelligent Machines: a compact systems
 language for AI-generated programs. Its production compiler is written in
@@ -40,6 +40,10 @@ by an explicit compatibility contract.
 - Integer proofs use a fixed `-1,000,000,000..1,000,000,000` domain; retained
   parameter propagation uses four passes; retained proof, lifetime, graph,
   report, and rewrite tables have documented limits.
+- `partial` is enforced through declared user-call edges, but the 1.0 checker
+  does not yet infer a missing declaration from every directly written
+  unproved `recur`. Until that gap is closed, authors must retain `partial`
+  unless the recurrence has been established total.
 - Exact equivalence covers at most eight Boolean parameters or one `U8`.
   Reduction is a small terminating, idempotent rule set, not global
   optimization.

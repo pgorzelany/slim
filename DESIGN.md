@@ -2,7 +2,7 @@
 
 Status: SLIM 1.0 released
 Name: **SLIM — Small Language for Intelligent Machines**
-Last updated: 2026-07-23
+Last updated: 2026-07-26
 
 ## Vision
 

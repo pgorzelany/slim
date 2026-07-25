@@ -83,6 +83,17 @@ test("learn renders multiline examples as valid standalone figures", async () =>
   assert.match(hello[0], /module hello\n\nfn main/);
   assert.doesNotMatch(hello[0], /<p>/);
   assert.doesNotMatch(html, /<p><figure class="code-example"/);
+  assert.match(html, /Scalar values and checked operations/);
+  assert.match(html, /Bytes, vectors, arenas, and IDs/);
+  assert.match(html, /Automatic and explicit parallelism/);
+  assert.match(html, /Complete accepted surface/);
+  assert.match(html, /data-generated-from="design\/surface\.tsv"/);
+  assert.match(html, /data-surface-key="builtin:i64\.add"/);
+  assert.match(html, /data-surface-key="syntax:fork"/);
+
+  for (const match of html.matchAll(/href="#([^"]+)"/g)) {
+    assert.match(html, new RegExp(`id="${match[1]}"`), `missing target for #${match[1]}`);
+  }
 });
 
 test("reference renders the generated surface and canonical documents", async () => {

@@ -204,12 +204,66 @@ async function expandExamples(markdown) {
   };
 }
 
+function surfaceIndexMarkup(entries) {
+  const categoryLabels = {
+    syntax: "Syntax",
+    type: "Types",
+    effect: "Effects",
+    entry: "Entry point",
+    builtin: "Built-ins",
+    backend: "Backend",
+  };
+  const categories = [...new Set(entries.map((entry) => entry.category))];
+  const groups = categories.map((category) => {
+    const items = entries
+      .filter((entry) => entry.category === category)
+      .map((entry) => {
+        const key = `${entry.category}:${entry.name}`;
+        const role = entry.semanticRole.replaceAll("-", " ");
+        return [
+          `<li data-surface-key="${escapeHtml(key)}">`,
+          `<code>${escapeHtml(entry.name)}</code>`,
+          `<span>${escapeHtml(role)}</span>`,
+          `</li>`,
+        ].join("");
+      })
+      .join("");
+    return [
+      `<section class="learn-surface-group">`,
+      `<h3>${escapeHtml(categoryLabels[category] ?? category)}</h3>`,
+      `<ul>${items}</ul>`,
+      `</section>`,
+    ].join("");
+  });
+
+  return [
+    `<div class="learn-surface-index" data-generated-from="design/surface.tsv" data-surface-count="${entries.length}">`,
+    groups.join(""),
+    `</div>`,
+  ].join("");
+}
+
 async function renderDocument(sourcePath, options = {}) {
   const source = await readFile(path.join(repositoryRoot, sourcePath), "utf8");
   const { title, body } = splitTitle(source, sourcePath);
   const expanded = options.examples
     ? await expandExamples(body)
     : { markdown: body, examples: [], replacements: [] };
+  if (options.surfaceEntries) {
+    const marker = "<!-- slim-surface-index -->";
+    const occurrences = expanded.markdown.split(marker).length - 1;
+    if (occurrences !== 1) {
+      throw new Error(
+        `content generation: ${sourcePath} needs exactly one ${marker}`,
+      );
+    }
+    const placeholder = "SLIMSURFACEINDEXPLACEHOLDER";
+    expanded.markdown = expanded.markdown.replace(marker, placeholder);
+    expanded.replacements.push({
+      placeholder,
+      markup: surfaceIndexMarkup(options.surfaceEntries),
+    });
+  }
   const shifted = shiftHeadings(expanded.markdown, options.headingShift ?? 0);
   let parsed = await marked.parse(shifted, {
     async: true,
@@ -246,13 +300,12 @@ function parseSurface(source) {
     });
 }
 
-const [design, cargo, hello, surfaceSource, learn, status, ...referenceDocuments] =
+const [design, cargo, hello, surfaceSource, status, ...referenceDocuments] =
   await Promise.all([
     readFile(path.join(repositoryRoot, "DESIGN.md"), "utf8"),
     readFile(path.join(repositoryRoot, "Cargo.toml"), "utf8"),
     readFile(path.join(repositoryRoot, "examples/hello.slim"), "utf8"),
     readFile(path.join(repositoryRoot, "design/surface.tsv"), "utf8"),
-    renderDocument("docs/LEARN.md", { examples: true }),
     renderDocument("docs/STATUS.md"),
     ...referenceSources.map(async (entry) => {
       const rendered = await renderDocument(entry.path, {
@@ -262,6 +315,12 @@ const [design, cargo, hello, surfaceSource, learn, status, ...referenceDocuments
       return { ...entry, ...rendered };
     }),
   ]);
+
+const surfaceEntries = parseSurface(surfaceSource);
+const learn = await renderDocument("docs/LEARN.md", {
+  examples: true,
+  surfaceEntries,
+});
 
 const meta = {
   name: "SLIM",
@@ -290,7 +349,7 @@ const surface = {
   milestone: meta.milestone,
   compilerVersion: meta.compilerVersion,
   generatedFrom: "design/surface.tsv",
-  entries: parseSurface(surfaceSource),
+  entries: surfaceEntries,
 };
 
 const content = {

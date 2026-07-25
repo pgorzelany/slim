@@ -23,7 +23,22 @@ test("tutorial embeds only existing production-checked SLIM files", async () => 
     /<!--\s*slim-example:\s*([^|]+?)(?:\s*\|\s*output:\s*(.*?))?\s*-->/g;
   const examples = [...learnSource.matchAll(pattern)];
 
-  assert.equal(examples.length, 7);
+  assert.deepEqual(
+    examples.map((match) => match[1].trim()),
+    [
+      "examples/hello.slim",
+      "conformance/pass/scalars.slim",
+      "examples/countdown.slim",
+      "conformance/pass/data.slim",
+      "examples/bytes.slim",
+      "conformance/pass/storage.slim",
+      "examples/inout.slim",
+      "conformance/pass/file_input.slim",
+      "conformance/pass/monotonic_clock.slim",
+      "conformance/pass/tcp_exchange.slim",
+      "conformance/pass/structured_fork.slim",
+    ],
+  );
   for (const match of examples) {
     const sourcePath = match[1].trim();
     const expectedOutput = match[2]?.trim() ?? null;
@@ -58,6 +73,19 @@ test("tutorial embeds only existing production-checked SLIM files", async () => 
   assert.deepEqual(
     generated.learn.examples,
     examples.map((match) => match[1].trim()),
+  );
+
+  const projectPath = "conformance/projects/basic/slim.project";
+  assert.match(learnSource, new RegExp(projectPath.replaceAll(".", "\\.")));
+  await access(path.join(repositoryRoot, projectPath));
+  const projectCheck = spawnSync("./slimc", ["check", projectPath], {
+    cwd: repositoryRoot,
+    encoding: "utf8",
+  });
+  assert.equal(
+    projectCheck.status,
+    0,
+    `${projectPath} failed to check:\n${projectCheck.stdout}${projectCheck.stderr}`,
   );
 });
 
@@ -101,6 +129,17 @@ test("surface JSON is an exact projection of the accepted ledger", async () => {
 
   assert.deepEqual(generatedSurface.entries, expected);
   assert.deepEqual(generated.surface.entries, expected);
+  const renderedLearnKeys = [
+    ...generated.learn.html.matchAll(/data-surface-key="([^"]+)"/g),
+  ].map((match) => match[1]);
+  assert.deepEqual(
+    renderedLearnKeys,
+    expected.map((entry) => `${entry.category}:${entry.name}`),
+  );
+  assert.match(
+    generated.learn.html,
+    new RegExp(`data-surface-count="${expected.length}"`),
+  );
 
   const builtins = execFileSync("./slimc", ["builtins"], {
     cwd: repositoryRoot,
