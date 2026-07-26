@@ -16,6 +16,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CC: clang
     steps:
       - name: Check out repository
         uses: actions/checkout@v6
