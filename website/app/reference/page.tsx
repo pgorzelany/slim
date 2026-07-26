@@ -1,12 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PageIntro } from "../_components/SiteShell";
-import { RenderedMarkdown } from "../_components/RenderedMarkdown";
 import { content } from "../_lib/content";
 
 export const metadata: Metadata = {
   title: "Reference",
-  description: "Canonical SLIM language, memory, project, analysis, and execution references.",
+  description: "The precise SLIM language reference, canonical contracts, and accepted surface.",
 };
 
 const categoryLabels: Record<string, string> = {
@@ -22,42 +21,62 @@ export default function ReferencePage() {
   const categories = [...new Set(content.surface.entries.map((entry) => entry.category))];
 
   return (
-    <main className="reference-page shell" id="main">
+    <main className="index-page shell" id="main">
       <PageIntro
         eyebrow="Reference"
-        title="One canonical surface"
-        description="Generated from the accepted language ledger and the repository's maintained contracts."
+        title="One canonical language surface"
+        description="Use the language chapters for precise lookup and the maintained contracts for normative boundaries beyond Core."
       />
 
-      <nav className="reference-index" aria-label="Reference documents">
-        {content.reference.map((document) => (
-          <a href={`#reference-${document.id}`} key={document.id}>
-            <strong>{document.title}</strong>
-            <span>{document.summary}</span>
-          </a>
-        ))}
-      </nav>
+      <section className="index-section" aria-labelledby="language-reference-title">
+        <header>
+          <p className="eyebrow">Language reference</p>
+          <h2 id="language-reference-title">Grammar, types, semantics, and tools</h2>
+        </header>
+        <ol className="chapter-grid chapter-grid--compact">
+          {content.languageReference.map((chapter) => (
+            <li key={chapter.slug}>
+              <Link href={chapter.route}>
+                <span>{String(chapter.order).padStart(2, "0")}</span>
+                <h3>{chapter.title}</h3>
+                <p>{chapter.summary}</p>
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className="index-section" aria-labelledby="contracts-title">
+        <header>
+          <p className="eyebrow">Canonical contracts</p>
+          <h2 id="contracts-title">Maintained repository specifications</h2>
+        </header>
+        <div className="reference-index">
+          {content.reference.map((document) => (
+            <Link
+              href={document.route}
+              id={`reference-${document.id}`}
+              key={document.id}
+            >
+              <strong>{document.title}</strong>
+              <span>{document.summary}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="surface-section" aria-labelledby="surface-title">
         <div className="section-heading">
           <p className="eyebrow">Generated ledger</p>
           <h2 id="surface-title">Accepted language surface</h2>
-          <p>
-            This table is generated directly from <code>design/surface.tsv</code>.
-          </p>
+          <p>This table is generated directly from <code>design/surface.tsv</code>.</p>
         </div>
         {categories.map((category) => (
           <div className="surface-group" key={category}>
             <h3>{categoryLabels[category] ?? category}</h3>
             <div className="table-scroll" role="region" aria-label={`${categoryLabels[category] ?? category} surface`}>
               <table>
-                <thead>
-                  <tr>
-                    <th scope="col">Name</th>
-                    <th scope="col">Semantic role</th>
-                    <th scope="col">Decision</th>
-                  </tr>
-                </thead>
+                <thead><tr><th scope="col">Name</th><th scope="col">Semantic role</th><th scope="col">Decision</th></tr></thead>
                 <tbody>
                   {content.surface.entries
                     .filter((entry) => entry.category === category)
@@ -77,19 +96,6 @@ export default function ReferencePage() {
           Machine-readable: <Link href="/reference/surface.json">surface.json</Link>
         </p>
       </section>
-
-      <div className="reference-documents">
-        {content.reference.map((document) => (
-          <article className="reference-document" id={`reference-${document.id}`} key={document.id}>
-            <header>
-              <p className="eyebrow">{document.path}</p>
-              <h2>{document.title}</h2>
-              <p>{document.summary}</p>
-            </header>
-            <RenderedMarkdown html={document.html} />
-          </article>
-        ))}
-      </div>
     </main>
   );
 }

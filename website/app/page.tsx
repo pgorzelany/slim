@@ -57,12 +57,12 @@ export default function Home() {
           <Link className="route-card" href="/learn">
             <span>01</span>
             <h3>Learn</h3>
-            <p>A compact path through the implemented language.</p>
+            <p>A chaptered, fixture-backed path through the complete programming model.</p>
           </Link>
           <Link className="route-card" href="/reference">
             <span>02</span>
             <h3>Reference</h3>
-            <p>Canonical grammar, memory, projects, tools, and execution.</p>
+            <p>Precise language chapters, canonical contracts, and the accepted surface.</p>
           </Link>
           <Link className="route-card" href="/status">
             <span>03</span>

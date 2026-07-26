@@ -33,7 +33,10 @@ recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
 their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 
 The generated language website is published from this repository at
-<https://pgorzelany.github.io/slim/>.
+<https://pgorzelany.github.io/slim/>. Its chaptered guide and language
+reference are maintained as canonical Markdown under
+[docs/book](docs/book), with executable examples linked to the conformance
+manifests.
 
 ## Verify everything
 

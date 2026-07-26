@@ -19,8 +19,8 @@ export const metadata: Metadata = {
   description:
     "A small systems language designed for AI-generated programs.",
   robots: {
-    index: false,
-    follow: false,
+    index: true,
+    follow: true,
   },
   icons: {
     icon: socialImageUrl,

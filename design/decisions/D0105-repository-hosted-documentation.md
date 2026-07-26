@@ -52,11 +52,14 @@ dependencies, behavior, artifacts, and release contents are unchanged.
 
 ## Evidence
 
-The static export emits HTML for `/`, `/learn/`, `/reference/`, and `/status/`
-plus `llms.txt` and `reference/surface.json`. Permanent tests read the exported
-files directly, validate route titles and internal links under both the root and
-the `/slim` Pages base path, compile every tutorial example, compare the
-generated surface with `slimc builtins`, and reject canonical-source drift.
+The initial static export emitted HTML for `/`, `/learn/`, `/reference/`, and
+`/status/` plus `llms.txt` and `reference/surface.json`. D0106 adds only
+build-time-enumerated chapter and contract routes, `robots.txt`, and
+`sitemap.xml`; every output remains part of the same static artifact. Permanent
+tests read the exported files directly, validate route titles and internal
+links under both the root and the `/slim` Pages base path, compile every
+referenced conformance example, compare the generated surface with
+`slimc builtins`, and reject canonical-source drift.
 
 The deployment workflow uses the repository lockfile, runs the complete website
 test before upload, grants the build job read-only repository access, and grants

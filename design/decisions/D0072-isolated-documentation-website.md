@@ -20,7 +20,10 @@ records, tested examples, and current milestone data remain its canonical
 inputs.
 
 The website is an isolated build-time consumer under `website/`. It may render
-four public routes and generate machine-readable documentation artifacts. It
+public routes generated from canonical repository documents and generate
+machine-readable documentation artifacts. D0106 replaces the initial
+four-route presentation limit with a bounded chapter model; it does not widen
+the dependency or runtime boundary. The website
 may not add compiler or runtime dependencies, language surface, executable
 fallbacks, or a second description of SLIM semantics.
 
@@ -44,9 +47,11 @@ repository with a static Next.js export published from this repository. Website
 dependencies remain confined to `website/package.json`; the root Cargo graph,
 bootstrap, compiler latency, generated programs, and runtime remain unchanged.
 
-The site has four routes: `/`, `/learn`, `/reference`, and `/status`. It has no
-live compiler, accounts, persistence, analytics, search service, version
-selector, or public package channel.
+The initial site had four routes: `/`, `/learn`, `/reference`, and `/status`.
+D0106 retains those indexes and generates guide, language-reference, and
+contract pages from repository Markdown. It has no live compiler, accounts,
+persistence, analytics, search service, version selector, or public package
+channel.
 
 ## Evidence
 
