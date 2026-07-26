@@ -32,6 +32,9 @@ The accepted canonical Core and compiler commands are documented in
 recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
 their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 
+The generated language website is published from this repository at
+<https://pgorzelany.github.io/slim/>.
+
 ## Verify everything
 
     ./scripts/verify.sh

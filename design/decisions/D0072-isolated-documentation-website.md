@@ -38,10 +38,11 @@ the compiler.
 
 ## Costs
 
-The website has a pinned Node, vinext, React, Vite, Cloudflare, and Markdown
-build toolchain. Those dependencies live only in `website/package.json`; the
-root Cargo graph, bootstrap, compiler latency, generated programs, and runtime
-remain unchanged.
+The initial website had a pinned Node, vinext, React, Vite, Cloudflare, and
+Markdown build toolchain. D0105 replaces the server wrapper and separate hosting
+repository with a static Next.js export published from this repository. Website
+dependencies remain confined to `website/package.json`; the root Cargo graph,
+bootstrap, compiler latency, generated programs, and runtime remain unchanged.
 
 The site has four routes: `/`, `/learn`, `/reference`, and `/status`. It has no
 live compiler, accounts, persistence, analytics, search service, version

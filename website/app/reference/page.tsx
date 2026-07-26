@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { PageIntro } from "../_components/SiteShell";
 import { RenderedMarkdown } from "../_components/RenderedMarkdown";
 import { content } from "../_lib/content";
@@ -73,7 +74,7 @@ export default function ReferencePage() {
           </div>
         ))}
         <p className="machine-link">
-          Machine-readable: <a href="/reference/surface.json">surface.json</a>
+          Machine-readable: <Link href="/reference/surface.json">surface.json</Link>
         </p>
       </section>
 

@@ -177,4 +177,8 @@ test("agent summary and dependency boundary remain explicit", async () => {
   assert.match(llms, /\/reference\/surface\.json/);
   assert.doesNotMatch(rootCargo, /website|vinext|react|marked/);
   assert.match(websitePackage, /"marked": "16\.4\.2"/);
+  assert.doesNotMatch(
+    websitePackage,
+    /vinext|vite|wrangler|@cloudflare\/vite-plugin/,
+  );
 });

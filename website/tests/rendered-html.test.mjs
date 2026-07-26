@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
+import { access, readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const routes = [
   ["/", "SLIM — Small Language for Intelligent Machines"],
@@ -7,6 +10,10 @@ const routes = [
   ["/reference", "Reference · SLIM"],
   ["/status", "Status · SLIM"],
 ];
+const siteRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const basePath = process.env.PAGES_BASE_PATH ?? "";
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://pgorzelany.github.io/slim/";
 const allowedInternalLinks = new Set([
   "/",
   "/learn",
@@ -16,54 +23,48 @@ const allowedInternalLinks = new Set([
 ]);
 
 async function render(pathname) {
-  const workerUrl = new URL("../dist/server/index.js", import.meta.url);
-  workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}-${pathname}`);
-  const { default: worker } = await import(workerUrl.href);
+  const relativePath =
+    pathname === "/" ? "index.html" : `${pathname.slice(1)}/index.html`;
+  return readFile(path.join(siteRoot, "out", relativePath), "utf8");
+}
 
-  return worker.fetch(
-    new Request(`http://localhost${pathname}`, {
-      headers: { accept: "text/html" },
-    }),
-    {
-      ASSETS: {
-        fetch: async () => new Response("Not found", { status: 404 }),
-      },
-    },
-    {
-      waitUntil() {},
-      passThroughOnException() {},
-    },
-  );
+function canonicalInternalPath(href) {
+  let pathname = new URL(href, "https://example.invalid").pathname;
+  if (basePath && pathname.startsWith(basePath)) {
+    pathname = pathname.slice(basePath.length) || "/";
+  }
+  if (pathname !== "/" && pathname.endsWith("/")) {
+    pathname = pathname.slice(0, -1);
+  }
+  return pathname;
 }
 
 for (const [pathname, title] of routes) {
-  test(`server-renders ${pathname}`, async () => {
-    const response = await render(pathname);
-    assert.equal(response.status, 200);
-    assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-    const html = await response.text();
+  test(`statically renders ${pathname}`, async () => {
+    const html = await render(pathname);
     assert.match(html, new RegExp(`<title>${title}</title>`, "i"));
     assert.match(html, /<main\b[^>]*\bid="main"/i);
-    assert.match(html, /href="\/learn"/);
-    assert.match(html, /href="\/reference"/);
-    assert.match(html, /href="\/status"/);
+    assert.match(html, new RegExp(`href="${basePath}/learn/?"`));
+    assert.match(html, new RegExp(`href="${basePath}/reference/?"`));
+    assert.match(html, new RegExp(`href="${basePath}/status/?"`));
     assert.match(html, /name="robots" content="noindex, nofollow"/i);
-    assert.match(html, /http:\/\/localhost(?::3000)?\/og-indented\.png/);
+    assert.match(html, new RegExp(`${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}og-indented\\.png`));
     assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 
     for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
       const href = match[1];
-      if (href.startsWith("/") && !href.startsWith("/_next/")) {
-        assert.ok(allowedInternalLinks.has(href), `unexpected internal link ${href}`);
+      if (href.startsWith("/") && !href.includes("/_next/")) {
+        assert.ok(
+          allowedInternalLinks.has(canonicalInternalPath(href)),
+          `unexpected internal link ${href}`,
+        );
       }
     }
   });
 }
 
 test("home exposes the current boundary and tested hello source", async () => {
-  const response = await render("/");
-  const html = await response.text();
+  const html = await render("/");
 
   assert.match(html, /SLIM 1.0 released/);
   assert.match(html, /examples\/hello\.slim/);
@@ -73,8 +74,7 @@ test("home exposes the current boundary and tested hello source", async () => {
 });
 
 test("learn renders multiline examples as valid standalone figures", async () => {
-  const response = await render("/learn");
-  const html = await response.text();
+  const html = await render("/learn");
   const hello = html.match(
     /<figure class="code-example" data-example-source="examples\/hello\.slim">[\s\S]*?<\/figure>/,
   );
@@ -97,8 +97,7 @@ test("learn renders multiline examples as valid standalone figures", async () =>
 });
 
 test("reference renders the generated surface and canonical documents", async () => {
-  const response = await render("/reference");
-  const html = await response.text();
+  const html = await render("/reference");
 
   assert.match(html, /Accepted language surface/);
   assert.match(html, /design\/surface\.tsv/);
@@ -114,4 +113,15 @@ test("reference renders the generated surface and canonical documents", async ()
   assert.match(html, /reference-release/);
   assert.match(html, /i64\.add/);
   assert.match(html, /guarded automatic and explicit structured execution/i);
+});
+
+test("static export includes the machine-readable artifacts", async () => {
+  const [llms, surface] = await Promise.all([
+    readFile(path.join(siteRoot, "out", "llms.txt"), "utf8"),
+    readFile(path.join(siteRoot, "out", "reference", "surface.json"), "utf8"),
+    access(path.join(siteRoot, "out", "404.html")),
+  ]);
+
+  assert.match(llms, /Small Language for Intelligent Machines/);
+  assert.equal(JSON.parse(surface).schemaVersion, 1);
 });

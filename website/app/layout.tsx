@@ -1,67 +1,53 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import { headers } from "next/headers";
 import { SiteFooter, SiteHeader } from "./_components/SiteShell";
 import { content } from "./_lib/content";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const configuredSiteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://pgorzelany.github.io/slim/";
+const metadataBase = new URL(
+  configuredSiteUrl.endsWith("/") ? configuredSiteUrl : `${configuredSiteUrl}/`,
+);
+const socialImageUrl = new URL("og-indented.png", metadataBase).toString();
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export async function generateMetadata(): Promise<Metadata> {
-  const requestHeaders = await headers();
-  const host = requestHeaders.get("host") ?? "localhost:3000";
-  const protocol =
-    requestHeaders.get("x-forwarded-proto") ??
-    (host.startsWith("localhost") ? "http" : "https");
-  const metadataBase = new URL(`${protocol}://${host}`);
-
-  return {
-    metadataBase,
-    title: {
-      default: "SLIM — Small Language for Intelligent Machines",
-      template: "%s · SLIM",
-    },
+export const metadata: Metadata = {
+  metadataBase,
+  title: {
+    default: "SLIM — Small Language for Intelligent Machines",
+    template: "%s · SLIM",
+  },
+  description:
+    "A small systems language designed for AI-generated programs.",
+  robots: {
+    index: false,
+    follow: false,
+  },
+  icons: {
+    icon: socialImageUrl,
+  },
+  openGraph: {
+    type: "website",
+    title: "SLIM — Small Language for Intelligent Machines",
     description:
-      "A small systems language designed for AI-generated programs.",
-    robots: {
-      index: false,
-      follow: false,
-    },
-    icons: {
-      icon: new URL("/og-indented.png", metadataBase).toString(),
-    },
-    openGraph: {
-      type: "website",
-      title: "SLIM — Small Language for Intelligent Machines",
-      description:
-        "Canonical syntax, static safety, deterministic memory, bounded analysis.",
-      siteName: "SLIM",
-      images: [
-        {
-          url: new URL("/og-indented.png", metadataBase).toString(),
-          width: 1536,
-          height: 1024,
-          alt: "SLIM — Small Language for Intelligent Machines",
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: "SLIM — Small Language for Intelligent Machines",
-      description:
-        "Canonical syntax, static safety, deterministic memory, bounded analysis.",
-      images: [new URL("/og-indented.png", metadataBase).toString()],
-    },
-  };
-}
+      "Canonical syntax, static safety, deterministic memory, bounded analysis.",
+    siteName: "SLIM",
+    images: [
+      {
+        url: socialImageUrl,
+        width: 1536,
+        height: 1024,
+        alt: "SLIM — Small Language for Intelligent Machines",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SLIM — Small Language for Intelligent Machines",
+    description:
+      "Canonical syntax, static safety, deterministic memory, bounded analysis.",
+    images: [socialImageUrl],
+  },
+};
 
 export default function RootLayout({
   children,
@@ -70,9 +56,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body>
         <a className="skip-link" href="#main">
           Skip to content
         </a>
