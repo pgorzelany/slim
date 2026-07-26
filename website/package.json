@@ -13,7 +13,7 @@
     "prebuild": "npm run generate",
     "build": "next build",
     "test": "npm run build && node --test tests/*.test.mjs",
-    "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern generated"
+    "lint": "eslint . --ignore-pattern .next --ignore-pattern generated"
   },
   "dependencies": {
     "marked": "16.4.2",
