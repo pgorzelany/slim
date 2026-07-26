@@ -14,14 +14,6 @@ const generatedSurface = JSON.parse(
   await readFile(path.join(siteRoot, "public/reference/surface.json"), "utf8"),
 );
 
-function expectedDiagnostics(expectation) {
-  return expectation.split(",").map((entry) => {
-    const match = entry.match(/^([^@]+)@(?:[^@]+@)?(\d+):(\d+)$/);
-    assert.ok(match, `malformed diagnostic expectation ${entry}`);
-    return { code: match[1], start: Number(match[2]), end: Number(match[3]) };
-  });
-}
-
 function runtimeExpectation(expectation) {
   const decode = (value) =>
     (value ?? "").replaceAll("\\n", "\n").replaceAll("\\t", "\t").replaceAll("\\\\", "\\");
@@ -77,25 +69,21 @@ test("book fixtures execute through production SLIM with exact expectations", as
     const isProject = fixture.manifestPath.endsWith("/projects/manifest.tsv");
 
     if (fixture.mode === "check-fail") {
-      const checked = spawnSync(
-        "./slimc",
-        ["--message-format=json", "check", fixture.path],
-        { cwd: repositoryRoot, encoding: "utf8" },
-      );
+      const checked = spawnSync("./slimc", ["check", fixture.path], {
+        cwd: repositoryRoot,
+        encoding: "utf8",
+      });
       assert.equal(checked.status, 1, `${fixture.id} unexpectedly checked`);
       const actual = `${checked.stdout}${checked.stderr}`
         .trim()
         .split(/\r?\n/)
         .filter(Boolean)
         .map((line) => {
-          const diagnostic = JSON.parse(line);
-          return {
-            code: diagnostic.code,
-            start: diagnostic.span.start,
-            end: diagnostic.span.end,
-          };
+          const match = line.match(/^error\[(.+)\]: rejected by the SLIM compiler$/);
+          assert.ok(match, `${fixture.id} emitted unexpected diagnostic output: ${line}`);
+          return match[1];
         });
-      assert.deepEqual(actual, expectedDiagnostics(fixture.expectation), fixture.id);
+      assert.deepEqual(actual, fixture.expectation.split(","), fixture.id);
       continue;
     }
 
