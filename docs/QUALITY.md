@@ -21,7 +21,7 @@ artifact used by normal compilation. The current report includes:
   and dependency facts;
 - exact declaration, effect, call, match, mutation, recurrence, allocation,
   and checked-trap counts;
-- exact or unknown totality, bounded owned-binding pressure, and finite record
+- exact or unknown totality, bounded owned-binding pressure, and finite struct
   state cardinality where the compiler knows every field cardinality;
 - bounded integer and recurrence proofs described in
   `docs/INTEGER_PROOFS.md`;
@@ -83,7 +83,7 @@ and requires:
 - a `Bool` result and no effects clause;
 - at most 256 tokens in the subject expression; and
 - Boolean and bounded integer literals/names; immutable `Bool`, `U8`, or `I64`
-  `let`; `bool.not`, `bool.and`, `bool.or`, `u8.to-i64`, integer comparisons,
+  `let`; `!`, `&&`, `||`, `u8.to_i64`, integer comparisons,
   and exhaustive Boolean `match`.
 
 The tool enumerates all `2^N` Boolean inputs in false-before-true order or all

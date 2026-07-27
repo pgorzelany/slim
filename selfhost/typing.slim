@@ -1,1974 +1,1867 @@
 module typing
 
-record TypeRef:
+struct TypeRef:
   kind: I64
   form: I64
 
-record Fact:
+struct Fact:
   type: TypeRef
 
-record Issue:
+struct Issue:
   code: Bytes
   start: I64
   end: I64
   blocks_inference: Bool
 
-record View:
+struct View:
   facts: Vec[Fact]
   issues: Vec[Issue]
 
-record Checked:
+struct Checked:
   status: I64
   view: View
   issues: Vec[Issue]
-  plan: memory/Plan
+  plan: memory.Plan
 
-record Binding:
+struct Binding:
   name: I64
   type: I64
   borrowed: Bool
+  mutable: Bool
   moved: Bool
   parent: I64
 
-record ScopeNode:
+struct ScopeNode:
   value: I64
   first_edge: I64
 
-record ScopeEdge:
+struct ScopeEdge:
   code: I64
   child: I64
   next_edge: I64
 
-record ScopeChange:
+struct ScopeChange:
   node: I64
   previous: I64
 
 fn empty_view() -> View effects[alloc]:
   let facts: Vec[Fact] = vec.new()
   let issues: Vec[Issue] = vec.new()
-  make View(facts = facts issues = issues)
+  View(facts: facts, issues: issues)
 
-fn append_scope_node(value: I64 inout nodes: Vec[ScopeNode]) -> I64 effects[alloc]:
+fn append_scope_node(value: I64, inout nodes: Vec[ScopeNode]) -> I64 effects[alloc]:
   let index: I64 = vec.len(nodes)
-  let node: ScopeNode = make ScopeNode(value = value first_edge = -1)
-  let pushed: Unit = vec.push(nodes node)
+  let node: ScopeNode = ScopeNode(value: value, first_edge: -1)
+  vec.push(nodes, node)
   index
 
-fn find_scope_edge(inout edges: Vec[ScopeEdge] cursor: I64 code: I64) -> I64 effects[partial]:
-  let done: Bool = i64.lt(cursor 0)
-  match done:
-    true:
+fn find_scope_edge(inout edges: Vec[ScopeEdge], cursor: I64, code: I64) -> I64 effects[partial]:
+  let done: Bool = cursor < 0
+  if done:
+    -1
+  else:
+    let edge: ScopeEdge = vec.get(edges, cursor)
+    let same: Bool = edge.code == code
+    if same:
+      edge.child
+    else:
+      recur(edges, edge.next_edge, code)
+
+fn ensure_scope_child(inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], parent: I64, code: I64) -> I64 effects[alloc, partial]:
+  let node: ScopeNode = vec.get(nodes, parent)
+  let found: I64 = find_scope_edge(edges, node.first_edge, code)
+  let present: Bool = found >= 0
+  if present:
+    found
+  else:
+    let child: I64 = append_scope_node(-1, nodes)
+    let edge_index: I64 = vec.len(edges)
+    let edge: ScopeEdge = ScopeEdge(code: code, child: child, next_edge: node.first_edge)
+    vec.push(edges, edge)
+    let updated: ScopeNode = ScopeNode(value: node.value, first_edge: edge_index)
+    vec.set(nodes, parent, updated)
+    child
+
+fn ensure_scope_chars(source: Bytes, index: I64, end: I64, node: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge]) -> I64 effects[alloc, partial]:
+  let done: Bool = index >= end
+  if done:
+    node
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let child: I64 = ensure_scope_child(nodes, edges, node, code)
+    let next: I64 = index + 1
+    recur(source, next, end, child, nodes, edges)
+
+fn lookup_scope_chars(source: Bytes, index: I64, end: I64, node: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge]) -> I64 effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    let current: ScopeNode = vec.get(nodes, node)
+    current.value
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let current: ScopeNode = vec.get(nodes, node)
+    let child: I64 = find_scope_edge(edges, current.first_edge, code)
+    let missing: Bool = child < 0
+    if missing:
       -1
-    false:
-      let edge: ScopeEdge = vec.get(edges cursor)
-      let same: Bool = i64.eq(get(edge code) code)
-      match same:
-        true:
-          get(edge child)
-        false:
-          recur(edges get(edge next_edge) code)
+    else:
+      let next: I64 = index + 1
+      recur(source, next, end, child, nodes, edges)
 
-fn ensure_scope_child(inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] parent: I64 code: I64) -> I64 effects[alloc partial]:
-  let node: ScopeNode = vec.get(nodes parent)
-  let found: I64 = find_scope_edge(edges get(node first_edge) code)
-  let present: Bool = i64.ge(found 0)
-  match present:
-    true:
-      found
-    false:
-      let child: I64 = append_scope_node(-1 nodes)
-      let edge_index: I64 = vec.len(edges)
-      let edge: ScopeEdge = make ScopeEdge(code = code child = child next_edge = get(node first_edge))
-      let pushed: Unit = vec.push(edges edge)
-      let updated: ScopeNode = make ScopeNode(value = get(node value) first_edge = edge_index)
-      let stored: Unit = vec.set(nodes parent updated)
-      child
+fn lookup_scope_token(source: Bytes, inout tokens: Vec[syntax.Token], token: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge]) -> I64 effects[partial]:
+  let start: I64 = syntax.ast_node_start(tokens, token)
+  let end: I64 = syntax.ast_node_end(tokens, token)
+  lookup_scope_chars(source, start, end, 0, nodes, edges)
 
-fn ensure_scope_chars(source: Bytes index: I64 end: I64 node: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge]) -> I64 effects[alloc partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
-      node
-    false:
-      let byte: U8 = bytes.get(source index)
-      let code: I64 = u8.to-i64(byte)
-      let child: I64 = ensure_scope_child(nodes edges node code)
-      let next: I64 = i64.add(index 1)
-      recur(source next end child nodes edges)
+fn bind_scope_token(source: Bytes, inout tokens: Vec[syntax.Token], token: I64, value: I64, borrowed: Bool, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let start: I64 = syntax.ast_node_start(tokens, token)
+  let end: I64 = syntax.ast_node_end(tokens, token)
+  let node_index: I64 = ensure_scope_chars(source, start, end, 0, nodes, edges)
+  let node: ScopeNode = vec.get(nodes, node_index)
+  let change: ScopeChange = ScopeChange(node: node_index, previous: node.value)
+  vec.push(changes, change)
+  let known_type: Bool = value >= 0
+  let type_value: I64 = if known_type:
+    value
+  else:
+    0
+  let type_scaled: I64 = type_value * 2
+  let borrowed_value: I64 = if borrowed:
+    1
+  else:
+    0
+  let type_mode: I64 = type_scaled + borrowed_value
+  let base: I64 = vec.len(tokens) + 1
+  let scaled: I64 = type_mode * base
+  let packed: I64 = scaled + token
+  let updated: ScopeNode = ScopeNode(value: packed, first_edge: node.first_edge)
+  vec.set(nodes, node_index, updated)
 
-fn lookup_scope_chars(source: Bytes index: I64 end: I64 node: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge]) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
-      let current: ScopeNode = vec.get(nodes node)
-      get(current value)
-    false:
-      let byte: U8 = bytes.get(source index)
-      let code: I64 = u8.to-i64(byte)
-      let current: ScopeNode = vec.get(nodes node)
-      let child: I64 = find_scope_edge(edges get(current first_edge) code)
-      let missing: Bool = i64.lt(child 0)
-      match missing:
-        true:
-          -1
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(source next end child nodes edges)
+fn rollback_scopes(mark: I64, index: I64, inout nodes: Vec[ScopeNode], inout changes: Vec[ScopeChange]) -> Void effects[partial]:
+  let done: Bool = index <= mark
+  if done:
+    void
+  else:
+    let previous_index: I64 = index - 1
+    let change: ScopeChange = vec.get(changes, previous_index)
+    let node_index: I64 = change.node
+    let node: ScopeNode = vec.get(nodes, node_index)
+    let restored: ScopeNode = ScopeNode(value: change.previous, first_edge: node.first_edge)
+    vec.set(nodes, node_index, restored)
+    recur(mark, previous_index, nodes, changes)
 
-fn lookup_scope_token(source: Bytes inout tokens: Vec[syntax/Token] token: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge]) -> I64 effects[partial]:
-  let start: I64 = syntax/ast_node_start(tokens token)
-  let end: I64 = syntax/ast_node_end(tokens token)
-  lookup_scope_chars(source start end 0 nodes edges)
+fn link_local_atom(source: Bytes, inout tokens: Vec[syntax.Token], atom: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge]) -> Void effects[partial]:
+  let packed: I64 = lookup_scope_token(source, tokens, atom, nodes, edges)
+  let found: Bool = packed >= 0
+  if found:
+    let negative: I64 = 0 - packed
+    let encoded: I64 = negative - 2
+    syntax.ast_node_set_link(tokens, atom, encoded)
+  else:
+    void
 
-fn bind_scope_token(source: Bytes inout tokens: Vec[syntax/Token] token: I64 value: I64 borrowed: Bool inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let start: I64 = syntax/ast_node_start(tokens token)
-  let end: I64 = syntax/ast_node_end(tokens token)
-  let node_index: I64 = ensure_scope_chars(source start end 0 nodes edges)
-  let node: ScopeNode = vec.get(nodes node_index)
-  let change: ScopeChange = make ScopeChange(node = node_index previous = get(node value))
-  let saved: Unit = vec.push(changes change)
-  let known_type: Bool = i64.ge(value 0)
-  let type_value: I64 = match known_type:
-    true:
-      value
-    false:
-      0
-  let type_scaled: I64 = i64.mul(type_value 2)
-  let borrowed_value: I64 = match borrowed:
-    true:
-      1
-    false:
-      0
-  let type_mode: I64 = i64.add(type_scaled borrowed_value)
-  let base: I64 = i64.add(vec.len(tokens) 1)
-  let scaled: I64 = i64.mul(type_mode base)
-  let packed: I64 = i64.add(scaled token)
-  let updated: ScopeNode = make ScopeNode(value = packed first_edge = get(node first_edge))
-  vec.set(nodes node_index updated)
+fn link_local_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    link_local_expr(source, tokens, cursor, nodes, edges, changes)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, nodes, edges, changes)
 
-fn rollback_scopes(mark: I64 index: I64 inout nodes: Vec[ScopeNode] inout changes: Vec[ScopeChange]) -> Unit effects[partial]:
-  let done: Bool = i64.le(index mark)
-  match done:
-    true:
-      unit
-    false:
-      let previous_index: I64 = i64.sub(index 1)
-      let change: ScopeChange = vec.get(changes previous_index)
-      let node_index: I64 = get(change node)
-      let node: ScopeNode = vec.get(nodes node_index)
-      let restored: ScopeNode = make ScopeNode(value = get(change previous) first_edge = get(node first_edge))
-      let stored: Unit = vec.set(nodes node_index restored)
-      recur(mark previous_index nodes changes)
+fn link_local_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let value: I64 = syntax.ast_member_value(cursor)
+    link_local_expr(source, tokens, value, nodes, edges, changes)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, nodes, edges, changes)
 
-fn link_local_atom(source: Bytes inout tokens: Vec[syntax/Token] atom: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge]) -> Unit effects[partial]:
-  let packed: I64 = lookup_scope_token(source tokens atom nodes edges)
-  let found: Bool = i64.ge(packed 0)
-  match found:
-    false:
-      unit
-    true:
-      let negative: I64 = i64.sub(0 packed)
-      let encoded: I64 = i64.sub(negative 2)
-      syntax/ast_node_set_link(tokens atom encoded)
+fn shadow_payload_names(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    bind_scope_token(source, tokens, cursor, -2, false, nodes, edges, changes)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, nodes, edges, changes)
 
-fn link_local_forms(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let linked: Unit = link_local_expr(source tokens cursor nodes edges changes)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next nodes edges changes)
+fn link_local_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let mark: I64 = vec.len(changes)
+    let first: I64 = syntax.ast_arm_bindings(tokens, cursor)
+    let body: I64 = syntax.ast_arm_body(tokens, cursor)
+    let payload: Bool = first < body
+    if payload:
+      shadow_payload_names(source, tokens, syntax.ast_list_first(first), nodes, edges, changes)
+    else:
+      void
+    link_local_expr(source, tokens, body, nodes, edges, changes)
+    let end: I64 = vec.len(changes)
+    rollback_scopes(mark, end, nodes, changes)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, nodes, edges, changes)
 
-fn link_local_fields(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let value: I64 = syntax/ast_member_value(cursor)
-      let linked: Unit = link_local_expr(source tokens value nodes edges changes)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next nodes edges changes)
-
-fn shadow_payload_names(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let shadowed: Unit = bind_scope_token(source tokens cursor -2 false nodes edges changes)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next nodes edges changes)
-
-fn link_local_arms(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let mark: I64 = vec.len(changes)
-      let first: I64 = syntax/ast_arm_bindings(tokens cursor)
-      let body: I64 = syntax/ast_arm_body(tokens cursor)
-      let payload: Bool = i64.lt(first body)
-      let shadowed: Unit = match payload:
-        false:
-          unit
-        true:
-          shadow_payload_names(source tokens syntax/ast_list_first(first) nodes edges changes)
-      let linked: Unit = link_local_expr(source tokens body nodes edges changes)
-      let end: I64 = vec.len(changes)
-      let restored: Unit = rollback_scopes(mark end nodes changes)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next nodes edges changes)
-
-fn link_local_let(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let name: I64 = syntax/ast_let_name(expr)
-  let type: I64 = syntax/ast_let_type(expr)
-  let value: I64 = syntax/ast_let_value(tokens expr)
-  let body: I64 = syntax/ast_let_body(tokens expr)
-  let linked_value: Unit = link_local_expr(source tokens value nodes edges changes)
+fn link_local_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let name: I64 = syntax.ast_let_name(expr)
+  let type: I64 = syntax.ast_let_type(expr)
+  let value: I64 = syntax.ast_let_value(tokens, expr)
+  let body: I64 = syntax.ast_let_body(tokens, expr)
+  link_local_expr(source, tokens, value, nodes, edges, changes)
   let mark: I64 = vec.len(changes)
-  let bound: Unit = bind_scope_token(source tokens name type false nodes edges changes)
-  let linked_body: Unit = link_local_expr(source tokens body nodes edges changes)
+  bind_scope_token(source, tokens, name, type, false, nodes, edges, changes)
+  link_local_expr(source, tokens, body, nodes, edges, changes)
   let end: I64 = vec.len(changes)
-  rollback_scopes(mark end nodes changes)
+  rollback_scopes(mark, end, nodes, changes)
 
-fn link_local_set(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let name: I64 = syntax/ast_set_name(expr)
-  let linked_name: Unit = link_local_atom(source tokens name nodes edges)
-  let value: I64 = syntax/ast_set_value(expr)
-  let body: I64 = syntax/ast_set_body(tokens expr)
-  let linked_value: Unit = link_local_expr(source tokens value nodes edges changes)
-  link_local_expr(source tokens body nodes edges changes)
+fn link_local_set(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let name: I64 = syntax.ast_set_name(expr)
+  link_local_atom(source, tokens, name, nodes, edges)
+  let value: I64 = syntax.ast_set_value(expr)
+  let body: I64 = syntax.ast_set_body(tokens, expr)
+  link_local_expr(source, tokens, value, nodes, edges, changes)
+  link_local_expr(source, tokens, body, nodes, edges, changes)
 
-fn link_local_data(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let make_form: Bool = syntax/ast_expression_is_make(source tokens expr)
-  match make_form:
-    true:
-      link_local_fields(source tokens syntax/ast_make_fields(expr) nodes edges changes)
-    false:
-      let get_form: Bool = syntax/ast_expression_is_get(source tokens expr)
-      match get_form:
-        true:
-          link_local_expr(source tokens syntax/ast_get_value(expr) nodes edges changes)
-        false:
-          let case_form: Bool = syntax/ast_expression_is_case(source tokens expr)
-          match case_form:
-            true:
-              link_local_forms(source tokens syntax/ast_case_payload(tokens expr) nodes edges changes)
-            false:
-              let match_form: Bool = syntax/ast_expression_is_match(source tokens expr)
-              match match_form:
-                true:
-                  let value: I64 = syntax/ast_match_value(expr)
-                  let linked: Unit = link_local_expr(source tokens value nodes edges changes)
-                  link_local_arms(source tokens syntax/ast_match_arms(tokens expr) nodes edges changes)
-                false:
-                  let fork_form: Bool = syntax/ast_expression_is_fork(source tokens expr)
-                  match fork_form:
-                    true:
-                      link_local_expr(source tokens syntax/ast_fork_body(expr) nodes edges changes)
-                    false:
-                      link_local_forms(source tokens syntax/ast_recur_arguments(expr) nodes edges changes)
+fn link_local_data(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
+  if make_form:
+    link_local_fields(source, tokens, syntax.ast_make_fields(expr), nodes, edges, changes)
+  else:
+    let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expr)
+    if get_form:
+      link_local_expr(source, tokens, syntax.ast_get_value(expr), nodes, edges, changes)
+    else:
+      let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expr)
+      if case_form:
+        link_local_forms(source, tokens, syntax.ast_case_payload(tokens, expr), nodes, edges, changes)
+      else:
+        let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
+        if match_form:
+          let value: I64 = syntax.ast_match_value(expr)
+          link_local_expr(source, tokens, value, nodes, edges, changes)
+          link_local_arms(source, tokens, syntax.ast_match_arms(tokens, expr), nodes, edges, changes)
+        else:
+          let fork_form: Bool = syntax.ast_expression_is_fork(source, tokens, expr)
+          if fork_form:
+            link_local_expr(source, tokens, syntax.ast_fork_body(expr), nodes, edges, changes)
+          else:
+            link_local_forms(source, tokens, syntax.ast_recur_arguments(expr), nodes, edges, changes)
 
-fn link_local_form(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let let_form: Bool = syntax/ast_expression_is_let(source tokens expr)
-  match let_form:
-    true:
-      link_local_let(source tokens expr nodes edges changes)
-    false:
-      let set_form: Bool = syntax/ast_expression_is_set(source tokens expr)
-      match set_form:
-        true:
-          link_local_set(source tokens expr nodes edges changes)
-        false:
-          let call_form: Bool = syntax/ast_expression_is_call(source tokens expr)
-          match call_form:
-            true:
-              link_local_forms(source tokens syntax/ast_call_arguments(expr) nodes edges changes)
-            false:
-              link_local_data(source tokens expr nodes edges changes)
+fn link_local_form(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
+  if let_form:
+    link_local_let(source, tokens, expr, nodes, edges, changes)
+  else:
+    let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
+    if set_form:
+      link_local_set(source, tokens, expr, nodes, edges, changes)
+    else:
+      let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
+      if call_form:
+        link_local_forms(source, tokens, syntax.ast_call_arguments(expr), nodes, edges, changes)
+      else:
+        link_local_data(source, tokens, expr, nodes, edges, changes)
 
-fn link_local_expr(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens expr)
-  let form: Bool = i64.eq(kind 0)
-  match form:
-    true:
-      link_local_form(source tokens expr nodes edges changes)
-    false:
-      let atom: Bool = i64.eq(kind 2)
-      match atom:
-        true:
-          link_local_atom(source tokens expr nodes edges)
-        false:
-          unit
+fn link_local_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, expr)
+  let form: Bool = kind == 0
+  if form:
+    link_local_form(source, tokens, expr, nodes, edges, changes)
+  else:
+    let atom: Bool = kind == 2
+    if atom:
+      link_local_atom(source, tokens, expr, nodes, edges)
+    else:
+      void
 
-fn bind_link_parameters(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout nodes: Vec[ScopeNode] inout edges: Vec[ScopeEdge] inout changes: Vec[ScopeChange]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let name: I64 = parameter_name(source tokens cursor)
-      let type: I64 = parameter_type(source tokens cursor)
-      let borrowed: Bool = parameter_is_inout(source tokens cursor)
-      let bound: Unit = bind_scope_token(source tokens name type borrowed nodes edges changes)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next nodes edges changes)
+fn bind_link_parameters(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout nodes: Vec[ScopeNode], inout edges: Vec[ScopeEdge], inout changes: Vec[ScopeChange]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let name: I64 = parameter_name(source, tokens, cursor)
+    let type: I64 = parameter_type(source, tokens, cursor)
+    let borrowed: Bool = parameter_is_inout(source, tokens, cursor)
+    bind_scope_token(source, tokens, name, type, borrowed, nodes, edges, changes)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, nodes, edges, changes)
 
-fn link_function_locals(source: Bytes inout tokens: Vec[syntax/Token] item: I64) -> Unit effects[alloc partial]:
+fn link_function_locals(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> Void effects[alloc, partial]:
   let nodes: Vec[ScopeNode] = vec.new()
   let edges: Vec[ScopeEdge] = vec.new()
   let changes: Vec[ScopeChange] = vec.new()
-  let root: I64 = append_scope_node(-1 nodes)
-  let params: I64 = syntax/ast_function_parameters(item)
-  let bound: Unit = bind_link_parameters(source tokens syntax/ast_parameters_first(params) nodes edges changes)
-  let return_type: I64 = syntax/ast_function_return_type(tokens item)
-  let effects: I64 = syntax/ast_function_effects(tokens item)
-  let body: I64 = syntax/ast_function_body(tokens item)
-  link_local_expr(source tokens body nodes edges changes)
+  let root: I64 = append_scope_node(-1, nodes)
+  let params: I64 = syntax.ast_function_parameters(item)
+  bind_link_parameters(source, tokens, syntax.ast_parameters_first(params), nodes, edges, changes)
+  let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+  let effects: I64 = syntax.ast_function_effects(tokens, item)
+  let body: I64 = syntax.ast_function_body(tokens, item)
+  link_local_expr(source, tokens, body, nodes, edges, changes)
 
-fn link_declaration_locals(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration] index: I64) -> Unit effects[alloc partial]:
+fn link_declaration_locals(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
-  let done: Bool = i64.ge(index count)
-  match done:
-    true:
-      unit
-    false:
-      let declaration: ir/Declaration = vec.get(declarations index)
-      let item: I64 = get(declaration form)
-      let function: Bool = syntax/ast_item_is_function(source tokens item)
-      let linked: Unit = match function:
-        true:
-          link_function_locals(source tokens item)
-        false:
-          unit
-      let next: I64 = i64.add(index 1)
-      recur(source tokens declarations next)
+  let done: Bool = index >= count
+  if done:
+    void
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    let function: Bool = syntax.ast_item_is_function(source, tokens, item)
+    if function:
+      link_function_locals(source, tokens, item)
+    else:
+      void
+    let next: I64 = index + 1
+    recur(source, tokens, declarations, next)
 
 fn invalid_type(token: I64) -> TypeRef:
-  make TypeRef(kind = -2 form = token)
+  TypeRef(kind: -2, form: token)
 
-fn initialize_facts(inout tokens: Vec[syntax/Token] expr: I64 inout facts: Vec[Fact]) -> Unit effects[alloc partial]:
+fn initialize_facts(inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[Fact]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(tokens)
-  let done: Bool = i64.ge(expr length)
-  match done:
-    true:
-      unit
-    false:
-      let type: TypeRef = invalid_type(expr)
-      let fact: Fact = make Fact(type = type)
-      let pushed: Unit = vec.push(facts fact)
-      let next: I64 = syntax/ast_node_after(expr)
-      recur(tokens next facts)
+  let done: Bool = expr >= length
+  if done:
+    void
+  else:
+    let type: TypeRef = invalid_type(expr)
+    let fact: Fact = Fact(type: type)
+    vec.push(facts, fact)
+    let next: I64 = syntax.ast_node_after(expr)
+    recur(tokens, next, facts)
 
-fn fact_type(inout facts: Vec[Fact] expr: I64) -> TypeRef effects[partial]:
-  let nonnegative: Bool = i64.ge(expr 0)
+fn fact_type(inout facts: Vec[Fact], expr: I64) -> TypeRef effects[partial]:
+  let nonnegative: Bool = expr >= 0
   let length: I64 = vec.len(facts)
-  let below: Bool = i64.lt(expr length)
-  let bounded: Bool = bool.and(nonnegative below)
-  match bounded:
-    false:
-      invalid_type(expr)
-    true:
-      let fact: Fact = vec.get(facts expr)
-      get(fact type)
+  let below: Bool = expr < length
+  let bounded: Bool = nonnegative && below
+  if bounded:
+    let fact: Fact = vec.get(facts, expr)
+    fact.type
+  else:
+    invalid_type(expr)
 
-fn linked_binding_is_inout(inout tokens: Vec[syntax/Token] name: I64) -> Bool effects[partial]:
-  let link: I64 = syntax/ast_node_link(tokens name)
-  let encoded: Bool = i64.lt(link -1)
-  match encoded:
-    false:
-      false
-    true:
-      let positive: I64 = i64.sub(0 link)
-      let packed: I64 = i64.sub(positive 2)
-      let base: I64 = i64.add(vec.len(tokens) 1)
-      let type_mode: I64 = i64.div(packed base)
-      let mode: I64 = i64.rem(type_mode 2)
-      i64.eq(mode 1)
+fn linked_binding_is_inout(inout tokens: Vec[syntax.Token], name: I64) -> Bool effects[partial]:
+  let link: I64 = syntax.ast_node_link(tokens, name)
+  let encoded: Bool = link < -1
+  if encoded:
+    let positive: I64 = 0 - link
+    let packed: I64 = positive - 2
+    let base: I64 = vec.len(tokens) + 1
+    let type_mode: I64 = packed / base
+    let mode: I64 = type_mode % 2
+    mode == 1
+  else:
+    false
 
-fn linked_binding_declaration(inout tokens: Vec[syntax/Token] name: I64) -> I64 effects[partial]:
-  let link: I64 = syntax/ast_node_link(tokens name)
-  let encoded: Bool = i64.lt(link -1)
-  match encoded:
-    false:
-      -1
-    true:
-      let positive: I64 = i64.sub(0 link)
-      let packed: I64 = i64.sub(positive 2)
-      let base: I64 = i64.add(vec.len(tokens) 1)
-      i64.rem(packed base)
+fn linked_binding_declaration(inout tokens: Vec[syntax.Token], name: I64) -> I64 effects[partial]:
+  let link: I64 = syntax.ast_node_link(tokens, name)
+  let encoded: Bool = link < -1
+  if encoded:
+    let positive: I64 = 0 - link
+    let packed: I64 = positive - 2
+    let base: I64 = vec.len(tokens) + 1
+    packed % base
+  else:
+    -1
 
-fn scalar_type(kind: I64 token: I64) -> TypeRef:
-  make TypeRef(kind = kind form = token)
+fn scalar_type(kind: I64, token: I64) -> TypeRef:
+  TypeRef(kind: kind, form: token)
 
-fn source_type(source: Bytes inout tokens: Vec[syntax/Token] form: I64) -> TypeRef effects[partial]:
-  let kind: I64 = syntax/scalar_type_kind(source tokens form)
-  make TypeRef(kind = kind form = form)
+fn source_type(source: Bytes, inout tokens: Vec[syntax.Token], form: I64) -> TypeRef effects[partial]:
+  let kind: I64 = syntax.scalar_type_kind(source, tokens, form)
+  TypeRef(kind: kind, form: form)
 
 fn type_valid(type: TypeRef) -> Bool:
-  i64.ge(get(type kind) -1)
+  type.kind >= -1
 
-fn append_issue(code: Bytes start: I64 end: I64 inout issues: Vec[Issue]) -> Unit effects[alloc]:
-  let issue: Issue = make Issue(code = code start = start end = end blocks_inference = true)
-  vec.push(issues issue)
+fn append_issue(code: Bytes, start: I64, end: I64, inout issues: Vec[Issue]) -> Void effects[alloc]:
+  let issue: Issue = Issue(code: code, start: start, end: end, blocks_inference: true)
+  vec.push(issues, issue)
 
-fn append_ownership_issue(code: Bytes token: I64 inout issues: Vec[Issue]) -> Unit effects[alloc]:
-  let issue: Issue = make Issue(code = code start = token end = token blocks_inference = false)
-  vec.push(issues issue)
+fn append_ownership_issue(code: Bytes, token: I64, inout issues: Vec[Issue]) -> Void effects[alloc]:
+  let issue: Issue = Issue(code: code, start: token, end: token, blocks_inference: false)
+  vec.push(issues, issue)
 
 fn issues_block_inference(inout issues: Vec[Issue]) -> Bool effects[partial]:
   let count: I64 = vec.len(issues)
-  let present: Bool = i64.gt(count 0)
-  match present:
-    false:
-      false
-    true:
-      let last: I64 = i64.sub(count 1)
-      let issue: Issue = vec.get(issues last)
-      get(issue blocks_inference)
+  let present: Bool = count > 0
+  if present:
+    let last: I64 = count - 1
+    let issue: Issue = vec.get(issues, last)
+    issue.blocks_inference
+  else:
+    false
 
-fn record_issue(code: Bytes token: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
+fn record_issue(code: Bytes, token: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
   let blocked: Bool = issues_block_inference(issues)
-  match blocked:
-    true:
-      unit
-    false:
-      append_issue(code token token issues)
+  if blocked:
+    void
+  else:
+    append_issue(code, token, token, issues)
 
-fn type_forms_equal(source: Bytes inout tokens: Vec[syntax/Token] left: I64 right: I64) -> Bool effects[partial]:
-  let left_kind: I64 = syntax/ast_node_kind(tokens left)
-  let right_kind: I64 = syntax/ast_node_kind(tokens right)
-  let same_kind: Bool = i64.eq(left_kind right_kind)
-  match same_kind:
-    false:
+fn type_forms_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+  let left_kind: I64 = syntax.ast_node_kind(tokens, left)
+  let right_kind: I64 = syntax.ast_node_kind(tokens, right)
+  let same_kind: Bool = left_kind == right_kind
+  if same_kind:
+    let form: Bool = left_kind == 0
+    if form:
+      type_lists_equal(source, tokens, syntax.ast_list_first(left), syntax.ast_list_first(right))
+    else:
+      let left_start: I64 = syntax.ast_node_start(tokens, left)
+      let left_end: I64 = syntax.ast_node_end(tokens, left)
+      let right_start: I64 = syntax.ast_node_start(tokens, right)
+      let right_end: I64 = syntax.ast_node_end(tokens, right)
+      syntax.spans_equal(source, left_start, left_end, right_start, right_end)
+  else:
+    false
+
+fn type_lists_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+  let left_kind: I64 = syntax.ast_node_kind(tokens, left)
+  let right_kind: I64 = syntax.ast_node_kind(tokens, right)
+  let left_done: Bool = left_kind == 1
+  let right_done: Bool = right_kind == 1
+  let either_done: Bool = left_done || right_done
+  if either_done:
+    left_done && right_done
+  else:
+    let same: Bool = type_forms_equal(source, tokens, left, right)
+    if same:
+      let next_left: I64 = syntax.ast_next(tokens, left)
+      let next_right: I64 = syntax.ast_next(tokens, right)
+      recur(source, tokens, next_left, next_right)
+    else:
       false
-    true:
-      let form: Bool = i64.eq(left_kind 0)
-      match form:
-        true:
-          type_lists_equal(source tokens syntax/ast_list_first(left) syntax/ast_list_first(right))
-        false:
-          let left_start: I64 = syntax/ast_node_start(tokens left)
-          let left_end: I64 = syntax/ast_node_end(tokens left)
-          let right_start: I64 = syntax/ast_node_start(tokens right)
-          let right_end: I64 = syntax/ast_node_end(tokens right)
-          syntax/spans_equal(source left_start left_end right_start right_end)
 
-fn type_lists_equal(source: Bytes inout tokens: Vec[syntax/Token] left: I64 right: I64) -> Bool effects[partial]:
-  let left_kind: I64 = syntax/ast_node_kind(tokens left)
-  let right_kind: I64 = syntax/ast_node_kind(tokens right)
-  let left_done: Bool = i64.eq(left_kind 1)
-  let right_done: Bool = i64.eq(right_kind 1)
-  let either_done: Bool = bool.or(left_done right_done)
-  match either_done:
-    true:
-      bool.and(left_done right_done)
-    false:
-      let same: Bool = type_forms_equal(source tokens left right)
-      match same:
-        false:
-          false
-        true:
-          let next_left: I64 = syntax/ast_next(tokens left)
-          let next_right: I64 = syntax/ast_next(tokens right)
-          recur(source tokens next_left next_right)
+fn types_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: TypeRef, right: TypeRef) -> Bool effects[partial]:
+  let left_kind: I64 = left.kind
+  let right_kind: I64 = right.kind
+  let left_scalar: Bool = left_kind >= 0
+  let right_scalar: Bool = right_kind >= 0
+  let either_scalar: Bool = left_scalar || right_scalar
+  if either_scalar:
+    let both: Bool = left_scalar && right_scalar
+    let same: Bool = left_kind == right_kind
+    both && same
+  else:
+    type_forms_equal(source, tokens, left.form, right.form)
 
-fn types_equal(source: Bytes inout tokens: Vec[syntax/Token] left: TypeRef right: TypeRef) -> Bool effects[partial]:
-  let left_kind: I64 = get(left kind)
-  let right_kind: I64 = get(right kind)
-  let left_scalar: Bool = i64.ge(left_kind 0)
-  let right_scalar: Bool = i64.ge(right_kind 0)
-  let either_scalar: Bool = bool.or(left_scalar right_scalar)
-  match either_scalar:
-    true:
-      let both: Bool = bool.and(left_scalar right_scalar)
-      let same: Bool = i64.eq(left_kind right_kind)
-      bool.and(both same)
-    false:
-      type_forms_equal(source tokens get(left form) get(right form))
+fn type_matches_form(source: Bytes, inout tokens: Vec[syntax.Token], actual: TypeRef, expected: I64) -> Bool effects[partial]:
+  let expected_type: TypeRef = source_type(source, tokens, expected)
+  types_equal(source, tokens, actual, expected_type)
 
-fn type_matches_form(source: Bytes inout tokens: Vec[syntax/Token] actual: TypeRef expected: I64) -> Bool effects[partial]:
-  let expected_type: TypeRef = source_type(source tokens expected)
-  types_equal(source tokens actual expected_type)
-
-fn add_fact(expr: I64 type: TypeRef inout facts: Vec[Fact]) -> Unit effects[alloc partial]:
+fn add_fact(expr: I64, type: TypeRef, inout facts: Vec[Fact]) -> Void effects[alloc, partial]:
   let valid: Bool = type_valid(type)
-  match valid:
-    true:
-      let fact: Fact = make Fact(type = type)
-      vec.set(facts expr fact)
-    false:
-      unit
+  if valid:
+    let fact: Fact = Fact(type: type)
+    vec.set(facts, expr, fact)
+  else:
+    void
 
-fn finish_type(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 actual: TypeRef inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
+fn finish_type(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, actual: TypeRef, inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
   let valid: Bool = type_valid(actual)
-  let contextual: Bool = i64.ge(expected 0)
-  let compare: Bool = bool.and(valid contextual)
-  let same: Bool = match compare:
-    true:
-      type_matches_form(source tokens actual expected)
-    false:
-      true
-  match same:
-    false:
-      let noted: Unit = record_issue("E0344" expr issues)
-      invalid_type(expr)
-    true:
-      let noted: Unit = add_fact(expr actual facts)
-      fact_type(facts expr)
+  let contextual: Bool = expected >= 0
+  let compare: Bool = valid && contextual
+  let same: Bool = if compare:
+    type_matches_form(source, tokens, actual, expected)
+  else:
+    true
+  if same:
+    add_fact(expr, actual, facts)
+    fact_type(facts, expr)
+  else:
+    record_issue("E0344", expr, issues)
+    invalid_type(expr)
 
-fn parameter_is_inout(source: Bytes inout tokens: Vec[syntax/Token] parameter: I64) -> Bool effects[partial]:
-  syntax/ast_binding_is_inout(source tokens parameter)
+fn parameter_is_inout(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64) -> Bool effects[partial]:
+  syntax.ast_binding_is_inout(source, tokens, parameter)
 
-fn parameter_name(source: Bytes inout tokens: Vec[syntax/Token] parameter: I64) -> I64 effects[partial]:
-  syntax/ast_binding_name(source tokens parameter)
+fn parameter_name(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64) -> I64 effects[partial]:
+  syntax.ast_binding_name(source, tokens, parameter)
 
-fn parameter_type(source: Bytes inout tokens: Vec[syntax/Token] parameter: I64) -> I64 effects[partial]:
-  syntax/ast_binding_type(source tokens parameter)
+fn parameter_type(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64) -> I64 effects[partial]:
+  syntax.ast_binding_type(source, tokens, parameter)
 
-fn add_binding(inout tokens: Vec[syntax/Token] name: I64 type: I64 borrowed: Bool parent: I64 inout bindings: Vec[Binding]) -> I64 effects[alloc partial]:
+fn add_binding(inout tokens: Vec[syntax.Token], name: I64, type: I64, borrowed: Bool, mutable: Bool, parent: I64, inout bindings: Vec[Binding]) -> I64 effects[alloc, partial]:
   let index: I64 = vec.len(bindings)
-  let linked: Unit = syntax/ast_node_set_link(tokens name index)
-  let binding: Binding = make Binding(name = name type = type borrowed = borrowed moved = false parent = parent)
-  let pushed: Unit = vec.push(bindings binding)
+  syntax.ast_node_set_link(tokens, name, index)
+  let binding: Binding = Binding(name: name, type: type, borrowed: borrowed, mutable: mutable, moved: false, parent: parent)
+  vec.push(bindings, binding)
   index
 
-fn bind_parameters(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 parent: I64 inout bindings: Vec[Binding]) -> I64 effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      parent
-    false:
-      let name: I64 = parameter_name(source tokens cursor)
-      let type: I64 = parameter_type(source tokens cursor)
-      let borrowed: Bool = parameter_is_inout(source tokens cursor)
-      let next_parent: I64 = add_binding(tokens name type borrowed parent bindings)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next next_parent bindings)
+fn bind_parameters(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, parent: I64, inout bindings: Vec[Binding]) -> I64 effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    parent
+  else:
+    let name: I64 = parameter_name(source, tokens, cursor)
+    let type: I64 = parameter_type(source, tokens, cursor)
+    let borrowed: Bool = parameter_is_inout(source, tokens, cursor)
+    let declared_mutable: Bool = syntax.ast_binding_is_mutable(source, tokens, cursor)
+    let mutable: Bool = borrowed || declared_mutable
+    let next_parent: I64 = add_binding(tokens, name, type, borrowed, mutable, parent, bindings)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, next_parent, bindings)
 
-fn find_binding_type(source: Bytes inout tokens: Vec[syntax/Token] inout bindings: Vec[Binding] parent: I64 name: I64) -> I64 effects[partial]:
-  let link: I64 = syntax/ast_node_link(tokens name)
-  let encoded: Bool = i64.lt(link -1)
-  let decoded_type: I64 = match encoded:
-    true:
-      let positive: I64 = i64.sub(0 link)
-      let packed: I64 = i64.sub(positive 2)
-      let base: I64 = i64.add(vec.len(tokens) 1)
-      let type_mode: I64 = i64.div(packed base)
-      i64.div(type_mode 2)
-    false:
+fn find_binding_type(source: Bytes, inout tokens: Vec[syntax.Token], inout bindings: Vec[Binding], parent: I64, name: I64) -> I64 effects[partial]:
+  let link: I64 = syntax.ast_node_link(tokens, name)
+  let encoded: Bool = link < -1
+  let decoded_type: I64 = if encoded:
+    let positive: I64 = 0 - link
+    let packed: I64 = positive - 2
+    let base: I64 = vec.len(tokens) + 1
+    let type_mode: I64 = packed / base
+    type_mode / 2
+  else:
+    -1
+  let linked_type: Bool = decoded_type > 0
+  if linked_type:
+    decoded_type
+  else:
+    let done: Bool = parent < 0
+    if done:
       -1
-  let linked_type: Bool = i64.gt(decoded_type 0)
-  match linked_type:
-    true:
-      decoded_type
-    false:
-      let done: Bool = i64.lt(parent 0)
-      match done:
-        true:
-          -1
-        false:
-          let binding: Binding = vec.get(bindings parent)
-          let candidate: I64 = get(binding name)
-          let name_start: I64 = syntax/ast_node_start(tokens name)
-          let name_end: I64 = syntax/ast_node_end(tokens name)
-          let candidate_start: I64 = syntax/ast_node_start(tokens candidate)
-          let candidate_end: I64 = syntax/ast_node_end(tokens candidate)
-          let same: Bool = syntax/spans_equal(source name_start name_end candidate_start candidate_end)
-          match same:
-            true:
-              get(binding type)
-            false:
-              recur(source tokens bindings get(binding parent) name)
+    else:
+      let binding: Binding = vec.get(bindings, parent)
+      let candidate: I64 = binding.name
+      let name_start: I64 = syntax.ast_node_start(tokens, name)
+      let name_end: I64 = syntax.ast_node_end(tokens, name)
+      let candidate_start: I64 = syntax.ast_node_start(tokens, candidate)
+      let candidate_end: I64 = syntax.ast_node_end(tokens, candidate)
+      let same: Bool = syntax.spans_equal(source, name_start, name_end, candidate_start, candidate_end)
+      if same:
+        binding.type
+      else:
+        recur(source, tokens, bindings, binding.parent, name)
 
-fn mark_named_move(inout tokens: Vec[syntax/Token] argument: I64 inout bindings: Vec[Binding] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens argument)
-  let named: Bool = i64.eq(kind 2)
-  match named:
-    false:
-      true
-    true:
-      let link: I64 = syntax/ast_node_link(tokens argument)
-      let encoded: Bool = i64.lt(link -1)
-      match encoded:
-        false:
+fn find_binding_mutable(source: Bytes, inout tokens: Vec[syntax.Token], inout bindings: Vec[Binding], parent: I64, name: I64) -> Bool effects[partial]:
+  let done: Bool = parent < 0
+  if done:
+    false
+  else:
+    let binding: Binding = vec.get(bindings, parent)
+    let candidate: I64 = binding.name
+    let name_start: I64 = syntax.ast_node_start(tokens, name)
+    let name_end: I64 = syntax.ast_node_end(tokens, name)
+    let candidate_start: I64 = syntax.ast_node_start(tokens, candidate)
+    let candidate_end: I64 = syntax.ast_node_end(tokens, candidate)
+    let same: Bool = syntax.spans_equal(source, name_start, name_end, candidate_start, candidate_end)
+    if same:
+      binding.mutable
+    else:
+      recur(source, tokens, bindings, binding.parent, name)
+
+fn mark_named_move(inout tokens: Vec[syntax.Token], argument: I64, inout bindings: Vec[Binding], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, argument)
+  let named: Bool = kind == 2
+  if named:
+    let link: I64 = syntax.ast_node_link(tokens, argument)
+    let encoded: Bool = link < -1
+    if encoded:
+      let positive: I64 = 0 - link
+      let packed: I64 = positive - 2
+      let base: I64 = vec.len(tokens) + 1
+      let declaration: I64 = packed % base
+      let binding_index: I64 = syntax.ast_node_link(tokens, declaration)
+      let found: Bool = binding_index >= 0
+      if found:
+        let binding: Binding = vec.get(bindings, binding_index)
+        let moved: Bool = binding.moved
+        if moved:
+          append_ownership_issue("E0315", argument, issues)
           true
-        true:
-          let positive: I64 = i64.sub(0 link)
-          let packed: I64 = i64.sub(positive 2)
-          let base: I64 = i64.add(vec.len(tokens) 1)
-          let declaration: I64 = i64.rem(packed base)
-          let binding_index: I64 = syntax/ast_node_link(tokens declaration)
-          let found: Bool = i64.ge(binding_index 0)
-          match found:
-            false:
-              true
-            true:
-              let binding: Binding = vec.get(bindings binding_index)
-              let moved: Bool = get(binding moved)
-              match moved:
-                true:
-                  let noted: Unit = append_ownership_issue("E0315" argument issues)
-                  true
-                false:
-                  let borrowed: Bool = get(binding borrowed)
-                  match borrowed:
-                    true:
-                      let noted: Unit = append_ownership_issue("E0347" argument issues)
-                      true
-                    false:
-                      let updated: Binding = make Binding(name = get(binding name) type = get(binding type) borrowed = borrowed moved = true parent = get(binding parent))
-                      let stored: Unit = vec.set(bindings binding_index updated)
-                      true
-
-fn form_count(inout tokens: Vec[syntax/Token] cursor: I64 count: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      count
-    false:
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(tokens next i64.add(count 1))
-
-fn expect_arity(inout tokens: Vec[syntax/Token] cursor: I64 expected: I64 token: I64 inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let actual: I64 = form_count(tokens cursor 0)
-  let same: Bool = i64.eq(actual expected)
-  match same:
-    true:
+        else:
+          let borrowed: Bool = binding.borrowed
+          if borrowed:
+            append_ownership_issue("E0347", argument, issues)
+            true
+          else:
+            let updated: Binding = Binding(name: binding.name, type: binding.type, borrowed: borrowed, mutable: binding.mutable, moved: true, parent: binding.parent)
+            vec.set(bindings, binding_index, updated)
+            true
+      else:
+        true
+    else:
       true
-    false:
-      let noted: Unit = record_issue("E0351" token issues)
-      false
+  else:
+    true
 
-fn expect_kind(actual: TypeRef kind: I64 token: I64 inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
+fn form_count(inout tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    count
+  else:
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(tokens, next, count + 1)
+
+fn expect_arity(inout tokens: Vec[syntax.Token], cursor: I64, expected: I64, token: I64, inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let actual: I64 = form_count(tokens, cursor, 0)
+  let same: Bool = actual == expected
+  if same:
+    true
+  else:
+    record_issue("E0351", token, issues)
+    false
+
+fn expect_kind(actual: TypeRef, kind: I64, token: I64, inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
   let valid: Bool = type_valid(actual)
-  let same_kind: Bool = i64.eq(get(actual kind) kind)
-  let same: Bool = bool.and(valid same_kind)
-  match same:
-    true:
-      true
-    false:
-      let noted: Unit = record_issue("E0344" token issues)
-      false
+  let same_kind: Bool = actual.kind == kind
+  let same: Bool = valid && same_kind
+  if same:
+    true
+  else:
+    record_issue("E0344", token, issues)
+    false
 
-fn builtin_group_math(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let a: Bool = syntax/ast_node_text_is(source tokens callee "i64.add")
-  let b: Bool = syntax/ast_node_text_is(source tokens callee "i64.sub")
-  let c: Bool = syntax/ast_node_text_is(source tokens callee "i64.mul")
-  let d: Bool = syntax/ast_node_text_is(source tokens callee "i64.div")
-  let e: Bool = syntax/ast_node_text_is(source tokens callee "i64.rem")
-  bool.or(bool.or(a b) bool.or(bool.or(c d) e))
+fn builtin_group_math(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.add")
+  let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.sub")
+  let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.mul")
+  let d: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.div")
+  let e: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.rem")
+  a || (b || (c || (d || e)))
 
-fn builtin_group_compare(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let a: Bool = syntax/ast_node_text_is(source tokens callee "i64.eq")
-  let b: Bool = syntax/ast_node_text_is(source tokens callee "i64.lt")
-  let c: Bool = syntax/ast_node_text_is(source tokens callee "i64.le")
-  let d: Bool = syntax/ast_node_text_is(source tokens callee "i64.gt")
-  let e: Bool = syntax/ast_node_text_is(source tokens callee "i64.ge")
-  bool.or(bool.or(a b) bool.or(bool.or(c d) e))
+fn builtin_group_compare(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
+  let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.lt")
+  let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.le")
+  let d: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.gt")
+  let e: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.ge")
+  a || (b || (c || (d || e)))
 
-fn builtin_group_scalar(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let a: Bool = syntax/ast_node_text_is(source tokens callee "bool.not")
-  let b: Bool = syntax/ast_node_text_is(source tokens callee "bool.and")
-  let c: Bool = syntax/ast_node_text_is(source tokens callee "bool.or")
-  let d: Bool = syntax/ast_node_text_is(source tokens callee "u8.to-i64")
-  let e: Bool = syntax/ast_node_text_is(source tokens callee "i64.to-u8")
-  bool.or(bool.or(a b) bool.or(bool.or(c d) e))
+fn builtin_group_scalar(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
+  let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and")
+  let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.or")
+  let d: Bool = syntax.ast_node_text_is(source, tokens, callee, "u8.to_i64")
+  let e: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.to_u8")
+  a || (b || (c || (d || e)))
 
-fn builtin_group_bytes_io(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let a: Bool = syntax/ast_node_text_is(source tokens callee "bytes.len")
-  let b: Bool = syntax/ast_node_text_is(source tokens callee "bytes.get")
-  let c: Bool = syntax/ast_node_text_is(source tokens callee "bytes.freeze")
-  let d: Bool = syntax/ast_node_text_is(source tokens callee "io.print-i64")
-  let e: Bool = syntax/ast_node_text_is(source tokens callee "io.print-bytes")
-  let f: Bool = syntax/ast_node_text_is(source tokens callee "io.println")
-  let g: Bool = syntax/ast_node_text_is(source tokens callee "io.read-file")
-  let h: Bool = syntax/ast_node_text_is(source tokens callee "io.monotonic-ms")
-  let i: Bool = syntax/ast_node_text_is(source tokens callee "io.tcp-exchange")
-  bool.or(bool.or(a b) bool.or(bool.or(c d) bool.or(bool.or(e f) bool.or(g bool.or(h i)))))
+fn builtin_group_bytes_io(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.len")
+  let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.get")
+  let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.freeze")
+  let d: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_i64")
+  let e: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_bytes")
+  let f: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.println")
+  let g: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
+  let h: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.monotonic_ms")
+  let i: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
+  a || (b || (c || (d || (e || (f || (g || (h || i)))))))
 
-fn builtin_group_storage(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let a: Bool = syntax/ast_node_text_is(source tokens callee "vec.new")
-  let b: Bool = syntax/ast_node_text_is(source tokens callee "vec.len")
-  let c: Bool = syntax/ast_node_text_is(source tokens callee "vec.get")
-  let d: Bool = syntax/ast_node_text_is(source tokens callee "vec.push")
-  let e: Bool = syntax/ast_node_text_is(source tokens callee "vec.set")
-  let f: Bool = syntax/ast_node_text_is(source tokens callee "arena.new")
-  let g: Bool = syntax/ast_node_text_is(source tokens callee "arena.add")
-  let h: Bool = syntax/ast_node_text_is(source tokens callee "arena.get")
-  bool.or(bool.or(a b) bool.or(bool.or(c d) bool.or(bool.or(e f) bool.or(g h))))
+fn builtin_group_storage(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
+  let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.len")
+  let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.get")
+  let d: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.push")
+  let e: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.set")
+  let f: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
+  let g: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
+  let h: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.get")
+  a || (b || (c || (d || (e || (f || (g || h))))))
 
-fn builtin_known(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let math: Bool = builtin_group_math(source tokens callee)
-  let compare: Bool = builtin_group_compare(source tokens callee)
-  let scalar: Bool = builtin_group_scalar(source tokens callee)
-  let bytes_io: Bool = builtin_group_bytes_io(source tokens callee)
-  let storage: Bool = builtin_group_storage(source tokens callee)
-  bool.or(bool.or(math compare) bool.or(scalar bool.or(bytes_io storage)))
+fn builtin_known(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let math: Bool = builtin_group_math(source, tokens, callee)
+  let compare: Bool = builtin_group_compare(source, tokens, callee)
+  let scalar: Bool = builtin_group_scalar(source, tokens, callee)
+  let bytes_io: Bool = builtin_group_bytes_io(source, tokens, callee)
+  let storage: Bool = builtin_group_storage(source, tokens, callee)
+  math || (compare || (scalar || (bytes_io || storage)))
 
-fn result_is_composite(source: Bytes inout tokens: Vec[syntax/Token] type: TypeRef constructor: I64) -> Bool effects[partial]:
+fn result_is_composite(source: Bytes, inout tokens: Vec[syntax.Token], type: TypeRef, constructor: I64) -> Bool effects[partial]:
   let valid: Bool = type_valid(type)
-  let source_kind: Bool = i64.eq(get(type kind) -1)
-  let possible: Bool = bool.and(valid source_kind)
-  match possible:
-    false:
-      false
-    true:
-      let form: I64 = get(type form)
-      let vector_kind: Bool = i64.eq(constructor 0)
-      match vector_kind:
-        true:
-          syntax/ast_type_is_vec(source tokens form)
-        false:
-          let arena_kind: Bool = i64.eq(constructor 1)
-          match arena_kind:
-            true:
-              syntax/ast_type_is_arena(source tokens form)
-            false:
-              syntax/ast_type_is_id(source tokens form)
+  let source_kind: Bool = type.kind == -1
+  let possible: Bool = valid && source_kind
+  if possible:
+    let form: I64 = type.form
+    let vector_kind: Bool = constructor == 0
+    if vector_kind:
+      syntax.ast_type_is_vec(source, tokens, form)
+    else:
+      let arena_kind: Bool = constructor == 1
+      if arena_kind:
+        syntax.ast_type_is_arena(source, tokens, form)
+      else:
+        syntax.ast_type_is_id(source, tokens, form)
+  else:
+    false
 
-fn linked_item(inout tokens: Vec[syntax/Token] name: I64) -> I64 effects[partial]:
-  syntax/ast_node_link(tokens name)
+fn linked_item(inout tokens: Vec[syntax.Token], name: I64) -> I64 effects[partial]:
+  syntax.ast_node_link(tokens, name)
 
-fn item_has_kind(source: Bytes inout tokens: Vec[syntax/Token] item: I64 kind: I64) -> Bool effects[partial]:
-  let present: Bool = i64.ge(item 0)
-  match present:
-    false:
-      false
-    true:
-      let function_kind: Bool = i64.eq(kind 0)
-      match function_kind:
-        true:
-          syntax/ast_item_is_function(source tokens item)
-        false:
-          let record_kind: Bool = i64.eq(kind 1)
-          match record_kind:
-            true:
-              syntax/ast_item_is_record(source tokens item)
-            false:
-              syntax/ast_item_is_variant(source tokens item)
+fn item_has_kind(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, kind: I64) -> Bool effects[partial]:
+  let present: Bool = item >= 0
+  if present:
+    let function_kind: Bool = kind == 0
+    if function_kind:
+      syntax.ast_item_is_function(source, tokens, item)
+    else:
+      let record_kind: Bool = kind == 1
+      if record_kind:
+        syntax.ast_item_is_record(source, tokens, item)
+      else:
+        syntax.ast_item_is_variant(source, tokens, item)
+  else:
+    false
 
-fn find_named_form(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 name: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      -1
-    false:
-      let candidate: I64 = syntax/ast_node_after(cursor)
-      let name_start: I64 = syntax/ast_node_start(tokens name)
-      let name_end: I64 = syntax/ast_node_end(tokens name)
-      let candidate_start: I64 = syntax/ast_node_start(tokens candidate)
-      let candidate_end: I64 = syntax/ast_node_end(tokens candidate)
-      let same: Bool = syntax/spans_equal(source name_start name_end candidate_start candidate_end)
-      match same:
-        true:
-          cursor
-        false:
-          let next: I64 = syntax/ast_next(tokens cursor)
-          recur(source tokens next name)
+fn find_named_form(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    -1
+  else:
+    let candidate: I64 = syntax.ast_node_after(cursor)
+    let name_start: I64 = syntax.ast_node_start(tokens, name)
+    let name_end: I64 = syntax.ast_node_end(tokens, name)
+    let candidate_start: I64 = syntax.ast_node_start(tokens, candidate)
+    let candidate_end: I64 = syntax.ast_node_end(tokens, candidate)
+    let same: Bool = syntax.spans_equal(source, name_start, name_end, candidate_start, candidate_end)
+    if same:
+      cursor
+    else:
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      recur(source, tokens, next, name)
 
-fn infer_atom(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 parent: I64 inout bindings: Vec[Binding] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens expr)
-  let string_value: Bool = i64.eq(kind 3)
-  match string_value:
-    true:
-      scalar_type(4 expr)
-    false:
-      let true_value: Bool = syntax/ast_node_text_is(source tokens expr "true")
-      let false_value: Bool = syntax/ast_node_text_is(source tokens expr "false")
-      let bool_value: Bool = bool.or(true_value false_value)
-      match bool_value:
-        true:
-          scalar_type(1 expr)
-        false:
-          let unit_value: Bool = syntax/ast_node_text_is(source tokens expr "unit")
-          match unit_value:
-            true:
-              scalar_type(0 expr)
-            false:
-              let number: Bool = syntax/first_byte_is_number(source tokens expr)
-              match number:
-                true:
-                  scalar_type(3 expr)
-                false:
-                  let type: I64 = find_binding_type(source tokens bindings parent expr)
-                  let found: Bool = i64.ge(type 0)
-                  match found:
-                    true:
-                      source_type(source tokens type)
-                    false:
-                      let noted: Unit = record_issue("E0314" expr issues)
-                      invalid_type(expr)
+fn infer_atom(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, parent: I64, inout bindings: Vec[Binding], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, expr)
+  let string_value: Bool = kind == 3
+  if string_value:
+    scalar_type(4, expr)
+  else:
+    let true_value: Bool = syntax.ast_node_text_is(source, tokens, expr, "true")
+    let false_value: Bool = syntax.ast_node_text_is(source, tokens, expr, "false")
+    let bool_value: Bool = true_value || false_value
+    if bool_value:
+      scalar_type(1, expr)
+    else:
+      let void_value: Bool = syntax.ast_node_text_is(source, tokens, expr, "void")
+      if void_value:
+        scalar_type(0, expr)
+      else:
+        let number: Bool = syntax.first_byte_is_number(source, tokens, expr)
+        if number:
+          scalar_type(3, expr)
+        else:
+          let type: I64 = find_binding_type(source, tokens, bindings, parent, expr)
+          let found: Bool = type >= 0
+          if found:
+            source_type(source, tokens, type)
+          else:
+            record_issue("E0314", expr, issues)
+            invalid_type(expr)
 
-fn check_scalar_argument(source: Bytes inout tokens: Vec[syntax/Token] argument: I64 kind: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let actual: TypeRef = infer_expr(source tokens argument -1 parent params return_type bindings facts issues)
-  expect_kind(actual kind argument issues)
+fn check_scalar_argument(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, kind: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let actual: TypeRef = infer_expr(source, tokens, argument, -1, parent, params, return_type, bindings, facts, issues)
+  expect_kind(actual, kind, argument, issues)
 
-fn infer_two_scalar_builtin(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 arguments: I64 argument_kind: I64 result_kind: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 2 syntax/ast_call_callee(expr) issues)
-  match arity:
-    false:
+fn infer_two_scalar_builtin(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 2, syntax.ast_call_callee(expr), issues)
+  if arity:
+    let second: I64 = syntax.ast_next(tokens, arguments)
+    let first_ok: Bool = check_scalar_argument(source, tokens, arguments, argument_kind, parent, params, return_type, bindings, facts, issues)
+    let second_ok: Bool = check_scalar_argument(source, tokens, second, argument_kind, parent, params, return_type, bindings, facts, issues)
+    let both: Bool = first_ok && second_ok
+    if both:
+      scalar_type(result_kind, expr)
+    else:
       invalid_type(expr)
-    true:
-      let second: I64 = syntax/ast_next(tokens arguments)
-      let first_ok: Bool = check_scalar_argument(source tokens arguments argument_kind parent params return_type bindings facts issues)
-      let second_ok: Bool = check_scalar_argument(source tokens second argument_kind parent params return_type bindings facts issues)
-      let both: Bool = bool.and(first_ok second_ok)
-      match both:
-        true:
-          scalar_type(result_kind expr)
-        false:
-          invalid_type(expr)
+  else:
+    invalid_type(expr)
 
-fn infer_one_scalar_builtin(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 arguments: I64 argument_kind: I64 result_kind: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 1 syntax/ast_call_callee(expr) issues)
-  match arity:
-    false:
+fn infer_one_scalar_builtin(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 1, syntax.ast_call_callee(expr), issues)
+  if arity:
+    let valid: Bool = check_scalar_argument(source, tokens, arguments, argument_kind, parent, params, return_type, bindings, facts, issues)
+    if valid:
+      scalar_type(result_kind, expr)
+    else:
       invalid_type(expr)
-    true:
-      let valid: Bool = check_scalar_argument(source tokens arguments argument_kind parent params return_type bindings facts issues)
-      match valid:
-        true:
-          scalar_type(result_kind expr)
-        false:
-          invalid_type(expr)
+  else:
+    invalid_type(expr)
 
-fn infer_collection_new(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 arguments: I64 expected: I64 constructor: I64 inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 0 syntax/ast_call_callee(expr) issues)
-  let contextual: Bool = i64.ge(expected 0)
-  let expected_type: TypeRef = match contextual:
-    true:
-      source_type(source tokens expected)
-    false:
-      invalid_type(expr)
-  let composite: Bool = match contextual:
-    true:
-      result_is_composite(source tokens expected_type constructor)
-    false:
-      false
-  let valid: Bool = bool.and(arity composite)
-  match valid:
-    true:
-      expected_type
-    false:
-      let noted: Unit = record_issue("E0344" expr issues)
-      invalid_type(expr)
+fn infer_collection_new(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, arguments: I64, expected: I64, constructor: I64, inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 0, syntax.ast_call_callee(expr), issues)
+  let contextual: Bool = expected >= 0
+  let expected_type: TypeRef = if contextual:
+    source_type(source, tokens, expected)
+  else:
+    invalid_type(expr)
+  let composite: Bool = if contextual:
+    result_is_composite(source, tokens, expected_type, constructor)
+  else:
+    false
+  let valid: Bool = arity && composite
+  if valid:
+    expected_type
+  else:
+    record_issue("E0344", expr, issues)
+    invalid_type(expr)
 
-fn infer_vector_builtin(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let new_call: Bool = syntax/ast_node_text_is(source tokens callee "vec.new")
-  match new_call:
-    true:
-      infer_collection_new(source tokens expr arguments expected 0 issues)
-    false:
-      let len_call: Bool = syntax/ast_node_text_is(source tokens callee "vec.len")
-      let get_call: Bool = syntax/ast_node_text_is(source tokens callee "vec.get")
-      let push_call: Bool = syntax/ast_node_text_is(source tokens callee "vec.push")
-      let set_call: Bool = syntax/ast_node_text_is(source tokens callee "vec.set")
-      let arity_expected: I64 = match len_call:
-        true:
-          1
-        false:
-          match get_call:
-            true:
-              2
-            false:
-              match push_call:
-                true:
-                  2
-                false:
-                  3
-      let arity: Bool = expect_arity(tokens arguments arity_expected callee issues)
-      match arity:
-        false:
-          invalid_type(expr)
-        true:
-          let vector: TypeRef = infer_expr(source tokens arguments -1 parent params return_type bindings facts issues)
-          let vector_ok: Bool = result_is_composite(source tokens vector 0)
-          match vector_ok:
-            false:
-              let noted: Unit = record_issue("E0344" arguments issues)
-              invalid_type(expr)
-            true:
-              let element_type: I64 = i64.add(get(vector form) 2)
-              match len_call:
-                true:
-                  scalar_type(3 expr)
-                false:
-                  let second: I64 = syntax/ast_next(tokens arguments)
-                  match get_call:
-                    true:
-                      let index_ok: Bool = check_scalar_argument(source tokens second 3 parent params return_type bindings facts issues)
-                      match index_ok:
-                        true:
-                          source_type(source tokens element_type)
-                        false:
-                          invalid_type(expr)
-                    false:
-                      match push_call:
-                        true:
-                          let value: TypeRef = infer_expr(source tokens second element_type parent params return_type bindings facts issues)
-                          let valid: Bool = type_valid(value)
-                          match valid:
-                            true:
-                              scalar_type(0 expr)
-                            false:
-                              invalid_type(expr)
-                        false:
-                          let third: I64 = syntax/ast_next(tokens second)
-                          let index_ok: Bool = check_scalar_argument(source tokens second 3 parent params return_type bindings facts issues)
-                          let value: TypeRef = infer_expr(source tokens third element_type parent params return_type bindings facts issues)
-                          let value_ok: Bool = type_valid(value)
-                          let valid: Bool = bool.and(index_ok value_ok)
-                          match valid:
-                            true:
-                              scalar_type(0 expr)
-                            false:
-                              invalid_type(expr)
-
-fn infer_arena_builtin(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let new_call: Bool = syntax/ast_node_text_is(source tokens callee "arena.new")
-  match new_call:
-    true:
-      infer_collection_new(source tokens expr arguments expected 1 issues)
-    false:
-      let arity: Bool = expect_arity(tokens arguments 2 callee issues)
-      match arity:
-        false:
-          invalid_type(expr)
-        true:
-          let arena: TypeRef = infer_expr(source tokens arguments -1 parent params return_type bindings facts issues)
-          let arena_ok: Bool = result_is_composite(source tokens arena 1)
-          match arena_ok:
-            false:
-              let noted: Unit = record_issue("E0344" arguments issues)
-              invalid_type(expr)
-            true:
-              let element_type: I64 = i64.add(get(arena form) 2)
-              let second: I64 = syntax/ast_next(tokens arguments)
-              let add_call: Bool = syntax/ast_node_text_is(source tokens callee "arena.add")
-              match add_call:
-                true:
-                  let value: TypeRef = infer_expr(source tokens second element_type parent params return_type bindings facts issues)
-                  let value_valid: Bool = type_valid(value)
-                  let contextual: Bool = i64.ge(expected 0)
-                  let expected_type: TypeRef = match contextual:
-                    true:
-                      source_type(source tokens expected)
-                    false:
-                      invalid_type(expr)
-                  let id_ok: Bool = match contextual:
-                    true:
-                      result_is_composite(source tokens expected_type 2)
-                    false:
-                      false
-                  let same_inner: Bool = match id_ok:
-                    true:
-                      type_forms_equal(source tokens element_type syntax/ast_type_argument(expected))
-                    false:
-                      false
-                  let valid: Bool = bool.and(value_valid same_inner)
-                  match valid:
-                    true:
-                      expected_type
-                    false:
-                      let noted: Unit = record_issue("E0344" expr issues)
-                      invalid_type(expr)
-                false:
-                  let identity: TypeRef = infer_expr(source tokens second -1 parent params return_type bindings facts issues)
-                  let id_ok: Bool = result_is_composite(source tokens identity 2)
-                  let same_inner: Bool = match id_ok:
-                    true:
-                      type_forms_equal(source tokens element_type i64.add(get(identity form) 2))
-                    false:
-                      false
-                  match same_inner:
-                    true:
-                      source_type(source tokens element_type)
-                    false:
-                      let noted: Unit = record_issue("E0344" second issues)
-                      invalid_type(expr)
-
-fn infer_bytes_freeze(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 1 callee issues)
-  match arity:
-    false:
-      invalid_type(expr)
-    true:
-      let vector: TypeRef = infer_expr(source tokens arguments -1 parent params return_type bindings facts issues)
-      let vector_ok: Bool = result_is_composite(source tokens vector 0)
-      let inner: I64 = match vector_ok:
-        true:
-          i64.add(get(vector form) 2)
-        false:
-          -1
-      let inner_kind: I64 = match vector_ok:
-        true:
-          syntax/scalar_type_kind(source tokens inner)
-        false:
-          -1
-      let byte_vector: Bool = i64.eq(inner_kind 2)
-      let valid: Bool = bool.and(vector_ok byte_vector)
-      match valid:
-        true:
-          let moved: Bool = mark_named_move(tokens arguments bindings issues)
-          match moved:
-            true:
-              scalar_type(4 expr)
-            false:
-              invalid_type(expr)
-        false:
-          let noted: Unit = record_issue("E0344" arguments issues)
-          invalid_type(expr)
-
-fn infer_read_file(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 2 callee issues)
-  match arity:
-    false:
-      invalid_type(expr)
-    true:
-      let second: I64 = syntax/ast_next(tokens arguments)
-      let path_ok: Bool = check_scalar_argument(source tokens arguments 4 parent params return_type bindings facts issues)
-      let output: TypeRef = infer_expr(source tokens second -1 parent params return_type bindings facts issues)
-      let vector_ok: Bool = result_is_composite(source tokens output 0)
-      let inner: I64 = match vector_ok:
-        true:
-          i64.add(get(output form) 2)
-        false:
-          -1
-      let inner_kind: I64 = match vector_ok:
-        true:
-          syntax/scalar_type_kind(source tokens inner)
-        false:
-          -1
-      let bytes_ok: Bool = i64.eq(inner_kind 2)
-      let output_ok: Bool = bool.and(vector_ok bytes_ok)
-      let valid: Bool = bool.and(path_ok output_ok)
-      match valid:
-        true:
-          scalar_type(1 expr)
-        false:
-          let noted: Unit = record_issue("E0344" second issues)
-          invalid_type(expr)
-
-fn infer_tcp_exchange(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 6 callee issues)
-  match arity:
-    false:
-      invalid_type(expr)
-    true:
-      let second: I64 = syntax/ast_next(tokens arguments)
-      let third: I64 = syntax/ast_next(tokens second)
-      let fourth: I64 = syntax/ast_next(tokens third)
-      let fifth: I64 = syntax/ast_next(tokens fourth)
-      let sixth: I64 = syntax/ast_next(tokens fifth)
-      let address_ok: Bool = check_scalar_argument(source tokens arguments 4 parent params return_type bindings facts issues)
-      let port_ok: Bool = check_scalar_argument(source tokens second 3 parent params return_type bindings facts issues)
-      let request_ok: Bool = check_scalar_argument(source tokens third 4 parent params return_type bindings facts issues)
-      let limit_ok: Bool = check_scalar_argument(source tokens fourth 3 parent params return_type bindings facts issues)
-      let timeout_ok: Bool = check_scalar_argument(source tokens fifth 3 parent params return_type bindings facts issues)
-      let output: TypeRef = infer_expr(source tokens sixth -1 parent params return_type bindings facts issues)
-      let vector_ok: Bool = result_is_composite(source tokens output 0)
-      let inner: I64 = match vector_ok:
-        true:
-          i64.add(get(output form) 2)
-        false:
-          -1
-      let inner_kind: I64 = match vector_ok:
-        true:
-          syntax/scalar_type_kind(source tokens inner)
-        false:
-          -1
-      let bytes_ok: Bool = i64.eq(inner_kind 2)
-      let output_ok: Bool = bool.and(vector_ok bytes_ok)
-      let scalar_ok: Bool = bool.and(address_ok bool.and(port_ok bool.and(request_ok bool.and(limit_ok timeout_ok))))
-      let valid: Bool = bool.and(scalar_ok output_ok)
-      match valid:
-        true:
-          scalar_type(1 expr)
-        false:
-          let noted: Unit = record_issue("E0344" sixth issues)
-          invalid_type(expr)
-
-fn infer_zero_scalar_builtin(inout tokens: Vec[syntax/Token] expr: I64 arguments: I64 result_kind: I64 inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arity: Bool = expect_arity(tokens arguments 0 syntax/ast_call_callee(expr) issues)
-  match arity:
-    true:
-      scalar_type(result_kind expr)
-    false:
-      invalid_type(expr)
-
-fn infer_builtin_call(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let tcp: Bool = syntax/ast_node_text_is(source tokens callee "io.tcp-exchange")
-  match tcp:
-    true:
-      infer_tcp_exchange(source tokens expr callee arguments parent params return_type bindings facts issues)
-    false:
-      let clock: Bool = syntax/ast_node_text_is(source tokens callee "io.monotonic-ms")
-      match clock:
-        true:
-          infer_zero_scalar_builtin(tokens expr arguments 3 issues)
-        false:
-          let math: Bool = builtin_group_math(source tokens callee)
-          match math:
-            true:
-              infer_two_scalar_builtin(source tokens expr arguments 3 3 parent params return_type bindings facts issues)
-            false:
-              let compare: Bool = builtin_group_compare(source tokens callee)
-              match compare:
-                true:
-                  infer_two_scalar_builtin(source tokens expr arguments 3 1 parent params return_type bindings facts issues)
-                false:
-                  let bool_not: Bool = syntax/ast_node_text_is(source tokens callee "bool.not")
-                  match bool_not:
-                    true:
-                      infer_one_scalar_builtin(source tokens expr arguments 1 1 parent params return_type bindings facts issues)
-                    false:
-                      let bool_binary: Bool = bool.or(syntax/ast_node_text_is(source tokens callee "bool.and") syntax/ast_node_text_is(source tokens callee "bool.or"))
-                      match bool_binary:
-                        true:
-                          infer_two_scalar_builtin(source tokens expr arguments 1 1 parent params return_type bindings facts issues)
-                        false:
-                          let u8_to_i64: Bool = syntax/ast_node_text_is(source tokens callee "u8.to-i64")
-                          match u8_to_i64:
-                            true:
-                              infer_one_scalar_builtin(source tokens expr arguments 2 3 parent params return_type bindings facts issues)
-                            false:
-                              let i64_to_u8: Bool = syntax/ast_node_text_is(source tokens callee "i64.to-u8")
-                              match i64_to_u8:
-                                true:
-                                  infer_one_scalar_builtin(source tokens expr arguments 3 2 parent params return_type bindings facts issues)
-                                false:
-                                  let bytes_len: Bool = syntax/ast_node_text_is(source tokens callee "bytes.len")
-                                  match bytes_len:
-                                    true:
-                                      infer_one_scalar_builtin(source tokens expr arguments 4 3 parent params return_type bindings facts issues)
-                                    false:
-                                      let bytes_get: Bool = syntax/ast_node_text_is(source tokens callee "bytes.get")
-                                      match bytes_get:
-                                        true:
-                                          let arity: Bool = expect_arity(tokens arguments 2 callee issues)
-                                          match arity:
-                                            false:
-                                              invalid_type(expr)
-                                            true:
-                                              let second: I64 = syntax/ast_next(tokens arguments)
-                                              let bytes_ok: Bool = check_scalar_argument(source tokens arguments 4 parent params return_type bindings facts issues)
-                                              let index_ok: Bool = check_scalar_argument(source tokens second 3 parent params return_type bindings facts issues)
-                                              let valid: Bool = bool.and(bytes_ok index_ok)
-                                              match valid:
-                                                true:
-                                                  scalar_type(2 expr)
-                                                false:
-                                                  invalid_type(expr)
-                                        false:
-                                          let freeze: Bool = syntax/ast_node_text_is(source tokens callee "bytes.freeze")
-                                          match freeze:
-                                            true:
-                                              infer_bytes_freeze(source tokens expr callee arguments parent params return_type bindings facts issues)
-                                            false:
-                                              let print_i64: Bool = syntax/ast_node_text_is(source tokens callee "io.print-i64")
-                                              match print_i64:
-                                                true:
-                                                  infer_one_scalar_builtin(source tokens expr arguments 3 0 parent params return_type bindings facts issues)
-                                                false:
-                                                  let print_bytes: Bool = syntax/ast_node_text_is(source tokens callee "io.print-bytes")
-                                                  let println: Bool = syntax/ast_node_text_is(source tokens callee "io.println")
-                                                  let bytes_output: Bool = bool.or(print_bytes println)
-                                                  match bytes_output:
-                                                    true:
-                                                      infer_one_scalar_builtin(source tokens expr arguments 4 0 parent params return_type bindings facts issues)
-                                                    false:
-                                                      let read_file: Bool = syntax/ast_node_text_is(source tokens callee "io.read-file")
-                                                      match read_file:
-                                                        true:
-                                                          infer_read_file(source tokens expr callee arguments parent params return_type bindings facts issues)
-                                                        false:
-                                                          let vector_call: Bool = bool.or(syntax/ast_node_text_is(source tokens callee "vec.new") bool.or(syntax/ast_node_text_is(source tokens callee "vec.len") bool.or(syntax/ast_node_text_is(source tokens callee "vec.get") bool.or(syntax/ast_node_text_is(source tokens callee "vec.push") syntax/ast_node_text_is(source tokens callee "vec.set")))))
-                                                          match vector_call:
-                                                            true:
-                                                              infer_vector_builtin(source tokens expr callee arguments expected parent params return_type bindings facts issues)
-                                                            false:
-                                                              infer_arena_builtin(source tokens expr callee arguments expected parent params return_type bindings facts issues)
-
-fn check_recursive_argument_identity(source: Bytes inout tokens: Vec[syntax/Token] argument: I64 parameter: I64 callee: I64 inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let recursive: Bool = syntax/ast_callee_is_recur(source tokens callee)
-  let borrowed: Bool = parameter_is_inout(source tokens parameter)
-  let required: Bool = bool.and(recursive borrowed)
-  match required:
-    false:
-      true
-    true:
-      let parameter_token: I64 = parameter_name(source tokens parameter)
-      let parameter_start: I64 = syntax/ast_node_start(tokens parameter_token)
-      let parameter_end: I64 = syntax/ast_node_end(tokens parameter_token)
-      let argument_start: I64 = syntax/ast_node_start(tokens argument)
-      let argument_end: I64 = syntax/ast_node_end(tokens argument)
-      let same: Bool = syntax/spans_equal(source parameter_start parameter_end argument_start argument_end)
-      match same:
-        true:
-          true
-        false:
-          let noted: Unit = append_issue("E0350" argument argument issues)
-          false
-
-fn check_owned_argument(source: Bytes inout tokens: Vec[syntax/Token] argument: I64 parameter: I64 callee: I64 inout bindings: Vec[Binding] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let recursive: Bool = syntax/ast_callee_is_recur(source tokens callee)
-  match recursive:
-    true:
-      true
-    false:
-      let borrowed: Bool = parameter_is_inout(source tokens parameter)
-      let by_value: Bool = bool.not(borrowed)
-      let type: I64 = parameter_type(source tokens parameter)
-      let storage: I64 = memory/type_storage_kind(source tokens type)
-      let owned: Bool = i64.eq(storage 2)
-      let transfer: Bool = bool.and(by_value owned)
-      match transfer:
-        false:
-          true
-        true:
-          mark_named_move(tokens argument bindings issues)
-
-fn check_call_arguments(source: Bytes inout tokens: Vec[syntax/Token] argument: I64 parameter: I64 parent: I64 params: I64 return_type: I64 callee: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let argument_kind: I64 = syntax/ast_node_kind(tokens argument)
-  let parameter_kind: I64 = syntax/ast_node_kind(tokens parameter)
-  let arguments_done: Bool = i64.eq(argument_kind 1)
-  let parameters_done: Bool = i64.eq(parameter_kind 1)
-  let either_done: Bool = bool.or(arguments_done parameters_done)
-  match either_done:
-    true:
-      let both_done: Bool = bool.and(arguments_done parameters_done)
-      match both_done:
-        true:
-          true
-        false:
-          let noted: Unit = record_issue("E0351" callee issues)
-          false
-    false:
-      let expected: I64 = parameter_type(source tokens parameter)
-      let identity: Bool = check_recursive_argument_identity(source tokens argument parameter callee issues)
-      let actual: TypeRef = infer_expr(source tokens argument expected parent params return_type bindings facts issues)
-      let actual_valid: Bool = type_valid(actual)
-      let move_valid: Bool = match actual_valid:
-        true:
-          check_owned_argument(source tokens argument parameter callee bindings issues)
-        false:
-          true
-      let valid: Bool = bool.and(actual_valid bool.and(identity move_valid))
-      let next_argument: I64 = syntax/ast_next(tokens argument)
-      let next_parameter: I64 = syntax/ast_next(tokens parameter)
-      let remaining: Bool = recur(source tokens next_argument next_parameter parent params return_type callee bindings facts issues)
-      bool.and(valid remaining)
-
-fn infer_user_call(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 callee: I64 arguments: I64 item: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let function: Bool = item_has_kind(source tokens item 0)
-  match function:
-    false:
-      let noted: Unit = record_issue("E0314" callee issues)
-      invalid_type(expr)
-    true:
-      let parameters: I64 = syntax/ast_function_parameters(item)
-      let first_parameter: I64 = syntax/ast_parameters_first(parameters)
-      let valid: Bool = check_call_arguments(source tokens arguments first_parameter parent params return_type callee bindings facts issues)
-      match valid:
-        false:
-          invalid_type(expr)
-        true:
-          let result_type: I64 = syntax/ast_function_return_type(tokens item)
-          source_type(source tokens result_type)
-
-fn infer_call(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let callee: I64 = syntax/ast_call_callee(expr)
-  let arguments: I64 = syntax/ast_call_arguments(expr)
-  let builtin: Bool = builtin_known(source tokens callee)
-  match builtin:
-    true:
-      infer_builtin_call(source tokens expr callee arguments expected parent params return_type bindings facts issues)
-    false:
-      let item: I64 = linked_item(tokens callee)
-      infer_user_call(source tokens expr callee arguments item parent params return_type bindings facts issues)
-
-fn check_make_fields(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 definition: I64 parent: I64 params: I64 return_type: I64 record_name: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let cursor_kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let definition_kind: I64 = syntax/ast_node_kind(tokens definition)
-  let cursor_done: Bool = i64.eq(cursor_kind 1)
-  let definition_done: Bool = i64.eq(definition_kind 1)
-  let either_done: Bool = bool.or(cursor_done definition_done)
-  match either_done:
-    true:
-      let both_done: Bool = bool.and(cursor_done definition_done)
-      match both_done:
-        true:
-          true
-        false:
-          let noted: Unit = record_issue("E0351" record_name issues)
-          false
-    false:
-      let name: I64 = syntax/ast_member_name(cursor)
-      let declared_name: I64 = syntax/ast_member_name(definition)
-      let name_start: I64 = syntax/ast_node_start(tokens name)
-      let name_end: I64 = syntax/ast_node_end(tokens name)
-      let declared_start: I64 = syntax/ast_node_start(tokens declared_name)
-      let declared_end: I64 = syntax/ast_node_end(tokens declared_name)
-      let same_name: Bool = syntax/spans_equal(source name_start name_end declared_start declared_end)
-      match same_name:
-        false:
-          let noted: Unit = record_issue("E0352" name issues)
-          false
-        true:
-          let linked: Unit = syntax/ast_node_set_link(tokens cursor definition)
-          let field_type: I64 = syntax/ast_member_value(definition)
-          let value: I64 = syntax/ast_member_value(cursor)
-          let actual: TypeRef = infer_expr(source tokens value field_type parent params return_type bindings facts issues)
-          let valid: Bool = type_valid(actual)
-          let next_cursor: I64 = syntax/ast_next(tokens cursor)
-          let next_definition: I64 = syntax/ast_next(tokens definition)
-          let remaining: Bool = recur(source tokens next_cursor next_definition parent params return_type record_name bindings facts issues)
-          bool.and(valid remaining)
-
-fn infer_make(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let record_name: I64 = syntax/ast_make_type(expr)
-  let item: I64 = linked_item(tokens record_name)
-  let record: Bool = item_has_kind(source tokens item 1)
-  match record:
-    false:
-      let noted: Unit = record_issue("E0352" record_name issues)
-      invalid_type(expr)
-    true:
-      let definitions: I64 = syntax/ast_data_members_first(item)
-      let provided: I64 = syntax/ast_make_fields(expr)
-      let valid: Bool = check_make_fields(source tokens provided definitions parent params return_type record_name bindings facts issues)
-      match valid:
-        true:
-          source_type(source tokens record_name)
-        false:
-          invalid_type(expr)
-
-fn infer_get(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let value: I64 = syntax/ast_get_value(expr)
-  let field: I64 = syntax/ast_get_field(tokens expr)
-  let owner: TypeRef = infer_expr(source tokens value -1 parent params return_type bindings facts issues)
-  let source_type: Bool = i64.eq(get(owner kind) -1)
-  match source_type:
-    false:
-      let noted: Unit = record_issue("E0344" value issues)
-      invalid_type(expr)
-    true:
-      let item: I64 = linked_item(tokens get(owner form))
-      let record: Bool = item_has_kind(source tokens item 1)
-      match record:
-        false:
-          let noted: Unit = record_issue("E0344" value issues)
-          invalid_type(expr)
-        true:
-          let definition: I64 = find_named_form(source tokens syntax/ast_data_members_first(item) field)
-          let known: Bool = i64.ge(definition 0)
-          match known:
-            false:
-              let noted: Unit = record_issue("E0352" field issues)
-              invalid_type(expr)
-            true:
-              source_type(source tokens syntax/ast_member_value(definition))
-
-fn check_payload(source: Bytes inout tokens: Vec[syntax/Token] value: I64 type: I64 parent: I64 params: I64 return_type: I64 case_name: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let value_kind: I64 = syntax/ast_node_kind(tokens value)
-  let type_kind: I64 = syntax/ast_node_kind(tokens type)
-  let values_done: Bool = i64.eq(value_kind 1)
-  let types_done: Bool = i64.eq(type_kind 1)
-  let either_done: Bool = bool.or(values_done types_done)
-  match either_done:
-    true:
-      let both: Bool = bool.and(values_done types_done)
-      match both:
-        true:
-          true
-        false:
-          let noted: Unit = record_issue("E0351" case_name issues)
-          false
-    false:
-      let actual: TypeRef = infer_expr(source tokens value type parent params return_type bindings facts issues)
-      let valid: Bool = type_valid(actual)
-      let next_value: I64 = syntax/ast_next(tokens value)
-      let next_type: I64 = syntax/ast_next(tokens type)
-      let remaining: Bool = recur(source tokens next_value next_type parent params return_type case_name bindings facts issues)
-      bool.and(valid remaining)
-
-fn infer_case(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let variant_name: I64 = syntax/ast_case_type(expr)
-  let case_name: I64 = syntax/ast_case_name(tokens expr)
-  let item: I64 = linked_item(tokens variant_name)
-  let variant: Bool = item_has_kind(source tokens item 2)
-  match variant:
-    false:
-      let noted: Unit = record_issue("E0352" variant_name issues)
-      invalid_type(expr)
-    true:
-      let case_form: I64 = find_named_form(source tokens syntax/ast_data_members_first(item) case_name)
-      let known: Bool = i64.ge(case_form 0)
-      match known:
-        false:
-          let noted: Unit = record_issue("E0352" case_name issues)
-          invalid_type(expr)
-        true:
-          let linked: Unit = syntax/ast_node_set_link(tokens expr case_form)
-          let payload: I64 = syntax/ast_case_payload(tokens expr)
-          let payload_type: I64 = syntax/ast_member_value(case_form)
-          let valid: Bool = check_payload(source tokens payload payload_type parent params return_type case_name bindings facts issues)
-          match valid:
-            true:
-              source_type(source tokens variant_name)
-            false:
-              invalid_type(expr)
-
-fn bind_payload_names(source: Bytes inout tokens: Vec[syntax/Token] name: I64 type: I64 parent: I64 case_name: I64 inout bindings: Vec[Binding] inout issues: Vec[Issue]) -> I64 effects[alloc partial]:
-  let name_kind: I64 = syntax/ast_node_kind(tokens name)
-  let type_kind: I64 = syntax/ast_node_kind(tokens type)
-  let names_done: Bool = i64.eq(name_kind 1)
-  let types_done: Bool = i64.eq(type_kind 1)
-  let either_done: Bool = bool.or(names_done types_done)
-  match either_done:
-    true:
-      let both: Bool = bool.and(names_done types_done)
-      match both:
-        true:
-          parent
-        false:
-          let noted: Unit = record_issue("E0351" case_name issues)
-          -2
-    false:
-      let next_parent: I64 = add_binding(tokens name type false parent bindings)
-      let next_name: I64 = syntax/ast_next(tokens name)
-      let next_type: I64 = syntax/ast_next(tokens type)
-      recur(source tokens next_name next_type next_parent case_name bindings issues)
-
-fn case_name_matches(source: Bytes inout tokens: Vec[syntax/Token] case_form: I64 pattern: I64) -> Bool effects[partial]:
-  let declared: I64 = syntax/ast_member_name(case_form)
-  let declared_start: I64 = syntax/ast_node_start(tokens declared)
-  let declared_end: I64 = syntax/ast_node_end(tokens declared)
-  let pattern_start: I64 = syntax/ast_node_start(tokens pattern)
-  let pattern_end: I64 = syntax/ast_node_end(tokens pattern)
-  syntax/spans_equal(source declared_start declared_end pattern_start pattern_end)
-
-fn ordered_arm_parent(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 case_cursor: I64 pattern: I64 boolean_match: Bool parent: I64 inout bindings: Vec[Binding] inout issues: Vec[Issue]) -> I64 effects[alloc partial]:
-  match boolean_match:
-    true:
-      parent
-    false:
-      let same: Bool = case_name_matches(source tokens case_cursor pattern)
-      match same:
-        false:
-          let noted: Unit = record_issue("E0352" pattern issues)
-          -2
-        true:
-          let linked: Unit = syntax/ast_node_set_link(tokens cursor case_cursor)
-          let payload_type: I64 = syntax/ast_member_value(case_cursor)
-          let payload_kind: I64 = syntax/ast_node_kind(tokens payload_type)
-          let empty: Bool = i64.eq(payload_kind 1)
-          match empty:
-            true:
-              parent
-            false:
-              let names_form: I64 = syntax/ast_arm_bindings(tokens cursor)
-              bind_payload_names(source tokens syntax/ast_list_first(names_form) payload_type parent pattern bindings issues)
-
-fn ordered_arm_body(inout tokens: Vec[syntax/Token] cursor: I64 case_cursor: I64 boolean_match: Bool) -> I64 effects[partial]:
-  syntax/ast_arm_body(tokens cursor)
-
-fn infer_match_arms_ordered(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 variant_item: I64 case_cursor: I64 match_expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 has_first: Bool first: TypeRef seen_true: Bool seen_false: Bool inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arm_kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let arms_done: Bool = i64.eq(arm_kind 1)
-  let boolean_match: Bool = i64.lt(variant_item 0)
-  let case_kind: I64 = match boolean_match:
-    true:
+fn infer_vector_builtin(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
+  if new_call:
+    infer_collection_new(source, tokens, expr, arguments, expected, 0, issues)
+  else:
+    let len_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.len")
+    let get_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.get")
+    let push_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.push")
+    let set_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.set")
+    let arity_expected: I64 = if len_call:
       1
-    false:
-      syntax/ast_node_kind(tokens case_cursor)
-  let cases_done: Bool = i64.eq(case_kind 1)
-  match arms_done:
-    true:
-      let bool_complete: Bool = bool.and(seen_true seen_false)
-      let exact: Bool = match boolean_match:
-        true:
-          bool_complete
-        false:
-          cases_done
-      match exact:
-        true:
-          first
-        false:
-          let noted: Unit = record_issue("E0351" syntax/ast_expression_marker(match_expr) issues)
-          invalid_type(match_expr)
-    false:
-      let extra_variant: Bool = bool.and(bool.not(boolean_match) cases_done)
-      match extra_variant:
-        true:
-          let noted: Unit = record_issue("E0351" syntax/ast_expression_marker(match_expr) issues)
-          invalid_type(match_expr)
-        false:
-          let pattern: I64 = syntax/ast_arm_pattern(cursor)
-          let true_pattern: Bool = match boolean_match:
-            true:
-              syntax/ast_node_text_is(source tokens pattern "true")
-            false:
-              false
-          let false_pattern: Bool = match boolean_match:
-            true:
-              syntax/ast_node_text_is(source tokens pattern "false")
-            false:
-              false
-          let bool_pattern: Bool = bool.or(true_pattern false_pattern)
-          let pattern_known: Bool = match boolean_match:
-            true:
-              bool_pattern
-            false:
-              case_name_matches(source tokens case_cursor pattern)
-          let duplicate_true: Bool = bool.and(true_pattern seen_true)
-          let duplicate_false: Bool = bool.and(false_pattern seen_false)
-          let duplicate: Bool = bool.or(duplicate_true duplicate_false)
-          let pattern_valid: Bool = bool.and(pattern_known bool.not(duplicate))
-          let pattern_code: Bytes = match boolean_match:
-            true:
-              "E0335"
-            false:
-              "E0352"
-          let pattern_issue: Unit = match pattern_valid:
-            true:
-              unit
-            false:
-              record_issue(pattern_code pattern issues)
-          let arm_parent: I64 = ordered_arm_parent(source tokens cursor case_cursor pattern boolean_match parent bindings issues)
-          let parent_valid: Bool = i64.ge(arm_parent -1)
-          let body: I64 = ordered_arm_body(tokens cursor case_cursor boolean_match)
-          let actual: TypeRef = infer_expr(source tokens body expected arm_parent params return_type bindings facts issues)
-          let actual_valid: Bool = type_valid(actual)
-          let compare_first: Bool = bool.and(has_first i64.lt(expected 0))
-          let same_type: Bool = match compare_first:
-            true:
-              types_equal(source tokens first actual)
-            false:
-              true
-          let mismatch: Unit = match same_type:
-            true:
-              unit
-            false:
-              record_issue("E0344" body issues)
-          let next_first: TypeRef = match has_first:
-            true:
-              first
-            false:
-              actual
-          let next_arm: I64 = syntax/ast_next(tokens cursor)
-          let next_case: I64 = match boolean_match:
-            true:
-              -1
-            false:
-              syntax/ast_next(tokens case_cursor)
-          let next_seen_true: Bool = bool.or(seen_true true_pattern)
-          let next_seen_false: Bool = bool.or(seen_false false_pattern)
-          let remaining: TypeRef = recur(source tokens next_arm variant_item next_case match_expr expected parent params return_type true next_first next_seen_true next_seen_false bindings facts issues)
-          let valid: Bool = bool.and(pattern_valid bool.and(parent_valid bool.and(actual_valid same_type)))
-          match valid:
-            true:
-              remaining
-            false:
-              invalid_type(body)
+    else:
+      if get_call:
+        2
+      else:
+        if push_call:
+          2
+        else:
+          3
+    let arity: Bool = expect_arity(tokens, arguments, arity_expected, callee, issues)
+    if arity:
+      let vector: TypeRef = infer_expr(source, tokens, arguments, -1, parent, params, return_type, bindings, facts, issues)
+      let vector_ok: Bool = result_is_composite(source, tokens, vector, 0)
+      if vector_ok:
+        let element_type: I64 = vector.form + 2
+        if len_call:
+          scalar_type(3, expr)
+        else:
+          let second: I64 = syntax.ast_next(tokens, arguments)
+          if get_call:
+            let index_ok: Bool = check_scalar_argument(source, tokens, second, 3, parent, params, return_type, bindings, facts, issues)
+            if index_ok:
+              source_type(source, tokens, element_type)
+            else:
+              invalid_type(expr)
+          else:
+            if push_call:
+              let value: TypeRef = infer_expr(source, tokens, second, element_type, parent, params, return_type, bindings, facts, issues)
+              let valid: Bool = type_valid(value)
+              if valid:
+                scalar_type(0, expr)
+              else:
+                invalid_type(expr)
+            else:
+              let third: I64 = syntax.ast_next(tokens, second)
+              let index_ok: Bool = check_scalar_argument(source, tokens, second, 3, parent, params, return_type, bindings, facts, issues)
+              let value: TypeRef = infer_expr(source, tokens, third, element_type, parent, params, return_type, bindings, facts, issues)
+              let value_ok: Bool = type_valid(value)
+              let valid: Bool = index_ok && value_ok
+              if valid:
+                scalar_type(0, expr)
+              else:
+                invalid_type(expr)
+      else:
+        record_issue("E0344", arguments, issues)
+        invalid_type(expr)
+    else:
+      invalid_type(expr)
 
-fn infer_match_ordered(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let value: I64 = syntax/ast_match_value(expr)
-  let scrutinee: TypeRef = infer_expr(source tokens value -1 parent params return_type bindings facts issues)
-  let boolean_match: Bool = i64.eq(get(scrutinee kind) 1)
-  let variant_item: I64 = match boolean_match:
-    true:
+fn infer_arena_builtin(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
+  if new_call:
+    infer_collection_new(source, tokens, expr, arguments, expected, 1, issues)
+  else:
+    let arity: Bool = expect_arity(tokens, arguments, 2, callee, issues)
+    if arity:
+      let arena: TypeRef = infer_expr(source, tokens, arguments, -1, parent, params, return_type, bindings, facts, issues)
+      let arena_ok: Bool = result_is_composite(source, tokens, arena, 1)
+      if arena_ok:
+        let element_type: I64 = arena.form + 2
+        let second: I64 = syntax.ast_next(tokens, arguments)
+        let add_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
+        if add_call:
+          let value: TypeRef = infer_expr(source, tokens, second, element_type, parent, params, return_type, bindings, facts, issues)
+          let value_valid: Bool = type_valid(value)
+          let contextual: Bool = expected >= 0
+          let expected_type: TypeRef = if contextual:
+            source_type(source, tokens, expected)
+          else:
+            invalid_type(expr)
+          let id_ok: Bool = if contextual:
+            result_is_composite(source, tokens, expected_type, 2)
+          else:
+            false
+          let same_inner: Bool = if id_ok:
+            type_forms_equal(source, tokens, element_type, syntax.ast_type_argument(expected))
+          else:
+            false
+          let valid: Bool = value_valid && same_inner
+          if valid:
+            expected_type
+          else:
+            record_issue("E0344", expr, issues)
+            invalid_type(expr)
+        else:
+          let identity: TypeRef = infer_expr(source, tokens, second, -1, parent, params, return_type, bindings, facts, issues)
+          let id_ok: Bool = result_is_composite(source, tokens, identity, 2)
+          let same_inner: Bool = if id_ok:
+            type_forms_equal(source, tokens, element_type, identity.form + 2)
+          else:
+            false
+          if same_inner:
+            source_type(source, tokens, element_type)
+          else:
+            record_issue("E0344", second, issues)
+            invalid_type(expr)
+      else:
+        record_issue("E0344", arguments, issues)
+        invalid_type(expr)
+    else:
+      invalid_type(expr)
+
+fn infer_bytes_freeze(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 1, callee, issues)
+  if arity:
+    let vector: TypeRef = infer_expr(source, tokens, arguments, -1, parent, params, return_type, bindings, facts, issues)
+    let vector_ok: Bool = result_is_composite(source, tokens, vector, 0)
+    let inner: I64 = if vector_ok:
+      vector.form + 2
+    else:
       -1
-    false:
-      linked_item(tokens get(scrutinee form))
-  let variant: Bool = match boolean_match:
-    true:
+    let inner_kind: I64 = if vector_ok:
+      syntax.scalar_type_kind(source, tokens, inner)
+    else:
+      -1
+    let byte_vector: Bool = inner_kind == 2
+    let valid: Bool = vector_ok && byte_vector
+    if valid:
+      let moved: Bool = mark_named_move(tokens, arguments, bindings, issues)
+      if moved:
+        scalar_type(4, expr)
+      else:
+        invalid_type(expr)
+    else:
+      record_issue("E0344", arguments, issues)
+      invalid_type(expr)
+  else:
+    invalid_type(expr)
+
+fn infer_read_file(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 2, callee, issues)
+  if arity:
+    let second: I64 = syntax.ast_next(tokens, arguments)
+    let path_ok: Bool = check_scalar_argument(source, tokens, arguments, 4, parent, params, return_type, bindings, facts, issues)
+    let output: TypeRef = infer_expr(source, tokens, second, -1, parent, params, return_type, bindings, facts, issues)
+    let vector_ok: Bool = result_is_composite(source, tokens, output, 0)
+    let inner: I64 = if vector_ok:
+      output.form + 2
+    else:
+      -1
+    let inner_kind: I64 = if vector_ok:
+      syntax.scalar_type_kind(source, tokens, inner)
+    else:
+      -1
+    let bytes_ok: Bool = inner_kind == 2
+    let output_ok: Bool = vector_ok && bytes_ok
+    let valid: Bool = path_ok && output_ok
+    if valid:
+      scalar_type(1, expr)
+    else:
+      record_issue("E0344", second, issues)
+      invalid_type(expr)
+  else:
+    invalid_type(expr)
+
+fn infer_tcp_exchange(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 6, callee, issues)
+  if arity:
+    let second: I64 = syntax.ast_next(tokens, arguments)
+    let third: I64 = syntax.ast_next(tokens, second)
+    let fourth: I64 = syntax.ast_next(tokens, third)
+    let fifth: I64 = syntax.ast_next(tokens, fourth)
+    let sixth: I64 = syntax.ast_next(tokens, fifth)
+    let address_ok: Bool = check_scalar_argument(source, tokens, arguments, 4, parent, params, return_type, bindings, facts, issues)
+    let port_ok: Bool = check_scalar_argument(source, tokens, second, 3, parent, params, return_type, bindings, facts, issues)
+    let request_ok: Bool = check_scalar_argument(source, tokens, third, 4, parent, params, return_type, bindings, facts, issues)
+    let limit_ok: Bool = check_scalar_argument(source, tokens, fourth, 3, parent, params, return_type, bindings, facts, issues)
+    let timeout_ok: Bool = check_scalar_argument(source, tokens, fifth, 3, parent, params, return_type, bindings, facts, issues)
+    let output: TypeRef = infer_expr(source, tokens, sixth, -1, parent, params, return_type, bindings, facts, issues)
+    let vector_ok: Bool = result_is_composite(source, tokens, output, 0)
+    let inner: I64 = if vector_ok:
+      output.form + 2
+    else:
+      -1
+    let inner_kind: I64 = if vector_ok:
+      syntax.scalar_type_kind(source, tokens, inner)
+    else:
+      -1
+    let bytes_ok: Bool = inner_kind == 2
+    let output_ok: Bool = vector_ok && bytes_ok
+    let scalar_ok: Bool = address_ok && (port_ok && (request_ok && (limit_ok && timeout_ok)))
+    let valid: Bool = scalar_ok && output_ok
+    if valid:
+      scalar_type(1, expr)
+    else:
+      record_issue("E0344", sixth, issues)
+      invalid_type(expr)
+  else:
+    invalid_type(expr)
+
+fn infer_zero_scalar_builtin(inout tokens: Vec[syntax.Token], expr: I64, arguments: I64, result_kind: I64, inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arity: Bool = expect_arity(tokens, arguments, 0, syntax.ast_call_callee(expr), issues)
+  if arity:
+    scalar_type(result_kind, expr)
+  else:
+    invalid_type(expr)
+
+fn infer_builtin_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
+  if tcp:
+    infer_tcp_exchange(source, tokens, expr, callee, arguments, parent, params, return_type, bindings, facts, issues)
+  else:
+    let clock: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.monotonic_ms")
+    if clock:
+      infer_zero_scalar_builtin(tokens, expr, arguments, 3, issues)
+    else:
+      let math: Bool = builtin_group_math(source, tokens, callee)
+      if math:
+        infer_two_scalar_builtin(source, tokens, expr, arguments, 3, 3, parent, params, return_type, bindings, facts, issues)
+      else:
+        let compare: Bool = builtin_group_compare(source, tokens, callee)
+        if compare:
+          infer_two_scalar_builtin(source, tokens, expr, arguments, 3, 1, parent, params, return_type, bindings, facts, issues)
+        else:
+          let bool_not: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
+          if bool_not:
+            infer_one_scalar_builtin(source, tokens, expr, arguments, 1, 1, parent, params, return_type, bindings, facts, issues)
+          else:
+            let bool_binary: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and") || syntax.ast_node_text_is(source, tokens, callee, "bool.or")
+            if bool_binary:
+              infer_two_scalar_builtin(source, tokens, expr, arguments, 1, 1, parent, params, return_type, bindings, facts, issues)
+            else:
+              let u8_to_i64: Bool = syntax.ast_node_text_is(source, tokens, callee, "u8.to_i64")
+              if u8_to_i64:
+                infer_one_scalar_builtin(source, tokens, expr, arguments, 2, 3, parent, params, return_type, bindings, facts, issues)
+              else:
+                let i64_to_u8: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.to_u8")
+                if i64_to_u8:
+                  infer_one_scalar_builtin(source, tokens, expr, arguments, 3, 2, parent, params, return_type, bindings, facts, issues)
+                else:
+                  let bytes_len: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.len")
+                  if bytes_len:
+                    infer_one_scalar_builtin(source, tokens, expr, arguments, 4, 3, parent, params, return_type, bindings, facts, issues)
+                  else:
+                    let bytes_get: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.get")
+                    if bytes_get:
+                      let arity: Bool = expect_arity(tokens, arguments, 2, callee, issues)
+                      if arity:
+                        let second: I64 = syntax.ast_next(tokens, arguments)
+                        let bytes_ok: Bool = check_scalar_argument(source, tokens, arguments, 4, parent, params, return_type, bindings, facts, issues)
+                        let index_ok: Bool = check_scalar_argument(source, tokens, second, 3, parent, params, return_type, bindings, facts, issues)
+                        let valid: Bool = bytes_ok && index_ok
+                        if valid:
+                          scalar_type(2, expr)
+                        else:
+                          invalid_type(expr)
+                      else:
+                        invalid_type(expr)
+                    else:
+                      let freeze: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.freeze")
+                      if freeze:
+                        infer_bytes_freeze(source, tokens, expr, callee, arguments, parent, params, return_type, bindings, facts, issues)
+                      else:
+                        let print_i64: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_i64")
+                        if print_i64:
+                          infer_one_scalar_builtin(source, tokens, expr, arguments, 3, 0, parent, params, return_type, bindings, facts, issues)
+                        else:
+                          let print_bytes: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_bytes")
+                          let println: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.println")
+                          let bytes_output: Bool = print_bytes || println
+                          if bytes_output:
+                            infer_one_scalar_builtin(source, tokens, expr, arguments, 4, 0, parent, params, return_type, bindings, facts, issues)
+                          else:
+                            let read_file: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
+                            if read_file:
+                              infer_read_file(source, tokens, expr, callee, arguments, parent, params, return_type, bindings, facts, issues)
+                            else:
+                              let vector_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new") || (syntax.ast_node_text_is(source, tokens, callee, "vec.len") || (syntax.ast_node_text_is(source, tokens, callee, "vec.get") || (syntax.ast_node_text_is(source, tokens, callee, "vec.push") || syntax.ast_node_text_is(source, tokens, callee, "vec.set"))))
+                              if vector_call:
+                                infer_vector_builtin(source, tokens, expr, callee, arguments, expected, parent, params, return_type, bindings, facts, issues)
+                              else:
+                                infer_arena_builtin(source, tokens, expr, callee, arguments, expected, parent, params, return_type, bindings, facts, issues)
+
+fn check_recursive_argument_identity(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, parameter: I64, callee: I64, inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let recursive: Bool = syntax.ast_callee_is_recur(source, tokens, callee)
+  let borrowed: Bool = parameter_is_inout(source, tokens, parameter)
+  let required: Bool = recursive && borrowed
+  if required:
+    let parameter_token: I64 = parameter_name(source, tokens, parameter)
+    let parameter_start: I64 = syntax.ast_node_start(tokens, parameter_token)
+    let parameter_end: I64 = syntax.ast_node_end(tokens, parameter_token)
+    let argument_start: I64 = syntax.ast_node_start(tokens, argument)
+    let argument_end: I64 = syntax.ast_node_end(tokens, argument)
+    let same: Bool = syntax.spans_equal(source, parameter_start, parameter_end, argument_start, argument_end)
+    if same:
       true
-    false:
-      item_has_kind(source tokens variant_item 2)
-  match variant:
-    false:
-      let noted: Unit = record_issue("E0344" value issues)
-      invalid_type(expr)
-    true:
-      let first_arm: I64 = syntax/ast_match_arms(tokens expr)
-      let first_case: I64 = match boolean_match:
-        true:
-          -1
-        false:
-          syntax/ast_data_members_first(variant_item)
-      let initial: TypeRef = invalid_type(expr)
-      infer_match_arms_ordered(source tokens first_arm variant_item first_case expr expected parent params return_type false initial false false bindings facts issues)
+    else:
+      append_issue("E0350", argument, argument, issues)
+      false
+  else:
+    true
 
-fn infer_fork(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let inner: I64 = syntax/ast_fork_body(expr)
-  let arity: Bool = expect_arity(tokens inner 1 syntax/ast_expression_marker(expr) issues)
-  match arity:
-    false:
-      invalid_type(expr)
-    true:
-      infer_expr(source tokens inner expected parent params return_type bindings facts issues)
+fn check_owned_argument(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, parameter: I64, callee: I64, inout bindings: Vec[Binding], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let recursive: Bool = syntax.ast_callee_is_recur(source, tokens, callee)
+  if recursive:
+    true
+  else:
+    let borrowed: Bool = parameter_is_inout(source, tokens, parameter)
+    let by_value: Bool = !borrowed
+    let type: I64 = parameter_type(source, tokens, parameter)
+    let storage: I64 = memory.type_storage_kind(source, tokens, type)
+    let owned: Bool = storage == 2
+    let transfer: Bool = by_value && owned
+    if transfer:
+      mark_named_move(tokens, argument, bindings, issues)
+    else:
+      true
 
-fn infer_recur(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let arguments: I64 = syntax/ast_recur_arguments(expr)
-  let first_parameter: I64 = syntax/ast_parameters_first(params)
-  let valid: Bool = check_call_arguments(source tokens arguments first_parameter parent params return_type syntax/ast_expression_marker(expr) bindings facts issues)
-  match valid:
-    true:
-      source_type(source tokens return_type)
-    false:
-      invalid_type(expr)
+fn check_call_arguments(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, parameter: I64, parent: I64, params: I64, return_type: I64, callee: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let argument_kind: I64 = syntax.ast_node_kind(tokens, argument)
+  let parameter_kind: I64 = syntax.ast_node_kind(tokens, parameter)
+  let arguments_done: Bool = argument_kind == 1
+  let parameters_done: Bool = parameter_kind == 1
+  let either_done: Bool = arguments_done || parameters_done
+  if either_done:
+    let both_done: Bool = arguments_done && parameters_done
+    if both_done:
+      true
+    else:
+      record_issue("E0351", callee, issues)
+      false
+  else:
+    let expected: I64 = parameter_type(source, tokens, parameter)
+    let identity: Bool = check_recursive_argument_identity(source, tokens, argument, parameter, callee, issues)
+    let actual: TypeRef = infer_expr(source, tokens, argument, expected, parent, params, return_type, bindings, facts, issues)
+    let actual_valid: Bool = type_valid(actual)
+    let move_valid: Bool = if actual_valid:
+      check_owned_argument(source, tokens, argument, parameter, callee, bindings, issues)
+    else:
+      true
+    let valid: Bool = actual_valid && (identity && move_valid)
+    let next_argument: I64 = syntax.ast_next(tokens, argument)
+    let next_parameter: I64 = syntax.ast_next(tokens, parameter)
+    let remaining: Bool = recur(source, tokens, next_argument, next_parameter, parent, params, return_type, callee, bindings, facts, issues)
+    valid && remaining
 
-fn infer_let(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let name: I64 = syntax/ast_let_name(expr)
-  let type: I64 = syntax/ast_let_type(expr)
-  let value: I64 = syntax/ast_let_value(tokens expr)
-  let body: I64 = syntax/ast_let_body(tokens expr)
-  let value_type: TypeRef = infer_expr(source tokens value type parent params return_type bindings facts issues)
-  let next_parent: I64 = add_binding(tokens name type false parent bindings)
-  let body_type: TypeRef = infer_expr(source tokens body expected next_parent params return_type bindings facts issues)
+fn infer_user_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, item: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let function: Bool = item_has_kind(source, tokens, item, 0)
+  if function:
+    let parameters: I64 = syntax.ast_function_parameters(item)
+    let first_parameter: I64 = syntax.ast_parameters_first(parameters)
+    let valid: Bool = check_call_arguments(source, tokens, arguments, first_parameter, parent, params, return_type, callee, bindings, facts, issues)
+    if valid:
+      let result_type: I64 = syntax.ast_function_return_type(tokens, item)
+      source_type(source, tokens, result_type)
+    else:
+      invalid_type(expr)
+  else:
+    record_issue("E0314", callee, issues)
+    invalid_type(expr)
+
+fn infer_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let callee: I64 = syntax.ast_call_callee(expr)
+  let arguments: I64 = syntax.ast_call_arguments(expr)
+  let builtin: Bool = builtin_known(source, tokens, callee)
+  if builtin:
+    infer_builtin_call(source, tokens, expr, callee, arguments, expected, parent, params, return_type, bindings, facts, issues)
+  else:
+    let item: I64 = linked_item(tokens, callee)
+    infer_user_call(source, tokens, expr, callee, arguments, item, parent, params, return_type, bindings, facts, issues)
+
+fn check_make_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, definition: I64, parent: I64, params: I64, return_type: I64, record_name: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let cursor_kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let definition_kind: I64 = syntax.ast_node_kind(tokens, definition)
+  let cursor_done: Bool = cursor_kind == 1
+  let definition_done: Bool = definition_kind == 1
+  let either_done: Bool = cursor_done || definition_done
+  if either_done:
+    let both_done: Bool = cursor_done && definition_done
+    if both_done:
+      true
+    else:
+      record_issue("E0351", record_name, issues)
+      false
+  else:
+    let name: I64 = syntax.ast_member_name(cursor)
+    let declared_name: I64 = syntax.ast_member_name(definition)
+    let name_start: I64 = syntax.ast_node_start(tokens, name)
+    let name_end: I64 = syntax.ast_node_end(tokens, name)
+    let declared_start: I64 = syntax.ast_node_start(tokens, declared_name)
+    let declared_end: I64 = syntax.ast_node_end(tokens, declared_name)
+    let same_name: Bool = syntax.spans_equal(source, name_start, name_end, declared_start, declared_end)
+    if same_name:
+      syntax.ast_node_set_link(tokens, cursor, definition)
+      let field_type: I64 = syntax.ast_member_value(definition)
+      let value: I64 = syntax.ast_member_value(cursor)
+      let actual: TypeRef = infer_expr(source, tokens, value, field_type, parent, params, return_type, bindings, facts, issues)
+      let valid: Bool = type_valid(actual)
+      let next_cursor: I64 = syntax.ast_next(tokens, cursor)
+      let next_definition: I64 = syntax.ast_next(tokens, definition)
+      let remaining: Bool = recur(source, tokens, next_cursor, next_definition, parent, params, return_type, record_name, bindings, facts, issues)
+      valid && remaining
+    else:
+      record_issue("E0352", name, issues)
+      false
+
+fn infer_make(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let record_name: I64 = syntax.ast_make_type(expr)
+  let item: I64 = linked_item(tokens, record_name)
+  let record: Bool = item_has_kind(source, tokens, item, 1)
+  if record:
+    let definitions: I64 = syntax.ast_data_members_first(item)
+    let provided: I64 = syntax.ast_make_fields(expr)
+    let valid: Bool = check_make_fields(source, tokens, provided, definitions, parent, params, return_type, record_name, bindings, facts, issues)
+    if valid:
+      source_type(source, tokens, record_name)
+    else:
+      invalid_type(expr)
+  else:
+    record_issue("E0352", record_name, issues)
+    invalid_type(expr)
+
+fn infer_get(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let value: I64 = syntax.ast_get_value(expr)
+  let field: I64 = syntax.ast_get_field(tokens, expr)
+  let owner: TypeRef = infer_expr(source, tokens, value, -1, parent, params, return_type, bindings, facts, issues)
+  let source_type: Bool = owner.kind == -1
+  if source_type:
+    let item: I64 = linked_item(tokens, owner.form)
+    let record: Bool = item_has_kind(source, tokens, item, 1)
+    if record:
+      let definition: I64 = find_named_form(source, tokens, syntax.ast_data_members_first(item), field)
+      let known: Bool = definition >= 0
+      if known:
+        source_type(source, tokens, syntax.ast_member_value(definition))
+      else:
+        record_issue("E0352", field, issues)
+        invalid_type(expr)
+    else:
+      record_issue("E0344", value, issues)
+      invalid_type(expr)
+  else:
+    record_issue("E0344", value, issues)
+    invalid_type(expr)
+
+fn check_payload(source: Bytes, inout tokens: Vec[syntax.Token], value: I64, type: I64, parent: I64, params: I64, return_type: I64, case_name: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let value_kind: I64 = syntax.ast_node_kind(tokens, value)
+  let type_kind: I64 = syntax.ast_node_kind(tokens, type)
+  let values_done: Bool = value_kind == 1
+  let types_done: Bool = type_kind == 1
+  let either_done: Bool = values_done || types_done
+  if either_done:
+    let both: Bool = values_done && types_done
+    if both:
+      true
+    else:
+      record_issue("E0351", case_name, issues)
+      false
+  else:
+    let actual: TypeRef = infer_expr(source, tokens, value, type, parent, params, return_type, bindings, facts, issues)
+    let valid: Bool = type_valid(actual)
+    let next_value: I64 = syntax.ast_next(tokens, value)
+    let next_type: I64 = syntax.ast_next(tokens, type)
+    let remaining: Bool = recur(source, tokens, next_value, next_type, parent, params, return_type, case_name, bindings, facts, issues)
+    valid && remaining
+
+fn infer_case(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let variant_name: I64 = syntax.ast_case_type(expr)
+  let case_name: I64 = syntax.ast_case_name(tokens, expr)
+  let item: I64 = linked_item(tokens, variant_name)
+  let variant: Bool = item_has_kind(source, tokens, item, 2)
+  if variant:
+    let case_form: I64 = find_named_form(source, tokens, syntax.ast_data_members_first(item), case_name)
+    let known: Bool = case_form >= 0
+    if known:
+      syntax.ast_node_set_link(tokens, expr, case_form)
+      let payload: I64 = syntax.ast_case_payload(tokens, expr)
+      let payload_type: I64 = syntax.ast_member_value(case_form)
+      let valid: Bool = check_payload(source, tokens, payload, payload_type, parent, params, return_type, case_name, bindings, facts, issues)
+      if valid:
+        source_type(source, tokens, variant_name)
+      else:
+        invalid_type(expr)
+    else:
+      record_issue("E0352", case_name, issues)
+      invalid_type(expr)
+  else:
+    record_issue("E0352", variant_name, issues)
+    invalid_type(expr)
+
+fn bind_payload_names(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, type: I64, parent: I64, case_name: I64, inout bindings: Vec[Binding], inout issues: Vec[Issue]) -> I64 effects[alloc, partial]:
+  let name_kind: I64 = syntax.ast_node_kind(tokens, name)
+  let type_kind: I64 = syntax.ast_node_kind(tokens, type)
+  let names_done: Bool = name_kind == 1
+  let types_done: Bool = type_kind == 1
+  let either_done: Bool = names_done || types_done
+  if either_done:
+    let both: Bool = names_done && types_done
+    if both:
+      parent
+    else:
+      record_issue("E0351", case_name, issues)
+      -2
+  else:
+    let mutable: Bool = syntax.ast_pattern_name_is_mutable(tokens, name)
+    let next_parent: I64 = add_binding(tokens, name, type, false, mutable, parent, bindings)
+    let next_name: I64 = syntax.ast_next(tokens, name)
+    let next_type: I64 = syntax.ast_next(tokens, type)
+    recur(source, tokens, next_name, next_type, next_parent, case_name, bindings, issues)
+
+fn case_name_matches(source: Bytes, inout tokens: Vec[syntax.Token], case_form: I64, pattern: I64) -> Bool effects[partial]:
+  let declared: I64 = syntax.ast_member_name(case_form)
+  let declared_start: I64 = syntax.ast_node_start(tokens, declared)
+  let declared_end: I64 = syntax.ast_node_end(tokens, declared)
+  let pattern_start: I64 = syntax.ast_node_start(tokens, pattern)
+  let pattern_end: I64 = syntax.ast_node_end(tokens, pattern)
+  syntax.spans_equal(source, declared_start, declared_end, pattern_start, pattern_end)
+
+fn ordered_arm_parent(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, case_cursor: I64, pattern: I64, boolean_match: Bool, parent: I64, inout bindings: Vec[Binding], inout issues: Vec[Issue]) -> I64 effects[alloc, partial]:
+  if boolean_match:
+    parent
+  else:
+    let same: Bool = case_name_matches(source, tokens, case_cursor, pattern)
+    if same:
+      syntax.ast_node_set_link(tokens, cursor, case_cursor)
+      let payload_type: I64 = syntax.ast_member_value(case_cursor)
+      let payload_kind: I64 = syntax.ast_node_kind(tokens, payload_type)
+      let empty: Bool = payload_kind == 1
+      if empty:
+        parent
+      else:
+        let names_form: I64 = syntax.ast_arm_bindings(tokens, cursor)
+        bind_payload_names(source, tokens, syntax.ast_list_first(names_form), payload_type, parent, pattern, bindings, issues)
+    else:
+      record_issue("E0352", pattern, issues)
+      -2
+
+fn ordered_arm_body(inout tokens: Vec[syntax.Token], cursor: I64, case_cursor: I64, boolean_match: Bool) -> I64 effects[partial]:
+  syntax.ast_arm_body(tokens, cursor)
+
+fn infer_match_arms_ordered(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, variant_item: I64, case_cursor: I64, match_expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, has_first: Bool, first: TypeRef, seen_true: Bool, seen_false: Bool, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arm_kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let arms_done: Bool = arm_kind == 1
+  let boolean_match: Bool = variant_item < 0
+  let case_kind: I64 = if boolean_match:
+    1
+  else:
+    syntax.ast_node_kind(tokens, case_cursor)
+  let cases_done: Bool = case_kind == 1
+  if arms_done:
+    let bool_complete: Bool = seen_true && seen_false
+    let exact: Bool = if boolean_match:
+      bool_complete
+    else:
+      cases_done
+    if exact:
+      first
+    else:
+      record_issue("E0351", syntax.ast_expression_marker(match_expr), issues)
+      invalid_type(match_expr)
+  else:
+    let extra_variant: Bool = (!boolean_match) && cases_done
+    if extra_variant:
+      record_issue("E0351", syntax.ast_expression_marker(match_expr), issues)
+      invalid_type(match_expr)
+    else:
+      let pattern: I64 = syntax.ast_arm_pattern(cursor)
+      let true_pattern: Bool = if boolean_match:
+        syntax.ast_node_text_is(source, tokens, pattern, "true")
+      else:
+        false
+      let false_pattern: Bool = if boolean_match:
+        syntax.ast_node_text_is(source, tokens, pattern, "false")
+      else:
+        false
+      let bool_pattern: Bool = true_pattern || false_pattern
+      let pattern_known: Bool = if boolean_match:
+        bool_pattern
+      else:
+        case_name_matches(source, tokens, case_cursor, pattern)
+      let duplicate_true: Bool = true_pattern && seen_true
+      let duplicate_false: Bool = false_pattern && seen_false
+      let duplicate: Bool = duplicate_true || duplicate_false
+      let pattern_valid: Bool = pattern_known && (!duplicate)
+      let pattern_code: Bytes = if boolean_match:
+        "E0335"
+      else:
+        "E0352"
+      if pattern_valid:
+        void
+      else:
+        record_issue(pattern_code, pattern, issues)
+      let arm_parent: I64 = ordered_arm_parent(source, tokens, cursor, case_cursor, pattern, boolean_match, parent, bindings, issues)
+      let parent_valid: Bool = arm_parent >= -1
+      let body: I64 = ordered_arm_body(tokens, cursor, case_cursor, boolean_match)
+      let actual: TypeRef = infer_expr(source, tokens, body, expected, arm_parent, params, return_type, bindings, facts, issues)
+      let actual_valid: Bool = type_valid(actual)
+      let compare_first: Bool = has_first && (expected < 0)
+      let same_type: Bool = if compare_first:
+        types_equal(source, tokens, first, actual)
+      else:
+        true
+      if same_type:
+        void
+      else:
+        record_issue("E0344", body, issues)
+      let next_first: TypeRef = if has_first:
+        first
+      else:
+        actual
+      let next_arm: I64 = syntax.ast_next(tokens, cursor)
+      let next_case: I64 = if boolean_match:
+        -1
+      else:
+        syntax.ast_next(tokens, case_cursor)
+      let next_seen_true: Bool = seen_true || true_pattern
+      let next_seen_false: Bool = seen_false || false_pattern
+      let remaining: TypeRef = recur(source, tokens, next_arm, variant_item, next_case, match_expr, expected, parent, params, return_type, true, next_first, next_seen_true, next_seen_false, bindings, facts, issues)
+      let valid: Bool = pattern_valid && (parent_valid && (actual_valid && same_type))
+      if valid:
+        remaining
+      else:
+        invalid_type(body)
+
+fn infer_match_ordered(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let value: I64 = syntax.ast_match_value(expr)
+  let scrutinee: TypeRef = infer_expr(source, tokens, value, -1, parent, params, return_type, bindings, facts, issues)
+  let boolean_match: Bool = scrutinee.kind == 1
+  let if_form: Bool = syntax.ast_expression_is_if(tokens, expr)
+  let familiar_match: Bool = syntax.ast_expression_is_familiar_match(tokens, expr)
+  let familiar_control: Bool = if_form || familiar_match
+  let familiar_kind_valid: Bool = if if_form:
+    boolean_match
+  else:
+    !boolean_match
+  let control_kind_valid: Bool = if familiar_control:
+    familiar_kind_valid
+  else:
+    true
+  let variant_item: I64 = if boolean_match:
+    -1
+  else:
+    linked_item(tokens, scrutinee.form)
+  let variant_shape: Bool = if boolean_match:
+    true
+  else:
+    item_has_kind(source, tokens, variant_item, 2)
+  let variant: Bool = control_kind_valid && variant_shape
+  if variant:
+    let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
+    let first_case: I64 = if boolean_match:
+      -1
+    else:
+      syntax.ast_data_members_first(variant_item)
+    let initial: TypeRef = invalid_type(expr)
+    infer_match_arms_ordered(source, tokens, first_arm, variant_item, first_case, expr, expected, parent, params, return_type, false, initial, false, false, bindings, facts, issues)
+  else:
+    record_issue("E0344", value, issues)
+    invalid_type(expr)
+
+fn infer_fork(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let inner: I64 = syntax.ast_fork_body(expr)
+  let arity: Bool = expect_arity(tokens, inner, 1, syntax.ast_expression_marker(expr), issues)
+  if arity:
+    infer_expr(source, tokens, inner, expected, parent, params, return_type, bindings, facts, issues)
+  else:
+    invalid_type(expr)
+
+fn infer_recur(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let arguments: I64 = syntax.ast_recur_arguments(expr)
+  let first_parameter: I64 = syntax.ast_parameters_first(params)
+  let valid: Bool = check_call_arguments(source, tokens, arguments, first_parameter, parent, params, return_type, syntax.ast_expression_marker(expr), bindings, facts, issues)
+  if valid:
+    source_type(source, tokens, return_type)
+  else:
+    invalid_type(expr)
+
+fn infer_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let name: I64 = syntax.ast_let_name(expr)
+  let type: I64 = syntax.ast_let_type(expr)
+  let value: I64 = syntax.ast_let_value(tokens, expr)
+  let body: I64 = syntax.ast_let_body(tokens, expr)
+  let statement: Bool = syntax.ast_expression_is_statement(tokens, expr)
+  let value_expected: I64 = if statement:
+    -1
+  else:
+    type
+  let value_type: TypeRef = infer_expr(source, tokens, value, value_expected, parent, params, return_type, bindings, facts, issues)
+  let stored_void: Bool = (!statement) && type_contains_void(source, tokens, type)
+  let value_void: Bool = type_valid(value_type) && (value_type.kind == 0)
+  let discarded: Bool = statement && (!value_void)
+  if stored_void:
+    record_issue("E0358", type, issues)
+  else:
+    void
+  if discarded:
+    record_issue("E0357", value, issues)
+  else:
+    void
+  let mutable: Bool = syntax.ast_let_is_mutable(source, tokens, expr)
+  let next_parent: I64 = add_binding(tokens, name, type, false, mutable, parent, bindings)
+  let body_type: TypeRef = infer_expr(source, tokens, body, expected, next_parent, params, return_type, bindings, facts, issues)
   let value_valid: Bool = type_valid(value_type)
   let body_valid: Bool = type_valid(body_type)
-  let valid: Bool = bool.and(value_valid body_valid)
-  match valid:
-    true:
-      body_type
-    false:
+  let placement_valid: Bool = !(stored_void || discarded)
+  let valid: Bool = placement_valid && (value_valid && body_valid)
+  if valid:
+    body_type
+  else:
+    invalid_type(expr)
+
+fn infer_set(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let name: I64 = syntax.ast_set_name(expr)
+  let type: I64 = find_binding_type(source, tokens, bindings, parent, name)
+  let found: Bool = type >= 0
+  if found:
+    let familiar: Bool = syntax.ast_assignment_is_familiar(tokens, expr)
+    let declared_mutable: Bool = find_binding_mutable(source, tokens, bindings, parent, name)
+    let mutable: Bool = (!familiar) || declared_mutable
+    if mutable:
+      let value: I64 = syntax.ast_set_value(expr)
+      let body: I64 = syntax.ast_set_body(tokens, expr)
+      let value_type: TypeRef = infer_expr(source, tokens, value, type, parent, params, return_type, bindings, facts, issues)
+      let body_type: TypeRef = infer_expr(source, tokens, body, expected, parent, params, return_type, bindings, facts, issues)
+      let valid: Bool = type_valid(value_type) && type_valid(body_type)
+      if valid:
+        body_type
+      else:
+        invalid_type(expr)
+    else:
+      record_issue("E0359", name, issues)
       invalid_type(expr)
+  else:
+    record_issue("E0314", name, issues)
+    invalid_type(expr)
 
-fn infer_set(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let name: I64 = syntax/ast_set_name(expr)
-  let type: I64 = find_binding_type(source tokens bindings parent name)
-  let found: Bool = i64.ge(type 0)
-  match found:
-    false:
-      let noted: Unit = record_issue("E0314" name issues)
-      invalid_type(expr)
-    true:
-      let value: I64 = syntax/ast_set_value(expr)
-      let body: I64 = syntax/ast_set_body(tokens expr)
-      let value_type: TypeRef = infer_expr(source tokens value type parent params return_type bindings facts issues)
-      let body_type: TypeRef = infer_expr(source tokens body expected parent params return_type bindings facts issues)
-      let valid: Bool = bool.and(type_valid(value_type) type_valid(body_type))
-      match valid:
-        true:
-          body_type
-        false:
-          invalid_type(expr)
+fn infer_form(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
+  let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
+  if let_form:
+    infer_let(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+  else:
+    let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
+    if set_form:
+      infer_set(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+    else:
+      let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
+      if call_form:
+        infer_call(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+      else:
+        let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
+        if make_form:
+          infer_make(source, tokens, expr, parent, params, return_type, bindings, facts, issues)
+        else:
+          let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expr)
+          if get_form:
+            infer_get(source, tokens, expr, parent, params, return_type, bindings, facts, issues)
+          else:
+            let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expr)
+            if case_form:
+              infer_case(source, tokens, expr, parent, params, return_type, bindings, facts, issues)
+            else:
+              let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
+              if match_form:
+                infer_match_ordered(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+              else:
+                let fork_form: Bool = syntax.ast_expression_is_fork(source, tokens, expr)
+                if fork_form:
+                  infer_fork(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+                else:
+                  infer_recur(source, tokens, expr, parent, params, return_type, bindings, facts, issues)
 
-fn infer_form(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
-  let let_form: Bool = syntax/ast_expression_is_let(source tokens expr)
-  match let_form:
-    true:
-      infer_let(source tokens expr expected parent params return_type bindings facts issues)
-    false:
-      let set_form: Bool = syntax/ast_expression_is_set(source tokens expr)
-      match set_form:
-        true:
-          infer_set(source tokens expr expected parent params return_type bindings facts issues)
-        false:
-          let call_form: Bool = syntax/ast_expression_is_call(source tokens expr)
-          match call_form:
-            true:
-              infer_call(source tokens expr expected parent params return_type bindings facts issues)
-            false:
-              let make_form: Bool = syntax/ast_expression_is_make(source tokens expr)
-              match make_form:
-                true:
-                  infer_make(source tokens expr parent params return_type bindings facts issues)
-                false:
-                  let get_form: Bool = syntax/ast_expression_is_get(source tokens expr)
-                  match get_form:
-                    true:
-                      infer_get(source tokens expr parent params return_type bindings facts issues)
-                    false:
-                      let case_form: Bool = syntax/ast_expression_is_case(source tokens expr)
-                      match case_form:
-                        true:
-                          infer_case(source tokens expr parent params return_type bindings facts issues)
-                        false:
-                          let match_form: Bool = syntax/ast_expression_is_match(source tokens expr)
-                          match match_form:
-                            true:
-                              infer_match_ordered(source tokens expr expected parent params return_type bindings facts issues)
-                            false:
-                              let fork_form: Bool = syntax/ast_expression_is_fork(source tokens expr)
-                              match fork_form:
-                                true:
-                                  infer_fork(source tokens expr expected parent params return_type bindings facts issues)
-                                false:
-                                  infer_recur(source tokens expr parent params return_type bindings facts issues)
-
-fn infer_expr(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 expected: I64 parent: I64 params: I64 return_type: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> TypeRef effects[alloc partial]:
+fn infer_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> TypeRef effects[alloc, partial]:
   let failed: Bool = issues_block_inference(issues)
-  match failed:
-    true:
-      invalid_type(expr)
-    false:
-      let kind: I64 = syntax/ast_node_kind(tokens expr)
-      let form: Bool = i64.eq(kind 0)
-      let actual: TypeRef = match form:
-        true:
-          infer_form(source tokens expr expected parent params return_type bindings facts issues)
-        false:
-          infer_atom(source tokens expr parent bindings issues)
-      finish_type(source tokens expr expected actual facts issues)
+  if failed:
+    invalid_type(expr)
+  else:
+    let kind: I64 = syntax.ast_node_kind(tokens, expr)
+    let form: Bool = kind == 0
+    let actual: TypeRef = if form:
+      infer_form(source, tokens, expr, expected, parent, params, return_type, bindings, facts, issues)
+    else:
+      infer_atom(source, tokens, expr, parent, bindings, issues)
+    finish_type(source, tokens, expr, expected, actual, facts, issues)
 
-fn type_form_wellformed(source: Bytes inout tokens: Vec[syntax/Token] type: I64) -> Bool effects[partial]:
-  let scalar: I64 = syntax/scalar_type_kind(source tokens type)
-  let scalar_type: Bool = i64.ge(scalar 0)
-  match scalar_type:
-    true:
+fn type_form_wellformed(source: Bytes, inout tokens: Vec[syntax.Token], type: I64) -> Bool effects[partial]:
+  let scalar: I64 = syntax.scalar_type_kind(source, tokens, type)
+  let scalar_type: Bool = scalar >= 0
+  if scalar_type:
+    true
+  else:
+    let kind: I64 = syntax.ast_node_kind(tokens, type)
+    let atom: Bool = kind == 2
+    if atom:
+      let item: I64 = linked_item(tokens, type)
+      let record: Bool = item_has_kind(source, tokens, item, 1)
+      let variant: Bool = item_has_kind(source, tokens, item, 2)
+      record || variant
+    else:
+      let form: Bool = kind == 0
+      if form:
+        let vec_type: Bool = syntax.ast_type_is_vec(source, tokens, type)
+        let arena_type: Bool = syntax.ast_type_is_arena(source, tokens, type)
+        let id_type: Bool = syntax.ast_type_is_id(source, tokens, type)
+        let constructor: Bool = vec_type || (arena_type || id_type)
+        let inner: I64 = syntax.ast_type_argument(type)
+        let inner_valid: Bool = type_form_wellformed(source, tokens, inner)
+        let next: I64 = syntax.ast_next(tokens, inner)
+        let next_kind: I64 = syntax.ast_node_kind(tokens, next)
+        let exact: Bool = next_kind == 1
+        constructor && (inner_valid && exact)
+      else:
+        false
+
+fn type_contains_void(source: Bytes, inout tokens: Vec[syntax.Token], type: I64) -> Bool effects[partial]:
+  let scalar: I64 = syntax.scalar_type_kind(source, tokens, type)
+  if scalar == 0:
+    true
+  else:
+    let kind: I64 = syntax.ast_node_kind(tokens, type)
+    if kind == 0:
+      type_contains_void(source, tokens, syntax.ast_type_argument(type))
+    else:
+      false
+
+fn check_type_form(source: Bytes, inout tokens: Vec[syntax.Token], type: I64, inout issues: Vec[Issue]) -> Bool effects[alloc, partial]:
+  let valid: Bool = type_form_wellformed(source, tokens, type)
+  if valid:
+    true
+  else:
+    record_issue("E0354", type, issues)
+    false
+
+fn check_type_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let valid: Bool = check_type_form(source, tokens, cursor, issues)
+    let stored_void: Bool = type_contains_void(source, tokens, cursor)
+    if stored_void:
+      record_issue("E0358", cursor, issues)
+    else:
+      void
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, issues)
+
+fn check_parameter_types(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let type: I64 = parameter_type(source, tokens, cursor)
+    let valid: Bool = check_type_form(source, tokens, type, issues)
+    let stored_void: Bool = type_contains_void(source, tokens, type)
+    if stored_void:
+      record_issue("E0358", type, issues)
+    else:
+      void
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, issues)
+
+fn check_record_types(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let type: I64 = syntax.ast_member_value(cursor)
+    let valid: Bool = check_type_form(source, tokens, type, issues)
+    let stored_void: Bool = type_contains_void(source, tokens, type)
+    if stored_void:
+      record_issue("E0358", type, issues)
+    else:
+      void
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, issues)
+
+fn check_variant_types(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let payload: I64 = syntax.ast_member_value(cursor)
+    check_type_forms(source, tokens, payload, issues)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, issues)
+
+fn type_is_vec_bytes(source: Bytes, inout tokens: Vec[syntax.Token], type: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, type)
+  let form: Bool = kind == 0
+  if form:
+    let vector: Bool = syntax.ast_type_is_vec(source, tokens, type)
+    let inner: I64 = syntax.ast_type_argument(type)
+    let inner_kind: I64 = syntax.scalar_type_kind(source, tokens, inner)
+    let bytes_type: Bool = inner_kind == 4
+    let next: I64 = syntax.ast_next(tokens, inner)
+    let next_kind: I64 = syntax.ast_node_kind(tokens, next)
+    let exact: Bool = next_kind == 1
+    vector && (bytes_type && exact)
+  else:
+    false
+
+fn main_signature_valid(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> Bool effects[partial]:
+  let params: I64 = syntax.ast_function_parameters(item)
+  let first: I64 = syntax.ast_parameters_first(params)
+  let count: I64 = form_count(tokens, first, 0)
+  let one: Bool = count == 1
+  if one:
+    let borrowed: Bool = parameter_is_inout(source, tokens, first)
+    let plain: Bool = !borrowed
+    let name: I64 = parameter_name(source, tokens, first)
+    let named: Bool = syntax.ast_node_text_is(source, tokens, name, "args")
+    let type: I64 = parameter_type(source, tokens, first)
+    let vector: Bool = type_is_vec_bytes(source, tokens, type)
+    let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+    let return_kind: I64 = syntax.scalar_type_kind(source, tokens, return_type)
+    let returns_i64: Bool = return_kind == 3
+    plain && (named && (vector && returns_i64))
+  else:
+    false
+
+fn prior_declaration_has_name(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64, name: I64) -> Bool effects[partial]:
+  let done: Bool = index <= 0
+  if done:
+    false
+  else:
+    let prior_index: I64 = index - 1
+    let declaration: ir.Declaration = vec.get(declarations, prior_index)
+    let prior_name: I64 = declaration.name
+    let name_start: I64 = syntax.ast_node_start(tokens, name)
+    let name_end: I64 = syntax.ast_node_end(tokens, name)
+    let prior_start: I64 = syntax.ast_node_start(tokens, prior_name)
+    let prior_end: I64 = syntax.ast_node_end(tokens, prior_name)
+    let same: Bool = syntax.spans_equal(source, name_start, name_end, prior_start, prior_end)
+    if same:
       true
-    false:
-      let kind: I64 = syntax/ast_node_kind(tokens type)
-      let atom: Bool = i64.eq(kind 2)
-      match atom:
-        true:
-          let item: I64 = linked_item(tokens type)
-          let record: Bool = item_has_kind(source tokens item 1)
-          let variant: Bool = item_has_kind(source tokens item 2)
-          bool.or(record variant)
-        false:
-          let form: Bool = i64.eq(kind 0)
-          match form:
-            false:
-              false
-            true:
-              let vec_type: Bool = syntax/ast_type_is_vec(source tokens type)
-              let arena_type: Bool = syntax/ast_type_is_arena(source tokens type)
-              let id_type: Bool = syntax/ast_type_is_id(source tokens type)
-              let constructor: Bool = bool.or(vec_type bool.or(arena_type id_type))
-              let inner: I64 = syntax/ast_type_argument(type)
-              let inner_valid: Bool = type_form_wellformed(source tokens inner)
-              let next: I64 = syntax/ast_next(tokens inner)
-              let next_kind: I64 = syntax/ast_node_kind(tokens next)
-              let exact: Bool = i64.eq(next_kind 1)
-              bool.and(constructor bool.and(inner_valid exact))
+    else:
+      recur(source, tokens, declarations, prior_index, name)
 
-fn check_type_form(source: Bytes inout tokens: Vec[syntax/Token] type: I64 inout issues: Vec[Issue]) -> Bool effects[alloc partial]:
-  let valid: Bool = type_form_wellformed(source tokens type)
-  match valid:
-    true:
-      true
-    false:
-      let noted: Unit = record_issue("E0354" type issues)
-      false
-
-fn check_type_forms(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let valid: Bool = check_type_form(source tokens cursor issues)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next issues)
-
-fn check_parameter_types(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let type: I64 = parameter_type(source tokens cursor)
-      let valid: Bool = check_type_form(source tokens type issues)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next issues)
-
-fn check_record_types(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let type: I64 = syntax/ast_member_value(cursor)
-      let valid: Bool = check_type_form(source tokens type issues)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next issues)
-
-fn check_variant_types(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let payload: I64 = syntax/ast_member_value(cursor)
-      let valid: Unit = check_type_forms(source tokens payload issues)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next issues)
-
-fn type_is_vec_bytes(source: Bytes inout tokens: Vec[syntax/Token] type: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens type)
-  let form: Bool = i64.eq(kind 0)
-  match form:
-    false:
-      false
-    true:
-      let vector: Bool = syntax/ast_type_is_vec(source tokens type)
-      let inner: I64 = syntax/ast_type_argument(type)
-      let inner_kind: I64 = syntax/scalar_type_kind(source tokens inner)
-      let bytes_type: Bool = i64.eq(inner_kind 4)
-      let next: I64 = syntax/ast_next(tokens inner)
-      let next_kind: I64 = syntax/ast_node_kind(tokens next)
-      let exact: Bool = i64.eq(next_kind 1)
-      bool.and(vector bool.and(bytes_type exact))
-
-fn main_signature_valid(source: Bytes inout tokens: Vec[syntax/Token] item: I64) -> Bool effects[partial]:
-  let params: I64 = syntax/ast_function_parameters(item)
-  let first: I64 = syntax/ast_parameters_first(params)
-  let count: I64 = form_count(tokens first 0)
-  let one: Bool = i64.eq(count 1)
-  match one:
-    false:
-      false
-    true:
-      let borrowed: Bool = parameter_is_inout(source tokens first)
-      let plain: Bool = bool.not(borrowed)
-      let name: I64 = parameter_name(source tokens first)
-      let named: Bool = syntax/ast_node_text_is(source tokens name "args")
-      let type: I64 = parameter_type(source tokens first)
-      let vector: Bool = type_is_vec_bytes(source tokens type)
-      let return_type: I64 = syntax/ast_function_return_type(tokens item)
-      let return_kind: I64 = syntax/scalar_type_kind(source tokens return_type)
-      let returns_i64: Bool = i64.eq(return_kind 3)
-      bool.and(plain bool.and(named bool.and(vector returns_i64)))
-
-fn check_declaration_types(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration] index: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
+fn check_declaration_types(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
-  let done: Bool = i64.ge(index count)
-  match done:
-    true:
-      unit
-    false:
-      let declaration: ir/Declaration = vec.get(declarations index)
-      let item: I64 = get(declaration form)
-      let function: Bool = syntax/ast_item_is_function(source tokens item)
-      let record: Bool = syntax/ast_item_is_record(source tokens item)
-      let checked: Unit = match function:
-        true:
-          let params: I64 = syntax/ast_function_parameters(item)
-          let parameter_types: Unit = check_parameter_types(source tokens syntax/ast_parameters_first(params) issues)
-          let return_type: I64 = syntax/ast_function_return_type(tokens item)
-          let returned: Bool = check_type_form(source tokens return_type issues)
-          let name: I64 = syntax/ast_item_name(item)
-          let main: Bool = syntax/ast_node_text_is(source tokens name "main")
-          let signature: Bool = match main:
-            true:
-              main_signature_valid(source tokens item)
-            false:
-              true
-          match signature:
-            true:
-              unit
-            false:
-              record_issue("E0355" name issues)
-        false:
-          let first_member: I64 = syntax/ast_data_members_first(item)
-          match record:
-            true:
-              check_record_types(source tokens first_member issues)
-            false:
-              check_variant_types(source tokens first_member issues)
-      let next: I64 = i64.add(index 1)
-      recur(source tokens declarations next issues)
+  let done: Bool = index >= count
+  if done:
+    void
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    let name: I64 = declaration.name
+    let duplicate: Bool = prior_declaration_has_name(source, tokens, declarations, index, name)
+    if duplicate:
+      record_issue("E0352", name, issues)
+    else:
+      void
+    let function: Bool = syntax.ast_item_is_function(source, tokens, item)
+    let record: Bool = syntax.ast_item_is_record(source, tokens, item)
+    if function:
+      let params: I64 = syntax.ast_function_parameters(item)
+      check_parameter_types(source, tokens, syntax.ast_parameters_first(params), issues)
+      let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+      let returned: Bool = check_type_form(source, tokens, return_type, issues)
+      let main: Bool = syntax.ast_node_text_is(source, tokens, name, "main")
+      let signature: Bool = if main:
+        main_signature_valid(source, tokens, item)
+      else:
+        true
+      if signature:
+        void
+      else:
+        record_issue("E0355", name, issues)
+    else:
+      let first_member: I64 = syntax.ast_data_members_first(item)
+      if record:
+        check_record_types(source, tokens, first_member, issues)
+      else:
+        check_variant_types(source, tokens, first_member, issues)
+    let next: I64 = index + 1
+    recur(source, tokens, declarations, next, issues)
 
-fn ownership_result_expr(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens expr)
-  let form: Bool = i64.eq(kind 0)
-  match form:
-    false:
-      expr
-    true:
-      let let_form: Bool = syntax/ast_expression_is_let(source tokens expr)
-      match let_form:
-        true:
-          recur(source tokens syntax/ast_let_body(tokens expr))
-        false:
-          let set_form: Bool = syntax/ast_expression_is_set(source tokens expr)
-          match set_form:
-            true:
-              recur(source tokens syntax/ast_set_body(tokens expr))
-            false:
-              expr
+fn ownership_result_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, expr)
+  let form: Bool = kind == 0
+  if form:
+    let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
+    if let_form:
+      recur(source, tokens, syntax.ast_let_body(tokens, expr))
+    else:
+      let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
+      if set_form:
+        recur(source, tokens, syntax.ast_set_body(tokens, expr))
+      else:
+        expr
+  else:
+    expr
 
-fn append_inout_return_issue(source: Bytes inout tokens: Vec[syntax/Token] return_type: I64 body: I64 inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
-  let storage: I64 = memory/type_storage_kind(source tokens return_type)
-  let owned: Bool = i64.eq(storage 2)
-  match owned:
-    false:
-      unit
-    true:
-      let result: I64 = ownership_result_expr(source tokens body)
-      let kind: I64 = syntax/ast_node_kind(tokens result)
-      let named: Bool = i64.eq(kind 2)
-      match named:
-        false:
-          unit
-        true:
-          let borrowed: Bool = linked_binding_is_inout(tokens result)
-          match borrowed:
-            false:
-              unit
-            true:
-              append_ownership_issue("E0347" result issues)
+fn append_inout_return_issue(source: Bytes, inout tokens: Vec[syntax.Token], return_type: I64, body: I64, inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
+  let storage: I64 = memory.type_storage_kind(source, tokens, return_type)
+  let owned: Bool = storage == 2
+  if owned:
+    let result: I64 = ownership_result_expr(source, tokens, body)
+    let kind: I64 = syntax.ast_node_kind(tokens, result)
+    let named: Bool = kind == 2
+    if named:
+      let borrowed: Bool = linked_binding_is_inout(tokens, result)
+      if borrowed:
+        append_ownership_issue("E0347", result, issues)
+      else:
+        void
+    else:
+      void
+  else:
+    void
 
-fn check_functions(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration] index: I64 inout bindings: Vec[Binding] inout facts: Vec[Fact] inout issues: Vec[Issue]) -> Unit effects[alloc partial]:
+fn check_functions(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64, inout bindings: Vec[Binding], inout facts: Vec[Fact], inout issues: Vec[Issue]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
-  let done: Bool = i64.ge(index count)
+  let done: Bool = index >= count
   let failed: Bool = issues_block_inference(issues)
-  let stop: Bool = bool.or(done failed)
-  match stop:
-    true:
-      unit
-    false:
-      let declaration: ir/Declaration = vec.get(declarations index)
-      let item: I64 = get(declaration form)
-      let function: Bool = syntax/ast_item_is_function(source tokens item)
-      let checked: Unit = match function:
-        false:
-          unit
-        true:
-          let params: I64 = syntax/ast_function_parameters(item)
-          let parent: I64 = bind_parameters(source tokens syntax/ast_parameters_first(params) -1 bindings)
-          let return_type: I64 = syntax/ast_function_return_type(tokens item)
-          let effects: I64 = syntax/ast_function_effects(tokens item)
-          let body: I64 = syntax/ast_function_body(tokens item)
-          let typed: TypeRef = infer_expr(source tokens body return_type parent params return_type bindings facts issues)
-          let valid: Bool = type_valid(typed)
-          let returned: Unit = match valid:
-            true:
-              append_inout_return_issue(source tokens return_type body issues)
-            false:
-              unit
-          unit
-      let next: I64 = i64.add(index 1)
-      recur(source tokens declarations next bindings facts issues)
+  let stop: Bool = done || failed
+  if stop:
+    void
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    let function: Bool = syntax.ast_item_is_function(source, tokens, item)
+    if function:
+      let params: I64 = syntax.ast_function_parameters(item)
+      let parent: I64 = bind_parameters(source, tokens, syntax.ast_parameters_first(params), -1, bindings)
+      let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+      let effects: I64 = syntax.ast_function_effects(tokens, item)
+      let body: I64 = syntax.ast_function_body(tokens, item)
+      let typed: TypeRef = infer_expr(source, tokens, body, return_type, parent, params, return_type, bindings, facts, issues)
+      let valid: Bool = type_valid(typed)
+      if valid:
+        append_inout_return_issue(source, tokens, return_type, body, issues)
+      else:
+        void
+      void
+    else:
+      void
+    let next: I64 = index + 1
+    recur(source, tokens, declarations, next, bindings, facts, issues)
 
-fn analyze(source: Bytes inout tokens: Vec[syntax/Token] inout declarations: Vec[ir/Declaration]) -> View effects[alloc partial]:
-  let linked: Unit = syntax/link_declaration_names(source tokens)
-  let locals: Unit = link_declaration_locals(source tokens declarations 0)
+fn analyze(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
+  syntax.link_declaration_names(source, tokens)
+  link_declaration_locals(source, tokens, declarations, 0)
   let bindings: Vec[Binding] = vec.new()
   let facts: Vec[Fact] = vec.new()
-  let initialized: Unit = initialize_facts(tokens 0 facts)
+  initialize_facts(tokens, 0, facts)
   let issues: Vec[Issue] = vec.new()
-  let declarations_checked: Unit = check_declaration_types(source tokens declarations 0 issues)
-  let functions_checked: Unit = check_functions(source tokens declarations 0 bindings facts issues)
-  make View(facts = facts issues = issues)
+  check_declaration_types(source, tokens, declarations, 0, issues)
+  check_functions(source, tokens, declarations, 0, bindings, facts, issues)
+  View(facts: facts, issues: issues)

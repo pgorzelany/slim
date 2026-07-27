@@ -140,6 +140,8 @@ fn run_performance() {
         std::process::exit(1);
     }
 
+    benchmark_separator_dense_frontend(&compiler, &directory.path, sizes, samples);
+
     let nested_sizes: &[usize] = if quick {
         &[125, 250, 500, 1_000]
     } else {
@@ -328,6 +330,68 @@ fn run_performance() {
     if exponent > limit {
         eprintln!(
             "performance gate: owned-transfer check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} transfers"
+        );
+        std::process::exit(1);
+    }
+}
+
+fn benchmark_separator_dense_frontend(
+    compiler: &Path,
+    directory: &Path,
+    sizes: &[usize],
+    samples: usize,
+) {
+    println!(
+        "separator_declarations\tsource_bytes\tlexemes\tcommas\tcanonical_ast_nodes\tparse_check_us"
+    );
+    let mut first = None;
+    let mut last = None;
+    for size in sizes {
+        let source = generated_separator_dense_program(*size);
+        let path = directory.join(format!("separator-dense-{size}.slim"));
+        fs::write(&path, &source).expect("write separator-dense frontend fixture");
+        require_clean_output(
+            compiler_output(compiler, "check", &path),
+            "separator-dense warmup",
+        );
+        let analysis = compiler_output(compiler, "analyze", &path);
+        if !analysis.status.success() || !analysis.stderr.is_empty() {
+            fail_output("separator-dense analysis", &analysis);
+        }
+        let report = String::from_utf8(analysis.stdout).expect("analysis must be UTF-8");
+        let ast_nodes: usize = report_numbers(&report, "(expression-nodes ")
+            .into_iter()
+            .sum();
+        let lexemes = neutral_lexical_tokens(source.as_bytes());
+        let commas = source.bytes().filter(|byte| *byte == b',').count();
+        let mut times = Vec::with_capacity(samples);
+        for _ in 0..samples {
+            let (elapsed, output) =
+                timed_output(Command::new(compiler).arg("check").arg(&path), "SLIM check");
+            require_clean_output(output, "separator-dense check");
+            times.push(elapsed);
+        }
+        times.sort();
+        let median = times[samples / 2];
+        println!(
+            "{size}\t{}\t{lexemes}\t{commas}\t{ast_nodes}\t{}",
+            source.len(),
+            median.as_micros()
+        );
+        if first.is_none() {
+            first = Some((*size, median));
+        }
+        last = Some((*size, median));
+    }
+    let (first_size, first_time) = first.expect("separator series has a first sample");
+    let (last_size, last_time) = last.expect("separator series has a last sample");
+    let size_ratio = last_size as f64 / first_size as f64;
+    let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
+    let exponent = time_ratio.ln() / size_ratio.ln();
+    let limit = performance_budget("check-exponent", "generated-separator-lists");
+    if exponent > limit {
+        eprintln!(
+            "performance gate: separator-dense parse/check exponent {exponent:.3} exceeds {limit:.3}"
         );
         std::process::exit(1);
     }
@@ -2084,17 +2148,34 @@ fn median_runtime_with_env(
 
 fn generated_program(declarations: usize) -> String {
     let mut source = String::with_capacity(declarations * 80);
-    source.push_str("module scaling\n\n");
+    source.push_str("module scaling\n");
     for index in 0..declarations {
-        source.push_str("fn function-");
+        source.push_str("fn function_");
         source.push_str(&index.to_string());
         if index == 0 {
-            source.push_str("(value: I64) -> I64:\n  i64.add(value 0)\n\n");
+            source.push_str("(value: I64) -> I64:\n  value + 0\n\n");
         } else {
-            source.push_str("(value: I64) -> I64:\n  function-0(value)\n\n");
+            source.push_str("(value: I64) -> I64:\n  function_0(value)\n\n");
         }
     }
-    source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  function-0(0)\n");
+    source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  function_0(0)\n");
+    source
+}
+
+fn generated_separator_dense_program(declarations: usize) -> String {
+    let mut source = String::with_capacity(declarations * 105);
+    source.push_str("module separator_dense\n");
+    for index in 0..declarations {
+        source.push_str("fn combine_");
+        source.push_str(&index.to_string());
+        source.push_str("(first: I64, second: I64, third: I64) -> I64:\n  ");
+        if index == 0 {
+            source.push_str("first + second + third\n\n");
+        } else {
+            source.push_str("combine_0(first, second, third)\n\n");
+        }
+    }
+    source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  combine_0(10, 12, 20)\n");
     source
 }
 
@@ -2104,7 +2185,7 @@ fn generated_nested_program(bindings: usize) -> String {
         "module nested\n\nfn identity(value: I64) -> I64:\n  value\n\nfn deep(seed: I64) -> I64:\n",
     );
     for index in 0..bindings {
-        source.push_str("  let value-");
+        source.push_str("  let value_");
         source.push_str(&index.to_string());
         source.push_str(": I64 = identity(seed)\n");
     }
@@ -2115,7 +2196,7 @@ fn generated_nested_program(bindings: usize) -> String {
 fn generated_computed_argument_program(calls: usize) -> String {
     let mut source = String::with_capacity(calls * 16);
     source.push_str(
-        "module computed-arguments\n\nfn identity(value: I64) -> I64:\n  value\n\nfn chain(seed: I64) -> I64:\n  ",
+        "module computed_arguments\n\nfn identity(value: I64) -> I64:\n  value\n\nfn chain(seed: I64) -> I64:\n  ",
     );
     for _ in 0..calls {
         source.push_str("identity(");
@@ -2130,31 +2211,40 @@ fn generated_computed_argument_program(calls: usize) -> String {
 
 fn generated_aggregate_temporary_program(fields: usize) -> String {
     let mut source = String::with_capacity(fields * 110);
-    source.push_str("module aggregate-temporaries\n\nrecord Wide:\n");
+    source.push_str("module aggregate_temporaries\n\nstruct Wide:\n");
     for index in 0..fields {
-        source.push_str("  field-");
+        source.push_str("  field_");
         source.push_str(&index.to_string());
         source.push_str(": I64\n");
     }
-    source.push_str("\nvariant Payload:\n  Values(");
-    for _ in 0..fields {
-        source.push_str("I64 ");
+    source.push_str("\nenum Payload:\n  Values(");
+    for index in 0..fields {
+        if index > 0 {
+            source.push_str(", ");
+        }
+        source.push_str("I64");
     }
     source.push_str(
-        ")\n\nfn identity(value: I64) -> I64:\n  value\n\nfn build() -> I64:\n  let record-value: Wide = make Wide(",
+        ")\n\nfn identity(value: I64) -> I64:\n  value\n\nfn build() -> I64:\n  let record_value: Wide = Wide(",
     );
     for index in 0..fields {
-        source.push_str("field-");
+        if index > 0 {
+            source.push_str(", ");
+        }
+        source.push_str("field_");
         source.push_str(&index.to_string());
-        source.push_str(" = identity(");
+        source.push_str(": identity(");
         source.push_str(&index.to_string());
-        source.push_str(") ");
+        source.push(')');
     }
-    source.push_str(")\n  let variant-value: Payload = case Payload::Values(");
+    source.push_str(")\n  let variant_value: Payload = Payload::Values(");
     for index in 0..fields {
+        if index > 0 {
+            source.push_str(", ");
+        }
         source.push_str("identity(");
         source.push_str(&index.to_string());
-        source.push_str(") ");
+        source.push(')');
     }
     source.push_str(")\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  build()\n");
     source
@@ -2163,7 +2253,7 @@ fn generated_aggregate_temporary_program(fields: usize) -> String {
 fn generated_planned_allocation_call_program(calls: usize) -> String {
     let mut source = String::with_capacity(calls * 17);
     source.push_str(
-        "module planned-allocation-calls\n\nfn allocate(value: I64) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  value\n\nfn chain(seed: I64) -> I64 effects[alloc]:\n  ",
+        "module planned_allocation_calls\n\nfn allocate(value: I64) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  value\n\nfn chain(seed: I64) -> I64 effects[alloc]:\n  ",
     );
     for _ in 0..calls {
         source.push_str("allocate(");
@@ -2178,53 +2268,54 @@ fn generated_planned_allocation_call_program(calls: usize) -> String {
 
 fn generated_inout_read_program(parameters: usize) -> String {
     let mut source = String::with_capacity(parameters * 58);
-    source.push_str("module inout-reads\n\nfn read(");
+    source.push_str("module inout_reads\n\nfn read(");
     for index in 0..parameters {
-        source.push_str("inout value-");
+        if index > 0 {
+            source.push_str(", ");
+        }
+        source.push_str("inout value_");
         source.push_str(&index.to_string());
-        source.push_str(": I64 ");
+        source.push_str(": I64");
     }
     source.push_str(") -> I64 effects[partial]:\n  ");
     for index in 0..parameters {
-        source.push_str("i64.add(value-");
+        source.push_str("value_");
         source.push_str(&index.to_string());
-        source.push(' ');
+        source.push_str(" + ");
     }
     source.push('0');
-    for _ in 0..parameters {
-        source.push(')');
-    }
     source.push_str("\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     source
 }
 
 fn generated_named_type_program(functions: usize) -> String {
     let mut source = String::with_capacity(functions * 70);
-    source.push_str("module named-types\n\n");
+    source.push_str("module named_types\n");
     for index in 0..functions {
-        source.push_str("fn worker-");
+        source.push_str("fn worker_");
         source.push_str(&index.to_string());
         source.push_str("(value: Payload) -> I64:\n  0\n\n");
     }
-    source.push_str("record Payload:\n  bytes: Bytes\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+    source.push_str("struct Payload:\n  bytes: Bytes\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     source
 }
 
 fn generated_owned_transfer_program(transfers: usize) -> String {
     let mut source = String::with_capacity(transfers * 100);
     source.push_str(
-        "module owned-transfers\n\nfn consume(value: Vec[I64]) -> Unit:\n  unit\n\nfn transfer(",
+        "module owned_transfers\n\nfn consume(value: Vec[I64]) -> Void:\n  void\n\nfn transfer(",
     );
     for index in 0..transfers {
-        source.push_str("value-");
+        if index > 0 {
+            source.push_str(", ");
+        }
+        source.push_str("value_");
         source.push_str(&index.to_string());
-        source.push_str(": Vec[I64] ");
+        source.push_str(": Vec[I64]");
     }
     source.push_str(") -> I64:\n");
     for index in 0..transfers {
-        source.push_str("  let moved-");
-        source.push_str(&index.to_string());
-        source.push_str(": Unit = consume(value-");
+        source.push_str("  consume(value_");
         source.push_str(&index.to_string());
         source.push_str(")\n");
     }
@@ -2295,12 +2386,12 @@ impl SnapshotPair {
         match scenario {
             IncrementalScenario::NoChange => {}
             IncrementalScenario::PrivateBody => {
-                replace_in_first_module(&updated, "input 1", "input 2")
+                replace_in_first_module(&updated, "input + 1", "input + 2")
             }
             IncrementalScenario::PublicInterface => replace_in_first_module(
                 &updated,
                 "fn value(input: I64)",
-                "fn value(input: I64 valid: Bool)",
+                "fn value(input: I64, valid: Bool)",
             ),
         }
         Self { directory }
@@ -2331,7 +2422,7 @@ fn write_project(root: &Path, graph: ProjectGraph, modules: usize) {
     };
     fs::write(
         root.join("app.slim"),
-        format!("module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  {app_dependency}/value(40)\n"),
+        format!("module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  {app_dependency}.value(40)\n"),
     )
     .expect("write benchmark entry module");
     for index in 0..modules {
@@ -2346,14 +2437,14 @@ fn write_project(root: &Path, graph: ProjectGraph, modules: usize) {
         ));
         let body = match graph {
             ProjectGraph::Deep if index > 0 => {
-                format!("{}/value(input)", module_name(index - 1))
+                format!("{}.value(input)", module_name(index - 1))
             }
-            ProjectGraph::Wide | ProjectGraph::Deep => "i64.add(input 1)".to_owned(),
+            ProjectGraph::Wide | ProjectGraph::Deep => "input + 1".to_owned(),
         };
         fs::write(
             root.join(format!("{module}.slim")),
             format!(
-                "module {module}\n\nrecord Marker:\n  value: I64\n\nfn value(input: I64) -> I64:\n  {body}\n"
+                "module {module}\n\nstruct Marker:\n  value: I64\n\nfn value(input: I64) -> I64:\n  {body}\n"
             ),
         )
         .expect("write benchmark module");

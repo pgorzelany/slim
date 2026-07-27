@@ -18,7 +18,7 @@ compatibility.
 4. [Bindings, evaluation, and mutation](book/guide/04-bindings-evaluation-and-mutation.md)
 5. [Functions, entry points, and effects](book/guide/05-functions-entry-and-effects.md)
 6. [Control flow and `recur`](book/guide/06-control-flow-and-recur.md)
-7. [Records, variants, and patterns](book/guide/07-records-variants-and-patterns.md)
+7. [Structs, enums, and patterns](book/guide/07-structs-enums-and-patterns.md)
 8. [Bytes, vectors, arenas, and IDs](book/guide/08-bytes-vectors-arenas-and-ids.md)
 9. [Ownership, moves, borrowing, and lifetimes](book/guide/09-ownership-moves-and-borrowing.md)
 10. [Traps, failure, and allocation exhaustion](book/guide/10-traps-failure-and-allocation-exhaustion.md)

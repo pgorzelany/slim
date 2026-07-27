@@ -35,8 +35,10 @@ ASCII space separates forms and operands. Each block level adds exactly two
 spaces. Tabs are `E0103`, odd indentation is `E0104`, and skipped indentation
 levels are `E0105`.
 
-Indentation defines structure; braces do not. Commas and semicolons are not
-optional decorations but rejected alternate spellings under `E0106`.
+Indentation defines structure; braces do not. Commas are required between
+parenthesized or bracketed list elements. Missing commas are `E0108`; leading,
+doubled, and trailing commas are `E0109`. Braces and semicolons are rejected
+under `E0106`.
 
 ## Comments and blank lines
 

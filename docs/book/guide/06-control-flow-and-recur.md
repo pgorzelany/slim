@@ -5,21 +5,19 @@ and recurrence, keeping control flow explicit and analyzable.
 
 ## Boolean selection
 
-A Boolean `match` requires `Bool`; truthiness and implicit integer-to-Boolean
-conversion do not exist. Both source structure and emitted control flow remain
-deterministic.
+`if`/`else` is the sole Boolean branch form and requires `Bool`; truthiness
+and implicit integer-to-Boolean conversion do not exist.
 
 ## Exhaustive matching
 
-`match` handles Boolean or variant alternatives. Arms may not repeat and must
-cover the complete domain. Variant arms follow declaration order; Boolean arm
-order is irrelevant because `Bool` has no declared source order.
+`match` handles enum alternatives only. Arms may not repeat and must cover the
+complete domain in declaration order.
 
 <!-- slim-fixture: nonexhaustive -->
 
 Exhaustiveness means a checked match does not gain a hidden default branch.
-Variant patterns and payload bindings are covered in
-[records, variants, and patterns](07-records-variants-and-patterns.md).
+Enum patterns and payload bindings are covered in
+[structs, enums, and patterns](07-structs-enums-and-patterns.md).
 
 ## Tail recurrence
 

@@ -1,11 +1,10 @@
-module equivalent-right
+module equivalent_right
 
-fn subject(x: Bool y: Bool) -> Bool:
-  match x:
-    true:
-      y
-    false:
-      false
+fn subject(x: Bool, y: Bool) -> Bool:
+  if x:
+    y
+  else:
+    false
 
 fn main(args: Vec[Bytes]) -> I64:
   0

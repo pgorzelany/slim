@@ -1,11 +1,10 @@
-module monotonic-clock
+module monotonic_clock
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let first: I64 = io.monotonic-ms()
-  let second: I64 = io.monotonic-ms()
-  match i64.ge(second first):
-    true:
-      let shown: Unit = io.println("OK")
-      0
-    false:
-      1
+  let first: I64 = io.monotonic_ms()
+  let second: I64 = io.monotonic_ms()
+  if second >= first:
+    io.println("OK")
+    0
+  else:
+    1

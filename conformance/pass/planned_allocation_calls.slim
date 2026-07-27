@@ -1,12 +1,12 @@
-module planned-allocation-calls
+module planned_allocation_calls
 
 fn allocate(value: I64) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  let pushed: Unit = vec.push(values value)
-  vec.get(values 0)
+  vec.push(values, value)
+  vec.get(values, 0)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let answer: I64 = allocate(allocate(42))
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+  io.print_i64(answer)
+  io.println("")
   0

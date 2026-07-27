@@ -41,8 +41,8 @@ fn nested_refinement_expression(remaining: usize, depth: usize) -> String {
         return format!("{indentation}value\n");
     }
     format!(
-        "{indentation}match i64.lt(value 10):\n{indentation}  true:\n{}{indentation}  false:\n{indentation}    value\n",
-        nested_refinement_expression(remaining - 1, depth + 2)
+        "{indentation}if value < 10:\n{}{indentation}else:\n{indentation}  value\n",
+        nested_refinement_expression(remaining - 1, depth + 1)
     )
 }
 
@@ -169,7 +169,7 @@ fn checks_builds_and_runs_native_program() {
     let directory = temporary_directory("native");
     let source = write_source(
         &directory,
-        "module answer\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let shown: Unit = io.print-i64(42)\n  let newline: Unit = io.println(\"\")\n  0\n",
+        "module answer\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  io.print_i64(42)\n  io.println(\"\")\n  0\n",
     );
     let check = Command::new(slimc())
         .arg("check")
@@ -315,9 +315,9 @@ fn bounded_tcp_exchange_preserves_failure_state_and_closes_connections() {
 
 #[cfg(unix)]
 #[test]
-fn explicit_structured_fork_joins_loopback_requests_and_adopts_owned_results() {
+fn explicit_structured_parallel_joins_loopback_requests_and_adopts_owned_results() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    let directory = temporary_directory("explicit-fork");
+    let directory = temporary_directory("explicit-parallel");
     let left = TcpListener::bind("127.0.0.1:0").unwrap();
     let right = TcpListener::bind("127.0.0.1:0").unwrap();
     let left_port = left.local_addr().unwrap().port();
@@ -389,7 +389,7 @@ fn explicit_structured_fork_joins_loopback_requests_and_adopts_owned_results() {
     );
 
     let generated = fs::read_to_string(directory.join("program.slim")).unwrap();
-    assert!(generated.contains("fork:\n    let first: Reply"));
+    assert!(generated.contains("parallel:\n    let first: Reply"));
     let emitted = Command::new(slimc()).arg(&source).output().unwrap();
     assert!(emitted.status.success());
     let emitted = String::from_utf8(emitted.stdout).unwrap();
@@ -688,7 +688,7 @@ fn production_codegen_executes_profitable_plan_with_serial_fallback() {
 
     let nested_source = write_source(
         &directory,
-        "module nested-plan\n\nfn run(remaining: I64 state: Bool) -> Bool effects[partial]:\n  match i64.le(remaining 0):\n    true:\n      state\n    false:\n      recur(i64.sub(remaining 1) bool.not(state))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  match true:\n    true:\n      let left: Bool = run(1000000 true)\n      let right: Bool = run(1000000 false)\n      0\n    false:\n      0\n",
+        "module nested_plan\n\nfn run(remaining: I64, state: Bool) -> Bool effects[partial]:\n  if (remaining <= 0):\n    state\n  else:\n    recur((remaining - 1), !state)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  if true:\n    let left: Bool = run(1000000, true)\n    let right: Bool = run(1000000, false)\n    0\n  else:\n    0\n",
     );
     let nested_analysis = Command::new(slimc())
         .arg("analyze")
@@ -739,7 +739,7 @@ fn emits_c_deterministically() {
     let directory = temporary_directory("determinism");
     let source = write_source(
         &directory,
-        "module deterministic\n\nfn main(args: Vec[Bytes]) -> I64:\n  i64.add(40 2)\n",
+        "module deterministic\n\nfn main(args: Vec[Bytes]) -> I64:\n  40 + 2\n",
     );
     let first = directory.join("first.c");
     let second = directory.join("second.c");
@@ -761,7 +761,7 @@ fn emits_c_deterministically() {
 
     let unknown = write_source(
         &directory,
-        "module unknown-arithmetic\n\nfn add-one(value: I64) -> I64 effects[partial]:\n  i64.add(value 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = add-one(41)\n  add-one(first)\n",
+        "module unknown_arithmetic\n\nfn add_one(value: I64) -> I64 effects[partial]:\n  (value + 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = add_one(41)\n  add_one(first)\n",
     );
     let unknown_generated = directory.join("unknown.c");
     let status = Command::new(slimc())
@@ -787,7 +787,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let exact = write_source(
         &directory,
-        "module exact-parameter\n\nfn quotient(value: I64 divisor: I64) -> I64 effects[partial]:\n  i64.div(value divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient(84 2)\n",
+        "module exact_parameter\n\nfn quotient(value: I64, divisor: I64) -> I64 effects[partial]:\n  (value / divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient(84, 2)\n",
     );
     let exact_c = directory.join("exact.c");
     assert!(
@@ -806,7 +806,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let conflicting = write_source(
         &directory,
-        "module conflicting-parameters\n\nfn quotient(value: I64 divisor: I64) -> I64 effects[partial]:\n  i64.div(value divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = quotient(84 2)\n  quotient(first 3)\n",
+        "module conflicting_parameters\n\nfn quotient(value: I64, divisor: I64) -> I64 effects[partial]:\n  (value / divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = quotient(84, 2)\n  quotient(first, 3)\n",
     );
     let conflicting_c = directory.join("conflicting.c");
     assert!(
@@ -828,7 +828,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let possible_zero = write_source(
         &directory,
-        "module possible-zero-parameter\n\nfn quotient(value: I64 divisor: I64) -> I64 effects[partial]:\n  i64.div(value divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  match true:\n    true:\n      quotient(84 2)\n    false:\n      quotient(84 0)\n",
+        "module possible_zero_parameter\n\nfn quotient(value: I64, divisor: I64) -> I64 effects[partial]:\n  (value / divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  if true:\n    quotient(84, 2)\n  else:\n    quotient(84, 0)\n",
     );
     let possible_zero_c = directory.join("possible-zero.c");
     assert!(
@@ -850,7 +850,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let changed_recurrence = write_source(
         &directory,
-        "module changed-recurrence\n\nfn quotient-loop(index: I64 limit: I64 divisor: I64) -> I64 effects[partial]:\n  match i64.eq(index limit):\n    true:\n      index\n    false:\n      let quotient: I64 = i64.div(index divisor)\n      recur(i64.add(index 1) limit i64.add(divisor 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient-loop(0 10 2)\n",
+        "module changed_recurrence\n\nfn quotient_loop(index: I64, limit: I64, divisor: I64) -> I64 effects[partial]:\n  if (index == limit):\n    index\n  else:\n    let quotient: I64 = (index / divisor)\n    recur((index + 1), limit, (divisor + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient_loop(0, 10, 2)\n",
     );
     let changed_recurrence_c = directory.join("changed-recurrence.c");
     assert!(
@@ -871,7 +871,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let decreasing_divisor = write_source(
         &directory,
-        "module decreasing-divisor\n\nfn quotient-loop(index: I64 limit: I64 divisor: I64) -> I64 effects[partial]:\n  match i64.eq(index limit):\n    true:\n      index\n    false:\n      let quotient: I64 = i64.div(index divisor)\n      recur(i64.add(index 1) limit i64.sub(divisor 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient-loop(0 10 2)\n",
+        "module decreasing_divisor\n\nfn quotient_loop(index: I64, limit: I64, divisor: I64) -> I64 effects[partial]:\n  if (index == limit):\n    index\n  else:\n    let quotient: I64 = (index / divisor)\n    recur((index + 1), limit, (divisor - 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  quotient_loop(0, 10, 2)\n",
     );
     let decreasing_divisor_c = directory.join("decreasing-divisor.c");
     assert!(
@@ -893,7 +893,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 
     let bounded = write_source(
         &directory,
-        "module bounded-parameter-propagation\n\nfn deepest(value: I64 divisor: I64) -> I64 effects[partial]:\n  i64.div(value divisor)\n\nfn level-four(value: I64 divisor: I64) -> I64 effects[partial]:\n  deepest(value divisor)\n\nfn level-three(value: I64 divisor: I64) -> I64 effects[partial]:\n  level-four(value divisor)\n\nfn level-two(value: I64 divisor: I64) -> I64 effects[partial]:\n  level-three(value divisor)\n\nfn level-one(value: I64 divisor: I64) -> I64 effects[partial]:\n  level-two(value divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  level-one(84 2)\n",
+        "module bounded_parameter_propagation\n\nfn deepest(value: I64, divisor: I64) -> I64 effects[partial]:\n  (value / divisor)\n\nfn level_four(value: I64, divisor: I64) -> I64 effects[partial]:\n  deepest(value, divisor)\n\nfn level_three(value: I64, divisor: I64) -> I64 effects[partial]:\n  level_four(value, divisor)\n\nfn level_two(value: I64, divisor: I64) -> I64 effects[partial]:\n  level_three(value, divisor)\n\nfn level_one(value: I64, divisor: I64) -> I64 effects[partial]:\n  level_two(value, divisor)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  level_one(84, 2)\n",
     );
     let bounded_c = directory.join("bounded.c");
     assert!(
@@ -922,7 +922,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
 
     let early_result = write_source(
         &directory,
-        "module counted-stages\n\nfn count(index: I64 total: I64) -> I64 effects[partial]:\n  match i64.eq(index 4):\n    true:\n      total\n    false:\n      match i64.eq(index 2):\n        true:\n          recur(i64.add(index 1) total)\n        false:\n          match i64.eq(index 3):\n            true:\n              42\n            false:\n              recur(i64.add(index 1) i64.add(total 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0 0)\n",
+        "module counted_stages\n\nfn count(index: I64, total: I64) -> I64 effects[partial]:\n  if (index == 4):\n    total\n  else:\n    if (index == 2):\n      recur((index + 1), total)\n    else:\n      if (index == 3):\n        42\n      else:\n        recur((index + 1), (total + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0, 0)\n",
     );
     let early_c = directory.join("early.c");
     let emitted = Command::new(slimc())
@@ -974,7 +974,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
 
     let maximum = write_source(
         &directory,
-        "module maximum-counted-stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  match i64.eq(index 16):\n    true:\n      index\n    false:\n      recur(i64.add(index 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
+        "module maximum_counted_stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  if (index == 16):\n    index\n  else:\n    recur((index + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
     );
     let maximum_c = directory.join("maximum.c");
     assert!(
@@ -997,7 +997,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
 
     let conflicting = write_source(
         &directory,
-        "module conflicting-counted-starts\n\nfn count(index: I64) -> I64 effects[partial]:\n  match i64.eq(index 4):\n    true:\n      index\n    false:\n      recur(i64.add(index 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = count(0)\n  count(1)\n",
+        "module conflicting_counted_starts\n\nfn count(index: I64) -> I64 effects[partial]:\n  if (index == 4):\n    index\n  else:\n    recur((index + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  let first: I64 = count(0)\n  count(1)\n",
     );
     let conflicting_c = directory.join("conflicting.c");
     assert!(
@@ -1016,7 +1016,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
 
     let over_budget = write_source(
         &directory,
-        "module over-budget-counted-stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  match i64.eq(index 17):\n    true:\n      index\n    false:\n      recur(i64.add(index 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
+        "module over_budget_counted_stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  if (index == 17):\n    index\n  else:\n    recur((index + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
     );
     let over_budget_c = directory.join("over-budget.c");
     assert!(
@@ -1035,7 +1035,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
 
     let explicit_fork = write_source(
         &directory,
-        "module forked-counted-stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  match i64.eq(index 4):\n    true:\n      index\n    false:\n      fork:\n        recur(i64.add(index 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
+        "module forked_counted_stages\n\nfn count(index: I64) -> I64 effects[partial]:\n  if (index == 4):\n    index\n  else:\n    parallel:\n      recur((index + 1))\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  count(0)\n",
     );
     let fork_check = Command::new(slimc())
         .arg("check")
@@ -1058,7 +1058,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let propagated = write_source(
         &directory,
-        "module bounded-call-ranges\n\nfn consume(value: I64) -> I64 effects[partial]:\n  i64.add(value 1)\n\nfn normalize(value: I64) -> I64 effects[partial]:\n  let bounded: I64 = i64.rem(value 10)\n  consume(bounded)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  match true:\n    true:\n      normalize(0)\n    false:\n      normalize(100)\n",
+        "module bounded_call_ranges\n\nfn consume(value: I64) -> I64 effects[partial]:\n  (value + 1)\n\nfn normalize(value: I64) -> I64 effects[partial]:\n  let bounded: I64 = (value % 10)\n  consume(bounded)\n\nfn main(args: Vec[Bytes]) -> I64 effects[partial]:\n  if true:\n    normalize(0)\n  else:\n    normalize(100)\n",
     );
     let propagated_c = directory.join("propagated.c");
     assert!(
@@ -1087,7 +1087,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let fallback_success = write_source(
         &directory,
-        "module versioned-get-fallback\n\nfn read(inout values: Vec[I64] index: I64) -> I64 effects[partial]:\n  vec.get(values index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:\n  let values: Vec[I64] = vec.new()\n  let pushed: Unit = vec.push(values 42)\n  match true:\n    true:\n      read(values 0)\n    false:\n      read(values 9)\n",
+        "module versioned_get_fallback\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  if true:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
     );
     let fallback_c = directory.join("fallback.c");
     assert!(
@@ -1121,7 +1121,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let fallback_trap = write_source(
         &directory,
-        "module versioned-get-trap\n\nfn read(inout values: Vec[I64] index: I64) -> I64 effects[partial]:\n  vec.get(values index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:\n  let values: Vec[I64] = vec.new()\n  let pushed: Unit = vec.push(values 42)\n  match false:\n    true:\n      read(values 0)\n    false:\n      read(values 9)\n",
+        "module versioned_get_trap\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  if false:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
     );
     let trap_executable = directory.join("trap");
     assert!(
@@ -1144,7 +1144,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let versioned_set = write_source(
         &directory,
-        "module versioned-set-fallback\n\nfn store(inout values: Vec[I64] index: I64 value: I64) -> Unit effects[partial]:\n  vec.set(values index value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:\n  let values: Vec[I64] = vec.new()\n  let pushed: Unit = vec.push(values 0)\n  let stored: Unit = match true:\n    true:\n      store(values 0 42)\n    false:\n      store(values 9 42)\n  vec.get(values 0)\n",
+        "module versioned_set_fallback\n\nfn store(inout values: Vec[I64], index: I64, value: I64) -> Void effects[partial]:\n  vec.set(values, index, value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 0)\n  if true:\n    store(values, 0, 42)\n  else:\n    store(values, 9, 42)\n  vec.get(values, 0)\n",
     );
     let set_c = directory.join("set.c");
     assert!(
@@ -1177,7 +1177,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let negative = write_source(
         &directory,
-        "module negative-index\n\nfn read(inout values: Vec[I64] index: I64) -> I64 effects[partial]:\n  vec.get(values index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:\n  let values: Vec[I64] = vec.new()\n  let pushed: Unit = vec.push(values 42)\n  read(values -1)\n",
+        "module negative_index\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  read(values, -1)\n",
     );
     let negative_c = directory.join("negative.c");
     assert!(
@@ -1202,7 +1202,7 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
     let directory = temporary_directory("typed-vector-set");
     let source = write_source(
         &directory,
-        "module typed-vector-set\n\nrecord Pair:\n  left: I64\n  right: I64\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc partial]:\n  let pairs: Vec[Pair] = vec.new()\n  let first: Pair = make Pair(left = 1 right = 2)\n  let pushed: Unit = vec.push(pairs first)\n  let second: Pair = make Pair(left = 20 right = 22)\n  let stored: Unit = vec.set(pairs 0 second)\n  let result: Pair = vec.get(pairs 0)\n  i64.add(get(result left) get(result right))\n",
+        "module typed_vector_set\n\nstruct Pair:\n  left: I64\n  right: I64\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let pairs: Vec[Pair] = vec.new()\n  let first: Pair = Pair(left: 1, right: 2)\n  vec.push(pairs, first)\n  let second: Pair = Pair(left: 20, right: 22)\n  vec.set(pairs, 0, second)\n  let result: Pair = vec.get(pairs, 0)\n  (result.left + result.right)\n",
     );
     let generated = directory.join("program.c");
     assert!(
@@ -1245,7 +1245,7 @@ fn propagates_typed_allocation_failure() {
     let directory = temporary_directory("allocation-failure");
     let source = write_source(
         &directory,
-        "module allocation-failure\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  let pushed: Unit = vec.push(values 42)\n  0\n",
+        "module allocation_failure\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  0\n",
     );
     let executable = directory.join("program");
     let build = Command::new(slimc())
@@ -1328,6 +1328,76 @@ fn formatter_is_idempotent_through_cli() {
         .status()
         .unwrap();
     assert!(status.success());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn rejects_every_removed_pre_09_spelling() {
+    let directory = temporary_directory("legacy-syntax");
+    let cases = [
+        (
+            "record",
+            "module legacy\n\nrecord Old:\n  value: I64\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+        ),
+        (
+            "variant",
+            "module legacy\n\nvariant Old:\n  None\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+        ),
+        (
+            "Unit",
+            "module legacy\n\nfn old() -> Unit:\n  unit\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+        ),
+        (
+            "fork",
+            "module legacy\n\nfn main(args: Vec[Bytes]) -> I64:\n  fork:\n    0\n",
+        ),
+        (
+            "make",
+            "module legacy\n\nstruct Old:\n  value: I64\n\nfn main(args: Vec[Bytes]) -> I64:\n  let old: Old = make Old(value = 0)\n  0\n",
+        ),
+        (
+            "get",
+            "module legacy\n\nstruct Old:\n  value: I64\n\nfn main(args: Vec[Bytes]) -> I64:\n  let old: Old = Old(value: 0)\n  get(old value)\n",
+        ),
+        (
+            "case",
+            "module legacy\n\nenum Old:\n  Some(I64)\n\nfn main(args: Vec[Bytes]) -> I64:\n  let old: Old = case Old::Some(0)\n  0\n",
+        ),
+        (
+            "set",
+            "module legacy\n\nfn main(args: Vec[Bytes]) -> I64:\n  var value: I64 = 0\n  set value = 1\n  value\n",
+        ),
+        (
+            "missing commas",
+            "module legacy\n\nfn add(left: I64 right: I64) -> I64:\n  left + right\n\nfn main(args: Vec[Bytes]) -> I64:\n  add(20 22)\n",
+        ),
+        (
+            "kebab identifier",
+            "module legacy\n\nfn old-name() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+        ),
+        (
+            "slash qualification",
+            "module legacy\n\nfn main(args: Vec[Bytes]) -> I64:\n  math/answer(40)\n",
+        ),
+        (
+            "named arithmetic",
+            "module legacy\n\nfn main(args: Vec[Bytes]) -> I64:\n  i64.add(20, 22)\n",
+        ),
+        (
+            "hyphenated builtin",
+            "module legacy\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  io.print-i64(42)\n  0\n",
+        ),
+    ];
+    for (index, (label, source)) in cases.into_iter().enumerate() {
+        let path = directory.join(format!("legacy-{index}.slim"));
+        fs::write(&path, source).unwrap();
+        let output = Command::new(slimc())
+            .arg("check")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert!(!output.status.success(), "legacy {label} was accepted");
+    }
     fs::remove_dir_all(directory).unwrap();
 }
 
@@ -1466,7 +1536,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert_eq!(first.stdout, second.stdout);
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
-    assert!(report.starts_with("(analysis 7 (module vector-sum)"));
+    assert!(report.starts_with("(analysis 7 (module vector_sum)"));
     assert!(report.contains("(fact-limit 64)"));
     assert!(report.contains("(quality (guarantee exact)"));
     assert!(report.contains("(function-quality 3 fill"));
@@ -1552,7 +1622,7 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 7 (module integer-ranges)",
+        "(analysis 7 (module integer_ranges)",
         "(integer-proofs (domain -1000000000 1000000000)",
         "(refinement-limit 64) (parameter-pass-limit 4)",
         "(refinements 6) (refinements-truncated false)",
@@ -1567,17 +1637,17 @@ fn integer_ranges_prove_guarded_arithmetic_and_preserve_unknowns() {
         "(checked-site 212 (status total) (lower unknown) (upper unknown))",
         "(checked-site 232 (status unknown)",
         "(checked-site 273 (status total) (lower 0) (upper unknown))",
-        "guarded-upper (guarantee exact) (status safe)",
-        "guarded-lower (guarantee exact) (status safe)",
-        "exact-arithmetic (guarantee exact) (status safe)",
+        "guarded_upper (guarantee exact) (status safe)",
+        "guarded_lower (guarantee exact) (status safe)",
+        "exact_arithmetic (guarantee exact) (status safe)",
         "unguarded (guarantee exact) (status unavailable) (reason checked-trap)",
-        "zero-divisor (guarantee exact) (status unavailable) (reason checked-trap)",
-        "domain-limit (guarantee exact) (status unavailable) (reason checked-trap)",
-        "constant-remainder (guarantee exact) (status safe) (blockers)",
-        "constant-division (guarantee exact) (status safe) (blockers)",
-        "possible-division-overflow (guarantee exact) (status unavailable) (reason checked-trap)",
-        "total-countdown (guarantee exact) (status safe) (blockers)",
-        "total-countdown (guarantee exact) (effects partial) (cost-vector 1",
+        "zero_divisor (guarantee exact) (status unavailable) (reason checked-trap)",
+        "domain_limit (guarantee exact) (status unavailable) (reason checked-trap)",
+        "constant_remainder (guarantee exact) (status safe) (blockers)",
+        "constant_division (guarantee exact) (status safe) (blockers)",
+        "possible_division_overflow (guarantee exact) (status unavailable) (reason checked-trap)",
+        "total_countdown (guarantee exact) (status safe) (blockers)",
+        "total_countdown (guarantee exact) (effects partial) (cost-vector 1",
         "(expression-nodes 11)",
         "(recurs 1) (allocation-sites 0) (trap-sites 1) (totality (guarantee exact) (status total))",
         "(eligible-sites 1)",
@@ -1608,7 +1678,7 @@ fn resource_evidence_reports_exact_zero_and_unknown_recurrence_work() {
     assert!(report_parentheses_are_balanced(&first.stdout));
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
-        "(analysis 7 (module resource-work)",
+        "(analysis 7 (module resource_work)",
         "(resource-evidence (profile-limit 16) (call-site-report-limit 64)",
         "(recurrence-profile 3 run (guarantee exact) (controller-position 0) (stop-bound 0) (step 1))",
         "(call-work 53 3 run (guarantee exact) (iterations 10))",
@@ -1629,10 +1699,10 @@ fn resource_evidence_reports_exact_zero_and_unknown_recurrence_work() {
 fn resource_evidence_limits_profiles_and_reported_call_sites() {
     let directory = temporary_directory("resource-bounds");
 
-    let mut profiles = "module resource-profile-bound\n\n".to_owned();
+    let mut profiles = "module resource_profile_bound\n".to_owned();
     for index in 0..17 {
         profiles.push_str(&format!(
-            "fn run-{index}(remaining: I64) -> I64 effects[partial]:\n  match i64.le(remaining 0):\n    true:\n      0\n    false:\n      recur(i64.sub(remaining 1))\n\n"
+            "fn run_{index}(remaining: I64) -> I64 effects[partial]:\n  if remaining <= 0:\n    0\n  else:\n    recur(remaining - 1)\n\n"
         ));
     }
     profiles.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
@@ -1653,11 +1723,11 @@ fn resource_evidence_limits_profiles_and_reported_call_sites() {
 
     let mut body = String::new();
     for index in 0..65 {
-        body.push_str(&format!("  let value-{index}: I64 = run({index})\n"));
+        body.push_str(&format!("  let value_{index}: I64 = run({index})\n"));
     }
     body.push_str("  0");
     let calls = format!(
-        "module resource-call-bound\n\nfn run(remaining: I64) -> I64 effects[partial]:\n  match i64.le(remaining 0):\n    true:\n      0\n    false:\n      recur(i64.sub(remaining 1))\n\nfn many() -> I64 effects[partial]:\n{body}\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+        "module resource_call_bound\n\nfn run(remaining: I64) -> I64 effects[partial]:\n  if remaining <= 0:\n    0\n  else:\n    recur(remaining - 1)\n\nfn many() -> I64 effects[partial]:\n{body}\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
     );
     let call_path = directory.join("calls.slim");
     fs::write(&call_path, calls).unwrap();
@@ -1688,7 +1758,7 @@ fn integer_range_refinement_limit_is_explicit_and_deterministic() {
     let directory = temporary_directory("integer-range-bound");
     let body = nested_refinement_expression(33, 1);
     let source = format!(
-        "module integer-range-bound\n\nfn nested(value: I64) -> I64:\n{body}\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+        "module integer_range_bound\n\nfn nested(value: I64) -> I64:\n{body}\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
     );
     let path = write_source(&directory, &source);
     let analyze = || {
@@ -1712,11 +1782,9 @@ fn integer_range_refinement_limit_is_explicit_and_deterministic() {
 #[test]
 fn integer_checked_site_report_limit_is_explicit_and_deterministic() {
     let directory = temporary_directory("integer-site-bound");
-    let mut source = "module integer-site-bound\n\n".to_owned();
+    let mut source = "module integer_site_bound\n".to_owned();
     for index in 0..65 {
-        source.push_str(&format!(
-            "fn f{index}(value: I64) -> I64:\n  i64.add(value 1)\n\n"
-        ));
+        source.push_str(&format!("fn f{index}(value: I64) -> I64:\n  value + 1\n\n"));
     }
     source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
     let path = write_source(&directory, &source);
@@ -1759,19 +1827,19 @@ fn parallelism_analysis_proves_only_independent_reorder_safe_work() {
     let report = String::from_utf8(first.stdout).unwrap();
     for required in [
         "(parallelism (guarantee exact) (function-limit 64) (edge-limit 4096) (resolution-pass-limit 64) (schedule-limit 64)",
-        "safe-left (guarantee exact) (status safe) (blockers)",
-        "safe-right (guarantee exact) (status safe) (blockers)",
+        "safe_left (guarantee exact) (status safe) (blockers)",
+        "safe_right (guarantee exact) (status safe) (blockers)",
         "overdeclared (guarantee exact) (status safe) (blockers)",
         "traps (guarantee exact) (status unavailable) (reason checked-trap) (blockers checked-trap)",
-        "calls-trap (guarantee exact) (status unavailable) (reason callee-not-safe) (blockers callee-not-safe)",
+        "calls_trap (guarantee exact) (status unavailable) (reason callee-not-safe) (blockers callee-not-safe)",
         "allocates (guarantee exact) (status unavailable) (reason allocation-or-io) (blockers allocation-or-io)",
         "borrows (guarantee exact) (status unavailable) (reason exclusive-borrow) (blockers exclusive-borrow)",
         "mutates (guarantee exact) (status unavailable) (reason mutation) (blockers mutation)",
         "repeats (guarantee exact) (status unavailable) (reason recurrence) (blockers recurrence)",
         "countdown (guarantee exact) (status safe) (blockers)",
-        "countdown-pair (guarantee exact) (status safe) (blockers)",
+        "countdown_pair (guarantee exact) (status safe) (blockers)",
         "overlap (guarantee exact) (status safe) (blockers)",
-        "cycle-left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
+        "cycle_left (guarantee unknown) (status unknown) (reason call-cycle) (blockers call-cycle)",
         "(race-free true) (deadlock-free true) (profitability unknown) (profitability-reason target-work-unavailable)",
         "(schedule (policy lexical-earliest-nonoverlap) (guarantee exact) (candidate-sites 4) (selected-sites 3) (reported-sites 3) (executable-sites 0) (executed-sites 0))",
         "(eligible-sites 4)",
@@ -1790,11 +1858,11 @@ fn parallelism_schedule_limit_is_explicit_and_deterministic() {
     let directory = temporary_directory("parallel-schedule-bound");
     let mut body = String::new();
     for index in 0..130 {
-        body.push_str(&format!("  let task-{index}: Bool = work()\n"));
+        body.push_str(&format!("  let task_{index}: Bool = work()\n"));
     }
     body.push_str("  true");
     let source = format!(
-        "module parallel-schedule-bound\n\nfn work() -> Bool:\n  true\n\nfn plan() -> Bool:\n{body}\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+        "module parallel_schedule_bound\n\nfn work() -> Bool:\n  true\n\nfn plan() -> Bool:\n{body}\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
     );
     let path = write_source(&directory, &source);
     let analyze = || {
@@ -1824,9 +1892,9 @@ fn parallelism_analysis_reports_function_and_edge_bounds() {
     let directory = temporary_directory("parallel-bounds");
 
     let mut function_source =
-        String::from("module parallel-function-bound\n\nfn needs-late() -> Bool:\n  late()\n\n");
+        String::from("module parallel_function_bound\n\nfn needs_late() -> Bool:\n  late()\n");
     for index in 0..63 {
-        function_source.push_str(&format!("fn filler-{index}() -> Bool:\n  true\n\n"));
+        function_source.push_str(&format!("fn filler_{index}() -> Bool:\n  true\n\n"));
     }
     function_source
         .push_str("fn late() -> Bool:\n  true\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
@@ -1841,16 +1909,17 @@ fn parallelism_analysis_reports_function_and_edge_bounds() {
     assert!(function_report.contains("(parallelism (guarantee bounded)"));
     assert!(
         function_report
-            .contains("needs-late (guarantee unknown) (status unknown) (reason function-limit) (blockers function-limit)")
+            .contains("needs_late (guarantee unknown) (status unknown) (reason function-limit) (blockers function-limit)")
     );
 
-    let mut edge_source = String::from("module parallel-edge-bound\n\nrecord Wide:\n");
+    let mut edge_source = String::from("module parallel_edge_bound\n\nstruct Wide:\n");
     for index in 0..4097 {
-        edge_source.push_str(&format!("  field-{index}: Bool\n"));
+        edge_source.push_str(&format!("  field_{index}: Bool\n"));
     }
-    edge_source.push_str("\nfn leaf() -> Bool:\n  true\n\nfn build() -> Wide:\n  make Wide(\n");
+    edge_source.push_str("\nfn leaf() -> Bool:\n  true\n\nfn build() -> Wide:\n  Wide(\n");
     for index in 0..4097 {
-        edge_source.push_str(&format!("    field-{index} = leaf()\n"));
+        let separator = if index == 4096 { "" } else { "," };
+        edge_source.push_str(&format!("    field_{index}: leaf(){separator}\n"));
     }
     edge_source.push_str("  )\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
     let edge_path = directory.join("edges.slim");
@@ -1926,9 +1995,9 @@ fn reduction_proofs_are_deterministic_and_replayed_independently() {
     assert!(reduced_output.status.success());
     let reduced_source = String::from_utf8(reduced_output.stdout.clone()).unwrap();
     assert!(reduced_source.contains("fn idempotent(value: Bool) -> Bool:\n  value"));
-    assert!(reduced_source.contains("fn identity-match(value: Bool) -> Bool:\n  value"));
+    assert!(reduced_source.contains("fn identity_match(value: Bool) -> Bool:\n  value"));
     assert!(
-        reduced_source.contains("fn common-result(condition: Bool value: Bool) -> Bool:\n  value")
+        reduced_source.contains("fn common_result(condition: Bool, value: Bool) -> Bool:\n  value")
     );
     fs::write(&reduced, reduced_output.stdout).unwrap();
     let reduced_again = Command::new(slimc())
@@ -1946,16 +2015,9 @@ fn reduction_proofs_are_deterministic_and_replayed_independently() {
         .unwrap();
     assert!(nonapplicable.status.success());
     let nonapplicable_source = String::from_utf8(nonapplicable.stdout).unwrap();
-    assert!(nonapplicable_source.contains("bool.and(bool.not(value) bool.not(value))"));
-    assert!(
-        nonapplicable_source.contains(
-            "match bool.not(condition):\n    true:\n      value\n    false:\n      value"
-        )
-    );
-    assert!(
-        nonapplicable_source
-            .contains("match condition:\n    true:\n      left\n    false:\n      right")
-    );
+    assert!(nonapplicable_source.contains("(!value) && (!value)"));
+    assert!(nonapplicable_source.contains("if !condition:\n    value\n  else:\n    value"));
+    assert!(nonapplicable_source.contains("if condition:\n    left\n  else:\n    right"));
     let verified = Command::new(slimc())
         .arg("verify-reduction")
         .arg(&source)
@@ -2077,7 +2139,7 @@ fn structural_edits_are_versioned_bounded_and_normally_checked() {
     assert!(edited.status.success());
     assert_eq!(
         edited.stdout,
-        b"module equivalent-left\n\nfn subject(a: Bool b: Bool) -> Bool:\n  false\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+        b"module equivalent_left\n\nfn subject(a: Bool, b: Bool) -> Bool:\n  false\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
     );
 
     let malformed = Command::new(slimc())
@@ -2155,10 +2217,10 @@ fn deep_reduction_falls_back_to_an_idempotent_canonical_program() {
     // Seven changing passes plus one stability pass are accepted. Eight
     // changing passes must hit the exact D0028 limit and return the fallback.
     for _ in 0..8 {
-        expression = format!("bool.not({expression})");
+        expression = format!("!({expression})");
     }
     let source_text = format!(
-        "module bounded-reduction\n\nfn main(args: Vec[Bytes]) -> I64:\n  match {expression}:\n    true:\n      0\n    false:\n      1\n"
+        "module bounded_reduction\n\nfn main(args: Vec[Bytes]) -> I64:\n  if {expression}:\n    0\n  else:\n    1\n"
     );
     let source = write_source(&directory, &source_text);
     let first = Command::new(slimc())
@@ -2167,7 +2229,7 @@ fn deep_reduction_falls_back_to_an_idempotent_canonical_program() {
         .output()
         .unwrap();
     assert!(first.status.success());
-    assert_eq!(first.stdout, source_text.as_bytes());
+    assert_ne!(first.stdout, source_text.as_bytes());
 
     let reduced = directory.join("reduced.slim");
     fs::write(&reduced, &first.stdout).unwrap();
@@ -2195,7 +2257,7 @@ fn passes_program_arguments_explicitly() {
     let directory = temporary_directory("arguments");
     let source = write_source(
         &directory,
-        "module arguments\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let shown: Unit = io.print-i64(vec.len(args))\n  let newline: Unit = io.println(\"\")\n  0\n",
+        "module arguments\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  io.print_i64(vec.len(args))\n  io.println(\"\")\n  0\n",
     );
     let output = Command::new(slimc())
         .arg("run")
@@ -2238,12 +2300,12 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
     let directory = temporary_directory("project");
     fs::write(
         directory.join("app.slim"),
-        "module app\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let answer: I64 = math/answer(40)\n  let shown: Unit = io.print-i64(answer)\n  let newline: Unit = io.println(\"\")\n  0\n",
+        "module app\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let answer: I64 = math.answer(40)\n  io.print_i64(answer)\n  io.println(\"\")\n  0\n",
     )
     .unwrap();
     fs::write(
         directory.join("math.slim"),
-        "module math\n\nfn answer(value: I64) -> I64:\n  i64.add(value 2)\n",
+        "module math\n\nfn answer(value: I64) -> I64:\n  value + 2\n",
     )
     .unwrap();
     let manifest = directory.join("slim.project");
@@ -2298,7 +2360,7 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
     );
     assert_eq!(
         fs::read_to_string(interfaces.join("math.sli")).unwrap(),
-        "(interface 1 math (fn answer ((owned I64)) I64 (effects)))\n"
+        "(interface 2 math (fn answer ((owned I64)) I64 (effects)))\n"
     );
 
     let relocated = temporary_directory("project-relocated");

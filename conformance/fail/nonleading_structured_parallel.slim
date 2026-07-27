@@ -1,0 +1,13 @@
+module nonleading_structured_parallel
+
+fn sample() -> I64 effects[io]:
+  io.monotonic_ms()
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  if true:
+    parallel:
+      let first: I64 = sample()
+      let second: I64 = sample()
+      first + second
+  else:
+    1

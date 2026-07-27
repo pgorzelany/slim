@@ -3,16 +3,38 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
-fn semantic_pattern_tokens(text: &str) -> Vec<&str> {
-    text.split(|character: char| {
-        !character.is_ascii_alphanumeric()
-            && character != '_'
-            && character != '-'
-            && character != '.'
-            && character != '/'
-    })
-    .filter(|token| !token.is_empty() && *token != "-" && *token != "call")
-    .collect()
+fn semantic_pattern_tokens(text: &str) -> Vec<String> {
+    let without_named_operators = [
+        "i64.add", "i64.sub", "i64.mul", "i64.div", "i64.rem", "i64.eq", "i64.lt", "i64.le",
+        "i64.gt", "i64.ge", "bool.not", "bool.and", "bool.or",
+    ]
+    .into_iter()
+    .fold(text.to_owned(), |source, spelling| {
+        source.replace(spelling, " ")
+    });
+    without_named_operators
+        .split(|character: char| {
+            !character.is_ascii_alphanumeric() && character != '_' && character != '-'
+        })
+        .filter_map(|token| {
+            if token.is_empty()
+                || matches!(token, "call" | "make" | "get" | "case" | "set" | "match")
+            {
+                return None;
+            }
+            Some(
+                match token {
+                    "record" => "struct",
+                    "variant" => "enum",
+                    "Unit" => "Void",
+                    "unit" => "void",
+                    "fork" => "parallel",
+                    other => other,
+                }
+                .replace('-', "_"),
+            )
+        })
+        .collect()
 }
 
 fn contains_slim_pattern(source: &str, pattern: &str) -> bool {
@@ -24,10 +46,22 @@ fn contains_slim_pattern(source: &str, pattern: &str) -> bool {
     }
     let source_tokens = semantic_pattern_tokens(source);
     let pattern_tokens = semantic_pattern_tokens(pattern);
-    !pattern_tokens.is_empty()
-        && source_tokens
-            .windows(pattern_tokens.len())
-            .any(|window| window == pattern_tokens)
+    if pattern_tokens.is_empty() {
+        return false;
+    }
+    let mut expected = pattern_tokens.iter();
+    let Some(mut token) = expected.next() else {
+        return false;
+    };
+    for source_token in &source_tokens {
+        if source_token == token {
+            let Some(next) = expected.next() else {
+                return true;
+            };
+            token = next;
+        }
+    }
+    false
 }
 
 const REQUIRED_HEADINGS: [&str; 5] = [
@@ -170,7 +204,7 @@ fn check_core_1l_contracts(
         "docs/RELEASE.md",
         "release/manifest.txt",
         "scripts/package-release.sh",
-        "scripts/verify-1.0.sh",
+        "scripts/verify-0.9.sh",
         "scripts/verify-release.sh",
         "benchmarks/results/2026-07-23-core-1l-slim-1-0.md",
     ] {
@@ -181,18 +215,23 @@ fn check_core_1l_contracts(
 
     let version = fs::read_to_string(root.join("VERSION")).unwrap_or_default();
     let version = version.trim();
-    if version != "1.0.0" {
+    let version_parts: Vec<_> = version.split('.').collect();
+    if version_parts.len() != 3
+        || version_parts
+            .iter()
+            .any(|part| part.is_empty() || !part.bytes().all(|byte| byte.is_ascii_digit()))
+    {
         errors.push(format!(
-            "Core 1L VERSION must be exactly 1.0.0, found `{version}`"
+            "VERSION must be canonical numeric x.y.z, found `{version}`"
         ));
     }
     for (path, needle) in [
-        ("Cargo.toml", "version = \"1.0.0\""),
-        ("Cargo.lock", "version = \"1.0.0\""),
-        ("docs/STATUS.md", "Compiler version: 1.0.0"),
+        ("Cargo.toml", format!("version = \"{version}\"")),
+        ("Cargo.lock", format!("version = \"{version}\"")),
+        ("docs/STATUS.md", format!("Compiler version: {version}")),
     ] {
         let contents = fs::read_to_string(root.join(path)).unwrap_or_default();
-        if !contents.contains(needle) {
+        if !contents.contains(&needle) {
             errors.push(format!(
                 "Core 1L version drift: {path} is missing `{needle}`"
             ));
@@ -228,12 +267,12 @@ fn check_core_1l_contracts(
     }
 
     let expected_contracts = [
-        "source-surface\t1\tstable-major\tdesign/surface.tsv",
-        "project-manifest\t1\tstable-major\tdocs/PROJECTS.md",
-        "project-interface\t1\tstable-major\tdocs/PROJECTS.md",
-        "persistent-cache\t1\trebuildable\tselfhost/cache.slim",
-        "diagnostic-codes\t1\tstable-major\tdocs/DIAGNOSTICS.md",
-        "diagnostic-json\t1\tstable-major\tdocs/DIAGNOSTICS.md",
+        "source-surface\t2\tpre-1.0-minor\tdesign/surface.tsv",
+        "project-manifest\t1\tpre-1.0-minor\tdocs/PROJECTS.md",
+        "project-interface\t2\tpre-1.0-minor\tdocs/PROJECTS.md",
+        "persistent-cache\t2\trebuildable\tselfhost/cache.slim",
+        "diagnostic-codes\t1\tpre-1.0-minor\tdocs/DIAGNOSTICS.md",
+        "diagnostic-json\t1\tpre-1.0-minor\tdocs/DIAGNOSTICS.md",
         "analysis\t7\tversioned-tooling\tdocs/QUALITY.md",
         "cost-vector\t1\tversioned-tooling\tdocs/QUALITY.md",
         "equivalence\t2\tversioned-tooling\tdocs/QUALITY.md",
@@ -241,7 +280,7 @@ fn check_core_1l_contracts(
         "reduction-verification\t1\tversioned-tooling\tdocs/REDUCTION.md",
         "structural-edit\t1\tversioned-tooling\tdocs/QUALITY.md",
         "runtime-abi\t1\texact-match\truntime/slim_rt.h",
-        "c-backend\t1\tstable-major\tdocs/CORE.md",
+        "c-backend\t1\tpre-1.0-minor\tdocs/CORE.md",
     ];
     let contract = fs::read_to_string(root.join("design/release-contract.tsv")).unwrap_or_default();
     let rows: Vec<_> = contract
@@ -250,7 +289,7 @@ fn check_core_1l_contracts(
         .collect();
     if rows != expected_contracts {
         errors.push(
-            "design/release-contract.tsv differs from the frozen SLIM 1.0 contract".to_owned(),
+            "design/release-contract.tsv differs from the current SLIM release contract".to_owned(),
         );
     }
     for row in rows {
@@ -299,6 +338,8 @@ fn check_core_1l_contracts(
     let packager = fs::read_to_string(root.join("scripts/package-release.sh")).unwrap_or_default();
     for required in [
         "status --porcelain --untracked-files=all",
+        "slim_prefix=\"slim-$slim_version\"",
+        "slim_archive=\"$slim_output/$slim_prefix.tar.gz\"",
         "SOURCE-MANIFEST.sha256",
         "touch -t 200001010000.00",
         "--format ustar",
@@ -324,12 +365,12 @@ fn check_core_1l_contracts(
             ));
         }
     }
-    let release_gate = fs::read_to_string(root.join("scripts/verify-1.0.sh")).unwrap_or_default();
+    let release_gate = fs::read_to_string(root.join("scripts/verify-0.9.sh")).unwrap_or_default();
     for required in [
         "scripts/verify.sh",
         "scripts/verify-release.sh",
         "npm test",
-        "SLIM 1.0 verification",
+        "SLIM 0.9 verification",
     ] {
         if !contains_slim_pattern(&release_gate, required) {
             errors.push(format!("Core 1L release gate is missing `{required}`"));
@@ -353,9 +394,10 @@ fn check_core_1l_contracts(
     for required in [
         "design/surface.tsv",
         "design/project-semantics.tsv",
-        "no second spelling",
+        "0.y.0",
+        "0.y.z",
         "runtime ABI 1",
-        "new major version",
+        "future 1.0",
     ] {
         if !contains_slim_pattern(&compatibility, required) {
             errors.push(format!(
@@ -381,13 +423,10 @@ fn check_core_1l_contracts(
     let release_evidence =
         fs::read_to_string(root.join("benchmarks/results/2026-07-23-core-1l-slim-1-0.md"))
             .unwrap_or_default();
-    if !status.contains("Status: SLIM 1.0 released")
-        || !status.contains("Next milestone: Post-1.0 evidence-driven development")
-        || !design.contains("Status: SLIM 1.0 released")
-        || !roadmap.contains("Status: SLIM 1.0 released")
-        || !roadmap.contains("Current milestone: Post-1.0 evidence-driven development")
-        || !roadmap
-            .contains("## Core 1L: compatibility and release stabilization\n\nStatus: complete")
+    if !status.contains("Status: SLIM 0.9 — experimental, pre-1.0")
+        || !design.contains("Status: SLIM 0.9 — experimental, pre-1.0")
+        || !roadmap.contains("Status: SLIM 0.9 — experimental, pre-1.0")
+        || !roadmap.contains("## Core 1L: internal stabilization milestone\n\nStatus: complete")
     {
         errors.push("Core 1L closure boundary is not canonical".to_owned());
     }
@@ -496,9 +535,8 @@ fn check_core_1k_acceptance(
 
     let status = fs::read_to_string(root.join("docs/STATUS.md")).unwrap_or_default();
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
-    if !status.contains("Status: SLIM 1.0 released")
-        || !status.contains("Next milestone: Post-1.0 evidence-driven development")
-        || !roadmap.contains("Current milestone: Post-1.0 evidence-driven development")
+    if !status.contains("Status: SLIM 0.9 — experimental, pre-1.0")
+        || !roadmap.contains("Current milestone: Pre-1.0 evidence-driven development")
         || !roadmap.contains("## Core 1K: semantic quality and reduction\n\nStatus: complete")
     {
         errors.push("Core 1K closure boundary is not canonical".to_owned());
@@ -517,10 +555,10 @@ fn check_core_1j_acceptance(
                 && decision.primitive == "structured-fork"
                 && decision.score >= 40 => {}
         Some(_) => errors.push(
-            "Core 1J requires accepted language decision D0078 for structured-fork scoring at least 40"
+            "Core 1J requires accepted historical D0078 ownership for `parallel` scoring at least 40"
                 .to_owned(),
         ),
-        None => errors.push("Core 1J structured-fork decision D0078 is missing".to_owned()),
+        None => errors.push("Core 1J `parallel` decision D0078 is missing".to_owned()),
     }
     match decisions.get("D0079") {
         Some(decision)
@@ -535,21 +573,21 @@ fn check_core_1j_acceptance(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    let fork_rows: Vec<_> = surface
+    let parallel_rows: Vec<_> = surface
         .lines()
         .filter(|line| line.ends_with("\tD0078"))
         .collect();
-    if fork_rows != ["syntax\tfork\tlexical-two-call-fork\tD0078"] {
-        errors.push("D0078 must own exactly one canonical `fork` syntax row".to_owned());
+    if parallel_rows != ["syntax\tparallel\tlexical-two-call-parallelism\tD0078"] {
+        errors.push("D0078 must own exactly one canonical `parallel` syntax row".to_owned());
     }
 
     for required in [
         "benchmarks/host/dual_fetch.slim",
         "benchmarks/host/dual_health.slim",
         "benchmarks/results/2026-07-23-core-1j-structured-concurrency.md",
-        "conformance/pass/structured_fork.slim",
-        "conformance/fail/invalid_structured_fork.slim",
-        "conformance/fail/nonleading_structured_fork.slim",
+        "conformance/pass/structured_parallel.slim",
+        "conformance/fail/invalid_structured_parallel.slim",
+        "conformance/fail/nonleading_structured_parallel.slim",
         "tests/fixtures/region_adoption.c",
     ] {
         if !root.join(required).is_file() {
@@ -562,8 +600,8 @@ fn check_core_1j_acceptance(
         "(fn fork-task-valid",
         "(fn fork-leading-items",
         "\"E0356\"",
-        "\"io.tcp-exchange\"",
-        "\"io.monotonic-ms\"",
+        "\"io.tcp_exchange\"",
+        "\"io.monotonic_ms\"",
     ] {
         if !contains_slim_pattern(&checker, required) {
             errors.push(format!("Core 1J checker is missing `{required}`"));
@@ -615,7 +653,11 @@ fn check_core_1j_acceptance(
     }
 
     let conformance = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
-    for required in ["syntax:fork", "diagnostic:E0356", "parallel:explicit-fork"] {
+    for required in [
+        "syntax:parallel",
+        "diagnostic:E0356",
+        "parallel:explicit-region",
+    ] {
         if !contains_slim_pattern(&conformance, required) {
             errors.push(format!("Core 1J conformance is missing `{required}`"));
         }
@@ -636,7 +678,7 @@ fn check_core_1j_acceptance(
 
     let e2e = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for required in [
-        "explicit_structured_fork_joins_loopback_requests_and_adopts_owned_results",
+        "explicit_structured_parallel_joins_loopback_requests_and_adopts_owned_results",
         "adopted_region_storage_remains_parent_owned_and_resizable",
         "SLIM_TASK_DISABLE",
         "SLIM_ALLOC_FAIL_AT",
@@ -835,8 +877,8 @@ fn check_integer_proof_evidence(
         "integer_range_refinement_limit_is_explicit_and_deterministic",
         "integer_checked_site_report_limit_is_explicit_and_deterministic",
         "(checked-site-count 65) (guarantee bounded)",
-        "zero-divisor (guarantee exact) (status unavailable)",
-        "domain-limit (guarantee exact) (status unavailable)",
+        "zero_divisor (guarantee exact) (status unavailable)",
+        "domain_limit (guarantee exact) (status unavailable)",
     ] {
         if !contains_slim_pattern(&e2e, required) {
             errors.push(format!("integer proof evidence is missing `{required}`"));
@@ -1058,19 +1100,19 @@ fn check_host_boundary(
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     if surface
         .lines()
-        .filter(|line| line.starts_with("builtin\tio.monotonic-ms\tmonotonic-clock\tD0075"))
+        .filter(|line| line.starts_with("builtin\tio.monotonic_ms\tmonotonic-clock\tD0075"))
         .count()
         != 1
     {
-        errors.push("io.monotonic-ms must have exactly one D0075 surface row".to_owned());
+        errors.push("io.monotonic_ms must have exactly one D0075 surface row".to_owned());
     }
     if surface
         .lines()
-        .filter(|line| line.starts_with("builtin\tio.tcp-exchange\tbounded-tcp-exchange\tD0076"))
+        .filter(|line| line.starts_with("builtin\tio.tcp_exchange\tbounded-tcp-exchange\tD0076"))
         .count()
         != 1
     {
-        errors.push("io.tcp-exchange must have exactly one D0076 surface row".to_owned());
+        errors.push("io.tcp_exchange must have exactly one D0076 surface row".to_owned());
     }
     for forbidden in ["builtin\tio.clock", "builtin\tio.now", "builtin\tio.time"] {
         if surface.contains(forbidden) {
@@ -1099,7 +1141,7 @@ fn check_host_boundary(
         ),
         (
             "selfhost/effects.slim",
-            "(call syntax/ast_node_text_is source tokens callee \"io.monotonic-ms\")",
+            "(call syntax/ast_node_text_is source tokens callee \"io.monotonic_ms\")",
         ),
         ("selfhost/codegen.slim", "(true \"slim_monotonic_ms\")"),
         ("runtime/slim_rt.h", "int64_t slim_monotonic_ms(void);"),
@@ -1108,7 +1150,7 @@ fn check_host_boundary(
             "static _Thread_local int64_t slim_last_monotonic_ms = 0;",
         ),
         ("selfhost/typing.slim", "(fn infer_tcp_exchange "),
-        ("selfhost/effects.slim", "callee \"io.tcp-exchange\""),
+        ("selfhost/effects.slim", "\"io.tcp_exchange\""),
         ("selfhost/codegen.slim", "(fn emit_tcp_exchange_call "),
         ("runtime/slim_rt.h", "bool slim_tcp_exchange("),
         ("runtime/slim_rt.c", "#if !defined(SLIM_POSIX_NETWORK)"),
@@ -1124,10 +1166,10 @@ fn check_host_boundary(
     let manifest = fs::read_to_string(root.join("conformance/manifest.tsv")).unwrap_or_default();
     for required in [
         "monotonic-clock\trun\tconformance/pass/monotonic_clock.slim",
-        "builtin:io.monotonic-ms,effect:io",
+        "builtin:io.monotonic_ms,effect:io",
         "missing-clock-effect\tcheck-fail\tconformance/fail/missing_clock_effect.slim",
         "tcp-exchange\tcheck-pass\tconformance/pass/tcp_exchange.slim",
-        "builtin:io.tcp-exchange,effect:alloc,effect:io,host:bounded-network",
+        "builtin:io.tcp_exchange,effect:alloc,effect:io,host:bounded-network",
         "missing-tcp-effect\tcheck-fail\tconformance/fail/missing_tcp_effect.slim",
     ] {
         if !contains_slim_pattern(&manifest, required) {
@@ -1341,7 +1383,7 @@ fn check_complete_parallel_blockers(
 
     let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for required in [
-        "safe-left (guarantee exact) (status safe) (blockers)",
+        "safe_left (guarantee exact) (status safe) (blockers)",
         "(blockers allocation-or-io)",
         "(blockers recurrence)",
         "(blockers callee-not-safe)",
@@ -1438,11 +1480,11 @@ fn check_total_recurrence_evidence(
 
     let tests = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
     for required in [
-        "constant-remainder (guarantee exact) (status safe)",
-        "possible-division-overflow (guarantee exact) (status unavailable)",
-        "total-countdown (guarantee exact) (status safe)",
+        "constant_remainder (guarantee exact) (status safe)",
+        "possible_division_overflow (guarantee exact) (status unavailable)",
+        "total_countdown (guarantee exact) (status safe)",
         "overdeclared (guarantee exact) (status safe)",
-        "countdown-pair (guarantee exact) (status safe)",
+        "countdown_pair (guarantee exact) (status safe)",
         "(eligible-sites 4)",
     ] {
         if !contains_slim_pattern(&tests, required) {
@@ -1454,7 +1496,7 @@ fn check_total_recurrence_evidence(
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
     if !baseline
         .lines()
-        .any(|line| line.starts_with("state_machine\t1888\t3\t1\t1\t2\t2\t"))
+        .any(|line| line.starts_with("state_machine\t1172\t4\t1\t1\t2\t3\t"))
     {
         errors.push(
             "parallelism baseline must retain the positive state_machine application".to_owned(),
@@ -1551,7 +1593,7 @@ fn check_deterministic_parallel_schedule(
     for required in [
         "# schema=5",
         "candidate_sites\tselected_sites\treported_sites\texecutable_sites\texecuted_sites\teligible_sites",
-        "state_machine\t1888\t3\t1\t1\t2\t2\t",
+        "state_machine\t1172\t4\t1\t1\t2\t3\t",
     ] {
         if !contains_slim_pattern(&baseline, required) {
             errors.push(format!(
@@ -1563,8 +1605,10 @@ fn check_deterministic_parallel_schedule(
         .lines()
         .find(|line| line.starts_with("state_machine\t"))
         .unwrap_or_default();
-    if !state.ends_with("\t1\t1\t1\t1\t1\t1") {
-        errors.push("state_machine schedule baseline must remain exactly 1/1/1/1/1".to_owned());
+    if !state.ends_with("\t4\t3\t3\t1\t1\t4") {
+        errors.push(
+            "state_machine D0107 schedule baseline must remain exactly 4/3/3/1/1/4".to_owned(),
+        );
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
@@ -1765,14 +1809,17 @@ fn check_parallel_execution_boundary(
     }
     let baseline =
         fs::read_to_string(root.join("benchmarks/parallelism-baseline.tsv")).unwrap_or_default();
-    for challenge in ["state_machine", "signal_network"] {
+    for (challenge, schedule) in [
+        ("state_machine", "\t4\t3\t3\t1\t1\t4"),
+        ("signal_network", "\t8\t5\t5\t1\t1\t8"),
+    ] {
         let row = baseline
             .lines()
             .find(|line| line.starts_with(&format!("{challenge}\t")))
             .unwrap_or_default();
-        if !row.ends_with("\t1\t1\t1\t1\t1\t1") {
+        if !row.ends_with(schedule) {
             errors.push(format!(
-                "{challenge} must retain one candidate, selected, reported, executable, and executed site"
+                "{challenge} must retain its D0107 candidate, selected, reported, executable, executed, and eligible counts"
             ));
         }
     }
@@ -1954,8 +2001,8 @@ fn check_allocation_free_region_elision(
     for required in [
         "(let allocation_effect Bool (call memory/function_plan_allocates function_plan)",
         "(let uses_child_region Bool (call bool.and local_region allocation_effect)",
-        "(let region Unit (match uses_child_region",
-        "(let destroyed Unit (match uses_child_region",
+        "if uses_child_region:",
+        "slim_region_destroy(&slim_function_region)",
     ] {
         if !contains_slim_pattern(&codegen, required) {
             errors.push(format!(
@@ -1963,9 +2010,7 @@ fn check_allocation_free_region_elision(
             ));
         }
     }
-    if codegen.contains("(let region Unit (match local_region")
-        || codegen.contains("(let destroyed Unit (match local_region")
-    {
+    if codegen.contains("if local_region:") {
         errors.push("code generation restored unconditional empty child regions".to_owned());
     }
 }
@@ -3059,8 +3104,8 @@ fn check_indented_source(root: &Path, errors: &mut Vec<String>) {
         "\tE0104@",
         "skipped-indentation\tcheck-fail",
         "\tE0105@",
-        "comma-syntax\tcheck-fail",
-        "\tE0106@",
+        "trailing-comma\tcheck-fail",
+        "\tE0109@",
         "unterminated-string\tcheck-fail",
         "\tE0107@",
     ] {
@@ -3153,10 +3198,10 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for (operation, count) in [
-        ("io.read-file(", check.matches("io.read-file(").count()),
+        ("io.read_file(", check.matches("io.read_file(").count()),
         (
-            "syntax/parse_program_result(",
-            check.matches("syntax/parse_program_result(").count(),
+            "syntax.parse_program_result(",
+            check.matches("syntax.parse_program_result(").count(),
         ),
     ] {
         if count != 1 {
@@ -3165,7 +3210,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    if !check.contains("Vec[ir/Declaration]") {
+    if !check.contains("Vec[ir.Declaration]") {
         errors.push("self-host checker does not consume structured declarations".to_owned());
     }
 
@@ -3278,7 +3323,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let project_manifest =
         fs::read_to_string(root.join("conformance/projects/manifest.tsv")).unwrap_or_default();
     if !project_manifest.contains(
-        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@97:102,E0350@app@103:107",
+        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@98:103,E0350@app@105:109",
     ) {
         errors.push("recursive-inout project projection fixture is missing".to_owned());
     }
@@ -3293,7 +3338,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("Boolean recovery project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@190:196,E0347@app@250:256,E0315@app@377:383,E0347@app@448:454",
+        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@172:178,E0347@app@232:238,E0315@app@359:365,E0347@app@430:436",
     ) {
         errors.push("ownership project projection fixture is missing".to_owned());
     }

@@ -1,9 +1,9 @@
-module nested-calls
+module nested_calls
 
 fn length(values: Vec[I64]) -> I64:
   vec.len(values)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
-  let shown: Unit = io.print-i64(length(vec.new()))
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
+  io.print_i64(length(vec.new()))
+  io.println("")
   0

@@ -1,5 +1,5 @@
-module division-overflow
+module division_overflow
 
 fn main(args: Vec[Bytes]) -> I64:
-  let minimum: I64 = i64.sub(-9223372036854775807 1)
-  i64.div(minimum -1)
+  let minimum: I64 = -9223372036854775807 - 1
+  minimum / -1

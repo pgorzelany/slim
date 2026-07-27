@@ -1,6 +1,6 @@
-module signal-network
+module signal_network
 
-record Signals:
+struct Signals:
   a: Bool
   b: Bool
   c: Bool
@@ -10,145 +10,48 @@ record Signals:
   g: Bool
   h: Bool
 
-fn run(remaining: I64 signals: Signals) -> Signals effects[partial]:
-  match i64.le(remaining 0):
-    true:
-      signals
-    false:
-      let next-a: Bool = bool.not(get(signals h))
-      let next-b: Bool = get(signals a)
-      let next-c: Bool = bool.and(get(signals b) get(signals h))
-      let next-d: Bool = bool.or(get(signals c) get(signals a))
-      let next-e: Bool = get(signals d)
-      let next-f: Bool = bool.not(get(signals e))
-      let next-g: Bool = bool.and(get(signals f) get(signals c))
-      let next-h: Bool = bool.or(get(signals g) get(signals b))
-      recur(i64.sub(remaining 1) make Signals(a = next-a b = next-b c = next-c d = next-d e = next-e f = next-f g = next-g h = next-h))
+fn run(remaining: I64, signals: Signals) -> Signals effects[partial]:
+  if remaining <= 0:
+    signals
+  else:
+    let next_a: Bool = !signals.h
+    let next_b: Bool = signals.a
+    let next_c: Bool = signals.b && signals.h
+    let next_d: Bool = signals.c || signals.a
+    let next_e: Bool = signals.d
+    let next_f: Bool = !signals.e
+    let next_g: Bool = signals.f && signals.c
+    let next_h: Bool = signals.g || signals.b
+    recur(remaining - 1, Signals(a: next_a, b: next_b, c: next_c, d: next_d, e: next_e, f: next_f, g: next_g, h: next_h))
 
-fn same(left: Signals right: Signals) -> Bool:
-  bool.and(
-    i64.eq(
-      match get(left a):
-        true:
-          1
-        false:
-          0
-      match get(right a):
-        true:
-          1
-        false:
-          0
-    )
-    bool.and(
-      i64.eq(
-        match get(left b):
-          true:
-            1
-          false:
-            0
-        match get(right b):
-          true:
-            1
-          false:
-            0
-      )
-      bool.and(
-        i64.eq(
-          match get(left c):
-            true:
-              1
-            false:
-              0
-          match get(right c):
-            true:
-              1
-            false:
-              0
-        )
-        bool.and(
-          i64.eq(
-            match get(left d):
-              true:
-                1
-              false:
-                0
-            match get(right d):
-              true:
-                1
-              false:
-                0
-          )
-          bool.and(
-            i64.eq(
-              match get(left e):
-                true:
-                  1
-                false:
-                  0
-              match get(right e):
-                true:
-                  1
-                false:
-                  0
-            )
-            bool.and(
-              i64.eq(
-                match get(left f):
-                  true:
-                    1
-                  false:
-                    0
-                match get(right f):
-                  true:
-                    1
-                  false:
-                    0
-              )
-              bool.and(
-                i64.eq(
-                  match get(left g):
-                    true:
-                      1
-                    false:
-                      0
-                  match get(right g):
-                    true:
-                      1
-                    false:
-                      0
-                )
-                i64.eq(
-                  match get(left h):
-                    true:
-                      1
-                    false:
-                      0
-                  match get(right h):
-                    true:
-                      1
-                    false:
-                      0
-                )
-              )
-            )
-          )
-        )
-      )
-    )
-  )
+fn bit(value: Bool) -> I64:
+  if value:
+    1
+  else:
+    0
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let seed: Bool = i64.gt(vec.len(args) 1)
-  let first: Signals = make Signals(a = seed b = false c = true d = false e = true f = false g = true h = false)
-  let second: Signals = make Signals(a = false b = seed c = false d = true e = false f = true g = false h = true)
-  let left: Signals = run(2000000 first)
-  let right: Signals = run(2000000 second)
-  let equal: Bool = same(left right)
-  let answer: I64 = match equal:
-    true:
-      1
-    false:
-      0
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn same(left: Signals, right: Signals) -> Bool:
+  let a_equal: Bool = bit(left.a) == bit(right.a)
+  let b_equal: Bool = bit(left.b) == bit(right.b)
+  let c_equal: Bool = bit(left.c) == bit(right.c)
+  let d_equal: Bool = bit(left.d) == bit(right.d)
+  let e_equal: Bool = bit(left.e) == bit(right.e)
+  let f_equal: Bool = bit(left.f) == bit(right.f)
+  let g_equal: Bool = bit(left.g) == bit(right.g)
+  let h_equal: Bool = bit(left.h) == bit(right.h)
+  a_equal && (b_equal && (c_equal && (d_equal && (e_equal && (f_equal && (g_equal && h_equal))))))
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let seed: Bool = vec.len(args) > 1
+  let first: Signals = Signals(a: seed, b: false, c: true, d: false, e: true, f: false, g: true, h: false)
+  let second: Signals = Signals(a: false, b: seed, c: false, d: true, e: false, f: true, g: false, h: true)
+  let left: Signals = run(2000000, first)
+  let right: Signals = run(2000000, second)
+  let equal: Bool = same(left, right)
+  let answer: I64 = if equal:
+    1
+  else:
+    0
+  io.print_i64(answer)
+  io.println("")
   0

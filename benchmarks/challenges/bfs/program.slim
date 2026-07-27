@@ -1,28 +1,26 @@
 module bfs
 
-fn enqueue(inout queue: Vec[I64] node: I64 limit: I64) -> Unit effects[alloc]:
-  match i64.le(node limit):
-    true:
-      vec.push(queue node)
-    false:
-      unit
+fn enqueue(inout queue: Vec[I64], node: I64, limit: I64) -> Void effects[alloc]:
+  if node <= limit:
+    vec.push(queue, node)
+  else:
+    void
 
-fn visit(inout queue: Vec[I64] index: I64 limit: I64 total: I64) -> I64 effects[alloc partial]:
-  match i64.eq(index vec.len(queue)):
-    true:
-      total
-    false:
-      let node: I64 = vec.get(queue index)
-      let left: I64 = i64.add(i64.mul(node 2) 1)
-      let right: I64 = i64.add(left 1)
-      let left-added: Unit = enqueue(queue left limit)
-      let right-added: Unit = enqueue(queue right limit)
-      recur(queue i64.add(index 1) limit i64.add(total node))
+fn visit(inout queue: Vec[I64], index: I64, limit: I64, total: I64) -> I64 effects[alloc, partial]:
+  if index == vec.len(queue):
+    total
+  else:
+    let node: I64 = vec.get(queue, index)
+    let left: I64 = (node * 2) + 1
+    let right: I64 = left + 1
+    enqueue(queue, left, limit)
+    enqueue(queue, right, limit)
+    recur(queue, index + 1, limit, total + node)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let queue: Vec[I64] = vec.new()
-  let root: Unit = vec.push(queue 0)
-  let result: I64 = visit(queue 0 100000 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  vec.push(queue, 0)
+  let result: I64 = visit(queue, 0, 100000, 0)
+  io.print_i64(result)
+  io.println("")
   0

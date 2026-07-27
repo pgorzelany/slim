@@ -1,9 +1,9 @@
-module variant-payload-arity
+module variant_payload_arity
 
-variant Maybe:
+enum Maybe:
   None
   Some(I64)
 
 fn main(args: Vec[Bytes]) -> I64:
-  let value: Maybe = case Maybe::Some()
+  let value: Maybe = Maybe::Some()
   0

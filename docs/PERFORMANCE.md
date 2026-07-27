@@ -1,6 +1,6 @@
 # Core 1C performance contract
 
-Status: permanent SLIM 1.0 contract
+Status: SLIM 0.9 — experimental, pre-1.0; permanent regression contract
 
 Performance tests are permanent compatibility evidence. They are not deleted
 after an optimization lands, and a result file never replaces an executable
@@ -41,6 +41,12 @@ The maintained suite separates:
 No aggregate score hides one dimension. Native runtime measurements never
 stand in for compiler speed, and model-token proxies never stand in for an LLM
 success rate.
+
+The SLIM 0.9 frontend series includes a separator-dense generated fixture.
+Each row records source bytes, neutral lexemes, comma lexemes, canonical
+expression AST nodes, and median combined parse/check time. Commas remain
+temporary lexer tokens and contribute no canonical AST nodes. This series has
+the same approximately-linear 1.25 exponent gate.
 
 ## Core 1C gates
 
@@ -119,7 +125,7 @@ relaxing it follows the scored performance-exception policy above.
 
 ## Core 1I host-call contract
 
-D0075 compares 100,000 `io.monotonic-ms` samples in generated SLIM with a C
+D0075 compares 100,000 `io.monotonic_ms` samples in generated SLIM with a C
 reference using the same runtime operation. The same-host SLIM/C ratio must not
 exceed 2.00. This isolates language call and recurrence overhead from the host
 clock's own latency. The test also requires successful output-free execution;
@@ -131,7 +137,7 @@ network implementation enabled and disabled. Their same-host binary-size ratio
 must not exceed 1.03. The gate bounds inactive host support without pretending
 that loopback timing predicts real network latency.
 
-## Post-1.0 safe C-parity program
+## Safe C-parity program
 
 D0084 expands the matched native corpus from fourteen to twenty applications
 before optimizing it. The suite now covers dense graphs, backtracking,

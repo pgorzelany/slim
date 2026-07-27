@@ -1,46 +1,43 @@
-# SLIM 1.0 compatibility
+# SLIM 0.9 compatibility
 
-Version: 1
-Status: stable for major version 1
+Status: SLIM 0.9 — experimental, pre-1.0
 
-`VERSION` is the only compiler-version source. `design/surface.tsv` and
-`design/project-semantics.tsv` are the complete accepted language and project
-inventories. `design/release-contract.tsv` names every frozen machine
-interface and its current schema.
+`VERSION` is the canonical compiler version. `design/surface.tsv` and
+`design/project-semantics.tsv` inventory the accepted language and project
+surface. `design/release-contract.tsv` records each machine interface schema.
 
-## Promise
+## Pre-1.0 policy
 
-For supported 1.x compilers:
+- A `0.y.0` release may make breaking source or documented-behavior changes
+  through an accepted decision and complete migration notes.
+- A `0.y.z` patch release preserves accepted source and documented behavior
+  within that minor version.
+- No long-term source-compatibility promise begins until a future explicit
+  1.0 freeze.
 
-- accepted 1.0 source remains accepted with the same defined behavior;
-- names are not repurposed and no second spelling is added for an operation;
-- project manifests and interfaces with schema 1 retain their meaning;
-- diagnostic identities, primary byte spans, and JSON schema 1 remain
-  machine-readable;
-- generated C requires runtime ABI 1 exactly; and
-- a schema version is changed before a tooling report changes incompatibly.
+SLIM 0.9 deliberately has one canonical spelling for each operation. Removed
+spellings do not remain as aliases, and there is no legacy parser in the final
+compiler.
 
-Compatible additions still require the feature policy, a decision, a unique
-surface role, specification, diagnostics, conformance, and measured costs.
-Deprecation does not silently change behavior. Removal or incompatible meaning
-requires a new major version and a migration note.
+Project manifest schema 1 remains current because its structure is unchanged.
+Interface and cache schemas are 2 because qualified names and stored source
+identities changed. Generated C retains runtime ABI 1 because runtime
+semantics and representation did not change.
 
-## Deliberately weaker contracts
+## Future 1.0 freeze
 
-Persistent caches are validated evidence, not program artifacts. A compiler
-may reject and rebuild them. Human diagnostic wording, optimization choices,
-C identifier spellings, analysis facts explicitly reported as `unknown`,
-performance within recorded budgets, and undocumented implementation details
-may change in a 1.x release.
+A future 1.0 requires an accepted compatibility decision, a frozen canonical
+surface and project contract, complete conformance coverage, stable diagnostic
+and tooling schemas, migration notes for the preceding 0.y release, and
+recorded compiler/runtime performance budgets. It is not implied by completing
+an internal milestone.
 
-Versioned analysis, equivalence, proof, and edit reports are tooling data, not
-executable SLIM. Consumers must reject unknown schema versions rather than
-guessing. Generated C and `slim_rt.h` are a matched pair; mixing ABI versions
-is unsupported and rejected by the C compiler.
+## Historical decisions
 
-## Compatibility changes
+D0082 and D0083 remain historical evidence for the earlier internal 1.0
+candidate. D0107 supersedes their current release-status and major-version
+compatibility promises without rewriting that recorded evidence.
 
-Every compatibility change needs a scored decision. The release gate checks
-that the canonical ledgers, specification, conformance tags, diagnostic
-contract, runtime ABI, and this policy agree. No compatibility alias is added
-automatically: migration is performed by an explicit tool or source edit.
+Every later compatibility change still requires the feature policy and an
+accepted decision. Tooling consumers must reject unknown schemas rather than
+guessing; rebuildable caches may always be rejected and reconstructed.

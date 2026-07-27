@@ -1,45 +1,41 @@
 module knapsack
 
-fn fill(inout values: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
-  match i64.gt(index count):
-    true:
-      unit
-    false:
-      let pushed: Unit = vec.push(values 0)
-      recur(values i64.add(index 1) count)
+fn fill(inout values: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+  if index > count:
+    void
+  else:
+    vec.push(values, 0)
+    recur(values, index + 1, count)
 
-fn capacities(inout values: Vec[I64] capacity: I64 weight: I64 value: I64) -> Unit effects[partial]:
-  match i64.lt(capacity weight):
-    true:
-      unit
-    false:
-      let prior: I64 = vec.get(values i64.sub(capacity weight))
-      let candidate: I64 = i64.add(prior value)
-      let current: I64 = vec.get(values capacity)
-      let better: Bool = i64.gt(candidate current)
-      let stored: Unit = match better:
-        true:
-          vec.set(values capacity candidate)
-        false:
-          unit
-      recur(values i64.sub(capacity 1) weight value)
+fn capacities(inout values: Vec[I64], capacity: I64, weight: I64, value: I64) -> Void effects[partial]:
+  if capacity < weight:
+    void
+  else:
+    let prior: I64 = vec.get(values, capacity - weight)
+    let candidate: I64 = prior + value
+    let current: I64 = vec.get(values, capacity)
+    let better: Bool = candidate > current
+    if better:
+      vec.set(values, capacity, candidate)
+    else:
+      void
+    recur(values, capacity - 1, weight, value)
 
-fn items(inout values: Vec[I64] item: I64 count: I64 capacity: I64) -> Unit effects[partial]:
-  match i64.gt(item count):
-    true:
-      unit
-    false:
-      let weight: I64 = i64.add(1 i64.rem(i64.mul(item 17) 97))
-      let value: I64 = i64.add(1 i64.rem(i64.mul(item 29) 211))
-      let updated: Unit = capacities(values capacity weight value)
-      recur(values i64.add(item 1) count capacity)
+fn items(inout values: Vec[I64], item: I64, count: I64, capacity: I64) -> Void effects[partial]:
+  if item > count:
+    void
+  else:
+    let weight: I64 = 1 + ((item * 17) % 97)
+    let value: I64 = 1 + ((item * 29) % 211)
+    capacities(values, capacity, weight, value)
+    recur(values, item + 1, count, capacity)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let capacity: I64 = 2048
   let values: Vec[I64] = vec.new()
-  let filled: Unit = fill(values 0 capacity)
-  let solved: Unit = items(values 1 200 capacity)
-  let result: I64 = vec.get(values capacity)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(values, 0, capacity)
+  items(values, 1, 200, capacity)
+  let result: I64 = vec.get(values, capacity)
+  io.print_i64(result)
+  io.println("")
   0

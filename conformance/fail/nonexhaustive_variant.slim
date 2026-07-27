@@ -1,6 +1,6 @@
-module nonexhaustive-variant
+module nonexhaustive_variant
 
-variant Maybe:
+enum Maybe:
   None
   Some(I64)
 
@@ -10,4 +10,4 @@ fn unwrap(value: Maybe) -> I64:
       0
 
 fn main(args: Vec[Bytes]) -> I64:
-  unwrap(case Maybe::None())
+  unwrap(Maybe::None())

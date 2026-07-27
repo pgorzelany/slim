@@ -1,10 +1,10 @@
-module invalid-structured-fork
+module invalid_structured_parallel
 
 fn identity(value: I64) -> I64:
   value
 
 fn main(args: Vec[Bytes]) -> I64:
-  fork:
+  parallel:
     let first: I64 = identity(20)
     let second: I64 = identity(22)
-    i64.add(first second)
+    first + second

@@ -26,10 +26,9 @@ makes cleanup and retained allocation sites permanent, repeatable evidence.
 
 ## Host failure
 
-Fallible host operations return `Bool` rather than throwing. A caller uses an
-ordinary Boolean `match`; on file or TCP failure, the documented output vector
-is unchanged. Declaring `io` permits the capability but does not turn failure
-into a hidden control path.
+Fallible host operations return `Bool` rather than throwing. A caller uses
+`if`/`else`; on file or TCP failure, the documented output vector is unchanged.
+Declaring `io` permits the capability but does not create hidden control flow.
 
 ## Compile-time rejection
 

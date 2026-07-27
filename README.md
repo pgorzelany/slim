@@ -66,7 +66,7 @@ For the executable Core oracle and incremental measurements:
 
 ## Current boundary
 
-SLIM is currently at **1.0**. The
+SLIM is currently **SLIM 0.9 — experimental, pre-1.0**. The
 self-hosted compiler, portable C11 seed, language surface, bounded analysis,
 reduction tools, memory model, and exact current limitations are summarized in
 [docs/STATUS.md](docs/STATUS.md). That document is the canonical short status;

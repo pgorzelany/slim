@@ -1,21 +1,21 @@
-module parallel-evidence
+module parallel_evidence
 
-fn safe-left(value: I64) -> Bool:
-  i64.lt(value 10)
+fn safe_left(value: I64) -> Bool:
+  value < 10
 
-fn safe-right(value: I64) -> Bool:
-  bool.not(safe-left(value))
+fn safe_right(value: I64) -> Bool:
+  !safe_left(value)
 
-fn safe-consume(value: Bool) -> Bool:
-  bool.not(value)
+fn safe_consume(value: Bool) -> Bool:
+  !value
 
-fn overdeclared() -> Bool effects[alloc io partial]:
+fn overdeclared() -> Bool effects[alloc, io, partial]:
   true
 
 fn traps(value: I64) -> I64:
-  i64.add(value 1)
+  value + 1
 
-fn calls-trap(value: I64) -> I64:
+fn calls_trap(value: I64) -> I64:
   traps(value)
 
 fn allocates() -> I64 effects[alloc]:
@@ -23,53 +23,50 @@ fn allocates() -> I64 effects[alloc]:
   0
 
 fn borrows(inout value: I64) -> Bool:
-  i64.gt(value 0)
+  value > 0
 
-fn mutates(value: I64) -> I64:
-  set value = 1
+fn mutates(var value: I64) -> I64:
+  value = 1
   value
 
 fn repeats(value: I64) -> Bool effects[partial]:
-  match i64.eq(value 0):
-    true:
-      true
-    false:
-      recur(0)
+  if value == 0:
+    true
+  else:
+    recur(0)
 
-fn countdown(remaining: I64 state: Bool) -> Bool effects[partial]:
-  match i64.le(remaining 0):
-    true:
-      state
-    false:
-      recur(i64.sub(remaining 1) bool.not(state))
+fn countdown(remaining: I64, state: Bool) -> Bool effects[partial]:
+  if remaining <= 0:
+    state
+  else:
+    recur(remaining - 1, !state)
 
-fn countdown-pair(value: I64) -> Bool effects[partial]:
-  let left: Bool = countdown(value true)
-  let right: Bool = countdown(value false)
-  bool.and(left right)
+fn countdown_pair(value: I64) -> Bool effects[partial]:
+  let left: Bool = countdown(value, true)
+  let right: Bool = countdown(value, false)
+  left && right
 
 fn overlap(value: I64) -> Bool:
-  let first: Bool = safe-left(value)
-  let second: Bool = safe-right(value)
-  let third: Bool = safe-left(3)
-  bool.and(first bool.and(second third))
+  let first: Bool = safe_left(value)
+  let second: Bool = safe_right(value)
+  let third: Bool = safe_left(3)
+  first && (second && third)
 
-fn cycle-left() -> Bool:
-  cycle-right()
+fn cycle_left() -> Bool:
+  cycle_right()
 
-fn cycle-right() -> Bool:
-  cycle-left()
+fn cycle_right() -> Bool:
+  cycle_left()
 
 fn dependent(value: I64) -> Bool:
-  let first: Bool = safe-left(value)
-  let second: Bool = safe-consume(first)
-  bool.and(first second)
+  let first: Bool = safe_left(value)
+  let second: Bool = safe_consume(first)
+  first && second
 
 fn main(args: Vec[Bytes]) -> I64:
-  let left: Bool = safe-left(1)
-  let right: Bool = safe-right(20)
-  match bool.and(left right):
-    true:
-      0
-    false:
-      1
+  let left: Bool = safe_left(1)
+  let right: Bool = safe_right(20)
+  if left && right:
+    0
+  else:
+    1

@@ -1,69 +1,65 @@
 module session
 
-fn state_for_path(path: Bytes with_dependencies: Bool) -> query/State effects[alloc io partial]:
+fn state_for_path(path: Bytes, with_dependencies: Bool) -> query.State effects[alloc, io, partial]:
   let manifest_bytes: Vec[U8] = vec.new()
-  let manifest_read: Bool = io.read-file(path manifest_bytes)
+  let manifest_read: Bool = io.read_file(path, manifest_bytes)
   let manifest_source: Bytes = bytes.freeze(manifest_bytes)
-  let manifest_tokens: Vec[syntax/Token] = vec.new()
-  let tokenized: Unit = syntax/lex_data(manifest_source 0 manifest_tokens)
+  let manifest_tokens: Vec[syntax.Token] = vec.new()
+  syntax.lex_data(manifest_source, 0, manifest_tokens)
   let entry_form: I64 = 3
-  let modules: I64 = syntax/ast_next(manifest_tokens entry_form)
-  let module_tokens: Vec[syntax/Token] = vec.new()
-  let loaded: Vec[project/LoadedModule] = vec.new()
-  let loaded_result: I64 = project/load_project_modules(path manifest_source manifest_tokens modules module_tokens loaded)
-  match with_dependencies:
-    true:
-      query/build_state(manifest_source manifest_tokens module_tokens loaded)
-    false:
-      query/build_snapshot_state(manifest_source manifest_tokens module_tokens loaded)
+  let modules: I64 = syntax.ast_next(manifest_tokens, entry_form)
+  let module_tokens: Vec[syntax.Token] = vec.new()
+  let loaded: Vec[project.LoadedModule] = vec.new()
+  let loaded_result: I64 = project.load_project_modules(path, manifest_source, manifest_tokens, modules, module_tokens, loaded)
+  if with_dependencies:
+    query.build_state(manifest_source, manifest_tokens, module_tokens, loaded)
+  else:
+    query.build_snapshot_state(manifest_source, manifest_tokens, module_tokens, loaded)
 
-fn print_work(work: query/Work) -> I64 effects[io]:
-  let parsed: I64 = get(work parsed)
-  let lowered: I64 = get(work lowered)
-  let checked: I64 = get(work checked)
-  let generated: I64 = get(work generated)
-  let first: Unit = io.print-i64(parsed)
-  let first_space: Unit = io.print-bytes(" ")
-  let second: Unit = io.print-i64(lowered)
-  let second_space: Unit = io.print-bytes(" ")
-  let third: Unit = io.print-i64(checked)
-  let third_space: Unit = io.print-bytes(" ")
-  let fourth: Unit = io.print-i64(generated)
-  let newline: Unit = io.println("")
+fn print_work(work: query.Work) -> I64 effects[io]:
+  let parsed: I64 = work.parsed
+  let lowered: I64 = work.lowered
+  let checked: I64 = work.checked
+  let generated: I64 = work.generated
+  io.print_i64(parsed)
+  io.print_bytes(" ")
+  io.print_i64(lowered)
+  io.print_bytes(" ")
+  io.print_i64(checked)
+  io.print_bytes(" ")
+  io.print_i64(generated)
+  io.println("")
   0
 
-fn run(initial_path: Bytes updated_path: Bytes) -> I64 effects[alloc io partial]:
-  let previous_state: query/State = state_for_path(initial_path false)
-  let current_state: query/State = state_for_path(updated_path true)
-  let previous: Vec[query/Snapshot] = get(previous_state snapshots)
-  let current: Vec[query/Snapshot] = get(current_state snapshots)
-  let dependencies: Vec[query/Dependency] = get(current_state dependencies)
-  let work: query/Work = query/measure_update(previous current dependencies)
+fn run(initial_path: Bytes, updated_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let previous_state: query.State = state_for_path(initial_path, false)
+  let current_state: query.State = state_for_path(updated_path, true)
+  let previous: Vec[query.Snapshot] = previous_state.snapshots
+  let current: Vec[query.Snapshot] = current_state.snapshots
+  let dependencies: Vec[query.Dependency] = current_state.dependencies
+  let work: query.Work = query.measure_update(previous, current, dependencies)
   print_work(work)
 
-fn run_recovery(initial_path: Bytes invalid_path: Bytes recovered_path: Bytes) -> I64 effects[alloc io partial]:
-  let initial_errors: I64 = project/check_project_path(initial_path)
-  let initial_invalid: Bool = i64.gt(initial_errors 0)
-  match initial_invalid:
-    true:
-      initial_errors
-    false:
-      let previous_state: query/State = state_for_path(initial_path false)
-      let rejected: I64 = project/check_project_path(invalid_path)
-      let invalid: Bool = i64.gt(rejected 0)
-      match invalid:
-        false:
-          65
-        true:
-          let recovered_errors: I64 = project/check_project_path(recovered_path)
-          let recovered_invalid: Bool = i64.gt(recovered_errors 0)
-          match recovered_invalid:
-            true:
-              recovered_errors
-            false:
-              let current_state: query/State = state_for_path(recovered_path true)
-              let previous: Vec[query/Snapshot] = get(previous_state snapshots)
-              let current: Vec[query/Snapshot] = get(current_state snapshots)
-              let dependencies: Vec[query/Dependency] = get(current_state dependencies)
-              let work: query/Work = query/measure_update(previous current dependencies)
-              print_work(work)
+fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let initial_errors: I64 = project.check_project_path(initial_path)
+  let initial_invalid: Bool = initial_errors > 0
+  if initial_invalid:
+    initial_errors
+  else:
+    let previous_state: query.State = state_for_path(initial_path, false)
+    let rejected: I64 = project.check_project_path(invalid_path)
+    let invalid: Bool = rejected > 0
+    if invalid:
+      let recovered_errors: I64 = project.check_project_path(recovered_path)
+      let recovered_invalid: Bool = recovered_errors > 0
+      if recovered_invalid:
+        recovered_errors
+      else:
+        let current_state: query.State = state_for_path(recovered_path, true)
+        let previous: Vec[query.Snapshot] = previous_state.snapshots
+        let current: Vec[query.Snapshot] = current_state.snapshots
+        let dependencies: Vec[query.Dependency] = current_state.dependencies
+        let work: query.Work = query.measure_update(previous, current, dependencies)
+        print_work(work)
+    else:
+      65

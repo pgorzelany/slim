@@ -6,7 +6,7 @@ import { content } from "../_lib/content";
 
 export const metadata: Metadata = {
   title: "Learn",
-  description: "A chaptered, fixture-backed guide to the complete SLIM 1.0 programming model.",
+  description: "A chaptered, fixture-backed guide to the experimental SLIM 0.9 programming model.",
 };
 
 const legacyAnchors: Record<string, string[]> = {
@@ -16,7 +16,7 @@ const legacyAnchors: Record<string, string[]> = {
   "bindings-evaluation-and-mutation": ["bindings-evaluation-mutation-and-repetition"],
   "functions-entry-and-effects": ["program-shape-functions-and-entry", "effects-and-failure"],
   "control-flow-and-recur": [],
-  "records-variants-and-patterns": ["records-variants-construction-and-projection"],
+  "structs-enums-and-patterns": ["records-variants-construction-and-projection"],
   "bytes-vectors-arenas-and-ids": ["bytes-vectors-arenas-and-ids"],
   "ownership-moves-and-borrowing": ["ownership-borrowing-and-lifetimes"],
   "traps-failure-and-allocation-exhaustion": [],

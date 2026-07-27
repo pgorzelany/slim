@@ -19,7 +19,7 @@ checked manifest rather than source-file discovery.
 
 ## Type declarations
 
-A `record` declares an ordered list of named fields. A `variant` declares an
+A `struct` declares an ordered list of named fields. An `enum` declares an
 ordered closed set of cases and their payload types. Order is canonical and is
 checked at construction and matching sites.
 
@@ -54,9 +54,10 @@ malformed block structure is rejected, not repaired through hidden statements.
 
 ## Canonicality
 
-Calls use parentheses with whitespace-separated arguments. Fields, cases,
-effect lists, manifest modules, and pattern arms use their required canonical
-order. The grammar has one spelling for each semantic operation.
+Calls, effect lists, payloads, patterns, and constructor fields use required
+commas with no trailing comma. Fields, cases, manifest modules, and pattern
+arms use their required canonical order. The grammar has one spelling for each
+semantic operation.
 
 ## Normative boundary
 

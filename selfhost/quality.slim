@@ -1,6 +1,6 @@
 module quality
 
-record Metrics:
+struct Metrics:
   nodes: I64
   calls: I64
   matches: I64
@@ -11,552 +11,482 @@ record Metrics:
   rewrites: I64
 
 fn zero() -> Metrics:
-  make Metrics(nodes = 0 calls = 0 matches = 0 mutations = 0 recurs = 0 allocations = 0 traps = 0 rewrites = 0)
+  Metrics(nodes: 0, calls: 0, matches: 0, mutations: 0, recurs: 0, allocations: 0, traps: 0, rewrites: 0)
 
-fn add(left: Metrics right: Metrics) -> Metrics:
-  make Metrics(nodes = i64.add(get(left nodes) get(right nodes)) calls = i64.add(get(left calls) get(right calls)) matches = i64.add(get(left matches) get(right matches)) mutations = i64.add(get(left mutations) get(right mutations)) recurs = i64.add(get(left recurs) get(right recurs)) allocations = i64.add(get(left allocations) get(right allocations)) traps = i64.add(get(left traps) get(right traps)) rewrites = i64.add(get(left rewrites) get(right rewrites)))
+fn add(left: Metrics, right: Metrics) -> Metrics:
+  Metrics(nodes: left.nodes + right.nodes, calls: left.calls + right.calls, matches: left.matches + right.matches, mutations: left.mutations + right.mutations, recurs: left.recurs + right.recurs, allocations: left.allocations + right.allocations, traps: left.traps + right.traps, rewrites: left.rewrites + right.rewrites)
 
-fn add_node(children: Metrics calls: I64 matches: I64 mutations: I64 recurs: I64 allocations: I64 traps: I64 rewrites: I64) -> Metrics:
-  make Metrics(nodes = i64.add(get(children nodes) 1) calls = i64.add(get(children calls) calls) matches = i64.add(get(children matches) matches) mutations = i64.add(get(children mutations) mutations) recurs = i64.add(get(children recurs) recurs) allocations = i64.add(get(children allocations) allocations) traps = i64.add(get(children traps) traps) rewrites = i64.add(get(children rewrites) rewrites))
+fn add_node(children: Metrics, calls: I64, matches: I64, mutations: I64, recurs: I64, allocations: I64, traps: I64, rewrites: I64) -> Metrics:
+  Metrics(nodes: children.nodes + 1, calls: children.calls + calls, matches: children.matches + matches, mutations: children.mutations + mutations, recurs: children.recurs + recurs, allocations: children.allocations + allocations, traps: children.traps + traps, rewrites: children.rewrites + rewrites)
 
-fn last_child(inout tokens: Vec[syntax/Token] cursor: I64 previous: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      previous
-    false:
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(tokens next cursor)
+fn last_child(inout tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    previous
+  else:
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(tokens, next, cursor)
 
-fn analyze_list_from(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 total: Metrics) -> Metrics effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      total
-    false:
-      let current: Metrics = analyze_expression(source tokens cursor)
-      let next_total: Metrics = add(total current)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next next_total)
+fn analyze_list_from(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, total: Metrics) -> Metrics effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let current: Metrics = analyze_expression(source, tokens, cursor)
+    let next_total: Metrics = add(total, current)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, next_total)
 
-fn analyze_list(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64) -> Metrics effects[partial]:
+fn analyze_list(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Metrics effects[partial]:
   let initial: Metrics = zero()
-  analyze_list_from(source tokens cursor initial)
+  analyze_list_from(source, tokens, cursor, initial)
 
-fn analyze_make_fields_from(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 total: Metrics) -> Metrics effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      total
-    false:
-      let value: I64 = syntax/ast_member_value(cursor)
-      let current: Metrics = analyze_expression(source tokens value)
-      let next_total: Metrics = add(total current)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next next_total)
+fn analyze_make_fields_from(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, total: Metrics) -> Metrics effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let value: I64 = syntax.ast_member_value(cursor)
+    let current: Metrics = analyze_expression(source, tokens, value)
+    let next_total: Metrics = add(total, current)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, next_total)
 
-fn analyze_make_fields(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64) -> Metrics effects[partial]:
+fn analyze_make_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Metrics effects[partial]:
   let initial: Metrics = zero()
-  analyze_make_fields_from(source tokens cursor initial)
+  analyze_make_fields_from(source, tokens, cursor, initial)
 
-fn analyze_match_arms_from(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 total: Metrics) -> Metrics effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      total
-    false:
-      let first: I64 = syntax/ast_arm_pattern(cursor)
-      let body: I64 = last_child(tokens first first)
-      let current: Metrics = analyze_expression(source tokens body)
-      let next_total: Metrics = add(total current)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next next_total)
+fn analyze_match_arms_from(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, total: Metrics) -> Metrics effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let first: I64 = syntax.ast_arm_pattern(cursor)
+    let body: I64 = last_child(tokens, first, first)
+    let current: Metrics = analyze_expression(source, tokens, body)
+    let next_total: Metrics = add(total, current)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, next_total)
 
-fn analyze_match_arms(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64) -> Metrics effects[partial]:
+fn analyze_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Metrics effects[partial]:
   let initial: Metrics = zero()
-  analyze_match_arms_from(source tokens cursor initial)
+  analyze_match_arms_from(source, tokens, cursor, initial)
 
-fn callee_is_alloc(source: Bytes inout tokens: Vec[syntax/Token] callee: I64) -> Bool effects[partial]:
-  let vector_new: Bool = syntax/ast_node_text_is(source tokens callee "vec.new")
-  let vector_push: Bool = syntax/ast_node_text_is(source tokens callee "vec.push")
-  let arena_new: Bool = syntax/ast_node_text_is(source tokens callee "arena.new")
-  let arena_add: Bool = syntax/ast_node_text_is(source tokens callee "arena.add")
-  bool.or(vector_new bool.or(vector_push bool.or(arena_new arena_add)))
+fn callee_is_alloc(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+  let vector_new: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
+  let vector_push: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.push")
+  let arena_new: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
+  let arena_add: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
+  vector_new || (vector_push || (arena_new || arena_add))
 
-fn analyze_call(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Metrics effects[partial]:
-  let callee: I64 = syntax/ast_call_callee(expr)
-  let first: I64 = syntax/ast_call_arguments(expr)
-  let children: Metrics = analyze_list(source tokens first)
-  let alloc: Bool = callee_is_alloc(source tokens callee)
-  let trap: Bool = ranges/callee-is-checked-trap(source tokens callee)
-  let reduction: I64 = reduce/reduction_kind(source tokens expr)
-  let reducible: Bool = i64.gt(reduction 0)
-  add_node(
-    children
+fn analyze_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
+  let callee: I64 = syntax.ast_call_callee(expr)
+  let first: I64 = syntax.ast_call_arguments(expr)
+  let children: Metrics = analyze_list(source, tokens, first)
+  let alloc: Bool = callee_is_alloc(source, tokens, callee)
+  let trap: Bool = ranges.callee_is_checked_trap(source, tokens, callee)
+  let reduction: I64 = reduce.reduction_kind(source, tokens, expr)
+  let reducible: Bool = reduction > 0
+  let allocation_count: I64 = if alloc:
     1
+  else:
     0
-    0
-    0
-    match alloc:
-      true:
-        1
-      false:
-        0
-    match trap:
-      true:
-        1
-      false:
-        0
-    match reducible:
-      true:
-        1
-      false:
-        0
-  )
-
-fn analyze_let(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Metrics effects[partial]:
-  let type_index: I64 = syntax/ast_let_type(expr)
-  let value: I64 = syntax/ast_let_value(tokens expr)
-  let body: I64 = syntax/ast_let_body(tokens expr)
-  let value_metrics: Metrics = analyze_expression(source tokens value)
-  let body_metrics: Metrics = analyze_expression(source tokens body)
-  let children: Metrics = add(value_metrics body_metrics)
-  let reduction: I64 = reduce/reduction_kind(source tokens expr)
-  let reducible: Bool = i64.gt(reduction 0)
-  add_node(
-    children
-    0
-    0
-    0
-    0
-    0
-    0
-    match reducible:
-      true:
-        1
-      false:
-        0
-  )
-
-fn analyze_match(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Metrics effects[partial]:
-  let value: I64 = syntax/ast_match_value(expr)
-  let first_arm: I64 = syntax/ast_match_arms(tokens expr)
-  let value_metrics: Metrics = analyze_expression(source tokens value)
-  let arm_metrics: Metrics = analyze_match_arms(source tokens first_arm)
-  let children: Metrics = add(value_metrics arm_metrics)
-  let reduction: I64 = reduce/reduction_kind(source tokens expr)
-  let reducible: Bool = i64.gt(reduction 0)
-  add_node(
-    children
-    0
+  let trap_count: I64 = if trap:
     1
+  else:
     0
+  let rewrite_count: I64 = if reducible:
+    1
+  else:
     0
+  add_node(children, 1, 0, 0, 0, allocation_count, trap_count, rewrite_count)
+
+fn analyze_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
+  let type_index: I64 = syntax.ast_let_type(expr)
+  let value: I64 = syntax.ast_let_value(tokens, expr)
+  let body: I64 = syntax.ast_let_body(tokens, expr)
+  let value_metrics: Metrics = analyze_expression(source, tokens, value)
+  let body_metrics: Metrics = analyze_expression(source, tokens, body)
+  let children: Metrics = add(value_metrics, body_metrics)
+  let reduction: I64 = reduce.reduction_kind(source, tokens, expr)
+  let reducible: Bool = reduction > 0
+  let rewrite_count: I64 = if reducible:
+    1
+  else:
     0
+  add_node(children, 0, 0, 0, 0, 0, 0, rewrite_count)
+
+fn analyze_match(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
+  let value: I64 = syntax.ast_match_value(expr)
+  let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
+  let value_metrics: Metrics = analyze_expression(source, tokens, value)
+  let arm_metrics: Metrics = analyze_match_arms(source, tokens, first_arm)
+  let children: Metrics = add(value_metrics, arm_metrics)
+  let reduction: I64 = reduce.reduction_kind(source, tokens, expr)
+  let reducible: Bool = reduction > 0
+  let rewrite_count: I64 = if reducible:
+    1
+  else:
     0
-    match reducible:
-      true:
-        1
-      false:
-        0
-  )
+  add_node(children, 0, 1, 0, 0, 0, 0, rewrite_count)
 
-fn analyze_data(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Metrics effects[partial]:
-  let make_form: Bool = syntax/ast_expression_is_make(source tokens expr)
-  match make_form:
-    true:
-      let children: Metrics = analyze_make_fields(source tokens syntax/ast_make_fields(expr))
-      add_node(children 0 0 0 0 0 0 0)
-    false:
-      let get_form: Bool = syntax/ast_expression_is_get(source tokens expr)
-      match get_form:
-        true:
-          let children: Metrics = analyze_expression(source tokens syntax/ast_get_value(expr))
-          add_node(children 0 0 0 0 0 0 0)
-        false:
-          let case_form: Bool = syntax/ast_expression_is_case(source tokens expr)
-          match case_form:
-            true:
-              let children: Metrics = analyze_list(source tokens syntax/ast_case_payload(tokens expr))
-              add_node(children 0 0 0 0 0 0 0)
-            false:
-              add_node(zero() 0 0 0 0 0 0 0)
+fn analyze_data(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
+  let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
+  if make_form:
+    let children: Metrics = analyze_make_fields(source, tokens, syntax.ast_make_fields(expr))
+    add_node(children, 0, 0, 0, 0, 0, 0, 0)
+  else:
+    let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expr)
+    if get_form:
+      let children: Metrics = analyze_expression(source, tokens, syntax.ast_get_value(expr))
+      add_node(children, 0, 0, 0, 0, 0, 0, 0)
+    else:
+      let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expr)
+      if case_form:
+        let children: Metrics = analyze_list(source, tokens, syntax.ast_case_payload(tokens, expr))
+        add_node(children, 0, 0, 0, 0, 0, 0, 0)
+      else:
+        add_node(zero(), 0, 0, 0, 0, 0, 0, 0)
 
-fn analyze_expression(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Metrics effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens expr)
-  let composite: Bool = i64.eq(kind 0)
-  match composite:
-    false:
-      add_node(zero() 0 0 0 0 0 0 0)
-    true:
-      let let_form: Bool = syntax/ast_expression_is_let(source tokens expr)
-      match let_form:
-        true:
-          analyze_let(source tokens expr)
-        false:
-          let call_form: Bool = syntax/ast_expression_is_call(source tokens expr)
-          match call_form:
-            true:
-              analyze_call(source tokens expr)
-            false:
-              let match_form: Bool = syntax/ast_expression_is_match(source tokens expr)
-              match match_form:
-                true:
-                  analyze_match(source tokens expr)
-                false:
-                  let recur_form: Bool = syntax/ast_expression_is_recur(source tokens expr)
-                  match recur_form:
-                    true:
-                      let children: Metrics = analyze_list(source tokens syntax/ast_recur_arguments(expr))
-                      add_node(children 0 0 0 1 0 0 0)
-                    false:
-                      let set_form: Bool = syntax/ast_expression_is_set(source tokens expr)
-                      match set_form:
-                        true:
-                          let value_metrics: Metrics = analyze_expression(source tokens syntax/ast_set_value(expr))
-                          let body_metrics: Metrics = analyze_expression(source tokens syntax/ast_set_body(tokens expr))
-                          let children: Metrics = add(value_metrics body_metrics)
-                          add_node(children 0 0 1 0 0 0 0)
-                        false:
-                          analyze_data(source tokens expr)
+fn analyze_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, expr)
+  let composite: Bool = kind == 0
+  if composite:
+    let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
+    if let_form:
+      analyze_let(source, tokens, expr)
+    else:
+      let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
+      if call_form:
+        analyze_call(source, tokens, expr)
+      else:
+        let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
+        if match_form:
+          analyze_match(source, tokens, expr)
+        else:
+          let recur_form: Bool = syntax.ast_expression_is_recur(source, tokens, expr)
+          if recur_form:
+            let children: Metrics = analyze_list(source, tokens, syntax.ast_recur_arguments(expr))
+            add_node(children, 0, 0, 0, 1, 0, 0, 0)
+          else:
+            let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
+            if set_form:
+              let value_metrics: Metrics = analyze_expression(source, tokens, syntax.ast_set_value(expr))
+              let body_metrics: Metrics = analyze_expression(source, tokens, syntax.ast_set_body(tokens, expr))
+              let children: Metrics = add(value_metrics, body_metrics)
+              add_node(children, 0, 0, 1, 0, 0, 0, 0)
+            else:
+              analyze_data(source, tokens, expr)
+  else:
+    add_node(zero(), 0, 0, 0, 0, 0, 0, 0)
 
-fn append_i64(value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let negative: Bool = i64.lt(value 0)
-  match negative:
-    true:
-      let minus: Unit = text/append_text(output "-")
-      let magnitude: I64 = i64.sub(0 value)
-      text/append_nonnegative_i64(magnitude output)
-    false:
-      text/append_nonnegative_i64(value output)
+fn append_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let negative: Bool = value < 0
+  if negative:
+    text.append_text(output, "-")
+    let magnitude: I64 = 0 - value
+    text.append_nonnegative_i64(magnitude, output)
+  else:
+    text.append_nonnegative_i64(value, output)
 
-fn effect_present(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 name: Bytes) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      false
-    false:
-      let same: Bool = syntax/ast_node_text_is(source tokens cursor name)
-      match same:
-        true:
-          true
-        false:
-          let next: I64 = syntax/ast_node_after(cursor)
-          recur(source tokens next name)
+fn effect_present(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name: Bytes) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    false
+  else:
+    let same: Bool = syntax.ast_node_text_is(source, tokens, cursor, name)
+    if same:
+      true
+    else:
+      let next: I64 = syntax.ast_node_after(cursor)
+      recur(source, tokens, next, name)
 
-fn emit_metric(name: Bytes value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let open: Unit = text/append_text(output " (")
-  let named: Unit = text/append_text(output name)
-  let space: Unit = text/append_text(output " ")
-  let numbered: Unit = append_i64(value output)
-  text/append_text(output ")")
+fn emit_metric(name: Bytes, value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(output, " (")
+  text.append_text(output, name)
+  text.append_text(output, " ")
+  append_i64(value, output)
+  text.append_text(output, ")")
 
-fn emit_totality(metrics: Metrics range_total: Bool inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  match range_total:
-    true:
-      text/append_text(output " (totality (guarantee exact) (status total))")
-    false:
-      text/append_text(output " (totality (guarantee unknown) (reason recursion-or-unproved-call))")
+fn emit_totality(metrics: Metrics, range_total: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  if range_total:
+    text.append_text(output, " (totality (guarantee exact) (status total))")
+  else:
+    text.append_text(output, " (totality (guarantee unknown) (reason recursion-or-unproved-call))")
 
 fn bool_cost(value: Bool) -> I64:
-  match value:
-    true:
+  if value:
+    1
+  else:
+    0
+
+fn emit_exact_cost(name: Bytes, model: Bytes, value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(output, " (")
+  text.append_text(output, name)
+  text.append_text(output, " (model ")
+  text.append_text(output, model)
+  text.append_text(output, ") (guarantee exact) (value ")
+  append_i64(value, output)
+  text.append_text(output, "))")
+
+fn emit_unknown_cost(name: Bytes, model: Bytes, reason: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(output, " (")
+  text.append_text(output, name)
+  text.append_text(output, " (model ")
+  text.append_text(output, model)
+  text.append_text(output, ") (guarantee unknown) (reason ")
+  text.append_text(output, reason)
+  text.append_text(output, "))")
+
+fn emit_cost_vector(metrics: Metrics, body_tokens: I64, alloc_effect: Bool, io_effect: Bool, partial_effect: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let alloc_cost: I64 = bool_cost(alloc_effect)
+  let io_cost: I64 = bool_cost(io_effect)
+  let partial_cost: I64 = bool_cost(partial_effect)
+  let first_effects: I64 = alloc_cost + io_cost
+  let effect_kinds: I64 = first_effects + partial_cost
+  let failure_sites: I64 = metrics.allocations + metrics.traps
+  let first_obligations: I64 = metrics.matches + metrics.mutations
+  let second_obligations: I64 = metrics.recurs + metrics.traps
+  let proof_obligations: I64 = first_obligations + second_obligations
+  text.append_text(output, " (cost-vector 1")
+  emit_exact_cost("source-size", "expression-tokens-v1", body_tokens, output)
+  emit_unknown_cost("runtime-work", "dynamic-work-v1", "execution-frequency-or-call-bound", output)
+  emit_unknown_cost("peak-memory", "peak-bytes-v1", "allocation-volume-or-layout-bound", output)
+  emit_exact_cost("effect-surface", "declared-effect-kinds-v1", effect_kinds, output)
+  emit_exact_cost("failure-surface", "static-allocation-and-trap-sites-v1", failure_sites, output)
+  emit_exact_cost("proof-burden", "static-obligations-v1", proof_obligations, output)
+  text.append_text(output, ")")
+
+fn emit_function_metrics(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], item: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let name: I64 = syntax.ast_item_name(item)
+  let params: I64 = syntax.ast_function_parameters(item)
+  let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+  let effects: I64 = syntax.ast_function_effects(tokens, item)
+  let body: I64 = syntax.ast_function_body(tokens, item)
+  let range_total: Bool = ranges.fact_total(range_facts, body)
+  let metrics: Metrics = analyze_expression(source, tokens, body)
+  let first_effect: I64 = syntax.ast_effects_first(effects)
+  let alloc_effect: Bool = effect_present(source, tokens, first_effect, "alloc")
+  let io_effect: Bool = effect_present(source, tokens, first_effect, "io")
+  let partial_effect: Bool = effect_present(source, tokens, first_effect, "partial")
+  text.append_text(output, " (function-quality ")
+  append_i64(item, output)
+  text.append_text(output, " ")
+  text.append_token(source, tokens, name, output)
+  text.append_text(output, " (guarantee exact) (effects")
+  if alloc_effect:
+    text.append_text(output, " alloc")
+  else:
+    void
+  if io_effect:
+    text.append_text(output, " io")
+  else:
+    void
+  if partial_effect:
+    text.append_text(output, " partial")
+  else:
+    void
+  text.append_text(output, ")")
+  let body_end: I64 = syntax.ast_next(tokens, body)
+  let body_tokens: I64 = body_end - body
+  emit_cost_vector(metrics, body_tokens, alloc_effect, io_effect, partial_effect, output)
+  emit_metric("expression-nodes", metrics.nodes, output)
+  emit_metric("calls", metrics.calls, output)
+  emit_metric("matches", metrics.matches, output)
+  emit_metric("mutations", metrics.mutations, output)
+  emit_metric("recurs", metrics.recurs, output)
+  emit_metric("allocation-sites", metrics.allocations, output)
+  emit_metric("trap-sites", metrics.traps, output)
+  emit_totality(metrics, range_total, output)
+  emit_metric("rewrite-sites", metrics.rewrites, output)
+  text.append_text(output, ")")
+
+fn emit_function_metrics_from(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
+    if function_item:
+      emit_function_metrics(source, tokens, range_facts, cursor, output)
+    else:
+      void
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, range_facts, next, output)
+
+fn primitive_bits(source: Bytes, inout tokens: Vec[syntax.Token], type_index: I64) -> I64 effects[partial]:
+  let void_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "Void")
+  if void_type:
+    0
+  else:
+    let bool_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "Bool")
+    if bool_type:
       1
-    false:
-      0
-
-fn emit_exact_cost(name: Bytes model: Bytes value: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let open: Unit = text/append_text(output " (")
-  let named: Unit = text/append_text(output name)
-  let model-prefix: Unit = text/append_text(output " (model ")
-  let model-text: Unit = text/append_text(output model)
-  let value-prefix: Unit = text/append_text(output ") (guarantee exact) (value ")
-  let value-text: Unit = append_i64(value output)
-  text/append_text(output "))")
-
-fn emit_unknown_cost(name: Bytes model: Bytes reason: Bytes inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let open: Unit = text/append_text(output " (")
-  let named: Unit = text/append_text(output name)
-  let model-prefix: Unit = text/append_text(output " (model ")
-  let model-text: Unit = text/append_text(output model)
-  let reason-prefix: Unit = text/append_text(output ") (guarantee unknown) (reason ")
-  let reason-text: Unit = text/append_text(output reason)
-  text/append_text(output "))")
-
-fn emit_cost_vector(metrics: Metrics body-tokens: I64 alloc-effect: Bool io-effect: Bool partial-effect: Bool inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let alloc-cost: I64 = bool_cost(alloc-effect)
-  let io-cost: I64 = bool_cost(io-effect)
-  let partial-cost: I64 = bool_cost(partial-effect)
-  let first-effects: I64 = i64.add(alloc-cost io-cost)
-  let effect-kinds: I64 = i64.add(first-effects partial-cost)
-  let failure-sites: I64 = i64.add(get(metrics allocations) get(metrics traps))
-  let first-obligations: I64 = i64.add(get(metrics matches) get(metrics mutations))
-  let second-obligations: I64 = i64.add(get(metrics recurs) get(metrics traps))
-  let proof-obligations: I64 = i64.add(first-obligations second-obligations)
-  let open: Unit = text/append_text(output " (cost-vector 1")
-  let source-size: Unit = emit_exact_cost("source-size" "expression-tokens-v1" body-tokens output)
-  let runtime: Unit = emit_unknown_cost("runtime-work" "dynamic-work-v1" "execution-frequency-or-call-bound" output)
-  let memory: Unit = emit_unknown_cost("peak-memory" "peak-bytes-v1" "allocation-volume-or-layout-bound" output)
-  let effects: Unit = emit_exact_cost("effect-surface" "declared-effect-kinds-v1" effect-kinds output)
-  let failures: Unit = emit_exact_cost("failure-surface" "static-allocation-and-trap-sites-v1" failure-sites output)
-  let proof: Unit = emit_exact_cost("proof-burden" "static-obligations-v1" proof-obligations output)
-  text/append_text(output ")")
-
-fn emit_function_metrics(source: Bytes inout tokens: Vec[syntax/Token] inout range_facts: Vec[ranges/Fact] item: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let name: I64 = syntax/ast_item_name(item)
-  let params: I64 = syntax/ast_function_parameters(item)
-  let return_type: I64 = syntax/ast_function_return_type(tokens item)
-  let effects: I64 = syntax/ast_function_effects(tokens item)
-  let body: I64 = syntax/ast_function_body(tokens item)
-  let range_total: Bool = ranges/fact-total(range_facts body)
-  let metrics: Metrics = analyze_expression(source tokens body)
-  let first_effect: I64 = syntax/ast_effects_first(effects)
-  let alloc_effect: Bool = effect_present(source tokens first_effect "alloc")
-  let io_effect: Bool = effect_present(source tokens first_effect "io")
-  let partial_effect: Bool = effect_present(source tokens first_effect "partial")
-  let open: Unit = text/append_text(output " (function-quality ")
-  let id: Unit = append_i64(item output)
-  let name_space: Unit = text/append_text(output " ")
-  let named: Unit = text/append_token(source tokens name output)
-  let guarantee: Unit = text/append_text(output " (guarantee exact) (effects")
-  let alloc_text: Unit = match alloc_effect:
-    true:
-      text/append_text(output " alloc")
-    false:
-      unit
-  let io_text: Unit = match io_effect:
-    true:
-      text/append_text(output " io")
-    false:
-      unit
-  let partial_text: Unit = match partial_effect:
-    true:
-      text/append_text(output " partial")
-    false:
-      unit
-  let effects_close: Unit = text/append_text(output ")")
-  let body-end: I64 = syntax/ast_next(tokens body)
-  let body-tokens: I64 = i64.sub(body-end body)
-  let costs: Unit = emit_cost_vector(metrics body-tokens alloc_effect io_effect partial_effect output)
-  let nodes: Unit = emit_metric("expression-nodes" get(metrics nodes) output)
-  let calls: Unit = emit_metric("calls" get(metrics calls) output)
-  let matches: Unit = emit_metric("matches" get(metrics matches) output)
-  let mutations: Unit = emit_metric("mutations" get(metrics mutations) output)
-  let recurs: Unit = emit_metric("recurs" get(metrics recurs) output)
-  let allocations: Unit = emit_metric("allocation-sites" get(metrics allocations) output)
-  let traps: Unit = emit_metric("trap-sites" get(metrics traps) output)
-  let totality: Unit = emit_totality(metrics range_total output)
-  let rewrites: Unit = emit_metric("rewrite-sites" get(metrics rewrites) output)
-  text/append_text(output ")")
-
-fn emit_function_metrics_from(source: Bytes inout tokens: Vec[syntax/Token] inout range_facts: Vec[ranges/Fact] cursor: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let function_item: Bool = syntax/ast_item_is_function(source tokens cursor)
-      let emitted: Unit = match function_item:
-        true:
-          emit_function_metrics(source tokens range_facts cursor output)
-        false:
-          unit
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens range_facts next output)
-
-fn primitive_bits(source: Bytes inout tokens: Vec[syntax/Token] type_index: I64) -> I64 effects[partial]:
-  let unit_type: Bool = syntax/ast_node_text_is(source tokens type_index "Unit")
-  match unit_type:
-    true:
-      0
-    false:
-      let bool_type: Bool = syntax/ast_node_text_is(source tokens type_index "Bool")
-      match bool_type:
-        true:
-          1
-        false:
-          let u8_type: Bool = syntax/ast_node_text_is(source tokens type_index "U8")
-          match u8_type:
-            true:
-              8
-            false:
-              let i64_type: Bool = syntax/ast_node_text_is(source tokens type_index "I64")
-              match i64_type:
-                true:
-                  64
-                false:
-                  -1
-
-fn record_bits(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 total: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      total
-    false:
-      let type_index: I64 = syntax/ast_member_value(cursor)
-      let bits: I64 = primitive_bits(source tokens type_index)
-      let known: Bool = i64.ge(bits 0)
-      match known:
-        false:
+    else:
+      let u8_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "U8")
+      if u8_type:
+        8
+      else:
+        let i64_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "I64")
+        if i64_type:
+          64
+        else:
           -1
-        true:
-          let next_total: I64 = i64.add(total bits)
-          let next: I64 = syntax/ast_next(tokens cursor)
-          recur(source tokens next next_total)
 
-fn variant_known(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      true
-    false:
-      let first_type: I64 = syntax/ast_member_value(cursor)
-      let bits: I64 = variant_payload_bits(source tokens first_type 0)
-      let known: Bool = i64.ge(bits 0)
-      match known:
-        false:
-          false
-        true:
-          let next: I64 = syntax/ast_next(tokens cursor)
-          recur(source tokens next)
+fn record_bits(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, total: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let type_index: I64 = syntax.ast_member_value(cursor)
+    let bits: I64 = primitive_bits(source, tokens, type_index)
+    let known: Bool = bits >= 0
+    if known:
+      let next_total: I64 = total + bits
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      recur(source, tokens, next, next_total)
+    else:
+      -1
 
-fn variant_payload_bits(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 total: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
+fn variant_known(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    true
+  else:
+    let first_type: I64 = syntax.ast_member_value(cursor)
+    let bits: I64 = variant_payload_bits(source, tokens, first_type, 0)
+    let known: Bool = bits >= 0
+    if known:
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      recur(source, tokens, next)
+    else:
+      false
+
+fn variant_payload_bits(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, total: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let bits: I64 = primitive_bits(source, tokens, cursor)
+    let known: Bool = bits >= 0
+    if known:
+      let next_total: I64 = total + bits
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      recur(source, tokens, next, next_total)
+    else:
+      -1
+
+fn emit_variant_terms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let first_type: I64 = syntax.ast_member_value(cursor)
+    let bits: I64 = variant_payload_bits(source, tokens, first_type, 0)
+    text.append_text(output, " (pow2 ")
+    append_i64(bits, output)
+    text.append_text(output, ")")
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, output)
+
+fn emit_unknown_state(inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(output, " (guarantee unknown) (reason dynamic-or-unresolved-type)")
+
+fn emit_record_state(source: Bytes, inout tokens: Vec[syntax.Token], first: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let bits: I64 = record_bits(source, tokens, first, 0)
+  let known: Bool = bits >= 0
+  if known:
+    text.append_text(output, " (guarantee exact) (cardinality (pow2 ")
+    append_i64(bits, output)
+    text.append_text(output, "))")
+  else:
+    emit_unknown_state(output)
+
+fn emit_variant_state(source: Bytes, inout tokens: Vec[syntax.Token], first: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let known: Bool = variant_known(source, tokens, first)
+  if known:
+    text.append_text(output, " (guarantee exact) (cardinality (sum")
+    emit_variant_terms(source, tokens, first, output)
+    text.append_text(output, "))")
+  else:
+    emit_unknown_state(output)
+
+fn emit_state_model(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let name: I64 = syntax.ast_item_name(item)
+  let shape: I64 = syntax.ast_data_body(item)
+  let first: I64 = syntax.ast_data_members_first(item)
+  let record_item: Bool = syntax.ast_item_is_record(source, tokens, item)
+  text.append_text(output, " (state-model ")
+  text.append_token(source, tokens, name, output)
+  if record_item:
+    emit_record_state(source, tokens, first, output)
+    text.append_text(output, ")")
+  else:
+    emit_variant_state(source, tokens, first, output)
+    text.append_text(output, ")")
+
+fn emit_state_models(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let record_item: Bool = syntax.ast_item_is_record(source, tokens, cursor)
+    let variant_item: Bool = syntax.ast_item_is_variant(source, tokens, cursor)
+    let data_item: Bool = record_item || variant_item
+    if data_item:
+      emit_state_model(source, tokens, cursor, output)
+    else:
+      void
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, output)
+
+fn count_items_from(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, item_kind: I64, total: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    total
+  else:
+    let function_kind: Bool = item_kind == 0
+    let matching: Bool = if function_kind:
+      syntax.ast_item_is_function(source, tokens, cursor)
+    else:
+      let record_kind: Bool = item_kind == 1
+      if record_kind:
+        syntax.ast_item_is_record(source, tokens, cursor)
+      else:
+        syntax.ast_item_is_variant(source, tokens, cursor)
+    let next_total: I64 = if matching:
+      total + 1
+    else:
       total
-    false:
-      let bits: I64 = primitive_bits(source tokens cursor)
-      let known: Bool = i64.ge(bits 0)
-      match known:
-        false:
-          -1
-        true:
-          let next_total: I64 = i64.add(total bits)
-          let next: I64 = syntax/ast_next(tokens cursor)
-          recur(source tokens next next_total)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, item_kind, next_total)
 
-fn emit_variant_terms(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let first_type: I64 = syntax/ast_member_value(cursor)
-      let bits: I64 = variant_payload_bits(source tokens first_type 0)
-      let prefix: Unit = text/append_text(output " (pow2 ")
-      let numbered: Unit = append_i64(bits output)
-      let close: Unit = text/append_text(output ")")
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next output)
+fn count_items(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, item_kind: I64) -> I64 effects[partial]:
+  count_items_from(source, tokens, cursor, item_kind, 0)
 
-fn emit_unknown_state(inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  text/append_text(output " (guarantee unknown) (reason dynamic-or-unresolved-type)")
-
-fn emit_record_state(source: Bytes inout tokens: Vec[syntax/Token] first: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let bits: I64 = record_bits(source tokens first 0)
-  let known: Bool = i64.ge(bits 0)
-  match known:
-    false:
-      emit_unknown_state(output)
-    true:
-      let prefix: Unit = text/append_text(output " (guarantee exact) (cardinality (pow2 ")
-      let numbered: Unit = append_i64(bits output)
-      text/append_text(output "))")
-
-fn emit_variant_state(source: Bytes inout tokens: Vec[syntax/Token] first: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let known: Bool = variant_known(source tokens first)
-  match known:
-    false:
-      emit_unknown_state(output)
-    true:
-      let prefix: Unit = text/append_text(output " (guarantee exact) (cardinality (sum")
-      let terms: Unit = emit_variant_terms(source tokens first output)
-      text/append_text(output "))")
-
-fn emit_state_model(source: Bytes inout tokens: Vec[syntax/Token] item: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let name: I64 = syntax/ast_item_name(item)
-  let shape: I64 = syntax/ast_data_body(item)
-  let first: I64 = syntax/ast_data_members_first(item)
-  let record_item: Bool = syntax/ast_item_is_record(source tokens item)
-  let open: Unit = text/append_text(output " (state-model ")
-  let named: Unit = text/append_token(source tokens name output)
-  match record_item:
-    true:
-      let content: Unit = emit_record_state(source tokens first output)
-      text/append_text(output ")")
-    false:
-      let content: Unit = emit_variant_state(source tokens first output)
-      text/append_text(output ")")
-
-fn emit_state_models(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let record_item: Bool = syntax/ast_item_is_record(source tokens cursor)
-      let variant_item: Bool = syntax/ast_item_is_variant(source tokens cursor)
-      let data_item: Bool = bool.or(record_item variant_item)
-      let emitted: Unit = match data_item:
-        true:
-          emit_state_model(source tokens cursor output)
-        false:
-          unit
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next output)
-
-fn count_items_from(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 item_kind: I64 total: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      total
-    false:
-      let function_kind: Bool = i64.eq(item_kind 0)
-      let matching: Bool = match function_kind:
-        true:
-          syntax/ast_item_is_function(source tokens cursor)
-        false:
-          let record_kind: Bool = i64.eq(item_kind 1)
-          match record_kind:
-            true:
-              syntax/ast_item_is_record(source tokens cursor)
-            false:
-              syntax/ast_item_is_variant(source tokens cursor)
-      let next_total: I64 = match matching:
-        true:
-          i64.add(total 1)
-        false:
-          total
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next item_kind next_total)
-
-fn count_items(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 item_kind: I64) -> I64 effects[partial]:
-  count_items_from(source tokens cursor item_kind 0)
-
-fn emit_module_facts(source: Bytes inout tokens: Vec[syntax/Token] inout range_facts: Vec[ranges/Fact] inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let items: I64 = syntax/ast_module_items(0)
-  let functions: I64 = count_items(source tokens items 0)
-  let records: I64 = count_items(source tokens items 1)
-  let variants: I64 = count_items(source tokens items 2)
-  let open: Unit = text/append_text(output " (quality (guarantee exact)")
-  let function_metric: Unit = emit_metric("functions" functions output)
-  let record_metric: Unit = emit_metric("records" records output)
-  let variant_metric: Unit = emit_metric("variants" variants output)
-  let state_open: Unit = text/append_text(output " (state-models")
-  let states: Unit = emit_state_models(source tokens items output)
-  let state_close: Unit = text/append_text(output ") (function-metrics")
-  let metrics: Unit = emit_function_metrics_from(source tokens range_facts items output)
-  text/append_text(output "))")
+fn emit_module_facts(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let items: I64 = syntax.ast_module_items(0)
+  let functions: I64 = count_items(source, tokens, items, 0)
+  let records: I64 = count_items(source, tokens, items, 1)
+  let variants: I64 = count_items(source, tokens, items, 2)
+  text.append_text(output, " (quality (guarantee exact)")
+  emit_metric("functions", functions, output)
+  emit_metric("records", records, output)
+  emit_metric("variants", variants, output)
+  text.append_text(output, " (state-models")
+  emit_state_models(source, tokens, items, output)
+  text.append_text(output, ") (function-metrics")
+  emit_function_metrics_from(source, tokens, range_facts, items, output)
+  text.append_text(output, "))")

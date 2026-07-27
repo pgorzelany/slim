@@ -1,6 +1,6 @@
-module variant-use-after-move
+module variant_use_after_move
 
-variant Boxed:
+enum Boxed:
   some(Vec[I64])
 
 fn length(value: Boxed) -> I64:
@@ -10,6 +10,6 @@ fn length(value: Boxed) -> I64:
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let items: Vec[I64] = vec.new()
-  let boxed: Boxed = case Boxed::some(items)
+  let boxed: Boxed = Boxed::some(items)
   let first: I64 = length(boxed)
   length(boxed)

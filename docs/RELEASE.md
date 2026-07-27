@@ -1,7 +1,7 @@
-# Building and verifying SLIM 1.0
+# Building and verifying SLIM 0.9
 
-Version: 1
-Status: release contract
+Version: 0.9.0
+Status: SLIM 0.9 — experimental, pre-1.0
 
 SLIM releases are source archives rooted at `slim-VERSION/`. They contain the
 self-hosted compiler, checked-in portable C11 seed, runtime, launcher,
@@ -21,8 +21,8 @@ serial tier is used.
 ## Clean install
 
 ```text
-tar -xzf slim-1.0.0.tar.gz
-cd slim-1.0.0
+tar -xzf slim-0.9.0.tar.gz
+cd slim-0.9.0
 ./bootstrap.sh
 ./slimc --version
 ./slimc check examples/hello.slim
@@ -50,3 +50,5 @@ bytes.
 The release is accepted only when the normal repository gate, two-archive
 reproducibility check, clean extraction/bootstrap/build/run test, runtime ABI
 mismatch test, and documentation/website drift checks pass.
+
+The release-specific clean gate is `./scripts/verify-0.9.sh`.

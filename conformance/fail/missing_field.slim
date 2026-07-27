@@ -1,9 +1,9 @@
-module missing-field
+module missing_field
 
-record Pair:
+struct Pair:
   left: I64
   right: I64
 
 fn main(args: Vec[Bytes]) -> I64:
-  let pair: Pair = make Pair(left = 1)
-  get(pair left)
+  let pair: Pair = Pair(left: 1)
+  pair.left

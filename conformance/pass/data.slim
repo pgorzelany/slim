@@ -1,10 +1,10 @@
 module data
 
-record Pair:
+struct Pair:
   left: I64
   right: I64
 
-variant Maybe:
+enum Maybe:
   None
   Some(I64)
 
@@ -16,14 +16,14 @@ fn unwrap(value: Maybe) -> I64:
       number
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let pair: Pair = make Pair(left = 20 right = 22)
-  let left: I64 = get(pair left)
-  let right: I64 = get(pair right)
-  let sum: I64 = i64.add(left right)
-  let changed: I64 = 0
-  set changed = sum
-  let wrapped: Maybe = case Maybe::Some(changed)
+  let pair: Pair = Pair(left: 20, right: 22)
+  let left: I64 = pair.left
+  let right: I64 = pair.right
+  let sum: I64 = left + right
+  var changed: I64 = 0
+  changed = sum
+  let wrapped: Maybe = Maybe::Some(changed)
   let answer: I64 = unwrap(wrapped)
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+  io.print_i64(answer)
+  io.println("")
   0

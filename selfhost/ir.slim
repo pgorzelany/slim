@@ -1,11 +1,11 @@
 module ir
 
-variant DeclarationKind:
+enum DeclarationKind:
   Function
   Record
   Variant
 
-record Declaration:
+struct Declaration:
   kind: DeclarationKind
   form: I64
   name: I64

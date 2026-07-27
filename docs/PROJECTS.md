@@ -1,6 +1,6 @@
 # SLIM deterministic projects
 
-Status: stable project schema 1
+Status: SLIM 0.9 — experimental, pre-1.0; project manifest schema 1
 
 Core 0.2 combines existing Core modules into one executable without adding a
 second module form or source-level import/export declarations. One explicit
@@ -33,10 +33,9 @@ strictly sorted and unique. A module must not import itself. Reordering these
 semantic sets is rejected with a canonical replacement instead of becoming a
 second accepted representation.
 
-Module identities and declared names are ASCII identifiers without `/`.
-Module identities may contain `.` for flat organizational names. `/` has one
-meaning in Core 0.2: it separates a module identity from an exported
-declaration in a qualified reference.
+Module identities and declared names are ASCII identifiers. Module identities
+may contain `.` for flat organizational names. `.` separates a module identity
+from an exported declaration in a qualified reference.
 
 A path is UTF-8, relative to the directory containing the manifest, uses `/`
 separators, ends in `.slim`, and contains no empty, `.` or `..` segment. It
@@ -49,13 +48,13 @@ The module name in each source file must equal its manifest identity.
 
 An import grants access to one module namespace, not to all transitive imports.
 It does not copy declarations into the local namespace. Imported declarations
-are referenced only as `module/name` in every position that currently accepts
+are referenced only as `module.name` in every position that currently accepts
 a function or named type:
 
 ```text
 fn main(args: Vec[Bytes]) -> I64:
-  let number: math/Number = math/add(20 22)
-  get(number value)
+  let number: math.Number = math.add(20, 22)
+  number.value
 ```
 
 Unqualified references resolve only to local declarations or built-ins.
@@ -92,7 +91,7 @@ slimc interfaces MANIFEST [--jobs N] -o DIRECTORY
 `interfaces` is the only additional operation. It materializes the same
 canonical interface bytes used by checking and caching; it is not another way
 to compile. Project operations accept `--jobs N`; `--jobs 1` is the serial
-oracle and remains the default. CLI project operations use `.slim-cache/v1`
+oracle and remains the default. CLI project operations use `.slim-cache/v2`
 beside the manifest; the library's `compile`/`compile_with_jobs` entry points
 remain cache-free clean oracles. The compiler never searches upward for a
 manifest.
@@ -102,31 +101,31 @@ manifest.
 Each module has one UTF-8 interface artifact:
 
 ```text
-(interface 1 math
-  (record Number ((value I64)))
-  (fn add ((owned math/Number) (owned math/Number)) math/Number (effects)))
+(interface 2 math
+  (struct Number ((value I64)))
+  (fn add ((owned math.Number) (owned math.Number)) math.Number (effects)))
 ```
 
 The grammar is:
 
 ```text
-interface = (interface 1 MODULE declaration*)
-declaration = record | variant | function
-record   = (record NAME ((NAME TYPE)*))
-variant  = (variant NAME ((NAME TYPE*)*))
+interface = (interface 2 MODULE declaration*)
+declaration = struct | enum | function
+struct   = (struct NAME ((NAME TYPE)*))
+enum     = (enum NAME ((NAME TYPE*)*))
 function = (fn NAME ((MODE TYPE)*) TYPE (effects EFFECT*))
 MODE     = owned | inout
 ```
 
 Artifacts contain only exported declarations. Declarations are sorted by
-name. Record fields and variant cases preserve semantic layout order. Effects
+name. Struct fields and enum cases preserve semantic layout order. Effects
 use the fixed `alloc`, `io`, `partial` order. Every named type is fully
 qualified, including a type from the artifact's own module. Artifacts contain
 no source bodies, spans, paths, timestamps, host data, target data, hashes, or
 compiler scheduling data. Their stable fingerprint is computed over these
 exact bytes.
 
-Interface schema `1` is rejected rather than guessed when unsupported. A
+Interface schemas other than `2` are rejected rather than guessed. A
 schema change requires a compatibility decision and a compiler-version change;
 there is no permissive reader for unknown fields.
 
@@ -156,7 +155,7 @@ identity mismatch, and checksum mismatch. A rejected entry is ignored and
 rebuilt from source; it can never make an invalid program pass. Cache writes
 use a temporary file and atomic rename after successful checking.
 
-The default cache directory is `.slim-cache/v1` beside the manifest. Cache
+The default cache directory is `.slim-cache/v2` beside the manifest. Cache
 contents affect work performed, never diagnostics, interfaces, generated C, or
 native behavior. A fresh in-memory session with an empty cache is the clean
 oracle used by tests.

@@ -11,7 +11,7 @@ move ownership. After a move, the old binding cannot be used.
 
 <!-- slim-fixture: use-after-move -->
 
-Records and variants containing affine fields follow the same rule as their
+Structs and enums containing affine fields follow the same rule as their
 contents.
 
 ## Exclusive `inout` borrows

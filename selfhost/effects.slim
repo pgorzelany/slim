@@ -1,84 +1,75 @@
 module effects
 
-fn list_has(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 effect_code: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      false
-    false:
-      let alloc_effect: Bool = i64.eq(effect_code 1)
-      let io_effect: Bool = i64.eq(effect_code 2)
-      let matches_alloc: Bool = syntax/ast_node_text_is(source tokens cursor "alloc")
-      let matches_io: Bool = syntax/ast_node_text_is(source tokens cursor "io")
-      let matches_partial: Bool = syntax/ast_node_text_is(source tokens cursor "partial")
-      let selected: Bool = match alloc_effect:
-        true:
-          matches_alloc
-        false:
-          match io_effect:
-            true:
-              matches_io
-            false:
-              matches_partial
-      match selected:
-        true:
-          true
-        false:
-          let next: I64 = syntax/ast_node_after(cursor)
-          recur(source tokens next effect_code)
-
-fn builtin_requires(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 effect_code: I64) -> Bool effects[partial]:
-  let alloc_effect: Bool = i64.eq(effect_code 1)
-  let io_effect: Bool = i64.eq(effect_code 2)
-  match alloc_effect:
-    true:
-      let vec_new: Bool = syntax/ast_node_text_is(source tokens callee "vec.new")
-      let vec_push: Bool = syntax/ast_node_text_is(source tokens callee "vec.push")
-      let arena_new: Bool = syntax/ast_node_text_is(source tokens callee "arena.new")
-      let arena_add: Bool = syntax/ast_node_text_is(source tokens callee "arena.add")
-      let read_file: Bool = syntax/ast_node_text_is(source tokens callee "io.read-file")
-      let tcp: Bool = syntax/ast_node_text_is(source tokens callee "io.tcp-exchange")
-      let first: Bool = bool.or(vec_new vec_push)
-      let second: Bool = bool.or(arena_new arena_add)
-      let storage: Bool = bool.or(first second)
-      bool.or(bool.or(storage read_file) tcp)
-    false:
-      match io_effect:
-        true:
-          let print_i64: Bool = syntax/ast_node_text_is(source tokens callee "io.print-i64")
-          let print_bytes: Bool = syntax/ast_node_text_is(source tokens callee "io.print-bytes")
-          let println: Bool = syntax/ast_node_text_is(source tokens callee "io.println")
-          let read_file: Bool = syntax/ast_node_text_is(source tokens callee "io.read-file")
-          let tcp: Bool = syntax/ast_node_text_is(source tokens callee "io.tcp-exchange")
-          let first: Bool = bool.or(print_i64 print_bytes)
-          let second: Bool = bool.or(println read_file)
-          let clock: Bool = syntax/ast_node_text_is(source tokens callee "io.monotonic-ms")
-          bool.or(bool.or(first second) bool.or(clock tcp))
-        false:
-          false
-
-fn params_have(source: Bytes inout tokens: Vec[syntax/Token] item: I64 effect_code: I64) -> Bool effects[partial]:
-  let valid: Bool = i64.ge(item 0)
-  match valid:
-    false:
-      false
-    true:
-      let effect_form: I64 = syntax/ast_function_effects(tokens item)
-      let first: I64 = syntax/ast_effects_first(effect_form)
-      list_has(source tokens first effect_code)
-
-fn call_requires(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 effect_code: I64) -> Bool effects[partial]:
-  let builtin: Bool = builtin_requires(source tokens callee effect_code)
-  match builtin:
-    true:
+fn list_has(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, effect_code: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    false
+  else:
+    let alloc_effect: Bool = effect_code == 1
+    let io_effect: Bool = effect_code == 2
+    let matches_alloc: Bool = syntax.ast_node_text_is(source, tokens, cursor, "alloc")
+    let matches_io: Bool = syntax.ast_node_text_is(source, tokens, cursor, "io")
+    let matches_partial: Bool = syntax.ast_node_text_is(source, tokens, cursor, "partial")
+    let selected: Bool = if alloc_effect:
+      matches_alloc
+    else:
+      if io_effect:
+        matches_io
+      else:
+        matches_partial
+    if selected:
       true
-    false:
-      let item: I64 = syntax/ast_node_link(tokens callee)
-      let linked: Bool = i64.ge(item 0)
-      match linked:
-        false:
-          false
-        true:
-          let params: I64 = syntax/ast_function_parameters(item)
-          params_have(source tokens item effect_code)
+    else:
+      let next: I64 = syntax.ast_node_after(cursor)
+      recur(source, tokens, next, effect_code)
+
+fn builtin_requires(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
+  let alloc_effect: Bool = effect_code == 1
+  let io_effect: Bool = effect_code == 2
+  if alloc_effect:
+    let vec_new: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
+    let vec_push: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.push")
+    let arena_new: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
+    let arena_add: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
+    let read_file: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
+    let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
+    let first: Bool = vec_new || vec_push
+    let second: Bool = arena_new || arena_add
+    let storage: Bool = first || second
+    storage || (read_file || tcp)
+  else:
+    if io_effect:
+      let print_i64: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_i64")
+      let print_bytes: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_bytes")
+      let println: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.println")
+      let read_file: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
+      let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
+      let first: Bool = print_i64 || print_bytes
+      let second: Bool = println || read_file
+      let clock: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.monotonic_ms")
+      first || (second || (clock || tcp))
+    else:
+      false
+
+fn params_have(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, effect_code: I64) -> Bool effects[partial]:
+  let valid: Bool = item >= 0
+  if valid:
+    let effect_form: I64 = syntax.ast_function_effects(tokens, item)
+    let first: I64 = syntax.ast_effects_first(effect_form)
+    list_has(source, tokens, first, effect_code)
+  else:
+    false
+
+fn call_requires(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
+  let builtin: Bool = builtin_requires(source, tokens, callee, effect_code)
+  if builtin:
+    true
+  else:
+    let item: I64 = syntax.ast_node_link(tokens, callee)
+    let linked: Bool = item >= 0
+    if linked:
+      let params: I64 = syntax.ast_function_parameters(item)
+      params_have(source, tokens, item, effect_code)
+    else:
+      false

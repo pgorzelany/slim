@@ -1,10 +1,9 @@
-module tcp-exchange
+module tcp_exchange
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let output: Vec[U8] = vec.new()
-  let result: Bool = io.tcp-exchange("not-an-address" 8080 "PING" 64 1000 output)
-  match result:
-    true:
-      1
-    false:
-      vec.len(output)
+  let result: Bool = io.tcp_exchange("not-an-address", 8080, "PING", 64, 1000, output)
+  if result:
+    1
+  else:
+    vec.len(output)

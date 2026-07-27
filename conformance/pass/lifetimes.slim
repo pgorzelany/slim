@@ -1,33 +1,32 @@
 module lifetimes
 
-record Pair:
+struct Pair:
   left: Vec[I64]
   right: Vec[I64]
 
-variant Choice:
+enum Choice:
   none
   some(Vec[I64])
 
-fn numbers(first: I64 second: I64) -> Vec[I64] effects[alloc]:
+fn numbers(first: I64, second: I64) -> Vec[I64] effects[alloc]:
   let output: Vec[I64] = vec.new()
-  let pushed_first: Unit = vec.push(output first)
-  let pushed_second: Unit = vec.push(output second)
+  vec.push(output, first)
+  vec.push(output, second)
   output
 
 fn word() -> Bytes effects[alloc]:
   let output: Vec[U8] = vec.new()
-  let o: U8 = i64.to-u8(79)
-  let k: U8 = i64.to-u8(75)
-  let pushed_o: Unit = vec.push(output o)
-  let pushed_k: Unit = vec.push(output k)
+  let o: U8 = i64.to_u8(79)
+  let k: U8 = i64.to_u8(75)
+  vec.push(output, o)
+  vec.push(output, k)
   bytes.freeze(output)
 
 fn choose(present: Bool) -> Choice effects[alloc]:
-  match present:
-    true:
-      case Choice::some(numbers(5 8))
-    false:
-      case Choice::none()
+  if present:
+    Choice::some(numbers(5, 8))
+  else:
+    Choice::none()
 
 fn choice_length(value: Choice) -> I64:
   match value:
@@ -36,19 +35,19 @@ fn choice_length(value: Choice) -> I64:
     some(items):
       vec.len(items)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
-  let pair: Pair = make Pair(left = numbers(1 2) right = numbers(3 4))
-  let left: Vec[I64] = get(pair left)
-  let right: Vec[I64] = get(pair right)
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
+  let pair: Pair = Pair(left: numbers(1, 2), right: numbers(3, 4))
+  let left: Vec[I64] = pair.left
+  let right: Vec[I64] = pair.right
   let left_length: I64 = vec.len(left)
   let right_length: I64 = vec.len(right)
   let text: Bytes = word()
   let text_length: I64 = bytes.len(text)
   let selected: Choice = choose(true)
   let selected_length: I64 = choice_length(selected)
-  let first_total: I64 = i64.add(left_length right_length)
-  let second_total: I64 = i64.add(text_length selected_length)
-  let total: I64 = i64.add(first_total second_total)
-  let shown: Unit = io.print-bytes(text)
-  let newline: Unit = io.println("")
-  i64.sub(total 8)
+  let first_total: I64 = left_length + right_length
+  let second_total: I64 = text_length + selected_length
+  let total: I64 = first_total + second_total
+  io.print_bytes(text)
+  io.println("")
+  total - 8

@@ -1,6 +1,6 @@
-module quality-evidence
+module quality_evidence
 
-record TenFlags:
+struct TenFlags:
   a: Bool
   b: Bool
   c: Bool
@@ -12,15 +12,15 @@ record TenFlags:
   i: Bool
   j: Bool
 
-record Dynamic:
+struct Dynamic:
   values: Vec[Bool]
 
-variant Decision:
+enum Decision:
   No
   Yes(Bool)
   Code(U8)
 
-fn total-literal() -> Bool:
+fn total_literal() -> Bool:
   true
 
 fn main(args: Vec[Bytes]) -> I64:

@@ -1,28 +1,27 @@
 module scalars
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let add: I64 = i64.add(40 2)
-  let sub: I64 = i64.sub(44 2)
-  let mul: I64 = i64.mul(6 7)
-  let div: I64 = i64.div(84 2)
-  let rem: I64 = i64.rem(85 43)
-  let eq: Bool = i64.eq(add sub)
-  let lt: Bool = i64.lt(41 42)
-  let le: Bool = i64.le(42 42)
-  let gt: Bool = i64.gt(43 42)
-  let ge: Bool = i64.ge(42 42)
-  let not_false: Bool = bool.not(false)
-  let both: Bool = bool.and(eq lt)
-  let either: Bool = bool.or(false le)
-  let byte: U8 = i64.to-u8(mul)
-  let widened: I64 = u8.to-i64(byte)
-  let checks_a: Bool = bool.and(both either)
-  let checks_b: Bool = bool.and(gt ge)
-  let checks: Bool = bool.and(checks_a checks_b)
-  match checks:
-    true:
-      let shown: Unit = io.print-i64(widened)
-      let newline: Unit = io.println("")
-      0
-    false:
-      rem
+  let add: I64 = 40 + 2
+  let sub: I64 = 44 - 2
+  let mul: I64 = 6 * 7
+  let div: I64 = 84 / 2
+  let rem: I64 = 85 % 43
+  let eq: Bool = add == sub
+  let lt: Bool = 41 < 42
+  let le: Bool = 42 <= 42
+  let gt: Bool = 43 > 42
+  let ge: Bool = 42 >= 42
+  let not_false: Bool = !false
+  let both: Bool = eq && lt
+  let either: Bool = false || le
+  let byte: U8 = i64.to_u8(mul)
+  let widened: I64 = u8.to_i64(byte)
+  let checks_a: Bool = both && either
+  let checks_b: Bool = gt && ge
+  let checks: Bool = checks_a && checks_b
+  if checks:
+    io.print_i64(widened)
+    io.println("")
+    0
+  else:
+    rem

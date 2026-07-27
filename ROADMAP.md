@@ -1,8 +1,8 @@
 # SLIM Roadmap
 
-Status: SLIM 1.0 released
-Current milestone: Post-1.0 evidence-driven development
-Last updated: 2026-07-23
+Status: SLIM 0.9 — experimental, pre-1.0
+Current milestone: Pre-1.0 evidence-driven development
+Last updated: 2026-07-27
 
 ## Direction
 
@@ -12,7 +12,7 @@ forms are preferred over new primitives. Every durable change follows
 `design/FEATURE_POLICY.md`; planning a milestone does not pre-approve its
 features.
 
-The path to 1.0 is:
+The internal stabilization sequence was:
 
 1. Core 1H: bounded resources and application evidence.
 2. Core 1I: a safe typed host boundary.
@@ -43,12 +43,12 @@ summary rather than a second copy of those records.
 | Core 1D | One retained checked compiler view for typing, ownership, effects, memory planning, diagnostics, and emission. |
 | Core 1E | Safety-preserving native efficiency with the portable C11 backend. |
 | Core 1F | Bounded totality, reorder-safety, and deterministic parallel-plan evidence. |
-| Core 1G | Guarded automatic fork/join for one proven, profitable, race-free, and deadlock-free subset. |
+| Core 1G | Guarded automatic parallel execution for one proven, profitable, race-free, and deadlock-free subset. |
 | Core 1H | Bounded resource evidence over fourteen maintained applications without new source contracts. |
 | Core 1I | One monotonic clock and one bounded TCP exchange without source handles or FFI. |
-| Core 1J | One lexical two-call fork for bounded host work, isolated task regions, and deterministic join. |
+| Core 1J | One lexical two-call parallel region for bounded host work, isolated task regions, and deterministic join. |
 | Core 1K | Exact Boolean/byte specification evidence, named cost vectors, and strict replayable atom reductions without new syntax. |
-| Core 1L / 1.0 | Frozen compatibility, diagnostics and ABI contracts, reproducible source packaging, and clean-install validation. |
+| Core 1L | Internal stabilization evidence for compatibility, diagnostics, ABI, reproducible source packaging, and clean-install validation. |
 
 Core 0.3 evidence is summarized in
 `benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
@@ -170,7 +170,7 @@ Status: complete
 
 Automatic parallelism is suitable for proven pure CPU work, but effectful host
 operations have observable intent that cannot generally be inferred. D0078
-therefore admits one leading two-call `fork`; D0079 closes the milestone
+therefore admits one leading two-call `parallel`; D0079 closes the milestone
 without general task state.
 
 ### Work
@@ -238,11 +238,12 @@ predicate returns byte `3` as the first counterexample. The reduction fixture
 falls from 410 to 310 canonical tokens, replays independently, is byte-stable
 on a second pass, and retains computed or effect-relevant shapes.
 
-## Core 1L: compatibility and release stabilization
+## Core 1L: internal stabilization milestone
 
 Status: complete
 
-Core 1L turns the accepted language into SLIM 1.0; it is not a feature sweep.
+Core 1L stabilized the accepted internal language candidate; it was not a
+public 1.0 freeze or a feature sweep.
 
 ### Work
 
@@ -286,6 +287,6 @@ For every milestone:
 7. Do not call the milestone complete while any required behavior depends on an
    undocumented fallback.
 
-SLIM 1.0 is compatibility-stable under `docs/COMPATIBILITY.md`. Future work
+SLIM 0.9 follows the pre-1.0 policy in `docs/COMPATIBILITY.md`. Future work
 still begins with evidence; the design goals and feature policy take
 precedence over milestone labels.

@@ -106,8 +106,8 @@ test("reference index preserves contracts and exact generated surface", async ()
   assert.match(html, /id="reference-core"/);
   assert.match(html, /id="reference-compatibility"/);
   assert.match(html, /design\/surface\.tsv/);
-  assert.match(html, /i64\.add/);
-  assert.match(html, /lexical-two-call-fork/);
+  assert.match(html, /u8\.to_i64/);
+  assert.match(html, /lexical-two-call-parallelism/);
 });
 
 test("public indexing and machine-readable artifacts cover every route", async () => {

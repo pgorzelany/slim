@@ -1,144 +1,160 @@
-# SLIM 1.0 Core language
+# SLIM 0.9 Core language
 
-Status: stable for major version 1
+Status: SLIM 0.9 — experimental, pre-1.0
 
 SLIM source is the only compilable program representation. Leading whitespace
-defines blocks, and `slimc fmt` emits the unique canonical layout.
+defines blocks, and `slimc fmt` emits the unique canonical layout. SLIM 0.9 is
+an atomic syntax replacement: the compiler does not accept the removed
+pre-0.9 spellings.
 
 ## Lexical grammar
 
 - Indentation is exactly two ASCII spaces per level. Tabs, odd indentation,
-  and skipping more than one level are errors. Blank lines and `#` line
-  comments do not change indentation.
-- Calls and payloads use `(` and `)`; composite types and effects use `[` and
-  `]`. Arguments are separated by whitespace, never commas.
-- `:`, `::`, `=`, and `->` have one structural meaning each. Braces, commas,
-  and semicolons are rejected.
-- Identifiers contain ASCII letters, digits, `_`, `-`, `.`, `/`, `?`, or `!`,
-  and may not begin with a digit.
+  and skipped levels are errors. Blank lines and `#` comments do not change
+  indentation.
+- Identifiers match `[A-Za-z_][A-Za-z0-9_]*`. A qualified module reference is
+  a dot-separated sequence of identifiers. `::` is reserved for enum cases.
 - Integers are base-10 `I64` literals with an optional leading `-`.
 - Byte strings use double quotes and the escapes `\\`, `\"`, `\n`, `\r`,
-  `\t`, and `\xNN` for an exact hexadecimal byte.
-- `#` starts a comment extending through the end of the line.
+  `\t`, and `\xNN`.
+- Parenthesized and bracketed lists require commas between elements. Missing,
+  leading, doubled, and trailing commas are rejected.
+- Braces and semicolons are not part of the language.
 
 ## Program grammar
 
 ```text
-program   = "module" NAME NEWLINE item*
-item      = function | record | variant
-function  = "fn" NAME "(" parameter* ")" "->" type effects? ":" block
-parameter = NAME ":" type | "inout" NAME ":" type
-effects   = "effects" "[" EFFECT+ "]"
-record    = "record" NAME ":" NEWLINE INDENT (NAME ":" type NEWLINE)* DEDENT
-variant   = "variant" NAME ":" NEWLINE INDENT
-            (NAME ("(" type* ")")? NEWLINE)* DEDENT
-type      = Unit | Bool | U8 | I64 | Bytes | NAME
-          | "Vec" "[" type "]" | "Arena" "[" type "]" | "Id" "[" type "]"
-block     = ("let" NAME ":" type "=" expression NEWLINE
-           | "set" NAME "=" expression NEWLINE)* expression
+program    = "module" identifier NEWLINE item*
+item       = function | struct | enum
+function   = "fn" identifier "(" parameters? ")" "->" type effects? ":" block
+parameters = parameter ("," parameter)*
+parameter  = ("var" | "inout")? identifier ":" type
+effects    = "effects" "[" effect ("," effect)* "]"
+struct     = "struct" identifier ":" NEWLINE INDENT field* DEDENT
+field      = identifier ":" type NEWLINE
+enum       = "enum" identifier ":" NEWLINE INDENT enum_case+ DEDENT
+enum_case  = identifier ("(" types? ")")? NEWLINE
+types      = type ("," type)*
+type       = Void | Bool | U8 | I64 | Bytes | identifier
+           | "Vec" "[" type "]" | "Arena" "[" type "]" | "Id" "[" type "]"
+block      = statement* expression
+statement  = "let" identifier ":" type "=" expression
+           | "var" identifier ":" type "=" expression
+           | identifier "=" expression
+           | void_expression
 ```
 
-Effects are drawn from `alloc`, `io`, and `partial`, in that order with no
-duplicates. Calls are `name(argument...)`. The remaining compound expressions
-have one spelling:
+Effects are drawn from `alloc`, `io`, and `partial`, in that order without
+duplicates. Every executable defines exactly
+`fn main(args: Vec[Bytes]) -> I64 ...`.
+
+Applications are comma-separated and evaluated left to right:
+
+```slim
+function_name(first, second)
+recur(next, total)
+Pair(left: 20, right: 22)
+Maybe::Some(value)
+```
+
+Function arguments remain positional. Named, colon-separated elements identify
+struct construction and must provide every field once in declaration order.
+`Pair()` is empty-struct construction when `Pair` resolves to a struct and a
+zero-argument call when it resolves to a function. Declarations share one
+namespace, so the two cannot have the same fully qualified name.
+
+Projection uses `value.field`; module qualification uses `module.name`; enum
+construction uses `Type::Case`. A match pattern uses the case name within the
+scrutinee's known enum. Nested projection is allowed.
+
+## Expressions and control flow
+
+The scalar and Boolean operators are:
 
 ```text
-make T(field = value...)
-get(value field)
-case T::Case(payload...)
-recur(argument...)
-match value:
-  Pattern(bindings...):
-    block
-fork:
-  block
+highest  !                  right associative
+         * / %              left associative
+         + -                left associative
+         < <= > >=          left associative
+         ==                 left associative
+         &&                 left associative
+lowest   ||                 left associative
 ```
 
-Together with literals, names, `let`, and `set`, each maps directly to one AST
-form; there is no desugaring layer, operator alias, or method-call alias.
+There is no `!=` and no general unary negation; a negative integer is a literal.
+Operators map directly to the existing checked operations. Grouping uses
+parentheses and does not change left-to-right operand evaluation.
 
-Every executable defines exactly `fn main(args: Vec[Bytes]) -> I64 ...`.
-Element zero is the executable path and remaining values are process arguments.
-There is no implicit global argument accessor and no alternative entry-point
-signature.
+`if`/`else` is the sole Boolean branch form:
 
-Every type position must contain one scalar type, one declared record or
-variant name, or exactly one of `Vec[TYPE]`, `Arena[TYPE]`, and `Id[TYPE]`.
-Unknown names, function names used as types, malformed constructors, and extra
-type arguments are rejected before code generation.
+```slim
+if ready && count > 0:
+  value
+else:
+  fallback
+```
+
+`match` is restricted to enums. It contains every case exactly once in
+declaration order, and each pattern binds exactly the declared payload:
+
+```slim
+match value:
+  None:
+    0
+  Some(inner):
+    inner
+```
+
+`parallel:` is the one explicit concurrency form. It has checked execution,
+join, effect, and serial-fallback behavior.
+
+## Bindings and Void
+
+`let` creates an immutable binding. `var` creates a mutable binding. Assignment
+is valid only for `var`, mutable parameters and pattern bindings, or `inout`.
+An `inout` parameter remains a non-escaping exclusive lexical borrow.
+
+Every non-final block expression must have exact type `Void`; silently
+discarding another result is an error. `void` is the explicit `Void` value.
+`Void` may be used only as a function result, a Void block result, or an
+expression statement. It cannot be a parameter, stored binding, struct field,
+enum payload, or collection element. The compiler retains its internal unit
+representation and lowers it to `SlimUnit`; this source rename has no runtime
+or ABI effect.
 
 ## Semantics
 
-- Evaluation order is left-to-right.
-- Bindings are immutable unless declared as the target of `set` through unique
-  lexical access.
+- Evaluation order is left to right.
 - Scalars and typed IDs are copyable. Owned aggregates move.
-- An `inout` parameter is a non-escaping exclusive lexical borrow. Calls pass a
-  named unique binding and cannot move it while the borrow is active.
-- Indexing is checked. Arithmetic overflow is a defined trap in checked builds
-  and two's-complement wrapping only through explicitly named wrapping
-  operations.
+- Indexing is checked. Checked arithmetic overflow, division by zero, and
+  remainder by zero are defined traps.
 - Pure functions omit the effects clause. Allocation, I/O, and unproven
-  termination require the ordered `alloc`, `io`, and `partial` capabilities
-  respectively.
-- Record construction names every declared field exactly once and in declaration
-  order. Field projection must name a field of the value's record type.
-- Variant construction names one declared case and supplies exactly its payload
-  types. A variant `match` contains every case exactly once and in declaration
-  order; each arm binds exactly the declared payload.
-- A Boolean `match` contains `true` and `false` exactly once. Boolean arm order
-  is irrelevant because `Bool` has no user-declared source order.
-- Every nested expression is checked against its expected type. Calls and
-  `recur` require exact arity and argument types; `set` preserves the binding's
-  declared type; all match arms agree on the enclosing expected type.
-- A tail-position `recur` transfers control to the current function entry and
-  does not grow the stack.
-- Resource failure is returned as an explicit typed value; it is never
-  undefined behavior. `io.read-file` has the single total signature
-  `(Bytes, inout Vec[U8]) -> Bool`: success appends the complete file, while
-  failure returns `false` and leaves the output unchanged.
-- `io.monotonic-ms() -> I64` requires `io`, allocates nothing, and returns a
-  nonnegative reading that does not decrease within one execution thread. Its
-  epoch is unspecified.
-- `io.tcp-exchange(Bytes, I64, Bytes, I64, I64, inout Vec[U8]) -> Bool`
-  requires `alloc io`; response size and elapsed wait are explicit, every
-  descriptor is runtime-lexical, and failure leaves output unchanged.
-- `fork:` is the one explicit concurrency form. Its block admits two
-  independent leading direct leaf-call bindings with bounded host effects,
-  scalar or byte-view inputs, no `inout`, and no `partial`. Both calls finish
-  before the remaining block; results install in lexical order. Spawn failure
-  uses the same serial execution.
-- Allocation exhaustion is the typed failure outcome of the existing `alloc`
-  effect. Generated code propagates it immediately, destroys active regions,
-  and handles it once at the executable boundary with exit code 71. SLIM 1.0
-  exposes no trapping or `try-` allocation alias and no invalid value sentinel;
-  local recovery is not yet source surface.
+  termination require `alloc`, `io`, and `partial`.
+- Calls and `recur` require exact arity and types. Assignment preserves the
+  binding type. Branch results must agree.
+- A tail-position `recur` transfers control to the current function entry
+  without growing the stack.
+- Resource failure remains an explicit typed result.
+- Structured parallel execution retains identical task bodies, deterministic
+  joins, serial fallback, and the existing runtime gates.
 
-## Built-in calls
+## Built-ins and qualification
 
-Built-ins use the same call syntax as ordinary functions and have exactly one
-canonical name. SLIM 1.0 includes checked integer arithmetic and comparison,
-Boolean operations, byte length/access, vector length/access/update, and basic
-I/O required by the compiler. Their concrete signatures are emitted by
-`slimc builtins` and tested as part of the language surface.
+Built-ins use snake_case names such as `io.print_i64`, `io.read_file`,
+`io.tcp_exchange`, `io.monotonic_ms`, `vec.get`, and `bytes.freeze`.
+Arithmetic, comparisons, and Boolean operations use the operator syntax above;
+their earlier callable spellings are not aliases.
 
-The current host-service contract and its deliberately absent capabilities are
+The complete signatures are emitted by `slimc builtins`. Host behavior is
 specified in `docs/HOST.md`.
 
-## Diagnostics
+## Diagnostics and tooling
 
 Every diagnostic has a stable code, severity, primary byte span, optional
-labels, notes, and fixes. Human and newline-delimited JSON renderings contain
-the same information. User input must not panic the compiler.
+labels, notes, and fixes. Human and JSON renderings carry the same information.
 
-## Tooling boundary
-
-`slimc analyze`, `reduce`, `prove-reduction`, `verify-reduction`, `equivalent`,
-and `edit` are compiler tools, not Core language features. Analysis and proof
-commands emit versioned non-executable reports. Reduction and a successfully
-checked edit emit ordinary canonical `.slim` source and cannot change which
-forms the compiler accepts. Canonical SLIM remains the only compilable
-representation; derived facts, proofs, patches, and control-flow views have no
-independent executable syntax or type system. The bounded contracts are
-specified in `docs/REDUCTION.md` and `docs/QUALITY.md`; compatibility and
-diagnostic promises are in `docs/COMPATIBILITY.md` and `docs/DIAGNOSTICS.md`.
+Analysis, reduction, equivalence, proof, edit, and agent-patch outputs are
+versioned tooling data, never a second executable representation. Canonical
+SLIM remains the compiler's sole accepted program form. Compatibility and
+diagnostic policies are specified in `docs/COMPATIBILITY.md` and
+`docs/DIAGNOSTICS.md`.

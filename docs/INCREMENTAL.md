@@ -11,7 +11,7 @@ session keeps two stable 64-bit fingerprints:
 - syntax: the declaration's normalized token structure, excluding whitespace,
   comments, and source offsets;
 - interface: the callable signature, effects, parameter modes, or complete
-  record/variant layout.
+  struct/enum layout.
 
 The FNV-1a encoding is defined in the compiler and never uses Rust's
 process-randomized hash state. Dependency edges cover user-function calls and

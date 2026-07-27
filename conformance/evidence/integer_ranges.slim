@@ -1,58 +1,54 @@
-module integer-ranges
+module integer_ranges
 
-fn guarded-upper(value: I64) -> I64:
-  match i64.lt(value 10):
-    true:
-      i64.add(value 1)
-    false:
-      value
+fn guarded_upper(value: I64) -> I64:
+  if value < 10:
+    value + 1
+  else:
+    value
 
-fn guarded-lower(value: I64) -> I64:
-  match i64.gt(value -10):
-    true:
-      i64.sub(value 1)
-    false:
-      value
+fn guarded_lower(value: I64) -> I64:
+  if value > -10:
+    value - 1
+  else:
+    value
 
-fn exact-arithmetic() -> I64:
-  i64.mul(i64.add(20 2) 2)
+fn exact_arithmetic() -> I64:
+  (20 + 2) * 2
 
-fn exact-division() -> I64:
-  i64.div(84 2)
+fn exact_division() -> I64:
+  84 / 2
 
-fn exact-conversion() -> U8:
-  i64.to-u8(255)
+fn exact_conversion() -> U8:
+  i64.to_u8(255)
 
 fn unguarded(value: I64) -> I64:
-  i64.add(value 1)
+  value + 1
 
-fn zero-divisor() -> I64:
-  i64.div(1 0)
+fn zero_divisor() -> I64:
+  1 / 0
 
-fn domain-limit() -> I64:
-  i64.add(1000000000 1)
+fn domain_limit() -> I64:
+  1000000000 + 1
 
-fn constant-remainder(value: I64) -> I64:
-  i64.rem(value 3)
+fn constant_remainder(value: I64) -> I64:
+  value % 3
 
-fn constant-division(value: I64) -> I64:
-  i64.div(value 2)
+fn constant_division(value: I64) -> I64:
+  value / 2
 
-fn possible-division-overflow(value: I64) -> I64:
-  i64.div(value -1)
+fn possible_division_overflow(value: I64) -> I64:
+  value / -1
 
-fn total-countdown(remaining: I64 state: Bool) -> Bool effects[partial]:
-  match i64.le(remaining 0):
-    true:
-      state
-    false:
-      recur(i64.sub(remaining 1) bool.not(state))
+fn total_countdown(remaining: I64, state: Bool) -> Bool effects[partial]:
+  if remaining <= 0:
+    state
+  else:
+    recur(remaining - 1, !state)
 
 fn main(args: Vec[Bytes]) -> I64:
-  let left: I64 = guarded-upper(5)
-  let right: I64 = exact-arithmetic()
-  match i64.eq(left right):
-    true:
-      1
-    false:
-      0
+  let left: I64 = guarded_upper(5)
+  let right: I64 = exact_arithmetic()
+  if left == right:
+    1
+  else:
+    0

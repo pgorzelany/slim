@@ -1,10 +1,10 @@
 # artifact	version	compatibility	canonical-source
-source-surface	1	stable-major	design/surface.tsv
-project-manifest	1	stable-major	docs/PROJECTS.md
-project-interface	1	stable-major	docs/PROJECTS.md
-persistent-cache	1	rebuildable	selfhost/cache.slim
-diagnostic-codes	1	stable-major	docs/DIAGNOSTICS.md
-diagnostic-json	1	stable-major	docs/DIAGNOSTICS.md
+source-surface	2	pre-1.0-minor	design/surface.tsv
+project-manifest	1	pre-1.0-minor	docs/PROJECTS.md
+project-interface	2	pre-1.0-minor	docs/PROJECTS.md
+persistent-cache	2	rebuildable	selfhost/cache.slim
+diagnostic-codes	1	pre-1.0-minor	docs/DIAGNOSTICS.md
+diagnostic-json	1	pre-1.0-minor	docs/DIAGNOSTICS.md
 analysis	7	versioned-tooling	docs/QUALITY.md
 cost-vector	1	versioned-tooling	docs/QUALITY.md
 equivalence	2	versioned-tooling	docs/QUALITY.md
@@ -12,4 +12,4 @@ reduction-proof	2	versioned-tooling	docs/REDUCTION.md
 reduction-verification	1	versioned-tooling	docs/REDUCTION.md
 structural-edit	1	versioned-tooling	docs/QUALITY.md
 runtime-abi	1	exact-match	runtime/slim_rt.h
-c-backend	1	stable-major	docs/CORE.md
+c-backend	1	pre-1.0-minor	docs/CORE.md

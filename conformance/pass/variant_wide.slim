@@ -1,6 +1,6 @@
-module variant-wide
+module variant_wide
 
-variant Wide:
+enum Wide:
   C00
   C01
   C02
@@ -54,8 +54,8 @@ fn unwrap(value: Wide) -> I64:
       answer
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let value: Wide = case Wide::C15(42)
+  let value: Wide = Wide::C15(42)
   let answer: I64 = unwrap(value)
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+  io.print_i64(answer)
+  io.println("")
   0

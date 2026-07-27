@@ -25,10 +25,10 @@ indentation, and skipped levels are separate errors.
 The malformed fixture is rejected with `E0103`. The conformance corpus also
 fixes `E0104` for odd indentation and `E0105` for skipped levels.
 
-Canonical punctuation follows the same rule: calls and forms do not gain
-braces, commas, or semicolons.
+Canonical punctuation follows the same rule: parenthesized lists require
+commas, while braces and semicolons are rejected.
 
-<!-- slim-fixture: comma-syntax -->
+<!-- slim-fixture: missing-comma -->
 
 ## Formatting
 

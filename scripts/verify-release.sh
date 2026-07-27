@@ -61,7 +61,7 @@ test ! -e "$slim_install/target"
     test "$(./slimc run conformance/projects/basic/slim.project)" = "41"
     test "$(./slimc run benchmarks/challenges/sieve/program.slim)" = "78498"
     test "$(./slimc analyze examples/countdown.slim | sed -n '1p')" != ""
-    test "$(./slimc builtins | sed -n '1p')" = "i64.add"
+    test "$(./slimc builtins | sed -n '1p')" = "u8.to_i64"
 
     ./slimc emit-c examples/hello.slim -o "$slim_work/hello.c"
     sed 's/#define SLIM_RUNTIME_ABI_VERSION 1/#define SLIM_RUNTIME_ABI_VERSION 2/' \

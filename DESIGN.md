@@ -1,6 +1,6 @@
 # SLIM Language Design
 
-Status: SLIM 1.0 released
+Status: SLIM 0.9 — experimental, pre-1.0
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-26
 
@@ -80,7 +80,7 @@ Arbitrary locks, unrestricted communication, and foreign code cannot receive a
 general static deadlock-freedom guarantee.
 
 Core 1G executes a deliberately narrow subset of Core 1F's bounded,
-deterministic, pairwise non-overlapping fork/join plan. The compiler requires
+deterministic, pairwise non-overlapping parallel plan. The compiler requires
 complete totality and reorder-safety, atomic typed captures, a codegen-supported
 leading `let` chain, and exact work above the measured `posix-v1` threshold.
 One child and one parent-owned join guarantee bounded, deadlock-free structure;
@@ -243,10 +243,10 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-SLIM 1.0 has affine ownership, immutable bindings, exclusive mutation,
+SLIM 0.9 has affine ownership, explicit mutable bindings, exclusive mutation,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
-bounded analysis, direct-source reduction, and guarded automatic fork/join.
+bounded analysis, direct-source reduction, and guarded automatic parallel execution.
 Core 1I adds one effect-gated monotonic clock and one bounded whole TCP
 exchange, then closes without source handles. Core 1J adds one structured form
 for demonstrated effectful overlap. Core 1K adds exact finite byte
@@ -257,7 +257,7 @@ boundary.
 
 ## Remaining research questions
 
-Post-1.0 work remains evidence-driven:
+Further pre-1.0 work remains evidence-driven:
 
 1. How should bounded internal state interact with indefinite external event
    streams?

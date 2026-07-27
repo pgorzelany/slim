@@ -1,40 +1,37 @@
 module variants
 
-variant Command:
+enum Command:
   Keep
   Add(I64)
   Remove(I64)
 
 fn command(index: I64) -> Command effects[partial]:
-  let choice: I64 = i64.rem(index 3)
-  match i64.eq(choice 0):
-    true:
-      case Command::Add(i64.rem(index 17))
-    false:
-      match i64.eq(choice 1):
-        true:
-          case Command::Remove(i64.rem(index 13))
-        false:
-          case Command::Keep()
+  let choice: I64 = index % 3
+  if choice == 0:
+    Command::Add(index % 17)
+  else:
+    if choice == 1:
+      Command::Remove(index % 13)
+    else:
+      Command::Keep()
 
-fn apply(value: I64 command: Command) -> I64 effects[partial]:
+fn apply(value: I64, command: Command) -> I64 effects[partial]:
   match command:
     Keep:
       value
     Add(amount):
-      i64.add(value amount)
+      value + amount
     Remove(amount):
-      i64.sub(value amount)
+      value - amount
 
-fn simulate(index: I64 count: I64 value: I64) -> I64 effects[partial]:
-  match i64.eq(index count):
-    true:
-      value
-    false:
-      recur(i64.add(index 1) count apply(value command(index)))
+fn simulate(index: I64, count: I64, value: I64) -> I64 effects[partial]:
+  if index == count:
+    value
+  else:
+    recur(index + 1, count, apply(value, command(index)))
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let result: I64 = simulate(0 2000000 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let result: I64 = simulate(0, 2000000, 0)
+  io.print_i64(result)
+  io.println("")
   0

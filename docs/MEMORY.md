@@ -25,7 +25,7 @@ list only at process shutdown. This is memory-safe for accepted programs but is
 not compile-time lifetime planning or narrow deterministic release.
 
 There is also an ownership projection obligation that global retention masks:
-project sessions extract multiple vector fields from an affine `State` record.
+project sessions extract multiple vector fields from an affine `State` struct.
 Core 0.4 must represent disjoint field moves or conservatively keep the parent
 storage live; it must not generate two independently destroyed owners for one
 buffer.
@@ -38,8 +38,8 @@ The Core 0.3 twelve-module compiler contains:
 | --- | ---: |
 | Actual `vec.new` calls | 61 |
 | Actual zero-copy `bytes.freeze` calls | 32 |
-| Actual total `io.read-file` calls | 15 |
-| Vector-valued record fields | 8 |
+| Actual total `io.read_file` calls | 15 |
+| Vector-valued struct fields | 8 |
 | Functions returning vectors | 3 |
 | Functions returning `Bytes` | 11 |
 | Exclusive vector parameters | 408 |
@@ -55,8 +55,8 @@ user-written regions, or user-defined destructors.
 The typed plan uses four concepts:
 
 1. A storage value is `none`, `view`, or `owned`. Scalars and typed IDs are
-   `none`; `Bytes` is a `view`; vectors and arenas are `owned`; records and
-   variants derive the join of their members.
+   `none`; `Bytes` is a `view`; vectors and arenas are `owned`; structs and
+   enums derive the join of their members.
 2. An escape destination is local, result, or one numbered `inout` output.
    Function summaries contain only these bounded destinations.
 3. A liveness endpoint is a source span identifying the final required use of

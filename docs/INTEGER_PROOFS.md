@@ -17,15 +17,15 @@ keeps the implementation independent of a solver.
 The first transfer set understands:
 
 - exact integer literals and immutable `let` flow;
-- `i64.add` and `i64.sub` when an exact constant and the required one-sided
+- `+` and `-` when an exact constant and the required one-sided
   bound prove safety;
-- `i64.mul` when both operands and the result are bounded;
-- `i64.div` and `i64.rem` when the divisor is bounded away from zero and the
+- `*` when both operands and the result are bounded;
+- `/` and `%` when the divisor is bounded away from zero and the
   possible numerator/divisor pair excludes `I64::MIN / -1`; remainder bounds
   derive from the divisor magnitude even when the numerator is otherwise
   unknown;
-- `i64.to-u8` when the input is proven inside `0..255`; and
-- one-sided refinements from direct `i64.lt`, `i64.le`, `i64.gt`, and `i64.ge`
+- `i64.to_u8` when the input is proven inside `0..255`; and
+- one-sided refinements from direct `<`, `<=`, `>`, and `>=`
   comparisons against an exact constant in Boolean match arms.
 
 For closed checked programs, exact total scalar arguments propagate into a
@@ -39,7 +39,7 @@ values outside the proof domain remain unknown. Unknown is never permission to
 remove a check or reorder a trap.
 
 One recurrence shape has a complete structural proof. A function may match an
-I64 parameter with `i64.le` against an exact lower bound. Its true arm must be
+I64 parameter with `<=` against an exact lower bound. Its true arm must be
 total. Its false arm may contain total immutable bindings followed by exactly
 one tail `recur`; the corresponding argument must subtract a positive exact
 step from the same linked parameter, and the update plus every recurrent

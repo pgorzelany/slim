@@ -1,7 +1,7 @@
-# SLIM 1.0 diagnostics
+# SLIM 0.9 diagnostics
 
 Schema: 1
-Status: stable for major version 1
+Status: SLIM 0.9 — experimental, pre-1.0
 
 Every rejected program produces one or more diagnostics in deterministic
 source order. A diagnostic has a stable `E` code, severity, source identity,
@@ -37,8 +37,13 @@ The canonical parser reserves these stable conditions:
 - `E0103`: tab indentation
 - `E0104`: odd indentation width
 - `E0105`: skipped indentation level
-- `E0106`: forbidden comma, brace, or semicolon
+- `E0106`: forbidden brace or semicolon
 - `E0107`: unterminated byte string
+- `E0108`: missing comma, with an insertion fix where unambiguous
+- `E0109`: leading, doubled, or trailing comma
+- `E0357`: discarded non-Void result
+- `E0358`: Void used in a storable position
+- `E0359`: assignment to an immutable binding
 
 Each points at the offending byte interval, or the zero-width location where
 required structure is missing.

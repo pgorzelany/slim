@@ -1,72 +1,63 @@
-module n-queens
+module n_queens
 
-fn absolute-difference(left: I64 right: I64) -> I64:
-  match i64.ge(left right):
-    true:
-      i64.sub(left right)
-    false:
-      i64.sub(right left)
+fn absolute_difference(left: I64, right: I64) -> I64:
+  if left >= right:
+    left - right
+  else:
+    right - left
 
-fn safe(inout columns: Vec[I64] row: I64 column: I64 prior: I64) -> Bool effects[partial]:
-  match i64.eq(prior row):
-    true:
-      true
-    false:
-      let occupied: I64 = vec.get(columns prior)
-      let same-column: Bool = i64.eq(occupied column)
-      let row-distance: I64 = i64.sub(row prior)
-      let column-distance: I64 = absolute-difference(occupied column)
-      let same-diagonal: Bool = i64.eq(row-distance column-distance)
-      let conflict: Bool = bool.or(same-column same-diagonal)
-      match conflict:
-        true:
-          false
-        false:
-          recur(columns row column i64.add(prior 1))
+fn safe(inout columns: Vec[I64], row: I64, column: I64, prior: I64) -> Bool effects[partial]:
+  if prior == row:
+    true
+  else:
+    let occupied: I64 = vec.get(columns, prior)
+    let same_column: Bool = occupied == column
+    let row_distance: I64 = row - prior
+    let column_distance: I64 = absolute_difference(occupied, column)
+    let same_diagonal: Bool = row_distance == column_distance
+    let conflict: Bool = same_column || same_diagonal
+    if conflict:
+      false
+    else:
+      recur(columns, row, column, prior + 1)
 
-fn fill(inout columns: Vec[I64] index: I64 size: I64) -> Unit effects[alloc partial]:
-  match i64.eq(index size):
-    true:
-      unit
-    false:
-      let pushed: Unit = vec.push(columns -1)
-      recur(columns i64.add(index 1) size)
+fn fill(inout columns: Vec[I64], index: I64, size: I64) -> Void effects[alloc, partial]:
+  if index == size:
+    void
+  else:
+    vec.push(columns, -1)
+    recur(columns, index + 1, size)
 
-fn search(inout columns: Vec[I64] row: I64 column: I64 size: I64 total: I64) -> I64 effects[partial]:
-  match i64.lt(row 0):
-    true:
-      total
-    false:
-      let exhausted: Bool = i64.ge(column size)
-      match exhausted:
-        true:
-          match i64.eq(row 0):
-            true:
-              total
-            false:
-              let previous-row: I64 = i64.sub(row 1)
-              let previous-column: I64 = vec.get(columns previous-row)
-              let cleared: Unit = vec.set(columns row -1)
-              recur(columns previous-row i64.add(previous-column 1) size total)
-        false:
-          let allowed: Bool = safe(columns row column 0)
-          match allowed:
-            false:
-              recur(columns row i64.add(column 1) size total)
-            true:
-              let placed: Unit = vec.set(columns row column)
-              let last: Bool = i64.eq(row i64.sub(size 1))
-              match last:
-                true:
-                  recur(columns row i64.add(column 1) size i64.add(total 1))
-                false:
-                  recur(columns i64.add(row 1) 0 size total)
+fn search(inout columns: Vec[I64], row: I64, column: I64, size: I64, total: I64) -> I64 effects[partial]:
+  if row < 0:
+    total
+  else:
+    let exhausted: Bool = column >= size
+    if exhausted:
+      if row == 0:
+        total
+      else:
+        let previous_row: I64 = row - 1
+        let previous_column: I64 = vec.get(columns, previous_row)
+        vec.set(columns, row, -1)
+        recur(columns, previous_row, previous_column + 1, size, total)
+    else:
+      let allowed: Bool = safe(columns, row, column, 0)
+      if allowed:
+        vec.set(columns, row, column)
+        let last: Bool = row == (size - 1)
+        if last:
+          recur(columns, row, column + 1, size, total + 1)
+        else:
+          recur(columns, row + 1, 0, size, total)
+      else:
+        recur(columns, row, column + 1, size, total)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 13
   let columns: Vec[I64] = vec.new()
-  let filled: Unit = fill(columns 0 size)
-  let result: I64 = search(columns 0 0 size 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(columns, 0, size)
+  let result: I64 = search(columns, 0, 0, size, 0)
+  io.print_i64(result)
+  io.println("")
   0

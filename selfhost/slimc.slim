@@ -1,499 +1,441 @@
 module compiler
 
-fn check_input_path(path: Bytes) -> I64 effects[alloc io partial]:
-  let project: Bool = project/path_is_project(path)
-  match project:
-    true:
-      project/check_project_path(path)
-    false:
-      check/check_path_all(path)
+fn check_input_path(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project: Bool = project.path_is_project(path)
+  if project:
+    project.check_project_path(path)
+  else:
+    check.check_path_all(path)
 
-fn format_path(path: Bytes) -> I64 effects[alloc io partial]:
-  let project: Bool = project/path_is_project(path)
+fn format_path(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project: Bool = project.path_is_project(path)
   let input_bytes: Vec[U8] = vec.new()
-  let input_read: Bool = io.read-file(path input_bytes)
-  match input_read:
-    false:
-      let shown: Unit = io.println("E0409@0:0")
+  let input_read: Bool = io.read_file(path, input_bytes)
+  if input_read:
+    let input: Bytes = bytes.freeze(input_bytes)
+    if project:
+      let status: I64 = project.check_project_path(path)
+      let invalid: Bool = status > 0
+      if invalid:
+        status
+      else:
+        io.print_bytes(input)
+        0
+    else:
+      let tokens: Vec[syntax.Token] = vec.new()
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      if parsed.valid:
+        let valid: Bool = validate.module_shape_valid(input, tokens)
+        if valid:
+          let output: Vec[U8] = vec.new()
+          format.emit_module(input, tokens, output)
+          let bytes: Bytes = bytes.freeze(output)
+          io.print_bytes(bytes)
+          0
+        else:
+          io.println("E0102@0:0")
+          1
+      else:
+        check.report_program_parse(parsed)
+  else:
+    io.println("E0409@0:0")
+    1
+
+fn analyze_project_path(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let prepared: project.PreparedProject = project.prepare_project_path(path)
+  let status: I64 = prepared.status
+  let invalid: Bool = status > 0
+  if invalid:
+    status
+  else:
+    let source: Bytes = prepared.source
+    let tokens: Vec[syntax.Token] = prepared.tokens
+    let typed_facts: Vec[typing.Fact] = prepared.facts
+    let output: Vec[U8] = vec.new()
+    analysis.emit_module(source, tokens, typed_facts, output)
+    let result: Bytes = bytes.freeze(output)
+    io.print_bytes(result)
+    0
+
+fn transform_path(path: Bytes, analysis_mode: Bool) -> I64 effects[alloc, io, partial]:
+  let project: Bool = project.path_is_project(path)
+  if project:
+    if analysis_mode:
+      analyze_project_path(path)
+    else:
+      io.println("E0410@0:0")
       1
-    true:
+  else:
+    let input_bytes: Vec[U8] = vec.new()
+    let input_read: Bool = io.read_file(path, input_bytes)
+    if input_read:
       let input: Bytes = bytes.freeze(input_bytes)
-      match project:
-        true:
-          let status: I64 = project/check_project_path(path)
-          let invalid: Bool = i64.gt(status 0)
-          match invalid:
-            true:
-              status
-            false:
-              let shown: Unit = io.print-bytes(input)
-              0
-        false:
-          let tokens: Vec[syntax/Token] = vec.new()
-          let parsed: syntax/ProgramParse = syntax/parse_program_result(input tokens)
-          match get(parsed valid):
-            false:
-              check/report_program_parse(parsed)
-            true:
-              let valid: Bool = validate/module_shape_valid(input tokens)
-              match valid:
-                false:
-                  let shown: Unit = io.println("E0102@0:0")
-                  1
-                true:
-                  let output: Vec[U8] = vec.new()
-                  let formatted: Unit = format/emit_module(input tokens output)
-                  let bytes: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(bytes)
-                  0
+      let tokens: Vec[syntax.Token] = vec.new()
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      if parsed.valid:
+        let checked: typing.Checked = check.check_source(input, tokens)
+        let status: I64 = checked.status
+        let invalid: Bool = status > 0
+        if invalid:
+          status
+        else:
+          let view: typing.View = checked.view
+          let typed_facts: Vec[typing.Fact] = view.facts
+          let output: Vec[U8] = vec.new()
+          if analysis_mode:
+            analysis.emit_module(input, tokens, typed_facts, output)
+          else:
+            reduce.emit_normal_form(input, output)
+          let result: Bytes = bytes.freeze(output)
+          io.print_bytes(result)
+          0
+      else:
+        check.report_program_parse(parsed)
+    else:
+      io.println("E0409@0:0")
+      1
 
-fn analyze_project_path(path: Bytes) -> I64 effects[alloc io partial]:
-  let prepared: project/PreparedProject = project/prepare_project_path(path)
-  let status: I64 = get(prepared status)
-  let invalid: Bool = i64.gt(status 0)
-  match invalid:
-    true:
-      status
-    false:
-      let source: Bytes = get(prepared source)
-      let tokens: Vec[syntax/Token] = get(prepared tokens)
-      let typed_facts: Vec[typing/Fact] = get(prepared facts)
-      let output: Vec[U8] = vec.new()
-      let analyzed: Unit = analysis/emit_module(source tokens typed_facts output)
-      let result: Bytes = bytes.freeze(output)
-      let shown: Unit = io.print-bytes(result)
-      0
+fn compile_path(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project: Bool = project.path_is_project(path)
+  if project:
+    project.compile_project_path(path)
+  else:
+    let input_bytes: Vec[U8] = vec.new()
+    let input_read: Bool = io.read_file(path, input_bytes)
+    if input_read:
+      let input: Bytes = bytes.freeze(input_bytes)
+      let tokens: Vec[syntax.Token] = vec.new()
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      if parsed.valid:
+        let checked: typing.Checked = check.check_source(input, tokens)
+        let status: I64 = checked.status
+        let invalid: Bool = status > 0
+        if invalid:
+          status
+        else:
+          let view: typing.View = checked.view
+          let facts: Vec[typing.Fact] = view.facts
+          let plan: memory.Plan = checked.plan
+          let output: Vec[U8] = vec.new()
+          codegen.emit_program(input, tokens, facts, plan, output)
+          let generated: Bytes = bytes.freeze(output)
+          io.print_bytes(generated)
+          0
+      else:
+        check.report_program_parse(parsed)
+    else:
+      io.println("E0409@0:0")
+      1
 
-fn transform_path(path: Bytes analysis_mode: Bool) -> I64 effects[alloc io partial]:
-  let project: Bool = project/path_is_project(path)
-  match project:
-    true:
-      match analysis_mode:
-        true:
-          analyze_project_path(path)
-        false:
-          let shown: Unit = io.println("E0410@0:0")
-          1
-    false:
+fn proof_path(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project_input: Bool = project.path_is_project(path)
+  if project_input:
+    io.println("E0410@0:0")
+    1
+  else:
+    let checked: I64 = check.check_path_all(path)
+    let invalid: Bool = checked > 0
+    if invalid:
+      checked
+    else:
       let input_bytes: Vec[U8] = vec.new()
-      let input_read: Bool = io.read-file(path input_bytes)
-      match input_read:
-        false:
-          let shown: Unit = io.println("E0409@0:0")
+      let input_read: Bool = io.read_file(path, input_bytes)
+      if input_read:
+        let input: Bytes = bytes.freeze(input_bytes)
+        let tokens: Vec[syntax.Token] = vec.new()
+        let parsed: Bool = syntax.parse_program(input, tokens)
+        let output: Vec[U8] = vec.new()
+        proof.emit_report(input, tokens, output)
+        let result: Bytes = bytes.freeze(output)
+        io.print_bytes(result)
+        0
+      else:
+        io.println("E0409@0:0")
+        1
+
+fn verify_paths(original_path: Bytes, candidate_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let original_project: Bool = project.path_is_project(original_path)
+  let candidate_project: Bool = project.path_is_project(candidate_path)
+  let any_project: Bool = original_project || candidate_project
+  if any_project:
+    io.println("E0410@0:0")
+    1
+  else:
+    let original_checked: I64 = check.check_path_all(original_path)
+    let original_invalid: Bool = original_checked > 0
+    if original_invalid:
+      original_checked
+    else:
+      let candidate_checked: I64 = check.check_path_all(candidate_path)
+      let candidate_invalid: Bool = candidate_checked > 0
+      if candidate_invalid:
+        candidate_checked
+      else:
+        let original_bytes: Vec[U8] = vec.new()
+        let original_read: Bool = io.read_file(original_path, original_bytes)
+        let candidate_bytes: Vec[U8] = vec.new()
+        let candidate_read: Bool = io.read_file(candidate_path, candidate_bytes)
+        let both_read: Bool = original_read && candidate_read
+        if both_read:
+          let original: Bytes = bytes.freeze(original_bytes)
+          let candidate: Bytes = bytes.freeze(candidate_bytes)
+          let output: Vec[U8] = vec.new()
+          proof.verify(original, candidate, output)
+          let result: Bytes = bytes.freeze(output)
+          io.print_bytes(result)
+          0
+        else:
+          io.println("E0409@0:0")
           1
-        true:
-          let input: Bytes = bytes.freeze(input_bytes)
-          let tokens: Vec[syntax/Token] = vec.new()
-          let parsed: syntax/ProgramParse = syntax/parse_program_result(input tokens)
-          match get(parsed valid):
-            false:
-              check/report_program_parse(parsed)
-            true:
-              let checked: typing/Checked = check/check_source(input tokens)
-              let status: I64 = get(checked status)
-              let invalid: Bool = i64.gt(status 0)
-              match invalid:
-                true:
-                  status
-                false:
-                  let view: typing/View = get(checked view)
-                  let typed_facts: Vec[typing/Fact] = get(view facts)
-                  let output: Vec[U8] = vec.new()
-                  let transformed: Unit = match analysis_mode:
-                    true:
-                      analysis/emit_module(input tokens typed_facts output)
-                    false:
-                      reduce/emit_normal_form(input output)
-                  let result: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(result)
-                  0
 
-fn compile_path(path: Bytes) -> I64 effects[alloc io partial]:
-  let project: Bool = project/path_is_project(path)
-  match project:
-    true:
-      project/compile_project_path(path)
-    false:
-      let input_bytes: Vec[U8] = vec.new()
-      let input_read: Bool = io.read-file(path input_bytes)
-      match input_read:
-        false:
-          let shown: Unit = io.println("E0409@0:0")
+fn equivalent_paths(left_path: Bytes, right_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let left_project: Bool = project.path_is_project(left_path)
+  let right_project: Bool = project.path_is_project(right_path)
+  let any_project: Bool = left_project || right_project
+  if any_project:
+    io.println("E0410@0:0")
+    1
+  else:
+    let left_checked: I64 = check.check_path_all(left_path)
+    let left_invalid: Bool = left_checked > 0
+    if left_invalid:
+      left_checked
+    else:
+      let right_checked: I64 = check.check_path_all(right_path)
+      let right_invalid: Bool = right_checked > 0
+      if right_invalid:
+        right_checked
+      else:
+        let left_bytes: Vec[U8] = vec.new()
+        let left_read: Bool = io.read_file(left_path, left_bytes)
+        let right_bytes: Vec[U8] = vec.new()
+        let right_read: Bool = io.read_file(right_path, right_bytes)
+        let both_read: Bool = left_read && right_read
+        if both_read:
+          let left: Bytes = bytes.freeze(left_bytes)
+          let right: Bytes = bytes.freeze(right_bytes)
+          let left_tokens: Vec[syntax.Token] = vec.new()
+          let left_parsed: Bool = syntax.parse_program(left, left_tokens)
+          let right_tokens: Vec[syntax.Token] = vec.new()
+          let right_parsed: Bool = syntax.parse_program(right, right_tokens)
+          let output: Vec[U8] = vec.new()
+          equivalence.emit_comparison(left, left_tokens, right, right_tokens, output)
+          let result: Bytes = bytes.freeze(output)
+          io.print_bytes(result)
+          0
+        else:
+          io.println("E0409@0:0")
           1
-        true:
-          let input: Bytes = bytes.freeze(input_bytes)
-          let tokens: Vec[syntax/Token] = vec.new()
-          let parsed: syntax/ProgramParse = syntax/parse_program_result(input tokens)
-          match get(parsed valid):
-            false:
-              check/report_program_parse(parsed)
-            true:
-              let checked: typing/Checked = check/check_source(input tokens)
-              let status: I64 = get(checked status)
-              let invalid: Bool = i64.gt(status 0)
-              match invalid:
-                true:
-                  status
-                false:
-                  let view: typing/View = get(checked view)
-                  let facts: Vec[typing/Fact] = get(view facts)
-                  let plan: memory/Plan = get(checked plan)
-                  let output: Vec[U8] = vec.new()
-                  let emitted: Unit = codegen/emit_program(input tokens facts plan output)
-                  let generated: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(generated)
-                  0
 
-fn proof_path(path: Bytes) -> I64 effects[alloc io partial]:
-  let project_input: Bool = project/path_is_project(path)
-  match project_input:
-    true:
-      let shown: Unit = io.println("E0410@0:0")
-      1
-    false:
-      let checked: I64 = check/check_path_all(path)
-      let invalid: Bool = i64.gt(checked 0)
-      match invalid:
-        true:
-          checked
-        false:
-          let input_bytes: Vec[U8] = vec.new()
-          let input_read: Bool = io.read-file(path input_bytes)
-          match input_read:
-            false:
-              let shown: Unit = io.println("E0409@0:0")
-              1
-            true:
-              let input: Bytes = bytes.freeze(input_bytes)
-              let tokens: Vec[syntax/Token] = vec.new()
-              let parsed: Bool = syntax/parse_program(input tokens)
-              let output: Vec[U8] = vec.new()
-              let emitted: Unit = proof/emit_report(input tokens output)
-              let result: Bytes = bytes.freeze(output)
-              let shown: Unit = io.print-bytes(result)
-              0
+fn edit_paths(source_path: Bytes, patch_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project_input: Bool = project.path_is_project(source_path)
+  if project_input:
+    io.println("E0410@0:0")
+    1
+  else:
+    let checked: I64 = check.check_path_all(source_path)
+    let invalid: Bool = checked > 0
+    if invalid:
+      checked
+    else:
+      let source_bytes: Vec[U8] = vec.new()
+      let source_read: Bool = io.read_file(source_path, source_bytes)
+      let patch_bytes: Vec[U8] = vec.new()
+      let patch_read: Bool = io.read_file(patch_path, patch_bytes)
+      let both_read: Bool = source_read && patch_read
+      if both_read:
+        let source: Bytes = bytes.freeze(source_bytes)
+        let patch: Bytes = bytes.freeze(patch_bytes)
+        let tokens: Vec[syntax.Token] = vec.new()
+        let parsed: Bool = syntax.parse_program(source, tokens)
+        let output: Vec[U8] = vec.new()
+        let edited: Bool = edit.emit_candidate(source, tokens, patch, output)
+        if edited:
+          let result: Bytes = bytes.freeze(output)
+          io.print_bytes(result)
+          0
+        else:
+          io.println("E0411@0:0")
+          1
+      else:
+        io.println("E0409@0:0")
+        1
 
-fn verify_paths(original_path: Bytes candidate_path: Bytes) -> I64 effects[alloc io partial]:
-  let original_project: Bool = project/path_is_project(original_path)
-  let candidate_project: Bool = project/path_is_project(candidate_path)
-  let any_project: Bool = bool.or(original_project candidate_project)
-  match any_project:
-    true:
-      let shown: Unit = io.println("E0410@0:0")
-      1
-    false:
-      let original_checked: I64 = check/check_path_all(original_path)
-      let original_invalid: Bool = i64.gt(original_checked 0)
-      match original_invalid:
-        true:
-          original_checked
-        false:
-          let candidate_checked: I64 = check/check_path_all(candidate_path)
-          let candidate_invalid: Bool = i64.gt(candidate_checked 0)
-          match candidate_invalid:
-            true:
-              candidate_checked
-            false:
-              let original_bytes: Vec[U8] = vec.new()
-              let original_read: Bool = io.read-file(original_path original_bytes)
-              let candidate_bytes: Vec[U8] = vec.new()
-              let candidate_read: Bool = io.read-file(candidate_path candidate_bytes)
-              let both_read: Bool = bool.and(original_read candidate_read)
-              match both_read:
-                false:
-                  let shown: Unit = io.println("E0409@0:0")
-                  1
-                true:
-                  let original: Bytes = bytes.freeze(original_bytes)
-                  let candidate: Bytes = bytes.freeze(candidate_bytes)
-                  let output: Vec[U8] = vec.new()
-                  let verified: Unit = proof/verify(original candidate output)
-                  let result: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(result)
-                  0
+fn run_proof_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let enough: Bool = arg_count >= 3
+  if enough:
+    let source_path: Bytes = vec.get(args, 2)
+    proof_path(source_path)
+  else:
+    io.println("usage: slimc prove-reduction SOURCE")
+    64
 
-fn equivalent_paths(left_path: Bytes right_path: Bytes) -> I64 effects[alloc io partial]:
-  let left_project: Bool = project/path_is_project(left_path)
-  let right_project: Bool = project/path_is_project(right_path)
-  let any_project: Bool = bool.or(left_project right_project)
-  match any_project:
-    true:
-      let shown: Unit = io.println("E0410@0:0")
-      1
-    false:
-      let left_checked: I64 = check/check_path_all(left_path)
-      let left_invalid: Bool = i64.gt(left_checked 0)
-      match left_invalid:
-        true:
-          left_checked
-        false:
-          let right_checked: I64 = check/check_path_all(right_path)
-          let right_invalid: Bool = i64.gt(right_checked 0)
-          match right_invalid:
-            true:
-              right_checked
-            false:
-              let left_bytes: Vec[U8] = vec.new()
-              let left_read: Bool = io.read-file(left_path left_bytes)
-              let right_bytes: Vec[U8] = vec.new()
-              let right_read: Bool = io.read-file(right_path right_bytes)
-              let both_read: Bool = bool.and(left_read right_read)
-              match both_read:
-                false:
-                  let shown: Unit = io.println("E0409@0:0")
-                  1
-                true:
-                  let left: Bytes = bytes.freeze(left_bytes)
-                  let right: Bytes = bytes.freeze(right_bytes)
-                  let left_tokens: Vec[syntax/Token] = vec.new()
-                  let left_parsed: Bool = syntax/parse_program(left left_tokens)
-                  let right_tokens: Vec[syntax/Token] = vec.new()
-                  let right_parsed: Bool = syntax/parse_program(right right_tokens)
-                  let output: Vec[U8] = vec.new()
-                  let compared: Unit = equivalence/emit_comparison(left left_tokens right right_tokens output)
-                  let result: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(result)
-                  0
+fn run_verify_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let enough: Bool = arg_count >= 4
+  if enough:
+    let original_path: Bytes = vec.get(args, 2)
+    let candidate_path: Bytes = vec.get(args, 3)
+    verify_paths(original_path, candidate_path)
+  else:
+    io.println("usage: slimc verify-reduction ORIGINAL REDUCED")
+    64
 
-fn edit_paths(source_path: Bytes patch_path: Bytes) -> I64 effects[alloc io partial]:
-  let project_input: Bool = project/path_is_project(source_path)
-  match project_input:
-    true:
-      let shown: Unit = io.println("E0410@0:0")
-      1
-    false:
-      let checked: I64 = check/check_path_all(source_path)
-      let invalid: Bool = i64.gt(checked 0)
-      match invalid:
-        true:
-          checked
-        false:
-          let source_bytes: Vec[U8] = vec.new()
-          let source_read: Bool = io.read-file(source_path source_bytes)
-          let patch_bytes: Vec[U8] = vec.new()
-          let patch_read: Bool = io.read-file(patch_path patch_bytes)
-          let both_read: Bool = bool.and(source_read patch_read)
-          match both_read:
-            false:
-              let shown: Unit = io.println("E0409@0:0")
-              1
-            true:
-              let source: Bytes = bytes.freeze(source_bytes)
-              let patch: Bytes = bytes.freeze(patch_bytes)
-              let tokens: Vec[syntax/Token] = vec.new()
-              let parsed: Bool = syntax/parse_program(source tokens)
-              let output: Vec[U8] = vec.new()
-              let edited: Bool = edit/emit_candidate(source tokens patch output)
-              match edited:
-                false:
-                  let shown: Unit = io.println("E0411@0:0")
-                  1
-                true:
-                  let result: Bytes = bytes.freeze(output)
-                  let shown: Unit = io.print-bytes(result)
-                  0
+fn run_equivalent_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let enough: Bool = arg_count >= 4
+  if enough:
+    let left_path: Bytes = vec.get(args, 2)
+    let right_path: Bytes = vec.get(args, 3)
+    equivalent_paths(left_path, right_path)
+  else:
+    io.println("usage: slimc equivalent LEFT RIGHT")
+    64
 
-fn run_proof_command(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let enough: Bool = i64.ge(arg_count 3)
-  match enough:
-    false:
-      let shown: Unit = io.println("usage: slimc prove-reduction SOURCE")
-      64
-    true:
-      let source_path: Bytes = vec.get(args 2)
-      proof_path(source_path)
+fn run_edit_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let enough: Bool = arg_count >= 4
+  if enough:
+    let source_path: Bytes = vec.get(args, 2)
+    let patch_path: Bytes = vec.get(args, 3)
+    edit_paths(source_path, patch_path)
+  else:
+    io.println("usage: slimc edit SOURCE PATCH")
+    64
 
-fn run_verify_command(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let enough: Bool = i64.ge(arg_count 4)
-  match enough:
-    false:
-      let shown: Unit = io.println("usage: slimc verify-reduction ORIGINAL REDUCED")
-      64
-    true:
-      let original_path: Bytes = vec.get(args 2)
-      let candidate_path: Bytes = vec.get(args 3)
-      verify_paths(original_path candidate_path)
-
-fn run_equivalent_command(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let enough: Bool = i64.ge(arg_count 4)
-  match enough:
-    false:
-      let shown: Unit = io.println("usage: slimc equivalent LEFT RIGHT")
-      64
-    true:
-      let left_path: Bytes = vec.get(args 2)
-      let right_path: Bytes = vec.get(args 3)
-      equivalent_paths(left_path right_path)
-
-fn run_edit_command(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let enough: Bool = i64.ge(arg_count 4)
-  match enough:
-    false:
-      let shown: Unit = io.println("usage: slimc edit SOURCE PATCH")
-      64
-    true:
-      let source_path: Bytes = vec.get(args 2)
-      let patch_path: Bytes = vec.get(args 3)
-      edit_paths(source_path patch_path)
-
-fn run_evidence(inout args: Vec[Bytes] arg_count: I64 command: Bytes) -> I64 effects[alloc io partial]:
+fn run_evidence(inout args: Vec[Bytes], arg_count: I64, command: Bytes) -> I64 effects[alloc, io, partial]:
   let command_length: I64 = bytes.len(command)
-  let proving: Bool = syntax/span_equal(command 0 command_length "prove-reduction")
-  match proving:
-    true:
-      run_proof_command(args arg_count)
-    false:
-      let verifying: Bool = syntax/span_equal(command 0 command_length "verify-reduction")
-      match verifying:
-        true:
-          run_verify_command(args arg_count)
-        false:
-          let comparing: Bool = syntax/span_equal(command 0 command_length "equivalent")
-          match comparing:
-            true:
-              run_equivalent_command(args arg_count)
-            false:
-              run_edit_command(args arg_count)
+  let proving: Bool = syntax.span_equal(command, 0, command_length, "prove-reduction")
+  if proving:
+    run_proof_command(args, arg_count)
+  else:
+    let verifying: Bool = syntax.span_equal(command, 0, command_length, "verify-reduction")
+    if verifying:
+      run_verify_command(args, arg_count)
+    else:
+      let comparing: Bool = syntax.span_equal(command, 0, command_length, "equivalent")
+      if comparing:
+        run_equivalent_command(args, arg_count)
+      else:
+        run_edit_command(args, arg_count)
 
-fn compile_command_path(inout args: Vec[Bytes] arg_count: I64 path: Bytes) -> I64 effects[alloc io partial]:
-  let project: Bool = project/path_is_project(path)
-  match project:
-    false:
-      compile_path(path)
-    true:
-      let enough: Bool = i64.ge(arg_count 4)
-      let scheduled: Bool = match enough:
-        false:
-          false
-        true:
-          let option: Bytes = vec.get(args 2)
-          let option_length: I64 = bytes.len(option)
-          syntax/span_equal(option 0 option_length "--jobs")
-      let jobs: I64 = match scheduled:
-        false:
-          1
-        true:
-          let requested: Bytes = vec.get(args 3)
-          scheduler/parse_jobs(requested)
-      project/compile_project_path_jobs(path jobs)
+fn compile_command_path(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
+  let project: Bool = project.path_is_project(path)
+  if project:
+    let enough: Bool = arg_count >= 4
+    let scheduled: Bool = if enough:
+      let option: Bytes = vec.get(args, 2)
+      let option_length: I64 = bytes.len(option)
+      syntax.span_equal(option, 0, option_length, "--jobs")
+    else:
+      false
+    let jobs: I64 = if scheduled:
+      let requested: Bytes = vec.get(args, 3)
+      scheduler.parse_jobs(requested)
+    else:
+      1
+    project.compile_project_path_jobs(path, jobs)
+  else:
+    compile_path(path)
 
-fn run_compile(inout args: Vec[Bytes] arg_count: I64 path: Bytes) -> I64 effects[alloc io partial]:
+fn run_compile(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
   let length: I64 = bytes.len(path)
-  let proving: Bool = syntax/span_equal(path 0 length "prove-reduction")
-  let verifying: Bool = syntax/span_equal(path 0 length "verify-reduction")
-  let comparing: Bool = syntax/span_equal(path 0 length "equivalent")
-  let editing: Bool = syntax/span_equal(path 0 length "edit")
-  let first: Bool = bool.or(proving verifying)
-  let second: Bool = bool.or(comparing editing)
-  let evidence: Bool = bool.or(first second)
-  match evidence:
-    true:
-      run_evidence(args arg_count path)
-    false:
-      compile_command_path(args arg_count path)
+  let proving: Bool = syntax.span_equal(path, 0, length, "prove-reduction")
+  let verifying: Bool = syntax.span_equal(path, 0, length, "verify-reduction")
+  let comparing: Bool = syntax.span_equal(path, 0, length, "equivalent")
+  let editing: Bool = syntax.span_equal(path, 0, length, "edit")
+  let first: Bool = proving || verifying
+  let second: Bool = comparing || editing
+  let evidence: Bool = first || second
+  if evidence:
+    run_evidence(args, arg_count, path)
+  else:
+    compile_command_path(args, arg_count, path)
 
-fn run_cache(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let has_paths: Bool = i64.ge(arg_count 4)
-  match has_paths:
-    false:
-      let usage: Unit = io.println("usage: slimc cache MANIFEST CACHE")
-      64
-    true:
-      let manifest_path: Bytes = vec.get(args 2)
-      let cache_path: Bytes = vec.get(args 3)
-      cache/run(manifest_path cache_path)
+fn run_cache(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let has_paths: Bool = arg_count >= 4
+  if has_paths:
+    let manifest_path: Bytes = vec.get(args, 2)
+    let cache_path: Bytes = vec.get(args, 3)
+    cache.run(manifest_path, cache_path)
+  else:
+    io.println("usage: slimc cache MANIFEST CACHE")
+    64
 
-fn run_session(inout args: Vec[Bytes] arg_count: I64) -> I64 effects[alloc io partial]:
-  let has_paths: Bool = i64.ge(arg_count 4)
-  match has_paths:
-    false:
-      let usage: Unit = io.println("usage: slimc session INITIAL UPDATED [RECOVERED]")
-      64
-    true:
-      let initial_path: Bytes = vec.get(args 2)
-      let updated_path: Bytes = vec.get(args 3)
-      let recovering: Bool = i64.ge(arg_count 5)
-      match recovering:
-        false:
-          session/run(initial_path updated_path)
-        true:
-          let recovered_path: Bytes = vec.get(args 4)
-          session/run_recovery(initial_path updated_path recovered_path)
+fn run_session(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+  let has_paths: Bool = arg_count >= 4
+  if has_paths:
+    let initial_path: Bytes = vec.get(args, 2)
+    let updated_path: Bytes = vec.get(args, 3)
+    let recovering: Bool = arg_count >= 5
+    if recovering:
+      let recovered_path: Bytes = vec.get(args, 4)
+      session.run_recovery(initial_path, updated_path, recovered_path)
+    else:
+      session.run(initial_path, updated_path)
+  else:
+    io.println("usage: slimc session INITIAL UPDATED [RECOVERED]")
+    64
 
-fn run_transform(inout args: Vec[Bytes] arg_count: I64 analysis_mode: Bool usage: Bytes) -> I64 effects[alloc io partial]:
-  let has_source: Bool = i64.ge(arg_count 3)
-  match has_source:
-    false:
-      let shown: Unit = io.println(usage)
-      64
-    true:
-      let source_path: Bytes = vec.get(args 2)
-      transform_path(source_path analysis_mode)
+fn run_transform(inout args: Vec[Bytes], arg_count: I64, analysis_mode: Bool, usage: Bytes) -> I64 effects[alloc, io, partial]:
+  let has_source: Bool = arg_count >= 3
+  if has_source:
+    let source_path: Bytes = vec.get(args, 2)
+    transform_path(source_path, analysis_mode)
+  else:
+    io.println(usage)
+    64
 
-fn run(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn run(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let arg_count: I64 = vec.len(args)
-  let enough: Bool = i64.ge(arg_count 2)
-  match enough:
-    false:
-      let usage: Unit = io.println("usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE")
-      64
-    true:
-      let command: Bytes = vec.get(args 1)
-      let command_length: I64 = bytes.len(command)
-      let formatting: Bool = syntax/span_equal(command 0 command_length "fmt")
-      match formatting:
-        true:
-          let has_path: Bool = i64.ge(arg_count 3)
-          match has_path:
-            true:
-              let path: Bytes = vec.get(args 2)
-              format_path(path)
-            false:
-              let usage: Unit = io.println("usage: slimc fmt SOURCE")
-              64
-        false:
-          let checking: Bool = syntax/span_equal(command 0 command_length "check")
-          match checking:
-            true:
-              let has_source: Bool = i64.ge(arg_count 3)
-              match has_source:
-                true:
-                  let source_path: Bytes = vec.get(args 2)
-                  check_input_path(source_path)
-                false:
-                  let usage: Unit = io.println("usage: slimc check SOURCE")
-                  64
-            false:
-              let reducing: Bool = syntax/span_equal(command 0 command_length "reduce")
-              match reducing:
-                true:
-                  run_transform(args arg_count false "usage: slimc reduce SOURCE")
-                false:
-                  let analyzing: Bool = syntax/span_equal(command 0 command_length "analyze")
-                  match analyzing:
-                    true:
-                      run_transform(args arg_count true "usage: slimc analyze SOURCE")
-                    false:
-                      let interface_command: Bool = syntax/span_equal(command 0 command_length "interfaces")
-                      match interface_command:
-                        true:
-                          let has_manifest: Bool = i64.ge(arg_count 3)
-                          match has_manifest:
-                            true:
-                              let manifest_path: Bytes = vec.get(args 2)
-                              project/interfaces_path(manifest_path)
-                            false:
-                              let usage: Unit = io.println("usage: slimc interfaces MANIFEST")
-                              64
-                        false:
-                          let cache_command: Bool = syntax/span_equal(command 0 command_length "cache")
-                          match cache_command:
-                            true:
-                              run_cache(args arg_count)
-                            false:
-                              let session_command: Bool = syntax/span_equal(command 0 command_length "session")
-                              match session_command:
-                                true:
-                                  run_session(args arg_count)
-                                false:
-                                  run_compile(args arg_count command)
+  let enough: Bool = arg_count >= 2
+  if enough:
+    let command: Bytes = vec.get(args, 1)
+    let command_length: I64 = bytes.len(command)
+    let formatting: Bool = syntax.span_equal(command, 0, command_length, "fmt")
+    if formatting:
+      let has_path: Bool = arg_count >= 3
+      if has_path:
+        let path: Bytes = vec.get(args, 2)
+        format_path(path)
+      else:
+        io.println("usage: slimc fmt SOURCE")
+        64
+    else:
+      let checking: Bool = syntax.span_equal(command, 0, command_length, "check")
+      if checking:
+        let has_source: Bool = arg_count >= 3
+        if has_source:
+          let source_path: Bytes = vec.get(args, 2)
+          check_input_path(source_path)
+        else:
+          io.println("usage: slimc check SOURCE")
+          64
+      else:
+        let reducing: Bool = syntax.span_equal(command, 0, command_length, "reduce")
+        if reducing:
+          run_transform(args, arg_count, false, "usage: slimc reduce SOURCE")
+        else:
+          let analyzing: Bool = syntax.span_equal(command, 0, command_length, "analyze")
+          if analyzing:
+            run_transform(args, arg_count, true, "usage: slimc analyze SOURCE")
+          else:
+            let interface_command: Bool = syntax.span_equal(command, 0, command_length, "interfaces")
+            if interface_command:
+              let has_manifest: Bool = arg_count >= 3
+              if has_manifest:
+                let manifest_path: Bytes = vec.get(args, 2)
+                project.interfaces_path(manifest_path)
+              else:
+                io.println("usage: slimc interfaces MANIFEST")
+                64
+            else:
+              let cache_command: Bool = syntax.span_equal(command, 0, command_length, "cache")
+              if cache_command:
+                run_cache(args, arg_count)
+              else:
+                let session_command: Bool = syntax.span_equal(command, 0, command_length, "session")
+                if session_command:
+                  run_session(args, arg_count)
+                else:
+                  run_compile(args, arg_count, command)
+  else:
+    io.println("usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE")
+    64

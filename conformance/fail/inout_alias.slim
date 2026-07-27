@@ -1,9 +1,9 @@
 module alias
 
-fn pair(inout left: Vec[I64] inout right: Vec[I64]) -> Unit:
-  unit
+fn pair(inout left: Vec[I64], inout right: Vec[I64]) -> Void:
+  void
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  let used: Unit = pair(values values)
+  pair(values, values)
   0

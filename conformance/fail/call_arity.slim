@@ -1,7 +1,7 @@
-module call-arity
+module call_arity
 
-fn add(left: I64 right: I64) -> I64:
-  i64.add(left right)
+fn add(left: I64, right: I64) -> I64:
+  left + right
 
 fn main(args: Vec[Bytes]) -> I64:
   add(1)

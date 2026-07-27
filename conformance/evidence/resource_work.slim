@@ -1,11 +1,10 @@
-module resource-work
+module resource_work
 
 fn run(remaining: I64) -> I64 effects[partial]:
-  match i64.le(remaining 0):
-    true:
-      0
-    false:
-      recur(i64.sub(remaining 1))
+  if remaining <= 0:
+    0
+  else:
+    recur(remaining - 1)
 
 fn known() -> I64 effects[partial]:
   run(10)
@@ -19,4 +18,4 @@ fn unknown(count: I64) -> I64 effects[partial]:
 fn main(args: Vec[Bytes]) -> I64 effects[partial]:
   let left: I64 = known()
   let right: I64 = zero()
-  i64.add(left right)
+  left + right

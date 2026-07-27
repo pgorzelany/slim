@@ -1,6 +1,6 @@
 module syntax
 
-record Token:
+struct Token:
   kind: I64
   tag: I64
   start: I64
@@ -8,2305 +8,2798 @@ record Token:
   link: I64
   next: I64
 
-record Lexeme:
+struct Lexeme:
   kind: I64
   start: I64
   end: I64
   line: I64
   indent: I64
 
-record Parse:
+struct Parse:
   valid: Bool
   next: I64
+  code: Bytes
 
-record ProgramParse:
+struct ExprParse:
+  valid: Bool
+  next: I64
+  node: I64
+  code: Bytes
+
+struct ExprNode:
+  kind: I64
+  start: I64
+  end: I64
+  auxiliary: I64
+  first_edge: I64
+  last_edge: I64
+
+struct ExprEdge:
+  node: I64
+  name: I64
+  next_edge: I64
+
+struct EdgeList:
+  first: I64
+  last: I64
+  count: I64
+
+struct ArgumentParse:
+  valid: Bool
+  next: I64
+  first: I64
+  last: I64
+  count: I64
+  named: Bool
+  code: Bytes
+
+struct ProgramParse:
   valid: Bool
   code: Bytes
   start: I64
   end: I64
 
-record LexResult:
+struct LexResult:
   valid: Bool
   code: Bytes
   start: I64
   end: I64
 
-record NameNode:
+struct NameNode:
   value: I64
   first_edge: I64
 
-record NameEdge:
+struct NameEdge:
   code: I64
   child: I64
   next_edge: I64
 
-fn token_index_valid(inout tokens: Vec[Token] index: I64) -> Bool:
-  let nonnegative: Bool = i64.ge(index 0)
+fn token_index_valid(inout tokens: Vec[Token], index: I64) -> Bool:
+  let nonnegative: Bool = index >= 0
   let length: I64 = vec.len(tokens)
-  let below: Bool = i64.lt(index length)
-  bool.and(nonnegative below)
+  let below: Bool = index < length
+  nonnegative && below
 
-fn token_kind(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      -1
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token kind)
+fn token_kind(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.kind
+  else:
+    -1
 
-fn token_tag(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      -1
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token tag)
+fn token_tag(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.tag
+  else:
+    -1
 
-fn token_start(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      0
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token start)
+fn token_start(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.start
+  else:
+    0
 
-fn token_end(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      0
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token end)
+fn token_end(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.end
+  else:
+    0
 
-fn token_link(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      -1
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token link)
+fn token_link(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.link
+  else:
+    -1
 
-fn token_next(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let valid: Bool = token_index_valid(tokens index)
-  match valid:
-    false:
-      -1
-    true:
-      let token: Token = vec.get(tokens index)
-      get(token next)
+fn token_next(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let valid: Bool = token_index_valid(tokens, index)
+  if valid:
+    let token: Token = vec.get(tokens, index)
+    token.next
+  else:
+    -1
 
-fn set_token_link(inout tokens: Vec[Token] index: I64 link: I64) -> Unit effects[partial]:
-  let token: Token = vec.get(tokens index)
-  let updated: Token = make Token(kind = get(token kind) tag = get(token tag) start = get(token start) end = get(token end) link = link next = get(token next))
-  vec.set(tokens index updated)
+fn set_token_link(inout tokens: Vec[Token], index: I64, link: I64) -> Void effects[partial]:
+  let token: Token = vec.get(tokens, index)
+  let updated: Token = Token(kind: token.kind, tag: token.tag, start: token.start, end: token.end, link: link, next: token.next)
+  vec.set(tokens, index, updated)
 
-fn set-token-next(inout tokens: Vec[Token] index: I64 next: I64) -> Unit effects[partial]:
-  let token: Token = vec.get(tokens index)
-  let updated: Token = make Token(kind = get(token kind) tag = get(token tag) start = get(token start) end = get(token end) link = get(token link) next = next)
-  vec.set(tokens index updated)
+fn set_token_tag(inout tokens: Vec[Token], index: I64, tag: I64) -> Void effects[partial]:
+  let token: Token = vec.get(tokens, index)
+  let updated: Token = Token(kind: token.kind, tag: tag, start: token.start, end: token.end, link: token.link, next: token.next)
+  vec.set(tokens, index, updated)
 
-fn span_equal_chars(source: Bytes start: I64 text: Bytes index: I64 length: I64) -> Bool effects[partial]:
-  let done: Bool = i64.eq(index length)
-  match done:
-    true:
-      true
-    false:
-      let source_index: I64 = i64.add(start index)
-      let source_byte: U8 = bytes.get(source source_index)
-      let text_byte: U8 = bytes.get(text index)
-      let source_code: I64 = u8.to-i64(source_byte)
-      let text_code: I64 = u8.to-i64(text_byte)
-      let same: Bool = i64.eq(source_code text_code)
-      match same:
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(source start text next length)
-        false:
-          false
+fn set_token_next(inout tokens: Vec[Token], index: I64, next: I64) -> Void effects[partial]:
+  let token: Token = vec.get(tokens, index)
+  let updated: Token = Token(kind: token.kind, tag: token.tag, start: token.start, end: token.end, link: token.link, next: next)
+  vec.set(tokens, index, updated)
 
-fn span_equal(source: Bytes start: I64 end: I64 text: Bytes) -> Bool effects[partial]:
-  let span_length: I64 = i64.sub(end start)
+fn span_equal_chars(source: Bytes, start: I64, text: Bytes, index: I64, length: I64) -> Bool effects[partial]:
+  let done: Bool = index == length
+  if done:
+    true
+  else:
+    let source_index: I64 = start + index
+    let source_byte: U8 = bytes.get(source, source_index)
+    let text_byte: U8 = bytes.get(text, index)
+    let source_code: I64 = u8.to_i64(source_byte)
+    let text_code: I64 = u8.to_i64(text_byte)
+    let same: Bool = source_code == text_code
+    if same:
+      let next: I64 = index + 1
+      recur(source, start, text, next, length)
+    else:
+      false
+
+fn span_equal(source: Bytes, start: I64, end: I64, text: Bytes) -> Bool effects[partial]:
+  let span_length: I64 = end - start
   let text_length: I64 = bytes.len(text)
-  let same_length: Bool = i64.eq(span_length text_length)
-  match same_length:
-    true:
-      span_equal_chars(source start text 0 span_length)
-    false:
+  let same_length: Bool = span_length == text_length
+  if same_length:
+    span_equal_chars(source, start, text, 0, span_length)
+  else:
+    false
+
+fn spans_equal_chars(source: Bytes, left_start: I64, right_start: I64, index: I64, length: I64) -> Bool effects[partial]:
+  let done: Bool = index == length
+  if done:
+    true
+  else:
+    let left_index: I64 = left_start + index
+    let right_index: I64 = right_start + index
+    let left_byte: U8 = bytes.get(source, left_index)
+    let right_byte: U8 = bytes.get(source, right_index)
+    let left_code: I64 = u8.to_i64(left_byte)
+    let right_code: I64 = u8.to_i64(right_byte)
+    let same: Bool = left_code == right_code
+    if same:
+      let next: I64 = index + 1
+      recur(source, left_start, right_start, next, length)
+    else:
       false
 
-fn spans_equal_chars(source: Bytes left_start: I64 right_start: I64 index: I64 length: I64) -> Bool effects[partial]:
-  let done: Bool = i64.eq(index length)
-  match done:
-    true:
-      true
-    false:
-      let left_index: I64 = i64.add(left_start index)
-      let right_index: I64 = i64.add(right_start index)
-      let left_byte: U8 = bytes.get(source left_index)
-      let right_byte: U8 = bytes.get(source right_index)
-      let left_code: I64 = u8.to-i64(left_byte)
-      let right_code: I64 = u8.to-i64(right_byte)
-      let same: Bool = i64.eq(left_code right_code)
-      match same:
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(source left_start right_start next length)
-        false:
-          false
-
-fn spans_equal(source: Bytes left_start: I64 left_end: I64 right_start: I64 right_end: I64) -> Bool effects[partial]:
-  let left_length: I64 = i64.sub(left_end left_start)
-  let right_length: I64 = i64.sub(right_end right_start)
-  let same_length: Bool = i64.eq(left_length right_length)
-  match same_length:
-    true:
-      spans_equal_chars(source left_start right_start 0 left_length)
-    false:
-      false
+fn spans_equal(source: Bytes, left_start: I64, left_end: I64, right_start: I64, right_end: I64) -> Bool effects[partial]:
+  let left_length: I64 = left_end - left_start
+  let right_length: I64 = right_end - right_start
+  let same_length: Bool = left_length == right_length
+  if same_length:
+    spans_equal_chars(source, left_start, right_start, 0, left_length)
+  else:
+    false
 
 fn is_delimiter(code: I64) -> Bool:
-  let whitespace: Bool = i64.le(code 32)
-  let left: Bool = i64.eq(code 40)
-  let right: Bool = i64.eq(code 41)
-  let comment: Bool = i64.eq(code 59)
-  let quote: Bool = i64.eq(code 34)
-  let any_paren: Bool = bool.or(left right)
-  let any_control: Bool = bool.or(whitespace comment)
-  let any_delimiter: Bool = bool.or(any_paren any_control)
-  bool.or(any_delimiter quote)
+  let whitespace: Bool = code <= 32
+  let left: Bool = code == 40
+  let right: Bool = code == 41
+  let comment: Bool = code == 59
+  let quote: Bool = code == 34
+  let any_paren: Bool = left || right
+  let any_control: Bool = whitespace || comment
+  let any_delimiter: Bool = any_paren || any_control
+  any_delimiter || quote
 
-fn scan_atom(input: Bytes index: I64 length: I64) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
+fn scan_atom(input: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    index
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let delimiter: Bool = is_delimiter(code)
+    if delimiter:
       index
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let delimiter: Bool = is_delimiter(code)
-      match delimiter:
-        true:
-          index
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(input next length)
+    else:
+      let next: I64 = index + 1
+      recur(input, next, length)
 
-fn scan_string(input: Bytes index: I64 length: I64) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      index
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let escape: Bool = i64.eq(code 92)
-      match escape:
-        true:
-          let next: I64 = i64.add(index 2)
-          recur(input next length)
-        false:
-          let quote: Bool = i64.eq(code 34)
-          match quote:
-            true:
-              i64.add(index 1)
-            false:
-              let next: I64 = i64.add(index 1)
-              recur(input next length)
+fn scan_string(input: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    index
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let escape: Bool = code == 92
+    if escape:
+      let next: I64 = index + 2
+      recur(input, next, length)
+    else:
+      let quote: Bool = code == 34
+      if quote:
+        index + 1
+      else:
+        let next: I64 = index + 1
+        recur(input, next, length)
 
-fn scan_comment(input: Bytes index: I64 length: I64) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      index
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let newline: Bool = i64.eq(code 10)
-      match newline:
-        true:
-          i64.add(index 1)
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(input next length)
+fn scan_comment(input: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    index
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let newline: Bool = code == 10
+    if newline:
+      index + 1
+    else:
+      let next: I64 = index + 1
+      recur(input, next, length)
 
-fn push_tagged_token(inout tokens: Vec[Token] kind: I64 tag: I64 start: I64 end: I64) -> Unit effects[alloc]:
+fn push_tagged_token(inout tokens: Vec[Token], kind: I64, tag: I64, start: I64, end: I64) -> Void effects[alloc]:
   let index: I64 = vec.len(tokens)
-  let left: Bool = i64.eq(kind 0)
-  let following: I64 = match left:
-    true:
-      -1
-    false:
-      i64.add(index 1)
-  let token: Token = make Token(kind = kind tag = tag start = start end = end link = -1 next = following)
-  vec.push(tokens token)
+  let left: Bool = kind == 0
+  let following: I64 = if left:
+    -1
+  else:
+    index + 1
+  let token: Token = Token(kind: kind, tag: tag, start: start, end: end, link: -1, next: following)
+  vec.push(tokens, token)
 
-fn push_token(inout tokens: Vec[Token] kind: I64 start: I64 end: I64) -> Unit effects[alloc]:
-  push_tagged_token(tokens kind 0 start end)
+fn push_token(inout tokens: Vec[Token], kind: I64, start: I64, end: I64) -> Void effects[alloc]:
+  push_tagged_token(tokens, kind, 0, start, end)
 
-fn store-form-open(inout stack: Vec[I64] depth: I64 index: I64) -> Unit effects[alloc partial]:
+fn store_form_open(inout stack: Vec[I64], depth: I64, index: I64) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(stack)
-  let existing: Bool = i64.lt(depth length)
-  match existing:
-    true:
-      vec.set(stack depth index)
-    false:
-      vec.push(stack index)
+  let existing: Bool = depth < length
+  if existing:
+    vec.set(stack, depth, index)
+  else:
+    vec.push(stack, index)
 
-fn index-form-boundaries-from(inout tokens: Vec[Token] index: I64 length: I64 depth: I64 inout stack: Vec[I64]) -> Unit effects[alloc partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      unit
-    false:
-      let kind: I64 = token_kind(tokens index)
-      let left: Bool = i64.eq(kind 0)
-      let right: Bool = i64.eq(kind 1)
-      let following: I64 = i64.add(index 1)
-      match left:
-        true:
-          let stored: Unit = store-form-open(stack depth index)
-          let next-depth: I64 = i64.add(depth 1)
-          recur(tokens following length next-depth stack)
-        false:
-          match right:
-            false:
-              recur(tokens following length depth stack)
-            true:
-              let nested: Bool = i64.gt(depth 0)
-              match nested:
-                false:
-                  recur(tokens following length depth stack)
-                true:
-                  let next-depth: I64 = i64.sub(depth 1)
-                  let open: I64 = vec.get(stack next-depth)
-                  let stored: Unit = set-token-next(tokens open following)
-                  recur(tokens following length next-depth stack)
+fn index_form_boundaries_from(inout tokens: Vec[Token], index: I64, length: I64, depth: I64, inout stack: Vec[I64]) -> Void effects[alloc, partial]:
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let kind: I64 = token_kind(tokens, index)
+    let left: Bool = kind == 0
+    let right: Bool = kind == 1
+    let following: I64 = index + 1
+    if left:
+      store_form_open(stack, depth, index)
+      let next_depth: I64 = depth + 1
+      recur(tokens, following, length, next_depth, stack)
+    else:
+      if right:
+        let nested: Bool = depth > 0
+        if nested:
+          let next_depth: I64 = depth - 1
+          let open: I64 = vec.get(stack, next_depth)
+          set_token_next(tokens, open, following)
+          recur(tokens, following, length, next_depth, stack)
+        else:
+          recur(tokens, following, length, depth, stack)
+      else:
+        recur(tokens, following, length, depth, stack)
 
-fn index-form-boundaries(inout tokens: Vec[Token] first-token: I64) -> Unit effects[alloc partial]:
+fn index_form_boundaries(inout tokens: Vec[Token], first_token: I64) -> Void effects[alloc, partial]:
   let stack: Vec[I64] = vec.new()
   let length: I64 = vec.len(tokens)
-  index-form-boundaries-from(tokens first-token length 0 stack)
+  index_form_boundaries_from(tokens, first_token, length, 0, stack)
 
-fn index_ast_boundaries(inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  index-form-boundaries(tokens 0)
+fn index_ast_boundaries(inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  index_form_boundaries(tokens, 0)
 
-fn lex-from(input: Bytes index: I64 first-token: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
+fn lex_from(input: Bytes, index: I64, first_token: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
   let length: I64 = bytes.len(input)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      index-form-boundaries(tokens first-token)
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let whitespace: Bool = i64.le(code 32)
-      match whitespace:
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(input next first-token tokens)
-        false:
-          let comment: Bool = i64.eq(code 59)
-          match comment:
-            true:
-              let content_start: I64 = i64.add(index 1)
-              let next: I64 = scan_comment(input content_start length)
-              recur(input next first-token tokens)
-            false:
-              let left: Bool = i64.eq(code 40)
-              match left:
-                true:
-                  let next: I64 = i64.add(index 1)
-                  let pushed: Unit = push_token(tokens 0 index next)
-                  recur(input next first-token tokens)
-                false:
-                  let right: Bool = i64.eq(code 41)
-                  match right:
-                    true:
-                      let next: I64 = i64.add(index 1)
-                      let pushed: Unit = push_token(tokens 1 index next)
-                      recur(input next first-token tokens)
-                    false:
-                      let quote: Bool = i64.eq(code 34)
-                      match quote:
-                        true:
-                          let content_start: I64 = i64.add(index 1)
-                          let next: I64 = scan_string(input content_start length)
-                          let pushed: Unit = push_token(tokens 3 index next)
-                          recur(input next first-token tokens)
-                        false:
-                          let next: I64 = scan_atom(input index length)
-                          let pushed: Unit = push_token(tokens 2 index next)
-                          recur(input next first-token tokens)
+  let done: Bool = index >= length
+  if done:
+    index_form_boundaries(tokens, first_token)
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let whitespace: Bool = code <= 32
+    if whitespace:
+      let next: I64 = index + 1
+      recur(input, next, first_token, tokens)
+    else:
+      let comment: Bool = code == 59
+      if comment:
+        let content_start: I64 = index + 1
+        let next: I64 = scan_comment(input, content_start, length)
+        recur(input, next, first_token, tokens)
+      else:
+        let left: Bool = code == 40
+        if left:
+          let next: I64 = index + 1
+          push_token(tokens, 0, index, next)
+          recur(input, next, first_token, tokens)
+        else:
+          let right: Bool = code == 41
+          if right:
+            let next: I64 = index + 1
+            push_token(tokens, 1, index, next)
+            recur(input, next, first_token, tokens)
+          else:
+            let quote: Bool = code == 34
+            if quote:
+              let content_start: I64 = index + 1
+              let next: I64 = scan_string(input, content_start, length)
+              push_token(tokens, 3, index, next)
+              recur(input, next, first_token, tokens)
+            else:
+              let next: I64 = scan_atom(input, index, length)
+              push_token(tokens, 2, index, next)
+              recur(input, next, first_token, tokens)
 
-fn lex_data(input: Bytes index: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
+fn lex_data(input: Bytes, index: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
   let first_token: I64 = vec.len(tokens)
-  lex-from(input index first_token tokens)
+  lex_from(input, index, first_token, tokens)
 
-fn lexeme_index_valid(inout lexemes: Vec[Lexeme] index: I64) -> Bool:
-  let nonnegative: Bool = i64.ge(index 0)
+fn lexeme_index_valid(inout lexemes: Vec[Lexeme], index: I64) -> Bool:
+  let nonnegative: Bool = index >= 0
   let length: I64 = vec.len(lexemes)
-  let below: Bool = i64.lt(index length)
-  bool.and(nonnegative below)
+  let below: Bool = index < length
+  nonnegative && below
 
-fn lexeme_kind(inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      -1
-    true:
-      let lexeme: Lexeme = vec.get(lexemes index)
-      get(lexeme kind)
+fn lexeme_kind(inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    let lexeme: Lexeme = vec.get(lexemes, index)
+    lexeme.kind
+  else:
+    -1
 
-fn lexeme_start(inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      0
-    true:
-      let lexeme: Lexeme = vec.get(lexemes index)
-      get(lexeme start)
+fn lexeme_start(inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    let lexeme: Lexeme = vec.get(lexemes, index)
+    lexeme.start
+  else:
+    0
 
-fn lexeme_end(inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      0
-    true:
-      let lexeme: Lexeme = vec.get(lexemes index)
-      get(lexeme end)
+fn lexeme_end(inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    let lexeme: Lexeme = vec.get(lexemes, index)
+    lexeme.end
+  else:
+    0
 
-fn lexeme_line(inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      -1
-    true:
-      let lexeme: Lexeme = vec.get(lexemes index)
-      get(lexeme line)
+fn lexeme_line(inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    let lexeme: Lexeme = vec.get(lexemes, index)
+    lexeme.line
+  else:
+    -1
 
-fn lexeme_indent(inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      -1
-    true:
-      let lexeme: Lexeme = vec.get(lexemes index)
-      get(lexeme indent)
+fn lexeme_indent(inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    let lexeme: Lexeme = vec.get(lexemes, index)
+    lexeme.indent
+  else:
+    -1
 
-fn lexeme_equal(source: Bytes inout lexemes: Vec[Lexeme] index: I64 text: Bytes) -> Bool effects[partial]:
-  let valid: Bool = lexeme_index_valid(lexemes index)
-  match valid:
-    false:
-      false
-    true:
-      span_equal(source lexeme_start(lexemes index) lexeme_end(lexemes index) text)
+fn lexeme_equal(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, text: Bytes) -> Bool effects[partial]:
+  let valid: Bool = lexeme_index_valid(lexemes, index)
+  if valid:
+    span_equal(source, lexeme_start(lexemes, index), lexeme_end(lexemes, index), text)
+  else:
+    false
 
-fn push_lexeme(inout lexemes: Vec[Lexeme] kind: I64 start: I64 end: I64 line: I64 indent: I64) -> Unit effects[alloc]:
-  let lexeme: Lexeme = make Lexeme(kind = kind start = start end = end line = line indent = indent)
-  vec.push(lexemes lexeme)
+fn push_lexeme(inout lexemes: Vec[Lexeme], kind: I64, start: I64, end: I64, line: I64, indent: I64) -> Void effects[alloc]:
+  let lexeme: Lexeme = Lexeme(kind: kind, start: start, end: end, line: line, indent: indent)
+  vec.push(lexemes, lexeme)
 
-fn modern_arrow_at(input: Bytes index: I64 length: I64) -> Bool effects[partial]:
-  let following: I64 = i64.add(index 1)
-  let available: Bool = i64.lt(following length)
-  match available:
-    false:
-      false
-    true:
-      let first: U8 = bytes.get(input index)
-      let second: U8 = bytes.get(input following)
-      let first_code: I64 = u8.to-i64(first)
-      let second_code: I64 = u8.to-i64(second)
-      let dash: Bool = i64.eq(first_code 45)
-      let greater: Bool = i64.eq(second_code 62)
-      bool.and(dash greater)
+fn modern_arrow_at(input: Bytes, index: I64, length: I64) -> Bool effects[partial]:
+  let following: I64 = index + 1
+  let available: Bool = following < length
+  if available:
+    let first: U8 = bytes.get(input, index)
+    let second: U8 = bytes.get(input, following)
+    let first_code: I64 = u8.to_i64(first)
+    let second_code: I64 = u8.to_i64(second)
+    let dash: Bool = first_code == 45
+    let greater: Bool = second_code == 62
+    dash && greater
+  else:
+    false
+
+fn modern_pair_at(input: Bytes, index: I64, length: I64, first_expected: I64, second_expected: I64) -> Bool effects[partial]:
+  let following: I64 = index + 1
+  let available: Bool = following < length
+  if available:
+    let first: U8 = bytes.get(input, index)
+    let second: U8 = bytes.get(input, following)
+    let first_code: I64 = u8.to_i64(first)
+    let second_code: I64 = u8.to_i64(second)
+    let first_same: Bool = first_code == first_expected
+    let second_same: Bool = second_code == second_expected
+    first_same && second_same
+  else:
+    false
 
 fn modern_atom_delimiter(code: I64) -> Bool:
-  let whitespace: Bool = i64.le(code 32)
-  let left_round: Bool = i64.eq(code 40)
-  let right_round: Bool = i64.eq(code 41)
-  let left_square: Bool = i64.eq(code 91)
-  let right_square: Bool = i64.eq(code 93)
-  let colon: Bool = i64.eq(code 58)
-  let equal: Bool = i64.eq(code 61)
-  let comment: Bool = i64.eq(code 35)
-  let quote: Bool = i64.eq(code 34)
-  let first: Bool = bool.or(whitespace left_round)
-  let second: Bool = bool.or(right_round left_square)
-  let third: Bool = bool.or(right_square colon)
-  let fourth: Bool = bool.or(equal comment)
-  bool.or(bool.or(first second) bool.or(bool.or(third fourth) quote))
+  let whitespace: Bool = code <= 32
+  let left_round: Bool = code == 40
+  let right_round: Bool = code == 41
+  let left_square: Bool = code == 91
+  let right_square: Bool = code == 93
+  let colon: Bool = code == 58
+  let equal: Bool = code == 61
+  let comma: Bool = code == 44
+  let bang: Bool = code == 33
+  let comment: Bool = code == 35
+  let quote: Bool = code == 34
+  let first: Bool = whitespace || left_round
+  let second: Bool = right_round || left_square
+  let third: Bool = right_square || colon
+  let fourth: Bool = equal || comma
+  let fifth: Bool = bang || comment
+  let sixth: Bool = quote || false
+  first || (second || (third || (fourth || (fifth || sixth))))
 
-fn modern_scan_atom(input: Bytes index: I64 length: I64) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
+fn modern_scan_atom(input: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    index
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let delimiter: Bool = modern_atom_delimiter(code)
+    let arrow: Bool = modern_arrow_at(input, index, length)
+    let forbidden: Bool = modern_forbidden(code)
+    let stop: Bool = (delimiter || arrow) || forbidden
+    if stop:
       index
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let delimiter: Bool = modern_atom_delimiter(code)
-      let arrow: Bool = modern_arrow_at(input index length)
-      let forbidden: Bool = modern_forbidden(code)
-      let stop: Bool = bool.or(bool.or(delimiter arrow) forbidden)
-      match stop:
-        true:
-          index
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(input next length)
+    else:
+      let next: I64 = index + 1
+      recur(input, next, length)
 
 fn modern_forbidden(code: I64) -> Bool:
-  let comma: Bool = i64.eq(code 44)
-  let left_brace: Bool = i64.eq(code 123)
-  let right_brace: Bool = i64.eq(code 125)
-  let semicolon: Bool = i64.eq(code 59)
-  bool.or(bool.or(comma left_brace) bool.or(right_brace semicolon))
+  let left_brace: Bool = code == 123
+  let right_brace: Bool = code == 125
+  let semicolon: Bool = code == 59
+  left_brace || (right_brace || semicolon)
 
-fn modern_push_fixed(index: I64 length: I64 line: I64 indent: I64 kind: I64 width: I64 inout lexemes: Vec[Lexeme]) -> I64 effects[alloc]:
-  let end: I64 = i64.add(index width)
-  let within: Bool = i64.le(end length)
-  match within:
-    false:
+fn modern_push_fixed(index: I64, length: I64, line: I64, indent: I64, kind: I64, width: I64, inout lexemes: Vec[Lexeme]) -> I64 effects[alloc]:
+  let end: I64 = index + width
+  let within: Bool = end <= length
+  if within:
+    push_lexeme(lexemes, kind, index, end, line, indent)
+    end
+  else:
+    -1
+
+fn modern_push_string(input: Bytes, index: I64, length: I64, line: I64, indent: I64, inout lexemes: Vec[Lexeme]) -> I64 effects[alloc, partial]:
+  let content: I64 = index + 1
+  let end: I64 = scan_string(input, content, length)
+  let within: Bool = end <= length
+  if within:
+    let nonempty: Bool = end > content
+    if nonempty:
+      let last: I64 = end - 1
+      let byte: U8 = bytes.get(input, last)
+      let code: I64 = u8.to_i64(byte)
+      let terminated: Bool = code == 34
+      if terminated:
+        push_lexeme(lexemes, 1, index, end, line, indent)
+        end
+      else:
+        -1
+    else:
       -1
-    true:
-      let pushed: Unit = push_lexeme(lexemes kind index end line indent)
-      end
+  else:
+    -1
 
-fn modern_push_string(input: Bytes index: I64 length: I64 line: I64 indent: I64 inout lexemes: Vec[Lexeme]) -> I64 effects[alloc partial]:
-  let content: I64 = i64.add(index 1)
-  let end: I64 = scan_string(input content length)
-  let within: Bool = i64.le(end length)
-  match within:
-    false:
-      -1
-    true:
-      let nonempty: Bool = i64.gt(end content)
-      match nonempty:
-        false:
-          -1
-        true:
-          let last: I64 = i64.sub(end 1)
-          let byte: U8 = bytes.get(input last)
-          let code: I64 = u8.to-i64(byte)
-          let terminated: Bool = i64.eq(code 34)
-          match terminated:
-            false:
-              -1
-            true:
-              let pushed: Unit = push_lexeme(lexemes 1 index end line indent)
-              end
+fn modern_integer_tail_valid(input: Bytes, index: I64, end: I64) -> Bool effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    true
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let digit: Bool = (code >= 48) && (code <= 57)
+    if digit:
+      recur(input, index + 1, end)
+    else:
+      false
 
-fn modern_push_atom(input: Bytes index: I64 length: I64 line: I64 indent: I64 inout lexemes: Vec[Lexeme]) -> I64 effects[alloc partial]:
-  let end: I64 = modern_scan_atom(input index length)
-  let progress: Bool = i64.gt(end index)
-  match progress:
-    false:
-      -1
-    true:
-      let pushed: Unit = push_lexeme(lexemes 0 index end line indent)
-      end
+fn modern_integer_valid(input: Bytes, index: I64, end: I64) -> Bool effects[partial]:
+  let available: Bool = index < end
+  if available:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let negative: Bool = code == 45
+    let first_digit: I64 = if negative:
+      index + 1
+    else:
+      index
+    let nonempty: Bool = first_digit < end
+    if nonempty:
+      modern_integer_tail_valid(input, first_digit, end)
+    else:
+      false
+  else:
+    false
 
-fn lex_modern_token(input: Bytes index: I64 length: I64 line: I64 indent: I64 inout lexemes: Vec[Lexeme]) -> I64 effects[alloc partial]:
-  let byte: U8 = bytes.get(input index)
-  let code: I64 = u8.to-i64(byte)
+fn modern_operator_valid(input: Bytes, index: I64, end: I64) -> Bool effects[partial]:
+  let add: Bool = span_equal(input, index, end, "+")
+  let subtract: Bool = span_equal(input, index, end, "-")
+  let multiply: Bool = span_equal(input, index, end, "*")
+  let divide: Bool = span_equal(input, index, end, "/")
+  let remainder: Bool = span_equal(input, index, end, "%")
+  let less: Bool = span_equal(input, index, end, "<")
+  let greater: Bool = span_equal(input, index, end, ">")
+  let and: Bool = span_equal(input, index, end, "&&")
+  let or: Bool = span_equal(input, index, end, "||")
+  add || (subtract || (multiply || (divide || (remainder || (less || (greater || (and || or)))))))
+
+fn modern_push_atom(input: Bytes, index: I64, length: I64, line: I64, indent: I64, inout lexemes: Vec[Lexeme]) -> I64 effects[alloc, partial]:
+  let end: I64 = modern_scan_atom(input, index, length)
+  let progress: Bool = end > index
+  let identifier: Bool = if progress:
+    qualified_span_valid(input, index, end, index)
+  else:
+    false
+  let integer: Bool = if progress:
+    modern_integer_valid(input, index, end)
+  else:
+    false
+  let operator: Bool = if progress:
+    modern_operator_valid(input, index, end)
+  else:
+    false
+  let valid: Bool = identifier || (integer || operator)
+  if valid:
+    push_lexeme(lexemes, 0, index, end, line, indent)
+    end
+  else:
+    -1
+
+fn lex_modern_token(input: Bytes, index: I64, length: I64, line: I64, indent: I64, inout lexemes: Vec[Lexeme]) -> I64 effects[alloc, partial]:
+  let byte: U8 = bytes.get(input, index)
+  let code: I64 = u8.to_i64(byte)
   let forbidden: Bool = modern_forbidden(code)
-  match forbidden:
-    true:
-      -1
-    false:
-      let quote: Bool = i64.eq(code 34)
-      match quote:
-        true:
-          modern_push_string(input index length line indent lexemes)
-        false:
-          let left_round: Bool = i64.eq(code 40)
-          match left_round:
-            true:
-              modern_push_fixed(index length line indent 2 1 lexemes)
-            false:
-              let right_round: Bool = i64.eq(code 41)
-              match right_round:
-                true:
-                  modern_push_fixed(index length line indent 3 1 lexemes)
-                false:
-                  let left_square: Bool = i64.eq(code 91)
-                  match left_square:
-                    true:
-                      modern_push_fixed(index length line indent 4 1 lexemes)
-                    false:
-                      let right_square: Bool = i64.eq(code 93)
-                      match right_square:
-                        true:
-                          modern_push_fixed(index length line indent 5 1 lexemes)
-                        false:
-                          let colon: Bool = i64.eq(code 58)
-                          match colon:
-                            true:
-                              let following: I64 = i64.add(index 1)
-                              let double: Bool = match i64.lt(following length):
-                                false:
-                                  false
-                                true:
-                                  let next_byte: U8 = bytes.get(input following)
-                                  i64.eq(u8.to-i64(next_byte) 58)
-                              match double:
-                                true:
-                                  modern_push_fixed(index length line indent 7 2 lexemes)
-                                false:
-                                  modern_push_fixed(index length line indent 6 1 lexemes)
-                            false:
-                              let equal: Bool = i64.eq(code 61)
-                              match equal:
-                                true:
-                                  modern_push_fixed(index length line indent 8 1 lexemes)
-                                false:
-                                  let arrow: Bool = modern_arrow_at(input index length)
-                                  match arrow:
-                                    true:
-                                      modern_push_fixed(index length line indent 9 2 lexemes)
-                                    false:
-                                      modern_push_atom(input index length line indent lexemes)
+  if forbidden:
+    -1
+  else:
+    let quote: Bool = code == 34
+    if quote:
+      modern_push_string(input, index, length, line, indent, lexemes)
+    else:
+      let left_round: Bool = code == 40
+      if left_round:
+        modern_push_fixed(index, length, line, indent, 2, 1, lexemes)
+      else:
+        let right_round: Bool = code == 41
+        if right_round:
+          modern_push_fixed(index, length, line, indent, 3, 1, lexemes)
+        else:
+          let left_square: Bool = code == 91
+          if left_square:
+            modern_push_fixed(index, length, line, indent, 4, 1, lexemes)
+          else:
+            let right_square: Bool = code == 93
+            if right_square:
+              modern_push_fixed(index, length, line, indent, 5, 1, lexemes)
+            else:
+              let colon: Bool = code == 58
+              if colon:
+                let following: I64 = index + 1
+                let double: Bool = if following < length:
+                  let next_byte: U8 = bytes.get(input, following)
+                  u8.to_i64(next_byte) == 58
+                else:
+                  false
+                if double:
+                  modern_push_fixed(index, length, line, indent, 7, 2, lexemes)
+                else:
+                  modern_push_fixed(index, length, line, indent, 6, 1, lexemes)
+              else:
+                let bang: Bool = code == 33
+                if bang:
+                  modern_push_fixed(index, length, line, indent, 0, 1, lexemes)
+                else:
+                  let comma: Bool = code == 44
+                  if comma:
+                    modern_push_fixed(index, length, line, indent, 10, 1, lexemes)
+                  else:
+                    let equal: Bool = code == 61
+                    if equal:
+                      let double: Bool = modern_pair_at(input, index, length, 61, 61)
+                      if double:
+                        modern_push_fixed(index, length, line, indent, 0, 2, lexemes)
+                      else:
+                        modern_push_fixed(index, length, line, indent, 8, 1, lexemes)
+                    else:
+                      let arrow: Bool = modern_arrow_at(input, index, length)
+                      if arrow:
+                        modern_push_fixed(index, length, line, indent, 9, 2, lexemes)
+                      else:
+                        let less_equal: Bool = modern_pair_at(input, index, length, 60, 61)
+                        let greater_equal: Bool = modern_pair_at(input, index, length, 62, 61)
+                        let comparison: Bool = less_equal || greater_equal
+                        if comparison:
+                          modern_push_fixed(index, length, line, indent, 0, 2, lexemes)
+                        else:
+                          modern_push_atom(input, index, length, line, indent, lexemes)
 
 fn lex_success(position: I64) -> LexResult:
-  make LexResult(valid = true code = "" start = position end = position)
+  LexResult(valid: true, code: "", start: position, end: position)
 
-fn lex_failure(code: Bytes start: I64 end: I64) -> LexResult:
-  make LexResult(valid = false code = code start = start end = end)
+fn lex_failure(code: Bytes, start: I64, end: I64) -> LexResult:
+  LexResult(valid: false, code: code, start: start, end: end)
 
-fn lex_modern_from(input: Bytes index: I64 length: I64 line: I64 at_line_start: Bool indent_spaces: I64 inout lexemes: Vec[Lexeme]) -> LexResult effects[alloc partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      lex_success(length)
-    false:
-      let byte: U8 = bytes.get(input index)
-      let code: I64 = u8.to-i64(byte)
-      let tab: Bool = i64.eq(code 9)
-      match tab:
-        true:
-          lex_failure("E0103" index i64.add(index 1))
-        false:
-          let newline: Bool = i64.eq(code 10)
-          match newline:
-            true:
-              let next: I64 = i64.add(index 1)
-              let next_line: I64 = i64.add(line 1)
-              recur(input next length next_line true 0 lexemes)
-            false:
-              let comment: Bool = i64.eq(code 35)
-              match comment:
-                true:
-                  let next: I64 = scan_comment(input i64.add(index 1) length)
-                  let next_line: I64 = i64.add(line 1)
-                  recur(input next length next_line true 0 lexemes)
-                false:
-                  let leading_space: Bool = bool.and(at_line_start i64.eq(code 32))
-                  match leading_space:
-                    true:
-                      let next: I64 = i64.add(index 1)
-                      let next_spaces: I64 = i64.add(indent_spaces 1)
-                      recur(input next length line true next_spaces lexemes)
-                    false:
-                      let whitespace: Bool = i64.le(code 32)
-                      match whitespace:
-                        true:
-                          let next: I64 = i64.add(index 1)
-                          recur(input next length line false indent_spaces lexemes)
-                        false:
-                          let remainder: I64 = i64.rem(indent_spaces 2)
-                          let even: Bool = i64.eq(remainder 0)
-                          match even:
-                            false:
-                              let start: I64 = i64.sub(index indent_spaces)
-                              lex_failure("E0104" start index)
-                            true:
-                              let indent: I64 = i64.div(indent_spaces 2)
-                              let next: I64 = lex_modern_token(input index length line indent lexemes)
-                              let progress: Bool = i64.gt(next index)
-                              match progress:
-                                false:
-                                  let forbidden: Bool = modern_forbidden(code)
-                                  let quote: Bool = i64.eq(code 34)
-                                  let diagnostic: Bytes = match forbidden:
-                                    true:
-                                      "E0106"
-                                    false:
-                                      match quote:
-                                        true:
-                                          "E0107"
-                                        false:
-                                          "E0102"
-                                  lex_failure(diagnostic index i64.add(index 1))
-                                true:
-                                  recur(input next length line false indent_spaces lexemes)
+fn lex_modern_from(input: Bytes, index: I64, length: I64, line: I64, at_line_start: Bool, indent_spaces: I64, inout lexemes: Vec[Lexeme]) -> LexResult effects[alloc, partial]:
+  let done: Bool = index >= length
+  if done:
+    lex_success(length)
+  else:
+    let byte: U8 = bytes.get(input, index)
+    let code: I64 = u8.to_i64(byte)
+    let tab: Bool = code == 9
+    if tab:
+      lex_failure("E0103", index, index + 1)
+    else:
+      let newline: Bool = code == 10
+      if newline:
+        let next: I64 = index + 1
+        let next_line: I64 = line + 1
+        recur(input, next, length, next_line, true, 0, lexemes)
+      else:
+        let comment: Bool = code == 35
+        if comment:
+          let next: I64 = scan_comment(input, index + 1, length)
+          let next_line: I64 = line + 1
+          recur(input, next, length, next_line, true, 0, lexemes)
+        else:
+          let leading_space: Bool = at_line_start && (code == 32)
+          if leading_space:
+            let next: I64 = index + 1
+            let next_spaces: I64 = indent_spaces + 1
+            recur(input, next, length, line, true, next_spaces, lexemes)
+          else:
+            let whitespace: Bool = code <= 32
+            if whitespace:
+              let next: I64 = index + 1
+              recur(input, next, length, line, false, indent_spaces, lexemes)
+            else:
+              let remainder: I64 = indent_spaces % 2
+              let even: Bool = remainder == 0
+              if even:
+                let indent: I64 = indent_spaces / 2
+                let next: I64 = lex_modern_token(input, index, length, line, indent, lexemes)
+                let progress: Bool = next > index
+                if progress:
+                  recur(input, next, length, line, false, indent_spaces, lexemes)
+                else:
+                  let forbidden: Bool = modern_forbidden(code)
+                  let quote: Bool = code == 34
+                  let diagnostic: Bytes = if forbidden:
+                    "E0106"
+                  else:
+                    if quote:
+                      "E0107"
+                    else:
+                      "E0102"
+                  lex_failure(diagnostic, index, index + 1)
+              else:
+                let start: I64 = index - indent_spaces
+                lex_failure("E0104", start, index)
 
-fn lex_modern(input: Bytes inout lexemes: Vec[Lexeme]) -> LexResult effects[alloc partial]:
+fn lex_modern(input: Bytes, inout lexemes: Vec[Lexeme]) -> LexResult effects[alloc, partial]:
   let length: I64 = bytes.len(input)
-  lex_modern_from(input 0 length 0 true 0 lexemes)
+  lex_modern_from(input, 0, length, 0, true, 0, lexemes)
 
-fn indentation_jump(inout lexemes: Vec[Lexeme] index: I64 previous_line: I64 previous_indent: I64) -> I64 effects[partial]:
+fn indentation_jump(inout lexemes: Vec[Lexeme], index: I64, previous_line: I64, previous_indent: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(lexemes)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      -1
-    false:
-      let line: I64 = lexeme_line(lexemes index)
-      let new_line: Bool = i64.gt(line previous_line)
-      match new_line:
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(lexemes next previous_line previous_indent)
-        true:
-          let indent: I64 = lexeme_indent(lexemes index)
-          let first: Bool = i64.lt(previous_line 0)
-          let maximum: I64 = match first:
-            true:
-              0
-            false:
-              i64.add(previous_indent 1)
-          let skipped: Bool = i64.gt(indent maximum)
-          match skipped:
-            true:
-              index
-            false:
-              let next: I64 = i64.add(index 1)
-              recur(lexemes next line indent)
+  let done: Bool = index >= length
+  if done:
+    -1
+  else:
+    let line: I64 = lexeme_line(lexemes, index)
+    let new_line: Bool = line > previous_line
+    if new_line:
+      let indent: I64 = lexeme_indent(lexemes, index)
+      let first: Bool = previous_line < 0
+      let maximum: I64 = if first:
+        0
+      else:
+        previous_indent + 1
+      let skipped: Bool = indent > maximum
+      if skipped:
+        index
+      else:
+        let next: I64 = index + 1
+        recur(lexemes, next, line, indent)
+    else:
+      let next: I64 = index + 1
+      recur(lexemes, next, previous_line, previous_indent)
 
 fn parse_success(next: I64) -> Parse:
-  make Parse(valid = true next = next)
+  Parse(valid: true, next: next, code: "")
 
 fn parse_failure(next: I64) -> Parse:
-  make Parse(valid = false next = next)
+  Parse(valid: false, next: next, code: "E0102")
 
-fn lexeme_is_kind(inout lexemes: Vec[Lexeme] index: I64 kind: I64) -> Bool effects[partial]:
-  i64.eq(lexeme_kind(lexemes index) kind)
+fn parse_failure_code(next: I64, code: Bytes) -> Parse:
+  Parse(valid: false, next: next, code: code)
 
-fn lexeme_on_line(inout lexemes: Vec[Lexeme] index: I64 line: I64) -> Bool effects[partial]:
-  i64.eq(lexeme_line(lexemes index) line)
+fn lexeme_is_kind(inout lexemes: Vec[Lexeme], index: I64, kind: I64) -> Bool effects[partial]:
+  lexeme_kind(lexemes, index) == kind
 
-fn lexeme_at_indent(inout lexemes: Vec[Lexeme] index: I64 indent: I64) -> Bool effects[partial]:
-  i64.eq(lexeme_indent(lexemes index) indent)
+fn lexeme_on_line(inout lexemes: Vec[Lexeme], index: I64, line: I64) -> Bool effects[partial]:
+  lexeme_line(lexemes, index) == line
 
-fn push_lexeme_as_token(inout lexemes: Vec[Lexeme] index: I64 kind: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  push_token(tokens kind lexeme_start(lexemes index) lexeme_end(lexemes index))
+fn lexeme_at_indent(inout lexemes: Vec[Lexeme], index: I64, indent: I64) -> Bool effects[partial]:
+  lexeme_indent(lexemes, index) == indent
 
-fn push_name_lexeme(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Bool effects[alloc partial]:
-  let name: Bool = lexeme_is_kind(lexemes index 0)
-  match name:
-    false:
-      false
-    true:
-      let pushed: Unit = push_lexeme_as_token(lexemes index 2 tokens)
-      true
+fn push_lexeme_as_token(inout lexemes: Vec[Lexeme], index: I64, kind: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  push_token(tokens, kind, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
 
-fn push_scalar_lexeme(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Bool effects[alloc partial]:
-  let kind: I64 = lexeme_kind(lexemes index)
-  let name: Bool = i64.eq(kind 0)
-  let string_value: Bool = i64.eq(kind 1)
-  let scalar: Bool = bool.or(name string_value)
-  match scalar:
-    false:
-      false
-    true:
-      let token_kind: I64 = match name:
-        true:
-          2
-        false:
-          3
-      let pushed: Unit = push_lexeme_as_token(lexemes index token_kind tokens)
-      true
+fn push_name_lexeme(inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Bool effects[alloc, partial]:
+  let name: Bool = lexeme_is_kind(lexemes, index, 0)
+  if name:
+    push_lexeme_as_token(lexemes, index, 2, tokens)
+    true
+  else:
+    false
 
-fn begin_tagged_form(inout lexemes: Vec[Lexeme] index: I64 tag: I64 inout tokens: Vec[Token]) -> I64 effects[alloc partial]:
+fn begin_tagged_form(inout lexemes: Vec[Lexeme], index: I64, tag: I64, inout tokens: Vec[Token]) -> I64 effects[alloc, partial]:
   let open: I64 = vec.len(tokens)
-  let start: I64 = lexeme_start(lexemes index)
-  let end: I64 = lexeme_end(lexemes index)
-  let pushed: Unit = push_tagged_token(tokens 0 tag start end)
+  let start: I64 = lexeme_start(lexemes, index)
+  let end: I64 = lexeme_end(lexemes, index)
+  push_tagged_token(tokens, 0, tag, start, end)
   open
 
-fn begin_plain_form(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> I64 effects[alloc partial]:
-  begin_tagged_form(lexemes index 0 tokens)
+fn begin_plain_form(inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> I64 effects[alloc, partial]:
+  begin_tagged_form(lexemes, index, 0, tokens)
 
-fn finish_form_at(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  push_token(tokens 1 lexeme_start(lexemes index) lexeme_end(lexemes index))
+fn finish_form_at(inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  push_token(tokens, 1, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
 
-fn finish_form_after_tokens(inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
+fn finish_form_after_tokens(inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(tokens)
-  let last: I64 = i64.sub(length 1)
-  let end: I64 = token_end(tokens last)
-  push_token(tokens 1 end end)
+  let last: I64 = length - 1
+  let end: I64 = token_end(tokens, last)
+  push_token(tokens, 1, end, end)
 
-fn push_synthetic_marker(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  let start: I64 = lexeme_start(lexemes index)
-  push_token(tokens 2 start start)
+fn push_synthetic_marker(inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  let start: I64 = lexeme_start(lexemes, index)
+  push_token(tokens, 2, start, start)
 
-fn type_tag(source: Bytes inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let vector: Bool = lexeme_equal(source lexemes index "Vec")
-  match vector:
-    true:
-      6
-    false:
-      let arena: Bool = lexeme_equal(source lexemes index "Arena")
-      match arena:
-        true:
-          7
-        false:
-          let identity: Bool = lexeme_equal(source lexemes index "Id")
-          match identity:
-            true:
-              8
-            false:
-              0
+fn type_tag(source: Bytes, inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let vector: Bool = lexeme_equal(source, lexemes, index, "Vec")
+  if vector:
+    6
+  else:
+    let arena: Bool = lexeme_equal(source, lexemes, index, "Arena")
+    if arena:
+      7
+    else:
+      let identity: Bool = lexeme_equal(source, lexemes, index, "Id")
+      if identity:
+        8
+      else:
+        0
 
-fn parse_type(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let name: Bool = lexeme_is_kind(lexemes index 0)
-  match name:
-    false:
-      parse_failure(index)
-    true:
-      let following: I64 = i64.add(index 1)
-      let generic: Bool = lexeme_is_kind(lexemes following 4)
-      match generic:
-        false:
-          let pushed: Bool = push_name_lexeme(lexemes index tokens)
-          parse_success(following)
-        true:
-          let tag: I64 = type_tag(source lexemes index)
-          let supported: Bool = i64.gt(tag 0)
-          match supported:
-            false:
-              parse_failure(index)
-            true:
-              let open: I64 = begin_tagged_form(lexemes index tag tokens)
-              let head: Bool = push_name_lexeme(lexemes index tokens)
-              let argument_start: I64 = i64.add(following 1)
-              let argument: Parse = parse_type(source lexemes argument_start tokens)
-              match get(argument valid):
-                false:
-                  argument
-                true:
-                  let close: I64 = get(argument next)
-                  let closed: Bool = lexeme_is_kind(lexemes close 5)
-                  match closed:
-                    false:
-                      parse_failure(close)
-                    true:
-                      let finished: Unit = finish_form_at(lexemes close tokens)
-                      parse_success(i64.add(close 1))
+fn parse_type(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let name: Bool = lexeme_is_kind(lexemes, index, 0)
+  if name:
+    let following: I64 = index + 1
+    let generic: Bool = lexeme_is_kind(lexemes, following, 4)
+    if generic:
+      let tag: I64 = type_tag(source, lexemes, index)
+      let supported: Bool = tag > 0
+      if supported:
+        let open: I64 = begin_tagged_form(lexemes, index, tag, tokens)
+        let head: Bool = push_name_lexeme(lexemes, index, tokens)
+        let argument_start: I64 = following + 1
+        let argument: Parse = parse_type(source, lexemes, argument_start, tokens)
+        if argument.valid:
+          let close: I64 = argument.next
+          let closed: Bool = lexeme_is_kind(lexemes, close, 5)
+          if closed:
+            finish_form_at(lexemes, close, tokens)
+            parse_success(close + 1)
+          else:
+            parse_failure(close)
+        else:
+          argument
+      else:
+        parse_failure(index)
+    else:
+      let pushed: Bool = push_name_lexeme(lexemes, index, tokens)
+      parse_success(following)
+  else:
+    parse_failure(index)
 
-fn parse_plain_binding(source: Bytes inout lexemes: Vec[Lexeme] index: I64 allow_inout: Bool inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let start: I64 = index
-  let open: I64 = begin_plain_form(lexemes start tokens)
-  let inout_form: Bool = lexeme_equal(source lexemes index "inout")
-  let allowed: Bool = match inout_form:
-    true:
-      allow_inout
-    false:
-      true
-  match allowed:
-    false:
-      parse_failure(index)
-    true:
-      let after_inout: I64 = match inout_form:
-        true:
-          let pushed: Bool = push_name_lexeme(lexemes index tokens)
-          i64.add(index 1)
-        false:
-          index
-      let named: Bool = push_name_lexeme(lexemes after_inout tokens)
-      match named:
-        false:
-          parse_failure(after_inout)
-        true:
-          let colon: I64 = i64.add(after_inout 1)
-          let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-          match has_colon:
-            false:
-              parse_failure(colon)
-            true:
-              let type_start: I64 = i64.add(colon 1)
-              let parsed: Parse = parse_type(source lexemes type_start tokens)
-              match get(parsed valid):
-                false:
-                  parsed
-                true:
-                  let finished: Unit = finish_form_after_tokens(tokens)
-                  parsed
+fn effect_rank(source: Bytes, inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let allocation: Bool = lexeme_equal(source, lexemes, index, "alloc")
+  if allocation:
+    1
+  else:
+    let input_output: Bool = lexeme_equal(source, lexemes, index, "io")
+    if input_output:
+      2
+    else:
+      let partial: Bool = lexeme_equal(source, lexemes, index, "partial")
+      if partial:
+        3
+      else:
+        0
 
-fn parse_parameters_from(source: Bytes inout lexemes: Vec[Lexeme] index: I64 line: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 3)
-  match close:
-    true:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      match same_line:
-        false:
-          parse_failure(index)
-        true:
-          let finished: Unit = finish_form_at(lexemes index tokens)
-          parse_success(i64.add(index 1))
-    false:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      match same_line:
-        false:
-          parse_failure(index)
-        true:
-          let binding: Parse = parse_plain_binding(source lexemes index true tokens)
-          match get(binding valid):
-            false:
-              binding
-            true:
-              recur(source lexemes get(binding next) line tokens)
-
-fn parse_parameters(source: Bytes inout lexemes: Vec[Lexeme] index: I64 line: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: Bool = lexeme_is_kind(lexemes index 2)
-  match open:
-    false:
-      parse_failure(index)
-    true:
-      let list: I64 = begin_plain_form(lexemes index tokens)
-      let first: I64 = i64.add(index 1)
-      parse_parameters_from(source lexemes first line tokens)
-
-fn effect_rank(source: Bytes inout lexemes: Vec[Lexeme] index: I64) -> I64 effects[partial]:
-  let allocation: Bool = lexeme_equal(source lexemes index "alloc")
-  match allocation:
-    true:
-      1
-    false:
-      let input_output: Bool = lexeme_equal(source lexemes index "io")
-      match input_output:
-        true:
-          2
-        false:
-          let partial: Bool = lexeme_equal(source lexemes index "partial")
-          match partial:
-            true:
-              3
-            false:
-              0
-
-fn parse_effect_names(source: Bytes inout lexemes: Vec[Lexeme] index: I64 line: I64 previous: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 5)
-  match close:
-    true:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      let nonempty: Bool = i64.gt(previous 0)
-      let valid: Bool = bool.and(same_line nonempty)
-      match valid:
-        false:
-          parse_failure(index)
-        true:
-          let finished: Unit = finish_form_at(lexemes index tokens)
-          parse_success(i64.add(index 1))
-    false:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      let rank: I64 = effect_rank(source lexemes index)
-      let known: Bool = i64.gt(rank 0)
-      let ordered: Bool = i64.gt(rank previous)
-      let first: Bool = bool.and(same_line known)
-      let valid: Bool = bool.and(first ordered)
-      match valid:
-        false:
-          parse_failure(index)
-        true:
-          let name: Bool = push_name_lexeme(lexemes index tokens)
-          recur(source lexemes i64.add(index 1) line rank tokens)
-
-fn parse_effects(source: Bytes inout lexemes: Vec[Lexeme] index: I64 line: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let named: Bool = lexeme_equal(source lexemes index "effects")
-  match named:
-    false:
-      parse_failure(index)
-    true:
-      let open: I64 = begin_tagged_form(lexemes index 5 tokens)
-      let marker: Bool = push_name_lexeme(lexemes index tokens)
-      let bracket: I64 = i64.add(index 1)
-      let has_bracket: Bool = lexeme_is_kind(lexemes bracket 4)
-      match has_bracket:
-        false:
-          parse_failure(bracket)
-        true:
-          parse_effect_names(source lexemes i64.add(bracket 1) line 0 tokens)
-
-fn synthesize_empty_effects(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 5 tokens)
-  let marker: Unit = push_synthetic_marker(lexemes index tokens)
+fn synthesize_empty_effects(inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  let open: I64 = begin_tagged_form(lexemes, index, 5, tokens)
+  push_synthetic_marker(lexemes, index, tokens)
   finish_form_after_tokens(tokens)
 
-fn parse_expressions_until_round(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 3)
-  match close:
-    true:
-      let finished: Unit = finish_form_at(lexemes index tokens)
-      parse_success(i64.add(index 1))
-    false:
-      let expression: Parse = parse_expression(source lexemes index tokens)
-      match get(expression valid):
-        false:
-          expression
-        true:
-          recur(source lexemes get(expression next) tokens)
-
-fn parse_call_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 10 tokens)
-  let marker: Unit = push_synthetic_marker(lexemes index tokens)
-  let callee: Bool = push_name_lexeme(lexemes index tokens)
-  let arguments: I64 = i64.add(index 1)
-  let has_open: Bool = lexeme_is_kind(lexemes arguments 2)
-  match has_open:
-    false:
-      parse_failure(arguments)
-    true:
-      parse_expressions_until_round(source lexemes i64.add(arguments 1) tokens)
-
-fn parse_recur_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 15 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let arguments: I64 = i64.add(index 1)
-  let has_open: Bool = lexeme_is_kind(lexemes arguments 2)
-  match has_open:
-    false:
-      parse_failure(arguments)
-    true:
-      parse_expressions_until_round(source lexemes i64.add(arguments 1) tokens)
-
-fn parse_get_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 12 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let arguments: I64 = i64.add(index 1)
-  let has_open: Bool = lexeme_is_kind(lexemes arguments 2)
-  match has_open:
-    false:
-      parse_failure(arguments)
-    true:
-      let value_start: I64 = i64.add(arguments 1)
-      let value: Parse = parse_expression(source lexemes value_start tokens)
-      match get(value valid):
-        false:
-          value
-        true:
-          let field: I64 = get(value next)
-          let named: Bool = push_name_lexeme(lexemes field tokens)
-          match named:
-            false:
-              parse_failure(field)
-            true:
-              let close: I64 = i64.add(field 1)
-              let closed: Bool = lexeme_is_kind(lexemes close 3)
-              match closed:
-                false:
-                  parse_failure(close)
-                true:
-                  let finished: Unit = finish_form_at(lexemes close tokens)
-                  parse_success(i64.add(close 1))
-
-fn parse_make_fields(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 3)
-  match close:
-    true:
-      let finished: Unit = finish_form_at(lexemes index tokens)
-      parse_success(i64.add(index 1))
-    false:
-      let named: Bool = lexeme_is_kind(lexemes index 0)
-      match named:
-        false:
-          parse_failure(index)
-        true:
-          let field: I64 = begin_plain_form(lexemes index tokens)
-          let name: Bool = push_name_lexeme(lexemes index tokens)
-          let equal: I64 = i64.add(index 1)
-          let has_equal: Bool = lexeme_is_kind(lexemes equal 8)
-          match has_equal:
-            false:
-              parse_failure(equal)
-            true:
-              let value_start: I64 = i64.add(equal 1)
-              let value: Parse = parse_expression(source lexemes value_start tokens)
-              match get(value valid):
-                false:
-                  value
-                true:
-                  let finished: Unit = finish_form_after_tokens(tokens)
-                  recur(source lexemes get(value next) tokens)
-
-fn parse_make_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 11 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let type_start: I64 = i64.add(index 1)
-  let type_result: Parse = parse_type(source lexemes type_start tokens)
-  match get(type_result valid):
-    false:
-      type_result
-    true:
-      let fields: I64 = get(type_result next)
-      let has_open: Bool = lexeme_is_kind(lexemes fields 2)
-      match has_open:
-        false:
-          parse_failure(fields)
-        true:
-          parse_make_fields(source lexemes i64.add(fields 1) tokens)
-
-fn parse_case_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: I64 = begin_tagged_form(lexemes index 13 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let type_start: I64 = i64.add(index 1)
-  let type_result: Parse = parse_type(source lexemes type_start tokens)
-  match get(type_result valid):
-    false:
-      type_result
-    true:
-      let separator: I64 = get(type_result next)
-      let has_separator: Bool = lexeme_is_kind(lexemes separator 7)
-      match has_separator:
-        false:
-          parse_failure(separator)
-        true:
-          let case_name: I64 = i64.add(separator 1)
-          let named: Bool = push_name_lexeme(lexemes case_name tokens)
-          match named:
-            false:
-              parse_failure(case_name)
-            true:
-              let arguments: I64 = i64.add(case_name 1)
-              let has_open: Bool = lexeme_is_kind(lexemes arguments 2)
-              match has_open:
-                false:
-                  parse_failure(arguments)
-                true:
-                  parse_expressions_until_round(source lexemes i64.add(arguments 1) tokens)
-
-fn parse_pattern_names(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 3)
-  match close:
-    true:
-      let finished: Unit = finish_form_at(lexemes index tokens)
-      parse_success(i64.add(index 1))
-    false:
-      let named: Bool = push_name_lexeme(lexemes index tokens)
-      match named:
-        false:
-          parse_failure(index)
-        true:
-          recur(lexemes i64.add(index 1) tokens)
-
-fn parse_pattern_bindings(inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let open: Bool = lexeme_is_kind(lexemes index 2)
-  match open:
-    false:
+fn parse_record_members(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  let same_depth: Bool = if available:
+    lexeme_at_indent(lexemes, index, depth)
+  else:
+    false
+  if same_depth:
+    let line: I64 = lexeme_line(lexemes, index)
+    let member: I64 = begin_plain_form(lexemes, index, tokens)
+    let named: Bool = push_name_lexeme(lexemes, index, tokens)
+    if named:
+      let colon: I64 = index + 1
+      let has_colon: Bool = lexeme_is_kind(lexemes, colon, 6)
+      if has_colon:
+        let type_result: Parse = parse_type(source, lexemes, colon + 1, tokens)
+        if type_result.valid:
+          let next: I64 = type_result.next
+          let line_finished: Bool = if lexeme_index_valid(lexemes, next):
+            lexeme_line(lexemes, next) > line
+          else:
+            true
+          if line_finished:
+            finish_form_after_tokens(tokens)
+            recur(source, lexemes, next, depth, tokens)
+          else:
+            parse_failure(next)
+        else:
+          type_result
+      else:
+        parse_failure(colon)
+    else:
       parse_failure(index)
-    true:
-      let list: I64 = begin_plain_form(lexemes index tokens)
-      parse_pattern_names(lexemes i64.add(index 1) tokens)
+  else:
+    finish_form_after_tokens(tokens)
+    parse_success(index)
 
-fn parse_match_arm(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let exact_indent: Bool = lexeme_at_indent(lexemes index depth)
-  match exact_indent:
-    false:
+fn expr_success(next: I64, node: I64) -> ExprParse:
+  ExprParse(valid: true, next: next, node: node, code: "")
+
+fn expr_failure(next: I64, code: Bytes) -> ExprParse:
+  ExprParse(valid: false, next: next, node: -1, code: code)
+
+fn empty_edges() -> EdgeList:
+  EdgeList(first: -1, last: -1, count: 0)
+
+fn append_expr_node(kind: I64, start: I64, end: I64, auxiliary: I64, first_edge: I64, last_edge: I64, inout nodes: Vec[ExprNode]) -> I64 effects[alloc]:
+  let index: I64 = vec.len(nodes)
+  let node: ExprNode = ExprNode(kind: kind, start: start, end: end, auxiliary: auxiliary, first_edge: first_edge, last_edge: last_edge)
+  vec.push(nodes, node)
+  index
+
+fn append_expr_edge(node: I64, name: I64, list: EdgeList, inout edges: Vec[ExprEdge]) -> EdgeList effects[alloc, partial]:
+  let index: I64 = vec.len(edges)
+  let edge: ExprEdge = ExprEdge(node: node, name: name, next_edge: -1)
+  vec.push(edges, edge)
+  let previous: I64 = list.last
+  let has_previous: Bool = previous >= 0
+  if has_previous:
+    let prior: ExprEdge = vec.get(edges, previous)
+    let updated: ExprEdge = ExprEdge(node: prior.node, name: prior.name, next_edge: index)
+    vec.set(edges, previous, updated)
+  else:
+    void
+  let first: I64 = if has_previous:
+    list.first
+  else:
+    index
+  EdgeList(first: first, last: index, count: list.count + 1)
+
+fn expr_node(inout nodes: Vec[ExprNode], index: I64) -> ExprNode effects[partial]:
+  vec.get(nodes, index)
+
+fn expr_edge(inout edges: Vec[ExprEdge], index: I64) -> ExprEdge effects[partial]:
+  vec.get(edges, index)
+
+fn name_byte_valid(code: I64, first: Bool) -> Bool:
+  let upper: Bool = (code >= 65) && (code <= 90)
+  let lower: Bool = (code >= 97) && (code <= 122)
+  let underscore: Bool = code == 95
+  let letter: Bool = (upper || lower) || underscore
+  if first:
+    letter
+  else:
+    let digit: Bool = (code >= 48) && (code <= 57)
+    letter || digit
+
+fn identifier_span_valid(source: Bytes, index: I64, end: I64, first: Bool) -> Bool effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    !first
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let valid: Bool = name_byte_valid(code, first)
+    if valid:
+      recur(source, index + 1, end, false)
+    else:
+      false
+
+fn qualified_span_valid(source: Bytes, index: I64, end: I64, segment_start: I64) -> Bool effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    identifier_span_valid(source, segment_start, end, true)
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let dot: Bool = code == 46
+    if dot:
+      let segment_valid: Bool = identifier_span_valid(source, segment_start, index, true)
+      if segment_valid:
+        recur(source, index + 1, end, index + 1)
+      else:
+        false
+    else:
+      recur(source, index + 1, end, segment_start)
+
+fn span_dot_from(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    -1
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let dot: Bool = u8.to_i64(byte) == 46
+    if dot:
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn operator_precedence(source: Bytes, inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let logical_or: Bool = lexeme_equal(source, lexemes, index, "||")
+  if logical_or:
+    1
+  else:
+    let logical_and: Bool = lexeme_equal(source, lexemes, index, "&&")
+    if logical_and:
+      2
+    else:
+      let equal: Bool = lexeme_equal(source, lexemes, index, "==")
+      let less: Bool = lexeme_equal(source, lexemes, index, "<")
+      let less_equal: Bool = lexeme_equal(source, lexemes, index, "<=")
+      let greater: Bool = lexeme_equal(source, lexemes, index, ">")
+      let greater_equal: Bool = lexeme_equal(source, lexemes, index, ">=")
+      let relation: Bool = equal || (less || (less_equal || (greater || greater_equal)))
+      if relation:
+        3
+      else:
+        let add: Bool = lexeme_equal(source, lexemes, index, "+")
+        let subtract: Bool = lexeme_equal(source, lexemes, index, "-")
+        let sum: Bool = add || subtract
+        if sum:
+          4
+        else:
+          let multiply: Bool = lexeme_equal(source, lexemes, index, "*")
+          let divide: Bool = lexeme_equal(source, lexemes, index, "/")
+          let remainder: Bool = lexeme_equal(source, lexemes, index, "%")
+          let product: Bool = multiply || (divide || remainder)
+          if product:
+            5
+          else:
+            0
+
+fn operator_tag(source: Bytes, inout lexemes: Vec[Lexeme], index: I64) -> I64 effects[partial]:
+  let add: Bool = lexeme_equal(source, lexemes, index, "+")
+  if add:
+    31
+  else:
+    let subtract: Bool = lexeme_equal(source, lexemes, index, "-")
+    if subtract:
+      32
+    else:
+      let multiply: Bool = lexeme_equal(source, lexemes, index, "*")
+      if multiply:
+        33
+      else:
+        let divide: Bool = lexeme_equal(source, lexemes, index, "/")
+        if divide:
+          34
+        else:
+          let remainder: Bool = lexeme_equal(source, lexemes, index, "%")
+          if remainder:
+            35
+          else:
+            let equal: Bool = lexeme_equal(source, lexemes, index, "==")
+            if equal:
+              36
+            else:
+              let less: Bool = lexeme_equal(source, lexemes, index, "<")
+              if less:
+                37
+              else:
+                let less_equal: Bool = lexeme_equal(source, lexemes, index, "<=")
+                if less_equal:
+                  38
+                else:
+                  let greater: Bool = lexeme_equal(source, lexemes, index, ">")
+                  if greater:
+                    39
+                  else:
+                    let greater_equal: Bool = lexeme_equal(source, lexemes, index, ">=")
+                    if greater_equal:
+                      40
+                    else:
+                      let logical_and: Bool = lexeme_equal(source, lexemes, index, "&&")
+                      if logical_and:
+                        42
+                      else:
+                        43
+
+fn familiar_expression_stop(inout lexemes: Vec[Lexeme], index: I64) -> Bool effects[partial]:
+  let kind: I64 = lexeme_kind(lexemes, index)
+  let close: Bool = kind == 3
+  let comma: Bool = kind == 10
+  let colon: Bool = kind == 6
+  close || (comma || colon)
+
+fn parse_familiar_expression_precedence(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, minimum: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ExprParse effects[alloc, partial]:
+  let left: ExprParse = parse_familiar_prefix(source, lexemes, index, nodes, edges)
+  if left.valid:
+    parse_familiar_binary_tail(source, lexemes, left.next, left.node, minimum, nodes, edges)
+  else:
+    left
+
+fn parse_familiar_binary_tail(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, left: I64, minimum: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ExprParse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  let stopped: Bool = if available:
+    familiar_expression_stop(lexemes, index)
+  else:
+    true
+  if stopped:
+    expr_success(index, left)
+  else:
+    let precedence: I64 = operator_precedence(source, lexemes, index)
+    let operator_present: Bool = precedence > 0
+    let strong_enough: Bool = precedence >= minimum
+    let consume: Bool = operator_present && strong_enough
+    if consume:
+      let right_start: I64 = index + 1
+      let right: ExprParse = parse_familiar_expression_precedence(source, lexemes, right_start, precedence + 1, nodes, edges)
+      if right.valid:
+        let list0: EdgeList = empty_edges()
+        let list1: EdgeList = append_expr_edge(left, -1, list0, edges)
+        let list2: EdgeList = append_expr_edge(right.node, -1, list1, edges)
+        let left_node: ExprNode = expr_node(nodes, left)
+        let right_node: ExprNode = expr_node(nodes, right.node)
+        let start: I64 = left_node.start
+        let end: I64 = right_node.end
+        let tag: I64 = operator_tag(source, lexemes, index)
+        let combined: I64 = append_expr_node(6, start, end, tag, list2.first, list2.last, nodes)
+        recur(source, lexemes, right.next, combined, minimum, nodes, edges)
+      else:
+        right
+    else:
+      expr_success(index, left)
+
+fn argument_success(next: I64, list: EdgeList, named: Bool) -> ArgumentParse:
+  ArgumentParse(valid: true, next: next, first: list.first, last: list.last, count: list.count, named: named, code: "")
+
+fn argument_failure(next: I64, code: Bytes, list: EdgeList, named: Bool) -> ArgumentParse:
+  ArgumentParse(valid: false, next: next, first: list.first, last: list.last, count: list.count, named: named, code: code)
+
+fn parse_familiar_arguments_from(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, list: EdgeList, named_mode: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ArgumentParse effects[alloc, partial]:
+  let close: Bool = lexeme_is_kind(lexemes, index, 3)
+  if close:
+    argument_success(index + 1, list, named_mode == 1)
+  else:
+    let comma: Bool = lexeme_is_kind(lexemes, index, 10)
+    if comma:
+      argument_failure(index, "E0109", list, named_mode == 1)
+    else:
+      let candidate_name: Bool = lexeme_is_kind(lexemes, index, 0)
+      let following: I64 = index + 1
+      let colon: Bool = lexeme_is_kind(lexemes, following, 6)
+      let named: Bool = candidate_name && colon
+      let mode: I64 = if named:
+        1
+      else:
+        2
+      let compatible: Bool = (named_mode == 0) || (named_mode == mode)
+      if compatible:
+        let value_start: I64 = if named:
+          index + 2
+        else:
+          index
+        let value: ExprParse = parse_familiar_expression_precedence(source, lexemes, value_start, 1, nodes, edges)
+        if value.valid:
+          let edge_name: I64 = if named:
+            index
+          else:
+            -1
+          let appended: EdgeList = append_expr_edge(value.node, edge_name, list, edges)
+          let separator: I64 = value.next
+          let closed: Bool = lexeme_is_kind(lexemes, separator, 3)
+          if closed:
+            argument_success(separator + 1, appended, named)
+          else:
+            let separated: Bool = lexeme_is_kind(lexemes, separator, 10)
+            if separated:
+              let next: I64 = separator + 1
+              let trailing: Bool = lexeme_is_kind(lexemes, next, 3)
+              let doubled: Bool = lexeme_is_kind(lexemes, next, 10)
+              let invalid: Bool = trailing || doubled
+              if invalid:
+                argument_failure(separator, "E0109", appended, named)
+              else:
+                recur(source, lexemes, next, appended, mode, nodes, edges)
+            else:
+              argument_failure(separator, "E0108", appended, named)
+        else:
+          argument_failure(value.next, value.code, list, named)
+      else:
+        argument_failure(index, "E0102", list, named_mode == 1)
+
+fn parse_familiar_arguments(source: Bytes, inout lexemes: Vec[Lexeme], open: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ArgumentParse effects[alloc, partial]:
+  let opened: Bool = lexeme_is_kind(lexemes, open, 2)
+  if opened:
+    parse_familiar_arguments_from(source, lexemes, open + 1, empty_edges(), 0, nodes, edges)
+  else:
+    argument_failure(open, "E0102", empty_edges(), false)
+
+fn append_projection_fields(source: Bytes, atom_start: I64, atom_end: I64, cursor: I64, value: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> I64 effects[alloc, partial]:
+  let dot: I64 = span_dot_from(source, cursor, atom_end)
+  let done: Bool = dot < 0
+  if done:
+    value
+  else:
+    let field_start: I64 = dot + 1
+    let next_dot: I64 = span_dot_from(source, field_start, atom_end)
+    let field_end: I64 = if next_dot < 0:
+      atom_end
+    else:
+      next_dot
+    let field: I64 = append_expr_node(0, field_start, field_end, 2, -1, -1, nodes)
+    let list0: EdgeList = empty_edges()
+    let list1: EdgeList = append_expr_edge(value, -1, list0, edges)
+    let list2: EdgeList = append_expr_edge(field, -1, list1, edges)
+    let projection: I64 = append_expr_node(3, dot, field_end, 0, list2.first, list2.last, nodes)
+    recur(source, atom_start, atom_end, field_end, projection, nodes, edges)
+
+fn named_operator_span(source: Bytes, start: I64, end: I64) -> Bool effects[partial]:
+  let add: Bool = span_equal(source, start, end, "i64.add")
+  let subtract: Bool = span_equal(source, start, end, "i64.sub")
+  let multiply: Bool = span_equal(source, start, end, "i64.mul")
+  let divide: Bool = span_equal(source, start, end, "i64.div")
+  let remainder: Bool = span_equal(source, start, end, "i64.rem")
+  let equal: Bool = span_equal(source, start, end, "i64.eq")
+  let less: Bool = span_equal(source, start, end, "i64.lt")
+  let less_equal: Bool = span_equal(source, start, end, "i64.le")
+  let greater: Bool = span_equal(source, start, end, "i64.gt")
+  let greater_equal: Bool = span_equal(source, start, end, "i64.ge")
+  let not: Bool = span_equal(source, start, end, "bool.not")
+  let and: Bool = span_equal(source, start, end, "bool.and")
+  let or: Bool = span_equal(source, start, end, "bool.or")
+  let arithmetic_left: Bool = add || subtract
+  let arithmetic_right: Bool = multiply || divide
+  let arithmetic: Bool = arithmetic_left || arithmetic_right
+  let comparison_left: Bool = remainder || equal
+  let comparison_middle: Bool = less || less_equal
+  let comparison_right: Bool = greater || greater_equal
+  let comparison: Bool = comparison_left || (comparison_middle || comparison_right)
+  let boolean: Bool = not || (and || or)
+  arithmetic || (comparison || boolean)
+
+fn parse_familiar_name(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ExprParse effects[alloc, partial]:
+  let start: I64 = lexeme_start(lexemes, index)
+  let end: I64 = lexeme_end(lexemes, index)
+  let valid_name: Bool = qualified_span_valid(source, start, end, start)
+  if valid_name:
+    let following: I64 = index + 1
+    let enum_separator: Bool = lexeme_is_kind(lexemes, following, 7)
+    if enum_separator:
+      let case_index: I64 = following + 1
+      let case_valid: Bool = lexeme_is_kind(lexemes, case_index, 0)
+      if case_valid:
+        let case_start: I64 = lexeme_start(lexemes, case_index)
+        let case_end: I64 = lexeme_end(lexemes, case_index)
+        let case_name: I64 = append_expr_node(0, case_start, case_end, 2, -1, -1, nodes)
+        let arguments_open: I64 = case_index + 1
+        let arguments: ArgumentParse = parse_familiar_arguments(source, lexemes, arguments_open, nodes, edges)
+        if arguments.valid:
+          let initial: EdgeList = EdgeList(first: arguments.first, last: arguments.last, count: arguments.count)
+          let with_name: EdgeList = if initial.first < 0:
+            append_expr_edge(case_name, -1, empty_edges(), edges)
+          else:
+            let name_list: EdgeList = append_expr_edge(case_name, -1, empty_edges(), edges)
+            append_existing_edges(name_list, initial.first, edges)
+          let node: I64 = append_expr_node(4, start, end, 0, with_name.first, with_name.last, nodes)
+          expr_success(arguments.next, node)
+        else:
+          expr_failure(arguments.next, arguments.code)
+      else:
+        expr_failure(case_index, "E0102")
+    else:
+      let call: Bool = lexeme_is_kind(lexemes, following, 2)
+      if call:
+        let named_operator: Bool = named_operator_span(source, start, end)
+        if named_operator:
+          expr_failure(index, "E0102")
+        else:
+          let arguments: ArgumentParse = parse_familiar_arguments(source, lexemes, following, nodes, edges)
+          if arguments.valid:
+            let kind: I64 = if arguments.named:
+              2
+            else:
+              1
+            let node: I64 = append_expr_node(kind, start, end, 0, arguments.first, arguments.last, nodes)
+            expr_success(arguments.next, node)
+          else:
+            expr_failure(arguments.next, arguments.code)
+      else:
+        let dot: I64 = span_dot_from(source, start, end)
+        if dot < 0:
+          let node: I64 = append_expr_node(0, start, end, 2, -1, -1, nodes)
+          expr_success(following, node)
+        else:
+          let base: I64 = append_expr_node(0, start, dot, 2, -1, -1, nodes)
+          let node: I64 = append_projection_fields(source, start, end, dot, base, nodes, edges)
+          expr_success(following, node)
+  else:
+    let literal: I64 = append_expr_node(0, start, end, 2, -1, -1, nodes)
+    expr_success(index + 1, literal)
+
+fn append_existing_edges(list: EdgeList, cursor: I64, inout edges: Vec[ExprEdge]) -> EdgeList effects[alloc, partial]:
+  let done: Bool = cursor < 0
+  if done:
+    list
+  else:
+    let edge: ExprEdge = expr_edge(edges, cursor)
+    let appended: EdgeList = append_expr_edge(edge.node, edge.name, list, edges)
+    recur(appended, edge.next_edge, edges)
+
+fn parse_familiar_prefix(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge]) -> ExprParse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  if available:
+    let grouped: Bool = lexeme_is_kind(lexemes, index, 2)
+    if grouped:
+      let inner: ExprParse = parse_familiar_expression_precedence(source, lexemes, index + 1, 1, nodes, edges)
+      if inner.valid:
+        let close: I64 = inner.next
+        if lexeme_is_kind(lexemes, close, 3):
+          expr_success(close + 1, inner.node)
+        else:
+          expr_failure(close, "E0102")
+      else:
+        inner
+    else:
+      let unary: Bool = lexeme_equal(source, lexemes, index, "!")
+      if unary:
+        let operand: ExprParse = parse_familiar_expression_precedence(source, lexemes, index + 1, 6, nodes, edges)
+        if operand.valid:
+          let list: EdgeList = append_expr_edge(operand.node, -1, empty_edges(), edges)
+          let node: I64 = append_expr_node(7, lexeme_start(lexemes, index), lexeme_end(lexemes, index), 41, list.first, list.last, nodes)
+          expr_success(operand.next, node)
+        else:
+          operand
+      else:
+        let kind: I64 = lexeme_kind(lexemes, index)
+        let string_value: Bool = kind == 1
+        if string_value:
+          let node: I64 = append_expr_node(0, lexeme_start(lexemes, index), lexeme_end(lexemes, index), 3, -1, -1, nodes)
+          expr_success(index + 1, node)
+        else:
+          let atom: Bool = kind == 0
+          if atom:
+            let recur_form: Bool = lexeme_equal(source, lexemes, index, "recur")
+            let following: I64 = index + 1
+            let called: Bool = lexeme_is_kind(lexemes, following, 2)
+            let recurrence: Bool = recur_form && called
+            if recurrence:
+              let arguments: ArgumentParse = parse_familiar_arguments(source, lexemes, following, nodes, edges)
+              if arguments.valid:
+                let node: I64 = append_expr_node(5, lexeme_start(lexemes, index), lexeme_end(lexemes, index), 0, arguments.first, arguments.last, nodes)
+                expr_success(arguments.next, node)
+              else:
+                expr_failure(arguments.next, arguments.code)
+            else:
+              parse_familiar_name(source, lexemes, index, nodes, edges)
+          else:
+            expr_failure(index, "E0102")
+  else:
+    expr_failure(index, "E0102")
+
+fn push_span_token(inout tokens: Vec[Token], kind: I64, tag: I64, start: I64, end: I64) -> Void effects[alloc]:
+  push_tagged_token(tokens, kind, tag, start, end)
+
+fn push_virtual_token(inout tokens: Vec[Token], tag: I64, position: I64) -> Void effects[alloc]:
+  push_tagged_token(tokens, 2, tag, position, position)
+
+fn begin_span_form(inout tokens: Vec[Token], tag: I64, start: I64, end: I64) -> Void effects[alloc]:
+  push_tagged_token(tokens, 0, tag, start, end)
+
+fn finish_span_form(inout tokens: Vec[Token], position: I64) -> Void effects[alloc]:
+  push_token(tokens, 1, position, position)
+
+fn emit_expr_edges(source: Bytes, inout lexemes: Vec[Lexeme], inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge], cursor: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  let done: Bool = cursor < 0
+  if done:
+    void
+  else:
+    let edge: ExprEdge = expr_edge(edges, cursor)
+    emit_expr_node(source, lexemes, nodes, edges, edge.node, tokens)
+    recur(source, lexemes, nodes, edges, edge.next_edge, tokens)
+
+fn emit_make_edges(source: Bytes, inout lexemes: Vec[Lexeme], inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge], cursor: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  let done: Bool = cursor < 0
+  if done:
+    void
+  else:
+    let edge: ExprEdge = expr_edge(edges, cursor)
+    let name: I64 = edge.name
+    let start: I64 = lexeme_start(lexemes, name)
+    let end: I64 = lexeme_end(lexemes, name)
+    begin_span_form(tokens, 0, start, end)
+    push_span_token(tokens, 2, 0, start, end)
+    emit_expr_node(source, lexemes, nodes, edges, edge.node, tokens)
+    finish_span_form(tokens, end)
+    recur(source, lexemes, nodes, edges, edge.next_edge, tokens)
+
+fn emit_expr_node(source: Bytes, inout lexemes: Vec[Lexeme], inout nodes: Vec[ExprNode], inout edges: Vec[ExprEdge], index: I64, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  let node: ExprNode = expr_node(nodes, index)
+  let kind: I64 = node.kind
+  let start: I64 = node.start
+  let end: I64 = node.end
+  if kind == 0:
+    push_span_token(tokens, node.auxiliary, 0, start, end)
+  else:
+    if kind == 1:
+      begin_span_form(tokens, 10, start, end)
+      push_virtual_token(tokens, 110, start)
+      push_span_token(tokens, 2, 0, start, end)
+      emit_expr_edges(source, lexemes, nodes, edges, node.first_edge, tokens)
+      finish_span_form(tokens, end)
+    else:
+      if kind == 2:
+        begin_span_form(tokens, 11, start, end)
+        push_virtual_token(tokens, 111, start)
+        push_span_token(tokens, 2, 0, start, end)
+        emit_make_edges(source, lexemes, nodes, edges, node.first_edge, tokens)
+        finish_span_form(tokens, end)
+      else:
+        if kind == 3:
+          begin_span_form(tokens, 12, start, end)
+          push_virtual_token(tokens, 112, start)
+          let first: ExprEdge = expr_edge(edges, node.first_edge)
+          let second: ExprEdge = expr_edge(edges, first.next_edge)
+          emit_expr_node(source, lexemes, nodes, edges, first.node, tokens)
+          emit_expr_node(source, lexemes, nodes, edges, second.node, tokens)
+          finish_span_form(tokens, end)
+        else:
+          if kind == 4:
+            begin_span_form(tokens, 13, start, end)
+            push_virtual_token(tokens, 113, start)
+            push_span_token(tokens, 2, 0, start, end)
+            let first: ExprEdge = expr_edge(edges, node.first_edge)
+            emit_expr_node(source, lexemes, nodes, edges, first.node, tokens)
+            emit_expr_edges(source, lexemes, nodes, edges, first.next_edge, tokens)
+            finish_span_form(tokens, end)
+          else:
+            if kind == 5:
+              begin_span_form(tokens, 15, start, end)
+              push_span_token(tokens, 2, 0, start, end)
+              emit_expr_edges(source, lexemes, nodes, edges, node.first_edge, tokens)
+              finish_span_form(tokens, end)
+            else:
+              begin_span_form(tokens, 10, start, end)
+              push_virtual_token(tokens, 110, start)
+              push_span_token(tokens, 2, node.auxiliary, start, end)
+              emit_expr_edges(source, lexemes, nodes, edges, node.first_edge, tokens)
+              finish_span_form(tokens, end)
+
+fn parse_emit_familiar_expression(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let nodes: Vec[ExprNode] = vec.new()
+  let edges: Vec[ExprEdge] = vec.new()
+  let parsed: ExprParse = parse_familiar_expression_precedence(source, lexemes, index, 1, nodes, edges)
+  if parsed.valid:
+    emit_expr_node(source, lexemes, nodes, edges, parsed.node, tokens)
+    parse_success(parsed.next)
+  else:
+    parse_failure_code(parsed.next, parsed.code)
+
+fn parse_familiar_binding(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, allow_inout: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let start: I64 = index
+  let opened: I64 = begin_plain_form(lexemes, start, tokens)
+  let inout_form: Bool = lexeme_equal(source, lexemes, index, "inout")
+  let var_form: Bool = lexeme_equal(source, lexemes, index, "var")
+  let qualified: Bool = inout_form || var_form
+  let allowed: Bool = (!inout_form) || allow_inout
+  if allowed:
+    let name_index: I64 = if qualified:
+      let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+      index + 1
+    else:
+      index
+    let named: Bool = push_name_lexeme(lexemes, name_index, tokens)
+    if named:
+      let colon: I64 = name_index + 1
+      if lexeme_is_kind(lexemes, colon, 6):
+        let type_result: Parse = parse_type(source, lexemes, colon + 1, tokens)
+        if type_result.valid:
+          finish_form_after_tokens(tokens)
+          type_result
+        else:
+          type_result
+      else:
+        parse_failure(colon)
+    else:
+      parse_failure(name_index)
+  else:
+    parse_failure(index)
+
+fn parse_familiar_parameters_from(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, line: I64, first: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let close: Bool = lexeme_is_kind(lexemes, index, 3)
+  if close:
+    let same_line: Bool = lexeme_on_line(lexemes, index, line)
+    if same_line:
+      finish_form_at(lexemes, index, tokens)
+      parse_success(index + 1)
+    else:
       parse_failure(index)
-    true:
-      let arm: I64 = begin_plain_form(lexemes index tokens)
-      let pattern: Bool = push_name_lexeme(lexemes index tokens)
-      match pattern:
-        false:
-          parse_failure(index)
-        true:
-          let after_pattern: I64 = i64.add(index 1)
-          let has_bindings: Bool = lexeme_is_kind(lexemes after_pattern 2)
-          let bindings: Parse = match has_bindings:
-            true:
-              parse_pattern_bindings(lexemes after_pattern tokens)
-            false:
-              parse_success(after_pattern)
-          match get(bindings valid):
-            false:
-              bindings
-            true:
-              let colon: I64 = get(bindings next)
-              let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-              match has_colon:
-                false:
-                  parse_failure(colon)
-                true:
-                  let body_start: I64 = i64.add(colon 1)
-                  let body_depth: I64 = i64.add(depth 1)
-                  let body: Parse = parse_block(source lexemes body_start body_depth tokens)
-                  match get(body valid):
-                    false:
-                      body
-                    true:
-                      let finished: Unit = finish_form_after_tokens(tokens)
-                      body
+  else:
+    let leading_comma: Bool = lexeme_is_kind(lexemes, index, 10)
+    if leading_comma:
+      parse_failure_code(index, "E0109")
+    else:
+      let binding: Parse = parse_familiar_binding(source, lexemes, index, true, tokens)
+      if binding.valid:
+        let separator: I64 = binding.next
+        let closed: Bool = lexeme_is_kind(lexemes, separator, 3)
+        if closed:
+          finish_form_at(lexemes, separator, tokens)
+          parse_success(separator + 1)
+        else:
+          let comma: Bool = lexeme_is_kind(lexemes, separator, 10)
+          if comma:
+            let next: I64 = separator + 1
+            let invalid: Bool = lexeme_is_kind(lexemes, next, 3) || lexeme_is_kind(lexemes, next, 10)
+            if invalid:
+              parse_failure_code(separator, "E0109")
+            else:
+              recur(source, lexemes, next, line, false, tokens)
+          else:
+            parse_failure_code(separator, "E0108")
+      else:
+        binding
 
-fn parse_match_arms_tail(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let available: Bool = lexeme_index_valid(lexemes index)
-  match available:
-    false:
-      parse_success(index)
-    true:
-      let same_depth: Bool = lexeme_at_indent(lexemes index depth)
-      match same_depth:
-        false:
-          parse_success(index)
-        true:
-          let arm: Parse = parse_match_arm(source lexemes index depth tokens)
-          match get(arm valid):
-            false:
-              arm
-            true:
-              recur(source lexemes get(arm next) depth tokens)
+fn parse_familiar_parameters(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, line: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_is_kind(lexemes, index, 2):
+    let list: I64 = begin_plain_form(lexemes, index, tokens)
+    parse_familiar_parameters_from(source, lexemes, index + 1, line, true, tokens)
+  else:
+    parse_failure(index)
 
-fn parse_match_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let depth: I64 = lexeme_indent(lexemes index)
-  let open: I64 = begin_tagged_form(lexemes index 14 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let value_start: I64 = i64.add(index 1)
-  let value: Parse = parse_expression(source lexemes value_start tokens)
-  match get(value valid):
-    false:
-      value
-    true:
-      let colon: I64 = get(value next)
-      let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-      match has_colon:
-        false:
-          parse_failure(colon)
-        true:
-          let first_arm: I64 = i64.add(colon 1)
-          let arm_depth: I64 = i64.add(depth 1)
-          let available: Bool = lexeme_index_valid(lexemes first_arm)
-          let indented: Bool = match available:
-            false:
-              false
-            true:
-              lexeme_at_indent(lexemes first_arm arm_depth)
-          match indented:
-            false:
-              parse_failure(first_arm)
-            true:
-              let first: Parse = parse_match_arm(source lexemes first_arm arm_depth tokens)
-              match get(first valid):
-                false:
-                  first
-                true:
-                  let rest: Parse = parse_match_arms_tail(source lexemes get(first next) arm_depth tokens)
-                  match get(rest valid):
-                    false:
-                      rest
-                    true:
-                      let finished: Unit = finish_form_after_tokens(tokens)
-                      rest
+fn parse_familiar_effect_names(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, line: I64, previous: I64, first: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let close: Bool = lexeme_is_kind(lexemes, index, 5)
+  if close:
+    let valid: Bool = lexeme_on_line(lexemes, index, line) && (!first)
+    if valid:
+      finish_form_at(lexemes, index, tokens)
+      parse_success(index + 1)
+    else:
+      parse_failure(index)
+  else:
+    let leading_comma: Bool = lexeme_is_kind(lexemes, index, 10)
+    if leading_comma:
+      parse_failure_code(index, "E0109")
+    else:
+      let rank: I64 = effect_rank(source, lexemes, index)
+      let valid: Bool = lexeme_on_line(lexemes, index, line) && ((rank > 0) && (rank > previous))
+      if valid:
+        let name: Bool = push_name_lexeme(lexemes, index, tokens)
+        let separator: I64 = index + 1
+        let closed: Bool = lexeme_is_kind(lexemes, separator, 5)
+        if closed:
+          finish_form_at(lexemes, separator, tokens)
+          parse_success(separator + 1)
+        else:
+          let comma: Bool = lexeme_is_kind(lexemes, separator, 10)
+          if comma:
+            let next: I64 = separator + 1
+            let invalid: Bool = lexeme_is_kind(lexemes, next, 5) || lexeme_is_kind(lexemes, next, 10)
+            if invalid:
+              parse_failure_code(separator, "E0109")
+            else:
+              recur(source, lexemes, next, line, rank, false, tokens)
+          else:
+            parse_failure_code(separator, "E0108")
+      else:
+        parse_failure(index)
 
-fn parse_fork_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let following: I64 = i64.add(index 1)
-  let has_colon: Bool = lexeme_is_kind(lexemes following 6)
-  match has_colon:
-    false:
-      let called: Bool = lexeme_is_kind(lexemes following 2)
-      match called:
-        true:
-          parse_call_expression(source lexemes index tokens)
-        false:
-          let pushed: Bool = push_name_lexeme(lexemes index tokens)
-          parse_success(following)
-    true:
-      let depth: I64 = lexeme_indent(lexemes index)
-      let open: I64 = begin_tagged_form(lexemes index 17 tokens)
-      let marker: Bool = push_name_lexeme(lexemes index tokens)
-      let body_start: I64 = i64.add(following 1)
-      let body: Parse = parse_block(source lexemes body_start i64.add(depth 1) tokens)
-      match get(body valid):
-        false:
-          body
-        true:
-          let finished: Unit = finish_form_after_tokens(tokens)
-          body
+fn parse_familiar_effects(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, line: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_equal(source, lexemes, index, "effects"):
+    let opened: I64 = begin_tagged_form(lexemes, index, 5, tokens)
+    let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+    let bracket: I64 = index + 1
+    if lexeme_is_kind(lexemes, bracket, 4):
+      parse_familiar_effect_names(source, lexemes, bracket + 1, line, 0, true, tokens)
+    else:
+      parse_failure(bracket)
+  else:
+    parse_failure(index)
 
-fn parse_let_block(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let line: I64 = lexeme_line(lexemes index)
-  let open: I64 = begin_tagged_form(lexemes index 9 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let name: I64 = i64.add(index 1)
-  let named: Bool = push_name_lexeme(lexemes name tokens)
-  match named:
-    false:
-      parse_failure(name)
-    true:
-      let colon: I64 = i64.add(name 1)
-      let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-      match has_colon:
-        false:
-          parse_failure(colon)
-        true:
-          let type_start: I64 = i64.add(colon 1)
-          let type_result: Parse = parse_type(source lexemes type_start tokens)
-          match get(type_result valid):
-            false:
-              type_result
-            true:
-              let equal: I64 = get(type_result next)
-              let has_equal: Bool = lexeme_is_kind(lexemes equal 8)
-              match has_equal:
-                false:
-                  parse_failure(equal)
-                true:
-                  let value_start: I64 = i64.add(equal 1)
-                  let value: Parse = parse_expression(source lexemes value_start tokens)
-                  match get(value valid):
-                    false:
-                      value
-                    true:
-                      let body_start: I64 = get(value next)
-                      let available: Bool = lexeme_index_valid(lexemes body_start)
-                      let same_depth: Bool = match available:
-                        false:
-                          false
-                        true:
-                          lexeme_at_indent(lexemes body_start depth)
-                      let later_line: Bool = match available:
-                        false:
-                          false
-                        true:
-                          i64.gt(lexeme_line(lexemes body_start) line)
-                      let body_ready: Bool = bool.and(same_depth later_line)
-                      match body_ready:
-                        false:
-                          parse_failure(body_start)
-                        true:
-                          let body: Parse = parse_block(source lexemes body_start depth tokens)
-                          match get(body valid):
-                            false:
-                              body
-                            true:
-                              let finished: Unit = finish_form_after_tokens(tokens)
-                              body
+fn familiar_next_at_depth(inout lexemes: Vec[Lexeme], index: I64, depth: I64, line: I64) -> Bool effects[partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  if available:
+    let same_depth: Bool = lexeme_at_indent(lexemes, index, depth)
+    let later: Bool = lexeme_line(lexemes, index) > line
+    same_depth && later
+  else:
+    false
 
-fn parse_set_block(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let line: I64 = lexeme_line(lexemes index)
-  let open: I64 = begin_tagged_form(lexemes index 16 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let name: I64 = i64.add(index 1)
-  let named: Bool = push_name_lexeme(lexemes name tokens)
-  match named:
-    false:
-      parse_failure(name)
-    true:
-      let equal: I64 = i64.add(name 1)
-      let has_equal: Bool = lexeme_is_kind(lexemes equal 8)
-      match has_equal:
-        false:
+fn emit_virtual_void(inout tokens: Vec[Token], position: I64) -> Void effects[alloc]:
+  push_virtual_token(tokens, 120, position)
+
+fn parse_familiar_let_block(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let opened: I64 = begin_tagged_form(lexemes, index, 9, tokens)
+  let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+  let name_index: I64 = index + 1
+  let named: Bool = push_name_lexeme(lexemes, name_index, tokens)
+  if named:
+    let colon: I64 = name_index + 1
+    if lexeme_is_kind(lexemes, colon, 6):
+      let type_result: Parse = parse_type(source, lexemes, colon + 1, tokens)
+      if type_result.valid:
+        let equal: I64 = type_result.next
+        if lexeme_is_kind(lexemes, equal, 8):
+          let value: Parse = parse_familiar_nested_expression(source, lexemes, equal + 1, tokens)
+          if value.valid:
+            let body_start: I64 = value.next
+            let ready: Bool = familiar_next_at_depth(lexemes, body_start, depth, line)
+            if ready:
+              let body: Parse = parse_familiar_block(source, lexemes, body_start, depth, tokens)
+              if body.valid:
+                finish_form_after_tokens(tokens)
+                body
+              else:
+                body
+            else:
+              parse_failure(body_start)
+          else:
+            value
+        else:
           parse_failure(equal)
-        true:
-          let value_start: I64 = i64.add(equal 1)
-          let value: Parse = parse_expression(source lexemes value_start tokens)
-          match get(value valid):
-            false:
-              value
-            true:
-              let body_start: I64 = get(value next)
-              let available: Bool = lexeme_index_valid(lexemes body_start)
-              let same_depth: Bool = match available:
-                false:
-                  false
-                true:
-                  lexeme_at_indent(lexemes body_start depth)
-              let later_line: Bool = match available:
-                false:
-                  false
-                true:
-                  i64.gt(lexeme_line(lexemes body_start) line)
-              let body_ready: Bool = bool.and(same_depth later_line)
-              match body_ready:
-                false:
-                  parse_failure(body_start)
-                true:
-                  let body: Parse = parse_block(source lexemes body_start depth tokens)
-                  match get(body valid):
-                    false:
-                      body
-                    true:
-                      let finished: Unit = finish_form_after_tokens(tokens)
-                      body
+      else:
+        type_result
+    else:
+      parse_failure(colon)
+  else:
+    parse_failure(name_index)
 
-fn parse_block(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let available: Bool = lexeme_index_valid(lexemes index)
-  match available:
-    false:
-      parse_failure(index)
-    true:
-      let exact: Bool = lexeme_at_indent(lexemes index depth)
-      match exact:
-        false:
-          parse_failure(index)
-        true:
-          let let_form: Bool = lexeme_equal(source lexemes index "let")
-          match let_form:
-            true:
-              parse_let_block(source lexemes index depth tokens)
-            false:
-              let set_form: Bool = lexeme_equal(source lexemes index "set")
-              match set_form:
-                true:
-                  parse_set_block(source lexemes index depth tokens)
-                false:
-                  parse_expression(source lexemes index tokens)
+fn parse_familiar_assignment_block(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let opened: I64 = begin_tagged_form(lexemes, index, 16, tokens)
+  push_virtual_token(tokens, 116, lexeme_start(lexemes, index))
+  let name: Bool = push_name_lexeme(lexemes, index, tokens)
+  let equal: I64 = index + 1
+  let value: Parse = parse_familiar_nested_expression(source, lexemes, equal + 1, tokens)
+  if value.valid:
+    let body_start: I64 = value.next
+    let continuation: Bool = familiar_next_at_depth(lexemes, body_start, depth, line)
+    let body: Parse = if continuation:
+      parse_familiar_block(source, lexemes, body_start, depth, tokens)
+    else:
+      let position: I64 = lexeme_end(lexemes, index)
+      emit_virtual_void(tokens, position)
+      parse_success(body_start)
+    if body.valid:
+      finish_form_after_tokens(tokens)
+      body
+    else:
+      body
+  else:
+    value
 
-fn parse_expression(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let kind: I64 = lexeme_kind(lexemes index)
-  let string_value: Bool = i64.eq(kind 1)
-  match string_value:
-    true:
-      let pushed: Bool = push_scalar_lexeme(lexemes index tokens)
-      parse_success(i64.add(index 1))
-    false:
-      let name: Bool = i64.eq(kind 0)
-      match name:
-        false:
-          parse_failure(index)
-        true:
-          let make_form: Bool = lexeme_equal(source lexemes index "make")
-          match make_form:
-            true:
-              parse_make_expression(source lexemes index tokens)
-            false:
-              let get_form: Bool = lexeme_equal(source lexemes index "get")
-              match get_form:
-                true:
-                  parse_get_expression(source lexemes index tokens)
-                false:
-                  let case_form: Bool = lexeme_equal(source lexemes index "case")
-                  match case_form:
-                    true:
-                      parse_case_expression(source lexemes index tokens)
-                    false:
-                      let recur_form: Bool = lexeme_equal(source lexemes index "recur")
-                      match recur_form:
-                        true:
-                          parse_recur_expression(source lexemes index tokens)
-                        false:
-                          let match_form: Bool = lexeme_equal(source lexemes index "match")
-                          match match_form:
-                            true:
-                              parse_match_expression(source lexemes index tokens)
-                            false:
-                              let fork_form: Bool = lexeme_equal(source lexemes index "fork")
-                              match fork_form:
-                                true:
-                                  parse_fork_expression(source lexemes index tokens)
-                                false:
-                                  let let_form: Bool = lexeme_equal(source lexemes index "let")
-                                  let set_form: Bool = lexeme_equal(source lexemes index "set")
-                                  let continuation: Bool = bool.or(let_form set_form)
-                                  match continuation:
-                                    true:
-                                      parse_failure(index)
-                                    false:
-                                      let following: I64 = i64.add(index 1)
-                                      let called: Bool = lexeme_is_kind(lexemes following 2)
-                                      match called:
-                                        true:
-                                          parse_call_expression(source lexemes index tokens)
-                                        false:
-                                          let pushed: Bool = push_name_lexeme(lexemes index tokens)
-                                          parse_success(following)
+fn emit_familiar_arm_pattern(inout tokens: Vec[Token], tag: I64, position: I64) -> Void effects[alloc]:
+  push_virtual_token(tokens, tag, position)
 
-fn parse_record_members(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let available: Bool = lexeme_index_valid(lexemes index)
-  let same_depth: Bool = match available:
-    false:
-      false
-    true:
-      lexeme_at_indent(lexemes index depth)
-  match same_depth:
-    false:
-      let finished: Unit = finish_form_after_tokens(tokens)
-      parse_success(index)
-    true:
-      let line: I64 = lexeme_line(lexemes index)
-      let member: I64 = begin_plain_form(lexemes index tokens)
-      let named: Bool = push_name_lexeme(lexemes index tokens)
-      match named:
-        false:
-          parse_failure(index)
-        true:
-          let colon: I64 = i64.add(index 1)
-          let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-          match has_colon:
-            false:
-              parse_failure(colon)
-            true:
-              let type_result: Parse = parse_type(source lexemes i64.add(colon 1) tokens)
-              match get(type_result valid):
-                false:
-                  type_result
-                true:
-                  let next: I64 = get(type_result next)
-                  let line_finished: Bool = match lexeme_index_valid(lexemes next):
-                    false:
-                      true
-                    true:
-                      i64.gt(lexeme_line(lexemes next) line)
-                  match line_finished:
-                    false:
-                      parse_failure(next)
-                    true:
-                      let closed: Unit = finish_form_after_tokens(tokens)
-                      recur(source lexemes next depth tokens)
+fn parse_familiar_if_expression(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let depth: I64 = lexeme_indent(lexemes, index)
+  let opened: I64 = begin_tagged_form(lexemes, index, 19, tokens)
+  let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+  let nodes: Vec[ExprNode] = vec.new()
+  let edges: Vec[ExprEdge] = vec.new()
+  let condition: ExprParse = parse_familiar_expression_precedence(source, lexemes, index + 1, 1, nodes, edges)
+  if condition.valid:
+    let colon: I64 = condition.next
+    if lexeme_is_kind(lexemes, colon, 6):
+      emit_expr_node(source, lexemes, nodes, edges, condition.node, tokens)
+      begin_span_form(tokens, 0, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
+      emit_familiar_arm_pattern(tokens, 121, lexeme_start(lexemes, index))
+      let true_body: Parse = parse_familiar_block(source, lexemes, colon + 1, depth + 1, tokens)
+      if true_body.valid:
+        finish_form_after_tokens(tokens)
+        let else_index: I64 = true_body.next
+        let else_keyword: Bool = lexeme_equal(source, lexemes, else_index, "else")
+        let else_depth: Bool = lexeme_at_indent(lexemes, else_index, depth)
+        let else_valid: Bool = else_keyword && else_depth
+        if else_valid:
+          let else_colon: I64 = else_index + 1
+          if lexeme_is_kind(lexemes, else_colon, 6):
+            begin_span_form(tokens, 0, lexeme_start(lexemes, else_index), lexeme_end(lexemes, else_index))
+            emit_familiar_arm_pattern(tokens, 122, lexeme_start(lexemes, else_index))
+            let false_body: Parse = parse_familiar_block(source, lexemes, else_colon + 1, depth + 1, tokens)
+            if false_body.valid:
+              finish_form_after_tokens(tokens)
+              finish_form_after_tokens(tokens)
+              false_body
+            else:
+              false_body
+          else:
+            parse_failure(else_colon)
+        else:
+          parse_failure(else_index)
+      else:
+        true_body
+    else:
+      parse_failure(colon)
+  else:
+    parse_failure_code(condition.next, condition.code)
 
-fn parse_variant_payload_types(source: Bytes inout lexemes: Vec[Lexeme] index: I64 line: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let close: Bool = lexeme_is_kind(lexemes index 3)
-  match close:
-    true:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      match same_line:
-        false:
-          parse_failure(index)
-        true:
-          let finished: Unit = finish_form_at(lexemes index tokens)
-          parse_success(i64.add(index 1))
-    false:
-      let same_line: Bool = lexeme_on_line(lexemes index line)
-      match same_line:
-        false:
-          parse_failure(index)
-        true:
-          let type_result: Parse = parse_type(source lexemes index tokens)
-          match get(type_result valid):
-            false:
-              type_result
-            true:
-              recur(source lexemes get(type_result next) line tokens)
+fn parse_familiar_parallel_expression(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let colon: I64 = index + 1
+  if lexeme_is_kind(lexemes, colon, 6):
+    let opened: I64 = begin_tagged_form(lexemes, index, 17, tokens)
+    let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+    let depth: I64 = lexeme_indent(lexemes, index)
+    let body: Parse = parse_familiar_block(source, lexemes, colon + 1, depth + 1, tokens)
+    if body.valid:
+      finish_form_after_tokens(tokens)
+      body
+    else:
+      body
+  else:
+    parse_failure(colon)
 
-fn parse_variant_members(source: Bytes inout lexemes: Vec[Lexeme] index: I64 depth: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let available: Bool = lexeme_index_valid(lexemes index)
-  let same_depth: Bool = match available:
-    false:
-      false
-    true:
-      lexeme_at_indent(lexemes index depth)
-  match same_depth:
-    false:
-      let finished: Unit = finish_form_after_tokens(tokens)
-      parse_success(index)
-    true:
-      let line: I64 = lexeme_line(lexemes index)
-      let member: I64 = begin_plain_form(lexemes index tokens)
-      let named: Bool = push_name_lexeme(lexemes index tokens)
-      match named:
-        false:
-          parse_failure(index)
-        true:
-          let payload: I64 = i64.add(index 1)
-          let has_payload: Bool = lexeme_is_kind(lexemes payload 2)
-          let parsed: Parse = match has_payload:
-            true:
-              parse_variant_payload_types(source lexemes i64.add(payload 1) line tokens)
-            false:
-              let closed: Unit = finish_form_after_tokens(tokens)
-              parse_success(payload)
-          match get(parsed valid):
-            false:
-              parsed
-            true:
-              let next: I64 = get(parsed next)
-              let line_finished: Bool = match lexeme_index_valid(lexemes next):
-                false:
-                  true
-                true:
-                  i64.gt(lexeme_line(lexemes next) line)
-              match line_finished:
-                false:
-                  parse_failure(next)
-                true:
-                  recur(source lexemes next depth tokens)
+fn parse_familiar_pattern_names(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, first: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let close: Bool = lexeme_is_kind(lexemes, index, 3)
+  if close:
+    finish_form_at(lexemes, index, tokens)
+    parse_success(index + 1)
+  else:
+    let comma_first: Bool = lexeme_is_kind(lexemes, index, 10)
+    if comma_first:
+      parse_failure_code(index, "E0109")
+    else:
+      let mutable: Bool = lexeme_equal(source, lexemes, index, "var")
+      let name_index: I64 = if mutable:
+        index + 1
+      else:
+        index
+      let named: Bool = lexeme_is_kind(lexemes, name_index, 0)
+      if named:
+        let tag: I64 = if mutable:
+          140
+        else:
+          0
+        push_tagged_token(tokens, 2, tag, lexeme_start(lexemes, name_index), lexeme_end(lexemes, name_index))
+        let separator: I64 = name_index + 1
+        let closed: Bool = lexeme_is_kind(lexemes, separator, 3)
+        if closed:
+          finish_form_at(lexemes, separator, tokens)
+          parse_success(separator + 1)
+        else:
+          if lexeme_is_kind(lexemes, separator, 10):
+            let next: I64 = separator + 1
+            let invalid: Bool = lexeme_is_kind(lexemes, next, 3) || lexeme_is_kind(lexemes, next, 10)
+            if invalid:
+              parse_failure_code(separator, "E0109")
+            else:
+              recur(source, lexemes, next, false, tokens)
+          else:
+            parse_failure_code(separator, "E0108")
+      else:
+        parse_failure(name_index)
 
-fn parse_data_item(source: Bytes inout lexemes: Vec[Lexeme] index: I64 tag: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let line: I64 = lexeme_line(lexemes index)
-  let item: I64 = begin_tagged_form(lexemes index tag tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let name: I64 = i64.add(index 1)
-  let named: Bool = push_name_lexeme(lexemes name tokens)
-  match named:
-    false:
-      parse_failure(name)
-    true:
-      let colon: I64 = i64.add(name 1)
-      let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-      let same_line: Bool = lexeme_on_line(lexemes colon line)
-      let header: Bool = bool.and(has_colon same_line)
-      match header:
-        false:
+fn parse_familiar_pattern_bindings(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_is_kind(lexemes, index, 2):
+    let opened: I64 = begin_plain_form(lexemes, index, tokens)
+    parse_familiar_pattern_names(source, lexemes, index + 1, true, tokens)
+  else:
+    parse_failure(index)
+
+fn parse_familiar_match_arm(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_at_indent(lexemes, index, depth):
+    let opened: I64 = begin_plain_form(lexemes, index, tokens)
+    let pattern: Bool = push_name_lexeme(lexemes, index, tokens)
+    if pattern:
+      let after_pattern: I64 = index + 1
+      let bindings: Parse = if lexeme_is_kind(lexemes, after_pattern, 2):
+        parse_familiar_pattern_bindings(source, lexemes, after_pattern, tokens)
+      else:
+        parse_success(after_pattern)
+      if bindings.valid:
+        let colon: I64 = bindings.next
+        if lexeme_is_kind(lexemes, colon, 6):
+          let body: Parse = parse_familiar_block(source, lexemes, colon + 1, depth + 1, tokens)
+          if body.valid:
+            finish_form_after_tokens(tokens)
+            body
+          else:
+            body
+        else:
           parse_failure(colon)
-        true:
-          let body: I64 = begin_plain_form(lexemes colon tokens)
-          let first: I64 = i64.add(colon 1)
-          let members: Parse = match i64.eq(tag 3):
-            true:
-              parse_record_members(source lexemes first 1 tokens)
-            false:
-              parse_variant_members(source lexemes first 1 tokens)
-          match get(members valid):
-            false:
-              members
-            true:
-              let finished: Unit = finish_form_after_tokens(tokens)
-              members
-
-fn parse_function_item(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let line: I64 = lexeme_line(lexemes index)
-  let item: I64 = begin_tagged_form(lexemes index 2 tokens)
-  let marker: Bool = push_name_lexeme(lexemes index tokens)
-  let name: I64 = i64.add(index 1)
-  let named: Bool = push_name_lexeme(lexemes name tokens)
-  match named:
-    false:
-      parse_failure(name)
-    true:
-      let parameters: I64 = i64.add(name 1)
-      let params: Parse = parse_parameters(source lexemes parameters line tokens)
-      match get(params valid):
-        false:
-          params
-        true:
-          let arrow: I64 = get(params next)
-          let has_arrow: Bool = lexeme_is_kind(lexemes arrow 9)
-          let arrow_line: Bool = lexeme_on_line(lexemes arrow line)
-          let arrow_valid: Bool = bool.and(has_arrow arrow_line)
-          match arrow_valid:
-            false:
-              parse_failure(arrow)
-            true:
-              let return_start: I64 = i64.add(arrow 1)
-              let return_type: Parse = parse_type(source lexemes return_start tokens)
-              match get(return_type valid):
-                false:
-                  return_type
-                true:
-                  let after_return: I64 = get(return_type next)
-                  let explicit: Bool = lexeme_equal(source lexemes after_return "effects")
-                  let effects_result: Parse = match explicit:
-                    true:
-                      parse_effects(source lexemes after_return line tokens)
-                    false:
-                      let synthesized: Unit = synthesize_empty_effects(lexemes after_return tokens)
-                      parse_success(after_return)
-                  match get(effects_result valid):
-                    false:
-                      effects_result
-                    true:
-                      let colon: I64 = get(effects_result next)
-                      let has_colon: Bool = lexeme_is_kind(lexemes colon 6)
-                      let colon_line: Bool = lexeme_on_line(lexemes colon line)
-                      let header: Bool = bool.and(has_colon colon_line)
-                      match header:
-                        false:
-                          parse_failure(colon)
-                        true:
-                          let body_start: I64 = i64.add(colon 1)
-                          let body: Parse = parse_block(source lexemes body_start 1 tokens)
-                          match get(body valid):
-                            false:
-                              body
-                            true:
-                              let finished: Unit = finish_form_after_tokens(tokens)
-                              body
-
-fn parse_item(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let top_level: Bool = lexeme_at_indent(lexemes index 0)
-  match top_level:
-    false:
+      else:
+        bindings
+    else:
       parse_failure(index)
-    true:
-      let function_item: Bool = lexeme_equal(source lexemes index "fn")
-      match function_item:
-        true:
-          parse_function_item(source lexemes index tokens)
-        false:
-          let record_item: Bool = lexeme_equal(source lexemes index "record")
-          match record_item:
-            true:
-              parse_data_item(source lexemes index 3 tokens)
-            false:
-              let variant_item: Bool = lexeme_equal(source lexemes index "variant")
-              match variant_item:
-                true:
-                  parse_data_item(source lexemes index 4 tokens)
-                false:
-                  parse_failure(index)
+  else:
+    parse_failure(index)
 
-fn parse_items(source: Bytes inout lexemes: Vec[Lexeme] index: I64 inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let available: Bool = lexeme_index_valid(lexemes index)
-  match available:
-    false:
+fn parse_familiar_match_arms(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, first: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  let same_depth: Bool = if available:
+    lexeme_at_indent(lexemes, index, depth)
+  else:
+    false
+  if same_depth:
+    let arm: Parse = parse_familiar_match_arm(source, lexemes, index, depth, tokens)
+    if arm.valid:
+      recur(source, lexemes, arm.next, depth, false, tokens)
+    else:
+      arm
+  else:
+    if first:
+      parse_failure(index)
+    else:
       parse_success(index)
-    true:
-      let item: Parse = parse_item(source lexemes index tokens)
-      match get(item valid):
-        false:
-          item
-        true:
-          recur(source lexemes get(item next) tokens)
 
-fn parse_module(source: Bytes inout lexemes: Vec[Lexeme] inout tokens: Vec[Token]) -> Parse effects[alloc partial]:
-  let module_name: Bool = lexeme_equal(source lexemes 0 "module")
-  let top_level: Bool = lexeme_at_indent(lexemes 0 0)
-  let header_start: Bool = bool.and(module_name top_level)
-  match header_start:
-    false:
-      parse_failure(0)
-    true:
-      let root: I64 = begin_tagged_form(lexemes 0 1 tokens)
-      let marker: Bool = push_name_lexeme(lexemes 0 tokens)
-      let name: Bool = push_name_lexeme(lexemes 1 tokens)
-      let same_line: Bool = lexeme_on_line(lexemes 1 lexeme_line(lexemes 0))
-      let header: Bool = bool.and(name same_line)
-      match header:
-        false:
-          parse_failure(1)
-        true:
-          let items: Parse = parse_items(source lexemes 2 tokens)
-          match get(items valid):
-            false:
-              items
-            true:
-              let length: I64 = bytes.len(source)
-              let closed: Unit = push_token(tokens 1 length length)
-              items
+fn parse_familiar_match_expression(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let depth: I64 = lexeme_indent(lexemes, index)
+  let opened: I64 = begin_tagged_form(lexemes, index, 20, tokens)
+  let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+  let nodes: Vec[ExprNode] = vec.new()
+  let edges: Vec[ExprEdge] = vec.new()
+  let value: ExprParse = parse_familiar_expression_precedence(source, lexemes, index + 1, 1, nodes, edges)
+  if value.valid:
+    let colon: I64 = value.next
+    if lexeme_is_kind(lexemes, colon, 6):
+      emit_expr_node(source, lexemes, nodes, edges, value.node, tokens)
+      let arms: Parse = parse_familiar_match_arms(source, lexemes, colon + 1, depth + 1, true, tokens)
+      if arms.valid:
+        finish_form_after_tokens(tokens)
+        arms
+      else:
+        arms
+    else:
+      parse_failure(colon)
+  else:
+    parse_failure_code(value.next, value.code)
 
-fn parse_program_result(source: Bytes inout tokens: Vec[Token]) -> ProgramParse effects[alloc partial]:
+fn parse_familiar_value_block(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let nodes: Vec[ExprNode] = vec.new()
+  let edges: Vec[ExprEdge] = vec.new()
+  let value: ExprParse = parse_familiar_expression_precedence(source, lexemes, index, 1, nodes, edges)
+  if value.valid:
+    let next: I64 = value.next
+    let continuation: Bool = familiar_next_at_depth(lexemes, next, depth, line)
+    if continuation:
+      begin_span_form(tokens, 18, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
+      push_virtual_token(tokens, 118, lexeme_start(lexemes, index))
+      push_virtual_token(tokens, 131, lexeme_start(lexemes, index))
+      push_virtual_token(tokens, 130, lexeme_start(lexemes, index))
+      emit_expr_node(source, lexemes, nodes, edges, value.node, tokens)
+      let body: Parse = parse_familiar_block(source, lexemes, next, depth, tokens)
+      if body.valid:
+        finish_form_after_tokens(tokens)
+        body
+      else:
+        body
+    else:
+      emit_expr_node(source, lexemes, nodes, edges, value.node, tokens)
+      parse_success(next)
+  else:
+    parse_failure_code(value.next, value.code)
+
+fn copy_unlinked_tokens(inout source_tokens: Vec[Token], index: I64, inout destination: Vec[Token]) -> Void effects[alloc, partial]:
+  let length: I64 = vec.len(source_tokens)
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let token: Token = vec.get(source_tokens, index)
+    push_tagged_token(destination, token.kind, token.tag, token.start, token.end)
+    recur(source_tokens, index + 1, destination)
+
+fn parse_familiar_control_block(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, kind: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let temporary: Vec[Token] = vec.new()
+  let parsed: Parse = if kind == 0:
+    parse_familiar_if_expression(source, lexemes, index, temporary)
+  else:
+    if kind == 1:
+      parse_familiar_match_expression(source, lexemes, index, temporary)
+    else:
+      parse_familiar_parallel_expression(source, lexemes, index, temporary)
+  if parsed.valid:
+    let next: I64 = parsed.next
+    let continuation: Bool = familiar_next_at_depth(lexemes, next, depth, line)
+    if continuation:
+      begin_span_form(tokens, 18, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
+      push_virtual_token(tokens, 118, lexeme_start(lexemes, index))
+      push_virtual_token(tokens, 131, lexeme_start(lexemes, index))
+      push_virtual_token(tokens, 130, lexeme_start(lexemes, index))
+      copy_unlinked_tokens(temporary, 0, tokens)
+      let body: Parse = parse_familiar_block(source, lexemes, next, depth, tokens)
+      if body.valid:
+        finish_form_after_tokens(tokens)
+        body
+      else:
+        body
+    else:
+      copy_unlinked_tokens(temporary, 0, tokens)
+      parsed
+  else:
+    parsed
+
+fn parse_familiar_block(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  if available:
+    if lexeme_at_indent(lexemes, index, depth):
+      let let_form: Bool = lexeme_equal(source, lexemes, index, "let")
+      let var_form: Bool = lexeme_equal(source, lexemes, index, "var")
+      let binding: Bool = let_form || var_form
+      if binding:
+        parse_familiar_let_block(source, lexemes, index, depth, tokens)
+      else:
+        let following: I64 = index + 1
+        let assignment: Bool = lexeme_is_kind(lexemes, following, 8)
+        if assignment:
+          parse_familiar_assignment_block(source, lexemes, index, depth, tokens)
+        else:
+          let if_form: Bool = lexeme_equal(source, lexemes, index, "if")
+          if if_form:
+            parse_familiar_control_block(source, lexemes, index, depth, 0, tokens)
+          else:
+            let match_form: Bool = lexeme_equal(source, lexemes, index, "match")
+            if match_form:
+              parse_familiar_control_block(source, lexemes, index, depth, 1, tokens)
+            else:
+              let parallel_form: Bool = lexeme_equal(source, lexemes, index, "parallel")
+              if parallel_form:
+                parse_familiar_control_block(source, lexemes, index, depth, 2, tokens)
+              else:
+                parse_familiar_value_block(source, lexemes, index, depth, tokens)
+    else:
+      parse_failure(index)
+  else:
+    parse_failure(index)
+
+fn parse_familiar_nested_expression(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_equal(source, lexemes, index, "if"):
+    parse_familiar_if_expression(source, lexemes, index, tokens)
+  else:
+    if lexeme_equal(source, lexemes, index, "match"):
+      parse_familiar_match_expression(source, lexemes, index, tokens)
+    else:
+      if lexeme_equal(source, lexemes, index, "parallel"):
+        parse_familiar_parallel_expression(source, lexemes, index, tokens)
+      else:
+        parse_emit_familiar_expression(source, lexemes, index, tokens)
+
+fn parse_familiar_enum_payload(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, line: I64, first: Bool, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let close: Bool = lexeme_is_kind(lexemes, index, 3)
+  if close:
+    let same_line: Bool = lexeme_on_line(lexemes, index, line)
+    if same_line:
+      finish_form_at(lexemes, index, tokens)
+      parse_success(index + 1)
+    else:
+      parse_failure(index)
+  else:
+    if lexeme_is_kind(lexemes, index, 10):
+      parse_failure_code(index, "E0109")
+    else:
+      let type_result: Parse = parse_type(source, lexemes, index, tokens)
+      if type_result.valid:
+        let separator: I64 = type_result.next
+        let closed: Bool = lexeme_is_kind(lexemes, separator, 3)
+        if closed:
+          finish_form_at(lexemes, separator, tokens)
+          parse_success(separator + 1)
+        else:
+          if lexeme_is_kind(lexemes, separator, 10):
+            let next: I64 = separator + 1
+            let invalid: Bool = lexeme_is_kind(lexemes, next, 3) || lexeme_is_kind(lexemes, next, 10)
+            if invalid:
+              parse_failure_code(separator, "E0109")
+            else:
+              recur(source, lexemes, next, line, false, tokens)
+          else:
+            parse_failure_code(separator, "E0108")
+      else:
+        type_result
+
+fn parse_familiar_enum_members(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, depth: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let available: Bool = lexeme_index_valid(lexemes, index)
+  let same_depth: Bool = if available:
+    lexeme_at_indent(lexemes, index, depth)
+  else:
+    false
+  if same_depth:
+    let line: I64 = lexeme_line(lexemes, index)
+    let member: I64 = begin_plain_form(lexemes, index, tokens)
+    let named: Bool = push_name_lexeme(lexemes, index, tokens)
+    if named:
+      let payload: I64 = index + 1
+      let parsed: Parse = if lexeme_is_kind(lexemes, payload, 2):
+        parse_familiar_enum_payload(source, lexemes, payload + 1, line, true, tokens)
+      else:
+        finish_form_after_tokens(tokens)
+        parse_success(payload)
+      if parsed.valid:
+        let next: I64 = parsed.next
+        let line_finished: Bool = if lexeme_index_valid(lexemes, next):
+          lexeme_line(lexemes, next) > line
+        else:
+          true
+        if line_finished:
+          recur(source, lexemes, next, depth, tokens)
+        else:
+          parse_failure(next)
+      else:
+        parsed
+    else:
+      parse_failure(index)
+  else:
+    finish_form_after_tokens(tokens)
+    parse_success(index)
+
+fn parse_familiar_data_item(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, tag: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let item: I64 = begin_tagged_form(lexemes, index, tag, tokens)
+  let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+  let name: I64 = index + 1
+  let named: Bool = push_name_lexeme(lexemes, name, tokens)
+  if named:
+    let colon: I64 = name + 1
+    let header: Bool = lexeme_is_kind(lexemes, colon, 6) && lexeme_on_line(lexemes, colon, line)
+    if header:
+      let body: I64 = begin_plain_form(lexemes, colon, tokens)
+      let first: I64 = colon + 1
+      let members: Parse = if tag == 3:
+        parse_record_members(source, lexemes, first, 1, tokens)
+      else:
+        parse_familiar_enum_members(source, lexemes, first, 1, tokens)
+      if members.valid:
+        finish_form_after_tokens(tokens)
+        members
+      else:
+        members
+    else:
+      parse_failure(colon)
+  else:
+    parse_failure(name)
+
+fn parse_familiar_function_item(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let line: I64 = lexeme_line(lexemes, index)
+  let item: I64 = begin_tagged_form(lexemes, index, 2, tokens)
+  let marker: Bool = push_name_lexeme(lexemes, index, tokens)
+  let name: I64 = index + 1
+  let named: Bool = push_name_lexeme(lexemes, name, tokens)
+  if named:
+    let params: Parse = parse_familiar_parameters(source, lexemes, name + 1, line, tokens)
+    if params.valid:
+      let arrow: I64 = params.next
+      let arrow_valid: Bool = lexeme_is_kind(lexemes, arrow, 9) && lexeme_on_line(lexemes, arrow, line)
+      if arrow_valid:
+        let return_type: Parse = parse_type(source, lexemes, arrow + 1, tokens)
+        if return_type.valid:
+          let after_return: I64 = return_type.next
+          let effects_result: Parse = if lexeme_equal(source, lexemes, after_return, "effects"):
+            parse_familiar_effects(source, lexemes, after_return, line, tokens)
+          else:
+            synthesize_empty_effects(lexemes, after_return, tokens)
+            parse_success(after_return)
+          if effects_result.valid:
+            let colon: I64 = effects_result.next
+            let header: Bool = lexeme_is_kind(lexemes, colon, 6) && lexeme_on_line(lexemes, colon, line)
+            if header:
+              let body: Parse = parse_familiar_block(source, lexemes, colon + 1, 1, tokens)
+              if body.valid:
+                finish_form_after_tokens(tokens)
+                body
+              else:
+                body
+            else:
+              parse_failure(colon)
+          else:
+            effects_result
+        else:
+          return_type
+      else:
+        parse_failure(arrow)
+    else:
+      params
+  else:
+    parse_failure(name)
+
+fn parse_familiar_item(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_at_indent(lexemes, index, 0):
+    if lexeme_equal(source, lexemes, index, "fn"):
+      parse_familiar_function_item(source, lexemes, index, tokens)
+    else:
+      if lexeme_equal(source, lexemes, index, "struct"):
+        parse_familiar_data_item(source, lexemes, index, 3, tokens)
+      else:
+        if lexeme_equal(source, lexemes, index, "enum"):
+          parse_familiar_data_item(source, lexemes, index, 4, tokens)
+        else:
+          parse_failure(index)
+  else:
+    parse_failure(index)
+
+fn parse_familiar_items(source: Bytes, inout lexemes: Vec[Lexeme], index: I64, inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  if lexeme_index_valid(lexemes, index):
+    let item: Parse = parse_familiar_item(source, lexemes, index, tokens)
+    if item.valid:
+      recur(source, lexemes, item.next, tokens)
+    else:
+      item
+  else:
+    parse_success(index)
+
+fn parse_familiar_module(source: Bytes, inout lexemes: Vec[Lexeme], inout tokens: Vec[Token]) -> Parse effects[alloc, partial]:
+  let header: Bool = lexeme_equal(source, lexemes, 0, "module") && lexeme_at_indent(lexemes, 0, 0)
+  if header:
+    let root: I64 = begin_tagged_form(lexemes, 0, 1, tokens)
+    let marker: Bool = push_name_lexeme(lexemes, 0, tokens)
+    let name: Bool = push_name_lexeme(lexemes, 1, tokens)
+    let same_line: Bool = lexeme_on_line(lexemes, 1, lexeme_line(lexemes, 0))
+    if name && same_line:
+      let items: Parse = parse_familiar_items(source, lexemes, 2, tokens)
+      if items.valid:
+        let length: I64 = bytes.len(source)
+        push_token(tokens, 1, length, length)
+        items
+      else:
+        items
+    else:
+      parse_failure(1)
+  else:
+    parse_failure(0)
+
+fn parse_program_result(source: Bytes, inout tokens: Vec[Token]) -> ProgramParse effects[alloc, partial]:
   let lexemes: Vec[Lexeme] = vec.new()
-  let lexical: LexResult = lex_modern(source lexemes)
-  match get(lexical valid):
-    false:
-      make ProgramParse(valid = false code = get(lexical code) start = get(lexical start) end = get(lexical end))
-    true:
-      let jump: I64 = indentation_jump(lexemes 0 -1 0)
-      let skipped: Bool = i64.ge(jump 0)
-      match skipped:
-        true:
-          let width: I64 = i64.mul(lexeme_indent(lexemes jump) 2)
-          let end: I64 = lexeme_start(lexemes jump)
-          let start: I64 = i64.sub(end width)
-          make ProgramParse(valid = false code = "E0105" start = start end = end)
-        false:
-          let first_token: I64 = vec.len(tokens)
-          let parsed: Parse = parse_module(source lexemes tokens)
-          let complete: Bool = i64.eq(get(parsed next) vec.len(lexemes))
-          let valid: Bool = bool.and(get(parsed valid) complete)
-          match valid:
-            false:
-              let failure: I64 = get(parsed next)
-              let available: Bool = lexeme_index_valid(lexemes failure)
-              let start: I64 = match available:
-                true:
-                  lexeme_start(lexemes failure)
-                false:
-                  bytes.len(source)
-              let end: I64 = match available:
-                true:
-                  lexeme_end(lexemes failure)
-                false:
-                  start
-              make ProgramParse(valid = false code = "E0102" start = start end = end)
-            true:
-              let indexed: Unit = index-form-boundaries(tokens first_token)
-              let length: I64 = bytes.len(source)
-              make ProgramParse(valid = true code = "" start = length end = length)
+  let lexical: LexResult = lex_modern(source, lexemes)
+  if lexical.valid:
+    let jump: I64 = indentation_jump(lexemes, 0, -1, 0)
+    let skipped: Bool = jump >= 0
+    if skipped:
+      let width: I64 = lexeme_indent(lexemes, jump) * 2
+      let end: I64 = lexeme_start(lexemes, jump)
+      let start: I64 = end - width
+      ProgramParse(valid: false, code: "E0105", start: start, end: end)
+    else:
+      let first_token: I64 = vec.len(tokens)
+      let parsed: Parse = parse_familiar_module(source, lexemes, tokens)
+      let complete: Bool = parsed.next == vec.len(lexemes)
+      let valid: Bool = parsed.valid && complete
+      if valid:
+        index_form_boundaries(tokens, first_token)
+        let length: I64 = bytes.len(source)
+        ProgramParse(valid: true, code: "", start: length, end: length)
+      else:
+        let failure: I64 = parsed.next
+        let available: Bool = lexeme_index_valid(lexemes, failure)
+        let start: I64 = if available:
+          lexeme_start(lexemes, failure)
+        else:
+          bytes.len(source)
+        let end: I64 = if available:
+          lexeme_end(lexemes, failure)
+        else:
+          start
+        ProgramParse(valid: false, code: parsed.code, start: start, end: end)
+  else:
+    ProgramParse(valid: false, code: lexical.code, start: lexical.start, end: lexical.end)
 
-fn parse_program(source: Bytes inout tokens: Vec[Token]) -> Bool effects[alloc partial]:
-  let result: ProgramParse = parse_program_result(source tokens)
-  get(result valid)
+fn parse_program(source: Bytes, inout tokens: Vec[Token]) -> Bool effects[alloc, partial]:
+  let result: ProgramParse = parse_program_result(source, tokens)
+  result.valid
 
-fn token_equal(source: Bytes inout tokens: Vec[Token] index: I64 text: Bytes) -> Bool effects[partial]:
-  let start: I64 = token_start(tokens index)
-  let end: I64 = token_end(tokens index)
-  span_equal(source start end text)
+fn virtual_token_equal(tag: I64, text: Bytes) -> Bool effects[partial]:
+  if tag == 31:
+    span_equal(text, 0, bytes.len(text), "i64.add")
+  else:
+    if tag == 32:
+      span_equal(text, 0, bytes.len(text), "i64.sub")
+    else:
+      if tag == 33:
+        span_equal(text, 0, bytes.len(text), "i64.mul")
+      else:
+        if tag == 34:
+          span_equal(text, 0, bytes.len(text), "i64.div")
+        else:
+          if tag == 35:
+            span_equal(text, 0, bytes.len(text), "i64.rem")
+          else:
+            if tag == 36:
+              span_equal(text, 0, bytes.len(text), "i64.eq")
+            else:
+              if tag == 37:
+                span_equal(text, 0, bytes.len(text), "i64.lt")
+              else:
+                if tag == 38:
+                  span_equal(text, 0, bytes.len(text), "i64.le")
+                else:
+                  if tag == 39:
+                    span_equal(text, 0, bytes.len(text), "i64.gt")
+                  else:
+                    if tag == 40:
+                      span_equal(text, 0, bytes.len(text), "i64.ge")
+                    else:
+                      if tag == 41:
+                        span_equal(text, 0, bytes.len(text), "bool.not")
+                      else:
+                        if tag == 42:
+                          span_equal(text, 0, bytes.len(text), "bool.and")
+                        else:
+                          if tag == 43:
+                            span_equal(text, 0, bytes.len(text), "bool.or")
+                          else:
+                            if tag == 120:
+                              span_equal(text, 0, bytes.len(text), "void")
+                            else:
+                              if tag == 121:
+                                span_equal(text, 0, bytes.len(text), "true")
+                              else:
+                                if tag == 122:
+                                  span_equal(text, 0, bytes.len(text), "false")
+                                else:
+                                  if tag == 130:
+                                    span_equal(text, 0, bytes.len(text), "Void")
+                                  else:
+                                    false
 
-fn skip_nested(inout tokens: Vec[Token] index: I64 depth: I64) -> I64 effects[partial]:
+fn token_equal(source: Bytes, inout tokens: Vec[Token], index: I64, text: Bytes) -> Bool effects[partial]:
+  let tag: I64 = token_tag(tokens, index)
+  let virtual: Bool = virtual_token_equal(tag, text)
+  let start: I64 = token_start(tokens, index)
+  let end: I64 = token_end(tokens, index)
+  let exact: Bool = span_equal(source, start, end, text)
+  virtual || exact
+
+fn skip_nested(inout tokens: Vec[Token], index: I64, depth: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(tokens)
-  let exhausted: Bool = i64.ge(index length)
-  match exhausted:
-    true:
-      length
-    false:
-      let kind: I64 = token_kind(tokens index)
-      let left: Bool = i64.eq(kind 0)
-      let right: Bool = i64.eq(kind 1)
-      match left:
-        true:
-          let next_depth: I64 = i64.add(depth 1)
-          let next: I64 = i64.add(index 1)
-          recur(tokens next next_depth)
-        false:
-          match right:
-            true:
-              let next_depth: I64 = i64.sub(depth 1)
-              let next: I64 = i64.add(index 1)
-              let done: Bool = i64.eq(next_depth 0)
-              match done:
-                true:
-                  next
-                false:
-                  recur(tokens next next_depth)
-            false:
-              let next: I64 = i64.add(index 1)
-              recur(tokens next depth)
+  let exhausted: Bool = index >= length
+  if exhausted:
+    length
+  else:
+    let kind: I64 = token_kind(tokens, index)
+    let left: Bool = kind == 0
+    let right: Bool = kind == 1
+    if left:
+      let next_depth: I64 = depth + 1
+      let next: I64 = index + 1
+      recur(tokens, next, next_depth)
+    else:
+      if right:
+        let next_depth: I64 = depth - 1
+        let next: I64 = index + 1
+        let done: Bool = next_depth == 0
+        if done:
+          next
+        else:
+          recur(tokens, next, next_depth)
+      else:
+        let next: I64 = index + 1
+        recur(tokens, next, depth)
 
-fn skip_form(inout tokens: Vec[Token] index: I64) -> I64 effects[partial]:
-  let kind: I64 = token_kind(tokens index)
-  let left: Bool = i64.eq(kind 0)
-  match left:
-    true:
-      let indexed: I64 = token_next(tokens index)
-      let known: Bool = i64.ge(indexed 0)
-      match known:
-        true:
-          indexed
-        false:
-          let following: I64 = i64.add(index 1)
-          skip_nested(tokens following 1)
-    false:
-      i64.add(index 1)
+fn skip_form(inout tokens: Vec[Token], index: I64) -> I64 effects[partial]:
+  let kind: I64 = token_kind(tokens, index)
+  let left: Bool = kind == 0
+  if left:
+    let indexed: I64 = token_next(tokens, index)
+    let known: Bool = indexed >= 0
+    if known:
+      indexed
+    else:
+      let following: I64 = index + 1
+      skip_nested(tokens, following, 1)
+  else:
+    index + 1
 
 fn ast_node_after(node: I64) -> I64:
-  i64.add(node 1)
+  node + 1
 
-fn ast_node_kind(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  token_kind(tokens node)
+fn ast_node_kind(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  token_kind(tokens, node)
 
-fn ast_node_tag(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  token_tag(tokens node)
+fn ast_node_tag(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  token_tag(tokens, node)
 
-fn ast_node_set_link(inout tokens: Vec[Token] node: I64 link: I64) -> Unit effects[partial]:
-  set_token_link(tokens node link)
+fn ast_node_set_link(inout tokens: Vec[Token], node: I64, link: I64) -> Void effects[partial]:
+  set_token_link(tokens, node, link)
 
-fn ast_node_start(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  token_start(tokens node)
+fn ast_node_start(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  token_start(tokens, node)
 
-fn ast_node_end(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  token_end(tokens node)
+fn ast_node_end(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  token_end(tokens, node)
 
-fn ast_node_link(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  token_link(tokens node)
+fn ast_node_link(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  token_link(tokens, node)
 
-fn ast_node_text_is(source: Bytes inout tokens: Vec[Token] node: I64 text: Bytes) -> Bool effects[partial]:
-  token_equal(source tokens node text)
+fn ast_node_text_is(source: Bytes, inout tokens: Vec[Token], node: I64, text: Bytes) -> Bool effects[partial]:
+  token_equal(source, tokens, node, text)
 
-fn ast_node_is_list(inout tokens: Vec[Token] node: I64) -> Bool effects[partial]:
-  i64.eq(token_kind(tokens node) 0)
+fn ast_node_is_list(inout tokens: Vec[Token], node: I64) -> Bool effects[partial]:
+  token_kind(tokens, node) == 0
 
-fn ast_node_is_name(inout tokens: Vec[Token] node: I64) -> Bool effects[partial]:
-  i64.eq(token_kind(tokens node) 2)
+fn ast_node_is_name(inout tokens: Vec[Token], node: I64) -> Bool effects[partial]:
+  token_kind(tokens, node) == 2
 
-fn ast_node_is_string(inout tokens: Vec[Token] node: I64) -> Bool effects[partial]:
-  i64.eq(token_kind(tokens node) 3)
+fn ast_node_is_string(inout tokens: Vec[Token], node: I64) -> Bool effects[partial]:
+  token_kind(tokens, node) == 3
 
-fn ast_node_is_scalar(inout tokens: Vec[Token] node: I64) -> Bool effects[partial]:
-  let name: Bool = ast_node_is_name(tokens node)
-  let string-value: Bool = ast_node_is_string(tokens node)
-  bool.or(name string-value)
+fn ast_node_is_scalar(inout tokens: Vec[Token], node: I64) -> Bool effects[partial]:
+  let name: Bool = ast_node_is_name(tokens, node)
+  let string_value: Bool = ast_node_is_string(tokens, node)
+  name || string_value
 
 fn ast_list_first(list: I64) -> I64:
-  i64.add(list 1)
+  list + 1
 
-fn ast_list_done(inout tokens: Vec[Token] cursor: I64) -> Bool effects[partial]:
-  i64.eq(token_kind(tokens cursor) 1)
+fn ast_list_done(inout tokens: Vec[Token], cursor: I64) -> Bool effects[partial]:
+  token_kind(tokens, cursor) == 1
 
-fn ast_next(inout tokens: Vec[Token] node: I64) -> I64 effects[partial]:
-  skip_form(tokens node)
+fn ast_next(inout tokens: Vec[Token], node: I64) -> I64 effects[partial]:
+  skip_form(tokens, node)
 
-fn ast_list_close(inout tokens: Vec[Token] list: I64) -> I64 effects[partial]:
-  i64.sub(ast_next(tokens list) 1)
+fn ast_list_close(inout tokens: Vec[Token], list: I64) -> I64 effects[partial]:
+  ast_next(tokens, list) - 1
 
-fn ast_list_last(inout tokens: Vec[Token] cursor: I64 previous: I64) -> I64 effects[partial]:
-  match ast_list_done(tokens cursor):
-    true:
-      previous
-    false:
-      let next: I64 = ast_next(tokens cursor)
-      recur(tokens next cursor)
+fn ast_list_last(inout tokens: Vec[Token], cursor: I64, previous: I64) -> I64 effects[partial]:
+  if ast_list_done(tokens, cursor):
+    previous
+  else:
+    let next: I64 = ast_next(tokens, cursor)
+    recur(tokens, next, cursor)
 
-fn ast_module_is(source: Bytes inout tokens: Vec[Token] root: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens root 1 "module")
+fn ast_module_is(source: Bytes, inout tokens: Vec[Token], root: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, root, 1, "module")
 
 fn ast_module_name(root: I64) -> I64:
-  i64.add(root 2)
+  root + 2
 
 fn ast_module_items(root: I64) -> I64:
-  i64.add(root 3)
+  root + 3
 
 fn ast_item_name(item: I64) -> I64:
-  i64.add(item 2)
+  item + 2
 
-fn ast_item_is_function(source: Bytes inout tokens: Vec[Token] item: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens item 2 "fn")
+fn ast_item_is_function(source: Bytes, inout tokens: Vec[Token], item: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, item, 2, "fn")
 
-fn ast_item_is_record(source: Bytes inout tokens: Vec[Token] item: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens item 3 "record")
+fn ast_item_is_record(source: Bytes, inout tokens: Vec[Token], item: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, item, 3, "struct")
 
-fn ast_item_is_variant(source: Bytes inout tokens: Vec[Token] item: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens item 4 "variant")
+fn ast_item_is_variant(source: Bytes, inout tokens: Vec[Token], item: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, item, 4, "enum")
 
 fn ast_function_parameters(item: I64) -> I64:
-  i64.add(item 3)
+  item + 3
 
-fn ast_function_return_type(inout tokens: Vec[Token] item: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_function_parameters(item))
+fn ast_function_return_type(inout tokens: Vec[Token], item: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_function_parameters(item))
 
-fn ast_function_effects(inout tokens: Vec[Token] item: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_function_return_type(tokens item))
+fn ast_function_effects(inout tokens: Vec[Token], item: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_function_return_type(tokens, item))
 
-fn ast_function_body(inout tokens: Vec[Token] item: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_function_effects(tokens item))
+fn ast_function_body(inout tokens: Vec[Token], item: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_function_effects(tokens, item))
 
 fn ast_parameters_first(parameters: I64) -> I64:
   ast_list_first(parameters)
 
-fn ast_binding_is_inout(source: Bytes inout tokens: Vec[Token] binding: I64) -> Bool effects[partial]:
-  token_equal(source tokens i64.add(binding 1) "inout")
+fn ast_binding_is_inout(source: Bytes, inout tokens: Vec[Token], binding: I64) -> Bool effects[partial]:
+  token_equal(source, tokens, binding + 1, "inout")
 
-fn ast_binding_name(source: Bytes inout tokens: Vec[Token] binding: I64) -> I64 effects[partial]:
-  match ast_binding_is_inout(source tokens binding):
-    true:
-      i64.add(binding 2)
-    false:
-      i64.add(binding 1)
+fn ast_binding_is_mutable(source: Bytes, inout tokens: Vec[Token], binding: I64) -> Bool effects[partial]:
+  token_equal(source, tokens, binding + 1, "var")
 
-fn ast_binding_type(source: Bytes inout tokens: Vec[Token] binding: I64) -> I64 effects[partial]:
-  match ast_binding_is_inout(source tokens binding):
-    true:
-      i64.add(binding 3)
-    false:
-      i64.add(binding 2)
+fn ast_binding_name(source: Bytes, inout tokens: Vec[Token], binding: I64) -> I64 effects[partial]:
+  let qualified: Bool = ast_binding_is_inout(source, tokens, binding) || ast_binding_is_mutable(source, tokens, binding)
+  if qualified:
+    binding + 2
+  else:
+    binding + 1
+
+fn ast_binding_type(source: Bytes, inout tokens: Vec[Token], binding: I64) -> I64 effects[partial]:
+  let qualified: Bool = ast_binding_is_inout(source, tokens, binding) || ast_binding_is_mutable(source, tokens, binding)
+  if qualified:
+    binding + 3
+  else:
+    binding + 2
 
 fn ast_plain_binding_type_from_name(name: I64) -> I64:
-  i64.add(name 1)
+  name + 1
 
 fn ast_effects_first(effects: I64) -> I64:
-  i64.add(effects 2)
+  effects + 2
 
 fn ast_data_body(item: I64) -> I64:
-  i64.add(item 3)
+  item + 3
 
 fn ast_data_members_first(item: I64) -> I64:
   ast_list_first(ast_data_body(item))
 
 fn ast_member_name(member: I64) -> I64:
-  i64.add(member 1)
+  member + 1
 
 fn ast_member_value(member: I64) -> I64:
-  i64.add(member 2)
+  member + 2
 
-fn ast_type_is_vec(source: Bytes inout tokens: Vec[Token] type-node: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens type-node 6 "Vec")
+fn ast_type_is_vec(source: Bytes, inout tokens: Vec[Token], type_node: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, type_node, 6, "Vec")
 
-fn ast_type_is_arena(source: Bytes inout tokens: Vec[Token] type-node: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens type-node 7 "Arena")
+fn ast_type_is_arena(source: Bytes, inout tokens: Vec[Token], type_node: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, type_node, 7, "Arena")
 
-fn ast_type_is_id(source: Bytes inout tokens: Vec[Token] type-node: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens type-node 8 "Id")
+fn ast_type_is_id(source: Bytes, inout tokens: Vec[Token], type_node: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, type_node, 8, "Id")
 
-fn ast_effects_is_form(source: Bytes inout tokens: Vec[Token] effects-node: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens effects-node 5 "effects")
+fn ast_effects_is_form(source: Bytes, inout tokens: Vec[Token], effects_node: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, effects_node, 5, "effects")
 
-fn ast_type_argument(type-node: I64) -> I64:
-  i64.add(type-node 2)
+fn ast_type_argument(type_node: I64) -> I64:
+  type_node + 2
 
-fn ast_form_has_tag(source: Bytes inout tokens: Vec[Token] expr: I64 tag: I64 legacy-head: Bytes) -> Bool effects[partial]:
-  let form: Bool = i64.eq(token_kind(tokens expr) 0)
-  match form:
-    false:
-      false
-    true:
-      let actual: I64 = token_tag(tokens expr)
-      let tagged: Bool = i64.eq(actual tag)
-      match tagged:
-        true:
-          true
-        false:
-          let legacy: Bool = i64.eq(actual 0)
-          match legacy:
-            true:
-              token_equal(source tokens i64.add(expr 1) legacy-head)
-            false:
-              false
+fn ast_form_has_tag(source: Bytes, inout tokens: Vec[Token], expr: I64, tag: I64, legacy_head: Bytes) -> Bool effects[partial]:
+  let form: Bool = token_kind(tokens, expr) == 0
+  if form:
+    let actual: I64 = token_tag(tokens, expr)
+    let tagged: Bool = actual == tag
+    if tagged:
+      true
+    else:
+      let legacy: Bool = actual == 0
+      if legacy:
+        token_equal(source, tokens, expr + 1, legacy_head)
+      else:
+        false
+  else:
+    false
 
-fn ast_expression_is_let(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 9 "let")
+fn ast_expression_is_let(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  let binding: Bool = ast_form_has_tag(source, tokens, expr, 9, "let")
+  let statement: Bool = ast_node_tag(tokens, expr) == 18
+  binding || statement
 
-fn ast_expression_is_call(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 10 "call")
+fn ast_expression_is_statement(inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 18
 
-fn ast_expression_is_make(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 11 "make")
+fn ast_let_is_mutable(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_text_is(source, tokens, ast_expression_marker(expr), "var")
 
-fn ast_expression_is_get(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 12 "get")
+fn ast_expression_is_call(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, expr, 10, "call")
 
-fn ast_expression_is_case(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 13 "case")
+fn ast_expression_is_make(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 11
 
-fn ast_expression_is_match(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 14 "match")
+fn ast_expression_is_get(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 12
 
-fn ast_expression_is_recur(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 15 "recur")
+fn ast_expression_is_case(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 13
 
-fn ast_expression_is_set(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 16 "set")
+fn ast_expression_is_match(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  let enum_match: Bool = ast_form_has_tag(source, tokens, expr, 14, "match")
+  let familiar_match: Bool = ast_node_tag(tokens, expr) == 20
+  let if_form: Bool = ast_node_tag(tokens, expr) == 19
+  enum_match || (familiar_match || if_form)
 
-fn ast_expression_is_fork(source: Bytes inout tokens: Vec[Token] expr: I64) -> Bool effects[partial]:
-  ast_form_has_tag(source tokens expr 17 "fork")
+fn ast_expression_is_if(inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 19
+
+fn ast_expression_is_familiar_match(inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 20
+
+fn ast_expression_is_recur(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, expr, 15, "recur")
+
+fn ast_expression_is_set(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, expr) == 16
+
+fn ast_assignment_is_familiar(inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, ast_expression_marker(expr)) == 116
+
+fn ast_expression_is_fork(source: Bytes, inout tokens: Vec[Token], expr: I64) -> Bool effects[partial]:
+  ast_form_has_tag(source, tokens, expr, 17, "parallel")
 
 fn ast_expression_marker(expr: I64) -> I64:
   ast_list_first(expr)
 
 fn ast_let_name(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
 fn ast_let_type(expr: I64) -> I64:
-  i64.add(expr 3)
+  expr + 3
 
-fn ast_let_value(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_let_type(expr))
+fn ast_let_value(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_let_type(expr))
 
-fn ast_let_body(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_let_value(tokens expr))
+fn ast_let_body(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_let_value(tokens, expr))
 
 fn ast_call_callee(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
 fn ast_call_arguments(expr: I64) -> I64:
-  i64.add(expr 3)
+  expr + 3
 
-fn ast_callee_is_recur(source: Bytes inout tokens: Vec[Token] callee: I64) -> Bool effects[partial]:
-  token_equal(source tokens callee "recur")
+fn ast_callee_is_recur(source: Bytes, inout tokens: Vec[Token], callee: I64) -> Bool effects[partial]:
+  token_equal(source, tokens, callee, "recur")
 
 fn ast_make_type(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
 fn ast_make_fields(expr: I64) -> I64:
-  i64.add(expr 3)
+  expr + 3
 
 fn ast_get_value(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
-fn ast_get_field(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_get_value(expr))
+fn ast_get_field(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_get_value(expr))
 
 fn ast_case_type(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
-fn ast_case_name(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_case_type(expr))
+fn ast_case_name(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_case_type(expr))
 
-fn ast_case_payload(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_case_name(tokens expr))
+fn ast_case_payload(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_case_name(tokens, expr))
 
 fn ast_match_value(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
-fn ast_match_arms(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_match_value(expr))
+fn ast_match_arms(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_match_value(expr))
 
 fn ast_arm_pattern(arm: I64) -> I64:
-  i64.add(arm 1)
+  arm + 1
 
-fn ast_arm_bindings(inout tokens: Vec[Token] arm: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_arm_pattern(arm))
+fn ast_arm_bindings(inout tokens: Vec[Token], arm: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_arm_pattern(arm))
 
-fn ast_arm_body(inout tokens: Vec[Token] arm: I64) -> I64 effects[partial]:
+fn ast_arm_body(inout tokens: Vec[Token], arm: I64) -> I64 effects[partial]:
   let pattern: I64 = ast_arm_pattern(arm)
-  ast_list_last(tokens pattern pattern)
+  ast_list_last(tokens, pattern, pattern)
 
 fn ast_pattern_binding_name(binding: I64) -> I64:
   ast_list_first(binding)
 
+fn ast_pattern_name_is_mutable(inout tokens: Vec[Token], name: I64) -> Bool effects[partial]:
+  ast_node_tag(tokens, name) == 140
+
 fn ast_recur_arguments(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
 fn ast_set_name(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
 fn ast_set_value(expr: I64) -> I64:
-  i64.add(expr 3)
+  expr + 3
 
-fn ast_set_body(inout tokens: Vec[Token] expr: I64) -> I64 effects[partial]:
-  ast_next(tokens ast_set_value(expr))
+fn ast_set_body(inout tokens: Vec[Token], expr: I64) -> I64 effects[partial]:
+  ast_next(tokens, ast_set_value(expr))
 
 fn ast_fork_body(expr: I64) -> I64:
-  i64.add(expr 2)
+  expr + 2
 
-fn binding_is_inout(source: Bytes inout tokens: Vec[Token] params: I64 cursor: I64 name_start: I64 name_end: I64) -> Bool effects[partial]:
-  let kind: I64 = token_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
+fn binding_is_inout(source: Bytes, inout tokens: Vec[Token], params: I64, cursor: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+  let kind: I64 = token_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    false
+  else:
+    let head: I64 = cursor + 1
+    let is_inout: Bool = token_equal(source, tokens, head, "inout")
+    if is_inout:
+      let name_index: I64 = cursor + 2
+      let candidate_start: I64 = token_start(tokens, name_index)
+      let candidate_end: I64 = token_end(tokens, name_index)
+      let same: Bool = spans_equal(source, candidate_start, candidate_end, name_start, name_end)
+      if same:
+        true
+      else:
+        let next: I64 = skip_form(tokens, cursor)
+        recur(source, tokens, params, next, name_start, name_end)
+    else:
+      let next: I64 = skip_form(tokens, cursor)
+      recur(source, tokens, params, next, name_start, name_end)
+
+fn name_is_inout(source: Bytes, inout tokens: Vec[Token], params: I64, name: I64) -> Bool effects[partial]:
+  let cursor: I64 = params + 1
+  let name_start: I64 = token_start(tokens, name)
+  let name_end: I64 = token_end(tokens, name)
+  binding_is_inout(source, tokens, params, cursor, name_start, name_end)
+
+fn first_byte_is_number(source: Bytes, inout tokens: Vec[Token], index: I64) -> Bool effects[partial]:
+  let valid_token: Bool = token_index_valid(tokens, index)
+  if valid_token:
+    let start: I64 = token_start(tokens, index)
+    let length: I64 = bytes.len(source)
+    let available: Bool = start < length
+    if available:
+      let byte: U8 = bytes.get(source, start)
+      let code: I64 = u8.to_i64(byte)
+      let minus: Bool = code == 45
+      let lower: Bool = code >= 48
+      let upper: Bool = code <= 57
+      let digit: Bool = lower && upper
+      minus || digit
+    else:
       false
-    false:
-      let head: I64 = i64.add(cursor 1)
-      let is_inout: Bool = token_equal(source tokens head "inout")
-      match is_inout:
-        true:
-          let name_index: I64 = i64.add(cursor 2)
-          let candidate_start: I64 = token_start(tokens name_index)
-          let candidate_end: I64 = token_end(tokens name_index)
-          let same: Bool = spans_equal(source candidate_start candidate_end name_start name_end)
-          match same:
-            true:
-              true
-            false:
-              let next: I64 = skip_form(tokens cursor)
-              recur(source tokens params next name_start name_end)
-        false:
-          let next: I64 = skip_form(tokens cursor)
-          recur(source tokens params next name_start name_end)
+  else:
+    false
 
-fn name_is_inout(source: Bytes inout tokens: Vec[Token] params: I64 name: I64) -> Bool effects[partial]:
-  let cursor: I64 = i64.add(params 1)
-  let name_start: I64 = token_start(tokens name)
-  let name_end: I64 = token_end(tokens name)
-  binding_is_inout(source tokens params cursor name_start name_end)
-
-fn first_byte_is_number(source: Bytes inout tokens: Vec[Token] index: I64) -> Bool effects[partial]:
-  let valid_token: Bool = token_index_valid(tokens index)
-  match valid_token:
-    false:
-      false
-    true:
-      let start: I64 = token_start(tokens index)
-      let length: I64 = bytes.len(source)
-      let available: Bool = i64.lt(start length)
-      match available:
-        false:
-          false
-        true:
-          let byte: U8 = bytes.get(source start)
-          let code: I64 = u8.to-i64(byte)
-          let minus: Bool = i64.eq(code 45)
-          let lower: Bool = i64.ge(code 48)
-          let upper: Bool = i64.le(code 57)
-          let digit: Bool = bool.and(lower upper)
-          bool.or(minus digit)
-
-fn span_count_byte(source: Bytes index: I64 end: I64 code: I64 count: I64) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
+fn span_count_byte(source: Bytes, index: I64, end: I64, code: I64, count: I64) -> I64 effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    count
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let current: I64 = u8.to_i64(byte)
+    let same: Bool = current == code
+    let next_count: I64 = if same:
+      count + 1
+    else:
       count
-    false:
-      let byte: U8 = bytes.get(source index)
-      let current: I64 = u8.to-i64(byte)
-      let same: Bool = i64.eq(current code)
-      let next_count: I64 = match same:
-        true:
-          i64.add(count 1)
-        false:
-          count
-      let next: I64 = i64.add(index 1)
-      recur(source next end code next_count)
+    let next: I64 = index + 1
+    recur(source, next, end, code, next_count)
 
-fn scalar_type_kind(source: Bytes inout tokens: Vec[Token] type_index: I64) -> I64 effects[partial]:
-  let unit_type: Bool = token_equal(source tokens type_index "Unit")
-  match unit_type:
-    true:
-      0
-    false:
-      let bool_type: Bool = token_equal(source tokens type_index "Bool")
-      match bool_type:
-        true:
-          1
-        false:
-          let u8_type: Bool = token_equal(source tokens type_index "U8")
-          match u8_type:
-            true:
-              2
-            false:
-              let i64_type: Bool = token_equal(source tokens type_index "I64")
-              match i64_type:
-                true:
-                  3
-                false:
-                  let bytes_type: Bool = token_equal(source tokens type_index "Bytes")
-                  match bytes_type:
-                    true:
-                      4
-                    false:
-                      -1
+fn scalar_type_kind(source: Bytes, inout tokens: Vec[Token], type_index: I64) -> I64 effects[partial]:
+  let void_type: Bool = token_equal(source, tokens, type_index, "Void")
+  if void_type:
+    0
+  else:
+    let bool_type: Bool = token_equal(source, tokens, type_index, "Bool")
+    if bool_type:
+      1
+    else:
+      let u8_type: Bool = token_equal(source, tokens, type_index, "U8")
+      if u8_type:
+        2
+      else:
+        let i64_type: Bool = token_equal(source, tokens, type_index, "I64")
+        if i64_type:
+          3
+        else:
+          let bytes_type: Bool = token_equal(source, tokens, type_index, "Bytes")
+          if bytes_type:
+            4
+          else:
+            -1
 
-fn declaration_kind(source: Bytes inout tokens: Vec[Token] form: I64) -> ir/DeclarationKind effects[partial]:
-  let head: I64 = i64.add(form 1)
-  let function: Bool = token_equal(source tokens head "fn")
-  match function:
-    true:
-      let kind: ir/DeclarationKind = case ir/DeclarationKind::Function()
+fn declaration_kind(source: Bytes, inout tokens: Vec[Token], form: I64) -> ir.DeclarationKind effects[partial]:
+  let head: I64 = form + 1
+  let function: Bool = token_equal(source, tokens, head, "fn")
+  if function:
+    let kind: ir.DeclarationKind = ir.DeclarationKind::Function()
+    kind
+  else:
+    let record: Bool = token_equal(source, tokens, head, "struct")
+    if record:
+      let kind: ir.DeclarationKind = ir.DeclarationKind::Record()
       kind
-    false:
-      let record: Bool = token_equal(source tokens head "record")
-      match record:
-        true:
-          let kind: ir/DeclarationKind = case ir/DeclarationKind::Record()
-          kind
-        false:
-          let kind: ir/DeclarationKind = case ir/DeclarationKind::Variant()
-          kind
+    else:
+      let kind: ir.DeclarationKind = ir.DeclarationKind::Variant()
+      kind
 
-fn append_name_node(value: I64 inout nodes: Vec[NameNode]) -> I64 effects[alloc]:
+fn append_name_node(value: I64, inout nodes: Vec[NameNode]) -> I64 effects[alloc]:
   let index: I64 = vec.len(nodes)
-  let node: NameNode = make NameNode(value = value first_edge = -1)
-  let pushed: Unit = vec.push(nodes node)
+  let node: NameNode = NameNode(value: value, first_edge: -1)
+  vec.push(nodes, node)
   index
 
-fn find_name_edge(inout edges: Vec[NameEdge] cursor: I64 code: I64) -> I64 effects[partial]:
-  let exhausted: Bool = i64.lt(cursor 0)
-  match exhausted:
-    true:
-      -1
-    false:
-      let edge: NameEdge = vec.get(edges cursor)
-      let same: Bool = i64.eq(get(edge code) code)
-      match same:
-        true:
-          get(edge child)
-        false:
-          recur(edges get(edge next_edge) code)
+fn find_name_edge(inout edges: Vec[NameEdge], cursor: I64, code: I64) -> I64 effects[partial]:
+  let exhausted: Bool = cursor < 0
+  if exhausted:
+    -1
+  else:
+    let edge: NameEdge = vec.get(edges, cursor)
+    let same: Bool = edge.code == code
+    if same:
+      edge.child
+    else:
+      recur(edges, edge.next_edge, code)
 
-fn name_child(inout nodes: Vec[NameNode] inout edges: Vec[NameEdge] parent: I64 code: I64) -> I64 effects[alloc partial]:
-  let node: NameNode = vec.get(nodes parent)
-  let found: I64 = find_name_edge(edges get(node first_edge) code)
-  let present: Bool = i64.ge(found 0)
-  match present:
-    true:
-      found
-    false:
-      let child: I64 = append_name_node(-1 nodes)
-      let edge_index: I64 = vec.len(edges)
-      let edge: NameEdge = make NameEdge(code = code child = child next_edge = get(node first_edge))
-      let pushed: Unit = vec.push(edges edge)
-      let updated: NameNode = make NameNode(value = get(node value) first_edge = edge_index)
-      let stored: Unit = vec.set(nodes parent updated)
-      child
+fn name_child(inout nodes: Vec[NameNode], inout edges: Vec[NameEdge], parent: I64, code: I64) -> I64 effects[alloc, partial]:
+  let node: NameNode = vec.get(nodes, parent)
+  let found: I64 = find_name_edge(edges, node.first_edge, code)
+  let present: Bool = found >= 0
+  if present:
+    found
+  else:
+    let child: I64 = append_name_node(-1, nodes)
+    let edge_index: I64 = vec.len(edges)
+    let edge: NameEdge = NameEdge(code: code, child: child, next_edge: node.first_edge)
+    vec.push(edges, edge)
+    let updated: NameNode = NameNode(value: node.value, first_edge: edge_index)
+    vec.set(nodes, parent, updated)
+    child
 
-fn insert_name_chars(source: Bytes index: I64 end: I64 value: I64 node: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> Unit effects[alloc partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
-      let current: NameNode = vec.get(nodes node)
-      let updated: NameNode = make NameNode(value = value first_edge = get(current first_edge))
-      vec.set(nodes node updated)
-    false:
-      let byte: U8 = bytes.get(source index)
-      let code: I64 = u8.to-i64(byte)
-      let child: I64 = name_child(nodes edges node code)
-      let next: I64 = i64.add(index 1)
-      recur(source next end value child nodes edges)
+fn insert_name_chars(source: Bytes, index: I64, end: I64, value: I64, node: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> Void effects[alloc, partial]:
+  let done: Bool = index >= end
+  if done:
+    let current: NameNode = vec.get(nodes, node)
+    let updated: NameNode = NameNode(value: value, first_edge: current.first_edge)
+    vec.set(nodes, node, updated)
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let child: I64 = name_child(nodes, edges, node, code)
+    let next: I64 = index + 1
+    recur(source, next, end, value, child, nodes, edges)
 
-fn insert_name_token(source: Bytes inout tokens: Vec[Token] token: I64 value: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> Unit effects[alloc partial]:
-  let start: I64 = token_start(tokens token)
-  let end: I64 = token_end(tokens token)
-  insert_name_chars(source start end value 0 nodes edges)
+fn insert_name_token(source: Bytes, inout tokens: Vec[Token], token: I64, value: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> Void effects[alloc, partial]:
+  let start: I64 = token_start(tokens, token)
+  let end: I64 = token_end(tokens, token)
+  insert_name_chars(source, start, end, value, 0, nodes, edges)
 
-fn index_names_from(source: Bytes inout tokens: Vec[Token] cursor: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> Unit effects[alloc partial]:
+fn index_names_from(source: Bytes, inout tokens: Vec[Token], cursor: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(tokens)
-  let exhausted: Bool = i64.ge(cursor length)
-  match exhausted:
-    true:
-      unit
-    false:
-      let kind: I64 = token_kind(tokens cursor)
-      let done: Bool = i64.eq(kind 1)
-      match done:
-        true:
-          unit
-        false:
-          let name: I64 = i64.add(cursor 2)
-          let inserted: Unit = insert_name_token(source tokens name cursor nodes edges)
-          let next: I64 = skip_form(tokens cursor)
-          recur(source tokens next nodes edges)
+  let exhausted: Bool = cursor >= length
+  if exhausted:
+    void
+  else:
+    let kind: I64 = token_kind(tokens, cursor)
+    let done: Bool = kind == 1
+    if done:
+      void
+    else:
+      let name: I64 = cursor + 2
+      insert_name_token(source, tokens, name, cursor, nodes, edges)
+      let next: I64 = skip_form(tokens, cursor)
+      recur(source, tokens, next, nodes, edges)
 
-fn lookup_name_chars(source: Bytes index: I64 end: I64 node: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> I64 effects[partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
-      let current: NameNode = vec.get(nodes node)
-      get(current value)
-    false:
-      let byte: U8 = bytes.get(source index)
-      let code: I64 = u8.to-i64(byte)
-      let current: NameNode = vec.get(nodes node)
-      let child: I64 = find_name_edge(edges get(current first_edge) code)
-      let missing: Bool = i64.lt(child 0)
-      match missing:
-        true:
-          -1
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(source next end child nodes edges)
+fn lookup_name_chars(source: Bytes, index: I64, end: I64, node: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> I64 effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    let current: NameNode = vec.get(nodes, node)
+    current.value
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let current: NameNode = vec.get(nodes, node)
+    let child: I64 = find_name_edge(edges, current.first_edge, code)
+    let missing: Bool = child < 0
+    if missing:
+      -1
+    else:
+      let next: I64 = index + 1
+      recur(source, next, end, child, nodes, edges)
 
-fn lookup_name_token(source: Bytes inout tokens: Vec[Token] token: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> I64 effects[partial]:
-  let start: I64 = token_start(tokens token)
-  let end: I64 = token_end(tokens token)
-  lookup_name_chars(source start end 0 nodes edges)
+fn lookup_name_token(source: Bytes, inout tokens: Vec[Token], token: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> I64 effects[partial]:
+  let start: I64 = token_start(tokens, token)
+  let end: I64 = token_end(tokens, token)
+  lookup_name_chars(source, start, end, 0, nodes, edges)
 
-fn link_name_tokens(source: Bytes inout tokens: Vec[Token] index: I64 end: I64 inout nodes: Vec[NameNode] inout edges: Vec[NameEdge]) -> Unit effects[partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
-      unit
-    false:
-      let kind: I64 = token_kind(tokens index)
-      let atom: Bool = i64.eq(kind 2)
-      let value: I64 = match atom:
-        true:
-          lookup_name_token(source tokens index nodes edges)
-        false:
-          -1
-      let found: Bool = i64.ge(value 0)
-      let linked: Unit = match found:
-        true:
-          set_token_link(tokens index value)
-        false:
-          unit
-      let next: I64 = i64.add(index 1)
-      recur(source tokens next end nodes edges)
+fn link_name_tokens(source: Bytes, inout tokens: Vec[Token], index: I64, end: I64, inout nodes: Vec[NameNode], inout edges: Vec[NameEdge]) -> Void effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    void
+  else:
+    let kind: I64 = token_kind(tokens, index)
+    let atom: Bool = kind == 2
+    let value: I64 = if atom:
+      lookup_name_token(source, tokens, index, nodes, edges)
+    else:
+      -1
+    let found: Bool = value >= 0
+    if found:
+      set_token_link(tokens, index, value)
+    else:
+      void
+    let next: I64 = index + 1
+    recur(source, tokens, next, end, nodes, edges)
 
-fn link_declaration_names_from(source: Bytes inout tokens: Vec[Token] module_root: I64) -> Unit effects[alloc partial]:
+fn classify_empty_record_calls(source: Bytes, inout tokens: Vec[Token], index: I64, end: I64) -> Void effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    void
+  else:
+    let call: Bool = (token_kind(tokens, index) == 0) && (token_tag(tokens, index) == 10)
+    let callee: I64 = index + 2
+    let declaration: I64 = if call:
+      token_link(tokens, callee)
+    else:
+      -1
+    let found: Bool = declaration >= 0
+    let record: Bool = if found:
+      ast_item_is_record(source, tokens, declaration)
+    else:
+      false
+    let arguments: I64 = callee + 1
+    let empty: Bool = if call:
+      token_kind(tokens, arguments) == 1
+    else:
+      false
+    if record && empty:
+      set_token_tag(tokens, index, 11)
+      set_token_tag(tokens, index + 1, 111)
+    else:
+      void
+    let next: I64 = index + 1
+    recur(source, tokens, next, end)
+
+fn link_declaration_names_from(source: Bytes, inout tokens: Vec[Token], module_root: I64) -> Void effects[alloc, partial]:
   let nodes: Vec[NameNode] = vec.new()
   let edges: Vec[NameEdge] = vec.new()
-  let root: I64 = append_name_node(-1 nodes)
-  let first: I64 = i64.add(module_root 3)
-  let indexed: Unit = index_names_from(source tokens first nodes edges)
-  let end: I64 = skip_form(tokens module_root)
-  link_name_tokens(source tokens first end nodes edges)
+  let root: I64 = append_name_node(-1, nodes)
+  let first: I64 = module_root + 3
+  index_names_from(source, tokens, first, nodes, edges)
+  let end: I64 = skip_form(tokens, module_root)
+  link_name_tokens(source, tokens, first, end, nodes, edges)
+  classify_empty_record_calls(source, tokens, first, end)
 
-fn link_declaration_names(source: Bytes inout tokens: Vec[Token]) -> Unit effects[alloc partial]:
-  link_declaration_names_from(source tokens 0)
+fn link_declaration_names(source: Bytes, inout tokens: Vec[Token]) -> Void effects[alloc, partial]:
+  link_declaration_names_from(source, tokens, 0)
 
-fn index_declarations_from(source: Bytes inout tokens: Vec[Token] cursor: I64 inout declarations: Vec[ir/Declaration]) -> Unit effects[alloc partial]:
-  let token: I64 = token_kind(tokens cursor)
-  let done: Bool = i64.eq(token 1)
-  match done:
-    true:
-      unit
-    false:
-      let form: Bool = i64.eq(token 0)
-      match form:
-        false:
-          let next: I64 = i64.add(cursor 1)
-          recur(source tokens next declarations)
-        true:
-          let next: I64 = skip_form(tokens cursor)
-          let name: I64 = i64.add(cursor 2)
-          let kind: ir/DeclarationKind = declaration_kind(source tokens cursor)
-          let declaration: ir/Declaration = make ir/Declaration(kind = kind form = cursor name = name next = next)
-          let pushed: Unit = vec.push(declarations declaration)
-          recur(source tokens next declarations)
+fn index_declarations_from(source: Bytes, inout tokens: Vec[Token], cursor: I64, inout declarations: Vec[ir.Declaration]) -> Void effects[alloc, partial]:
+  let token: I64 = token_kind(tokens, cursor)
+  let done: Bool = token == 1
+  if done:
+    void
+  else:
+    let form: Bool = token == 0
+    if form:
+      let next: I64 = skip_form(tokens, cursor)
+      let name: I64 = cursor + 2
+      let kind: ir.DeclarationKind = declaration_kind(source, tokens, cursor)
+      let declaration: ir.Declaration = ir.Declaration(kind: kind, form: cursor, name: name, next: next)
+      vec.push(declarations, declaration)
+      recur(source, tokens, next, declarations)
+    else:
+      let next: I64 = cursor + 1
+      recur(source, tokens, next, declarations)
 
-fn index_declarations(source: Bytes inout tokens: Vec[Token]) -> Vec[ir/Declaration] effects[alloc partial]:
-  let declarations: Vec[ir/Declaration] = vec.new()
-  let indexed: Unit = index_declarations_from(source tokens 3 declarations)
+fn index_declarations(source: Bytes, inout tokens: Vec[Token]) -> Vec[ir.Declaration] effects[alloc, partial]:
+  let declarations: Vec[ir.Declaration] = vec.new()
+  index_declarations_from(source, tokens, 3, declarations)
   declarations

@@ -1,8 +1,8 @@
-module u8-unsupported-expression
+module u8_unsupported_expression
 
 fn subject(state: U8) -> Bool:
-  let number: I64 = u8.to-i64(state)
-  i64.eq(i64.add(number 1) 2)
+  let number: I64 = u8.to_i64(state)
+  (number + 1) == 2
 
 fn main(args: Vec[Bytes]) -> I64:
   0

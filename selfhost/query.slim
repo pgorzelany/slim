@@ -1,6 +1,6 @@
 module query
 
-record Snapshot:
+struct Snapshot:
   module: Bytes
   kind: I64
   name: Bytes
@@ -11,476 +11,434 @@ record Snapshot:
   interface_end: I64
   end: I64
 
-record Work:
+struct Work:
   parsed: I64
   lowered: I64
   checked: I64
   generated: I64
 
-record Dependency:
+struct Dependency:
   consumer: I64
   provider: I64
 
-record State:
+struct State:
   snapshots: Vec[Snapshot]
   dependencies: Vec[Dependency]
 
-fn copy_span(source: Bytes start: I64 end: I64) -> Bytes effects[alloc partial]:
+fn copy_span(source: Bytes, start: I64, end: I64) -> Bytes effects[alloc, partial]:
   let output: Vec[U8] = vec.new()
-  let appended: Unit = text/append_span(source start end output)
+  text.append_span(source, start, end, output)
   bytes.freeze(output)
 
-fn bytes_equal_from(left: Bytes right: Bytes index: I64 length: I64) -> Bool effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      true
-    false:
-      let left_byte: U8 = bytes.get(left index)
-      let right_byte: U8 = bytes.get(right index)
-      let left_code: I64 = u8.to-i64(left_byte)
-      let right_code: I64 = u8.to-i64(right_byte)
-      let same: Bool = i64.eq(left_code right_code)
-      match same:
-        false:
-          false
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(left right next length)
+fn bytes_equal_from(left: Bytes, right: Bytes, index: I64, length: I64) -> Bool effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    true
+  else:
+    let left_byte: U8 = bytes.get(left, index)
+    let right_byte: U8 = bytes.get(right, index)
+    let left_code: I64 = u8.to_i64(left_byte)
+    let right_code: I64 = u8.to_i64(right_byte)
+    let same: Bool = left_code == right_code
+    if same:
+      let next: I64 = index + 1
+      recur(left, right, next, length)
+    else:
+      false
 
-fn bytes_equal(left: Bytes right: Bytes) -> Bool effects[partial]:
+fn bytes_equal(left: Bytes, right: Bytes) -> Bool effects[partial]:
   let left_length: I64 = bytes.len(left)
   let right_length: I64 = bytes.len(right)
-  let same_length: Bool = i64.eq(left_length right_length)
-  match same_length:
-    false:
-      false
-    true:
-      bytes_equal_from(left right 0 left_length)
+  let same_length: Bool = left_length == right_length
+  if same_length:
+    bytes_equal_from(left, right, 0, left_length)
+  else:
+    false
 
-fn declaration_kind(source: Bytes inout tokens: Vec[syntax/Token] item: I64) -> I64 effects[partial]:
-  let function_item: Bool = syntax/ast_item_is_function(source tokens item)
-  match function_item:
-    true:
-      0
-    false:
-      let record_item: Bool = syntax/ast_item_is_record(source tokens item)
-      match record_item:
-        true:
-          1
-        false:
-          2
+fn declaration_kind(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
+  let function_item: Bool = syntax.ast_item_is_function(source, tokens, item)
+  if function_item:
+    0
+  else:
+    let record_item: Bool = syntax.ast_item_is_record(source, tokens, item)
+    if record_item:
+      1
+    else:
+      2
 
-fn declaration_interface_end(source: Bytes inout tokens: Vec[syntax/Token] item: I64) -> I64 effects[partial]:
-  let function_item: Bool = syntax/ast_item_is_function(source tokens item)
-  match function_item:
-    false:
-      let next: I64 = syntax/ast_next(tokens item)
-      let closing: I64 = i64.sub(next 1)
-      syntax/ast_node_end(tokens closing)
-    true:
-      let params: I64 = syntax/ast_function_parameters(item)
-      let return_type: I64 = syntax/ast_function_return_type(tokens item)
-      let effects: I64 = syntax/ast_function_effects(tokens item)
-      let after_effects: I64 = syntax/ast_function_body(tokens item)
-      let closing: I64 = i64.sub(after_effects 1)
-      syntax/ast_node_end(tokens closing)
+fn declaration_interface_end(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
+  let function_item: Bool = syntax.ast_item_is_function(source, tokens, item)
+  if function_item:
+    let params: I64 = syntax.ast_function_parameters(item)
+    let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+    let effects: I64 = syntax.ast_function_effects(tokens, item)
+    let after_effects: I64 = syntax.ast_function_body(tokens, item)
+    let closing: I64 = after_effects - 1
+    syntax.ast_node_end(tokens, closing)
+  else:
+    let next: I64 = syntax.ast_next(tokens, item)
+    let closing: I64 = next - 1
+    syntax.ast_node_end(tokens, closing)
 
-fn append_module_snapshots(manifest_source: Bytes inout manifest_tokens: Vec[syntax/Token] inout module_tokens: Vec[syntax/Token] module: project/LoadedModule cursor: I64 module_name: Bytes inout output: Vec[Snapshot]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(module_tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let source: Bytes = get(module source)
-      let name_token: I64 = syntax/ast_item_name(cursor)
-      let name_start: I64 = syntax/ast_node_start(module_tokens name_token)
-      let name_end: I64 = syntax/ast_node_end(module_tokens name_token)
-      let name: Bytes = copy_span(source name_start name_end)
-      let declaration_kind: I64 = declaration_kind(source module_tokens cursor)
-      let start: I64 = syntax/ast_node_start(module_tokens cursor)
-      let interface_end: I64 = declaration_interface_end(source module_tokens cursor)
-      let next: I64 = syntax/ast_next(module_tokens cursor)
-      let closing: I64 = i64.sub(next 1)
-      let end: I64 = syntax/ast_node_end(module_tokens closing)
-      let snapshot: Snapshot = make Snapshot(module = module_name kind = declaration_kind name = name source = source form = cursor next = next start = start interface_end = interface_end end = end)
-      let pushed: Unit = vec.push(output snapshot)
-      recur(manifest_source manifest_tokens module_tokens module next module_name output)
+fn append_module_snapshots(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], module: project.LoadedModule, cursor: I64, module_name: Bytes, inout output: Vec[Snapshot]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    let source: Bytes = module.source
+    let name_token: I64 = syntax.ast_item_name(cursor)
+    let name_start: I64 = syntax.ast_node_start(module_tokens, name_token)
+    let name_end: I64 = syntax.ast_node_end(module_tokens, name_token)
+    let name: Bytes = copy_span(source, name_start, name_end)
+    let declaration_kind: I64 = declaration_kind(source, module_tokens, cursor)
+    let start: I64 = syntax.ast_node_start(module_tokens, cursor)
+    let interface_end: I64 = declaration_interface_end(source, module_tokens, cursor)
+    let next: I64 = syntax.ast_next(module_tokens, cursor)
+    let closing: I64 = next - 1
+    let end: I64 = syntax.ast_node_end(module_tokens, closing)
+    let snapshot: Snapshot = Snapshot(module: module_name, kind: declaration_kind, name: name, source: source, form: cursor, next: next, start: start, interface_end: interface_end, end: end)
+    vec.push(output, snapshot)
+    recur(manifest_source, manifest_tokens, module_tokens, module, next, module_name, output)
 
-fn build_snapshots_from(manifest_source: Bytes inout manifest_tokens: Vec[syntax/Token] inout module_tokens: Vec[syntax/Token] inout loaded: Vec[project/LoadedModule] index: I64 inout output: Vec[Snapshot]) -> Unit effects[alloc partial]:
+fn build_snapshots_from(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule], index: I64, inout output: Vec[Snapshot]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(loaded)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      unit
-    false:
-      let module: project/LoadedModule = vec.get(loaded index)
-      let manifest_name: I64 = get(module name)
-      let name_start: I64 = syntax/ast_node_start(manifest_tokens manifest_name)
-      let name_end: I64 = syntax/ast_node_end(manifest_tokens manifest_name)
-      let module_name: Bytes = copy_span(manifest_source name_start name_end)
-      let root: I64 = get(module root)
-      let first: I64 = syntax/ast_module_items(root)
-      let appended: Unit = append_module_snapshots(manifest_source manifest_tokens module_tokens module first module_name output)
-      let next: I64 = i64.add(index 1)
-      recur(manifest_source manifest_tokens module_tokens loaded next output)
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let module: project.LoadedModule = vec.get(loaded, index)
+    let manifest_name: I64 = module.name
+    let name_start: I64 = syntax.ast_node_start(manifest_tokens, manifest_name)
+    let name_end: I64 = syntax.ast_node_end(manifest_tokens, manifest_name)
+    let module_name: Bytes = copy_span(manifest_source, name_start, name_end)
+    let root: I64 = module.root
+    let first: I64 = syntax.ast_module_items(root)
+    append_module_snapshots(manifest_source, manifest_tokens, module_tokens, module, first, module_name, output)
+    let next: I64 = index + 1
+    recur(manifest_source, manifest_tokens, module_tokens, loaded, next, output)
 
-fn build_snapshots(manifest_source: Bytes inout manifest_tokens: Vec[syntax/Token] inout module_tokens: Vec[syntax/Token] inout loaded: Vec[project/LoadedModule]) -> Vec[Snapshot] effects[alloc partial]:
+fn build_snapshots(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> Vec[Snapshot] effects[alloc, partial]:
   let output: Vec[Snapshot] = vec.new()
-  let built: Unit = build_snapshots_from(manifest_source manifest_tokens module_tokens loaded 0 output)
+  build_snapshots_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, output)
   output
 
-fn snapshot_identity_equal(left: Snapshot right: Snapshot) -> Bool effects[partial]:
-  let left_module: Bytes = get(left module)
-  let right_module: Bytes = get(right module)
-  let same_module: Bool = bytes_equal(left_module right_module)
-  let left_name: Bytes = get(left name)
-  let right_name: Bytes = get(right name)
-  let same_name: Bool = bytes_equal(left_name right_name)
-  let left_kind: I64 = get(left kind)
-  let right_kind: I64 = get(right kind)
-  let same_kind: Bool = i64.eq(left_kind right_kind)
-  let first: Bool = bool.and(same_module same_name)
-  bool.and(first same_kind)
+fn snapshot_identity_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]:
+  let left_module: Bytes = left.module
+  let right_module: Bytes = right.module
+  let same_module: Bool = bytes_equal(left_module, right_module)
+  let left_name: Bytes = left.name
+  let right_name: Bytes = right.name
+  let same_name: Bool = bytes_equal(left_name, right_name)
+  let left_kind: I64 = left.kind
+  let right_kind: I64 = right.kind
+  let same_kind: Bool = left_kind == right_kind
+  let first: Bool = same_module && same_name
+  first && same_kind
 
-fn snapshot_body_equal(left: Snapshot right: Snapshot) -> Bool effects[partial]:
-  let left_end: I64 = get(left end)
-  let left_start: I64 = get(left start)
-  let left_length: I64 = i64.sub(left_end left_start)
-  let right_end: I64 = get(right end)
-  let right_start: I64 = get(right start)
-  let right_length: I64 = i64.sub(right_end right_start)
-  let same_length: Bool = i64.eq(left_length right_length)
-  match same_length:
-    false:
-      false
-    true:
-      let left_bytes: Bytes = get(left source)
-      let right_bytes: Bytes = get(right source)
-      project/cross_span_chars_equal(left_bytes left_start right_bytes right_start 0 left_length)
+fn snapshot_body_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]:
+  let left_end: I64 = left.end
+  let left_start: I64 = left.start
+  let left_length: I64 = left_end - left_start
+  let right_end: I64 = right.end
+  let right_start: I64 = right.start
+  let right_length: I64 = right_end - right_start
+  let same_length: Bool = left_length == right_length
+  if same_length:
+    let left_bytes: Bytes = left.source
+    let right_bytes: Bytes = right.source
+    project.cross_span_chars_equal(left_bytes, left_start, right_bytes, right_start, 0, left_length)
+  else:
+    false
 
-fn find_snapshot(inout snapshots: Vec[Snapshot] candidate: Snapshot index: I64) -> I64 effects[partial]:
+fn find_snapshot(inout snapshots: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(snapshots)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      -1
-    false:
-      let snapshot: Snapshot = vec.get(snapshots index)
-      let same: Bool = snapshot_identity_equal(snapshot candidate)
-      match same:
-        true:
-          index
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(snapshots candidate next)
+  let done: Bool = index >= length
+  if done:
+    -1
+  else:
+    let snapshot: Snapshot = vec.get(snapshots, index)
+    let same: Bool = snapshot_identity_equal(snapshot, candidate)
+    if same:
+      index
+    else:
+      let next: I64 = index + 1
+      recur(snapshots, candidate, next)
 
-fn bytes_ranges_equal(left: Bytes left_start: I64 right: Bytes right_start: I64 index: I64 length: I64) -> Bool effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      true
-    false:
-      let left_index: I64 = i64.add(left_start index)
-      let right_index: I64 = i64.add(right_start index)
-      let left_byte: U8 = bytes.get(left left_index)
-      let right_byte: U8 = bytes.get(right right_index)
-      let left_code: I64 = u8.to-i64(left_byte)
-      let right_code: I64 = u8.to-i64(right_byte)
-      let same: Bool = i64.eq(left_code right_code)
-      match same:
-        false:
-          false
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(left left_start right right_start next length)
+fn bytes_ranges_equal(left: Bytes, left_start: I64, right: Bytes, right_start: I64, index: I64, length: I64) -> Bool effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    true
+  else:
+    let left_index: I64 = left_start + index
+    let right_index: I64 = right_start + index
+    let left_byte: U8 = bytes.get(left, left_index)
+    let right_byte: U8 = bytes.get(right, right_index)
+    let left_code: I64 = u8.to_i64(left_byte)
+    let right_code: I64 = u8.to_i64(right_byte)
+    let same: Bool = left_code == right_code
+    if same:
+      let next: I64 = index + 1
+      recur(left, left_start, right, right_start, next, length)
+    else:
+      false
 
-fn provider_name_equal(atom: Bytes snapshot: Snapshot) -> Bool effects[partial]:
-  let module: Bytes = get(snapshot module)
-  let name: Bytes = get(snapshot name)
+fn provider_name_equal(atom: Bytes, snapshot: Snapshot) -> Bool effects[partial]:
+  let module: Bytes = snapshot.module
+  let name: Bytes = snapshot.name
   let atom_length: I64 = bytes.len(atom)
   let module_length: I64 = bytes.len(module)
   let name_length: I64 = bytes.len(name)
-  let prefix_length: I64 = i64.add(module_length 1)
-  let expected: I64 = i64.add(prefix_length name_length)
-  let same_length: Bool = i64.eq(atom_length expected)
-  match same_length:
-    false:
+  let prefix_length: I64 = module_length + 1
+  let expected: I64 = prefix_length + name_length
+  let same_length: Bool = atom_length == expected
+  if same_length:
+    let same_module: Bool = bytes_ranges_equal(atom, 0, module, 0, 0, module_length)
+    if same_module:
+      let dot: U8 = bytes.get(atom, module_length)
+      let dot_code: I64 = u8.to_i64(dot)
+      let is_dot: Bool = dot_code == 46
+      if is_dot:
+        bytes_ranges_equal(atom, prefix_length, name, 0, 0, name_length)
+      else:
+        false
+    else:
       false
-    true:
-      let same_module: Bool = bytes_ranges_equal(atom 0 module 0 0 module_length)
-      match same_module:
-        false:
-          false
-        true:
-          let slash: U8 = bytes.get(atom module_length)
-          let slash_code: I64 = u8.to-i64(slash)
-          let is_slash: Bool = i64.eq(slash_code 47)
-          match is_slash:
-            false:
-              false
-            true:
-              bytes_ranges_equal(atom prefix_length name 0 0 name_length)
+  else:
+    false
 
-fn find_provider(atom: Bytes inout snapshots: Vec[Snapshot] index: I64) -> I64 effects[partial]:
+fn find_provider(atom: Bytes, inout snapshots: Vec[Snapshot], index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(snapshots)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      -1
-    false:
-      let snapshot: Snapshot = vec.get(snapshots index)
-      let same: Bool = provider_name_equal(atom snapshot)
-      match same:
-        true:
-          index
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(atom snapshots next)
+  let done: Bool = index >= length
+  if done:
+    -1
+  else:
+    let snapshot: Snapshot = vec.get(snapshots, index)
+    let same: Bool = provider_name_equal(atom, snapshot)
+    if same:
+      index
+    else:
+      let next: I64 = index + 1
+      recur(atom, snapshots, next)
 
-fn dependency_exists(inout dependencies: Vec[Dependency] consumer: I64 provider: I64 index: I64) -> Bool effects[partial]:
+fn dependency_exists(inout dependencies: Vec[Dependency], consumer: I64, provider: I64, index: I64) -> Bool effects[partial]:
   let length: I64 = vec.len(dependencies)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
+  let done: Bool = index >= length
+  if done:
+    false
+  else:
+    let dependency: Dependency = vec.get(dependencies, index)
+    let candidate_consumer: I64 = dependency.consumer
+    let same_consumer: Bool = candidate_consumer == consumer
+    let candidate_provider: I64 = dependency.provider
+    let same_provider: Bool = candidate_provider == provider
+    let same: Bool = same_consumer && same_provider
+    if same:
+      true
+    else:
+      let next: I64 = index + 1
+      recur(dependencies, consumer, provider, next)
+
+fn append_snapshot_dependencies(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot], consumer: I64, cursor: I64, end: I64, inout output: Vec[Dependency]) -> Void effects[alloc, partial]:
+  let done: Bool = cursor >= end
+  if done:
+    void
+  else:
+    let snapshot: Snapshot = vec.get(snapshots, consumer)
+    let source: Bytes = snapshot.source
+    let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+    let atom_kind: Bool = kind == 2
+    let start: I64 = syntax.ast_node_start(tokens, cursor)
+    let finish: I64 = syntax.ast_node_end(tokens, cursor)
+    let dot_count: I64 = if atom_kind:
+      syntax.span_count_byte(source, start, finish, 46, 0)
+    else:
+      0
+    let qualified: Bool = dot_count > 0
+    let provider: I64 = if qualified:
+      let atom: Bytes = copy_span(source, start, finish)
+      find_provider(atom, snapshots, 0)
+    else:
+      -1
+    let found: Bool = provider >= 0
+    let self: Bool = consumer == provider
+    let not_self: Bool = !self
+    let cross: Bool = found && not_self
+    let duplicate: Bool = if cross:
+      dependency_exists(output, consumer, provider, 0)
+    else:
       false
-    false:
-      let dependency: Dependency = vec.get(dependencies index)
-      let candidate_consumer: I64 = get(dependency consumer)
-      let same_consumer: Bool = i64.eq(candidate_consumer consumer)
-      let candidate_provider: I64 = get(dependency provider)
-      let same_provider: Bool = i64.eq(candidate_provider provider)
-      let same: Bool = bool.and(same_consumer same_provider)
-      match same:
-        true:
-          true
-        false:
-          let next: I64 = i64.add(index 1)
-          recur(dependencies consumer provider next)
+    let unique: Bool = !duplicate
+    let append: Bool = cross && unique
+    if append:
+      let dependency: Dependency = Dependency(consumer: consumer, provider: provider)
+      vec.push(output, dependency)
+    else:
+      void
+    let next: I64 = syntax.ast_node_after(cursor)
+    recur(tokens, snapshots, consumer, next, end, output)
 
-fn append_snapshot_dependencies(inout tokens: Vec[syntax/Token] inout snapshots: Vec[Snapshot] consumer: I64 cursor: I64 end: I64 inout output: Vec[Dependency]) -> Unit effects[alloc partial]:
-  let done: Bool = i64.ge(cursor end)
-  match done:
-    true:
-      unit
-    false:
-      let snapshot: Snapshot = vec.get(snapshots consumer)
-      let source: Bytes = get(snapshot source)
-      let kind: I64 = syntax/ast_node_kind(tokens cursor)
-      let atom_kind: Bool = i64.eq(kind 2)
-      let start: I64 = syntax/ast_node_start(tokens cursor)
-      let finish: I64 = syntax/ast_node_end(tokens cursor)
-      let slash_count: I64 = match atom_kind:
-        true:
-          syntax/span_count_byte(source start finish 47 0)
-        false:
-          0
-      let qualified: Bool = i64.gt(slash_count 0)
-      let provider: I64 = match qualified:
-        true:
-          let atom: Bytes = copy_span(source start finish)
-          find_provider(atom snapshots 0)
-        false:
-          -1
-      let found: Bool = i64.ge(provider 0)
-      let self: Bool = i64.eq(consumer provider)
-      let not_self: Bool = bool.not(self)
-      let cross: Bool = bool.and(found not_self)
-      let duplicate: Bool = match cross:
-        true:
-          dependency_exists(output consumer provider 0)
-        false:
-          false
-      let unique: Bool = bool.not(duplicate)
-      let append: Bool = bool.and(cross unique)
-      let pushed: Unit = match append:
-        true:
-          let dependency: Dependency = make Dependency(consumer = consumer provider = provider)
-          vec.push(output dependency)
-        false:
-          unit
-      let next: I64 = syntax/ast_node_after(cursor)
-      recur(tokens snapshots consumer next end output)
-
-fn build_dependencies_from(inout tokens: Vec[syntax/Token] inout snapshots: Vec[Snapshot] index: I64 inout output: Vec[Dependency]) -> Unit effects[alloc partial]:
+fn build_dependencies_from(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot], index: I64, inout output: Vec[Dependency]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(snapshots)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      unit
-    false:
-      let snapshot: Snapshot = vec.get(snapshots index)
-      let form: I64 = get(snapshot form)
-      let next_form: I64 = get(snapshot next)
-      let appended: Unit = append_snapshot_dependencies(tokens snapshots index form next_form output)
-      let next: I64 = i64.add(index 1)
-      recur(tokens snapshots next output)
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let snapshot: Snapshot = vec.get(snapshots, index)
+    let form: I64 = snapshot.form
+    let next_form: I64 = snapshot.next
+    append_snapshot_dependencies(tokens, snapshots, index, form, next_form, output)
+    let next: I64 = index + 1
+    recur(tokens, snapshots, next, output)
 
-fn build_dependencies(inout tokens: Vec[syntax/Token] inout snapshots: Vec[Snapshot]) -> Vec[Dependency] effects[alloc partial]:
+fn build_dependencies(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot]) -> Vec[Dependency] effects[alloc, partial]:
   let output: Vec[Dependency] = vec.new()
-  let built: Unit = build_dependencies_from(tokens snapshots 0 output)
+  build_dependencies_from(tokens, snapshots, 0, output)
   output
 
-fn build_state(manifest_source: Bytes inout manifest_tokens: Vec[syntax/Token] inout module_tokens: Vec[syntax/Token] inout loaded: Vec[project/LoadedModule]) -> State effects[alloc partial]:
-  let snapshots: Vec[Snapshot] = build_snapshots(manifest_source manifest_tokens module_tokens loaded)
-  let dependencies: Vec[Dependency] = build_dependencies(module_tokens snapshots)
-  make State(snapshots = snapshots dependencies = dependencies)
+fn build_state(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
+  let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded)
+  let dependencies: Vec[Dependency] = build_dependencies(module_tokens, snapshots)
+  State(snapshots: snapshots, dependencies: dependencies)
 
-fn snapshot_interface_equal(left: Snapshot right: Snapshot) -> Bool effects[partial]:
-  let left_end: I64 = get(left interface_end)
-  let left_start: I64 = get(left start)
-  let left_length: I64 = i64.sub(left_end left_start)
-  let right_end: I64 = get(right interface_end)
-  let right_start: I64 = get(right start)
-  let right_length: I64 = i64.sub(right_end right_start)
-  let same_length: Bool = i64.eq(left_length right_length)
-  match same_length:
-    false:
-      false
-    true:
-      let left_bytes: Bytes = get(left source)
-      let right_bytes: Bytes = get(right source)
-      project/cross_span_chars_equal(left_bytes left_start right_bytes right_start 0 left_length)
+fn snapshot_interface_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]:
+  let left_end: I64 = left.interface_end
+  let left_start: I64 = left.start
+  let left_length: I64 = left_end - left_start
+  let right_end: I64 = right.interface_end
+  let right_start: I64 = right.start
+  let right_length: I64 = right_end - right_start
+  let same_length: Bool = left_length == right_length
+  if same_length:
+    let left_bytes: Bytes = left.source
+    let right_bytes: Bytes = right.source
+    project.cross_span_chars_equal(left_bytes, left_start, right_bytes, right_start, 0, left_length)
+  else:
+    false
 
-fn fill_flags(length: I64 index: I64 inout flags: Vec[Bool]) -> Unit effects[alloc partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      unit
-    false:
-      let initial: Bool = false
-      let pushed: Unit = vec.push(flags initial)
-      let next: I64 = i64.add(index 1)
-      recur(length next flags)
+fn fill_flags(length: I64, index: I64, inout flags: Vec[Bool]) -> Void effects[alloc, partial]:
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let initial: Bool = false
+    vec.push(flags, initial)
+    let next: I64 = index + 1
+    recur(length, next, flags)
 
-fn find_aligned_snapshot(inout previous: Vec[Snapshot] candidate: Snapshot index: I64) -> I64 effects[partial]:
+fn find_aligned_snapshot(inout previous: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(previous)
-  let available: Bool = i64.lt(index length)
-  let same: Bool = match available:
-    false:
-      false
-    true:
-      let old: Snapshot = vec.get(previous index)
-      snapshot_identity_equal(old candidate)
-  match same:
-    true:
-      index
-    false:
-      find_snapshot(previous candidate 0)
+  let available: Bool = index < length
+  let same: Bool = if available:
+    let old: Snapshot = vec.get(previous, index)
+    snapshot_identity_equal(old, candidate)
+  else:
+    false
+  if same:
+    index
+  else:
+    find_snapshot(previous, candidate, 0)
 
-fn classify_changes(inout previous: Vec[Snapshot] inout current: Vec[Snapshot] index: I64 count: I64 inout invalidated: Vec[Bool] inout queue: Vec[I64]) -> I64 effects[alloc partial]:
+fn classify_changes(inout previous: Vec[Snapshot], inout current: Vec[Snapshot], index: I64, count: I64, inout invalidated: Vec[Bool], inout queue: Vec[I64]) -> I64 effects[alloc, partial]:
   let length: I64 = vec.len(current)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      count
-    false:
-      let candidate: Snapshot = vec.get(current index)
-      let prior: I64 = find_aligned_snapshot(previous candidate index)
-      let found: Bool = i64.ge(prior 0)
-      let body_changed: Bool = match found:
-        false:
-          true
-        true:
-          let old: Snapshot = vec.get(previous prior)
-          let same_body: Bool = snapshot_body_equal(old candidate)
-          bool.not(same_body)
-      let interface_changed: Bool = match found:
-        false:
-          true
-        true:
-          let old: Snapshot = vec.get(previous prior)
-          let same_interface: Bool = snapshot_interface_equal(old candidate)
-          bool.not(same_interface)
-      let marked: Unit = match body_changed:
-        true:
-          let value: Bool = true
-          vec.set(invalidated index value)
-        false:
-          unit
-      let enqueued: Unit = match interface_changed:
-        true:
-          vec.push(queue index)
-        false:
-          unit
-      let increment: I64 = match body_changed:
-        true:
-          1
-        false:
-          0
-      let total: I64 = i64.add(count increment)
-      let next: I64 = i64.add(index 1)
-      recur(previous current next total invalidated queue)
+  let done: Bool = index >= length
+  if done:
+    count
+  else:
+    let candidate: Snapshot = vec.get(current, index)
+    let prior: I64 = find_aligned_snapshot(previous, candidate, index)
+    let found: Bool = prior >= 0
+    let body_changed: Bool = if found:
+      let old: Snapshot = vec.get(previous, prior)
+      let same_body: Bool = snapshot_body_equal(old, candidate)
+      !same_body
+    else:
+      true
+    let interface_changed: Bool = if found:
+      let old: Snapshot = vec.get(previous, prior)
+      let same_interface: Bool = snapshot_interface_equal(old, candidate)
+      !same_interface
+    else:
+      true
+    if body_changed:
+      let value: Bool = true
+      vec.set(invalidated, index, value)
+    else:
+      void
+    if interface_changed:
+      vec.push(queue, index)
+    else:
+      void
+    let increment: I64 = if body_changed:
+      1
+    else:
+      0
+    let total: I64 = count + increment
+    let next: I64 = index + 1
+    recur(previous, current, next, total, invalidated, queue)
 
-fn mark_consumers(inout dependencies: Vec[Dependency] provider: I64 index: I64 inout invalidated: Vec[Bool] inout queue: Vec[I64]) -> Unit effects[alloc partial]:
+fn mark_consumers(inout dependencies: Vec[Dependency], provider: I64, index: I64, inout invalidated: Vec[Bool], inout queue: Vec[I64]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(dependencies)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      unit
-    false:
-      let dependency: Dependency = vec.get(dependencies index)
-      let candidate_provider: I64 = get(dependency provider)
-      let same: Bool = i64.eq(candidate_provider provider)
-      let consumer: I64 = get(dependency consumer)
-      let already: Bool = vec.get(invalidated consumer)
-      let fresh: Bool = bool.not(already)
-      let mark: Bool = bool.and(same fresh)
-      let marked: Unit = match mark:
-        true:
-          let value: Bool = true
-          vec.set(invalidated consumer value)
-        false:
-          unit
-      let enqueued: Unit = match mark:
-        true:
-          vec.push(queue consumer)
-        false:
-          unit
-      let next: I64 = i64.add(index 1)
-      recur(dependencies provider next invalidated queue)
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let dependency: Dependency = vec.get(dependencies, index)
+    let candidate_provider: I64 = dependency.provider
+    let same: Bool = candidate_provider == provider
+    let consumer: I64 = dependency.consumer
+    let already: Bool = vec.get(invalidated, consumer)
+    let fresh: Bool = !already
+    let mark: Bool = same && fresh
+    if mark:
+      let value: Bool = true
+      vec.set(invalidated, consumer, value)
+    else:
+      void
+    if mark:
+      vec.push(queue, consumer)
+    else:
+      void
+    let next: I64 = index + 1
+    recur(dependencies, provider, next, invalidated, queue)
 
-fn propagate_invalidations(inout dependencies: Vec[Dependency] inout queue: Vec[I64] cursor: I64 inout invalidated: Vec[Bool]) -> Unit effects[alloc partial]:
+fn propagate_invalidations(inout dependencies: Vec[Dependency], inout queue: Vec[I64], cursor: I64, inout invalidated: Vec[Bool]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(queue)
-  let done: Bool = i64.ge(cursor length)
-  match done:
-    true:
-      unit
-    false:
-      let provider: I64 = vec.get(queue cursor)
-      let marked: Unit = mark_consumers(dependencies provider 0 invalidated queue)
-      let next: I64 = syntax/ast_node_after(cursor)
-      recur(dependencies queue next invalidated)
+  let done: Bool = cursor >= length
+  if done:
+    void
+  else:
+    let provider: I64 = vec.get(queue, cursor)
+    mark_consumers(dependencies, provider, 0, invalidated, queue)
+    let next: I64 = syntax.ast_node_after(cursor)
+    recur(dependencies, queue, next, invalidated)
 
-fn count_flags(inout flags: Vec[Bool] index: I64 count: I64) -> I64 effects[partial]:
+fn count_flags(inout flags: Vec[Bool], index: I64, count: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(flags)
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      count
-    false:
-      let flag: Bool = vec.get(flags index)
-      let increment: I64 = match flag:
-        true:
-          1
-        false:
-          0
-      let total: I64 = i64.add(count increment)
-      let next: I64 = i64.add(index 1)
-      recur(flags next total)
+  let done: Bool = index >= length
+  if done:
+    count
+  else:
+    let flag: Bool = vec.get(flags, index)
+    let increment: I64 = if flag:
+      1
+    else:
+      0
+    let total: I64 = count + increment
+    let next: I64 = index + 1
+    recur(flags, next, total)
 
-fn build_snapshot_state(manifest_source: Bytes inout manifest_tokens: Vec[syntax/Token] inout module_tokens: Vec[syntax/Token] inout loaded: Vec[project/LoadedModule]) -> State effects[alloc partial]:
-  let snapshots: Vec[Snapshot] = build_snapshots(manifest_source manifest_tokens module_tokens loaded)
+fn build_snapshot_state(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
+  let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded)
   let dependencies: Vec[Dependency] = vec.new()
-  make State(snapshots = snapshots dependencies = dependencies)
+  State(snapshots: snapshots, dependencies: dependencies)
 
-fn measure_update(inout previous: Vec[Snapshot] inout current: Vec[Snapshot] inout dependencies: Vec[Dependency]) -> Work effects[alloc partial]:
+fn measure_update(inout previous: Vec[Snapshot], inout current: Vec[Snapshot], inout dependencies: Vec[Dependency]) -> Work effects[alloc, partial]:
   let length: I64 = vec.len(current)
   let invalidated: Vec[Bool] = vec.new()
-  let initialized: Unit = fill_flags(length 0 invalidated)
+  fill_flags(length, 0, invalidated)
   let queue: Vec[I64] = vec.new()
-  let parsed: I64 = classify_changes(previous current 0 0 invalidated queue)
-  let propagated: Unit = propagate_invalidations(dependencies queue 0 invalidated)
-  let checked: I64 = count_flags(invalidated 0 0)
-  make Work(parsed = parsed lowered = parsed checked = checked generated = checked)
+  let parsed: I64 = classify_changes(previous, current, 0, 0, invalidated, queue)
+  propagate_invalidations(dependencies, queue, 0, invalidated)
+  let checked: I64 = count_flags(invalidated, 0, 0)
+  Work(parsed: parsed, lowered: parsed, checked: checked, generated: checked)

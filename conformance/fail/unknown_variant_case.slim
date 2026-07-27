@@ -1,9 +1,9 @@
-module unknown-variant-case
+module unknown_variant_case
 
-variant Maybe:
+enum Maybe:
   None
   Some(I64)
 
 fn main(args: Vec[Bytes]) -> I64:
-  let value: Maybe = case Maybe::Missing()
+  let value: Maybe = Maybe::Missing()
   0

@@ -1,0 +1,17 @@
+module structured_parallel
+
+fn sample_clock() -> I64 effects[io]:
+  io.monotonic_ms()
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  parallel:
+    let first: I64 = sample_clock()
+    let second: I64 = sample_clock()
+    let first_valid: Bool = first >= 0
+    let second_valid: Bool = second >= 0
+    let valid: Bool = first_valid && second_valid
+    if valid:
+      io.println("OK")
+      0
+    else:
+      1

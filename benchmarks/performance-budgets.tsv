@@ -4,6 +4,7 @@ check-exponent	generated-declarations	1.25	exponent	D0030
 check-exponent	generated-nested-bindings	1.25	exponent	D0030
 check-exponent	generated-named-type-parameters	1.25	exponent	D0042
 check-exponent	generated-owned-transfers	1.25	exponent	D0049
+check-exponent	generated-separator-lists	1.25	exponent	D0107
 emit-exponent	generated-declarations	1.25	exponent	D0030
 emit-exponent	generated-computed-arguments	1.25	exponent	D0053
 emit-exponent	generated-aggregate-temporaries	1.25	exponent	D0054

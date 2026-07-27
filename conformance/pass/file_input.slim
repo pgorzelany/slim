@@ -1,23 +1,22 @@
-module file-input
+module file_input
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let output: Vec[U8] = vec.new()
-  let marker: U8 = i64.to-u8(79)
-  let pushed: Unit = vec.push(output marker)
-  let empty_read: Bool = io.read-file("conformance/pass/empty.input" output)
-  let bad_read: Bool = io.read-file("bad\x00path" output)
-  let rejected: Bool = bool.not(bad_read)
+  let marker: U8 = i64.to_u8(79)
+  vec.push(output, marker)
+  let empty_read: Bool = io.read_file("conformance/pass/empty.input", output)
+  let bad_read: Bool = io.read_file("bad\x00path", output)
+  let rejected: Bool = !bad_read
   let length: I64 = vec.len(output)
-  let length_ok: Bool = i64.eq(length 1)
-  let first: U8 = vec.get(output 0)
-  let first_code: I64 = u8.to-i64(first)
-  let byte_ok: Bool = i64.eq(first_code 79)
-  let reads_ok: Bool = bool.and(empty_read rejected)
-  let state_ok: Bool = bool.and(length_ok byte_ok)
-  let valid: Bool = bool.and(reads_ok state_ok)
-  match valid:
-    true:
-      let shown: Unit = io.println("OK")
-      0
-    false:
-      1
+  let length_ok: Bool = length == 1
+  let first: U8 = vec.get(output, 0)
+  let first_code: I64 = u8.to_i64(first)
+  let byte_ok: Bool = first_code == 79
+  let reads_ok: Bool = empty_read && rejected
+  let state_ok: Bool = length_ok && byte_ok
+  let valid: Bool = reads_ok && state_ok
+  if valid:
+    io.println("OK")
+    0
+  else:
+    1

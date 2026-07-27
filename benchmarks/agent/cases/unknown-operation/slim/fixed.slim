@@ -1,9 +1,8 @@
-module agent-repair
+module agent_repair
 
 fn main(args: Vec[Bytes]) -> I64:
   let input: Bool = true
-  match bool.not(input):
-    true:
-      0
-    false:
-      1
+  if !input:
+    0
+  else:
+    1

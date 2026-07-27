@@ -1,7 +1,7 @@
-module missing-partial
+module missing_partial
 
 fn divide(value: I64) -> I64 effects[partial]:
-  i64.div(value 1)
+  value / 1
 
 fn main(args: Vec[Bytes]) -> I64:
   divide(42)

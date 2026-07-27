@@ -1,14 +1,13 @@
 module countdown
 
-fn count(n: I64 sum: I64) -> I64 effects[partial]:
-  match i64.eq(n 0):
-    true:
-      sum
-    false:
-      recur(i64.sub(n 1) i64.add(sum n))
+fn count(n: I64, sum: I64) -> I64 effects[partial]:
+  if n == 0:
+    sum
+  else:
+    recur(n - 1, sum + n)
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let answer: I64 = count(10 0)
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let answer: I64 = count(10, 0)
+  io.print_i64(answer)
+  io.println("")
   0

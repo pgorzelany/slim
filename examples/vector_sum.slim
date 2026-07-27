@@ -1,23 +1,21 @@
-module vector-sum
+module vector_sum
 
-fn fill(values: Vec[I64] next: I64 limit: I64) -> Vec[I64] effects[alloc partial]:
-  match i64.eq(next limit):
-    true:
-      values
-    false:
-      let pushed: Unit = vec.push(values next)
-      recur(values i64.add(next 1) limit)
+fn fill(values: Vec[I64], next: I64, limit: I64) -> Vec[I64] effects[alloc, partial]:
+  if next == limit:
+    values
+  else:
+    vec.push(values, next)
+    recur(values, next + 1, limit)
 
-fn sum(values: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(index vec.len(values)):
-    true:
-      total
-    false:
-      recur(values i64.add(index 1) i64.add(total vec.get(values index)))
+fn sum(values: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
+  if index == vec.len(values):
+    total
+  else:
+    recur(values, index + 1, total + vec.get(values, index))
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
-  let values: Vec[I64] = fill(vec.new() 0 100)
-  let answer: I64 = sum(values 0 0)
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let values: Vec[I64] = fill(vec.new(), 0, 100)
+  let answer: I64 = sum(values, 0, 0)
+  io.print_i64(answer)
+  io.println("")
   0

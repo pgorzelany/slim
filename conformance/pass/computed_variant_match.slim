@@ -1,14 +1,14 @@
-module computed-variant-match
+module computed_variant_match
 
-variant Maybe:
+enum Maybe:
   None
   Some(I64)
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  match case Maybe::Some(i64.add(20 22)):
+  match Maybe::Some(20 + 22):
     None:
       1
     Some(answer):
-      let shown: Unit = io.print-i64(answer)
-      let newline: Unit = io.println("")
+      io.print_i64(answer)
+      io.println("")
       0

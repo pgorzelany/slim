@@ -1,27 +1,25 @@
-module prefix-sum
+module prefix_sum
 
-fn fill(inout values: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let value: I64 = i64.rem(i64.mul(index 31) 97)
-      let pushed: Unit = vec.push(values value)
-      recur(values i64.add(index 1) count)
+fn fill(inout values: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+  if index == count:
+    void
+  else:
+    let value: I64 = (index * 31) % 97
+    vec.push(values, value)
+    recur(values, index + 1, count)
 
-fn scan(inout values: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(index vec.len(values)):
-    true:
-      total
-    false:
-      let next: I64 = i64.add(total vec.get(values index))
-      let stored: Unit = vec.set(values index next)
-      recur(values i64.add(index 1) next)
+fn scan(inout values: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
+  if index == vec.len(values):
+    total
+  else:
+    let next: I64 = total + vec.get(values, index)
+    vec.set(values, index, next)
+    recur(values, index + 1, next)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let values: Vec[I64] = vec.new()
-  let filled: Unit = fill(values 0 250000)
-  let result: I64 = scan(values 0 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(values, 0, 250000)
+  let result: I64 = scan(values, 0, 0)
+  io.print_i64(result)
+  io.println("")
   0

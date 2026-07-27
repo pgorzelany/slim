@@ -5,18 +5,18 @@ result categories and the static rules that connect them.
 
 ## Scalar types
 
-`Bool`, `I64`, `U8`, and `Unit` are the scalar types. Boolean operations accept
+`Bool`, `I64`, `U8`, and `Void` are the scalar types. Boolean operations accept
 and return `Bool`. Integer arithmetic and comparison operate on `I64`. `U8`
-conversion is explicit. `Unit` represents the result of effect-oriented
-operations.
+conversion is explicit. `Void` represents an effect-oriented result and is not
+storable.
 
 There is no implicit conversion, numeric promotion, truthiness, or overload
 selection.
 
 ## Product and sum types
 
-A named record is a product whose field names, types, and order come from its
-declaration. A named variant is a closed sum whose cases, payload shapes, and
+A named struct is a product whose field names, types, and order come from its
+declaration. A named enum is a closed sum whose cases, payload shapes, and
 order come from its declaration.
 
 Construction, projection, mutation, case construction, and matching check the

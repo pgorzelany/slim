@@ -10,7 +10,7 @@ A function names each parameter type and its result:
 
 ```slim
 fn double(value: I64) -> I64:
-  i64.add(value value)
+  value + value
 ```
 
 Pure functions omit an effects clause. Effectful functions list required
@@ -22,7 +22,7 @@ A standalone executable defines exactly:
 
 ```slim
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let printed: Unit = io.println("hello")
+  io.println("hello")
   0
 ```
 
@@ -49,8 +49,8 @@ not proved total.
 
 ## Calls
 
-Calls use `callee(arguments...)`, with whitespace rather than commas between
-arguments. Argument count, types, ownership transfer, borrow exclusivity, and
+Calls use `callee(arguments...)`, with required commas between arguments.
+Argument count, types, ownership transfer, borrow exclusivity, and
 effect compatibility are all checked.
 
 <!-- slim-fixture: call-arity -->

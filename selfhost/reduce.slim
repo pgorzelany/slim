@@ -1,603 +1,531 @@
 module reduce
 
-fn tokens_equal(source: Bytes inout tokens: Vec[syntax/Token] left: I64 right: I64) -> Bool effects[partial]:
-  let left_start: I64 = syntax/ast_node_start(tokens left)
-  let left_end: I64 = syntax/ast_node_end(tokens left)
-  let right_start: I64 = syntax/ast_node_start(tokens right)
-  let right_end: I64 = syntax/ast_node_end(tokens right)
-  syntax/spans_equal(source left_start left_end right_start right_end)
+fn tokens_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+  let left_start: I64 = syntax.ast_node_start(tokens, left)
+  let left_end: I64 = syntax.ast_node_end(tokens, left)
+  let right_start: I64 = syntax.ast_node_start(tokens, right)
+  let right_end: I64 = syntax.ast_node_end(tokens, right)
+  syntax.spans_equal(source, left_start, left_end, right_start, right_end)
 
-fn boolean_literal(source: Bytes inout tokens: Vec[syntax/Token] value: I64) -> I64 effects[partial]:
-  let is_true: Bool = syntax/ast_node_text_is(source tokens value "true")
-  match is_true:
-    true:
-      1
-    false:
-      let is_false: Bool = syntax/ast_node_text_is(source tokens value "false")
-      match is_false:
-        true:
-          0
-        false:
-          -1
+fn boolean_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: I64) -> I64 effects[partial]:
+  let is_true: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
+  if is_true:
+    1
+  else:
+    let is_false: Bool = syntax.ast_node_text_is(source, tokens, value, "false")
+    if is_false:
+      0
+    else:
+      -1
 
-fn atom_value(inout tokens: Vec[syntax/Token] value: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens value)
-  i64.eq(kind 2)
+fn atom_value(inout tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, value)
+  kind == 2
 
-fn decimal_digits(source: Bytes index: I64 end: I64) -> Bool effects[partial]:
-  let done: Bool = i64.ge(index end)
-  match done:
-    true:
+fn decimal_digits(source: Bytes, index: I64, end: I64) -> Bool effects[partial]:
+  let done: Bool = index >= end
+  if done:
+    true
+  else:
+    let byte: U8 = bytes.get(source, index)
+    let code: I64 = u8.to_i64(byte)
+    let lower: Bool = code >= 48
+    let upper: Bool = code <= 57
+    let digit: Bool = lower && upper
+    if digit:
+      let next: I64 = index + 1
+      recur(source, next, end)
+    else:
+      false
+
+fn small_integer_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
+  let atom: Bool = atom_value(tokens, value)
+  if atom:
+    let start: I64 = syntax.ast_node_start(tokens, value)
+    let end: I64 = syntax.ast_node_end(tokens, value)
+    let length: I64 = end - start
+    let nonempty: Bool = length > 0
+    if nonempty:
+      let first: U8 = bytes.get(source, start)
+      let first_code: I64 = u8.to_i64(first)
+      let negative: Bool = first_code == 45
+      let digit_start: I64 = if negative:
+        start + 1
+      else:
+        start
+      let digit_count: I64 = end - digit_start
+      let has_digit: Bool = digit_count > 0
+      let bounded: Bool = digit_count <= 18
+      let safe_size: Bool = has_digit && bounded
+      if safe_size:
+        decimal_digits(source, digit_start, end)
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn matching_scalar_literal(source: Bytes, inout tokens: Vec[syntax.Token], type_index: I64, value: I64) -> Bool effects[partial]:
+  let void_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "Void")
+  if void_type:
+    let void_value: Bool = syntax.ast_node_text_is(source, tokens, value, "void")
+    void_value
+  else:
+    let bool_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "Bool")
+    if bool_type:
+      let literal: I64 = boolean_literal(source, tokens, value)
+      literal >= 0
+    else:
+      let integer_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "I64")
+      if integer_type:
+        small_integer_literal(source, tokens, value)
+      else:
+        false
+
+fn name_used(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, cursor: I64, end: I64) -> Bool effects[partial]:
+  let done: Bool = cursor >= end
+  if done:
+    false
+  else:
+    let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+    let atom: Bool = kind == 2
+    let same: Bool = if atom:
+      tokens_equal(source, tokens, name, cursor)
+    else:
+      false
+    if same:
       true
-    false:
-      let byte: U8 = bytes.get(source index)
-      let code: I64 = u8.to-i64(byte)
-      let lower: Bool = i64.ge(code 48)
-      let upper: Bool = i64.le(code 57)
-      let digit: Bool = bool.and(lower upper)
-      match digit:
-        false:
-          false
-        true:
-          let next: I64 = i64.add(index 1)
-          recur(source next end)
+    else:
+      let next: I64 = syntax.ast_node_after(cursor)
+      recur(source, tokens, name, next, end)
 
-fn small_integer_literal(source: Bytes inout tokens: Vec[syntax/Token] value: I64) -> Bool effects[partial]:
-  let atom: Bool = atom_value(tokens value)
-  match atom:
-    false:
-      false
-    true:
-      let start: I64 = syntax/ast_node_start(tokens value)
-      let end: I64 = syntax/ast_node_end(tokens value)
-      let length: I64 = i64.sub(end start)
-      let nonempty: Bool = i64.gt(length 0)
-      match nonempty:
-        false:
-          false
-        true:
-          let first: U8 = bytes.get(source start)
-          let first_code: I64 = u8.to-i64(first)
-          let negative: Bool = i64.eq(first_code 45)
-          let digit_start: I64 = match negative:
-            true:
-              i64.add(start 1)
-            false:
-              start
-          let digit_count: I64 = i64.sub(end digit_start)
-          let has_digit: Bool = i64.gt(digit_count 0)
-          let bounded: Bool = i64.le(digit_count 18)
-          let safe_size: Bool = bool.and(has_digit bounded)
-          match safe_size:
-            false:
-              false
-            true:
-              decimal_digits(source digit_start end)
+fn find_boolean_arm(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, wanted: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    -1
+  else:
+    let pattern: I64 = syntax.ast_arm_pattern(cursor)
+    let literal: I64 = boolean_literal(source, tokens, pattern)
+    let same: Bool = literal == wanted
+    if same:
+      cursor
+    else:
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      recur(source, tokens, next, wanted)
 
-fn matching_scalar_literal(source: Bytes inout tokens: Vec[syntax/Token] type_index: I64 value: I64) -> Bool effects[partial]:
-  let unit_type: Bool = syntax/ast_node_text_is(source tokens type_index "Unit")
-  match unit_type:
-    true:
-      syntax/ast_node_text_is(source tokens value "unit")
-    false:
-      let bool_type: Bool = syntax/ast_node_text_is(source tokens type_index "Bool")
-      match bool_type:
-        true:
-          let literal: I64 = boolean_literal(source tokens value)
-          i64.ge(literal 0)
-        false:
-          let integer_type: Bool = syntax/ast_node_text_is(source tokens type_index "I64")
-          match integer_type:
-            true:
-              small_integer_literal(source tokens value)
-            false:
-              false
-
-fn name_used(source: Bytes inout tokens: Vec[syntax/Token] name: I64 cursor: I64 end: I64) -> Bool effects[partial]:
-  let done: Bool = i64.ge(cursor end)
-  match done:
-    true:
-      false
-    false:
-      let kind: I64 = syntax/ast_node_kind(tokens cursor)
-      let atom: Bool = i64.eq(kind 2)
-      let same: Bool = match atom:
-        true:
-          tokens_equal(source tokens name cursor)
-        false:
-          false
-      match same:
-        true:
-          true
-        false:
-          let next: I64 = syntax/ast_node_after(cursor)
-          recur(source tokens name next end)
-
-fn find_boolean_arm(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 wanted: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
+fn selected_match_body(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+  let value: I64 = syntax.ast_match_value(expr)
+  let literal: I64 = boolean_literal(source, tokens, value)
+  let known: Bool = literal >= 0
+  if known:
+    let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
+    let arm: I64 = find_boolean_arm(source, tokens, first_arm, literal)
+    let found: Bool = arm >= 0
+    if found:
+      syntax.ast_arm_body(tokens, arm)
+    else:
       -1
-    false:
-      let pattern: I64 = syntax/ast_arm_pattern(cursor)
-      let literal: I64 = boolean_literal(source tokens pattern)
-      let same: Bool = i64.eq(literal wanted)
-      match same:
-        true:
-          cursor
-        false:
-          let next: I64 = syntax/ast_next(tokens cursor)
-          recur(source tokens next wanted)
+  else:
+    -1
 
-fn selected_match_body(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
-  let value: I64 = syntax/ast_match_value(expr)
-  let literal: I64 = boolean_literal(source tokens value)
-  let known: Bool = i64.ge(literal 0)
-  match known:
-    false:
-      -1
-    true:
-      let first_arm: I64 = syntax/ast_match_arms(tokens expr)
-      let arm: I64 = find_boolean_arm(source tokens first_arm literal)
-      let found: Bool = i64.ge(arm 0)
-      match found:
-        false:
-          -1
-        true:
-          syntax/ast_arm_body(tokens arm)
+fn unary_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, one_argument: Bool) -> I64 effects[partial]:
+  let not_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
+  let valid: Bool = not_call && one_argument
+  if valid:
+    let literal: I64 = boolean_literal(source, tokens, first)
+    if literal == 0:
+      2
+    else:
+      if literal == 1:
+        1
+      else:
+        0
+  else:
+    0
 
-fn unary_call_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 first: I64 one-argument: Bool) -> I64 effects[partial]:
-  let not-call: Bool = syntax/ast_node_text_is(source tokens callee "bool.not")
-  let valid: Bool = bool.and(not-call one-argument)
-  match valid:
-    false:
-      0
-    true:
-      let literal: I64 = boolean_literal(source tokens first)
-      match i64.eq(literal 0):
-        true:
-          2
-        false:
-          match i64.eq(literal 1):
-            true:
-              1
-            false:
-              0
-
-fn boolean_call_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 first: I64 second: I64 two-arguments: Bool) -> I64 effects[partial]:
-  let and-call: Bool = syntax/ast_node_text_is(source tokens callee "bool.and")
-  let or-call: Bool = syntax/ast_node_text_is(source tokens callee "bool.or")
-  let boolean-call: Bool = bool.or(and-call or-call)
-  let valid: Bool = bool.and(boolean-call two-arguments)
-  match valid:
-    false:
-      0
-    true:
-      let left: I64 = boolean_literal(source tokens first)
-      let right: I64 = boolean_literal(source tokens second)
-      let left-known: Bool = i64.ge(left 0)
-      let right-known: Bool = i64.ge(right 0)
-      let both-known: Bool = bool.and(left-known right-known)
-      match both-known:
-        true:
-          let result: Bool = match and-call:
-            true:
-              bool.and(i64.eq(left 1) i64.eq(right 1))
-            false:
-              bool.or(i64.eq(left 1) i64.eq(right 1))
-          match result:
-            true:
-              2
-            false:
-              1
-        false:
-          let first-atom: Bool = atom_value(tokens first)
-          let second-atom: Bool = atom_value(tokens second)
-          let both-atoms: Bool = bool.and(first-atom second-atom)
-          let same-atoms: Bool = match both-atoms:
-            true:
-              tokens_equal(source tokens first second)
-            false:
-              false
-          match same-atoms:
-            true:
-              6
-            false:
-              let and-identity: Bool = match and-call:
-                true:
-                  i64.eq(right 1)
-                false:
-                  false
-              let or-identity: Bool = match or-call:
-                true:
-                  i64.eq(right 0)
-                false:
-                  false
-              let identity: Bool = bool.or(and-identity or-identity)
-              let safe: Bool = bool.and(first-atom identity)
-              match safe:
-                true:
-                  3
-                false:
-                  0
-
-fn equality_call_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 first: I64 second: I64 two-arguments: Bool) -> I64 effects[partial]:
-  let equal-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.eq")
-  let valid: Bool = bool.and(equal-call two-arguments)
-  match valid:
-    false:
-      0
-    true:
-      let left-number: Bool = small_integer_literal(source tokens first)
-      let right-number: Bool = small_integer_literal(source tokens second)
-      let numbers: Bool = bool.and(left-number right-number)
-      let same: Bool = match numbers:
-        true:
-          tokens_equal(source tokens first second)
-        false:
+fn boolean_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+  let and_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and")
+  let or_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.or")
+  let boolean_call: Bool = and_call || or_call
+  let valid: Bool = boolean_call && two_arguments
+  if valid:
+    let left: I64 = boolean_literal(source, tokens, first)
+    let right: I64 = boolean_literal(source, tokens, second)
+    let left_known: Bool = left >= 0
+    let right_known: Bool = right >= 0
+    let both_known: Bool = left_known && right_known
+    if both_known:
+      let result: Bool = if and_call:
+        (left == 1) && (right == 1)
+      else:
+        (left == 1) || (right == 1)
+      if result:
+        2
+      else:
+        1
+    else:
+      let first_atom: Bool = atom_value(tokens, first)
+      let second_atom: Bool = atom_value(tokens, second)
+      let both_atoms: Bool = first_atom && second_atom
+      let same_atoms: Bool = if both_atoms:
+        tokens_equal(source, tokens, first, second)
+      else:
+        false
+      if same_atoms:
+        6
+      else:
+        let and_identity: Bool = if and_call:
+          right == 1
+        else:
           false
-      match same:
-        true:
-          2
-        false:
-          0
-
-fn arithmetic_call_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] callee: I64 first: I64 second: I64 two-arguments: Bool) -> I64 effects[partial]:
-  let add-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.add")
-  let sub-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.sub")
-  let mul-call: Bool = syntax/ast_node_text_is(source tokens callee "i64.mul")
-  let arithmetic: Bool = bool.or(add-call bool.or(sub-call mul-call))
-  let valid: Bool = bool.and(arithmetic two-arguments)
-  match valid:
-    false:
-      0
-    true:
-      let first-atom: Bool = atom_value(tokens first)
-      let zero: Bool = syntax/ast_node_text_is(source tokens second "0")
-      let one: Bool = syntax/ast_node_text_is(source tokens second "1")
-      let add-or-sub: Bool = bool.or(add-call sub-call)
-      let zero-identity: Bool = bool.and(add-or-sub zero)
-      let mul-identity: Bool = bool.and(mul-call one)
-      let identity: Bool = bool.or(zero-identity mul-identity)
-      let safe: Bool = bool.and(first-atom identity)
-      match safe:
-        true:
+        let or_identity: Bool = if or_call:
+          right == 0
+        else:
+          false
+        let identity: Bool = and_identity || or_identity
+        let safe: Bool = first_atom && identity
+        if safe:
           3
-        false:
+        else:
           0
+  else:
+    0
 
-fn call_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
-  let callee: I64 = syntax/ast_call_callee(expr)
-  let first: I64 = syntax/ast_call_arguments(expr)
-  let second: I64 = syntax/ast_next(tokens first)
-  let second-kind: I64 = syntax/ast_node_kind(tokens second)
-  let one-argument: Bool = i64.eq(second-kind 1)
-  let third: I64 = match one-argument:
-    true:
-      second
-    false:
-      syntax/ast_next(tokens second)
-  let third-kind: I64 = syntax/ast_node_kind(tokens third)
-  let two-arguments: Bool = match one-argument:
-    true:
+fn equality_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+  let equal_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
+  let valid: Bool = equal_call && two_arguments
+  if valid:
+    let left_number: Bool = small_integer_literal(source, tokens, first)
+    let right_number: Bool = small_integer_literal(source, tokens, second)
+    let numbers: Bool = left_number && right_number
+    let same: Bool = if numbers:
+      tokens_equal(source, tokens, first, second)
+    else:
       false
-    false:
-      i64.eq(third-kind 1)
-  let unary: I64 = unary_call_reduction_kind(source tokens callee first one-argument)
-  match i64.gt(unary 0):
-    true:
-      unary
-    false:
-      let boolean: I64 = boolean_call_reduction_kind(source tokens callee first second two-arguments)
-      match i64.gt(boolean 0):
-        true:
-          boolean
-        false:
-          let equality: I64 = equality_call_reduction_kind(source tokens callee first second two-arguments)
-          match i64.gt(equality 0):
-            true:
-              equality
-            false:
-              arithmetic_call_reduction_kind(source tokens callee first second two-arguments)
+    if same:
+      2
+    else:
+      0
+  else:
+    0
 
-fn match_reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
-  let selected: I64 = selected_match_body(source tokens expr)
-  let selected-found: Bool = i64.ge(selected 0)
-  match selected-found:
-    true:
-      4
-    false:
-      let value: I64 = syntax/ast_match_value(expr)
-      let value-atom: Bool = atom_value(tokens value)
-      match value-atom:
-        false:
-          0
-        true:
-          let first-arm: I64 = syntax/ast_match_arms(tokens expr)
-          let true-arm: I64 = find_boolean_arm(source tokens first-arm 1)
-          let false-arm: I64 = find_boolean_arm(source tokens first-arm 0)
-          let true-found: Bool = i64.ge(true-arm 0)
-          let false-found: Bool = i64.ge(false-arm 0)
-          let both-found: Bool = bool.and(true-found false-found)
-          match both-found:
-            false:
-              0
-            true:
-              let true-body: I64 = syntax/ast_arm_body(tokens true-arm)
-              let false-body: I64 = syntax/ast_arm_body(tokens false-arm)
-              let true-literal: I64 = boolean_literal(source tokens true-body)
-              let false-literal: I64 = boolean_literal(source tokens false-body)
-              let identity: Bool = bool.and(i64.eq(true-literal 1) i64.eq(false-literal 0))
-              match identity:
-                true:
-                  7
-                false:
-                  let true-atom: Bool = atom_value(tokens true-body)
-                  let false-atom: Bool = atom_value(tokens false-body)
-                  let atom-bodies: Bool = bool.and(true-atom false-atom)
-                  let same-bodies: Bool = match atom-bodies:
-                    true:
-                      tokens_equal(source tokens true-body false-body)
-                    false:
-                      false
-                  match same-bodies:
-                    true:
-                      8
-                    false:
-                      0
+fn arithmetic_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+  let add_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.add")
+  let sub_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.sub")
+  let mul_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.mul")
+  let arithmetic: Bool = add_call || (sub_call || mul_call)
+  let valid: Bool = arithmetic && two_arguments
+  if valid:
+    let first_atom: Bool = atom_value(tokens, first)
+    let zero: Bool = syntax.ast_node_text_is(source, tokens, second, "0")
+    let one: Bool = syntax.ast_node_text_is(source, tokens, second, "1")
+    let add_or_sub: Bool = add_call || sub_call
+    let zero_identity: Bool = add_or_sub && zero
+    let mul_identity: Bool = mul_call && one
+    let identity: Bool = zero_identity || mul_identity
+    let safe: Bool = first_atom && identity
+    if safe:
+      3
+    else:
+      0
+  else:
+    0
 
-fn match_replacement(source: Bytes inout tokens: Vec[syntax/Token] expr: I64 kind: I64) -> I64 effects[partial]:
-  let identity: Bool = i64.eq(kind 7)
-  match identity:
-    true:
-      syntax/ast_match_value(expr)
-    false:
-      let common: Bool = i64.eq(kind 8)
-      match common:
-        false:
-          -1
-        true:
-          let value: I64 = syntax/ast_match_value(expr)
-          let first-arm: I64 = syntax/ast_match_arms(tokens expr)
-          let true-arm: I64 = find_boolean_arm(source tokens first-arm 1)
-          syntax/ast_arm_body(tokens true-arm)
+fn call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+  let callee: I64 = syntax.ast_call_callee(expr)
+  let first: I64 = syntax.ast_call_arguments(expr)
+  let second: I64 = syntax.ast_next(tokens, first)
+  let second_kind: I64 = syntax.ast_node_kind(tokens, second)
+  let one_argument: Bool = second_kind == 1
+  let third: I64 = if one_argument:
+    second
+  else:
+    syntax.ast_next(tokens, second)
+  let third_kind: I64 = syntax.ast_node_kind(tokens, third)
+  let two_arguments: Bool = if one_argument:
+    false
+  else:
+    third_kind == 1
+  let unary: I64 = unary_call_reduction_kind(source, tokens, callee, first, one_argument)
+  if unary > 0:
+    unary
+  else:
+    let boolean: I64 = boolean_call_reduction_kind(source, tokens, callee, first, second, two_arguments)
+    if boolean > 0:
+      boolean
+    else:
+      let equality: I64 = equality_call_reduction_kind(source, tokens, callee, first, second, two_arguments)
+      if equality > 0:
+        equality
+      else:
+        arithmetic_call_reduction_kind(source, tokens, callee, first, second, two_arguments)
 
-fn emit_original_children(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 first: Bool inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      unit
-    false:
-      let separated: Unit = match first:
-        true:
-          unit
-        false:
-          text/append_text(output " ")
-      let emitted: Unit = emit_original_form(source tokens cursor output)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next false output)
+fn match_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+  let selected: I64 = selected_match_body(source, tokens, expr)
+  let selected_found: Bool = selected >= 0
+  if selected_found:
+    4
+  else:
+    let value: I64 = syntax.ast_match_value(expr)
+    let value_atom: Bool = atom_value(tokens, value)
+    if value_atom:
+      let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
+      let true_arm: I64 = find_boolean_arm(source, tokens, first_arm, 1)
+      let false_arm: I64 = find_boolean_arm(source, tokens, first_arm, 0)
+      let true_found: Bool = true_arm >= 0
+      let false_found: Bool = false_arm >= 0
+      let both_found: Bool = true_found && false_found
+      if both_found:
+        let true_body: I64 = syntax.ast_arm_body(tokens, true_arm)
+        let false_body: I64 = syntax.ast_arm_body(tokens, false_arm)
+        let true_literal: I64 = boolean_literal(source, tokens, true_body)
+        let false_literal: I64 = boolean_literal(source, tokens, false_body)
+        let identity: Bool = (true_literal == 1) && (false_literal == 0)
+        if identity:
+          7
+        else:
+          let true_atom: Bool = atom_value(tokens, true_body)
+          let false_atom: Bool = atom_value(tokens, false_body)
+          let atom_bodies: Bool = true_atom && false_atom
+          let same_bodies: Bool = if atom_bodies:
+            tokens_equal(source, tokens, true_body, false_body)
+          else:
+            false
+          if same_bodies:
+            8
+          else:
+            0
+      else:
+        0
+    else:
+      0
 
-fn emit_original_form(source: Bytes inout tokens: Vec[syntax/Token] form: I64 inout output: Vec[U8]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens form)
-  let composite: Bool = i64.eq(kind 0)
-  match composite:
-    false:
-      let atom: Bool = i64.eq(kind 2)
-      let start: I64 = syntax/ast_node_start(tokens form)
-      let end: I64 = syntax/ast_node_end(tokens form)
-      let empty: Bool = i64.eq(start end)
-      let synthetic: Bool = bool.and(atom empty)
-      match synthetic:
-        false:
-          text/append_token(source tokens form output)
-        true:
-          let parent: I64 = i64.sub(form 1)
-          let tag: I64 = syntax/ast_node_tag(tokens parent)
-          let call_marker: Bool = i64.eq(tag 10)
-          match call_marker:
-            true:
-              text/append_text(output "call")
-            false:
-              text/append_text(output "effects")
-    true:
-      let open: Unit = text/append_text(output "(")
-      let first: I64 = syntax/ast_list_first(form)
-      let children: Unit = emit_original_children(source tokens first true output)
-      text/append_text(output ")")
+fn match_replacement(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, kind: I64) -> I64 effects[partial]:
+  let identity: Bool = kind == 7
+  if identity:
+    syntax.ast_match_value(expr)
+  else:
+    let common: Bool = kind == 8
+    if common:
+      let value: I64 = syntax.ast_match_value(expr)
+      let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
+      let true_arm: I64 = find_boolean_arm(source, tokens, first_arm, 1)
+      syntax.ast_arm_body(tokens, true_arm)
+    else:
+      -1
 
-fn push_reduced_token(kind: I64 tag: I64 start: I64 end: I64 inout reduced: Vec[syntax/Token]) -> Unit effects[alloc]:
-  let token: syntax/Token = make syntax/Token(kind = kind tag = tag start = start end = end link = -1 next = -1)
-  vec.push(reduced token)
+fn emit_original_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    void
+  else:
+    if first:
+      void
+    else:
+      text.append_text(output, " ")
+    emit_original_form(source, tokens, cursor, output)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, false, output)
 
-fn clone_scalar(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens node)
-  let tag: I64 = syntax/ast_node_tag(tokens node)
-  let original_start: I64 = syntax/ast_node_start(tokens node)
-  let original_end: I64 = syntax/ast_node_end(tokens node)
-  let synthetic: Bool = i64.eq(original_start original_end)
+fn emit_original_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, form)
+  let composite: Bool = kind == 0
+  if composite:
+    text.append_text(output, "(")
+    let first: I64 = syntax.ast_list_first(form)
+    emit_original_children(source, tokens, first, true, output)
+    text.append_text(output, ")")
+  else:
+    let atom: Bool = kind == 2
+    let start: I64 = syntax.ast_node_start(tokens, form)
+    let end: I64 = syntax.ast_node_end(tokens, form)
+    let empty: Bool = start == end
+    let synthetic: Bool = atom && empty
+    if synthetic:
+      let parent: I64 = form - 1
+      let tag: I64 = syntax.ast_node_tag(tokens, parent)
+      let call_marker: Bool = tag == 10
+      if call_marker:
+        text.append_text(output, "call")
+      else:
+        text.append_text(output, "effects")
+    else:
+      text.append_token(source, tokens, form, output)
+
+fn push_reduced_token(kind: I64, tag: I64, start: I64, end: I64, inout reduced: Vec[syntax.Token]) -> Void effects[alloc]:
+  let token: syntax.Token = syntax.Token(kind: kind, tag: tag, start: start, end: end, link: -1, next: -1)
+  vec.push(reduced, token)
+
+fn clone_scalar(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, node)
+  let tag: I64 = syntax.ast_node_tag(tokens, node)
+  let original_start: I64 = syntax.ast_node_start(tokens, node)
+  let original_end: I64 = syntax.ast_node_end(tokens, node)
+  let synthetic: Bool = original_start == original_end
   let start: I64 = vec.len(atom_source)
-  let copied: Unit = match synthetic:
-    true:
-      unit
-    false:
-      text/append_token(source tokens node atom_source)
+  if synthetic:
+    void
+  else:
+    text.append_token(source, tokens, node, atom_source)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(kind tag start end reduced)
+  push_reduced_token(kind, tag, start, end, reduced)
 
-fn clone_literal(value: Bytes inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+fn clone_literal(value: Bytes, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let start: I64 = vec.len(atom_source)
-  let copied: Unit = text/append_text(atom_source value)
+  text.append_text(atom_source, value)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(2 0 start end reduced)
+  push_reduced_token(2, 0, start, end, reduced)
 
-fn clone_reduced_children(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
-  let done: Bool = syntax/ast_list_done(tokens cursor)
-  match done:
-    true:
-      unit
-    false:
-      let copied: Unit = clone_reduced_node(source tokens cursor atom_source reduced)
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next atom_source reduced)
+fn clone_reduced_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  let done: Bool = syntax.ast_list_done(tokens, cursor)
+  if done:
+    void
+  else:
+    clone_reduced_node(source, tokens, cursor, atom_source, reduced)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, atom_source, reduced)
 
-fn clone_form(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
+fn clone_form(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let position: I64 = vec.len(atom_source)
-  let tag: I64 = syntax/ast_node_tag(tokens node)
-  let open: Unit = push_reduced_token(0 tag position position reduced)
-  let first: I64 = syntax/ast_list_first(node)
-  let children: Unit = clone_reduced_children(source tokens first atom_source reduced)
+  let tag: I64 = syntax.ast_node_tag(tokens, node)
+  push_reduced_token(0, tag, position, position, reduced)
+  let first: I64 = syntax.ast_list_first(node)
+  clone_reduced_children(source, tokens, first, atom_source, reduced)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(1 0 end end reduced)
+  push_reduced_token(1, 0, end, end, reduced)
 
-fn clone_reduced_call(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
-  let reduction: I64 = call_reduction_kind(source tokens node)
-  match i64.eq(reduction 1):
-    true:
-      clone_literal("false" atom_source reduced)
-    false:
-      match i64.eq(reduction 2):
-        true:
-          clone_literal("true" atom_source reduced)
-        false:
-          let right_identity: Bool = i64.eq(reduction 3)
-          let idempotent: Bool = i64.eq(reduction 6)
-          let first: Bool = bool.or(right_identity idempotent)
-          match first:
-            true:
-              clone_reduced_node(source tokens syntax/ast_call_arguments(node) atom_source reduced)
-            false:
-              clone_form(source tokens node atom_source reduced)
+fn clone_reduced_call(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  let reduction: I64 = call_reduction_kind(source, tokens, node)
+  if reduction == 1:
+    clone_literal("false", atom_source, reduced)
+  else:
+    if reduction == 2:
+      clone_literal("true", atom_source, reduced)
+    else:
+      let right_identity: Bool = reduction == 3
+      let idempotent: Bool = reduction == 6
+      let first: Bool = right_identity || idempotent
+      if first:
+        clone_reduced_node(source, tokens, syntax.ast_call_arguments(node), atom_source, reduced)
+      else:
+        clone_form(source, tokens, node, atom_source, reduced)
 
-fn clone_reduced_match(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
-  let reduction: I64 = match_reduction_kind(source tokens node)
-  let selected: Bool = i64.eq(reduction 4)
-  match selected:
-    true:
-      let body: I64 = selected_match_body(source tokens node)
-      clone_reduced_node(source tokens body atom_source reduced)
-    false:
-      let replacement: I64 = match_replacement(source tokens node reduction)
-      let found: Bool = i64.ge(replacement 0)
-      match found:
-        true:
-          clone_reduced_node(source tokens replacement atom_source reduced)
-        false:
-          clone_form(source tokens node atom_source reduced)
+fn clone_reduced_match(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  let reduction: I64 = match_reduction_kind(source, tokens, node)
+  let selected: Bool = reduction == 4
+  if selected:
+    let body: I64 = selected_match_body(source, tokens, node)
+    clone_reduced_node(source, tokens, body, atom_source, reduced)
+  else:
+    let replacement: I64 = match_replacement(source, tokens, node, reduction)
+    let found: Bool = replacement >= 0
+    if found:
+      clone_reduced_node(source, tokens, replacement, atom_source, reduced)
+    else:
+      clone_form(source, tokens, node, atom_source, reduced)
 
-fn clone_reduced_node(source: Bytes inout tokens: Vec[syntax/Token] node: I64 inout atom_source: Vec[U8] inout reduced: Vec[syntax/Token]) -> Unit effects[alloc partial]:
-  let scalar: Bool = syntax/ast_node_is_scalar(tokens node)
-  match scalar:
-    true:
-      clone_scalar(source tokens node atom_source reduced)
-    false:
-      let let_form: Bool = syntax/ast_expression_is_let(source tokens node)
-      match let_form:
-        true:
-          let removable: Bool = let_reducible(source tokens node)
-          match removable:
-            true:
-              let body: I64 = syntax/ast_let_body(tokens node)
-              clone_reduced_node(source tokens body atom_source reduced)
-            false:
-              clone_form(source tokens node atom_source reduced)
-        false:
-          let call_form: Bool = syntax/ast_expression_is_call(source tokens node)
-          match call_form:
-            true:
-              clone_reduced_call(source tokens node atom_source reduced)
-            false:
-              let match_form: Bool = syntax/ast_expression_is_match(source tokens node)
-              match match_form:
-                true:
-                  clone_reduced_match(source tokens node atom_source reduced)
-                false:
-                  clone_form(source tokens node atom_source reduced)
+fn clone_reduced_node(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  let scalar: Bool = syntax.ast_node_is_scalar(tokens, node)
+  if scalar:
+    clone_scalar(source, tokens, node, atom_source, reduced)
+  else:
+    let let_form: Bool = syntax.ast_expression_is_let(source, tokens, node)
+    if let_form:
+      let removable: Bool = let_reducible(source, tokens, node)
+      if removable:
+        let body: I64 = syntax.ast_let_body(tokens, node)
+        clone_reduced_node(source, tokens, body, atom_source, reduced)
+      else:
+        clone_form(source, tokens, node, atom_source, reduced)
+    else:
+      let call_form: Bool = syntax.ast_expression_is_call(source, tokens, node)
+      if call_form:
+        clone_reduced_call(source, tokens, node, atom_source, reduced)
+      else:
+        let match_form: Bool = syntax.ast_expression_is_match(source, tokens, node)
+        if match_form:
+          clone_reduced_match(source, tokens, node, atom_source, reduced)
+        else:
+          clone_form(source, tokens, node, atom_source, reduced)
 
-fn canonicalize(source: Bytes) -> Bytes effects[alloc partial]:
-  let tokens: Vec[syntax/Token] = vec.new()
-  let parsed: Bool = syntax/parse_program(source tokens)
+fn canonicalize(source: Bytes) -> Bytes effects[alloc, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: Bool = syntax.parse_program(source, tokens)
   let output: Vec[U8] = vec.new()
-  let emitted: Unit = format/emit_module(source tokens output)
+  format.emit_module(source, tokens, output)
   bytes.freeze(output)
 
-fn normalize_from(source: Bytes fallback: Bytes remaining: I64) -> Bytes effects[alloc partial]:
-  let tokens: Vec[syntax/Token] = vec.new()
-  let parsed: Bool = syntax/parse_program(source tokens)
-  let reduced_tokens: Vec[syntax/Token] = vec.new()
+fn normalize_from(source: Bytes, fallback: Bytes, remaining: I64) -> Bytes effects[alloc, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: Bool = syntax.parse_program(source, tokens)
+  let reduced_tokens: Vec[syntax.Token] = vec.new()
   let atom_source: Vec[U8] = vec.new()
-  let reduced: Unit = clone_reduced_node(source tokens 0 atom_source reduced_tokens)
-  let indexed: Unit = syntax/index_ast_boundaries(reduced_tokens)
+  clone_reduced_node(source, tokens, 0, atom_source, reduced_tokens)
+  syntax.index_ast_boundaries(reduced_tokens)
   let atoms: Bytes = bytes.freeze(atom_source)
   let output: Vec[U8] = vec.new()
-  let formatted: Unit = format/emit_module(atoms reduced_tokens output)
+  format.emit_module(atoms, reduced_tokens, output)
   let next: Bytes = bytes.freeze(output)
   let source_length: I64 = bytes.len(source)
-  let same: Bool = syntax/span_equal(source 0 source_length next)
-  match same:
-    true:
-      next
-    false:
-      let exhausted: Bool = i64.le(remaining 0)
-      match exhausted:
-        true:
-          fallback
-        false:
-          let next_remaining: I64 = i64.sub(remaining 1)
-          recur(next fallback next_remaining)
+  let same: Bool = syntax.span_equal(source, 0, source_length, next)
+  if same:
+    next
+  else:
+    let exhausted: Bool = remaining <= 0
+    if exhausted:
+      fallback
+    else:
+      let next_remaining: I64 = remaining - 1
+      recur(next, fallback, next_remaining)
 
-fn normalize(source: Bytes) -> Bytes effects[alloc partial]:
+fn normalize(source: Bytes) -> Bytes effects[alloc, partial]:
   let canonical: Bytes = canonicalize(source)
-  normalize_from(canonical canonical 7)
+  normalize_from(canonical, canonical, 7)
 
-fn emit_normal_form(source: Bytes inout output: Vec[U8]) -> Unit effects[alloc partial]:
+fn emit_normal_form(source: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
   let normalized: Bytes = normalize(source)
-  text/append_text(output normalized)
+  text.append_text(output, normalized)
 
-fn let_reducible(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> Bool effects[partial]:
-  let name: I64 = syntax/ast_let_name(expr)
-  let type_index: I64 = syntax/ast_let_type(expr)
-  let value: I64 = syntax/ast_let_value(tokens expr)
-  let body: I64 = syntax/ast_let_body(tokens expr)
-  let body_end: I64 = syntax/ast_next(tokens body)
-  let literal: Bool = matching_scalar_literal(source tokens type_index value)
-  let use_limit: I64 = i64.add(body 64)
-  let bounded: Bool = i64.le(body_end use_limit)
-  let eligible: Bool = bool.and(literal bounded)
-  match eligible:
-    false:
-      false
-    true:
-      let used: Bool = name_used(source tokens name body body_end)
-      bool.not(used)
+fn let_reducible(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+  let name: I64 = syntax.ast_let_name(expr)
+  let type_index: I64 = syntax.ast_let_type(expr)
+  let value: I64 = syntax.ast_let_value(tokens, expr)
+  let body: I64 = syntax.ast_let_body(tokens, expr)
+  let body_end: I64 = syntax.ast_next(tokens, body)
+  let literal: Bool = matching_scalar_literal(source, tokens, type_index, value)
+  let use_limit: I64 = body + 64
+  let bounded: Bool = body_end <= use_limit
+  let eligible: Bool = literal && bounded
+  if eligible:
+    let used: Bool = name_used(source, tokens, name, body, body_end)
+    !used
+  else:
+    false
 
-fn reduction_kind(source: Bytes inout tokens: Vec[syntax/Token] expr: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens expr)
-  let composite: Bool = i64.eq(kind 0)
-  match composite:
-    false:
-      0
-    true:
-      let head: I64 = syntax/ast_list_first(expr)
-      let call-form: Bool = syntax/ast_expression_is_call(source tokens expr)
-      match call-form:
-        true:
-          call_reduction_kind(source tokens expr)
-        false:
-          let match-form: Bool = syntax/ast_expression_is_match(source tokens expr)
-          match match-form:
-            true:
-              match_reduction_kind(source tokens expr)
-            false:
-              let let-form: Bool = syntax/ast_expression_is_let(source tokens expr)
-              match let-form:
-                true:
-                  let removable: Bool = let_reducible(source tokens expr)
-                  match removable:
-                    true:
-                      5
-                    false:
-                      0
-                false:
-                  0
+fn reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, expr)
+  let composite: Bool = kind == 0
+  if composite:
+    let head: I64 = syntax.ast_list_first(expr)
+    let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
+    if call_form:
+      call_reduction_kind(source, tokens, expr)
+    else:
+      let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
+      if match_form:
+        match_reduction_kind(source, tokens, expr)
+      else:
+        let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
+        if let_form:
+          let removable: Bool = let_reducible(source, tokens, expr)
+          if removable:
+            5
+          else:
+            0
+        else:
+          0
+  else:
+    0

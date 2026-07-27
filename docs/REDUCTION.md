@@ -19,18 +19,18 @@ The current reducer admits only these rule families:
 
 - literal Boolean `not`, `and`, and `or` evaluation;
 - literal Boolean `match` selection;
-- `i64.eq` evaluation when both integer spellings are identical;
-- removal of `i64.add VALUE 0`, `i64.sub VALUE 0`, and `i64.mul VALUE 1`
+- `==` evaluation when both integer spellings are identical;
+- removal of `VALUE + 0`, `VALUE - 0`, and `VALUE * 1`
   when `VALUE` is an atom;
-- removal of `bool.and VALUE true` and `bool.or VALUE false` when `VALUE`
+- removal of `VALUE && true` and `VALUE || false` when `VALUE`
   is an atom;
-- replacement of `bool.and VALUE VALUE` or `bool.or VALUE VALUE` with the
+- replacement of `VALUE && VALUE` or `VALUE || VALUE` with the
   repeated atom;
 - replacement of `(match VALUE (true true) (false false))` with the Boolean
   atom `VALUE`;
-- replacement of a Boolean match whose two arms return the same atom with that
+- replacement of a Boolean `if` whose two branches return the same atom with that
   atom, only when the scrutinee is also an atom; and
-- removal of an unused immutable `Unit`, `Bool`, or `I64` binding whose value
+- removal of an unused immutable `Bool` or `I64` binding whose value
   is a matching literal.
 
 Every replacement is recursively reduced. The reducer performs at most eight
@@ -64,7 +64,7 @@ by the production compiler, and makes no equivalence or optimality claim.
 Core 1B additions—state models, effect/failure surfaces, ownership pressure,
 totality classifications, reduction proof replay, finite equivalence, and
 structural edits—are specified in `docs/QUALITY.md`.
-Core 1F reorder-safety and independent fork-site evidence is specified in
+Core 1F reorder-safety and independent parallel-site evidence is specified in
 `docs/PARALLELISM.md`. Core 1H recurrence and call-work evidence is specified
 in `docs/RESOURCE_BOUNDS.md`. Analysis data is not an executable IR.
 

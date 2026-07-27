@@ -10,4 +10,4 @@ slim_root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
     npm test
 )
 
-echo "SLIM 1.0 verification: repository, release, and website gates passed"
+echo "SLIM 0.9 verification: repository, release, and website gates passed"

@@ -1,29 +1,28 @@
-module dual-fetch
+module dual_fetch
 
-record Reply:
+struct Reply:
   ok: Bool
   body: Vec[U8]
 
-fn fetch(port: I64 request: Bytes) -> Reply effects[alloc io]:
+fn fetch(port: I64, request: Bytes) -> Reply effects[alloc, io]:
   let body: Vec[U8] = vec.new()
-  let ok: Bool = io.tcp-exchange("127.0.0.1" port request 64 2000 body)
-  make Reply(ok = ok body = body)
+  let ok: Bool = io.tcp_exchange("127.0.0.1", port, request, 64, 2000, body)
+  Reply(ok: ok, body: body)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
-  fork:
-    let first: Reply = fetch(8080 "LEFT")
-    let second: Reply = fetch(8081 "RIGHT")
-    let first-ok: Bool = get(first ok)
-    let second-ok: Bool = get(second ok)
-    let both-ok: Bool = bool.and(first-ok second-ok)
-    let first-body: Vec[U8] = get(first body)
-    let second-body: Vec[U8] = get(second body)
-    let first-length: I64 = vec.len(first-body)
-    let second-length: I64 = vec.len(second-body)
-    let lengths: Bool = bool.and(i64.eq(first-length 4) i64.eq(second-length 4))
-    match bool.and(both-ok lengths):
-      true:
-        let shown: Unit = io.println("OK")
-        0
-      false:
-        1
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  parallel:
+    let first: Reply = fetch(8080, "LEFT")
+    let second: Reply = fetch(8081, "RIGHT")
+    let first_ok: Bool = first.ok
+    let second_ok: Bool = second.ok
+    let both_ok: Bool = first_ok && second_ok
+    let first_body: Vec[U8] = first.body
+    let second_body: Vec[U8] = second.body
+    let first_length: I64 = vec.len(first_body)
+    let second_length: I64 = vec.len(second_body)
+    let lengths: Bool = (first_length == 4) && (second_length == 4)
+    if both_ok && lengths:
+      io.println("OK")
+      0
+    else:
+      1

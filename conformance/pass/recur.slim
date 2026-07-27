@@ -1,17 +1,16 @@
 module recur
 
-fn sum(next: I64 limit: I64 total: I64) -> I64 effects[partial]:
-  let done: Bool = i64.gt(next limit)
-  match done:
-    true:
-      total
-    false:
-      let following: I64 = i64.add(next 1)
-      let accumulated: I64 = i64.add(total next)
-      recur(following limit accumulated)
+fn sum(next: I64, limit: I64, total: I64) -> I64 effects[partial]:
+  let done: Bool = next > limit
+  if done:
+    total
+  else:
+    let following: I64 = next + 1
+    let accumulated: I64 = total + next
+    recur(following, limit, accumulated)
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let answer: I64 = sum(1 10 0)
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let answer: I64 = sum(1, 10, 0)
+  io.print_i64(answer)
+  io.println("")
   0

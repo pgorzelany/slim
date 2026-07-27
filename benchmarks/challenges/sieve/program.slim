@@ -1,52 +1,46 @@
 module sieve
 
-fn fill(inout flags: Vec[Bool] next: I64 limit: I64) -> Unit effects[alloc partial]:
-  match i64.gt(next limit):
-    true:
-      unit
-    false:
-      let pushed: Unit = vec.push(flags true)
-      recur(flags i64.add(next 1) limit)
+fn fill(inout flags: Vec[Bool], next: I64, limit: I64) -> Void effects[alloc, partial]:
+  if next > limit:
+    void
+  else:
+    vec.push(flags, true)
+    recur(flags, next + 1, limit)
 
-fn mark(inout flags: Vec[Bool] multiple: I64 step: I64 limit: I64) -> Unit effects[partial]:
-  match i64.gt(multiple limit):
-    true:
-      unit
-    false:
-      let cleared: Unit = vec.set(flags multiple false)
-      recur(flags i64.add(multiple step) step limit)
+fn mark(inout flags: Vec[Bool], multiple: I64, step: I64, limit: I64) -> Void effects[partial]:
+  if multiple > limit:
+    void
+  else:
+    vec.set(flags, multiple, false)
+    recur(flags, multiple + step, step, limit)
 
-fn cross(inout flags: Vec[Bool] prime: I64 limit: I64) -> Unit effects[partial]:
-  match i64.gt(i64.mul(prime prime) limit):
-    true:
-      unit
-    false:
-      match vec.get(flags prime):
-        true:
-          let marked: Unit = mark(flags i64.mul(prime prime) prime limit)
-          recur(flags i64.add(prime 1) limit)
-        false:
-          recur(flags i64.add(prime 1) limit)
+fn cross(inout flags: Vec[Bool], prime: I64, limit: I64) -> Void effects[partial]:
+  if (prime * prime) > limit:
+    void
+  else:
+    if vec.get(flags, prime):
+      mark(flags, prime * prime, prime, limit)
+      recur(flags, prime + 1, limit)
+    else:
+      recur(flags, prime + 1, limit)
 
-fn count(inout flags: Vec[Bool] index: I64 limit: I64 total: I64) -> I64 effects[partial]:
-  match i64.gt(index limit):
-    true:
-      total
-    false:
-      match vec.get(flags index):
-        true:
-          recur(flags i64.add(index 1) limit i64.add(total 1))
-        false:
-          recur(flags i64.add(index 1) limit total)
+fn count(inout flags: Vec[Bool], index: I64, limit: I64, total: I64) -> I64 effects[partial]:
+  if index > limit:
+    total
+  else:
+    if vec.get(flags, index):
+      recur(flags, index + 1, limit, total + 1)
+    else:
+      recur(flags, index + 1, limit, total)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let limit: I64 = 1000000
   let flags: Vec[Bool] = vec.new()
-  let filled: Unit = fill(flags 0 limit)
-  let zeroed: Unit = vec.set(flags 0 false)
-  let oned: Unit = vec.set(flags 1 false)
-  let crossed: Unit = cross(flags 2 limit)
-  let result: I64 = count(flags 2 limit 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(flags, 0, limit)
+  vec.set(flags, 0, false)
+  vec.set(flags, 1, false)
+  cross(flags, 2, limit)
+  let result: I64 = count(flags, 2, limit, 0)
+  io.print_i64(result)
+  io.println("")
   0

@@ -875,7 +875,7 @@ fn run_selfhost_cache_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), 
 
     let module = directory.join("math.slim");
     let before = fs::read_to_string(&module).map_err(|error| error.to_string())?;
-    let after = before.replacen("value 1", "value 2", 1);
+    let after = before.replacen("value + 1", "value + 2", 1);
     if before == after {
         return Err(format!(
             "{}: cache fixture lacks source identity marker",
@@ -993,10 +993,10 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     )?;
     let updated_module = updated_directory.join("math.slim");
     let before = fs::read_to_string(&updated_module).map_err(|error| error.to_string())?;
-    let after = before.replacen("value 1", "value 2", 1);
+    let after = before.replacen("value + 1", "value + 2", 1);
     if before == after {
         return Err(format!(
-            "{}: incremental fixture lacks `value 1` edit marker",
+            "{}: incremental fixture lacks `value + 1` edit marker",
             fixture.id
         ));
     }
@@ -1037,7 +1037,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     let updated_app = updated_directory.join("app.slim");
     for app in [&initial_app, &updated_app] {
         let before = fs::read_to_string(app).map_err(|error| error.to_string())?;
-        let after = before.replacen("effects[io]", "effects[io partial]", 1);
+        let after = before.replacen("effects[io]", "effects[io, partial]", 1);
         if before == after {
             return Err(format!(
                 "{}: incremental fixture lacks app effect marker",

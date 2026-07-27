@@ -23,9 +23,9 @@ required because the body prints.
 
 <!-- slim-fixture: scalars -->
 
-The complete fixture prints `42` followed by a newline. Calls enclose their
-arguments in parentheses and separate them with whitespace. Indentation is
-exactly two spaces per level; commas, semicolons, braces, tabs, and alternate
+The complete fixture prints `42` followed by a newline. Calls enclose
+comma-separated arguments in parentheses. Indentation is exactly two spaces
+per level; missing or trailing commas, semicolons, braces, tabs, and alternate
 call spellings are rejected.
 
 ## Check, run, and emit

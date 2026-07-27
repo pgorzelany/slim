@@ -1,271 +1,239 @@
 module validate
 
-fn atom_at(inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens index)
-  i64.eq(kind 2)
+fn atom_at(inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, index)
+  kind == 2
 
-fn string_token_valid(source: Bytes inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens index)
-  let string_value: Bool = i64.eq(kind 3)
-  match string_value:
-    false:
-      true
-    true:
-      let start: I64 = syntax/ast_node_start(tokens index)
-      let end: I64 = syntax/ast_node_end(tokens index)
-      let source_length: I64 = bytes.len(source)
-      let nonempty: Bool = i64.gt(end start)
-      let in_bounds: Bool = i64.le(end source_length)
-      let can_read: Bool = bool.and(nonempty in_bounds)
-      match can_read:
-        false:
-          false
-        true:
-          let last: I64 = i64.sub(end 1)
-          let byte: U8 = bytes.get(source last)
-          let code: I64 = u8.to-i64(byte)
-          i64.eq(code 34)
-
-fn string_tokens_valid(source: Bytes inout tokens: Vec[syntax/Token] index: I64 length: I64) -> Bool effects[partial]:
-  let done: Bool = i64.ge(index length)
-  match done:
-    true:
-      true
-    false:
-      let valid: Bool = string_token_valid(source tokens index)
-      match valid:
-        false:
-          false
-        true:
-          let next: I64 = syntax/ast_node_after(index)
-          recur(source tokens next length)
-
-fn form_count_at_least(inout tokens: Vec[syntax/Token] cursor: I64 count: I64 minimum: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens cursor)
-  let done: Bool = i64.eq(kind 1)
-  match done:
-    true:
-      i64.ge(count minimum)
-    false:
-      let invalid: Bool = i64.lt(kind 0)
-      match invalid:
-        true:
-          false
-        false:
-          let next: I64 = syntax/ast_next(tokens cursor)
-          let progressed: Bool = i64.gt(next cursor)
-          match progressed:
-            false:
-              false
-            true:
-              let next_count: I64 = i64.add(count 1)
-              recur(tokens next next_count minimum)
-
-fn expression_minimum(source: Bytes inout tokens: Vec[syntax/Token] expression: I64) -> I64 effects[partial]:
-  let let_form: Bool = syntax/ast_expression_is_let(source tokens expression)
-  match let_form:
-    true:
-      4
-    false:
-      let call_form: Bool = syntax/ast_expression_is_call(source tokens expression)
-      match call_form:
-        true:
-          1
-        false:
-          let make_form: Bool = syntax/ast_expression_is_make(source tokens expression)
-          match make_form:
-            true:
-              1
-            false:
-              let get_form: Bool = syntax/ast_expression_is_get(source tokens expression)
-              match get_form:
-                true:
-                  2
-                false:
-                  let case_form: Bool = syntax/ast_expression_is_case(source tokens expression)
-                  match case_form:
-                    true:
-                      2
-                    false:
-                      let match_form: Bool = syntax/ast_expression_is_match(source tokens expression)
-                      match match_form:
-                        true:
-                          2
-                        false:
-                          let set_form: Bool = syntax/ast_expression_is_set(source tokens expression)
-                          match set_form:
-                            true:
-                              3
-                            false:
-                              0
-
-fn expression_shape_valid(source: Bytes inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens index)
-  let scalar: Bool = i64.ge(kind 2)
-  match scalar:
-    true:
-      true
-    false:
-      let form: Bool = i64.eq(kind 0)
-      match form:
-        false:
-          false
-        true:
-          let head: I64 = syntax/ast_list_first(index)
-          let head_atom: Bool = atom_at(tokens head)
-          match head_atom:
-            false:
-              false
-            true:
-              let minimum: I64 = expression_minimum(source tokens index)
-              let first_child: I64 = syntax/ast_next(tokens head)
-              form_count_at_least(tokens first_child 0 minimum)
-
-fn function_item_valid(source: Bytes inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let name: I64 = syntax/ast_item_name(index)
-  let params: I64 = syntax/ast_function_parameters(index)
-  let name_valid: Bool = atom_at(tokens name)
-  let params_kind: I64 = syntax/ast_node_kind(tokens params)
-  let params_valid: Bool = i64.eq(params_kind 0)
-  let return_type: I64 = syntax/ast_function_return_type(tokens index)
-  let return_kind: I64 = syntax/ast_node_kind(tokens return_type)
-  let return_valid: Bool = i64.ge(return_kind 0)
-  let effects: I64 = syntax/ast_function_effects(tokens index)
-  let effects_kind: I64 = syntax/ast_node_kind(tokens effects)
-  let effects_form: Bool = i64.eq(effects_kind 0)
-  let effects_valid: Bool = match effects_form:
-    true:
-      syntax/ast_effects_is_form(source tokens effects)
-    false:
+fn string_token_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, index)
+  let string_value: Bool = kind == 3
+  if string_value:
+    let start: I64 = syntax.ast_node_start(tokens, index)
+    let end: I64 = syntax.ast_node_end(tokens, index)
+    let source_length: I64 = bytes.len(source)
+    let nonempty: Bool = end > start
+    let in_bounds: Bool = end <= source_length
+    let can_read: Bool = nonempty && in_bounds
+    if can_read:
+      let last: I64 = end - 1
+      let byte: U8 = bytes.get(source, last)
+      let code: I64 = u8.to_i64(byte)
+      code == 34
+    else:
       false
-  let body: I64 = syntax/ast_function_body(tokens index)
-  let body_valid: Bool = expression_shape_valid(source tokens body)
-  let body_end: I64 = syntax/ast_next(tokens body)
-  let closing: I64 = syntax/ast_list_close(tokens index)
-  let exact: Bool = i64.eq(body_end closing)
-  let first: Bool = bool.and(name_valid params_valid)
-  let second: Bool = bool.and(return_valid effects_valid)
-  let third: Bool = bool.and(body_valid exact)
-  let left: Bool = bool.and(first second)
-  bool.and(left third)
+  else:
+    true
 
-fn data_item_valid(inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let name: I64 = syntax/ast_item_name(index)
-  let body: I64 = syntax/ast_data_body(index)
-  let name_valid: Bool = atom_at(tokens name)
-  let body_kind: I64 = syntax/ast_node_kind(tokens body)
-  let body_valid: Bool = i64.eq(body_kind 0)
-  let body_end: I64 = syntax/ast_next(tokens body)
-  let closing: I64 = syntax/ast_list_close(tokens index)
-  let exact: Bool = i64.eq(body_end closing)
-  let left: Bool = bool.and(name_valid body_valid)
-  bool.and(left exact)
-
-fn item_valid(source: Bytes inout tokens: Vec[syntax/Token] index: I64) -> Bool effects[partial]:
-  let kind: I64 = syntax/ast_node_kind(tokens index)
-  let form: Bool = i64.eq(kind 0)
-  match form:
-    false:
+fn string_tokens_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, length: I64) -> Bool effects[partial]:
+  let done: Bool = index >= length
+  if done:
+    true
+  else:
+    let valid: Bool = string_token_valid(source, tokens, index)
+    if valid:
+      let next: I64 = syntax.ast_node_after(index)
+      recur(source, tokens, next, length)
+    else:
       false
-    true:
-      let function: Bool = syntax/ast_item_is_function(source tokens index)
-      match function:
-        true:
-          function_item_valid(source tokens index)
-        false:
-          let record: Bool = syntax/ast_item_is_record(source tokens index)
-          let variant: Bool = syntax/ast_item_is_variant(source tokens index)
-          let data: Bool = bool.or(record variant)
-          match data:
-            true:
-              data_item_valid(tokens index)
-            false:
-              false
 
-fn item_list_valid(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 closing: I64) -> Bool effects[partial]:
-  let done: Bool = i64.eq(cursor closing)
-  match done:
-    true:
-      true
-    false:
-      let below: Bool = i64.lt(cursor closing)
-      match below:
-        false:
+fn form_count_at_least(inout tokens: Vec[syntax.Token], cursor: I64, count: I64, minimum: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    count >= minimum
+  else:
+    let invalid: Bool = kind < 0
+    if invalid:
+      false
+    else:
+      let next: I64 = syntax.ast_next(tokens, cursor)
+      let progressed: Bool = next > cursor
+      if progressed:
+        let next_count: I64 = count + 1
+        recur(tokens, next, next_count, minimum)
+      else:
+        false
+
+fn expression_minimum(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64) -> I64 effects[partial]:
+  let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expression)
+  if let_form:
+    4
+  else:
+    let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expression)
+    if call_form:
+      0
+    else:
+      let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expression)
+      if make_form:
+        0
+      else:
+        let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expression)
+        if get_form:
+          2
+        else:
+          let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expression)
+          if case_form:
+            1
+          else:
+            let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expression)
+            if match_form:
+              2
+            else:
+              let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expression)
+              if set_form:
+                3
+              else:
+                0
+
+fn expression_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, index)
+  let scalar: Bool = kind >= 2
+  if scalar:
+    true
+  else:
+    let form: Bool = kind == 0
+    if form:
+      let head: I64 = syntax.ast_list_first(index)
+      let head_atom: Bool = atom_at(tokens, head)
+      if head_atom:
+        let minimum: I64 = expression_minimum(source, tokens, index)
+        let first_child: I64 = syntax.ast_next(tokens, head)
+        form_count_at_least(tokens, first_child, 0, minimum)
+      else:
+        false
+    else:
+      false
+
+fn function_item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let name: I64 = syntax.ast_item_name(index)
+  let params: I64 = syntax.ast_function_parameters(index)
+  let name_valid: Bool = atom_at(tokens, name)
+  let params_kind: I64 = syntax.ast_node_kind(tokens, params)
+  let params_valid: Bool = params_kind == 0
+  let return_type: I64 = syntax.ast_function_return_type(tokens, index)
+  let return_kind: I64 = syntax.ast_node_kind(tokens, return_type)
+  let return_valid: Bool = return_kind >= 0
+  let effects: I64 = syntax.ast_function_effects(tokens, index)
+  let effects_kind: I64 = syntax.ast_node_kind(tokens, effects)
+  let effects_form: Bool = effects_kind == 0
+  let effects_valid: Bool = if effects_form:
+    syntax.ast_effects_is_form(source, tokens, effects)
+  else:
+    false
+  let body: I64 = syntax.ast_function_body(tokens, index)
+  let body_valid: Bool = expression_shape_valid(source, tokens, body)
+  let body_end: I64 = syntax.ast_next(tokens, body)
+  let closing: I64 = syntax.ast_list_close(tokens, index)
+  let exact: Bool = body_end == closing
+  let first: Bool = name_valid && params_valid
+  let second: Bool = return_valid && effects_valid
+  let third: Bool = body_valid && exact
+  let left: Bool = first && second
+  left && third
+
+fn data_item_valid(inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let name: I64 = syntax.ast_item_name(index)
+  let body: I64 = syntax.ast_data_body(index)
+  let name_valid: Bool = atom_at(tokens, name)
+  let body_kind: I64 = syntax.ast_node_kind(tokens, body)
+  let body_valid: Bool = body_kind == 0
+  let body_end: I64 = syntax.ast_next(tokens, body)
+  let closing: I64 = syntax.ast_list_close(tokens, index)
+  let exact: Bool = body_end == closing
+  let left: Bool = name_valid && body_valid
+  left && exact
+
+fn item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, index)
+  let form: Bool = kind == 0
+  if form:
+    let function: Bool = syntax.ast_item_is_function(source, tokens, index)
+    if function:
+      function_item_valid(source, tokens, index)
+    else:
+      let record: Bool = syntax.ast_item_is_record(source, tokens, index)
+      let variant: Bool = syntax.ast_item_is_variant(source, tokens, index)
+      let data: Bool = record || variant
+      if data:
+        data_item_valid(tokens, index)
+      else:
+        false
+  else:
+    false
+
+fn item_list_valid(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, closing: I64) -> Bool effects[partial]:
+  let done: Bool = cursor == closing
+  if done:
+    true
+  else:
+    let below: Bool = cursor < closing
+    if below:
+      let valid: Bool = item_valid(source, tokens, cursor)
+      if valid:
+        let next: I64 = syntax.ast_next(tokens, cursor)
+        let progressed: Bool = next > cursor
+        if progressed:
+          recur(source, tokens, next, closing)
+        else:
           false
-        true:
-          let valid: Bool = item_valid(source tokens cursor)
-          match valid:
-            false:
-              false
-            true:
-              let next: I64 = syntax/ast_next(tokens cursor)
-              let progressed: Bool = i64.gt(next cursor)
-              match progressed:
-                false:
-                  false
-                true:
-                  recur(source tokens next closing)
+      else:
+        false
+    else:
+      false
 
-fn main_count(source: Bytes inout tokens: Vec[syntax/Token] cursor: I64 closing: I64 count: I64) -> I64 effects[partial]:
-  let done: Bool = i64.eq(cursor closing)
-  match done:
-    true:
+fn main_count(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, closing: I64, count: I64) -> I64 effects[partial]:
+  let done: Bool = cursor == closing
+  if done:
+    count
+  else:
+    let function: Bool = syntax.ast_item_is_function(source, tokens, cursor)
+    let name: I64 = syntax.ast_item_name(cursor)
+    let named_main: Bool = if function:
+      syntax.ast_node_text_is(source, tokens, name, "main")
+    else:
+      false
+    let next_count: I64 = if named_main:
+      count + 1
+    else:
       count
-    false:
-      let function: Bool = syntax/ast_item_is_function(source tokens cursor)
-      let name: I64 = syntax/ast_item_name(cursor)
-      let named_main: Bool = match function:
-        true:
-          syntax/ast_node_text_is(source tokens name "main")
-        false:
-          false
-      let next_count: I64 = match named_main:
-        true:
-          i64.add(count 1)
-        false:
-          count
-      let next: I64 = syntax/ast_next(tokens cursor)
-      recur(source tokens next closing next_count)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, closing, next_count)
 
-fn module_shape_valid_from(source: Bytes inout tokens: Vec[syntax/Token] root: I64 end: I64) -> Bool effects[partial]:
-  let length: I64 = i64.sub(end root)
-  let bounded: Bool = i64.le(length 1000000)
-  let enough: Bool = i64.ge(length 4)
-  let sized: Bool = bool.and(bounded enough)
-  match sized:
-    false:
+fn module_shape_valid_from(source: Bytes, inout tokens: Vec[syntax.Token], root: I64, end: I64) -> Bool effects[partial]:
+  let length: I64 = end - root
+  let bounded: Bool = length <= 1000000
+  let enough: Bool = length >= 4
+  let sized: Bool = bounded && enough
+  if sized:
+    let closing: I64 = syntax.ast_list_close(tokens, root)
+    let root_form: Bool = syntax.ast_node_is_list(tokens, root)
+    let module_head: Bool = syntax.ast_module_is(source, tokens, root)
+    let module_name: Bool = atom_at(tokens, syntax.ast_module_name(root))
+    let close_kind: I64 = syntax.ast_node_kind(tokens, closing)
+    let close_valid: Bool = close_kind == 1
+    let first: Bool = root_form && module_head
+    let second: Bool = module_name && close_valid
+    let header: Bool = first && second
+    if header:
+      let strings: Bool = string_tokens_valid(source, tokens, root, end)
+      if strings:
+        item_list_valid(source, tokens, syntax.ast_module_items(root), closing)
+      else:
+        false
+    else:
       false
-    true:
-      let closing: I64 = syntax/ast_list_close(tokens root)
-      let root_form: Bool = syntax/ast_node_is_list(tokens root)
-      let module_head: Bool = syntax/ast_module_is(source tokens root)
-      let module_name: Bool = atom_at(tokens syntax/ast_module_name(root))
-      let close_kind: I64 = syntax/ast_node_kind(tokens closing)
-      let close_valid: Bool = i64.eq(close_kind 1)
-      let first: Bool = bool.and(root_form module_head)
-      let second: Bool = bool.and(module_name close_valid)
-      let header: Bool = bool.and(first second)
-      match header:
-        false:
-          false
-        true:
-          let strings: Bool = string_tokens_valid(source tokens root end)
-          match strings:
-            false:
-              false
-            true:
-              item_list_valid(source tokens syntax/ast_module_items(root) closing)
+  else:
+    false
 
-fn module_shape_valid(source: Bytes inout tokens: Vec[syntax/Token]) -> Bool effects[partial]:
+fn module_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token]) -> Bool effects[partial]:
   let end: I64 = vec.len(tokens)
-  module_shape_valid_from(source tokens 0 end)
+  module_shape_valid_from(source, tokens, 0, end)
 
-fn executable_shape_valid(source: Bytes inout tokens: Vec[syntax/Token]) -> Bool effects[partial]:
-  let valid: Bool = module_shape_valid(source tokens)
-  match valid:
-    false:
-      false
-    true:
-      let closing: I64 = syntax/ast_list_close(tokens 0)
-      let mains: I64 = main_count(source tokens syntax/ast_module_items(0) closing 0)
-      i64.eq(mains 1)
+fn executable_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token]) -> Bool effects[partial]:
+  let valid: Bool = module_shape_valid(source, tokens)
+  if valid:
+    let closing: I64 = syntax.ast_list_close(tokens, 0)
+    let mains: I64 = main_count(source, tokens, syntax.ast_module_items(0), closing, 0)
+    mains == 1
+  else:
+    false

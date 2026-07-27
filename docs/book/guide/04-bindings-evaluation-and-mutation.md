@@ -1,15 +1,15 @@
 # Bindings, evaluation, and mutation
 
-Bindings make value flow visible: `let` introduces a value, calls evaluate
-left to right, and mutation occurs only through the canonical `set` or `inout`
-forms.
+Bindings make value flow visible: `let` introduces an immutable value, `var`
+introduces a mutable value, calls evaluate left to right, and mutation occurs
+only through assignment or `inout`.
 
 ## Local bindings
 
 A local binding names one typed value:
 
 ```slim
-let answer: I64 = i64.add(40 2)
+let answer: I64 = 40 + 2
 ```
 
 The annotation is checked exactly. Names resolve lexically, and an unknown name
@@ -31,9 +31,9 @@ failure.
 
 ## Visible rebinding
 
-`set name = value` changes a uniquely accessible lexical binding while
-preserving its exact declared type. It is the single canonical rebinding form;
-record fields are not assigned through a hidden property setter.
+`name = value` changes a uniquely accessible `var` while preserving its exact
+declared type. Assignment to `let` is rejected; struct fields are not assigned
+through a hidden property setter.
 
 <!-- slim-fixture: data -->
 

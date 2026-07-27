@@ -1,9 +1,9 @@
-module field-order
+module field_order
 
-record Pair:
+struct Pair:
   left: I64
   right: I64
 
 fn main(args: Vec[Bytes]) -> I64:
-  let pair: Pair = make Pair(right = 2 left = 1)
-  get(pair left)
+  let pair: Pair = Pair(right: 2, left: 1)
+  pair.left

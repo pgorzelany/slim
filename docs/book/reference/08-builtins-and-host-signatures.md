@@ -3,13 +3,12 @@
 This chapter groups the compiler-recognized operations by role; the generated
 surface ledger and `slimc builtins` remain the exact inventories.
 
-## Scalar built-ins
+## Scalar operations
 
-`i64.add`, `i64.sub`, `i64.mul`, `i64.div`, and `i64.rem` are checked integer
-operations. `i64.eq`, `i64.lt`, `i64.le`, `i64.gt`, and `i64.ge` return
-`Bool`. `bool.not`, `bool.and`, and `bool.or` operate on `Bool`.
+`+`, `-`, `*`, `/`, and `%` are checked integer operations. `==`, `<`, `<=`,
+`>`, and `>=` return `Bool`. `!`, `&&`, and `||` operate on `Bool`.
 
-`u8.to-i64` widens explicitly. `i64.to-u8` checks the target domain and traps
+`u8.to_i64` widens explicitly. `i64.to_u8` checks the target domain and traps
 when the input is outside it.
 
 ## Byte operations
@@ -32,13 +31,13 @@ growth is allocation-capable.
 
 ## Terminal and file I/O
 
-`io.print-i64`, `io.print-bytes`, and `io.println` provide ordered output.
-`io.read-file` provides bounded typed file input. These operations require the
+`io.print_i64`, `io.print_bytes`, and `io.println` provide ordered output.
+`io.read_file` provides bounded typed file input. These operations require the
 effects in their exact signatures.
 
 ## Clock and network
 
-`io.monotonic-ms` reads a monotonic duration clock. `io.tcp-exchange` performs
+`io.monotonic_ms` reads a monotonic duration clock. `io.tcp_exchange` performs
 one bounded typed exchange. Neither exposes a general operating-system handle,
 socket, thread, or event loop.
 

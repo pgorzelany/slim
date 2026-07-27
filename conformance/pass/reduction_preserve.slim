@@ -1,8 +1,8 @@
-module reduction-preserve
+module reduction_preserve
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let values: Vec[I64] = vec.new()
-  let pushed: Unit = vec.push(values 1)
+  vec.push(values, 1)
   let moved: Vec[I64] = values
-  let visible: Unit = io.println("kept")
-  i64.add(i64.add(9223372036854775807 1) 0)
+  io.println("kept")
+  (9223372036854775807 + 1) + 0

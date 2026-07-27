@@ -1,61 +1,55 @@
-module union-find
+module union_find
 
-fn fill(inout parents: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let pushed: Unit = vec.push(parents index)
-      recur(parents i64.add(index 1) count)
+fn fill(inout parents: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+  if index == count:
+    void
+  else:
+    vec.push(parents, index)
+    recur(parents, index + 1, count)
 
-fn find-root(inout parents: Vec[I64] node: I64) -> I64 effects[partial]:
-  let parent: I64 = vec.get(parents node)
-  match i64.eq(parent node):
-    true:
-      node
-    false:
-      recur(parents parent)
+fn find_root(inout parents: Vec[I64], node: I64) -> I64 effects[partial]:
+  let parent: I64 = vec.get(parents, node)
+  if parent == node:
+    node
+  else:
+    recur(parents, parent)
 
-fn unite(inout parents: Vec[I64] left: I64 right: I64) -> Unit effects[partial]:
-  let left-root: I64 = find-root(parents left)
-  let right-root: I64 = find-root(parents right)
-  match i64.eq(left-root right-root):
-    true:
-      unit
-    false:
-      vec.set(parents right-root left-root)
+fn unite(inout parents: Vec[I64], left: I64, right: I64) -> Void effects[partial]:
+  let left_root: I64 = find_root(parents, left)
+  let right_root: I64 = find_root(parents, right)
+  if left_root == right_root:
+    void
+  else:
+    vec.set(parents, right_root, left_root)
 
-fn build(inout parents: Vec[I64] index: I64 count: I64) -> Unit effects[partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let partner: I64 = i64.rem(i64.add(i64.mul(index 17) 23) count)
-      let joined: Unit = unite(parents index partner)
-      recur(parents i64.add(index 1) count)
+fn build(inout parents: Vec[I64], index: I64, count: I64) -> Void effects[partial]:
+  if index == count:
+    void
+  else:
+    let partner: I64 = ((index * 17) + 23) % count
+    unite(parents, index, partner)
+    recur(parents, index + 1, count)
 
-fn checksum(inout parents: Vec[I64] index: I64 count: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(index count):
-    true:
-      total
-    false:
-      let root: I64 = find-root(parents index)
-      recur(parents i64.add(index 1) count i64.add(total root))
+fn checksum(inout parents: Vec[I64], index: I64, count: I64, total: I64) -> I64 effects[partial]:
+  if index == count:
+    total
+  else:
+    let root: I64 = find_root(parents, index)
+    recur(parents, index + 1, count, total + root)
 
-fn query-rounds(inout parents: Vec[I64] round: I64 rounds: I64 count: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(round rounds):
-    true:
-      total
-    false:
-      let value: I64 = checksum(parents 0 count 0)
-      recur(parents i64.add(round 1) rounds count i64.add(total value))
+fn query_rounds(inout parents: Vec[I64], round: I64, rounds: I64, count: I64, total: I64) -> I64 effects[partial]:
+  if round == rounds:
+    total
+  else:
+    let value: I64 = checksum(parents, 0, count, 0)
+    recur(parents, round + 1, rounds, count, total + value)
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let count: I64 = 200000
   let parents: Vec[I64] = vec.new()
-  let filled: Unit = fill(parents 0 count)
-  let built: Unit = build(parents 0 count)
-  let result: I64 = query-rounds(parents 0 10 count 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(parents, 0, count)
+  build(parents, 0, count)
+  let result: I64 = query_rounds(parents, 0, 10, count, 0)
+  io.print_i64(result)
+  io.println("")
   0

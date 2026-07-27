@@ -1,8 +1,8 @@
-module u8-different
+module u8_different
 
 fn subject(state: U8) -> Bool:
-  let number: I64 = u8.to-i64(state)
-  bool.and(i64.ge(number 1) i64.le(number 3))
+  let number: I64 = u8.to_i64(state)
+  (number >= 1) && (number <= 3)
 
 fn main(args: Vec[Bytes]) -> I64:
   0

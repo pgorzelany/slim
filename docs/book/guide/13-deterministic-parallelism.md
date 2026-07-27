@@ -4,12 +4,12 @@ SLIM admits only structured parallel work whose checked shape preserves
 determinism, race freedom, deadlock freedom, and the serial meaning of the
 program.
 
-## Explicit structured `fork`
+## Explicit structured `parallel`
 
-`fork` admits two independent leading direct leaf-call bindings, waits for both,
+`parallel` admits two independent leading direct leaf-call bindings, waits for both,
 and installs results in lexical order before the remaining block.
 
-<!-- slim-fixture: structured-fork -->
+<!-- slim-fixture: structured-parallel -->
 
 Accepted tasks are checked leaf functions with restricted inputs, no `inout`,
 no `partial`, isolated allocation regions, and only the bounded host operation
@@ -36,7 +36,7 @@ unreported sites remain serial.
 An effectful or otherwise unsupported task boundary is rejected rather than
 silently acquiring weaker semantics.
 
-<!-- slim-fixture: invalid-structured-fork -->
+<!-- slim-fixture: invalid-structured-parallel -->
 
 ## Compiler guarantees
 

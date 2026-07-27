@@ -1,6 +1,6 @@
-module vector-set-bounds
+module vector_set_bounds
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  let updated: Unit = vec.set(values 0 1)
+  vec.set(values, 0, 1)
   0

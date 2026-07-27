@@ -1,31 +1,30 @@
-module typed-temporaries
+module typed_temporaries
 
-record Pair:
+struct Pair:
   left: I64
   right: I64
 
-record Envelope:
+struct Envelope:
   pair: Pair
   ready: Bool
 
-variant Packet:
+enum Packet:
   Empty
-  Data(Pair Bool)
+  Data(Pair, Bool)
 
 fn main(args: Vec[Bytes]) -> I64 effects[io]:
-  let envelope: Envelope = make Envelope(pair = make Pair(left = 10 right = 20) ready = bool.and(true true))
-  let packet: Packet = case Packet::Data(make Pair(left = 20 right = 22) bool.and(true true))
+  let envelope: Envelope = Envelope(pair: Pair(left: 10, right: 20), ready: true && true)
+  let packet: Packet = Packet::Data(Pair(left: 20, right: 22), true && true)
   match packet:
     Empty:
       1
-    Data(pair ready):
-      match bool.and(ready true):
-        true:
-          let left: I64 = get(pair left)
-          let right: I64 = get(pair right)
-          let answer: I64 = i64.add(left right)
-          let shown: Unit = io.print-i64(answer)
-          let newline: Unit = io.println("")
-          0
-        false:
-          2
+    Data(pair, ready):
+      if ready && true:
+        let left: I64 = pair.left
+        let right: I64 = pair.right
+        let answer: I64 = left + right
+        io.print_i64(answer)
+        io.println("")
+        0
+      else:
+        2

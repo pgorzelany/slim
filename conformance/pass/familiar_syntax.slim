@@ -1,0 +1,55 @@
+module familiar_syntax
+
+struct Empty:
+
+struct Pair:
+  left: I64
+  right: I64
+
+struct Box:
+  pair: Pair
+
+enum Choice:
+  None
+  Both(I64, I64)
+
+fn zero() -> I64:
+  7
+
+fn increment(var value: I64) -> I64:
+  value = value + 1
+  value
+
+fn finish() -> Void:
+  void
+
+fn total(choice: Choice) -> I64:
+  match choice:
+    None:
+      0
+    Both(left, right):
+      left + right
+
+fn mutable_total(choice: Choice) -> I64:
+  match choice:
+    None:
+      0
+    Both(var left, right):
+      left = left + 1
+      left + right
+
+fn main(args: Vec[Bytes]) -> I64:
+  let empty: Empty = Empty()
+  let called: I64 = zero()
+  let pair: Pair = Pair(left: called, right: 35)
+  let boxed: Box = Box(pair: pair)
+  let nested: I64 = boxed.pair.left
+  let choice: Choice = Choice::Both(nested, boxed.pair.right)
+  let answer: I64 = total(choice)
+  let mutable_answer: I64 = mutable_total(Choice::Both(20, 22))
+  finish()
+  let precedence: Bool = (1 + 2 * 3 == 7) && (!false || false)
+  if precedence && (increment(answer) == 43) && (mutable_answer == 43):
+    0
+  else:
+    1

@@ -1,25 +1,24 @@
 module records
 
-record State:
+struct State:
   x: I64
   y: I64
   vx: I64
   vy: I64
 
 fn step(state: State) -> State effects[partial]:
-  make State(x = i64.add(get(state x) get(state vx)) y = i64.add(get(state y) get(state vy)) vx = i64.add(get(state vx) 3) vy = i64.sub(get(state vy) 2))
+  State(x: state.x + state.vx, y: state.y + state.vy, vx: state.vx + 3, vy: state.vy - 2)
 
-fn simulate(remaining: I64 state: State) -> State effects[partial]:
-  match i64.eq(remaining 0):
-    true:
-      state
-    false:
-      recur(i64.sub(remaining 1) step(state))
+fn simulate(remaining: I64, state: State) -> State effects[partial]:
+  if remaining == 0:
+    state
+  else:
+    recur(remaining - 1, step(state))
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let initial: State = make State(x = 0 y = 0 vx = 11 vy = 17)
-  let result: State = simulate(1000000 initial)
-  let answer: I64 = i64.add(get(result x) get(result y))
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let initial: State = State(x: 0, y: 0, vx: 11, vy: 17)
+  let result: State = simulate(1000000, initial)
+  let answer: I64 = result.x + result.y
+  io.print_i64(answer)
+  io.println("")
   0

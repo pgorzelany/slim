@@ -1,0 +1,5 @@
+# declarations	source-bytes	lexemes	commas	canonical-expression-nodes	first-median-parse-check-us	repeat-median-parse-check-us	repeat-over-first
+250	23712	6771	1000	1005	3407	3436	1.009
+500	47462	13521	2000	2005	5380	5528	1.028
+1000	94962	27021	4000	4005	12091	12305	1.018
+2000	190962	54021	8000	8005	26700	26296	0.985

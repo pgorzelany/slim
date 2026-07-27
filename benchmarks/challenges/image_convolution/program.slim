@@ -1,72 +1,67 @@
-module image-convolution
+module image_convolution
 
-fn fill(inout current: Vec[I64] inout next: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let value: I64 = i64.rem(i64.add(i64.mul(index 31) 7) 256)
-      let pushed-current: Unit = vec.push(current value)
-      let pushed-next: Unit = vec.push(next 0)
-      recur(current next i64.add(index 1) count)
+fn fill(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+  if index == count:
+    void
+  else:
+    let value: I64 = ((index * 31) + 7) % 256
+    vec.push(current, value)
+    vec.push(next, 0)
+    recur(current, next, index + 1, count)
 
-fn step(inout current: Vec[I64] inout next: Vec[I64] index: I64 count: I64 size: I64) -> Unit effects[partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let row: I64 = i64.div(index size)
-      let column: I64 = i64.rem(index size)
-      let previous-row: I64 = i64.rem(i64.add(row i64.sub(size 1)) size)
-      let next-row: I64 = i64.rem(i64.add(row 1) size)
-      let previous-column: I64 = i64.rem(i64.add(column i64.sub(size 1)) size)
-      let next-column: I64 = i64.rem(i64.add(column 1) size)
-      let up-index: I64 = i64.add(i64.mul(previous-row size) column)
-      let down-index: I64 = i64.add(i64.mul(next-row size) column)
-      let left-index: I64 = i64.add(i64.mul(row size) previous-column)
-      let right-index: I64 = i64.add(i64.mul(row size) next-column)
-      let center: I64 = vec.get(current index)
-      let first: I64 = i64.add(i64.mul(center 4) vec.get(current up-index))
-      let second: I64 = i64.add(first vec.get(current down-index))
-      let third: I64 = i64.add(second vec.get(current left-index))
-      let total: I64 = i64.add(third vec.get(current right-index))
-      let value: I64 = i64.div(total 8)
-      let stored: Unit = vec.set(next index value)
-      recur(current next i64.add(index 1) count size)
+fn step(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64, size: I64) -> Void effects[partial]:
+  if index == count:
+    void
+  else:
+    let row: I64 = index / size
+    let column: I64 = index % size
+    let previous_row: I64 = (row + (size - 1)) % size
+    let next_row: I64 = (row + 1) % size
+    let previous_column: I64 = (column + (size - 1)) % size
+    let next_column: I64 = (column + 1) % size
+    let up_index: I64 = (previous_row * size) + column
+    let down_index: I64 = (next_row * size) + column
+    let left_index: I64 = (row * size) + previous_column
+    let right_index: I64 = (row * size) + next_column
+    let center: I64 = vec.get(current, index)
+    let first: I64 = (center * 4) + vec.get(current, up_index)
+    let second: I64 = first + vec.get(current, down_index)
+    let third: I64 = second + vec.get(current, left_index)
+    let total: I64 = third + vec.get(current, right_index)
+    let value: I64 = total / 8
+    vec.set(next, index, value)
+    recur(current, next, index + 1, count, size)
 
-fn copy-image(inout current: Vec[I64] inout next: Vec[I64] index: I64 count: I64) -> Unit effects[partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let value: I64 = vec.get(next index)
-      let stored: Unit = vec.set(current index value)
-      recur(current next i64.add(index 1) count)
+fn copy_image(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64) -> Void effects[partial]:
+  if index == count:
+    void
+  else:
+    let value: I64 = vec.get(next, index)
+    vec.set(current, index, value)
+    recur(current, next, index + 1, count)
 
-fn rounds(inout current: Vec[I64] inout next: Vec[I64] round: I64 limit: I64 count: I64 size: I64) -> Unit effects[partial]:
-  match i64.eq(round limit):
-    true:
-      unit
-    false:
-      let filtered: Unit = step(current next 0 count size)
-      let copied: Unit = copy-image(current next 0 count)
-      recur(current next i64.add(round 1) limit count size)
+fn rounds(inout current: Vec[I64], inout next: Vec[I64], round: I64, limit: I64, count: I64, size: I64) -> Void effects[partial]:
+  if round == limit:
+    void
+  else:
+    step(current, next, 0, count, size)
+    copy_image(current, next, 0, count)
+    recur(current, next, round + 1, limit, count, size)
 
-fn checksum(inout current: Vec[I64] index: I64 count: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(index count):
-    true:
-      total
-    false:
-      recur(current i64.add(index 1) count i64.add(total vec.get(current index)))
+fn checksum(inout current: Vec[I64], index: I64, count: I64, total: I64) -> I64 effects[partial]:
+  if index == count:
+    total
+  else:
+    recur(current, index + 1, count, total + vec.get(current, index))
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 256
-  let count: I64 = i64.mul(size size)
+  let count: I64 = size * size
   let current: Vec[I64] = vec.new()
   let next: Vec[I64] = vec.new()
-  let filled: Unit = fill(current next 0 count)
-  let filtered: Unit = rounds(current next 0 40 count size)
-  let result: I64 = checksum(current 0 count 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(current, next, 0, count)
+  rounds(current, next, 0, 40, count, size)
+  let result: I64 = checksum(current, 0, count, 0)
+  io.print_i64(result)
+  io.println("")
   0

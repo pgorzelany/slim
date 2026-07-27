@@ -1,83 +1,74 @@
-module merge-sort
+module merge_sort
 
-fn fill(inout values: Vec[I64] index: I64 count: I64) -> Unit effects[alloc partial]:
-  match i64.eq(index count):
-    true:
-      unit
-    false:
-      let pushed: Unit = vec.push(values i64.sub(count index))
-      recur(values i64.add(index 1) count)
+fn fill(inout values: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+  if index == count:
+    void
+  else:
+    vec.push(values, count - index)
+    recur(values, index + 1, count)
 
-fn copy-left(inout values: Vec[I64] inout scratch: Vec[I64] index: I64 middle: I64 output: I64) -> Unit effects[partial]:
-  match i64.eq(index middle):
-    true:
-      unit
-    false:
-      let copied: Unit = vec.set(scratch output vec.get(values index))
-      recur(values scratch i64.add(index 1) middle i64.add(output 1))
+fn copy_left(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, middle: I64, output: I64) -> Void effects[partial]:
+  if index == middle:
+    void
+  else:
+    vec.set(scratch, output, vec.get(values, index))
+    recur(values, scratch, index + 1, middle, output + 1)
 
-fn copy-right(inout values: Vec[I64] inout scratch: Vec[I64] index: I64 right: I64 output: I64) -> Unit effects[partial]:
-  match i64.eq(index right):
-    true:
-      unit
-    false:
-      let copied: Unit = vec.set(scratch output vec.get(values index))
-      recur(values scratch i64.add(index 1) right i64.add(output 1))
+fn copy_right(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, right: I64, output: I64) -> Void effects[partial]:
+  if index == right:
+    void
+  else:
+    vec.set(scratch, output, vec.get(values, index))
+    recur(values, scratch, index + 1, right, output + 1)
 
-fn merge-fill(inout values: Vec[I64] inout scratch: Vec[I64] left-index: I64 middle: I64 right-index: I64 right: I64 output: I64) -> Unit effects[partial]:
-  match i64.eq(left-index middle):
-    true:
-      copy-right(values scratch right-index right output)
-    false:
-      match i64.eq(right-index right):
-        true:
-          copy-left(values scratch left-index middle output)
-        false:
-          match i64.le(vec.get(values left-index) vec.get(values right-index)):
-            true:
-              let copied: Unit = vec.set(scratch output vec.get(values left-index))
-              recur(values scratch i64.add(left-index 1) middle right-index right i64.add(output 1))
-            false:
-              let copied: Unit = vec.set(scratch output vec.get(values right-index))
-              recur(values scratch left-index middle i64.add(right-index 1) right i64.add(output 1))
+fn merge_fill(inout values: Vec[I64], inout scratch: Vec[I64], left_index: I64, middle: I64, right_index: I64, right: I64, output: I64) -> Void effects[partial]:
+  if left_index == middle:
+    copy_right(values, scratch, right_index, right, output)
+  else:
+    if right_index == right:
+      copy_left(values, scratch, left_index, middle, output)
+    else:
+      if vec.get(values, left_index) <= vec.get(values, right_index):
+        vec.set(scratch, output, vec.get(values, left_index))
+        recur(values, scratch, left_index + 1, middle, right_index, right, output + 1)
+      else:
+        vec.set(scratch, output, vec.get(values, right_index))
+        recur(values, scratch, left_index, middle, right_index + 1, right, output + 1)
 
-fn copy-back(inout values: Vec[I64] inout scratch: Vec[I64] index: I64 right: I64) -> Unit effects[partial]:
-  match i64.eq(index right):
-    true:
-      unit
-    false:
-      let copied: Unit = vec.set(values index vec.get(scratch index))
-      recur(values scratch i64.add(index 1) right)
+fn copy_back(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, right: I64) -> Void effects[partial]:
+  if index == right:
+    void
+  else:
+    vec.set(values, index, vec.get(scratch, index))
+    recur(values, scratch, index + 1, right)
 
-fn merge(inout values: Vec[I64] inout scratch: Vec[I64] left: I64 middle: I64 right: I64) -> Unit effects[partial]:
-  let filled: Unit = merge-fill(values scratch left middle middle right left)
-  copy-back(values scratch left right)
+fn merge(inout values: Vec[I64], inout scratch: Vec[I64], left: I64, middle: I64, right: I64) -> Void effects[partial]:
+  merge_fill(values, scratch, left, middle, middle, right, left)
+  copy_back(values, scratch, left, right)
 
-fn sort(inout values: Vec[I64] inout scratch: Vec[I64] left: I64 right: I64) -> Unit effects[partial]:
-  match i64.le(i64.sub(right left) 1):
-    true:
-      unit
-    false:
-      let middle: I64 = i64.add(left i64.div(i64.sub(right left) 2))
-      let left-sorted: Unit = sort(values scratch left middle)
-      let right-sorted: Unit = sort(values scratch middle right)
-      merge(values scratch left middle right)
+fn sort(inout values: Vec[I64], inout scratch: Vec[I64], left: I64, right: I64) -> Void effects[partial]:
+  if (right - left) <= 1:
+    void
+  else:
+    let middle: I64 = left + ((right - left) / 2)
+    sort(values, scratch, left, middle)
+    sort(values, scratch, middle, right)
+    merge(values, scratch, left, middle, right)
 
-fn checksum(inout values: Vec[I64] index: I64 total: I64) -> I64 effects[partial]:
-  match i64.eq(index vec.len(values)):
-    true:
-      total
-    false:
-      recur(values i64.add(index 1) i64.add(total i64.mul(vec.get(values index) i64.add(index 1))))
+fn checksum(inout values: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
+  if index == vec.len(values):
+    total
+  else:
+    recur(values, index + 1, total + (vec.get(values, index) * (index + 1)))
 
-fn main(args: Vec[Bytes]) -> I64 effects[alloc io partial]:
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let count: I64 = 20000
   let values: Vec[I64] = vec.new()
   let scratch: Vec[I64] = vec.new()
-  let values-filled: Unit = fill(values 0 count)
-  let scratch-filled: Unit = fill(scratch 0 count)
-  let sorted: Unit = sort(values scratch 0 count)
-  let result: I64 = checksum(values 0 0)
-  let shown: Unit = io.print-i64(result)
-  let newline: Unit = io.println("")
+  fill(values, 0, count)
+  fill(scratch, 0, count)
+  sort(values, scratch, 0, count)
+  let result: I64 = checksum(values, 0, 0)
+  io.print_i64(result)
+  io.println("")
   0

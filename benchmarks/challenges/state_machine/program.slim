@@ -1,90 +1,45 @@
-module state-machine
+module state_machine
 
-record State:
+struct State:
   a: Bool
   b: Bool
   c: Bool
   d: Bool
 
-fn run(remaining: I64 state: State) -> State effects[partial]:
-  match i64.le(remaining 0):
-    true:
-      state
-    false:
-      let next-a: Bool = get(state b)
-      let next-b: Bool = get(state c)
-      let next-c: Bool = get(state d)
-      let next-d: Bool = bool.not(get(state a))
-      recur(i64.sub(remaining 1) make State(a = next-a b = next-b c = next-c d = next-d))
+fn run(remaining: I64, state: State) -> State effects[partial]:
+  if remaining <= 0:
+    state
+  else:
+    let next_a: Bool = state.b
+    let next_b: Bool = state.c
+    let next_c: Bool = state.d
+    let next_d: Bool = !state.a
+    recur(remaining - 1, State(a: next_a, b: next_b, c: next_c, d: next_d))
 
-fn same(left: State right: State) -> Bool:
-  bool.and(
-    i64.eq(
-      match get(left a):
-        true:
-          1
-        false:
-          0
-      match get(right a):
-        true:
-          1
-        false:
-          0
-    )
-    bool.and(
-      i64.eq(
-        match get(left b):
-          true:
-            1
-          false:
-            0
-        match get(right b):
-          true:
-            1
-          false:
-            0
-      )
-      bool.and(
-        i64.eq(
-          match get(left c):
-            true:
-              1
-            false:
-              0
-          match get(right c):
-            true:
-              1
-            false:
-              0
-        )
-        i64.eq(
-          match get(left d):
-            true:
-              1
-            false:
-              0
-          match get(right d):
-            true:
-              1
-            false:
-              0
-        )
-      )
-    )
-  )
+fn bit(value: Bool) -> I64:
+  if value:
+    1
+  else:
+    0
 
-fn main(args: Vec[Bytes]) -> I64 effects[io partial]:
-  let seed: Bool = i64.gt(vec.len(args) 1)
-  let first: State = make State(a = seed b = false c = true d = false)
-  let second: State = make State(a = false b = seed c = false d = true)
-  let left: State = run(2000000 first)
-  let right: State = run(2000000 second)
-  let equal: Bool = same(left right)
-  let answer: I64 = match equal:
-    true:
-      1
-    false:
-      0
-  let shown: Unit = io.print-i64(answer)
-  let newline: Unit = io.println("")
+fn same(left: State, right: State) -> Bool:
+  let a_equal: Bool = bit(left.a) == bit(right.a)
+  let b_equal: Bool = bit(left.b) == bit(right.b)
+  let c_equal: Bool = bit(left.c) == bit(right.c)
+  let d_equal: Bool = bit(left.d) == bit(right.d)
+  a_equal && (b_equal && (c_equal && d_equal))
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let seed: Bool = vec.len(args) > 1
+  let first: State = State(a: seed, b: false, c: true, d: false)
+  let second: State = State(a: false, b: seed, c: false, d: true)
+  let left: State = run(2000000, first)
+  let right: State = run(2000000, second)
+  let equal: Bool = same(left, right)
+  let answer: I64 = if equal:
+    1
+  else:
+    0
+  io.print_i64(answer)
+  io.println("")
   0

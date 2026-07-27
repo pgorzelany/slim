@@ -3,7 +3,7 @@
 Status: Core 1J guarded automatic and explicit structured execution
 
 SLIM has no general concurrency scheduler. Core 1F establishes which checked
-computations can enter a structured fork/join plan without changing observable
+computations can enter a structured parallel/join plan without changing observable
 behavior. Core 1G executes one proven pure subset automatically. Core 1J adds
 one explicit lexical wrapper for independent bounded host operations whose
 effect independence cannot be inferred.
@@ -28,7 +28,7 @@ when D0063/D0066's fact for that exact source node positively proves totality.
 Cyclic call graphs and facts beyond a fixed bound are `unknown`. Unknown never
 means safe.
 
-The analysis recognizes an independent fork site when two adjacent immutable
+The analysis recognizes an independent parallel site when two adjacent immutable
 `let` initializers are reorder-safe user computations and the second does not
 depend on the first binding. Both results join before the original body. With
 no mutation, exclusive borrow, effect, trap, or unstructured synchronization in
@@ -42,7 +42,7 @@ analyzed through its normal validated, flattened, typed artifact; there is no
 second project parser or checker. Analysis schema 7 preserves the Core 1G
 parallel fields: stable
 source-token node identities, per-function safety facts, exact recurrence work
-when derivable, candidate fork sites, and distinct selected, executable, and
+when derivable, candidate parallel sites, and distinct selected, executable, and
 executed counts. Unavailable or unknown results retain explicit reasons. It
 stores at most 64 functions and 4,096 direct call edges and performs at most 64
 graph-resolution passes.
@@ -70,7 +70,7 @@ size, proof counts, primary safety reasons, and eligible sites with
 verification. Baseline changes require a dated explanation.
 
 The initial corpus has 49 functions and 140 checked integer sites, but only one
-reported checked site is total and no function or fork site is eligible. Thirty
+reported checked site is total and no function or parallel site is eligible. Thirty
 functions first report an exclusive borrow, ten allocation or I/O, five a
 checked trap, and four recurrence. These are primary reasons only; secondary
 hazards remain masked. This result rejects execution work and rejects choosing
@@ -94,7 +94,7 @@ the complete implementation proves that no granted capability is exercised.
 The shared integer view also proves one canonical, strictly decreasing tail
 recurrence total. The new `state_machine` application performs two independent
 two-million-step recurrences: both are total and reorder-safe, and their
-adjacent calls produce one exact positive fork candidate. The original
+adjacent calls produce one exact positive parallel candidate. The original
 `variants/command` helper also becomes safe. Real allocation, I/O, unchecked
 traps, unsupported recurrence, exclusive access, and graph uncertainty remain
 blockers.
@@ -205,7 +205,7 @@ wrapper, environment parsing, thread include, or worker link flag.
 D0078 accepts exactly:
 
 ```text
-fork:
+parallel:
   let first: T = f(...)
   let second: U = g(...)
   body
@@ -214,9 +214,9 @@ fork:
 The wrapper is allowed only on a function's leading immutable `let` chain.
 Both initializers are direct calls to checked leaf functions. Parameters are
 scalars or `Bytes`, never `inout`; neither function declares `partial`; the
-checked body contains at least one `io.monotonic-ms` or bounded
-`io.tcp-exchange` operation and no nested user call, mutation, recurrence, or
-fork. Pure work uses Core 1G instead.
+checked body contains at least one `io.monotonic_ms` or bounded
+`io.tcp_exchange` operation and no nested user call, mutation, recurrence, or
+parallel block. Pure work uses Core 1G instead.
 
 The compiler starts at most one child, runs the other call on the parent, joins
 the child, and installs `first` then `second` before evaluating `body`.
