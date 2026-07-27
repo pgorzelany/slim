@@ -1,37 +1,24 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { BookLayout } from "../../_components/BookLayout";
+import { LegacyRedirect } from "../../_components/LegacyRedirect";
 import { content } from "../../_lib/content";
 
+export const metadata: Metadata = {
+  title: "Documentation moved",
+  robots: { index: false, follow: true },
+};
+
 export function generateStaticParams() {
-  return content.guide.map((chapter) => ({ slug: chapter.slug }));
+  return Object.keys(content.redirects.guide).map((slug) => ({ slug }));
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const chapter = content.guide.find((item) => item.slug === slug);
-  if (!chapter) return {};
-  return { title: chapter.title, description: chapter.summary };
-}
-
-export default async function GuideChapterPage({
+export default async function LegacyGuidePage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const chapter = content.guide.find((item) => item.slug === slug);
-  if (!chapter) notFound();
-  return (
-    <BookLayout
-      document={chapter}
-      documents={content.guide}
-      sectionTitle="The SLIM Guide"
-      indexRoute="/learn"
-    />
-  );
+  const target = content.redirects.guide[slug as keyof typeof content.redirects.guide];
+  if (!target) notFound();
+  return <LegacyRedirect target={target} />;
 }

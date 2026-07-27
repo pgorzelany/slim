@@ -1,7 +1,7 @@
 # Core 1G guarded automatic execution
 
 Date: 2026-07-23
-Decision: D0071
+Decision: RFC-0071
 Status: accepted
 
 ## Accepted boundary

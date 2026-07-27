@@ -1,7 +1,7 @@
 # Safe C-parity canonical O3 result
 
 Date: 2026-07-24
-Decision: D0086
+Decision: RFC-0086
 Parent: `ba5443e`
 Host: Darwin 25.3.0 arm64
 C compiler: Apple Clang 21.0.0

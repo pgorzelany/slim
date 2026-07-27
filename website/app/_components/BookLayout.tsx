@@ -1,9 +1,7 @@
 import Link from "next/link";
-import type { BookChapter, ReferenceDocument } from "../_lib/content";
+import type { Document } from "../_lib/content";
 import { RenderedMarkdown } from "./RenderedMarkdown";
 import { BookSearch } from "./BookSearch";
-
-type Document = BookChapter | ReferenceDocument;
 
 function ChapterList({
   documents,
@@ -51,7 +49,7 @@ export function BookLayout({
           <Link className="book-sidebar__title" href={indexRoute}>
             {sectionTitle}
           </Link>
-          <BookSearch id="sidebar-book-search" />
+          <BookSearch id="sidebar-book-search" scope="current" />
           <ChapterList documents={documents} currentRoute={document.route} />
         </aside>
 
@@ -66,7 +64,7 @@ export function BookLayout({
 
           <details className="book-mobile-nav">
             <summary>Browse {sectionTitle}</summary>
-            <BookSearch id="mobile-book-search" />
+            <BookSearch id="mobile-book-search" scope="current" />
             <ChapterList documents={documents} currentRoute={document.route} />
           </details>
 

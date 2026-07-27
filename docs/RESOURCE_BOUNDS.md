@@ -52,7 +52,7 @@ bound.
 
 ## Boundary
 
-D0074 closes Core 1H without source-level resource contracts. Reconsideration
+RFC-0074 closes Core 1H without source-level resource contracts. Reconsideration
 requires application evidence showing which repeated assumption inference
 cannot recover, followed by a separate weighted feature decision, diagnostics,
 semantics, and permanent tests.

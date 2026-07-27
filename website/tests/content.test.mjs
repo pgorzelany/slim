@@ -10,6 +10,9 @@ const repositoryRoot = path.resolve(siteRoot, "..");
 const generated = JSON.parse(
   await readFile(path.join(siteRoot, "generated/content.json"), "utf8"),
 );
+const search = JSON.parse(
+  await readFile(path.join(siteRoot, "generated/search.json"), "utf8"),
+).search;
 const generatedSurface = JSON.parse(
   await readFile(path.join(siteRoot, "public/reference/surface.json"), "utf8"),
 );
@@ -24,50 +27,98 @@ function runtimeExpectation(expectation) {
   };
 }
 
-test("chapter inventories derive stable metadata from canonical filenames", async () => {
-  const expectations = [
-    ["guide", "docs/book/guide", 14, "/learn/"],
-    ["languageReference", "docs/book/reference", 10, "/reference/language/"],
-  ];
-
-  for (const [key, directory, count, routePrefix] of expectations) {
-    const names = (await readdir(path.join(repositoryRoot, directory))).sort();
-    assert.equal(names.length, count);
-    assert.equal(generated[key].length, count);
-    assert.deepEqual(
-      generated[key].map((chapter) => path.basename(chapter.path)),
-      names,
-    );
-    for (const [index, chapter] of generated[key].entries()) {
-      const match = names[index].match(/^(\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/);
-      assert.ok(match);
-      assert.equal(chapter.order, index + 1);
-      assert.equal(chapter.slug, match[2]);
-      assert.equal(chapter.route, `${routePrefix}${chapter.slug}`);
-      assert.ok(chapter.title.length > 0);
-      assert.ok(chapter.summary.length > 30);
-      assert.ok(chapter.html.length > 500);
-      assert.ok(chapter.headings.length >= 3);
-      await access(path.join(repositoryRoot, chapter.path));
+async function collectFiles(directory, relative = "") {
+  const entries = await readdir(directory, { withFileTypes: true });
+  const files = [];
+  for (const entry of entries) {
+    if (
+      entry.isDirectory()
+      && [".git", ".next", "node_modules", "out", "target"].includes(entry.name)
+    ) {
+      continue;
+    }
+    const nextRelative = relative ? `${relative}/${entry.name}` : entry.name;
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) {
+      files.push(...await collectFiles(absolute, nextRelative));
+    } else if (entry.isFile()) {
+      files.push(nextRelative);
     }
   }
+  return files.sort();
+}
 
+test("Handbook inventory derives stable metadata from canonical filenames", async () => {
+  const directory = "docs/book/handbook";
+  const names = (await readdir(path.join(repositoryRoot, directory))).sort();
+  assert.equal(names.length, 12);
+  assert.equal(generated.handbook.length, 12);
+  assert.deepEqual(
+    generated.handbook.map((chapter) => path.basename(chapter.path)),
+    names,
+  );
+  for (const [index, chapter] of generated.handbook.entries()) {
+    const match = names[index].match(/^(\d{2})-([a-z0-9]+(?:-[a-z0-9]+)*)\.md$/);
+    assert.ok(match);
+    assert.equal(chapter.order, index + 1);
+    assert.equal(chapter.slug, match[2]);
+    assert.equal(chapter.route, `/handbook/${chapter.slug}`);
+    assert.ok(chapter.title.length > 0);
+    assert.ok(chapter.summary.length > 30);
+    assert.ok(chapter.html.length > 500);
+    assert.ok(chapter.headings.length >= 3);
+    await access(path.join(repositoryRoot, chapter.path));
+  }
+  assert.equal(generated.appendices.length, 5);
   assert.equal(new Set(generated.routes).size, generated.routes.length);
-  assert.equal(generated.routes.length, 40);
 });
 
-test("book fixtures execute through production SLIM with exact expectations", async () => {
-  const fixtures = [...generated.guide.flatMap((chapter) => chapter.fixtures)];
-  assert.ok(fixtures.length >= 30);
+test("every Markdown source is published once or explicitly excluded", async () => {
+  const markdown = (await collectFiles(repositoryRoot))
+    .filter((sourcePath) => sourcePath.endsWith(".md"));
+  const published = generated.coverage.published.map((entry) => entry.sourcePath);
+  const excluded = generated.coverage.excluded.map((entry) => entry.sourcePath);
+  assert.deepEqual([...published, ...excluded].sort(), markdown);
+  assert.equal(new Set(published).size, published.length);
+  assert.equal(new Set(generated.coverage.published.map((entry) => entry.route)).size, published.length);
+  assert.deepEqual(generated.coverage.excluded, [{
+    sourcePath: "AGENTS.md",
+    reason: "Internal operational policy for repository agents.",
+  }]);
+  assert.equal(generated.stats.publishedMarkdown, published.length);
+  assert.equal(generated.stats.excludedMarkdown, excluded.length);
+});
+
+test("documentation budgets report distinct current and historical archives", () => {
+  assert.ok(generated.stats.sequentialHandbookWords > 0);
+  assert.ok(generated.stats.algorithmWalkthroughWords > 0);
+  assert.ok(generated.stats.handbookWords <= 10_000);
+  assert.ok(generated.stats.maintainedCurrentWords <= 16_000);
+  assert.ok(generated.stats.rfcArchiveWords > generated.stats.maintainedCurrentWords);
+  assert.ok(generated.stats.evidenceArchiveWords > 0);
+});
+
+test("embedded Handbook fixtures execute through production SLIM", async () => {
+  const fixtures = generated.handbook.flatMap((chapter) => chapter.fixtures);
+  assert.ok(fixtures.length >= 40);
   const unique = new Map(fixtures.map((fixture) => [
     `${fixture.manifestPath}:${fixture.id}`,
     fixture,
   ]));
+  for (const required of [
+    "example-hello",
+    "example-countdown",
+    "example-data",
+    "example-vector-sum",
+    "example-inout",
+    "example-bytes",
+    "structured-parallel",
+  ]) {
+    assert.ok([...unique.values()].some((fixture) => fixture.id === required));
+  }
 
   for (const fixture of unique.values()) {
     await access(path.join(repositoryRoot, fixture.path));
-    const isProject = fixture.manifestPath.endsWith("/projects/manifest.tsv");
-
     if (fixture.mode === "check-fail") {
       const checked = spawnSync("./slimc", ["check", fixture.path], {
         cwd: repositoryRoot,
@@ -112,39 +163,46 @@ test("book fixtures execute through production SLIM with exact expectations", as
       assert.equal(run.status, expected.exit, fixture.id);
       assert.equal(run.stdout, expected.stdout, fixture.id);
       assert.equal(run.stderr, expected.stderr, fixture.id);
-    } else if (isProject) {
-      assert.equal(fixture.mode, "check-pass");
     }
   }
 });
 
-test("status metadata agrees with design, roadmap, and Cargo.toml", async () => {
-  const [design, cargo, status, roadmap] = await Promise.all([
+test("canonical version and status metadata agree", async () => {
+  const [design, cargo, status, roadmap, version] = await Promise.all([
     readFile(path.join(repositoryRoot, "DESIGN.md"), "utf8"),
     readFile(path.join(repositoryRoot, "Cargo.toml"), "utf8"),
     readFile(path.join(repositoryRoot, "docs/STATUS.md"), "utf8"),
     readFile(path.join(repositoryRoot, "ROADMAP.md"), "utf8"),
+    readFile(path.join(repositoryRoot, "VERSION"), "utf8"),
   ]);
   const designStatus = design.match(/^Status:\s*(.+)$/m)?.[1].trim();
-  const cargoVersion = cargo.match(/^version\s*=\s*"([^"]+)"$/m)?.[1].trim();
+  const canonicalVersion = version.trim();
   assert.equal(generated.meta.milestone, designStatus);
+  assert.equal(generated.meta.compilerVersion, canonicalVersion);
   assert.equal(status.match(/^Status:\s*(.+)$/m)?.[1].trim(), designStatus);
+  assert.equal(status.match(/^Compiler version:\s*(.+)$/m)?.[1].trim(), canonicalVersion);
   assert.equal(roadmap.match(/^Status:\s*(.+)$/m)?.[1].trim(), designStatus);
-  assert.equal(generated.meta.compilerVersion, cargoVersion);
-  assert.equal(status.match(/^Compiler version:\s*(.+)$/m)?.[1].trim(), cargoVersion);
+  assert.equal(cargo.match(/^version\s*=\s*"([^"]+)"$/m)?.[1], canonicalVersion);
 });
 
-test("surface JSON is an exact projection of the accepted ledger", async () => {
+test("surface JSON exactly projects accepted RFC ownership", async () => {
   const ledger = await readFile(path.join(repositoryRoot, "design/surface.tsv"), "utf8");
+  const rfcRoutes = new Map(generated.rfcs.map((rfc) => [rfc.id, rfc.route]));
   const expected = ledger
     .split(/\r?\n/)
     .filter((line) => line.trim() && !line.startsWith("#"))
     .map((line) => {
-      const [category, name, semanticRole, decision] = line.split("\t");
-      return { category, name, semanticRole, decision };
+      const [category, name, semanticRole, rfc] = line.split("\t");
+      return { category, name, semanticRole, rfc, rfcRoute: rfcRoutes.get(rfc) };
     });
+  assert.equal(generatedSurface.schemaVersion, 2);
   assert.deepEqual(generatedSurface.entries, expected);
   assert.deepEqual(generated.surface.entries, expected);
+  for (const entry of expected) {
+    const owner = generated.rfcs.find((rfc) => rfc.id === entry.rfc);
+    assert.equal(owner?.status, "accepted");
+    assert.equal(owner?.implementation, "complete");
+  }
 
   const builtins = execFileSync("./slimc", ["builtins"], {
     cwd: repositoryRoot,
@@ -156,23 +214,86 @@ test("surface JSON is an exact projection of the accepted ledger", async () => {
   );
 });
 
-test("contracts and local search retain canonical, bounded sources", async () => {
-  assert.equal(generated.reference.length, 12);
-  assert.equal(generated.search.length, 36);
-  assert.equal(new Set(generated.search.map((entry) => entry.route)).size, 36);
-  let contractsWithHeadings = 0;
-  for (const document of generated.reference) {
-    await access(path.join(repositoryRoot, document.path));
-    assert.ok(document.html.length > 100);
-    if (document.headings.length > 0) contractsWithHeadings += 1;
+test("RFC migration preserves legacy history and validates the new process", async () => {
+  assert.equal(generated.rfcs.length, 107);
+  assert.deepEqual(generated.rfcCounts, {
+    proposed: 0,
+    accepted: 99,
+    rejected: 8,
+    withdrawn: 0,
+    superseded: 0,
+  });
+  const legacy = generated.rfcs.filter((rfc) => rfc.process === "legacy");
+  assert.equal(legacy.filter((rfc) => rfc.status === "accepted").length, 98);
+  assert.equal(legacy.filter((rfc) => rfc.status === "rejected").length, 8);
+  assert.ok(legacy.filter((rfc) => rfc.status === "accepted").every((rfc) =>
+    rfc.implementation === "complete"));
+  assert.ok(legacy.filter((rfc) => rfc.status === "rejected").every((rfc) =>
+    rfc.implementation === "not-planned"));
+
+  const current = generated.rfcs.find((rfc) => rfc.id === "RFC-0108");
+  assert.equal(current?.status, "accepted");
+  assert.equal(current?.implementation, "complete");
+  assert.equal(current?.process, "1");
+  assert.equal(current?.route, "/rfcs/0108-documentation-and-rfc-process");
+  for (const rfc of generated.rfcs) {
+    assert.match(path.basename(rfc.path), /^\d{4}-[a-z0-9-]+\.md$/);
+    assert.equal(rfc.id, `RFC-${String(rfc.number).padStart(4, "0")}`);
+    await access(path.join(repositoryRoot, rfc.path));
   }
-  assert.equal(contractsWithHeadings, 11);
-  for (const entry of generated.search) {
+});
+
+test("algorithm gallery is generated from all comparative sources", async () => {
+  assert.equal(generated.algorithms.length, 20);
+  assert.equal(generated.algorithms.filter((algorithm) => algorithm.featured).length, 6);
+  assert.deepEqual(
+    generated.algorithms.filter((algorithm) => algorithm.featured).map((algorithm) =>
+      algorithm.challenge),
+    ["bfs", "merge_sort", "binary_search", "n_queens", "game_of_life", "edit_distance"],
+  );
+  assert.ok(generated.algorithms.filter((algorithm) => algorithm.featured).every((algorithm) =>
+    algorithm.walkthrough && algorithm.walkthrough.wordCount > 100));
+  assert.ok(generated.algorithms.filter((algorithm) => !algorithm.featured).every((algorithm) =>
+    algorithm.walkthrough === null));
+
+  for (const algorithm of generated.algorithms) {
+    const source = await readFile(path.join(repositoryRoot, algorithm.sourcePath), "utf8");
+    assert.equal(algorithm.source, source.trimEnd());
+    assert.ok(algorithm.title.length > 0);
+    assert.ok(algorithm.summary.length > 30);
+    assert.ok(algorithm.time.length > 0);
+    assert.ok(algorithm.space.length > 0);
+    assert.ok(algorithm.features.length >= 2);
+  }
+  const websiteSlimSources = (await collectFiles(siteRoot))
+    .filter((sourcePath) => sourcePath.endsWith(".slim"));
+  assert.deepEqual(websiteSlimSources, []);
+});
+
+test("search keeps current, development, RFC, and evidence scopes distinct", () => {
+  const counts = Object.fromEntries(
+    ["current", "development", "rfc", "evidence"].map((scope) => [
+      scope,
+      search.filter((entry) => entry.scope === scope).length,
+    ]),
+  );
+  assert.deepEqual(counts, {
+    current: 37,
+    development: 19,
+    rfc: 107,
+    evidence: 27,
+  });
+  assert.equal(new Set(search.map((entry) => `${entry.scope}:${entry.route}`)).size, search.length);
+  for (const entry of search) {
     assert.ok(generated.routes.includes(entry.route));
     assert.ok(entry.title.length > 0);
     assert.ok(entry.summary.length > 0);
     assert.ok(entry.text.length <= 6000);
   }
+  const binarySearch = search.find((entry) => entry.route.endsWith("/binary-search"));
+  assert.ok(binarySearch.tags.includes("Searching"));
+  assert.ok(binarySearch.tags.includes("O(log n)"));
+  assert.ok(binarySearch.tags.includes("vector"));
 });
 
 test("agent summary and dependency boundary remain explicit", async () => {
@@ -183,10 +304,11 @@ test("agent summary and dependency boundary remain explicit", async () => {
   ]);
   assert.match(llms, /Small Language for Intelligent Machines/);
   assert.match(llms, /docs\/CORE\.md is normative/);
-  assert.match(llms, /\/learn\/getting-started/);
-  assert.match(llms, /\/reference\/language\/lexical-structure/);
-  assert.match(llms, /\/reference\/contracts\/core/);
-  assert.doesNotMatch(rootCargo, /website|vinext|react|marked/);
+  assert.match(llms, /\/handbook\/getting-started/);
+  assert.match(llms, /\/handbook\/examples/);
+  assert.match(llms, /\/development/);
+  assert.match(llms, /\/rfcs/);
+  assert.doesNotMatch(rootCargo, /website|react|marked/);
   assert.match(websitePackage, /"marked": "16\.4\.2"/);
   assert.doesNotMatch(websitePackage, /algolia|lunr|flexsearch|wrangler|vinext/);
 });

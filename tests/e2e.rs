@@ -2215,7 +2215,7 @@ fn deep_reduction_falls_back_to_an_idempotent_canonical_program() {
     let directory = temporary_directory("bounded-reduction");
     let mut expression = "true".to_owned();
     // Seven changing passes plus one stability pass are accepted. Eight
-    // changing passes must hit the exact D0028 limit and return the fallback.
+    // changing passes must hit the exact RFC-0028 limit and return the fallback.
     for _ in 0..8 {
         expression = format!("!({expression})");
     }

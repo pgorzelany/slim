@@ -7,7 +7,7 @@ Command: `cargo run --release --quiet --bin slim-bench -- compare --quick`
 
 ## Inlinable checked runtime
 
-D0059 moves checked scalar, byte, and vector fast paths from the separate
+RFC-0059 moves checked scalar, byte, and vector fast paths from the separate
 runtime translation unit into one canonical `static inline` header
 implementation. Slow traps, region allocation, file I/O, and output remain
 out-of-line. No check, effect, syntax, or source profile is removed.
@@ -44,10 +44,10 @@ bootstrap seed.
 
 Profiling the two remaining aggregate gaps showed that every small helper paid
 for child-region initialization and destruction even when its retained plan had
-zero allocation sites. D0060 combines the existing placement and allocation
+zero allocation sites. RFC-0060 combines the existing placement and allocation
 facts; it does not infer effects again or change the uniform region ABI.
 
-| Challenge | D0059 SLIM us | D0060 SLIM us | D0060 C us | D0060 SLIM/C | Speedup |
+| Challenge | RFC-0059 SLIM us | RFC-0060 SLIM us | RFC-0060 C us | RFC-0060 SLIM/C | Speedup |
 |---|---:|---:|---:|---:|---:|
 | records | 5,080 | 1,844 | 1,283 | 1.437 | 2.75x |
 | variants | 17,280 | 3,387 | 3,265 | 1.037 | 5.10x |
@@ -62,7 +62,7 @@ correctness, safety, performance, and bootstrap gate passing.
 
 ## Core 1E acceptance
 
-D0061 freezes the milestone with release SLIM/C ratios from 1.017 to 1.871.
+RFC-0061 freezes the milestone with release SLIM/C ratios from 1.017 to 1.871.
 Dynamic vector bounds and layout remain checked where no range/storage proof is
 available. Matrix's flattened traversal, merge sort's checked recursive
 indices, and byte frequency's total whole-file input are recorded algorithmic

@@ -41,7 +41,7 @@ second geometric series checks deeply nested lexical bindings that repeatedly
 reference an outer parameter, guarding both scope lookup and compiler stack
 behavior. Its
 versioned limits are in `performance-budgets.tsv`; relaxing a limit requires
-the D0030 decision process. The standard verification script runs the quick
+the RFC-0030 decision process. The standard verification script runs the quick
 performance and matched-challenge gates on every release.
 
 The incremental command generates wide and deep module graphs at geometric
@@ -76,7 +76,7 @@ recurrence counts to retain worker-overhead and crossover evidence. It also
 builds the production-generated `state_machine` and `signal_network`, verifies
 parallel output against `SLIM_TASK_DISABLE=1`, and measures warmed median
 parallel/forced-serial ratios. The manual and generated ratios have separate
-durable budgets. Generated workers use D0070's explicit POSIX tier; unsupported
+durable budgets. Generated workers use RFC-0070's explicit POSIX tier; unsupported
 targets retain the same production code with the portable inline tier.
 
 The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full

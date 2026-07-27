@@ -1771,8 +1771,8 @@ fn challenge_manifest() -> Vec<String> {
         let columns: Vec<_> = line.split('\t').collect();
         assert_eq!(
             columns.len(),
-            2,
-            "challenge manifest line {} must have two columns",
+            9,
+            "challenge manifest line {} must have nine columns",
             line_number + 1
         );
         assert!(
@@ -1797,8 +1797,8 @@ fn challenge_has_feature(challenge: &str, feature: &str) -> bool {
             continue;
         }
         let columns: Vec<_> = line.split('\t').collect();
-        if columns.len() == 2 && columns[0] == challenge {
-            return columns[1].split(',').any(|candidate| candidate == feature);
+        if columns.len() == 9 && columns[0] == challenge {
+            return columns[6].split(',').any(|candidate| candidate == feature);
         }
     }
     panic!("challenge {challenge} is absent from the manifest")

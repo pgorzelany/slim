@@ -1,7 +1,7 @@
 # Core 1K semantic quality and reduction
 
 Date: 2026-07-23
-Decisions: D0080, D0081
+Decisions: RFC-0080, RFC-0081
 Compiler: self-hosted SLIM, portable C11 seed
 
 ## Exact specification evidence

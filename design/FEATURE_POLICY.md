@@ -15,9 +15,9 @@ A feature is rejected if it:
 - adds a default superlinear compiler pass; or
 - lacks specifications, diagnostics, tests, and measured costs.
 
-## Weighted decision score
+## Weighted RFC score
 
-Every durable decision rates each dimension from -2 to +2.
+Every durable proposal rates each dimension from -2 to +2.
 
 | Key | Dimension | Weight |
 |---|---|---:|
@@ -32,14 +32,33 @@ The normalized score is `sum(rating * weight) / 2`, in the range -100 to 100.
 An accepted language primitive must score at least +40, have a +2 in one
 dimension, and have no negative safety, compile, runtime, or minimality rating.
 
-## Decision record format
+## When an RFC is required
 
-Decision records are Markdown files named `DNNNN-name.md`. They must contain
-these single-line fields so the governance tool can validate them:
+An RFC is required for every user-visible feature, removal, syntax, semantic,
+type, effect, built-in, or compatibility change. It is also required for a
+substantial change to compiler architecture, canonical representation, runtime
+ABI, ownership or safety, dependencies, or a durable performance budget.
+
+An RFC is not required for a behavior-preserving refactor, a bug fix that
+restores accepted behavior, documentation corrections, additional tests, or a
+small optimization that remains within the accepted architecture and budgets.
+When the classification is uncertain, use an RFC.
+
+## RFC format
+
+RFCs are Markdown files under `design/rfcs/` named `NNNN-name.md`. Their title
+uses `# RFC-NNNN: Name`. Current-process RFCs contain these single-line fields:
 
 ```text
-Status: accepted
-Kind: language | architecture | runtime | dependency | compatibility
+Status: proposed | accepted | rejected | withdrawn | superseded
+Implementation: pending | complete | not-planned
+Process: 1
+Audience: user | developer | both
+Author: name
+Created: YYYY-MM-DD
+DecisionDate: YYYY-MM-DD
+Approver: project-maintainer
+Kind: language | architecture | runtime | dependency | compatibility | process
 Primitive: one-kebab-case-name | none
 Safety: -2..2
 Compile: -2..2
@@ -50,14 +69,24 @@ Dogfood: -2..2
 Score: -100..100
 ```
 
-They must also contain the headings `## Need`, `## Alternatives`, `## Costs`,
-`## Evidence`, and `## Removal`.
+They also contain Summary, Motivation, guide-level and reference-level
+explanations, compiler/runtime design, compatibility, diagnostics, performance,
+alternatives, tests, ratings, the maintainer decision, implementation, and
+removal/supersession sections. An accepted RFC and its complete implementation
+may merge together. Only explicit project-maintainer approval changes a
+proposal to accepted.
+
+The assistant or author proposes ratings and evidence. Governance validates
+the arithmetic and hard gates; ratings do not substitute for maintainer
+approval. Legacy RFCs retain the earlier headings and declare `Process:
+legacy`.
 
 ## Surface ledger
 
 `design/surface.tsv` is the canonical inventory of accepted language surface.
-Each non-comment row contains a category, unique name, semantic role, and
-decision ID. A semantic role may occur only once within a category.
+Each non-comment row contains a category, unique name, semantic role, and RFC
+ID. A semantic role may occur only once within a category. Active surface rows
+must cite an accepted RFC whose implementation is complete.
 
 ## Performance policy
 
@@ -67,7 +96,6 @@ decision ID. A semantic role may occur only once within a category.
   and binary size are recorded separately where relevant.
 - Scaling tests use geometrically increasing inputs. Ordinary frontend work
   must remain approximately O(n).
-- A necessary performance exception requires score +60, quantified impact, and
-  a containment or compensation plan. Safety and duplicate semantics never
-  receive exceptions.
-
+- A necessary performance exception requires an accepted RFC scoring at least
+  +60, quantified impact, and a containment or compensation plan. Safety and
+  duplicate semantics never receive exceptions.

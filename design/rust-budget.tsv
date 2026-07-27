@@ -1,4 +1,4 @@
-# Bootstrap-independent infrastructure only. Production Rust is forbidden by D0027.
+# Bootstrap-independent infrastructure only. Production Rust is forbidden by RFC-0027.
 # path	role	maximum-bytes
 src/bin/slim-bench.rs	infrastructure	-
 src/bin/slim-conform.rs	infrastructure	-

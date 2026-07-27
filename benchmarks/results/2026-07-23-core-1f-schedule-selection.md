@@ -1,7 +1,7 @@
 # Core 1F deterministic schedule selection
 
 Date: 2026-07-23
-Decision: D0067
+Decision: RFC-0067
 
 ## Result
 

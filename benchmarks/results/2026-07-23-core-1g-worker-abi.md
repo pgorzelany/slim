@@ -1,7 +1,7 @@
 # Core 1G tiered-worker checkpoint
 
 Date: 2026-07-23
-Decision: D0070
+Decision: RFC-0070
 Status: accepted runtime foundation; generated execution still disabled
 
 ## Contract

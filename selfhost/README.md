@@ -13,10 +13,10 @@ compiler runs successfully. No Rust compiler participates.
 The implementation is deliberately developed in valid Core rather than through
 a privileged bootstrap dialect.
 
-The `ir` module begins the D0023 typed-query migration. Syntax indexing creates
+The `ir` module begins the RFC-0023 typed-query migration. Syntax indexing creates
 one structured declaration vector per standalone check. All top-level checker
 passes share that vector, and governance requires exactly one file read and one
-lex operation in the self-host checker. D0031 adds the `typing` module: it
+lex operation in the self-host checker. RFC-0031 adds the `typing` module: it
 derives linked lexical bindings, validates all declared and nested expression
 types, and records structured type facts and issues. Expression facts form one
 dense token-indexed table with a guarded constant-time query. The checker
@@ -34,28 +34,28 @@ integer. Code generation and borrowed-return checking query that mode directly
 instead of rescanning parameter names.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
-D0058 freezes Core 1D after its final audit and complete release gate: ordinary
+RFC-0058 freezes Core 1D after its final audit and complete release gate: ordinary
 generation has one checked semantic authority while source forms, literals,
 declared layouts, and parameter declarations remain canonical lowering and ABI
 inputs.
-D0059 begins Core 1E without changing that boundary. Header-visible checked
+RFC-0059 begins Core 1E without changing that boundary. Header-visible checked
 integer, byte, and vector fast paths preserve all traps while allowing the C
 optimizer to specialize the self-hosted compiler's hot operations; five warm
 self-checks consume 0.05 seconds of user CPU each.
-D0060 then combines the retained placement and allocation-site facts: a
+RFC-0060 then combines the retained placement and allocation-site facts: a
 function with no direct or transitive allocation forwards the caller region
 without initializing an empty child. Allocation-capable functions keep their
 planned child/caller region, failure label, and reverse destruction path. Five
 warm self-checks now consume 0.03 seconds of user CPU each.
 
-D0075 begins Core 1I with `io.monotonic-ms`. Typing gives it zero arguments and
+RFC-0075 begins Core 1I with `io.monotonic-ms`. Typing gives it zero arguments and
 an `I64` result, effects require `io`, and code generation maps it to one
 allocation-free runtime call. Pure analysis and automatic parallelism
 conservatively treat the sample as effectful.
 
-D0076 adds `io.tcp-exchange` as one six-argument `alloc io` operation. Typing
+RFC-0076 adds `io.tcp-exchange` as one six-argument `alloc io` operation. Typing
 requires ordinary scalar inputs and a `Vec U8` output, code generation emits
-one runtime call, and analysis blocks effect reordering. D0077 closes Core 1I
+one runtime call, and analysis blocks effect reordering. RFC-0077 closes Core 1I
 without resource handles; the compiler continues to use the smaller file,
 argument, and stdout boundary.
 
@@ -64,10 +64,10 @@ liveness and escape summaries, allocation-site plans, and reverse destruction
 plans. The checker executes it from the structured declaration vector, while
 the backend uses its function summary to select caller or child regions and to
 emit recurrence boundaries without rescanning bodies. The generated ABI also
-propagates D0026's typed allocation-effect status and destroys child regions at
+propagates RFC-0026's typed allocation-effect status and destroys child regions at
 the single function exit.
 
-The `analysis` and `reduce` modules implement D0028 without a second program
+The `analysis` and `reduce` modules implement RFC-0028 without a second program
 representation. Analysis derives at most 64 binding facts per function from
 stable canonical token indices. Reduction traverses the checked SLIM tree
 directly, uses at most eight closure passes and 64-token dead-binding scans,
@@ -77,15 +77,15 @@ generation.
 The shared `ranges` view supplies integer totality, canonical tail-recurrence,
 and Core 1H resource evidence. Analysis schema 7 retains at most 16 recurrence
 profiles and prints at most 64 profiled calls, reporting exact literal
-workloads or an explicit unknown result. D0085 also gives this same view to C
+workloads or an explicit unknown result. RFC-0085 also gives this same view to C
 emission: an exact checked arithmetic node lowers directly only when its fact
 is total. Exact scalar parameters propagate through agreeing calls and
 unchanged recurrence for four fixed passes; unsupported or deeper paths remain
-unknown. D0087 consumes the retained checked element type for `vec.set`,
+unknown. RFC-0087 consumes the retained checked element type for `vec.set`,
 emitting a typed assignment through the canonical vector bounds checker rather
 than a generic byte copy. This adds no source or runtime contract.
 
-The `quality`, `proof`, `equivalence`, and `edit` modules implement D0029.
+The `quality`, `proof`, `equivalence`, and `edit` modules implement RFC-0029.
 They classify bounded evidence, record and independently replay reduction,
 exhaust the documented finite Boolean domain, and apply one checked canonical
 node replacement. Their reports and patches are non-executable tooling data;

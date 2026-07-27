@@ -1,7 +1,7 @@
 # Core 1F observed-effect and total-recurrence evidence
 
 Date: 2026-07-23
-Status: accepted D0066 evidence slice
+Status: accepted RFC-0066 evidence slice
 Host: macOS arm64, same checkout and warmed local toolchain
 
 Commands:
@@ -28,7 +28,7 @@ eligible-sites 1
 `run` applies a finite-state transition two million times. Two calls consume
 distinct owned records and join before comparison and output. The report proves
 the tasks race-free and deadlock-free but still labels profitability unknown;
-D0066 does not create or execute a task.
+RFC-0066 does not create or execute a task.
 
 The original `variants` application now has three total checked remainder
 sites and one safe function, `command`. The other eleven original applications
@@ -64,4 +64,4 @@ is unchanged and the additional inspection remains linear.
 The portable compiler seed reaches a byte-identical fixed point at 1,880,430 C
 bytes with SHA-256
 `88d66f396a2fa5b78e23fb3ee484dbf8b778c0f64bb600452d0471f0df855ba2`.
-That is 25,662 bytes (1.38%) above D0065.
+That is 25,662 bytes (1.38%) above RFC-0065.

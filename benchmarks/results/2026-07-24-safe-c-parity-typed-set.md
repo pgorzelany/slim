@@ -1,7 +1,7 @@
 # Safe C-parity typed vector-set result
 
 Date: 2026-07-24
-Decisions: D0086, D0087
+Decisions: RFC-0086, RFC-0087
 Parent: `ba5443e`
 Host: Darwin 25.3.0 arm64
 C compiler: Apple Clang 21.0.0

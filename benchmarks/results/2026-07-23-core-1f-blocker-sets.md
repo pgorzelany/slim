@@ -1,7 +1,7 @@
 # Core 1F complete blocker-set evidence
 
 Date: 2026-07-23
-Status: accepted D0065 evidence slice
+Status: accepted RFC-0065 evidence slice
 Host: macOS arm64, same checkout and warmed local toolchain
 
 Command: `cargo run --release --quiet --bin slim-bench -- parallelism`
@@ -62,5 +62,5 @@ sets.
 The compiler seed reaches a byte-identical fixed point at 1,854,768 generated
 C bytes with SHA-256
 `1616a2e9792e731b20965c221ffdacc042311d57da8e5556c633e22fb651c919`.
-This is 22,466 bytes (1.23%) above D0063. The application report remains a
+This is 22,466 bytes (1.23%) above RFC-0063. The application report remains a
 non-executable analysis artifact; no runtime or language surface changes.

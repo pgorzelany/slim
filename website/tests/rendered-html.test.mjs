@@ -31,26 +31,21 @@ function canonicalInternalPath(href) {
   return pathname;
 }
 
-const routeTitles = new Map([
-  ["/", "SLIM — Small Language for Intelligent Machines"],
-  ["/learn", "Learn · SLIM"],
-  ["/reference", "Reference · SLIM"],
-  ["/status", "Status · SLIM"],
-  ...generated.guide.map((chapter) => [chapter.route, `${chapter.title} · SLIM`]),
-  ...generated.languageReference.map((chapter) => [chapter.route, `${chapter.title} · SLIM`]),
-  ...generated.reference.map((document) => [document.route, `${document.title} · SLIM`]),
-]);
-
-for (const [pathname, title] of routeTitles) {
-  test(`statically renders ${pathname}`, async () => {
+test("every canonical route renders with valid internal links", async () => {
+  for (const pathname of generated.routes) {
     const html = await render(pathname);
-    assert.match(html, new RegExp(`<title>${title.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}</title>`, "i"));
-    assert.match(html, /<main\b[^>]*\bid="main"/i);
-    assert.match(html, new RegExp(`href="${basePath}/learn/?"`));
-    assert.match(html, new RegExp(`href="${basePath}/reference/?"`));
-    assert.match(html, new RegExp(`href="${basePath}/status/?"`));
-    assert.match(html, /name="robots" content="index, follow"/i);
-    assert.match(html, new RegExp(`${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}og-indented\\.png`));
+    assert.match(html, /<title>[^<]*SLIM[^<]*<\/title>/i, pathname);
+    assert.match(html, /<main\b[^>]*\bid="main"/i, pathname);
+    assert.match(html, new RegExp(`href="${basePath}/handbook/?"`), pathname);
+    assert.match(html, new RegExp(`href="${basePath}/development/?"`), pathname);
+    assert.match(html, new RegExp(`href="${basePath}/rfcs/?"`), pathname);
+    assert.match(html, new RegExp(`href="${basePath}/status/?"`), pathname);
+    assert.match(html, /name="robots" content="index, follow"/i, pathname);
+    assert.match(
+      html,
+      new RegExp(`${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}og-indented\\.png`),
+      pathname,
+    );
     assert.doesNotMatch(html, /codex-preview|react-loading-skeleton|Starter Project/);
 
     for (const match of html.matchAll(/<a\b[^>]*\bhref="([^"]+)"/g)) {
@@ -62,55 +57,129 @@ for (const [pathname, title] of routeTitles) {
         );
       }
       if (href.startsWith("#")) {
-        assert.match(html, new RegExp(`id="${href.slice(1)}"`), `missing ${href} on ${pathname}`);
+        assert.match(
+          html,
+          new RegExp(`id="${href.slice(1)}"`),
+          `missing ${href} on ${pathname}`,
+        );
       }
     }
-  });
-}
-
-test("guide index exposes chapters, search, and legacy fragments", async () => {
-  const html = await render("/learn");
-  assert.match(html, /id="book-search-input"/);
-  assert.match(html, /aria-live="polite"/);
-  assert.match(html, /\/learn\/getting-started\//);
-  assert.match(html, /\/learn\/diagnostics-and-compiler-tools\//);
-  for (const id of [
-    "run-and-format-a-program",
-    "scalar-values-and-checked-operations",
-    "bindings-evaluation-mutation-and-repetition",
-    "complete-accepted-surface",
-  ]) {
-    assert.match(html, new RegExp(`id="${id}"`));
   }
 });
 
-test("chapter pages expose book navigation and fixture-backed examples", async () => {
-  const first = await render("/learn/getting-started");
-  const middle = await render("/learn/ownership-moves-and-borrowing");
+test("Handbook index exposes levels, search, examples, appendices, and RFC-owned surface", async () => {
+  const html = await render("/handbook");
+  assert.match(html, /id="book-search-input"/);
+  assert.match(html, /aria-live="polite"/);
+  assert.match(html, />Foundations</);
+  assert.match(html, />Systems programming</);
+  assert.match(html, />Advanced use</);
+  assert.match(html, new RegExp(`${basePath}/handbook/getting-started/`));
+  assert.match(html, new RegExp(`${basePath}/handbook/examples/`));
+  assert.match(html, new RegExp(`${basePath}/handbook/appendix/core/`));
+  assert.match(html, /id="accepted-surface"/);
+  assert.match(html, /u8\.to_i64/);
+  assert.match(html, new RegExp(`${basePath}/rfcs/0107-experimental-familiar-source/`));
+  assert.match(html, new RegExp(`${basePath}/reference/surface\\.json`));
+});
+
+test("Handbook chapters expose navigation and exact fixture-backed examples", async () => {
+  const first = await render("/handbook/getting-started");
+  const middle = await render("/handbook/ownership-borrowing-and-memory");
   assert.match(first, /aria-label="Breadcrumb"/);
-  assert.match(first, /aria-label="The SLIM Guide chapters"/);
+  assert.match(first, /aria-label="The SLIM Handbook chapters"/);
   assert.match(first, /aria-label="On this page"/);
-  assert.match(first, /Browse (?:<!-- -->)?The SLIM Guide/);
+  assert.match(first, /Browse (?:<!-- -->)?The SLIM Handbook/);
   assert.match(first, /rel="next"/);
   assert.doesNotMatch(first, /rel="prev"/);
+  assert.match(first, /data-fixture-id="example-hello"/);
   assert.match(first, /data-fixture-id="scalars"/);
   assert.match(first, /data-fixture-id="type-mismatch"/);
   assert.match(first, /Exact diagnostics/);
   assert.match(middle, /rel="prev"/);
   assert.match(middle, /rel="next"/);
+  assert.match(middle, /affine/i);
+  assert.match(middle, /borrow/i);
 });
 
-test("reference index preserves contracts and exact generated surface", async () => {
-  const html = await render("/reference");
-  assert.match(html, /\/reference\/language\/lexical-structure\//);
-  assert.match(html, /id="reference-core"/);
-  assert.match(html, /id="reference-compatibility"/);
-  assert.match(html, /design\/surface\.tsv/);
-  assert.match(html, /u8\.to_i64/);
-  assert.match(html, /lexical-two-call-parallelism/);
+test("algorithm gallery and pages expose metadata, source, and featured walkthroughs", async () => {
+  const gallery = await render("/handbook/examples");
+  assert.match(gallery, /20(?:<!-- -->)? algorithms/);
+  assert.match(gallery, /Search algorithms/);
+  assert.match(gallery, /Category/);
+  assert.match(gallery, /Binary search/);
+  assert.match(gallery, /Levenshtein edit distance/);
+
+  const featured = await render("/handbook/examples/binary-search");
+  assert.match(featured, /Problem and result/);
+  assert.match(featured, /Ownership and effects/);
+  assert.match(featured, /Complexity analysis/);
+  assert.match(featured, /What differs from loop-oriented languages/);
+  assert.match(featured, /Why the result is deterministic/);
+  assert.match(featured, /Comparative benchmark evidence/);
+  assert.match(featured, /canonical tested source/);
+  assert.match(featured, /module binary_search/);
+
+  const concise = await render("/handbook/examples/sieve");
+  assert.match(concise, /This gallery entry is concise/);
+  assert.match(concise, /canonical tested source/);
+  assert.match(concise, /module sieve/);
 });
 
-test("public indexing and machine-readable artifacts cover every route", async () => {
+test("Development exposes all collections and separate word statistics", async () => {
+  const development = await render("/development");
+  assert.match(development, />Project</);
+  assert.match(development, />Current contracts</);
+  assert.match(development, />Subsystems</);
+  assert.match(development, new RegExp(`${basePath}/development/evidence/`));
+  assert.match(development, /Sequential Handbook/);
+  assert.match(development, /Featured walkthroughs/);
+  assert.match(development, /Maintained current docs/);
+  assert.match(development, /RFC archive/);
+  assert.match(development, /Evidence archive/);
+
+  const evidence = await render("/development/evidence");
+  assert.match(evidence, /27 reports|Find a measurement/);
+  assert.match(evidence, /historical/);
+  assert.match(evidence, /2026-07-27/);
+});
+
+test("RFC index filters records and detail pages expose disposition and ratings", async () => {
+  const index = await render("/rfcs");
+  assert.match(index, /Search RFCs/);
+  assert.match(index, /All statuses/);
+  assert.match(index, /All kinds/);
+  assert.match(index, /RFC-0108/);
+  assert.match(index, /99 accepted/);
+  assert.match(index, /8 rejected/);
+
+  const detail = await render("/rfcs/0108-documentation-and-rfc-process");
+  assert.match(detail, /implementation complete/);
+  assert.match(detail, /aria-label="RFC weighted ratings"/);
+  assert.match(detail, /weighted score/);
+  assert.match(detail, /Guide-level explanation/);
+  assert.match(detail, /Reference-level specification/);
+});
+
+test("legacy documentation routes are static noindex redirects", async () => {
+  const routes = [
+    ["/learn", "/handbook/"],
+    ["/learn/ownership-moves-and-borrowing", "/handbook/ownership-borrowing-and-memory/"],
+    ["/reference", "/handbook/"],
+    ["/reference/language/lexical-structure", "/handbook/appendix/core/"],
+    ["/reference/contracts/memory", "/development/contracts/memory/"],
+  ];
+  for (const [pathname, target] of routes) {
+    const html = await render(pathname);
+    assert.match(html, /name="robots" content="noindex, follow"/i);
+    assert.match(html, /http-equiv="refresh"/i);
+    assert.match(html, new RegExp(
+      `${basePath}${target}`.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"),
+    ));
+  }
+});
+
+test("public indexing and machine-readable artifacts cover canonical routes", async () => {
   const [llms, surface, robots, sitemap] = await Promise.all([
     readFile(path.join(siteRoot, "out", "llms.txt"), "utf8"),
     readFile(path.join(siteRoot, "out", "reference", "surface.json"), "utf8"),
@@ -118,10 +187,15 @@ test("public indexing and machine-readable artifacts cover every route", async (
     readFile(path.join(siteRoot, "out", "sitemap.xml"), "utf8"),
     access(path.join(siteRoot, "out", "404.html")),
   ]);
-  assert.match(llms, /\/reference\/contracts\/core/);
-  assert.equal(JSON.parse(surface).schemaVersion, 1);
+  assert.match(llms, /\/handbook\/examples/);
+  assert.match(llms, /\/development/);
+  assert.match(llms, /\/rfcs/);
+  assert.equal(JSON.parse(surface).schemaVersion, 2);
   assert.match(robots, /Allow: \//);
-  assert.match(robots, new RegExp(`${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}sitemap\\.xml`));
+  assert.match(
+    robots,
+    new RegExp(`${siteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}sitemap\\.xml`),
+  );
   for (const route of generated.routes) {
     const absolute = new URL(
       route === "/" ? "." : `${route.slice(1)}/`,
@@ -129,4 +203,5 @@ test("public indexing and machine-readable artifacts cover every route", async (
     ).toString();
     assert.match(sitemap, new RegExp(absolute.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
+  assert.doesNotMatch(sitemap, /\/learn\/|\/reference\/language\/|\/reference\/contracts\//);
 });

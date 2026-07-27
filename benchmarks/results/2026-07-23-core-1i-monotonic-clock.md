@@ -1,7 +1,7 @@
 # Core 1I monotonic clock
 
 Date: 2026-07-23
-Decision: D0075
+Decision: RFC-0075
 Status: accepted first host-service slice
 
 ## Boundary

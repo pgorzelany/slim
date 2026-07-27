@@ -9,7 +9,7 @@ surface. `design/release-contract.tsv` records each machine interface schema.
 ## Pre-1.0 policy
 
 - A `0.y.0` release may make breaking source or documented-behavior changes
-  through an accepted decision and complete migration notes.
+  through an accepted RFC and complete migration notes.
 - A `0.y.z` patch release preserves accepted source and documented behavior
   within that minor version.
 - No long-term source-compatibility promise begins until a future explicit
@@ -34,10 +34,10 @@ an internal milestone.
 
 ## Historical decisions
 
-D0082 and D0083 remain historical evidence for the earlier internal 1.0
-candidate. D0107 supersedes their current release-status and major-version
+RFC-0082 and RFC-0083 remain historical evidence for the earlier internal 1.0
+candidate. RFC-0107 supersedes their current release-status and major-version
 compatibility promises without rewriting that recorded evidence.
 
 Every later compatibility change still requires the feature policy and an
-accepted decision. Tooling consumers must reject unknown schemas rather than
+accepted RFC. Tooling consumers must reject unknown schemas rather than
 guessing; rebuildable caches may always be rejected and reconstructed.

@@ -1,7 +1,7 @@
 # Core 1F acceptance
 
 Date: 2026-07-23
-Decisions: D0062 through D0069
+Decisions: RFC-0062 through RFC-0069
 Status: complete evidence boundary; production execution deliberately disabled
 
 ## Outcome

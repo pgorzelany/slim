@@ -1,7 +1,7 @@
 # Core 1H bounded resource evidence
 
 Date: 2026-07-23
-Decisions: D0073, D0074
+Decisions: RFC-0073, RFC-0074
 Status: accepted milestone
 
 ## Boundary
@@ -31,7 +31,7 @@ the supported canonical shape.
 
 That negative result matters: zero retained profiles does not mean zero work,
 and structural expression or allocation sites do not determine physical time,
-allocation volume, or peak bytes. D0074 therefore closes Core 1H without
+allocation volume, or peak bytes. RFC-0074 therefore closes Core 1H without
 source resource syntax.
 
 ## Permanent evidence

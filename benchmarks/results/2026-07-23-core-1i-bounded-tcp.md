@@ -1,7 +1,7 @@
 # Core 1I bounded TCP evidence
 
 Date: 2026-07-23
-Decision: D0076
+Decision: RFC-0076
 Host: Apple arm64, local loopback
 
 The maintained `tcp_client.slim` application completed two numeric-address TCP

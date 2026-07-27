@@ -50,5 +50,5 @@ comma.
 expression statements only. A non-final expression statement must check as
 exactly `Void`; discarding another result is an error.
 
-D0107 records the version reset and syntax cutover. D0082 and D0083 remain
+RFC-0107 records the version reset and syntax cutover. RFC-0082 and RFC-0083 remain
 unchanged historical evidence.

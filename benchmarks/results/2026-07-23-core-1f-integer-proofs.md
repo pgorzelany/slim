@@ -1,12 +1,12 @@
 # Core 1F bounded integer proof evidence
 
 Date: 2026-07-23
-Status: accepted D0063 evidence slice
+Status: accepted RFC-0063 evidence slice
 Host: macOS arm64, same checkout and warmed local toolchain
 
 ## Proof behavior
 
-D0063 adds no syntax, built-in, effect, runtime ABI, dependency, optimizer, or
+RFC-0063 adds no syntax, built-in, effect, runtime ABI, dependency, optimizer, or
 scheduler. Analysis version 4 derives bounded integer facts from the ordinary
 checked token and type view. Quality and parallelism consume the same exact-node
 totality fact; neither reconstructs or weakens the proof.
@@ -41,7 +41,7 @@ Command: `cargo run --release --quiet --bin slim-bench -- reduction`
 
 The end-to-end analysis exponent is 0.868 from 1,000 to 8,000 declarations,
 below the unchanged permanent 1.25 gate. Analysis output remains linear. The
-8,000-declaration analysis time is 8.0% above the D0062 sample, while output is
+8,000-declaration analysis time is 8.0% above the RFC-0062 sample, while output is
 1.4% larger. This cost is paid only by the explicit analysis command; ordinary
 checking and C generation do not invoke the proof view, and generated user
 programs do not link it.
@@ -51,7 +51,7 @@ programs do not link it.
 The compiler reaches a byte-identical fixed point at 1,832,302 generated C
 bytes with SHA-256
 `3dfd1d5603223167bdde881217492037c756eb61bae7274f1f80b8fd1419a58b`.
-The proof slice adds 120,389 seed bytes (7.03%) over D0062 and 209,722 bytes
+The proof slice adds 120,389 seed bytes (7.03%) over RFC-0062 and 209,722 bytes
 (12.93%) over the Core 1E boundary. The cost is accepted because it creates one
 shared safety fact rather than parallel checker-specific logic, crosses every
 declared bound, preserves the permanent scaling budget, and adds no runtime or

@@ -1,7 +1,7 @@
 # Core 1F application parallelism baseline
 
 Date: 2026-07-23
-Status: accepted D0064 negative evidence
+Status: accepted RFC-0064 negative evidence
 Host: macOS arm64, same checkout and warmed local toolchain
 
 Command: `cargo run --release --quiet --bin slim-bench -- parallelism`
@@ -26,7 +26,7 @@ The compiler's primary reasons across all functions are:
 Declared effects, lexical mutation, unsafe callees, call cycles, table limits,
 and missing typed facts are not primary reasons in this corpus.
 
-This result prevents two premature conclusions. D0063 materially improves the
+This result prevents two premature conclusions. RFC-0063 materially improves the
 sound proof infrastructure but does not yet make the existing applications
 parallelizable. Also, the 30 exclusive-borrow labels do not prove that borrow
 precision should be implemented first: the report records only the first

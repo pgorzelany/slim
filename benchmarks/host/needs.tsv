@@ -1,7 +1,7 @@
 # application	required-host-behavior	current-boundary	decision
 selfhost-compiler	read finite source and project files	io.read-file	keep
-elapsed-budget	compare elapsed deadlines	io.monotonic-ms	D0075
-dual-endpoint-fetch	send and receive bounded bytes with deadline	io.tcp-exchange	D0076
+elapsed-budget	compare elapsed deadlines	io.monotonic-ms	RFC-0075
+dual-endpoint-fetch	send and receive bounded bytes with deadline	io.tcp-exchange	RFC-0076
 child-tool-orchestration	start arbitrary executable and capture output	external launcher	defer
 configuration	read immutable process inputs	main args	keep
 filesystem-output	persist generated artifacts	stdout plus external launcher	defer

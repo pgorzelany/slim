@@ -1,7 +1,7 @@
 # Safe C-parity expanded-corpus baseline
 
 Date: 2026-07-24
-Decision: D0084
+Decision: RFC-0084
 Compiler base: `87314f3c3ea46f0804bb396aa8ae09300cde2d71`
 Host: Darwin 25.3.0 arm64
 C compiler: Apple Clang 21.0.0

@@ -64,7 +64,7 @@ fn contains_slim_pattern(source: &str, pattern: &str) -> bool {
     false
 }
 
-const REQUIRED_HEADINGS: [&str; 5] = [
+const LEGACY_RFC_HEADINGS: [&str; 5] = [
     "## Need",
     "## Alternatives",
     "## Costs",
@@ -72,10 +72,30 @@ const REQUIRED_HEADINGS: [&str; 5] = [
     "## Removal",
 ];
 
+const CURRENT_RFC_HEADINGS: [&str; 14] = [
+    "## Summary",
+    "## Motivation",
+    "## Guide-level explanation",
+    "## Reference-level specification",
+    "## Compiler and runtime design",
+    "## Compatibility and migration",
+    "## Diagnostics and failure cases",
+    "## Performance and complexity",
+    "## Alternatives and drawbacks",
+    "## Test and acceptance plan",
+    "## Ratings and evidence",
+    "## Decision",
+    "## Implementation",
+    "## Removal and supersession",
+];
+
 #[derive(Debug)]
-struct Decision {
+struct Rfc {
     id: String,
     status: String,
+    implementation: String,
+    process: String,
+    audience: String,
     kind: String,
     primitive: String,
     ratings: [i32; 6],
@@ -120,13 +140,14 @@ fn check_repository(root: &Path) -> Vec<String> {
         }
     }
 
-    let decisions = load_decisions(&root.join("design/decisions"), &mut errors);
-    check_decisions(&decisions, &mut errors);
-    check_surface(&root.join("design/surface.tsv"), &decisions, &mut errors);
+    let rfcs = load_rfcs(&root.join("design/rfcs"), &mut errors);
+    check_rfcs(&rfcs, &mut errors);
+    check_rfc_migration(root, &mut errors);
+    check_surface(&root.join("design/surface.tsv"), &rfcs, &mut errors);
     check_semantic_ledger(
         &root.join("design/project-semantics.tsv"),
         "project-semantics.tsv",
-        &decisions,
+        &rfcs,
         &mut errors,
     );
     check_conformance_coverage(root, &mut errors);
@@ -137,63 +158,59 @@ fn check_repository(root: &Path) -> Vec<String> {
     check_ast_boundary(root, &mut errors);
     check_indented_source(root, &mut errors);
     check_selfhost_architecture(root, &mut errors);
-    check_core_1d_acceptance(root, &decisions, &mut errors);
-    check_runtime_fast_paths(root, &decisions, &mut errors);
-    check_allocation_free_region_elision(root, &decisions, &mut errors);
-    check_core_1e_acceptance(root, &decisions, &mut errors);
-    check_parallelism_evidence(root, &decisions, &mut errors);
-    check_integer_proof_evidence(root, &decisions, &mut errors);
-    check_resource_evidence(root, &decisions, &mut errors);
-    check_host_boundary(root, &decisions, &mut errors);
-    check_parallelism_application_baseline(root, &decisions, &mut errors);
-    check_complete_parallel_blockers(root, &decisions, &mut errors);
-    check_total_recurrence_evidence(root, &decisions, &mut errors);
-    check_deterministic_parallel_schedule(root, &decisions, &mut errors);
-    check_total_task_failure_semantics(root, &decisions, &mut errors);
-    check_parallel_execution_boundary(root, &decisions, &mut errors);
-    check_core_1j_acceptance(root, &decisions, &mut errors);
-    check_core_1k_acceptance(root, &decisions, &mut errors);
-    check_core_1l_contracts(root, &decisions, &mut errors);
+    check_core_1d_acceptance(root, &rfcs, &mut errors);
+    check_runtime_fast_paths(root, &rfcs, &mut errors);
+    check_allocation_free_region_elision(root, &rfcs, &mut errors);
+    check_core_1e_acceptance(root, &rfcs, &mut errors);
+    check_parallelism_evidence(root, &rfcs, &mut errors);
+    check_integer_proof_evidence(root, &rfcs, &mut errors);
+    check_resource_evidence(root, &rfcs, &mut errors);
+    check_host_boundary(root, &rfcs, &mut errors);
+    check_parallelism_application_baseline(root, &rfcs, &mut errors);
+    check_complete_parallel_blockers(root, &rfcs, &mut errors);
+    check_total_recurrence_evidence(root, &rfcs, &mut errors);
+    check_deterministic_parallel_schedule(root, &rfcs, &mut errors);
+    check_total_task_failure_semantics(root, &rfcs, &mut errors);
+    check_parallel_execution_boundary(root, &rfcs, &mut errors);
+    check_core_1j_acceptance(root, &rfcs, &mut errors);
+    check_core_1k_acceptance(root, &rfcs, &mut errors);
+    check_core_1l_contracts(root, &rfcs, &mut errors);
     check_memory_architecture(root, &mut errors);
     check_direct_reduction(root, &mut errors);
     check_bounded_program_evidence(root, &mut errors);
-    check_performance_architecture(root, &decisions, &mut errors);
+    check_performance_architecture(root, &rfcs, &mut errors);
     errors
 }
 
-fn check_core_1l_contracts(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0082") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "compatibility"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+fn check_core_1l_contracts(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0082") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "compatibility"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1L requires accepted primitive-free compatibility decision D0082 scoring at least 60"
+            "Core 1L requires accepted primitive-free compatibility rfc RFC-0082 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("Core 1L compatibility decision D0082 is missing".to_owned()),
+        None => errors.push("Core 1L compatibility rfc RFC-0082 is missing".to_owned()),
     }
-    match decisions.get("D0083") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0083") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1L closure requires accepted primitive-free architecture decision D0083 scoring at least 60"
+            "Core 1L closure requires accepted primitive-free architecture rfc RFC-0083 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("Core 1L closure decision D0083 is missing".to_owned()),
+        None => errors.push("Core 1L closure rfc RFC-0083 is missing".to_owned()),
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0082") || surface.contains("D0083") {
-        errors.push("Core 1L decisions must not add Core language surface".to_owned());
+    if surface.contains("RFC-0082") || surface.contains("RFC-0083") {
+        errors.push("Core 1L rfcs must not add Core language surface".to_owned());
     }
 
     for required in [
@@ -432,7 +449,7 @@ fn check_core_1l_contracts(
     }
     for required in [
         "Version: 1.0.0",
-        "Decisions: D0082, D0083",
+        "RFCs: RFC-0082, RFC-0083",
         "2,154,365-byte compiler seed",
         "116 conformance fixtures",
         "2,000",
@@ -446,31 +463,27 @@ fn check_core_1l_contracts(
     }
 }
 
-fn check_core_1k_acceptance(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
+fn check_core_1k_acceptance(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
     for (id, label) in [
-        ("D0080", "finite byte equivalence and named cost vectors"),
-        ("D0081", "Core 1K closure"),
+        ("RFC-0080", "finite byte equivalence and named cost vectors"),
+        ("RFC-0081", "Core 1K closure"),
     ] {
-        match decisions.get(id) {
-            Some(decision)
-                if decision.status == "accepted"
-                    && decision.kind == "architecture"
-                    && decision.primitive == "none"
-                    && decision.score >= 60 => {}
+        match rfcs.get(id) {
+            Some(rfc)
+                if rfc.status == "accepted"
+                    && rfc.kind == "architecture"
+                    && rfc.primitive == "none"
+                    && rfc.score >= 60 => {}
             Some(_) => errors.push(format!(
                 "Core 1K {label} requires an accepted primitive-free {id} scoring at least 60"
             )),
-            None => errors.push(format!("Core 1K decision {id} is missing")),
+            None => errors.push(format!("Core 1K rfc {id} is missing")),
         }
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0080") || surface.contains("D0081") {
-        errors.push("Core 1K decisions must not add Core language surface".to_owned());
+    if surface.contains("RFC-0080") || surface.contains("RFC-0081") {
+        errors.push("Core 1K rfcs must not add Core language surface".to_owned());
     }
 
     for required in [
@@ -543,42 +556,39 @@ fn check_core_1k_acceptance(
     }
 }
 
-fn check_core_1j_acceptance(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0078") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "language"
-                && decision.primitive == "structured-fork"
-                && decision.score >= 40 => {}
+fn check_core_1j_acceptance(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0078") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "language"
+                && rfc.primitive == "structured-fork"
+                && rfc.score >= 40 => {}
         Some(_) => errors.push(
-            "Core 1J requires accepted historical D0078 ownership for `parallel` scoring at least 40"
+            "Core 1J requires accepted historical RFC-0078 ownership for `parallel` scoring at least 40"
                 .to_owned(),
         ),
-        None => errors.push("Core 1J `parallel` decision D0078 is missing".to_owned()),
+        None => errors.push("Core 1J `parallel` rfc RFC-0078 is missing".to_owned()),
     }
-    match decisions.get("D0079") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0079") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1J closure requires accepted primitive-free D0079 scoring at least 60".to_owned(),
+            "Core 1J closure requires accepted primitive-free RFC-0079 scoring at least 60"
+                .to_owned(),
         ),
-        None => errors.push("Core 1J closure decision D0079 is missing".to_owned()),
+        None => errors.push("Core 1J closure rfc RFC-0079 is missing".to_owned()),
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     let parallel_rows: Vec<_> = surface
         .lines()
-        .filter(|line| line.ends_with("\tD0078"))
+        .filter(|line| line.ends_with("\tRFC-0078"))
         .collect();
-    if parallel_rows != ["syntax\tparallel\tlexical-two-call-parallelism\tD0078"] {
-        errors.push("D0078 must own exactly one canonical `parallel` syntax row".to_owned());
+    if parallel_rows != ["syntax\tparallel\tlexical-two-call-parallelism\tRFC-0078"] {
+        errors.push("RFC-0078 must own exactly one canonical `parallel` syntax row".to_owned());
     }
 
     for required in [
@@ -666,8 +676,8 @@ fn check_core_1j_acceptance(
     let budgets =
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
     for required in [
-        "structured-host-runtime-ratio\tdual_fetch\t0.75\tparallel-over-serial\tD0078",
-        "structured-host-runtime-ratio\tdual_health\t0.75\tparallel-over-serial\tD0078",
+        "structured-host-runtime-ratio\tdual_fetch\t0.75\tparallel-over-serial\tRFC-0078",
+        "structured-host-runtime-ratio\tdual_health\t0.75\tparallel-over-serial\tRFC-0078",
     ] {
         if !budgets.contains(required) {
             errors.push(format!(
@@ -700,22 +710,18 @@ fn check_core_1j_acceptance(
     }
 }
 
-fn check_parallelism_evidence(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0062") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+fn check_parallelism_evidence(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0062") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1F evidence requires accepted primitive-free D0062 scoring at least 60"
+            "Core 1F evidence requires accepted primitive-free RFC-0062 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("Core 1F parallelism evidence decision D0062 is missing".to_owned()),
+        None => errors.push("Core 1F parallelism evidence rfc RFC-0062 is missing".to_owned()),
     }
 
     for required in [
@@ -779,13 +785,14 @@ fn check_parallelism_evidence(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0062") {
-        errors.push("D0062 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0062") {
+        errors
+            .push("RFC-0062 has Primitive: none and must not add Core language surface".to_owned());
     }
 
     let budgets =
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
-    if !budgets.contains("analysis-exponent\tgenerated-declarations\t1.25\texponent\tD0062") {
+    if !budgets.contains("analysis-exponent\tgenerated-declarations\t1.25\texponent\tRFC-0062") {
         errors.push("Core 1F analysis scaling lacks its durable 1.25 budget".to_owned());
     }
 
@@ -800,20 +807,20 @@ fn check_parallelism_evidence(
 
 fn check_integer_proof_evidence(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0063") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0063") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "integer proof evidence requires accepted primitive-free D0063 scoring at least 60"
+            "integer proof evidence requires accepted primitive-free RFC-0063 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("integer proof evidence decision D0063 is missing".to_owned()),
+        None => errors.push("integer proof evidence rfc RFC-0063 is missing".to_owned()),
     }
 
     for required in [
@@ -867,8 +874,9 @@ fn check_integer_proof_evidence(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0063") {
-        errors.push("D0063 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0063") {
+        errors
+            .push("RFC-0063 has Primitive: none and must not add Core language surface".to_owned());
     }
 
     let e2e = fs::read_to_string(root.join("tests/e2e.rs")).unwrap_or_default();
@@ -886,33 +894,30 @@ fn check_integer_proof_evidence(
     }
 }
 
-fn check_resource_evidence(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0073") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+fn check_resource_evidence(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0073") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1H resource evidence requires accepted primitive-free D0073 scoring at least 60"
+            "Core 1H resource evidence requires accepted primitive-free RFC-0073 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("Core 1H resource evidence decision D0073 is missing".to_owned()),
+        None => errors.push("Core 1H resource evidence rfc RFC-0073 is missing".to_owned()),
     }
-    match decisions.get("D0074") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0074") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1H closure requires accepted primitive-free D0074 scoring at least 60".to_owned(),
+            "Core 1H closure requires accepted primitive-free RFC-0074 scoring at least 60"
+                .to_owned(),
         ),
-        None => errors.push("Core 1H closure decision D0074 is missing".to_owned()),
+        None => errors.push("Core 1H closure rfc RFC-0074 is missing".to_owned()),
     }
 
     for required in [
@@ -1018,9 +1023,9 @@ fn check_resource_evidence(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0073") || surface.contains("D0074") {
+    if surface.contains("RFC-0073") || surface.contains("RFC-0074") {
         errors.push(
-            "D0073 and D0074 have Primitive: none and must not add Core language surface"
+            "RFC-0073 and RFC-0074 have Primitive: none and must not add Core language surface"
                 .to_owned(),
         );
     }
@@ -1035,45 +1040,42 @@ fn check_resource_evidence(
     }
 }
 
-fn check_host_boundary(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0075") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "language"
-                && decision.primitive == "monotonic-clock"
-                && decision.score >= 40 => {}
+fn check_host_boundary(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0075") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "language"
+                && rfc.primitive == "monotonic-clock"
+                && rfc.score >= 40 => {}
         Some(_) => errors.push(
-            "Core 1I clock requires accepted D0075 monotonic-clock language surface scoring at least 40"
+            "Core 1I clock requires accepted RFC-0075 monotonic-clock language surface scoring at least 40"
                 .to_owned(),
         ),
-        None => errors.push("Core 1I monotonic clock decision D0075 is missing".to_owned()),
+        None => errors.push("Core 1I monotonic clock rfc RFC-0075 is missing".to_owned()),
     }
-    match decisions.get("D0076") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "language"
-                && decision.primitive == "bounded-tcp-exchange"
-                && decision.score >= 40 => {}
+    match rfcs.get("RFC-0076") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "language"
+                && rfc.primitive == "bounded-tcp-exchange"
+                && rfc.score >= 40 => {}
         Some(_) => errors.push(
-            "Core 1I network boundary requires accepted D0076 bounded-tcp-exchange language surface scoring at least 40"
+            "Core 1I network boundary requires accepted RFC-0076 bounded-tcp-exchange language surface scoring at least 40"
                 .to_owned(),
         ),
-        None => errors.push("Core 1I bounded TCP decision D0076 is missing".to_owned()),
+        None => errors.push("Core 1I bounded TCP rfc RFC-0076 is missing".to_owned()),
     }
-    match decisions.get("D0077") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0077") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "Core 1I closure requires accepted primitive-free D0077 scoring at least 60".to_owned(),
+            "Core 1I closure requires accepted primitive-free RFC-0077 scoring at least 60"
+                .to_owned(),
         ),
-        None => errors.push("Core 1I closure decision D0077 is missing".to_owned()),
+        None => errors.push("Core 1I closure rfc RFC-0077 is missing".to_owned()),
     }
 
     for required in [
@@ -1100,19 +1102,19 @@ fn check_host_boundary(
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
     if surface
         .lines()
-        .filter(|line| line.starts_with("builtin\tio.monotonic_ms\tmonotonic-clock\tD0075"))
+        .filter(|line| line.starts_with("builtin\tio.monotonic_ms\tmonotonic-clock\tRFC-0075"))
         .count()
         != 1
     {
-        errors.push("io.monotonic_ms must have exactly one D0075 surface row".to_owned());
+        errors.push("io.monotonic_ms must have exactly one RFC-0075 surface row".to_owned());
     }
     if surface
         .lines()
-        .filter(|line| line.starts_with("builtin\tio.tcp_exchange\tbounded-tcp-exchange\tD0076"))
+        .filter(|line| line.starts_with("builtin\tio.tcp_exchange\tbounded-tcp-exchange\tRFC-0076"))
         .count()
         != 1
     {
-        errors.push("io.tcp_exchange must have exactly one D0076 surface row".to_owned());
+        errors.push("io.tcp_exchange must have exactly one RFC-0076 surface row".to_owned());
     }
     for forbidden in ["builtin\tio.clock", "builtin\tio.now", "builtin\tio.time"] {
         if surface.contains(forbidden) {
@@ -1196,7 +1198,7 @@ fn check_host_boundary(
 
     let needs = fs::read_to_string(root.join("benchmarks/host/needs.tsv")).unwrap_or_default();
     for required in [
-        "dual-endpoint-fetch\tsend and receive bounded bytes with deadline\tio.tcp-exchange\tD0076",
+        "dual-endpoint-fetch\tsend and receive bounded bytes with deadline\tio.tcp-exchange\tRFC-0076",
         "child-tool-orchestration\tstart arbitrary executable and capture output\texternal launcher\tdefer",
         "filesystem-output\tpersist generated artifacts\tstdout plus external launcher\tdefer",
     ] {
@@ -1214,9 +1216,10 @@ fn check_host_boundary(
     if !benchmark.contains("\"host\" => run_host_evidence()")
         || !benchmark.contains("performance_budget(\"host-clock-runtime-ratio\", \"clock-100000\")")
         || !benchmark.contains("performance_budget(\"host-network-binary-ratio\", \"hello\")")
-        || !budgets.contains("host-clock-runtime-ratio\tclock-100000\t2.00\tslim-over-c\tD0075")
-        || !budgets
-            .contains("host-network-binary-ratio\thello\t1.03\thost-over-network-disabled\tD0076")
+        || !budgets.contains("host-clock-runtime-ratio\tclock-100000\t2.00\tslim-over-c\tRFC-0075")
+        || !budgets.contains(
+            "host-network-binary-ratio\thello\t1.03\thost-over-network-disabled\tRFC-0076",
+        )
         || !verify.contains("slim-bench -- host")
     {
         errors.push("Core 1I clock performance is not a permanent gated comparison".to_owned());
@@ -1225,20 +1228,20 @@ fn check_host_boundary(
 
 fn check_parallelism_application_baseline(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0064") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0064") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "parallelism application baseline requires accepted primitive-free D0064 scoring at least 60"
+            "parallelism application baseline requires accepted primitive-free RFC-0064 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("parallelism application baseline decision D0064 is missing".to_owned()),
+        None => errors.push("parallelism application baseline rfc RFC-0064 is missing".to_owned()),
     }
 
     for required in [
@@ -1320,27 +1323,28 @@ fn check_parallelism_application_baseline(
             .push("full verification does not run the parallelism application baseline".to_owned());
     }
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0064") {
-        errors.push("D0064 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0064") {
+        errors
+            .push("RFC-0064 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
 fn check_complete_parallel_blockers(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0065") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0065") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "complete parallel blockers require accepted primitive-free D0065 scoring at least 60"
+            "complete parallel blockers require accepted primitive-free RFC-0065 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("complete parallel blocker decision D0065 is missing".to_owned()),
+        None => errors.push("complete parallel blocker rfc RFC-0065 is missing".to_owned()),
     }
 
     if !root
@@ -1411,27 +1415,28 @@ fn check_complete_parallel_blockers(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0065") {
-        errors.push("D0065 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0065") {
+        errors
+            .push("RFC-0065 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
 fn check_total_recurrence_evidence(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0066") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0066") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "total recurrence evidence requires accepted primitive-free D0066 scoring at least 60"
+            "total recurrence evidence requires accepted primitive-free RFC-0066 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("total recurrence evidence decision D0066 is missing".to_owned()),
+        None => errors.push("total recurrence evidence rfc RFC-0066 is missing".to_owned()),
     }
 
     for required in [
@@ -1505,32 +1510,33 @@ fn check_total_recurrence_evidence(
 
     let budgets =
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
-    if !budgets.contains("native-runtime-ratio\tstate_machine\t2.50\tslim-over-c\tD0066") {
+    if !budgets.contains("native-runtime-ratio\tstate_machine\t2.50\tslim-over-c\tRFC-0066") {
         errors.push("state_machine lacks a durable native runtime budget".to_owned());
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0066") {
-        errors.push("D0066 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0066") {
+        errors
+            .push("RFC-0066 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
 fn check_deterministic_parallel_schedule(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0067") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0067") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "deterministic parallel scheduling requires accepted primitive-free D0067 scoring at least 60"
+            "deterministic parallel scheduling requires accepted primitive-free RFC-0067 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("deterministic parallel schedule decision D0067 is missing".to_owned()),
+        None => errors.push("deterministic parallel schedule rfc RFC-0067 is missing".to_owned()),
     }
 
     if !root
@@ -1607,44 +1613,44 @@ fn check_deterministic_parallel_schedule(
         .unwrap_or_default();
     if !state.ends_with("\t4\t3\t3\t1\t1\t4") {
         errors.push(
-            "state_machine D0107 schedule baseline must remain exactly 4/3/3/1/1/4".to_owned(),
+            "state_machine RFC-0107 schedule baseline must remain exactly 4/3/3/1/1/4".to_owned(),
         );
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0067") {
-        errors.push("D0067 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0067") {
+        errors
+            .push("RFC-0067 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
 fn check_total_task_failure_semantics(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0068") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "architecture"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0068") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "architecture"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "total-task failure semantics require accepted primitive-free D0068 scoring at least 60"
+            "total-task failure semantics require accepted primitive-free RFC-0068 scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("total-task failure decision D0068 is missing".to_owned()),
+        None => errors.push("total-task failure rfc RFC-0068 is missing".to_owned()),
     }
 
-    let decision =
-        fs::read_to_string(root.join("design/decisions/D0068-total-task-failure-semantics.md"))
-            .unwrap_or_default();
+    let rfc = fs::read_to_string(root.join("design/rfcs/0068-total-task-failure-semantics.md"))
+        .unwrap_or_default();
     for required in [
         "Worker-creation failure executes the same work inline",
         "A task cannot require\ncancellation because no accepted task can fail",
         "the parent owns the only join handle",
         "move each owned input exactly once",
     ] {
-        if !contains_slim_pattern(&decision, required) {
+        if !contains_slim_pattern(&rfc, required) {
             errors.push(format!(
                 "total-task failure contract is missing `{required}`"
             ));
@@ -1678,51 +1684,52 @@ fn check_total_task_failure_semantics(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0068") {
-        errors.push("D0068 has Primitive: none and must not add Core language surface".to_owned());
+    if surface.contains("RFC-0068") {
+        errors
+            .push("RFC-0068 has Primitive: none and must not add Core language surface".to_owned());
     }
 }
 
 fn check_parallel_execution_boundary(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0069") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "runtime"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0069") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "runtime"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "parallel execution boundary requires accepted primitive-free D0069 runtime decision scoring at least 60"
+            "parallel execution boundary requires accepted primitive-free RFC-0069 runtime rfc scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("parallel execution boundary decision D0069 is missing".to_owned()),
+        None => errors.push("parallel execution boundary rfc RFC-0069 is missing".to_owned()),
     }
-    match decisions.get("D0070") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "runtime"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0070") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "runtime"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "tiered structured workers require accepted primitive-free D0070 runtime decision scoring at least 60"
+            "tiered structured workers require accepted primitive-free RFC-0070 runtime rfc scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("tiered structured worker decision D0070 is missing".to_owned()),
+        None => errors.push("tiered structured worker rfc RFC-0070 is missing".to_owned()),
     }
-    match decisions.get("D0071") {
-        Some(decision)
-            if decision.status == "accepted"
-                && decision.kind == "runtime"
-                && decision.primitive == "none"
-                && decision.score >= 60 => {}
+    match rfcs.get("RFC-0071") {
+        Some(rfc)
+            if rfc.status == "accepted"
+                && rfc.kind == "runtime"
+                && rfc.primitive == "none"
+                && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "guarded automatic execution requires accepted primitive-free D0071 runtime decision scoring at least 60"
+            "guarded automatic execution requires accepted primitive-free RFC-0071 runtime rfc scoring at least 60"
                 .to_owned(),
         ),
-        None => errors.push("guarded automatic execution decision D0071 is missing".to_owned()),
+        None => errors.push("guarded automatic execution rfc RFC-0071 is missing".to_owned()),
     }
 
     for required in [
@@ -1731,7 +1738,7 @@ fn check_parallel_execution_boundary(
         "benchmarks/challenges/signal_network/program.slim",
         "benchmarks/challenges/signal_network/program.c",
         "benchmarks/challenges/signal_network/program.rs",
-        "design/decisions/D0071-guarded-automatic-fork-join.md",
+        "design/rfcs/0071-guarded-automatic-fork-join.md",
         "benchmarks/results/2026-07-23-core-1g-automatic-execution.md",
     ] {
         if !root.join(required).is_file() {
@@ -1791,15 +1798,15 @@ fn check_parallel_execution_boundary(
     }
     let budgets =
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
-    if !budgets
-        .contains("manual-parallel-runtime-ratio\tstate_machine\t2.00\tparallel-over-serial\tD0069")
-    {
+    if !budgets.contains(
+        "manual-parallel-runtime-ratio\tstate_machine\t2.00\tparallel-over-serial\tRFC-0069",
+    ) {
         errors.push("manual parallel reference lacks its durable ratio budget".to_owned());
     }
     for required in [
-        "generated-parallel-runtime-ratio\tstate_machine\t1.25\tparallel-over-serial\tD0071",
-        "generated-parallel-runtime-ratio\tsignal_network\t1.25\tparallel-over-serial\tD0071",
-        "native-runtime-ratio\tsignal_network\t2.50\tslim-over-c\tD0071",
+        "generated-parallel-runtime-ratio\tstate_machine\t1.25\tparallel-over-serial\tRFC-0071",
+        "generated-parallel-runtime-ratio\tsignal_network\t1.25\tparallel-over-serial\tRFC-0071",
+        "native-runtime-ratio\tsignal_network\t2.50\tslim-over-c\tRFC-0071",
     ] {
         if !contains_slim_pattern(&budgets, required) {
             errors.push(format!(
@@ -1819,7 +1826,7 @@ fn check_parallel_execution_boundary(
             .unwrap_or_default();
         if !row.ends_with(schedule) {
             errors.push(format!(
-                "{challenge} must retain its D0107 candidate, selected, reported, executable, executed, and eligible counts"
+                "{challenge} must retain its RFC-0107 candidate, selected, reported, executable, executed, and eligible counts"
             ));
         }
     }
@@ -1898,7 +1905,7 @@ fn check_parallel_execution_boundary(
         }
     }
     for required in [
-        "design/decisions/D0070-tiered-structured-worker-abi.md",
+        "design/rfcs/0070-tiered-structured-worker-abi.md",
         "benchmarks/results/2026-07-23-core-1g-worker-abi.md",
         "tests/fixtures/parallel_runtime.c",
     ] {
@@ -1928,32 +1935,27 @@ fn check_parallel_execution_boundary(
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    for decision in ["D0069", "D0070", "D0071"] {
-        if surface.contains(decision) {
+    for rfc in ["RFC-0069", "RFC-0070", "RFC-0071"] {
+        if surface.contains(rfc) {
             errors.push(format!(
-                "{decision} has Primitive: none and must not add Core language surface"
+                "{rfc} has Primitive: none and must not add Core language surface"
             ));
         }
     }
 }
 
-fn check_core_1e_acceptance(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0061") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
-        Some(_) => {
-            errors.push("Core 1E acceptance requires accepted D0061 scoring at least 60".to_owned())
-        }
-        None => errors.push("Core 1E acceptance decision D0061 is missing".to_owned()),
+fn check_core_1e_acceptance(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0061") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
+        Some(_) => errors
+            .push("Core 1E acceptance requires accepted RFC-0061 scoring at least 60".to_owned()),
+        None => errors.push("Core 1E acceptance rfc RFC-0061 is missing".to_owned()),
     }
 
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
     for required in [
         "### Core 1E: safety-preserving native efficiency\n\nStatus: complete",
-        "D0061 accepts Core 1E",
+        "RFC-0061 accepts Core 1E",
     ] {
         if !contains_slim_pattern(&roadmap, required) {
             errors.push(format!("Core 1E roadmap freeze is missing `{required}`"));
@@ -1972,11 +1974,11 @@ fn check_core_1e_acceptance(
     let budgets =
         fs::read_to_string(root.join("benchmarks/performance-budgets.tsv")).unwrap_or_default();
     for required in [
-        "native-runtime-ratio\tsieve\t2.50\tslim-over-c\tD0061",
-        "native-runtime-ratio\tmatrix\t2.00\tslim-over-c\tD0087",
-        "native-runtime-ratio\tbytefreq\t2.50\tslim-over-c\tD0061",
-        "native-runtime-ratio\trecords\t2.50\tslim-over-c\tD0061",
-        "native-runtime-ratio\tvariants\t1.75\tslim-over-c\tD0061",
+        "native-runtime-ratio\tsieve\t2.50\tslim-over-c\tRFC-0061",
+        "native-runtime-ratio\tmatrix\t2.00\tslim-over-c\tRFC-0087",
+        "native-runtime-ratio\tbytefreq\t2.50\tslim-over-c\tRFC-0061",
+        "native-runtime-ratio\trecords\t2.50\tslim-over-c\tRFC-0061",
+        "native-runtime-ratio\tvariants\t1.75\tslim-over-c\tRFC-0061",
     ] {
         if !contains_slim_pattern(&budgets, required) {
             errors.push(format!("Core 1E tightened budget is missing `{required}`"));
@@ -1986,15 +1988,16 @@ fn check_core_1e_acceptance(
 
 fn check_allocation_free_region_elision(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0060") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+    match rfcs.get("RFC-0060") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "allocation-free region elision requires accepted D0060 scoring at least 60".to_owned(),
+            "allocation-free region elision requires accepted RFC-0060 scoring at least 60"
+                .to_owned(),
         ),
-        None => errors.push("allocation-free region decision D0060 is missing".to_owned()),
+        None => errors.push("allocation-free region rfc RFC-0060 is missing".to_owned()),
     }
 
     let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
@@ -2015,31 +2018,27 @@ fn check_allocation_free_region_elision(
     }
 }
 
-fn check_runtime_fast_paths(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0059") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+fn check_runtime_fast_paths(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0059") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "checked runtime fast paths require accepted D0059 scoring at least 60".to_owned(),
+            "checked runtime fast paths require accepted RFC-0059 scoring at least 60".to_owned(),
         ),
-        None => errors.push("checked runtime fast-path decision D0059 is missing".to_owned()),
+        None => errors.push("checked runtime fast-path rfc RFC-0059 is missing".to_owned()),
     }
-    match decisions.get("D0087") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+    match rfcs.get("RFC-0087") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "typed vector-set lowering requires accepted D0087 scoring at least 60".to_owned(),
+            "typed vector-set lowering requires accepted RFC-0087 scoring at least 60".to_owned(),
         ),
-        None => errors.push("typed vector-set lowering decision D0087 is missing".to_owned()),
+        None => errors.push("typed vector-set lowering rfc RFC-0087 is missing".to_owned()),
     }
-    match decisions.get("D0098") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+    match rfcs.get("RFC-0098") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "versioned collection access requires accepted D0098 scoring at least 60".to_owned(),
+            "versioned collection access requires accepted RFC-0098 scoring at least 60".to_owned(),
         ),
-        None => errors.push("versioned collection access decision D0098 is missing".to_owned()),
+        None => errors.push("versioned collection access rfc RFC-0098 is missing".to_owned()),
     }
 
     let header = fs::read_to_string(root.join("runtime/slim_rt.h")).unwrap_or_default();
@@ -2113,23 +2112,18 @@ fn check_runtime_fast_paths(
     }
 }
 
-fn check_core_1d_acceptance(
-    root: &Path,
-    decisions: &BTreeMap<String, Decision>,
-    errors: &mut Vec<String>,
-) {
-    match decisions.get("D0058") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
-        Some(_) => {
-            errors.push("Core 1D acceptance requires accepted D0058 scoring at least 60".to_owned())
-        }
-        None => errors.push("Core 1D acceptance decision D0058 is missing".to_owned()),
+fn check_core_1d_acceptance(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
+    match rfcs.get("RFC-0058") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
+        Some(_) => errors
+            .push("Core 1D acceptance requires accepted RFC-0058 scoring at least 60".to_owned()),
+        None => errors.push("Core 1D acceptance rfc RFC-0058 is missing".to_owned()),
     }
 
     let roadmap = fs::read_to_string(root.join("ROADMAP.md")).unwrap_or_default();
     for required in [
         "### Core 1D: complete typed compiler view\n\nStatus: complete",
-        "Core 1D is accepted by D0058.",
+        "Core 1D is accepted by RFC-0058.",
     ] {
         if !contains_slim_pattern(&roadmap, required) {
             errors.push(format!("Core 1D roadmap freeze is missing `{required}`"));
@@ -2167,15 +2161,15 @@ fn check_core_1d_acceptance(
 
 fn check_performance_architecture(
     root: &Path,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
-    match decisions.get("D0086") {
-        Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+    match rfcs.get("RFC-0086") {
+        Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
         Some(_) => errors.push(
-            "canonical O3 native builds require accepted D0086 scoring at least 60".to_owned(),
+            "canonical O3 native builds require accepted RFC-0086 scoring at least 60".to_owned(),
         ),
-        None => errors.push("canonical O3 native-build decision D0086 is missing".to_owned()),
+        None => errors.push("canonical O3 native-build rfc RFC-0086 is missing".to_owned()),
     }
     let launcher = fs::read_to_string(root.join("slimc")).unwrap_or_default();
     if launcher.matches("-std=c11 -O3 -DNDEBUG").count() != 3
@@ -2188,7 +2182,7 @@ fn check_performance_architecture(
 
     for relative in [
         "docs/PERFORMANCE.md",
-        "design/decisions/D0030-durable-performance-evidence.md",
+        "design/rfcs/0030-durable-performance-evidence.md",
         "benchmarks/performance-budgets.tsv",
         "benchmarks/challenges/manifest.tsv",
         "benchmarks/agent/manifest.tsv",
@@ -2224,10 +2218,10 @@ fn check_performance_architecture(
                     line_index + 1
                 )),
             }
-            match decisions.get(columns[4]) {
-                Some(decision) if decision.status == "accepted" && decision.score >= 60 => {}
+            match rfcs.get(columns[4]) {
+                Some(rfc) if rfc.status == "accepted" && rfc.score >= 60 => {}
                 Some(_) => errors.push(format!(
-                    "performance budget {key} requires an accepted decision scoring at least 60"
+                    "performance budget {key} requires an accepted rfc scoring at least 60"
                 )),
                 None => errors.push(format!(
                     "performance budget {key} cites missing {}",
@@ -2246,15 +2240,33 @@ fn check_performance_architecture(
                 continue;
             }
             let columns: Vec<_> = line.split('\t').collect();
-            if columns.len() != 2 {
+            if columns.len() != 9 {
                 errors.push(format!(
-                    "challenges/manifest.tsv:{} must have two columns",
+                    "challenges/manifest.tsv:{} must have nine columns",
                     line_index + 1
                 ));
                 continue;
             }
             let challenge = columns[0];
-            challenge_features.extend(columns[1].split(',').map(str::to_owned));
+            challenge_features.extend(columns[6].split(',').map(str::to_owned));
+            if columns[1..7].iter().any(|field| field.is_empty()) {
+                errors.push(format!(
+                    "challenges/manifest.tsv:{} has empty publication metadata",
+                    line_index + 1
+                ));
+            }
+            if !matches!(columns[7], "yes" | "no") {
+                errors.push(format!(
+                    "challenges/manifest.tsv:{} featured must be yes or no",
+                    line_index + 1
+                ));
+            }
+            if !matches!(columns[8], "pedagogical" | "benchmark") {
+                errors.push(format!(
+                    "challenges/manifest.tsv:{} shape must be pedagogical or benchmark",
+                    line_index + 1
+                ));
+            }
             if !challenges.insert(challenge.to_owned()) {
                 errors.push(format!("duplicate challenge {challenge}"));
             }
@@ -2279,6 +2291,17 @@ fn check_performance_architecture(
         errors.push(format!(
             "durable challenge corpus must retain at least 12 workloads, found {}",
             challenges.len()
+        ));
+    }
+    let featured = fs::read_to_string(&manifest_path)
+        .unwrap_or_default()
+        .lines()
+        .filter(|line| !line.is_empty() && !line.starts_with('#'))
+        .filter(|line| line.split('\t').nth(7) == Some("yes"))
+        .count();
+    if featured != 6 {
+        errors.push(format!(
+            "algorithm gallery must retain exactly six featured walkthroughs, found {featured}"
         ));
     }
     for feature in [
@@ -2480,11 +2503,10 @@ fn check_toolchain_cutover(root: &Path, errors: &mut Vec<String>) {
         }
     }
 
-    let decision =
-        fs::read_to_string(root.join("design/decisions/D0027-portable-c-bootstrap-seed.md"))
-            .unwrap_or_default();
-    if !decision.contains("Status: accepted") {
-        errors.push("toolchain cutover requires accepted decision D0027".to_owned());
+    let rfc = fs::read_to_string(root.join("design/rfcs/0027-portable-c-bootstrap-seed.md"))
+        .unwrap_or_default();
+    if !rfc.contains("Status: accepted") {
+        errors.push("toolchain cutover requires accepted rfc RFC-0027".to_owned());
     }
 }
 
@@ -2541,13 +2563,13 @@ fn check_ledger_coverage(
     }
 }
 
-fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Decision> {
-    let mut decisions = BTreeMap::new();
+fn load_rfcs(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Rfc> {
+    let mut rfcs = BTreeMap::new();
     let entries = match fs::read_dir(dir) {
         Ok(entries) => entries,
         Err(error) => {
             errors.push(format!("cannot read {}: {error}", dir.display()));
-            return decisions;
+            return rfcs;
         }
     };
 
@@ -2560,13 +2582,14 @@ fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Deci
             .file_name()
             .and_then(|value| value.to_str())
             .unwrap_or("");
-        let Some(id) = file_name.split('-').next() else {
+        let Some(number) = file_name.split('-').next() else {
             continue;
         };
-        if id.len() != 5 || !id.starts_with('D') || !id[1..].chars().all(|ch| ch.is_ascii_digit()) {
-            errors.push(format!("invalid decision filename {file_name}"));
+        if number.len() != 4 || !number.chars().all(|ch| ch.is_ascii_digit()) {
+            errors.push(format!("invalid rfc filename {file_name}"));
             continue;
         }
+        let id = format!("RFC-{number}");
 
         let text = match fs::read_to_string(&path) {
             Ok(text) => text,
@@ -2575,13 +2598,22 @@ fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Deci
                 continue;
             }
         };
-        for heading in REQUIRED_HEADINGS {
-            if !text.lines().any(|line| line.trim() == heading) {
+        let fields = parse_fields(&text);
+        let process = fields.get("Process").map(String::as_str).unwrap_or("");
+        let required_headings: &[&str] = match process {
+            "legacy" => &LEGACY_RFC_HEADINGS,
+            "1" => &CURRENT_RFC_HEADINGS,
+            _ => &[],
+        };
+        for heading in required_headings {
+            if !text.lines().any(|line| line.trim() == *heading) {
                 errors.push(format!("{file_name} is missing {heading}"));
             }
         }
+        if !text.starts_with(&format!("# {id}: ")) {
+            errors.push(format!("{file_name} title must start with `# {id}: `"));
+        }
 
-        let fields = parse_fields(&text);
         let required_field = |name: &str, errors: &mut Vec<String>| -> String {
             match fields.get(name) {
                 Some(value) => value.clone(),
@@ -2592,6 +2624,16 @@ fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Deci
             }
         };
         let status = required_field("Status", errors);
+        let implementation = required_field("Implementation", errors);
+        let process = required_field("Process", errors);
+        let audience = if process == "1" {
+            for name in ["Author", "Created", "DecisionDate", "Approver"] {
+                required_field(name, errors);
+            }
+            required_field("Audience", errors)
+        } else {
+            String::new()
+        };
         let kind = required_field("Kind", errors);
         let primitive = required_field("Primitive", errors);
         let mut ratings = [0; 6];
@@ -2612,12 +2654,15 @@ fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Deci
         let score_text = required_field("Score", errors);
         let score = parse_number(&score_text, file_name, "Score", errors);
 
-        if decisions
+        if rfcs
             .insert(
-                id.to_owned(),
-                Decision {
-                    id: id.to_owned(),
+                id.clone(),
+                Rfc {
+                    id: id.clone(),
                     status,
+                    implementation,
+                    process,
+                    audience,
                     kind,
                     primitive,
                     ratings,
@@ -2626,10 +2671,10 @@ fn load_decisions(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Deci
             )
             .is_some()
         {
-            errors.push(format!("duplicate decision id {id}"));
+            errors.push(format!("duplicate RFC id {id}"));
         }
     }
-    decisions
+    rfcs
 }
 
 fn parse_fields(text: &str) -> BTreeMap<String, String> {
@@ -2652,11 +2697,63 @@ fn parse_number(value: &str, file: &str, field: &str, errors: &mut Vec<String>) 
     })
 }
 
-fn check_decisions(decisions: &BTreeMap<String, Decision>, errors: &mut Vec<String>) {
+fn check_rfcs(rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
     let mut primitives = BTreeSet::new();
-    for decision in decisions.values() {
+    let mut legacy_accepted = 0;
+    let mut legacy_rejected = 0;
+    for rfc in rfcs.values() {
+        if !matches!(
+            rfc.status.as_str(),
+            "proposed" | "accepted" | "rejected" | "withdrawn" | "superseded"
+        ) {
+            errors.push(format!("{} has unknown status {}", rfc.id, rfc.status));
+        }
+        if !matches!(
+            rfc.implementation.as_str(),
+            "pending" | "complete" | "not-planned"
+        ) {
+            errors.push(format!(
+                "{} has unknown implementation state {}",
+                rfc.id, rfc.implementation
+            ));
+        }
+        if !matches!(rfc.process.as_str(), "legacy" | "1") {
+            errors.push(format!(
+                "{} has unknown RFC process {}",
+                rfc.id, rfc.process
+            ));
+        }
+        if !matches!(
+            rfc.kind.as_str(),
+            "language" | "architecture" | "runtime" | "dependency" | "compatibility" | "process"
+        ) {
+            errors.push(format!("{} has unknown kind {}", rfc.id, rfc.kind));
+        }
+        if rfc.process == "1" && !matches!(rfc.audience.as_str(), "user" | "developer" | "both") {
+            errors.push(format!("{} has unknown audience {}", rfc.id, rfc.audience));
+        }
+        match (rfc.status.as_str(), rfc.implementation.as_str()) {
+            ("proposed", "pending")
+            | ("accepted", "pending")
+            | ("accepted", "complete")
+            | ("rejected", "not-planned")
+            | ("withdrawn", "not-planned")
+            | ("superseded", "complete")
+            | ("superseded", "not-planned") => {}
+            _ => errors.push(format!(
+                "{} status {} is incompatible with implementation {}",
+                rfc.id, rfc.status, rfc.implementation
+            )),
+        }
+        if rfc.process == "legacy" {
+            if rfc.status == "accepted" {
+                legacy_accepted += 1;
+            } else if rfc.status == "rejected" {
+                legacy_rejected += 1;
+            }
+        }
         let weights = [20, 20, 20, 20, 15, 5];
-        let weighted: i32 = decision
+        let weighted: i32 = rfc
             .ratings
             .iter()
             .zip(weights)
@@ -2665,43 +2762,124 @@ fn check_decisions(decisions: &BTreeMap<String, Decision>, errors: &mut Vec<Stri
         if weighted % 2 != 0 {
             errors.push(format!(
                 "{} score is fractional; choose ratings whose weighted sum is even",
-                decision.id
+                rfc.id
             ));
         }
         let calculated = weighted / 2;
-        if decision.score != calculated {
+        if rfc.score != calculated {
             errors.push(format!(
                 "{} declares score {} but calculated score is {}",
-                decision.id, decision.score, calculated
+                rfc.id, rfc.score, calculated
             ));
         }
-        if decision.status == "accepted" && decision.kind == "language" {
-            if decision.score < 40 {
-                errors.push(format!(
-                    "{} accepted language score is below 40",
-                    decision.id
-                ));
+        if rfc.status == "accepted" && rfc.kind == "language" {
+            if rfc.score < 40 {
+                errors.push(format!("{} accepted language score is below 40", rfc.id));
             }
-            if decision.ratings[..4].iter().any(|rating| *rating < 0) {
+            if rfc.ratings[..4].iter().any(|rating| *rating < 0) {
                 errors.push(format!(
                     "{} has a negative hard-gate rating in safety/compile/runtime/minimal",
-                    decision.id
+                    rfc.id
                 ));
             }
-            if !decision.ratings.contains(&2) {
-                errors.push(format!("{} has no primary +2 benefit", decision.id));
+            if !rfc.ratings.contains(&2) {
+                errors.push(format!("{} has no primary +2 benefit", rfc.id));
             }
         }
-        if decision.primitive != "none" && !primitives.insert(decision.primitive.clone()) {
+        if rfc.status == "accepted"
+            && rfc.primitive != "none"
+            && !primitives.insert(rfc.primitive.clone())
+        {
             errors.push(format!(
                 "{} duplicates accepted primitive {}",
-                decision.id, decision.primitive
+                rfc.id, rfc.primitive
             ));
+        }
+    }
+    if legacy_accepted != 98 || legacy_rejected != 8 {
+        errors.push(format!(
+            "legacy RFC disposition drift: expected 98 accepted and 8 rejected, found {legacy_accepted} accepted and {legacy_rejected} rejected"
+        ));
+    }
+}
+
+fn contains_legacy_rfc_id(text: &str) -> bool {
+    text.as_bytes()
+        .windows(5)
+        .any(|window| window[0] == b'D' && window[1..].iter().all(u8::is_ascii_digit))
+}
+
+fn visit_repository_text_files(root: &Path, dir: &Path, action: &mut impl FnMut(&Path, &str)) {
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.is_dir() {
+            let name = path
+                .file_name()
+                .and_then(|value| value.to_str())
+                .unwrap_or("");
+            if matches!(name, ".git" | ".next" | "node_modules" | "out" | "target") {
+                continue;
+            }
+            visit_repository_text_files(root, &path, action);
+            continue;
+        }
+        let extension = path
+            .extension()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        let file_name = path
+            .file_name()
+            .and_then(|value| value.to_str())
+            .unwrap_or("");
+        if !matches!(
+            extension,
+            "c" | "json"
+                | "lock"
+                | "md"
+                | "mjs"
+                | "rs"
+                | "sh"
+                | "slim"
+                | "toml"
+                | "ts"
+                | "tsv"
+                | "tsx"
+        ) && !matches!(file_name, "VERSION" | "slimc")
+        {
+            continue;
+        }
+        if let Ok(text) = fs::read_to_string(&path) {
+            action(path.strip_prefix(root).unwrap_or(&path), &text);
         }
     }
 }
 
-fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &mut Vec<String>) {
+fn check_rfc_migration(root: &Path, errors: &mut Vec<String>) {
+    let legacy_directory = root.join("design").join("decisions");
+    if legacy_directory.exists() {
+        errors.push("legacy design decision directory remains after RFC migration".to_owned());
+    }
+    let legacy_path = ["design", "decisions"].join("/");
+    visit_repository_text_files(root, root, &mut |path, text| {
+        if text.contains(&legacy_path) {
+            errors.push(format!(
+                "{} retains the legacy decision-directory spelling",
+                path.display()
+            ));
+        }
+        if contains_legacy_rfc_id(text) {
+            errors.push(format!(
+                "{} retains a legacy decision identifier",
+                path.display()
+            ));
+        }
+    });
+}
+
+fn check_surface(path: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
     let text = match fs::read_to_string(path) {
         Ok(text) => text,
         Err(error) => {
@@ -2732,10 +2910,10 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
         if !roles.insert(category_role.clone()) {
             errors.push(format!("duplicate semantic role {category_role}"));
         }
-        match decisions.get(columns[3]) {
-            Some(decision) if decision.status == "accepted" => {}
+        match rfcs.get(columns[3]) {
+            Some(rfc) if rfc.status == "accepted" && rfc.implementation == "complete" => {}
             Some(_) => errors.push(format!(
-                "surface {category_name} cites unaccepted {}",
+                "surface {category_name} cites inactive {}",
                 columns[3]
             )),
             None => errors.push(format!(
@@ -2774,7 +2952,7 @@ fn check_surface(path: &Path, decisions: &BTreeMap<String, Decision>, errors: &m
 fn check_semantic_ledger(
     path: &Path,
     display_name: &str,
-    decisions: &BTreeMap<String, Decision>,
+    rfcs: &BTreeMap<String, Rfc>,
     errors: &mut Vec<String>,
 ) {
     let text = match fs::read_to_string(path) {
@@ -2806,10 +2984,10 @@ fn check_semantic_ledger(
         if !roles.insert(category_role.clone()) {
             errors.push(format!("duplicate {display_name} role {category_role}"));
         }
-        match decisions.get(columns[3]) {
-            Some(decision) if decision.status == "accepted" => {}
+        match rfcs.get(columns[3]) {
+            Some(rfc) if rfc.status == "accepted" && rfc.implementation == "complete" => {}
             Some(_) => errors.push(format!(
-                "{display_name} {category_name} cites unaccepted {}",
+                "{display_name} {category_name} cites inactive {}",
                 columns[3]
             )),
             None => errors.push(format!(
@@ -2846,7 +3024,7 @@ fn check_rust_safety(dir: &Path, errors: &mut Vec<String>) {
     visit_rs_files(dir, &mut |path, text| {
         if text.contains(&unsafe_block) || text.contains(&unsafe_function) {
             errors.push(format!(
-                "unsafe Rust requires a dedicated accepted decision: {}",
+                "unsafe Rust requires a dedicated accepted rfc: {}",
                 path.display()
             ));
         }
@@ -2920,7 +3098,7 @@ fn check_rust_budget(root: &Path, errors: &mut Vec<String>) {
         seen.insert(relative.clone());
         match budget.get(&relative) {
             Some((role, Some(maximum))) if source.len() > *maximum => errors.push(format!(
-                "production Rust budget exceeded for {relative}: {} > {maximum} bytes; implement capability in SLIM or accept a new architecture decision",
+                "production Rust budget exceeded for {relative}: {} > {maximum} bytes; implement capability in SLIM or accept a new architecture rfc",
                 source.len()
             )),
             Some((role, None)) if role == "infrastructure" => {}
@@ -2936,12 +3114,15 @@ fn check_rust_budget(root: &Path, errors: &mut Vec<String>) {
 }
 
 fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
-    let decision_path = root.join("design/decisions/D0103-canonical-ast-boundary.md");
-    let decision = fs::read_to_string(&decision_path).unwrap_or_default();
-    for required in ["# D0103: Canonical AST module boundary", "Status: accepted"] {
-        if !contains_slim_pattern(&decision, required) {
+    let rfc_path = root.join("design/rfcs/0103-canonical-ast-boundary.md");
+    let rfc = fs::read_to_string(&rfc_path).unwrap_or_default();
+    for required in [
+        "# RFC-0103: Canonical AST module boundary",
+        "Status: accepted",
+    ] {
+        if !contains_slim_pattern(&rfc, required) {
             errors.push(format!(
-                "canonical AST boundary is missing accepted decision evidence `{required}`"
+                "canonical AST boundary is missing accepted rfc evidence `{required}`"
             ));
         }
     }
@@ -3008,11 +3189,10 @@ fn check_ast_boundary(root: &Path, errors: &mut Vec<String>) {
 }
 
 fn check_indented_source(root: &Path, errors: &mut Vec<String>) {
-    let decision =
-        fs::read_to_string(root.join("design/decisions/D0104-indented-canonical-source.md"))
-            .unwrap_or_default();
+    let rfc = fs::read_to_string(root.join("design/rfcs/0104-indented-canonical-source.md"))
+        .unwrap_or_default();
     for required in [
-        "# D0104: Indented canonical source",
+        "# RFC-0104: Indented canonical source",
         "Status: accepted",
         "Primitive: none",
         "two ASCII spaces per level",
@@ -3022,9 +3202,9 @@ fn check_indented_source(root: &Path, errors: &mut Vec<String>) {
         "1,015,050",
         "820,377",
     ] {
-        if !decision.contains(required) {
+        if !rfc.contains(required) {
             errors.push(format!(
-                "indented canonical source is missing decision evidence `{required}`"
+                "indented canonical source is missing rfc evidence `{required}`"
             ));
         }
     }
@@ -3425,13 +3605,16 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     let Ok(codegen) = fs::read_to_string(&codegen_path) else {
         return;
     };
-    let bounded_record_decision =
-        fs::read_to_string(root.join("design/decisions/D0046-bounded-record-member-lookup.md"))
+    let bounded_record_rfc =
+        fs::read_to_string(root.join("design/rfcs/0046-bounded-record-member-lookup.md"))
             .unwrap_or_default();
-    for required in ["# D0046: Bounded record member lookup", "Status: accepted"] {
-        if !contains_slim_pattern(&bounded_record_decision, required) {
+    for required in [
+        "# RFC-0046: Bounded record member lookup",
+        "Status: accepted",
+    ] {
+        if !contains_slim_pattern(&bounded_record_rfc, required) {
             errors.push(format!(
-                "bounded record member lookup is missing accepted decision evidence `{required}`"
+                "bounded record member lookup is missing accepted rfc evidence `{required}`"
             ));
         }
     }
@@ -3740,7 +3923,7 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
 
 fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
     for required in [
-        "design/decisions/D0028-direct-typed-reduction.md",
+        "design/rfcs/0028-direct-typed-reduction.md",
         "docs/REDUCTION.md",
         "selfhost/analysis.slim",
         "selfhost/reduce.slim",
@@ -3754,13 +3937,12 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
         }
     }
 
-    let decision =
-        fs::read_to_string(root.join("design/decisions/D0028-direct-typed-reduction.md"))
-            .unwrap_or_default();
+    let rfc = fs::read_to_string(root.join("design/rfcs/0028-direct-typed-reduction.md"))
+        .unwrap_or_default();
     for required in ["Status: accepted", "Primitive: none"] {
-        if !contains_slim_pattern(&decision, required) {
+        if !contains_slim_pattern(&rfc, required) {
             errors.push(format!(
-                "Core 1A direct reduction requires D0028 field `{required}`"
+                "Core 1A direct reduction requires RFC-0028 field `{required}`"
             ));
         }
     }
@@ -3815,8 +3997,8 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0028") {
-        errors.push("D0028 has Primitive: none and must not add Core surface".to_owned());
+    if surface.contains("RFC-0028") {
+        errors.push("RFC-0028 has Primitive: none and must not add Core surface".to_owned());
     }
 
     for directory in ["selfhost", "conformance", "examples", "docs", "design"] {
@@ -3826,7 +4008,7 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
                 Some("sil" | "slir")
             ) {
                 errors.push(format!(
-                    "separately parsed IR files are forbidden by D0028: {}",
+                    "separately parsed IR files are forbidden by RFC-0028: {}",
                     path.display()
                 ));
             }
@@ -3836,7 +4018,7 @@ fn check_direct_reduction(root: &Path, errors: &mut Vec<String>) {
 
 fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
     for required in [
-        "design/decisions/D0029-bounded-program-evidence.md",
+        "design/rfcs/0029-bounded-program-evidence.md",
         "docs/QUALITY.md",
         "selfhost/edit.slim",
         "selfhost/equivalence.slim",
@@ -3857,12 +4039,11 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
         }
     }
 
-    let decision =
-        fs::read_to_string(root.join("design/decisions/D0029-bounded-program-evidence.md"))
-            .unwrap_or_default();
+    let rfc = fs::read_to_string(root.join("design/rfcs/0029-bounded-program-evidence.md"))
+        .unwrap_or_default();
     for required in ["Status: accepted", "Primitive: none"] {
-        if !contains_slim_pattern(&decision, required) {
-            errors.push(format!("Core 1B requires D0029 field `{required}`"));
+        if !contains_slim_pattern(&rfc, required) {
+            errors.push(format!("Core 1B requires RFC-0029 field `{required}`"));
         }
     }
 
@@ -3964,8 +4145,8 @@ fn check_bounded_program_evidence(root: &Path, errors: &mut Vec<String>) {
     }
 
     let surface = fs::read_to_string(root.join("design/surface.tsv")).unwrap_or_default();
-    if surface.contains("D0029") {
-        errors.push("D0029 has Primitive: none and must not add Core surface".to_owned());
+    if surface.contains("RFC-0029") {
+        errors.push("RFC-0029 has Primitive: none and must not add Core surface".to_owned());
     }
 
     let benchmark = fs::read_to_string(root.join("src/bin/slim-bench.rs")).unwrap_or_default();

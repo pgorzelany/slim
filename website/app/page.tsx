@@ -16,7 +16,7 @@ export default function Home() {
       <section className="hero shell">
         <div className="hero__copy">
           <p className="eyebrow">
-            Stable 1.0 · compiler {content.meta.compilerVersion}
+            {content.meta.milestone} · compiler {content.meta.compilerVersion}
           </p>
           <h1>
             Small language.
@@ -29,8 +29,8 @@ export default function Home() {
             deterministic memory, and bounded evidence.
           </p>
           <div className="hero__actions">
-            <Link className="button button--primary" href="/learn">
-              Learn SLIM
+            <Link className="button button--primary" href="/handbook">
+              Read the Handbook
             </Link>
             <Link className="button" href="/status">
               Current status
@@ -54,18 +54,23 @@ export default function Home() {
           <h2 id="current-boundary">{content.meta.milestone}</h2>
         </div>
         <div className="route-grid">
-          <Link className="route-card" href="/learn">
+          <Link className="route-card" href="/handbook">
             <span>01</span>
-            <h3>Learn</h3>
-            <p>A chaptered, fixture-backed path through the complete programming model.</p>
+            <h3>Handbook</h3>
+            <p>One progressive, fixture-backed path through the programming model.</p>
           </Link>
-          <Link className="route-card" href="/reference">
+          <Link className="route-card" href="/development">
             <span>02</span>
-            <h3>Reference</h3>
-            <p>Precise language chapters, canonical contracts, and the accepted surface.</p>
+            <h3>Development</h3>
+            <p>Architecture, contracts, compiler subsystems, and dated evidence.</p>
+          </Link>
+          <Link className="route-card" href="/rfcs">
+            <span>03</span>
+            <h3>RFCs</h3>
+            <p>Accepted, rejected, and proposed changes with ratings and rationale.</p>
           </Link>
           <Link className="route-card" href="/status">
-            <span>03</span>
+            <span>04</span>
             <h3>Status</h3>
             <p>What works, what is bounded, and what does not exist yet.</p>
           </Link>

@@ -1,33 +1,26 @@
 # SLIM website
 
-Static, chaptered documentation site for SLIM — Small Language for Intelligent
-Machines. The production site is published from this repository at
-<https://pgorzelany.github.io/slim/>.
+The static SLIM documentation site publishes all repository Markdown except
+the explicitly internal `AGENTS.md`. Its canonical entry points are:
 
-The site does not own language facts. `npm run generate` reads the canonical
-repository documents, accepted surface ledger, compiler version, and tested
-examples, then creates the build inputs for:
+- `/handbook` for the progressive programming model and exact appendices
+- `/handbook/examples` for twenty benchmark-backed algorithm pages
+- `/development` for current architecture and compiler contracts
+- `/development/evidence` for dated benchmark reports
+- `/rfcs` for accepted, rejected, and superseded proposals
+- `/status` for the current implemented boundary
+- `/reference/surface.json` for the machine-readable accepted surface
 
-- `/`
-- `/learn`
-- `/learn/<guide-chapter>`
-- `/reference`
-- `/reference/language/<reference-chapter>`
-- `/reference/contracts/<contract-id>`
-- `/status`
-- `/reference/surface.json`
-- `/llms.txt`
-- `/robots.txt`
-- `/sitemap.xml`
+The site does not own language facts or duplicate `.slim` programs.
+`npm run generate` discovers repository collections, reads `VERSION`, renders
+canonical Markdown, embeds conformance fixtures, and reads algorithm source
+directly from `benchmarks/challenges/`. It fails when a Markdown file is
+unclassified, an internal link is unresolved, an RFC or challenge manifest is
+malformed, or a documentation word budget is exceeded.
 
-Guide chapters come from `docs/book/guide/NN-slug.md`; language-reference
-chapters come from `docs/book/reference/NN-slug.md`. The filename fixes order
-and route, while the leading title and opening paragraph provide page metadata.
-Generation rejects malformed inventories, unresolved local Markdown links, and
-unknown conformance fixture markers.
-
-Search is a bounded browser-local index generated from current chapter titles,
-summaries, headings, and text. It has no server or network dependency.
+Search is a bounded browser-local index with separate current, development,
+RFC, and evidence scopes. Legacy `/learn/*` and `/reference/*` HTML pages are
+static redirects; `/reference/surface.json` remains a stable public artifact.
 
 ## Commands
 
@@ -50,5 +43,4 @@ npm test
 
 The repository workflow publishes the tested `out/` artifact after changes
 reach `main`. Generated content and deployment output are ignored. The compiler
-and runtime do not depend on this project. `docs/CORE.md` remains normative;
-the website owns no language semantics or `.slim` example.
+and runtime do not depend on this project. `docs/CORE.md` remains normative.

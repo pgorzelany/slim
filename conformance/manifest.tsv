@@ -1,4 +1,10 @@
 # id	mode	source	selfhost	expectation	coverage
+example-hello	run	examples/hello.slim	parity	exit=0;stdout=hello from SLIM\n;stderr=	example:hello
+example-countdown	run	examples/countdown.slim	parity	exit=0;stdout=55\n;stderr=	example:countdown
+example-data	run	examples/data.slim	parity	exit=0;stdout=42\n;stderr=	example:data
+example-vector-sum	run	examples/vector_sum.slim	parity	exit=0;stdout=4950\n;stderr=	example:vector-sum
+example-inout	run	examples/inout.slim	parity	exit=0;stdout=42\n;stderr=	example:inout
+example-bytes	run	examples/bytes.slim	parity	exit=0;stdout=Hi\n;stderr=	example:bytes
 scalars	run	conformance/pass/scalars.slim	parity	exit=0;stdout=42\n;stderr=	syntax:module,syntax:fn,syntax:call,syntax:let,syntax:comma,syntax:operators,syntax:if,type:Bool,type:I64,type:U8,type:Void,effect:io,entry:main-args,builtin:u8.to_i64,builtin:i64.to_u8,builtin:io.print_i64,builtin:io.println
 storage	run	conformance/pass/storage.slim	parity	exit=0;stdout=OK\n;stderr=	type:Bytes,type:Vec,type:Arena,type:Id,effect:alloc,builtin:bytes.len,builtin:bytes.get,builtin:bytes.freeze,builtin:io.print_bytes,builtin:io.read_file,builtin:vec.new,builtin:vec.len,builtin:vec.get,builtin:vec.push,builtin:vec.set,builtin:arena.new,builtin:arena.add,builtin:arena.get,runtime:allocation
 allocation-failure	allocation-fail	conformance/pass/storage.slim	parity	exit=71;stdout=;stderr=SLIM allocation failure: exhausted at allocation 2\n	runtime:allocation-failure,runtime:region-destruction

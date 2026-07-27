@@ -22,11 +22,11 @@ The internal stabilization sequence was:
 
 LLVM, a second executable IR, unrestricted source FFI, detached tasks, locks,
 and duplicate syntax are outside this roadmap unless new evidence reverses an
-accepted decision.
+accepted RFC.
 
 ## Completed foundations
 
-Detailed implementation history belongs in `design/decisions/`; measured
+Detailed implementation history belongs in `design/rfcs/`; measured
 acceptance evidence belongs in `benchmarks/results/`. This table is the durable
 summary rather than a second copy of those records.
 
@@ -53,14 +53,14 @@ summary rather than a second copy of those records.
 Core 0.3 evidence is summarized in
 `benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
 milestone reports with matching names under `benchmarks/results/`. Core 1D
-through Core 1G close with D0058, D0061, D0069, and D0071 plus their dated
+through Core 1G close with RFC-0058, RFC-0061, RFC-0069, and RFC-0071 plus their dated
 reports.
 
 ### Core 1D: complete typed compiler view
 
 Status: complete
 
-Core 1D is accepted by D0058. The compiler retains one bounded typed artifact
+Core 1D is accepted by RFC-0058. The compiler retains one bounded typed artifact
 instead of reconstructing semantics in later passes. Its permanent gates cover
 typed links and plans, project source projection, diagnostics, adversarial
 source shapes, fixed-point bootstrap, and scaling.
@@ -69,7 +69,7 @@ source shapes, fixed-point bootstrap, and scaling.
 
 Status: complete
 
-D0061 accepts Core 1E. Header-visible checked fast paths and allocation-free
+RFC-0061 accepts Core 1E. Header-visible checked fast paths and allocation-free
 region elision reduce native overhead without unchecked profiles, new syntax,
 LLVM, or a second executable IR. The twelve maintained programs remain within
 their per-workload runtime budgets.
@@ -79,7 +79,7 @@ their per-workload runtime budgets.
 Status: complete
 
 Core 1F derives bounded integer proofs, complete blocker sets, total recurrence
-facts, reorder-safety, and one deterministic non-overlapping schedule. D0069
+facts, reorder-safety, and one deterministic non-overlapping schedule. RFC-0069
 kept execution disabled until the worker ABI, lowering, failure behavior,
 profitability evidence, and a second application existed.
 
@@ -87,7 +87,7 @@ profitability evidence, and a second application existed.
 
 Status: complete
 
-D0070 defines a tiered structured worker ABI. D0071 executes only two adjacent
+RFC-0070 defines a tiered structured worker ABI. RFC-0071 executes only two adjacent
 leading direct calls with atomic captures, complete totality and reorder-safety
 proofs, exact recurrence work above the accepted threshold, serial fallback,
 one parent-owned join, and no nested worker expansion. Everything else remains
@@ -98,10 +98,10 @@ serial. The exact boundary is in `docs/PARALLELISM.md`.
 Status: complete
 
 Core 1H makes physical limits useful without pretending arbitrary
-programs are decidable. D0073 advances analysis to schema 6,
+programs are decidable. RFC-0073 advances analysis to schema 6,
 publishes bounded recurrence profiles and exact-or-unknown call workloads, and
 locks a 14-application resource baseline without adding language surface.
-D0074 closes the milestone without resource syntax because the corpus does not
+RFC-0074 closes the milestone without resource syntax because the corpus does not
 justify physical time, allocation-volume, or peak-byte contracts.
 
 ### Work
@@ -136,9 +136,9 @@ justify physical time, allocation-volume, or peak-byte contracts.
 Status: complete
 
 Core 1I makes SLIM useful for real operating-system work while preserving
-the default safety model. D0075 starts with one allocation-free monotonic clock
-behind the existing statically enforced `io` effect. D0076 adds one bounded
-whole TCP exchange. D0077 closes the milestone without source handles, DNS,
+the default safety model. RFC-0075 starts with one allocation-free monotonic clock
+behind the existing statically enforced `io` effect. RFC-0076 adds one bounded
+whole TCP exchange. RFC-0077 closes the milestone without source handles, DNS,
 TLS, processes, or foreign declarations because maintained applications do not
 justify their state and authority surface.
 
@@ -169,8 +169,8 @@ justify their state and authority surface.
 Status: complete
 
 Automatic parallelism is suitable for proven pure CPU work, but effectful host
-operations have observable intent that cannot generally be inferred. D0078
-therefore admits one leading two-call `parallel`; D0079 closes the milestone
+operations have observable intent that cannot generally be inferred. RFC-0078
+therefore admits one leading two-call `parallel`; RFC-0079 closes the milestone
 without general task state.
 
 ### Work
@@ -206,8 +206,8 @@ unsupported-tier behavior have permanent tests.
 Status: complete
 
 Core 1K compares programs against explicit specifications and cost models, not
-one universal goodness score. D0080 accepts one exact byte domain and analysis
-schema 7; D0081 closes on three strictly token-reducing atom rules.
+one universal goodness score. RFC-0080 accepts one exact byte domain and analysis
+schema 7; RFC-0081 closes on three strictly token-reducing atom rules.
 
 ### Work
 
@@ -269,8 +269,8 @@ public 1.0 freeze or a feature sweep.
 - A clean installation can build and run the maintained applications without
   repository-internal knowledge.
 
-D0082 freezes the compatibility and runtime contracts without language
-surface. D0083 accepts a reproducible source archive, clean bootstrap and
+RFC-0082 freezes the compatibility and runtime contracts without language
+surface. RFC-0083 accepts a reproducible source archive, clean bootstrap and
 application run, complete repository and website gates, and one honestly
 validated Darwin/arm64 release target.
 

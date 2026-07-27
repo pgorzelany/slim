@@ -8,7 +8,7 @@ These rules apply to every change in this repository.
 2. Treat every language feature as a permanent cost until proven otherwise.
 3. Changes to syntax, semantics, types, ownership, effects, runtime ABI,
    compiler architecture, dependencies, or compatibility require an accepted
-   decision record in `design/decisions/`.
+   RFC in `design/rfcs/`.
 
 ## Language constraints
 
@@ -36,7 +36,7 @@ These rules apply to every change in this repository.
 - Performance fixtures, metric definitions, and regression gates are durable
   product infrastructure. Do not remove a passing gate after an optimization.
 - A performance budget may be tightened directly. Relaxing one requires an
-  accepted decision scoring at least +60, a measured cause, quantified impact,
+  accepted RFC scoring at least +60, a measured cause, quantified impact,
   and a containment or compensation plan.
 - Keep absolute dated measurements for tracking, but gate portable builds with
   deterministic work, geometric exponents, and same-host ratios rather than
@@ -46,7 +46,7 @@ These rules apply to every change in this repository.
 
 - Canonical parsed SLIM is the compiler's sole accepted program
   representation. Do not add a `.sil`, `.slir`, or other separately parsed IR
-  without a new accepted decision proving that derived views are insufficient.
+  without a new accepted RFC proving that derived views are insufficient.
 - Attach semantic facts to stable SLIM nodes or derive an ephemeral bounded
   view. Do not duplicate parsing, typing, ownership, or effects.
 - Every direct rewrite needs a local totality and behavior-preservation
@@ -89,7 +89,7 @@ These rules apply to every change in this repository.
 - Keep parallel candidates distinct from the selected plan. Selection uses
   stable lexical node order, emits only pairwise non-overlapping intervals, and
   becomes bounded rather than silently truncating after 64 reported sites.
-- Keep selected, executable, and executed sites distinct. D0071 permits
+- Keep selected, executable, and executed sites distinct. RFC-0071 permits
   execution only for the exact checked capture shape, leading-chain lowering,
   total recurrence work, and `posix-v1` threshold it records. Unknown work,
   computed captures, unsupported placement, bounded-away facts, and unreported
@@ -118,7 +118,7 @@ These rules apply to every change in this repository.
   Rust is limited to bootstrap-independent verification and measurement.
 - Do not add production Rust semantics or a second compiler path. Any proposed
   exception requires a separate accepted architecture decision and must not
-  bypass the D0027 cutover gate.
+  bypass the RFC-0027 cutover gate.
 - Never claim support through a semantic fallback. Every conformance row must
   execute through the production SLIM compiler.
 - Preserve deterministic formatting, diagnostics, and generated C.
@@ -130,6 +130,6 @@ These rules apply to every change in this repository.
   `cargo run --release --bin slim-bench -- compare --quick`, and
   `cargo run --release --bin slim-bench -- agent` before committing a compiler,
   runtime, benchmark, or agent-tool change.
-- Do not add a dependency without an accepted architecture decision.
+- Do not add a dependency without an accepted architecture RFC.
 - If a requested change conflicts with a hard gate, record the conflict rather
   than bypassing the gate.

@@ -1,7 +1,7 @@
 # SLIM 0.9 familiar-syntax frontend evidence
 
 Date: 2026-07-27
-Decision: D0107
+Decision: RFC-0107
 Compiler: self-hosted SLIM 0.9.0, portable C11 seed
 Fixed point: 2,743,494 generated C bytes
 
@@ -35,7 +35,7 @@ budgets are unchanged.
 ## Parallelism baseline migration
 
 Every application row in `benchmarks/parallelism-baseline.tsv` records a new
-source-byte count because D0107 replaces the complete source spelling. The
+source-byte count because RFC-0107 replaces the complete source spelling. The
 checked-site, refinement, blocker, and scheduling columns remain unchanged for
 eighteen applications.
 
@@ -46,3 +46,17 @@ three and five, while both programs retain exactly one executable and one
 executed total-recurrence site. This is recorded syntax-work evidence: runtime
 behavior, worker shape, and the generated parallel/forced-serial ratio budgets
 are unchanged.
+
+## Resource baseline migration
+
+Every application row in `benchmarks/resource-baseline.tsv` records the
+canonical SLIM 0.9 source-byte count. Recurrence profiles, exact and unknown
+work sites, allocation sites, trap sites, owned bindings, live-owner bounds,
+effectful functions, and totality classifications remain unchanged.
+
+The direct operator form reduces the counted expression nodes in
+`state_machine` from 115 to 111 and in `signal_network` from 200 to 188. These
+are syntax-work changes at the canonical AST boundary, not changes to resource
+semantics: both applications retain the same recurrence work, zero allocation
+sites, one trap site, one owned binding, and the same effect and totality
+classifications.

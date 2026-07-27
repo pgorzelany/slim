@@ -64,7 +64,7 @@ without profiling, a geometric fixture, and a same-host regression result.
 
 ## Token-interval diagnostic checkpoint
 
-D0034 replaces the structured issue's single token with inclusive start and
+RFC-0034 replaces the structured issue's single token with inclusive start and
 end token indices. Standalone and prepared-project reporters consume the same
 interval, while one-token type issues set both endpoints identically. The
 self-host check remained about 0.22 seconds and the compiler bootstrapped to a
@@ -79,7 +79,7 @@ smaller slices with source-shape measurements before each checkpoint.
 
 ## Finalized issue stream and first migrated family
 
-D0035 makes `Checked.issues` the completed diagnostic stream. It starts with
+RFC-0035 makes `Checked.issues` the completed diagnostic stream. It starts with
 the analyzer snapshot and is extended by later phases without rebuilding the
 typed view. This avoids both the ownership bug in mutating an extracted vector
 and the measured view-reconstruction performance cliff.
@@ -100,7 +100,7 @@ mutations.
 
 ## Checked emission links
 
-D0036 removes declaration relinking from `codegen/emit_program`. Standalone and
+RFC-0036 removes declaration relinking from `codegen/emit_program`. Standalone and
 project compilation already retain the exact token stream linked during type
 analysis, so the backend now consumes that checked evidence directly. The
 fixed-point seed shrank from 1,653,846 to 1,653,599 C bytes.
@@ -114,7 +114,7 @@ performance authority.
 
 ## Bound variant type links
 
-D0037 closes a checker/backend gap exposed by an adversarial aggregate fixture.
+RFC-0037 closes a checker/backend gap exposed by an adversarial aggregate fixture.
 A variant copied from a parameter into a lexical local passed type checking but
 the backend's parameter-only type scan emitted invalid C. Variant-match emission
 now decodes the scoped type link already attached to the bound scrutinee. The
@@ -133,7 +133,7 @@ not arbitrary expression lowering.
 
 ## Aggregate construction links
 
-D0038 removes record construction's whole-declaration scan by consuming the
+RFC-0038 removes record construction's whole-declaration scan by consuming the
 record type token's checked declaration link. Canonical field checking now also
 publishes the matching field definition on the supplied field form. A new
 `record-wide` executable fixture constructs sixteen ordered fields, projects
@@ -149,7 +149,7 @@ claim is made. The byte-identical seed is 1,647,978 C bytes; 91 fixtures and
 
 ## Variant construction links
 
-D0039 removes both remaining whole-declaration scans from variant construction
+RFC-0039 removes both remaining whole-declaration scans from variant construction
 and match emission. The checker now publishes validated constructor and match
 case definitions on their structural opening tokens. This producer-first
 checkpoint retains the case-name scan for one bootstrap generation so the
@@ -163,7 +163,7 @@ in the next checkpoint.
 
 ## Bounded variant members
 
-D0040 consumes the case links published by D0039 for both construction and
+RFC-0040 consumes the case links published by RFC-0039 for both construction and
 match-arm emission. The recursive textual case scanner is gone, making those
 queries independent of the number and spelling length of cases. The staged
 producer seed builds the consumer through the normal bootstrap path.
@@ -172,11 +172,11 @@ The sixteen-case fixture and existing local-match fixture compile and print
 `42`; self-validation remains about 0.22 seconds of user CPU time. All 92
 fixtures and 2,000 malformed mutations pass, and the byte-identical seed shrinks
 again to 1,643,001 C bytes. Record-field lookup remains the only aggregate
-member scan and retains D0038's explicit negative result.
+member scan and retains RFC-0038's explicit negative result.
 
 ## Typed recursive-inout diagnostics
 
-D0041 moves `E0350` into the existing typed call-argument traversal. A small
+RFC-0041 moves `E0350` into the existing typed call-argument traversal. A small
 non-recursive leaf compares recursive `inout` arguments with their parameters;
 the traversal appends every mismatch before normal type recovery. This avoids
 the measured issue-vector recursion cliff and removes the legacy recur argument,
@@ -190,7 +190,7 @@ fixtures and 2,000 malformed mutations pass.
 
 ## Checked memory type links
 
-D0042 orders standalone type analysis before memory planning and removes the
+RFC-0042 orders standalone type analysis before memory planning and removes the
 planner's recursive textual declaration lookup. Named record and variant
 storage classification now consumes the declaration link on the checked type
 token; code generation already satisfies the same checked-token precondition.
@@ -227,14 +227,14 @@ old per-reference declaration scan.
   allocation-failure, sanitizer, native challenge, agent feedback, and
   bootstrap checks are all permanent release gates.
 
-D0058 freezes this boundary after the final release run passes 101 fixtures,
+RFC-0058 freezes this boundary after the final release run passes 101 fixtures,
 2,000 mutations, every 1.25 source-shape budget, and the byte-identical
 1,629,310-byte portable seed. Later optimization may derive new facts from this
 artifact, but may not introduce a second semantic authority.
 
 ## Retained memory plan
 
-D0043 makes the memory plan a field of `typing/Checked` and carries it into the
+RFC-0043 makes the memory plan a field of `typing/Checked` and carries it into the
 prepared project. Ordinary code generation now requires that plan and consumes
 function summaries in declaration order. The consumer verifies the stored
 function token before using its `local_region` decision; the direct backend
@@ -259,7 +259,7 @@ evidence against retaining those facts through a differently factored change.
 
 ## Structured nonexhaustive diagnostics
 
-D0044 changes the existing Boolean exhaustiveness coordinator from direct byte
+RFC-0044 changes the existing Boolean exhaustiveness coordinator from direct byte
 reporting to one `typing/Issue` carrying the complete match token interval.
 Standalone `nonexhaustive` remains `E0336@66:87`, and `multiple` preserves its
 four-code order. The prepared-project fixture projects the same family as
@@ -283,7 +283,7 @@ classification followed by mutation is fast when split across helpers, while
 branching and mutation in the same function crosses the cliff; recursively
 converting events while carrying both event and issue vectors also crosses it.
 All candidates were reverted. No token sentinel, overloaded issue field, or
-rendered-diagnostic shortcut was retained. D0049 later resolved the blocker by
+rendered-diagnostic shortcut was retained. RFC-0049 later resolved the blocker by
 placing state on the existing typed binding, distinguishing non-blocking issues
 explicitly, and packing type plus declaration identity into the existing local
 link. Its permanent owned-transfer series is the required geometric
@@ -297,7 +297,7 @@ source-shape cliff.
 
 ## Bounded record members
 
-D0046 consumes the record-field links published by D0038 and removes the last
+RFC-0046 consumes the record-field links published by RFC-0038 and removes the last
 recursive textual aggregate-member scanner. The checked link is verified
 against the first record-field token and the existing field-name source span,
 so lookup is independent of declared field count without blindly trusting an
@@ -319,7 +319,7 @@ and a byte-identical 1,635,270-byte C bootstrap seed.
 
 ## Retained allocation boundaries
 
-D0047 completes the function-level allocation consumer without widening
+RFC-0047 completes the function-level allocation consumer without widening
 `FunctionPlan`. Its existing allocation-site vector now records all five
 allocating built-ins and allocation-capable user calls using checked declaration
 links. Function emission derives the presence of its failure label from that
@@ -340,7 +340,7 @@ remains near 0.11 seconds, and the complete release gate fixes the bootstrap at
 
 ## Structured Boolean recovery
 
-D0048 converts the complete secondary recovery sequence for an invalid Boolean
+RFC-0048 converts the complete secondary recovery sequence for an invalid Boolean
 match from direct rendering to finalized `typing/Issue` intervals. The existing
 walk appends unknown-name `E0314`, duplicate-arm `E0335`, and arm-type `E0344`
 after the primary nonexhaustive `E0336`, then renders once. The shallow recovery
@@ -358,7 +358,7 @@ are now the remaining legacy semantic family outside project projection.
 
 ## Typed ownership diagnostics
 
-D0049 moves aggregate transfer state onto the typed lexical `Binding`. Local
+RFC-0049 moves aggregate transfer state onto the typed lexical `Binding`. Local
 links pack the checked type token and exact declaration token, and declaration
 tokens point to their binding record during inference. User-call transfers and
 `bytes.freeze` therefore update move state in constant time without a second
@@ -381,7 +381,7 @@ byte-identical 1,619,795-byte fixed point with SHA-256
 
 ## Bounded project module validation
 
-D0050 moves structural source validation ahead of declaration linking for each
+RFC-0050 moves structural source validation ahead of declaration linking for each
 module loaded from a project. Validation receives that module's half-open range
 inside the shared token vector; malformed source is never retained or exposed
 to semantic consumers. `index_names_from` also stops at the vector length as an
@@ -400,7 +400,7 @@ bootstrap verification.
 
 ## Retained recurrence boundaries
 
-D0051 moves function-level recurrence classification into the checked memory
+RFC-0051 moves function-level recurrence classification into the checked memory
 plan. Planning records a Boolean only for an actual form headed by `recur`, and
 function emission consumes it instead of scanning the body for an atom with
 that spelling. This removes one backend semantic authority and makes the
@@ -418,7 +418,7 @@ bootstrap verification.
 
 ## Dense expression facts
 
-D0052 replaces the typed view's sparse postorder fact bag with a dense table
+RFC-0052 replaces the typed view's sparse postorder fact bag with a dense table
 indexed directly by token identity. Each slot stores only its `TypeRef`;
 non-expression tokens begin with the invalid sentinel, and successful inference
 updates the slot in constant time. `finish_type` rereads each result through the
@@ -442,7 +442,7 @@ deterministic bootstrap verification.
 
 ## Typed-fact code generation
 
-D0053 threads the checked dense fact vector through ordinary recursive C
+RFC-0053 threads the checked dense fact vector through ordinary recursive C
 emission. Computed call arguments and recursive-transfer temporaries query their
 expression token directly; the duplicate backend built-in-argument table and
 parameter-type reader are removed. Representative nested-call, recurrence,
@@ -465,10 +465,10 @@ challenges, and deterministic bootstrap verification.
 
 ## Typed aggregate temporaries
 
-D0054 makes computed record fields, variant payload values, and Boolean match
+RFC-0054 makes computed record fields, variant payload values, and Boolean match
 scrutinees consume the dense checked fact table. Record-field and variant-case
 declaration traversal remains intact for structural identity, canonical order,
-arity, and emitted layout. C output remains byte-identical to D0053 across the
+arity, and emitted layout. C output remains byte-identical to RFC-0053 across the
 representative compiler corpus and a new fixture combining scalar and named
 temporary types.
 
@@ -494,15 +494,15 @@ verification.
 
 ## Retained call allocation boundaries
 
-D0055 removes the last per-user-call effect-list read from C generation.
+RFC-0055 removes the last per-user-call effect-list read from C generation.
 `AllocationPlan` entries remain sparse and lexically sorted; a bounded binary
 query maps an exact call-form token to its retained region, so nested arguments
 may be emitted before their enclosing call without relying on a sequential
-cursor. Generated C remains byte-identical to D0054 across the representative
+cursor. Generated C remains byte-identical to RFC-0054 across the representative
 compiler corpus and a new nested allocation-call fixture.
 
 The permanent `generated-planned-allocation-calls` series emits 125, 250, 500,
-and 1,000 nested allocation-capable user calls. D0054 measured 3.200, 5.265,
+and 1,000 nested allocation-capable user calls. RFC-0054 measured 3.200, 5.265,
 12.718, and 38.013 milliseconds, endpoint exponent 1.190. The candidate's clean
 run measured 3.065, 5.334, 12.934, and 39.125 milliseconds, exponent 1.225 under
 the unchanged 1.25 budget. A preceding candidate pass stopped on the existing
@@ -516,8 +516,8 @@ challenges, and deterministic bootstrap verification.
 
 ## Typed match scrutinees
 
-D0056 makes match kind selection, variant type recovery, and arbitrary computed
-scrutinee materialization consume the checked expression fact. D0055 accepts a
+RFC-0056 makes match kind selection, variant type recovery, and arbitrary computed
+scrutinee materialization consume the checked expression fact. RFC-0055 accepts a
 direct `(case ...)` scrutinee during checking but traps with `I64 division by
 zero` during emission because the form has no packed local-binding link. The
 candidate compiles and runs the same fixture, printing `42`, while existing
@@ -533,14 +533,14 @@ verification.
 
 ## Linked binding modes
 
-D0057 packs one `inout` mode bit beside the existing local-link type and
+RFC-0057 packs one `inout` mode bit beside the existing local-link type and
 declaration token. Code generation and borrowed-return checking decode that
 checked binding mode in constant time; they no longer scan the current
 parameter list by spelling for every named use. Existing programs and
-diagnostics remain byte-identical to D0056.
+diagnostics remain byte-identical to RFC-0056.
 
 The permanent `generated-inout-binding-reads` series emits 125, 250, 500, and
-1,000 borrowed parameters with one read per parameter. D0056 measured 5.585,
+1,000 borrowed parameters with one read per parameter. RFC-0056 measured 5.585,
 33.701, 30.378, and 82.996 milliseconds and correctly failed the new 1.25 gate
 at exponent 1.298. The authoritative release run measures 5.383, 8.679, 18.479,
 and 47.779 milliseconds, exponent 1.050. Two earlier candidate passes stopped

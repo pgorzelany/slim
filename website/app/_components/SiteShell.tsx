@@ -1,8 +1,9 @@
 import Link from "next/link";
 
 const navigation = [
-  { href: "/learn", label: "Learn" },
-  { href: "/reference", label: "Reference" },
+  { href: "/handbook", label: "Handbook" },
+  { href: "/development", label: "Development" },
+  { href: "/rfcs", label: "RFCs" },
   { href: "/status", label: "Status" },
 ] as const;
 

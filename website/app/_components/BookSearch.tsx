@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { content, type SearchEntry } from "../_lib/content";
+import searchData from "../../generated/search.json";
+import type { SearchEntry } from "../_lib/content";
 
 type Result = {
   entry: SearchEntry;
@@ -10,12 +11,14 @@ type Result = {
   score: number;
 };
 
+const entries = searchData.search as SearchEntry[];
+
 function searchEntry(entry: SearchEntry, query: string): Result | null {
   const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
   if (terms.length === 0) return null;
   const title = entry.title.toLowerCase();
   const summary = entry.summary.toLowerCase();
-  const text = entry.text.toLowerCase();
+  const text = `${entry.text} ${entry.tags.join(" ")}`.toLowerCase();
   let score = 0;
   let bestHeading: Result["heading"];
 
@@ -38,11 +41,18 @@ function searchEntry(entry: SearchEntry, query: string): Result | null {
   return { entry, heading: bestHeading, score };
 }
 
-export function BookSearch({ id = "book-search" }: { id?: string }) {
+export function BookSearch({
+  id = "book-search",
+  scope = "current",
+}: {
+  id?: string;
+  scope?: SearchEntry["scope"] | "all";
+}) {
   const [query, setQuery] = useState("");
   const results = useMemo(
     () =>
-      content.search
+      entries
+        .filter((entry) => scope === "all" || entry.scope === scope)
         .map((entry) => searchEntry(entry, query))
         .filter((result): result is Result => result !== null)
         .sort((left, right) =>
@@ -50,22 +60,23 @@ export function BookSearch({ id = "book-search" }: { id?: string }) {
           left.entry.title.localeCompare(right.entry.title),
         )
         .slice(0, 12),
-    [query],
+    [query, scope],
   );
+  const scopeLabel = scope === "current" ? "Handbook" : scope === "all" ? "site" : scope;
   const resultLabel =
     query.trim() === ""
-      ? "Type to search the current SLIM book."
+      ? `Type to search the ${scopeLabel}.`
       : `${results.length} result${results.length === 1 ? "" : "s"}.`;
 
   return (
     <div className="book-search">
-      <label htmlFor={`${id}-input`}>Search the book</label>
+      <label htmlFor={`${id}-input`}>Search {scopeLabel}</label>
       <input
         id={`${id}-input`}
         type="search"
         value={query}
         onChange={(event) => setQuery(event.target.value)}
-        placeholder="Effects, borrowing, diagnostics…"
+        placeholder="Effects, borrowing, algorithms…"
         autoComplete="off"
       />
       <p className="book-search__status" aria-live="polite">

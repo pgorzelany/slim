@@ -1,7 +1,7 @@
 # Safe C-parity proof-directed arithmetic candidate
 
 Date: 2026-07-24
-Decisions: D0084, D0085
+Decisions: RFC-0084, RFC-0085
 Baseline compiler: `87314f3c3ea46f0804bb396aa8ae09300cde2d71`
 Host: Darwin 25.3.0 arm64
 C compiler: Apple Clang 21.0.0
@@ -58,7 +58,7 @@ SLIM/Rust across eighteen serial applications.
 
 ## Interpretation
 
-The candidate improves the D0084 full baseline from 1.371 to 1.359 against C
+The candidate improves the RFC-0084 full baseline from 1.371 to 1.359 against C
 and from 1.450 to 1.439 on serial work. The stencil arithmetic result validates
 exact-node lowering, but the overall gap is still 35.9%; C parity has not been
 reached.

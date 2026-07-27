@@ -1,22 +1,22 @@
-# schema=1
-# challenge	features
-gcd_fib	scalar,recursion
-sieve	vector,mutation
-bfs	graph,vector,mutation
-matrix	nested-loop,checked-arithmetic
-merge_sort	vector,recursion,mutation
-bytefreq	bytes,file-io,vector,mutation
-binary_search	vector,search,recursion
-prefix_sum	vector,mutation,checked-arithmetic
-records	record,value-state,recursion
-variants	variant,finite-state,exhaustive-match
-state_machine	record,finite-state,recursion,parallel-candidate
-signal_network	record,finite-state,boolean-network,recursion,parallel-candidate
-arena_sum	arena,typed-id,allocation
-knapsack	vector,dynamic-programming,mutation
-floyd_warshall	graph,dense-matrix,dynamic-programming,vector,mutation,checked-arithmetic
-n_queens	search,backtracking,vector,mutation,checked-arithmetic
-union_find	graph,disjoint-set,vector,mutation,recursion
-game_of_life	cellular-automaton,stencil,vector,mutation,checked-arithmetic
-image_convolution	image,stencil,vector,mutation,checked-arithmetic
-edit_distance	bytes,dynamic-programming,vector,mutation,checked-arithmetic
+# schema=2
+# challenge	title	category	summary	time	space	features	featured	shape
+gcd_fib	GCD and Fibonacci	Recurrence	Repeated Euclidean GCD and Fibonacci recurrences over scalar values.	O(n)	O(1)	scalar,recursion	no	benchmark
+sieve	Sieve of Eratosthenes	Number theory	Marks composite numbers in a typed Boolean vector.	O(n log log n)	O(n)	vector,mutation	no	benchmark
+bfs	Breadth-first search	Graphs	Traverses an implicit binary tree with a growing vector queue.	O(V + E)	O(V)	graph,vector,mutation	yes	benchmark
+matrix	Matrix multiplication	Linear algebra	Multiplies dense square matrices with checked index arithmetic.	O(n^3)	O(n^2)	nested-loop,checked-arithmetic	no	benchmark
+merge_sort	Merge sort	Sorting	Sorts a vector with recursive division and explicit scratch storage.	O(n log n)	O(n)	vector,recursion,mutation	yes	benchmark
+bytefreq	Byte frequency table	Text and bytes	Counts byte occurrences from bounded file input.	O(n)	O(1)	bytes,file-io,vector,mutation	no	benchmark
+binary_search	Binary search	Searching	Finds values in a sorted vector by recurrently narrowing a half-open range.	O(log n)	O(1)	vector,search,recursion	yes	benchmark
+prefix_sum	Prefix sum	Data parallelism	Builds cumulative vector totals with checked arithmetic.	O(n)	O(n)	vector,mutation,checked-arithmetic	no	benchmark
+records	Record state transition	Data modeling	Advances a fixed record state through repeated pure transformations.	O(n)	O(1)	record,value-state,recursion	no	benchmark
+variants	Variant state machine	Data modeling	Uses exhaustive enum matching to evolve finite state.	O(n)	O(1)	variant,finite-state,exhaustive-match	no	benchmark
+state_machine	Boolean state machine	State machines	Executes independent recurrent record transformations.	O(n)	O(1)	record,finite-state,recursion,parallel-candidate	no	benchmark
+signal_network	Boolean signal network	State machines	Propagates Boolean signals through a recurrent network.	O(n)	O(1)	record,finite-state,boolean-network,recursion,parallel-candidate	no	benchmark
+arena_sum	Arena traversal	Storage	Allocates typed arena values and sums them through stable IDs.	O(n)	O(n)	arena,typed-id,allocation	no	benchmark
+knapsack	0/1 knapsack	Dynamic programming	Computes bounded knapsack value with one mutable vector.	O(items * capacity)	O(capacity)	vector,dynamic-programming,mutation	no	benchmark
+floyd_warshall	Floyd-Warshall	Graphs	Computes all-pairs shortest paths in a dense matrix.	O(V^3)	O(V^2)	graph,dense-matrix,dynamic-programming,vector,mutation,checked-arithmetic	no	benchmark
+n_queens	N-Queens	Backtracking	Enumerates safe queen placements with mutable search state.	O(n!)	O(n)	search,backtracking,vector,mutation,checked-arithmetic	yes	benchmark
+union_find	Union-find	Graphs	Maintains disjoint sets with recurrent lookup and vector mutation.	O(n α(n))	O(n)	graph,disjoint-set,vector,mutation,recursion	no	benchmark
+game_of_life	Conway's Game of Life	Cellular automata	Updates a toroidal Boolean grid through double-buffered generations.	O(g * n^2)	O(n^2)	cellular-automaton,stencil,vector,mutation,checked-arithmetic	yes	benchmark
+image_convolution	Image convolution	Image processing	Applies a fixed stencil to a generated image vector.	O(n * k^2)	O(n)	image,stencil,vector,mutation,checked-arithmetic	no	benchmark
+edit_distance	Levenshtein edit distance	Dynamic programming	Computes byte-string distance with two reusable row buffers.	O(m * n)	O(n)	bytes,dynamic-programming,vector,mutation,checked-arithmetic	yes	benchmark

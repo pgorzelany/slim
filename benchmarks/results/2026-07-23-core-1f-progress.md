@@ -6,7 +6,7 @@ Host: macOS arm64, same checkout and warmed local toolchain
 
 ## Safety evidence before execution
 
-D0062 adds no syntax, effect, built-in, runtime ABI, dependency, task, or
+RFC-0062 adds no syntax, effect, built-in, runtime ABI, dependency, task, or
 scheduler. Analysis version 3 consumes the ordinary checked token links and
 typed facts. The exact fixture proves one adjacent independent fork/join site
 and separately rejects checked traps, a transitive unsafe callee, allocation,
@@ -47,7 +47,7 @@ user CPU.
 The compiler reaches a byte-identical fixed point at 1,711,913 generated C
 bytes with SHA-256
 `a2f022c8276829b4ff6a553d1202e537c9a881e6faf6795cf80c0dbe24daf06d`.
-The evidence slice adds 89,333 seed bytes (5.51%) over D0060.
+The evidence slice adds 89,333 seed bytes (5.51%) over RFC-0060.
 Ordinary checking and C generation do not invoke the parallel analysis, and
 generated user programs do not link it; only the explicit analysis command pays
 its analysis work.
