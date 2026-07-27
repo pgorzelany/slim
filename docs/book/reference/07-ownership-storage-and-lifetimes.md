@@ -6,12 +6,16 @@ memory access in safe source.
 
 ## Affine ownership
 
-`Bytes`, `Vec[T]`, `Arena[T]`, and aggregates that contain affine values have
-one owning binding. Passing, returning, or rebinding may move ownership. Any
-later use of the old binding is rejected.
+`Vec[T]`, `Arena[T]`, and aggregates containing either have one owning binding.
+Passing them to a plain parameter, returning them, or rebinding another name
+may move ownership. Any later use of the old binding is rejected.
 
 The compiler does not repair a move by inserting an implicit copy or reference
 count operation.
+
+`Bool`, `U8`, `I64`, `Id[T]`, `Bytes`, and aggregates containing only copyable
+members are copyable. `Bytes` copies are immutable views of one
+compiler-retained backing region rather than independent owning buffers.
 
 ## Exclusive `inout`
 
@@ -23,18 +27,44 @@ borrow operands may not alias.
 Tail recurrence preserves the linked `inout` controller instead of rebinding it
 to a different value.
 
+The borrow exists so a callee can inspect or mutate an affine owner while the
+caller retains ownership. It ends at return and cannot be stored as a value.
+It adds no allocation, owner, reference count, or runtime lifetime object.
+
 ## Frozen byte views
 
 Freezing establishes a view tied to the source storage. Operations that would
 invalidate or incorrectly reuse the source are rejected. The relationship is
 tracked without exposing a raw pointer.
 
-## Regions
+## Allocation
 
-The compiler selects lexical allocation regions and deterministically destroys
-owned storage when its valid region ends. Ownership transfer may move storage
-to a valid enclosing region. Generated code retains allocation-site identity so
-injected failure and cleanup remain reproducible.
+Scalar evaluation, aggregate construction, moves, borrows, projections,
+matching, and view copies do not allocate dynamic storage by themselves.
+Vectors and arenas allocate or reallocate backing storage when growth requires
+capacity. `bytes.freeze` transfers an existing vector buffer into a view
+relationship without allocating a second buffer.
+
+The `alloc` effect is a capability ceiling for possible direct or transitive
+allocation. It does not assert that a block is obtained on every execution.
+
+## Regions and physical release
+
+The compiler assigns every dynamic block to one lexical region. An allocating
+function with no storage result and no `inout` output uses a child region,
+which is destroyed on normal or allocation-failure exit. A storage/view result
+or `inout` output uses the caller-provided destination region. Allocation-free
+functions elide an otherwise empty child region.
+
+Regions destroy their blocks in reverse allocation order. The root region is
+destroyed at process shutdown, and trap cleanup destroys the active region
+chain. Generated code retains allocation-site identity so injected failure and
+cleanup remain reproducible.
+
+Source liveness is narrower than or equal to physical allocation lifetime. The
+checker can reject use immediately after a move or overwrite, while the current
+function-granularity implementation may retain the backing block until its
+region ends. Per-binding early release is not currently promised.
 
 ## Checked access
 

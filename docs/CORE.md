@@ -125,7 +125,9 @@ or ABI effect.
 ## Semantics
 
 - Evaluation order is left to right.
-- Scalars and typed IDs are copyable. Owned aggregates move.
+- `Bool`, `U8`, `I64`, typed IDs, immutable `Bytes` views, and aggregates
+  containing only copyable members are copyable. Vectors, arenas, and
+  aggregates containing either are affine and move.
 - Indexing is checked. Checked arithmetic overflow, division by zero, and
   remainder by zero are defined traps.
 - Pure functions omit the effects clause. Allocation, I/O, and unproven

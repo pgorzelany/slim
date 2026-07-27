@@ -6,14 +6,16 @@ explicit.
 
 ## Byte storage
 
-`Bytes` is an affine byte buffer. Its length and indexed reads use `bytes.len`
-and `bytes.get`; indexing traps when out of bounds. `bytes.freeze` produces a
-frozen view and participates in the lifetime rules.
+`Bytes` is a copyable immutable view, not an affine owner. Copying it copies
+only its data-and-length view; the compiler keeps the backing region alive for
+all copies. Its length and indexed reads use `bytes.len` and `bytes.get`;
+indexing traps when out of bounds.
 
 <!-- slim-fixture: bytes-bounds -->
 
 File input appends into an `inout Vec[U8]` and returns `Bool`; freezing the
-completed vector produces byte storage for read-only use.
+completed vector consumes that unique owner and produces a `Bytes` view of the
+same buffer without copying its contents.
 
 ## Typed vectors
 
@@ -24,11 +26,13 @@ operations.
 <!-- slim-fixture: storage -->
 
 Both reads and writes check bounds. Growth can fail through the deterministic
-allocation-failure path.
+allocation-failure path. `vec.new()` creates an empty owner handle; backing
+storage is obtained when growth first requires capacity.
 
 ## Arenas and stable IDs
 
-`Arena[T]` owns values of one type. `arena.add` returns an `Id[T]`, and
+`Arena[T]` is affine and owns values of one type. `arena.add` returns a
+copyable `Id[T]`, and
 `arena.get` resolves an ID within its owning arena. Typed IDs prevent mixing
 identities for unrelated element types.
 

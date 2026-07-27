@@ -24,20 +24,28 @@ declared name and exact component types.
 
 ## Storage types
 
-`Bytes` is affine byte storage. `Vec[T]` is an affine typed vector.
-`Arena[T]` owns typed elements, and `Id[T]` is an identity valid for the
-matching arena element type. Storage operations are ordinary built-ins with
-declared effects and checked indexes.
+`Bytes` is a copyable immutable view with a compiler-checked backing lifetime.
+`Vec[T]` is an affine typed vector. `Arena[T]` is affine and owns typed
+elements, while `Id[T]` is a copyable identity valid for the matching arena
+element type. Storage operations are ordinary built-ins with declared effects
+and checked indexes.
 
 ## Value categories and ownership
 
-Scalar values are copyable. Storage-bearing values and aggregates containing
-them are affine. An affine value may move, after which its old binding is
-invalid. `inout` is an exclusive nonescaping borrow of a named mutable binding,
-not another owning type.
+`Bool`, `U8`, `I64`, `Id[T]`, and `Bytes` are copyable. Copying `Bytes` copies
+only its view and retains the checked relationship to its backing region.
+`Vec[T]`, `Arena[T]`, and aggregates containing either are affine. Other
+aggregates are copyable.
 
-Frozen byte views retain a checked lifetime relation to their source. Safe
-source cannot form raw pointers or untracked aliases.
+An affine value may move, after which its old binding is invalid. A move
+transfers ownership but performs no implicit allocation or element copy.
+`inout` is an exclusive nonescaping borrow of a named caller binding, not
+another owning or storable reference type. Safe source cannot form raw pointers
+or untracked aliases.
+
+`let` and `var` are binding categories rather than value categories. `let`
+rejects direct rebinding in its lexical scope; `var` permits it. Neither changes
+the ownership category of the declared type.
 
 ## Function signatures
 

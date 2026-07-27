@@ -1,8 +1,8 @@
 # Bindings, evaluation, and mutation
 
-Bindings make value flow visible: `let` introduces an immutable value, `var`
-introduces a mutable value, calls evaluate left to right, and mutation occurs
-only through assignment or `inout`.
+Bindings make value flow visible: `let` prevents direct rebinding, `var`
+permits it, calls evaluate left to right, and access to owned storage remains
+exclusive.
 
 ## Local bindings
 
@@ -16,6 +16,16 @@ The annotation is checked exactly. Names resolve lexically, and an unknown name
 is an error rather than a dynamic lookup.
 
 <!-- slim-fixture: unknown-name -->
+
+`let` applies to the binding, not recursively to all storage reachable through
+its value. A `let Vec[T]` remains the unique owner of mutable vector storage and
+can be supplied to `vec.push`, `vec.set`, or an `inout` parameter. It cannot be
+directly replaced with `values = another_vector`. `var` permits that direct
+replacement.
+
+Binding mutability is independent of ownership: both `let` and `var` can hold
+copyable values, copyable `Bytes` views, or affine owners. A move can invalidate
+either kind of binding.
 
 ## Evaluation order
 
@@ -47,6 +57,10 @@ An `inout` parameter is an exclusive, nonescaping borrow of a named caller
 binding. The parameter declaration marks the borrow; the ordinary call must
 supply a named unique binding. The same binding cannot be passed to two
 simultaneous `inout` parameters, and temporaries cannot be borrowed.
+
+The borrow lets a function inspect or mutate an affine owner without taking
+ownership from the caller. It ends when the call returns. `inout` is not a
+storable reference type and does not allocate or perform reference counting.
 
 <!-- slim-fixture: inout -->
 
