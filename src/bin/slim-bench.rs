@@ -176,12 +176,14 @@ fn run_performance() {
             elapsed.as_nanos() as f64 / source.len() as f64
         );
         if first_nested.is_none() {
-            first_nested = Some((*size, elapsed));
+            first_nested = Some((*size, source.len(), elapsed));
         }
-        last_nested = Some((*size, elapsed));
+        last_nested = Some((*size, source.len(), elapsed));
     }
-    let (first_size, first_time) = first_nested.expect("nested series has a first sample");
-    let (last_size, last_time) = last_nested.expect("nested series has a last sample");
+    let (first_size, _, first_time) = first_nested.expect("nested series has a first sample");
+    let (last_size, nested_bytes, last_time) =
+        last_nested.expect("nested series has a last sample");
+    let nested_ns_per_byte = last_time.as_nanos() as f64 / nested_bytes as f64;
     let size_ratio = last_size as f64 / first_size as f64;
     let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
     let exponent = time_ratio.ln() / size_ratio.ln();
@@ -234,12 +236,12 @@ fn run_performance() {
         &directory.path,
         nested_sizes,
         samples,
-        "inout_binding_reads",
-        "inout-reads",
-        "inout-binding read",
-        "generated-inout-binding-reads",
+        "shared_binding_reads",
+        "shared-reads",
+        "shared-binding read",
+        "generated-shared-binding-reads",
         "parameters",
-        generated_inout_read_program,
+        generated_shared_read_program,
     );
 
     println!("named_type_parameters\tsource_bytes\tcheck_us\tcheck_ns_per_byte");
@@ -317,12 +319,14 @@ fn run_performance() {
             elapsed.as_nanos() as f64 / source.len() as f64
         );
         if first_owned.is_none() {
-            first_owned = Some((*size, elapsed));
+            first_owned = Some((*size, source.len(), elapsed));
         }
-        last_owned = Some((*size, elapsed));
+        last_owned = Some((*size, source.len(), elapsed));
     }
-    let (first_size, first_time) = first_owned.expect("owned-transfer series has a first sample");
-    let (last_size, last_time) = last_owned.expect("owned-transfer series has a last sample");
+    let (first_size, _, first_time) =
+        first_owned.expect("owned-transfer series has a first sample");
+    let (last_size, owned_bytes, last_time) =
+        last_owned.expect("owned-transfer series has a last sample");
     let size_ratio = last_size as f64 / first_size as f64;
     let time_ratio = last_time.as_nanos() as f64 / first_time.as_nanos() as f64;
     let exponent = time_ratio.ln() / size_ratio.ln();
@@ -330,6 +334,19 @@ fn run_performance() {
     if exponent > limit {
         eprintln!(
             "performance gate: owned-transfer check exponent {exponent:.3} exceeds {limit:.3} between {first_size} and {last_size} transfers"
+        );
+        std::process::exit(1);
+    }
+    let owned_ns_per_byte = last_time.as_nanos() as f64 / owned_bytes as f64;
+    let normalized_ratio = owned_ns_per_byte / nested_ns_per_byte;
+    println!("owned_transfer_normalized_ratio\t{normalized_ratio:.3}");
+    let ratio_limit = performance_budget(
+        "check-normalized-ratio",
+        "generated-owned-transfers-over-nested-bindings",
+    );
+    if normalized_ratio > ratio_limit {
+        eprintln!(
+            "performance gate: owned-transfer normalized check ratio {normalized_ratio:.3} exceeds {ratio_limit:.3}"
         );
         std::process::exit(1);
     }
@@ -2266,22 +2283,22 @@ fn generated_planned_allocation_call_program(calls: usize) -> String {
     source
 }
 
-fn generated_inout_read_program(parameters: usize) -> String {
+fn generated_shared_read_program(parameters: usize) -> String {
     let mut source = String::with_capacity(parameters * 58);
-    source.push_str("module inout_reads\n\nfn read(");
+    source.push_str("module shared_reads\n\nfn read(");
     for index in 0..parameters {
         if index > 0 {
             source.push_str(", ");
         }
-        source.push_str("inout value_");
+        source.push_str("value_");
         source.push_str(&index.to_string());
-        source.push_str(": I64");
+        source.push_str(": Vec[I64]");
     }
     source.push_str(") -> I64 effects[partial]:\n  ");
     for index in 0..parameters {
-        source.push_str("value_");
+        source.push_str("vec.len(value_");
         source.push_str(&index.to_string());
-        source.push_str(" + ");
+        source.push_str(") + ");
     }
     source.push('0');
     source.push_str("\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
@@ -2303,7 +2320,7 @@ fn generated_named_type_program(functions: usize) -> String {
 fn generated_owned_transfer_program(transfers: usize) -> String {
     let mut source = String::with_capacity(transfers * 100);
     source.push_str(
-        "module owned_transfers\n\nfn consume(value: Vec[I64]) -> Void:\n  void\n\nfn transfer(",
+        "module owned_transfers\n\nfn consume(value: ^Vec[I64]) -> Void:\n  void\n\nfn transfer(",
     );
     for index in 0..transfers {
         if index > 0 {
@@ -2311,11 +2328,11 @@ fn generated_owned_transfer_program(transfers: usize) -> String {
         }
         source.push_str("value_");
         source.push_str(&index.to_string());
-        source.push_str(": Vec[I64]");
+        source.push_str(": ^Vec[I64]");
     }
     source.push_str(") -> I64:\n");
     for index in 0..transfers {
-        source.push_str("  consume(value_");
+        source.push_str("  consume(^value_");
         source.push_str(&index.to_string());
         source.push_str(")\n");
     }

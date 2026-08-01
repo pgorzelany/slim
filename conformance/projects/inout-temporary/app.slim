@@ -1,7 +1,7 @@
 module app
 
-fn inspect(inout values: Vec[I64]) -> I64:
+fn inspect(values: @Vec[I64]) -> I64:
   vec.len(values)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
-  inspect(vec.new())
+  inspect(@vec.new())

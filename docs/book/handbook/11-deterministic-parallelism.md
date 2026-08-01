@@ -11,7 +11,8 @@ and installs results in lexical order before the remaining block.
 
 <!-- slim-fixture: structured-parallel -->
 
-Accepted tasks are checked leaf functions with restricted inputs, no `inout`,
+Accepted tasks are checked leaf functions with restricted inputs, no `@`
+exclusive parameters,
 no `partial`, isolated allocation regions, and only the bounded host operation
 shape recorded by the parallelism contract.
 

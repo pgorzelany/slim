@@ -1,0 +1,9 @@
+module shared_exclusive_overlap
+
+fn combined(shared: Vec[I64], exclusive: @Vec[I64]) -> I64:
+  vec.len(shared) + vec.len(exclusive)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let observed: I64 = combined(values, @values)
+  0

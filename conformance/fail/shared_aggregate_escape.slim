@@ -1,0 +1,10 @@
+module shared_aggregate_escape
+
+struct Box:
+  values: Vec[I64]
+
+fn invalid(values: Vec[I64]) -> Box:
+  Box(values: values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

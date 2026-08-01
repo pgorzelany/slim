@@ -1,24 +1,24 @@
 module app
 
-fn consume(value: Vec[I64]) -> Void:
+fn consume(value: ^Vec[I64]) -> Void:
   void
 
-fn take(value: Vec[I64]) -> I64:
+fn take(value: ^Vec[I64]) -> I64:
   vec.len(value)
 
-fn moved(values: Vec[I64]) -> Void:
-  consume(values)
-  consume(values)
+fn moved(values: ^Vec[I64]) -> Void:
+  consume(^values)
+  consume(^values)
 
-fn borrowed(inout values: Vec[I64]) -> I64:
-  take(values)
+fn borrowed(values: @Vec[I64]) -> I64:
+  take(^values)
 
-fn freeze_twice(values: Vec[U8]) -> I64:
-  let first: Bytes = bytes.freeze(values)
-  let second: Bytes = bytes.freeze(values)
+fn freeze_twice(values: ^Vec[U8]) -> I64:
+  let first: Bytes = bytes.freeze(^values)
+  let second: Bytes = bytes.freeze(^values)
   0
 
-fn return_borrowed(inout values: Vec[I64]) -> Vec[I64]:
+fn return_borrowed(values: @Vec[I64]) -> Vec[I64]:
   values
 
 fn main(args: Vec[Bytes]) -> I64:

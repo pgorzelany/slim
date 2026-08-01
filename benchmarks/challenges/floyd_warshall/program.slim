@@ -1,6 +1,6 @@
 module floyd_warshall
 
-fn fill(inout distances: Vec[I64], index: I64, size: I64) -> Void effects[alloc, partial]:
+fn fill(distances: @Vec[I64], index: I64, size: I64) -> Void effects[alloc, partial]:
   let count: I64 = size * size
   if index == count:
     void
@@ -13,10 +13,10 @@ fn fill(inout distances: Vec[I64], index: I64, size: I64) -> Void effects[alloc,
       0
     else:
       seed
-    vec.push(distances, value)
-    recur(distances, index + 1, size)
+    vec.push(@distances, value)
+    recur(@distances, index + 1, size)
 
-fn columns(inout distances: Vec[I64], pivot: I64, row: I64, column: I64, size: I64) -> Void effects[partial]:
+fn columns(distances: @Vec[I64], pivot: I64, row: I64, column: I64, size: I64) -> Void effects[partial]:
   if column == size:
     void
   else:
@@ -29,24 +29,24 @@ fn columns(inout distances: Vec[I64], pivot: I64, row: I64, column: I64, size: I
     let current: I64 = vec.get(distances, target_index)
     let better: Bool = candidate < current
     if better:
-      vec.set(distances, target_index, candidate)
+      vec.set(@distances, target_index, candidate)
     else:
       void
-    recur(distances, pivot, row, column + 1, size)
+    recur(@distances, pivot, row, column + 1, size)
 
-fn rows(inout distances: Vec[I64], pivot: I64, row: I64, size: I64) -> Void effects[partial]:
+fn rows(distances: @Vec[I64], pivot: I64, row: I64, size: I64) -> Void effects[partial]:
   if row == size:
     void
   else:
-    columns(distances, pivot, row, 0, size)
-    recur(distances, pivot, row + 1, size)
+    columns(@distances, pivot, row, 0, size)
+    recur(@distances, pivot, row + 1, size)
 
-fn pivots(inout distances: Vec[I64], pivot: I64, size: I64) -> Void effects[partial]:
+fn pivots(distances: @Vec[I64], pivot: I64, size: I64) -> Void effects[partial]:
   if pivot == size:
     void
   else:
-    rows(distances, pivot, 0, size)
-    recur(distances, pivot + 1, size)
+    rows(@distances, pivot, 0, size)
+    recur(@distances, pivot + 1, size)
 
 fn checksum(distances: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
   if index == vec.len(distances):
@@ -57,8 +57,8 @@ fn checksum(distances: Vec[I64], index: I64, total: I64) -> I64 effects[partial]
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 192
   let distances: Vec[I64] = vec.new()
-  fill(distances, 0, size)
-  pivots(distances, 0, size)
+  fill(@distances, 0, size)
+  pivots(@distances, 0, size)
   let result: I64 = checksum(distances, 0, 0)
   io.print_i64(result)
   io.println("")

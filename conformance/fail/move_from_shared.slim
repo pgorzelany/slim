@@ -1,0 +1,10 @@
+module move_from_shared
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn invalid(values: Vec[I64]) -> Void:
+  consume(^values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -24,7 +24,7 @@ makes incorrect ordering observable.
 ## Ownership and effects
 
 Both `values` and `scratch` remain owned by `main` and are passed as distinct
-`inout` borrows. The no-alias rule prevents them from referring to the same
+`@` borrows. The no-alias rule prevents them from referring to the same
 owner. Filling may allocate; sorting mutates existing elements and needs no
 hidden allocation. Reads, writes, arithmetic, and recurrent argument types are
 checked.

@@ -2,7 +2,7 @@ module dual_health
 
 fn healthy(port: I64, request: Bytes) -> Bool effects[alloc, io]:
   let body: Vec[U8] = vec.new()
-  let ok: Bool = io.tcp_exchange("127.0.0.1", port, request, 8, 2000, body)
+  let ok: Bool = io.tcp_exchange("127.0.0.1", port, request, 8, 2000, @body)
   let length: I64 = vec.len(body)
   ok && (length == 2)
 

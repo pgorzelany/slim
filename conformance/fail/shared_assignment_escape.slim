@@ -1,0 +1,9 @@
+module shared_assignment_escape
+
+fn invalid(values: Vec[I64]) -> Vec[I64] effects[alloc]:
+  var selected: Vec[I64] = vec.new()
+  selected = values
+  selected
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

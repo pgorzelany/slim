@@ -40,7 +40,7 @@ Quick geometric compiler series use 250, 500, 1,000, and 2,000 declarations;
 full series extend through 8,000. Ordinary checking, emission, reduction,
 analysis, and proof remain within their recorded approximately-linear exponent
 budgets. Separate shapes cover nested bindings, named type references, owned
-transfers, aggregate temporaries, planned allocation calls, and `inout` reads.
+transfers, aggregate temporaries, planned allocation calls, and shared reads.
 
 The twenty comparative challenges must match their C and Rust oracles before
 runtime ratios are measured. Per-program budgets remain authoritative because

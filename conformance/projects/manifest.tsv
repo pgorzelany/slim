@@ -32,7 +32,7 @@ project-type-error	check-fail	conformance/projects/type-error/slim.project	parit
 project-nonexhaustive	check-fail	conformance/projects/nonexhaustive/slim.project	parity	E0336@app@48:77	project:diagnostics,match:exhaustive
 project-boolean-recovery	check-fail	conformance/projects/boolean-recovery/slim.project	parity	E0336@app@48:105,E0314@app@76:83,E0335@app@88:105,E0344@app@100:105	project:diagnostics,recovery:multiple-diagnostics
 project-effect-error	check-fail	conformance/projects/effect-error/slim.project	parity	E0343@app@48:58	project:diagnostics,effect:enforcement
-project-inout-temporary	check-fail	conformance/projects/inout-temporary/slim.project	parity	E0348@app@133:140	project:diagnostics,ownership:named-inout
-project-inout-alias	check-fail	conformance/projects/inout-alias/slim.project	parity	E0349@app@181:187	project:diagnostics,ownership:no-alias
-project-recur-rebind	check-fail	conformance/projects/recur-rebind/slim.project	parity	E0350@app@98:103,E0350@app@105:109	project:diagnostics,ownership:recur-preserves-inout
-project-ownership	check-fail	conformance/projects/ownership/slim.project	parity	E0315@app@172:178,E0347@app@232:238,E0315@app@359:365,E0347@app@430:436	project:diagnostics,ownership:move,ownership:inout-return
+project-inout-temporary	check-fail	conformance/projects/inout-temporary/slim.project	parity	E0348@app@129:136	project:diagnostics,ownership:named-exclusive
+project-inout-alias	check-fail	conformance/projects/inout-alias/slim.project	parity	E0349@app@173:179	project:diagnostics,ownership:no-alias
+project-recur-rebind	check-fail	conformance/projects/recur-rebind/slim.project	parity	E0350@app@89:94,E0350@app@97:101	project:diagnostics,ownership:recur-preserves-exclusive
+project-ownership	check-fail	conformance/projects/ownership/slim.project	parity	E0315@app@177:183,E0347@app@233:239,E0315@app@363:369,E0347@app@429:435	project:diagnostics,ownership:move,ownership:exclusive-return

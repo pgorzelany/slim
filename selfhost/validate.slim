@@ -1,10 +1,10 @@
 module validate
 
-fn atom_at(inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn atom_at(tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, index)
   kind == 2
 
-fn string_token_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn string_token_valid(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, index)
   let string_value: Bool = kind == 3
   if string_value:
@@ -24,7 +24,7 @@ fn string_token_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64
   else:
     true
 
-fn string_tokens_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, length: I64) -> Bool effects[partial]:
+fn string_tokens_valid(source: Bytes, tokens: Vec[syntax.Token], index: I64, length: I64) -> Bool effects[partial]:
   let done: Bool = index >= length
   if done:
     true
@@ -36,7 +36,7 @@ fn string_tokens_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I6
     else:
       false
 
-fn form_count_at_least(inout tokens: Vec[syntax.Token], cursor: I64, count: I64, minimum: I64) -> Bool effects[partial]:
+fn form_count_at_least(tokens: Vec[syntax.Token], cursor: I64, count: I64, minimum: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -54,7 +54,7 @@ fn form_count_at_least(inout tokens: Vec[syntax.Token], cursor: I64, count: I64,
       else:
         false
 
-fn expression_minimum(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64) -> I64 effects[partial]:
+fn expression_minimum(source: Bytes, tokens: Vec[syntax.Token], expression: I64) -> I64 effects[partial]:
   let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expression)
   if let_form:
     4
@@ -85,7 +85,7 @@ fn expression_minimum(source: Bytes, inout tokens: Vec[syntax.Token], expression
               else:
                 0
 
-fn expression_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn expression_shape_valid(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, index)
   let scalar: Bool = kind >= 2
   if scalar:
@@ -104,7 +104,7 @@ fn expression_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token], index:
     else:
       false
 
-fn function_item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn function_item_valid(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let name: I64 = syntax.ast_item_name(index)
   let params: I64 = syntax.ast_function_parameters(index)
   let name_valid: Bool = atom_at(tokens, name)
@@ -131,7 +131,7 @@ fn function_item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I6
   let left: Bool = first && second
   left && third
 
-fn data_item_valid(inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn data_item_valid(tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let name: I64 = syntax.ast_item_name(index)
   let body: I64 = syntax.ast_data_body(index)
   let name_valid: Bool = atom_at(tokens, name)
@@ -143,7 +143,7 @@ fn data_item_valid(inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[
   let left: Bool = name_valid && body_valid
   left && exact
 
-fn item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+fn item_valid(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, index)
   let form: Bool = kind == 0
   if form:
@@ -161,7 +161,7 @@ fn item_valid(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Boo
   else:
     false
 
-fn item_list_valid(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, closing: I64) -> Bool effects[partial]:
+fn item_list_valid(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, closing: I64) -> Bool effects[partial]:
   let done: Bool = cursor == closing
   if done:
     true
@@ -181,7 +181,7 @@ fn item_list_valid(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, 
     else:
       false
 
-fn main_count(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, closing: I64, count: I64) -> I64 effects[partial]:
+fn main_count(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, closing: I64, count: I64) -> I64 effects[partial]:
   let done: Bool = cursor == closing
   if done:
     count
@@ -199,7 +199,7 @@ fn main_count(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, closi
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, next, closing, next_count)
 
-fn module_shape_valid_from(source: Bytes, inout tokens: Vec[syntax.Token], root: I64, end: I64) -> Bool effects[partial]:
+fn module_shape_valid_from(source: Bytes, tokens: Vec[syntax.Token], root: I64, end: I64) -> Bool effects[partial]:
   let length: I64 = end - root
   let bounded: Bool = length <= 1000000
   let enough: Bool = length >= 4
@@ -225,11 +225,11 @@ fn module_shape_valid_from(source: Bytes, inout tokens: Vec[syntax.Token], root:
   else:
     false
 
-fn module_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token]) -> Bool effects[partial]:
+fn module_shape_valid(source: Bytes, tokens: Vec[syntax.Token]) -> Bool effects[partial]:
   let end: I64 = vec.len(tokens)
   module_shape_valid_from(source, tokens, 0, end)
 
-fn executable_shape_valid(source: Bytes, inout tokens: Vec[syntax.Token]) -> Bool effects[partial]:
+fn executable_shape_valid(source: Bytes, tokens: Vec[syntax.Token]) -> Bool effects[partial]:
   let valid: Bool = module_shape_valid(source, tokens)
   if valid:
     let closing: I64 = syntax.ast_list_close(tokens, 0)

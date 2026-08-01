@@ -5,5 +5,5 @@ fn length(values: Vec[U8]) -> I64:
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[U8] = vec.new()
-  let frozen: Bytes = bytes.freeze(values)
+  let frozen: Bytes = bytes.freeze(^values)
   length(values)

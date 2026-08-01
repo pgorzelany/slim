@@ -9,22 +9,22 @@ fn minimum_two(left: I64, right: I64) -> I64:
 fn minimum_three(first: I64, second: I64, third: I64) -> I64:
   minimum_two(minimum_two(first, second), third)
 
-fn fill(inout previous: Vec[I64], inout current: Vec[I64], index: I64, length: I64) -> Void effects[alloc, partial]:
+fn fill(previous: @Vec[I64], current: @Vec[I64], index: I64, length: I64) -> Void effects[alloc, partial]:
   if index > length:
     void
   else:
-    vec.push(previous, index)
-    vec.push(current, 0)
-    recur(previous, current, index + 1, length)
+    vec.push(@previous, index)
+    vec.push(@current, 0)
+    recur(@previous, @current, index + 1, length)
 
-fn reset(inout previous: Vec[I64], index: I64, length: I64) -> Void effects[partial]:
+fn reset(previous: @Vec[I64], index: I64, length: I64) -> Void effects[partial]:
   if index > length:
     void
   else:
-    vec.set(previous, index, index)
-    recur(previous, index + 1, length)
+    vec.set(@previous, index, index)
+    recur(@previous, index + 1, length)
 
-fn columns(left: Bytes, right: Bytes, inout previous: Vec[I64], inout current: Vec[I64], row: I64, column: I64, right_length: I64) -> Void effects[partial]:
+fn columns(left: Bytes, right: Bytes, previous: @Vec[I64], current: @Vec[I64], row: I64, column: I64, right_length: I64) -> Void effects[partial]:
   if column > right_length:
     void
   else:
@@ -38,34 +38,34 @@ fn columns(left: Bytes, right: Bytes, inout previous: Vec[I64], inout current: V
     let insertion: I64 = vec.get(current, column - 1) + 1
     let substitution: I64 = vec.get(previous, column - 1) + cost
     let value: I64 = minimum_three(deletion, insertion, substitution)
-    vec.set(current, column, value)
-    recur(left, right, previous, current, row, column + 1, right_length)
+    vec.set(@current, column, value)
+    recur(left, right, @previous, @current, row, column + 1, right_length)
 
-fn copy_row(inout previous: Vec[I64], inout current: Vec[I64], index: I64, length: I64) -> Void effects[partial]:
+fn copy_row(previous: @Vec[I64], current: @Vec[I64], index: I64, length: I64) -> Void effects[partial]:
   if index > length:
     void
   else:
     let value: I64 = vec.get(current, index)
-    vec.set(previous, index, value)
-    recur(previous, current, index + 1, length)
+    vec.set(@previous, index, value)
+    recur(@previous, @current, index + 1, length)
 
-fn rows(left: Bytes, right: Bytes, inout previous: Vec[I64], inout current: Vec[I64], row: I64, left_length: I64, right_length: I64) -> Void effects[partial]:
+fn rows(left: Bytes, right: Bytes, previous: @Vec[I64], current: @Vec[I64], row: I64, left_length: I64, right_length: I64) -> Void effects[partial]:
   if row > left_length:
     void
   else:
-    vec.set(current, 0, row)
-    columns(left, right, previous, current, row, 1, right_length)
-    copy_row(previous, current, 0, right_length)
-    recur(left, right, previous, current, row + 1, left_length, right_length)
+    vec.set(@current, 0, row)
+    columns(left, right, @previous, @current, row, 1, right_length)
+    copy_row(@previous, @current, 0, right_length)
+    recur(left, right, @previous, @current, row + 1, left_length, right_length)
 
-fn repeat(left: Bytes, right: Bytes, inout previous: Vec[I64], inout current: Vec[I64], round: I64, rounds: I64, left_length: I64, right_length: I64, total: I64) -> I64 effects[partial]:
+fn repeat(left: Bytes, right: Bytes, previous: @Vec[I64], current: @Vec[I64], round: I64, rounds: I64, left_length: I64, right_length: I64, total: I64) -> I64 effects[partial]:
   if round == rounds:
     total
   else:
-    reset(previous, 0, right_length)
-    rows(left, right, previous, current, 1, left_length, right_length)
+    reset(@previous, 0, right_length)
+    rows(left, right, @previous, @current, 1, left_length, right_length)
     let value: I64 = vec.get(previous, right_length)
-    recur(left, right, previous, current, round + 1, rounds, left_length, right_length, total + value)
+    recur(left, right, @previous, @current, round + 1, rounds, left_length, right_length, total + value)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let left: Bytes = "thequickbrownfoxjumpsoverthelazydogpackmyboxwithfivedozenliquorjugsphinxofblackquartzjudgemyvow"
@@ -74,9 +74,9 @@ fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let right_length: I64 = bytes.len(right)
   let previous: Vec[I64] = vec.new()
   let current: Vec[I64] = vec.new()
-  fill(previous, current, 0, right_length)
+  fill(@previous, @current, 0, right_length)
   let rounds: I64 = 200 * vec.len(args)
-  let result: I64 = repeat(left, right, previous, current, 0, rounds, left_length, right_length, 0)
+  let result: I64 = repeat(left, right, @previous, @current, 0, rounds, left_length, right_length, 0)
   io.print_i64(result)
   io.println("")
   0

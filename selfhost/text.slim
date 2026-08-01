@@ -1,44 +1,44 @@
 module text
 
-fn append_span(source: Bytes, index: I64, end: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_span(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     void
   else:
     let byte: U8 = bytes.get(source, index)
-    vec.push(output, byte)
+    vec.push(@output, byte)
     let next: I64 = index + 1
-    recur(source, next, end, output)
+    recur(source, next, end, @output)
 
-fn append_text_chars(text: Bytes, index: I64, length: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_text_chars(text: Bytes, index: I64, length: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = index >= length
   if done:
     void
   else:
     let byte: U8 = bytes.get(text, index)
-    vec.push(output, byte)
+    vec.push(@output, byte)
     let next: I64 = index + 1
-    recur(text, next, length, output)
+    recur(text, next, length, @output)
 
-fn append_text(inout output: Vec[U8], text: Bytes) -> Void effects[alloc, partial]:
+fn append_text(output: @Vec[U8], text: Bytes) -> Void effects[alloc, partial]:
   let length: I64 = bytes.len(text)
-  append_text_chars(text, 0, length, output)
+  append_text_chars(text, 0, length, @output)
 
-fn append_nonnegative_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_nonnegative_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let multiple: Bool = value >= 10
   if multiple:
     let prefix: I64 = value / 10
     let remainder: I64 = value % 10
-    append_nonnegative_i64(prefix, output)
+    append_nonnegative_i64(prefix, @output)
     let code: I64 = remainder + 48
     let byte: U8 = i64.to_u8(code)
-    vec.push(output, byte)
+    vec.push(@output, byte)
   else:
     let code: I64 = value + 48
     let byte: U8 = i64.to_u8(code)
-    vec.push(output, byte)
+    vec.push(@output, byte)
 
-fn append_token(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_token(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let start: I64 = syntax.ast_node_start(tokens, index)
   let end: I64 = syntax.ast_node_end(tokens, index)
-  append_span(source, start, end, output)
+  append_span(source, start, end, @output)

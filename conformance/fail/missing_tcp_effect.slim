@@ -2,7 +2,7 @@ module missing_tcp_effect
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let output: Vec[U8] = vec.new()
-  if io.tcp_exchange("127.0.0.1", 8080, "PING", 64, 1000, output):
+  if io.tcp_exchange("127.0.0.1", 8080, "PING", 64, 1000, @output):
     0
   else:
     1

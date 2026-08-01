@@ -1,0 +1,14 @@
+module conditional_borrow_overlap
+
+fn pair(shared: Vec[I64], exclusive: @Vec[I64]) -> Void:
+  void
+
+fn invalid(left: @Vec[I64], right: @Vec[I64], first: Bool) -> Void:
+  let selected: Vec[I64] = if first:
+    left
+  else:
+    right
+  pair(selected, @left)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

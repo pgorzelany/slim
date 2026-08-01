@@ -1,0 +1,7 @@
+module recur_owned_overlap
+
+fn spin(left: ^Vec[I64], right: ^Vec[I64]) -> I64 effects[partial]:
+  recur(^left, ^left)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

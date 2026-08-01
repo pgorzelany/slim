@@ -2,15 +2,15 @@ module session
 
 fn state_for_path(path: Bytes, with_dependencies: Bool) -> query.State effects[alloc, io, partial]:
   let manifest_bytes: Vec[U8] = vec.new()
-  let manifest_read: Bool = io.read_file(path, manifest_bytes)
-  let manifest_source: Bytes = bytes.freeze(manifest_bytes)
+  let manifest_read: Bool = io.read_file(path, @manifest_bytes)
+  let manifest_source: Bytes = bytes.freeze(^manifest_bytes)
   let manifest_tokens: Vec[syntax.Token] = vec.new()
-  syntax.lex_data(manifest_source, 0, manifest_tokens)
+  syntax.lex_data(manifest_source, 0, @manifest_tokens)
   let entry_form: I64 = 3
   let modules: I64 = syntax.ast_next(manifest_tokens, entry_form)
   let module_tokens: Vec[syntax.Token] = vec.new()
   let loaded: Vec[project.LoadedModule] = vec.new()
-  let loaded_result: I64 = project.load_project_modules(path, manifest_source, manifest_tokens, modules, module_tokens, loaded)
+  let loaded_result: I64 = project.load_project_modules(path, manifest_source, manifest_tokens, modules, @module_tokens, @loaded)
   if with_dependencies:
     query.build_state(manifest_source, manifest_tokens, module_tokens, loaded)
   else:

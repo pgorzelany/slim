@@ -10,7 +10,7 @@ struct BindingFact:
   last_use: I64
   dependencies: I64
 
-fn tokens_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+fn tokens_equal(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
   let left_start: I64 = syntax.ast_node_start(tokens, left)
   let left_end: I64 = syntax.ast_node_end(tokens, left)
   let right_start: I64 = syntax.ast_node_start(tokens, right)
@@ -22,7 +22,7 @@ fn binding_active(fact: BindingFact, position: I64) -> Bool:
   let inside_scope: Bool = position <= fact.scope_end
   declared_before && inside_scope
 
-fn find_binding(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[BindingFact], name: I64, position: I64, index: I64) -> I64 effects[partial]:
+fn find_binding(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[BindingFact], name: I64, position: I64, index: I64) -> I64 effects[partial]:
   let done: Bool = index < 0
   if done:
     -1
@@ -39,7 +39,7 @@ fn find_binding(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec
       let next: I64 = index - 1
       recur(source, tokens, facts, name, position, next)
 
-fn record_use(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[BindingFact], name: I64, position: I64) -> Void effects[alloc, partial]:
+fn record_use(source: Bytes, tokens: Vec[syntax.Token], facts: @Vec[BindingFact], name: I64, position: I64) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, name)
   let atom: Bool = kind == 2
   if atom:
@@ -52,58 +52,66 @@ fn record_use(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[B
       let next_uses: I64 = fact.uses + 1
       let next_dependencies: I64 = fact.dependencies + 1
       let updated: BindingFact = BindingFact(id: fact.id, name: fact.name, type_index: fact.type_index, ownership: fact.ownership, scope_end: fact.scope_end, uses: next_uses, last_use: position, dependencies: next_dependencies)
-      vec.set(facts, index, updated)
+      vec.set(@facts, index, updated)
     else:
       void
   else:
     void
 
-fn append_binding(name: I64, type_index: I64, ownership: I64, scope_end: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn append_binding(name: I64, type_index: I64, ownership: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(facts)
   let bounded: Bool = count < 64
   if bounded:
     let fact: BindingFact = BindingFact(id: name, name: name, type_index: type_index, ownership: ownership, scope_end: scope_end, uses: 0, last_use: -1, dependencies: 0)
-    vec.push(facts, fact)
+    vec.push(@facts, fact)
   else:
     void
 
-fn collect_parameters(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, scope_end: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn collect_parameters(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
     let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
     let type_index: I64 = syntax.ast_binding_type(source, tokens, cursor)
-    let storage: I64 = if borrowed:
-      3
+    let storage: I64 = memory.type_storage_kind(source, tokens, type_index)
+    let affine: Bool = storage == 2
+    let mode: I64 = syntax.ast_binding_mode(source, tokens, cursor)
+    let ownership: I64 = if affine:
+      if mode == 0:
+        4
+      else:
+        if mode == 1:
+          3
+        else:
+          2
     else:
-      memory.type_storage_kind(source, tokens, type_index)
-    append_binding(name, type_index, storage, scope_end, facts)
+      storage
+    append_binding(name, type_index, ownership, scope_end, @facts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, scope_end, facts)
+    recur(source, tokens, next, scope_end, @facts)
 
-fn analyze_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_forms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     void
   else:
-    analyze_expression(source, tokens, cursor, facts)
+    analyze_expression(source, tokens, cursor, @facts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, facts)
+    recur(source, tokens, next, @facts)
 
-fn analyze_make_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_make_fields(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
     let value: I64 = syntax.ast_member_value(cursor)
-    analyze_expression(source, tokens, value, facts)
+    analyze_expression(source, tokens, value, @facts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, facts)
+    recur(source, tokens, next, @facts)
 
-fn collect_pattern_bindings(inout tokens: Vec[syntax.Token], cursor: I64, body: I64, scope_end: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn collect_pattern_bindings(tokens: Vec[syntax.Token], cursor: I64, body: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let done: Bool = cursor == body
   if done:
     void
@@ -111,13 +119,13 @@ fn collect_pattern_bindings(inout tokens: Vec[syntax.Token], cursor: I64, body: 
     let binding: Bool = syntax.ast_node_is_list(tokens, cursor)
     if binding:
       let name: I64 = syntax.ast_pattern_binding_name(cursor)
-      append_binding(name, -1, 4, scope_end, facts)
+      append_binding(name, -1, 4, scope_end, @facts)
     else:
       void
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(tokens, next, body, scope_end, facts)
+    recur(tokens, next, body, scope_end, @facts)
 
-fn analyze_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -125,63 +133,63 @@ fn analyze_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, ino
     let body: I64 = syntax.ast_arm_body(tokens, cursor)
     let first_binding: I64 = syntax.ast_arm_bindings(tokens, cursor)
     let scope_end: I64 = syntax.ast_next(tokens, cursor)
-    collect_pattern_bindings(tokens, first_binding, body, scope_end, facts)
-    analyze_expression(source, tokens, body, facts)
+    collect_pattern_bindings(tokens, first_binding, body, scope_end, @facts)
+    analyze_expression(source, tokens, body, @facts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, facts)
+    recur(source, tokens, next, @facts)
 
-fn analyze_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_let(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_let_name(expr)
   let type_index: I64 = syntax.ast_let_type(expr)
   let value: I64 = syntax.ast_let_value(tokens, expr)
   let body: I64 = syntax.ast_let_body(tokens, expr)
   let scope_end: I64 = syntax.ast_next(tokens, body)
-  analyze_expression(source, tokens, value, facts)
+  analyze_expression(source, tokens, value, @facts)
   let storage: I64 = memory.type_storage_kind(source, tokens, type_index)
-  append_binding(name, type_index, storage, scope_end, facts)
-  analyze_expression(source, tokens, body, facts)
+  append_binding(name, type_index, storage, scope_end, @facts)
+  analyze_expression(source, tokens, body, @facts)
 
-fn analyze_match(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_match(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let value: I64 = syntax.ast_match_value(expr)
   let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
-  analyze_expression(source, tokens, value, facts)
-  analyze_arms(source, tokens, first_arm, facts)
+  analyze_expression(source, tokens, value, @facts)
+  analyze_arms(source, tokens, first_arm, @facts)
 
-fn analyze_set(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_set(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_set_name(expr)
   let value: I64 = syntax.ast_set_value(expr)
   let body: I64 = syntax.ast_set_body(tokens, expr)
-  record_use(source, tokens, facts, name, expr)
-  analyze_expression(source, tokens, value, facts)
-  analyze_expression(source, tokens, body, facts)
+  record_use(source, tokens, @facts, name, expr)
+  analyze_expression(source, tokens, value, @facts)
+  analyze_expression(source, tokens, body, @facts)
 
-fn analyze_data_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_data_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
   if make_form:
     let type_index: I64 = syntax.ast_make_type(expr)
     let first_field: I64 = syntax.ast_make_fields(expr)
-    analyze_make_fields(source, tokens, first_field, facts)
+    analyze_make_fields(source, tokens, first_field, @facts)
   else:
     let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expr)
     if get_form:
       let value: I64 = syntax.ast_get_value(expr)
-      analyze_expression(source, tokens, value, facts)
+      analyze_expression(source, tokens, value, @facts)
     else:
       let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expr)
       if case_form:
         let type_index: I64 = syntax.ast_case_type(expr)
         let variant: I64 = syntax.ast_case_name(tokens, expr)
         let first_value: I64 = syntax.ast_case_payload(tokens, expr)
-        analyze_forms(source, tokens, first_value, facts)
+        analyze_forms(source, tokens, first_value, @facts)
       else:
         void
 
-fn analyze_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout facts: Vec[BindingFact]) -> Void effects[alloc, partial]:
+fn analyze_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let composite: Bool = syntax.ast_node_is_list(tokens, expr)
   if composite:
     let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
     if let_form:
-      analyze_let(source, tokens, expr, facts)
+      analyze_let(source, tokens, expr, @facts)
     else:
       let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
       let recur_form: Bool = syntax.ast_expression_is_recur(source, tokens, expr)
@@ -191,87 +199,91 @@ fn analyze_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64,
           syntax.ast_call_arguments(expr)
         else:
           syntax.ast_recur_arguments(expr)
-        analyze_forms(source, tokens, first, facts)
+        analyze_forms(source, tokens, first, @facts)
       else:
         let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
         if match_form:
-          analyze_match(source, tokens, expr, facts)
+          analyze_match(source, tokens, expr, @facts)
         else:
           let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
           if set_form:
-            analyze_set(source, tokens, expr, facts)
+            analyze_set(source, tokens, expr, @facts)
           else:
-            analyze_data_expression(source, tokens, expr, facts)
+            analyze_data_expression(source, tokens, expr, @facts)
   else:
-    record_use(source, tokens, facts, expr, expr)
+    record_use(source, tokens, @facts, expr, expr)
 
-fn append_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let negative: Bool = value < 0
   if negative:
-    text.append_text(output, "-")
+    text.append_text(@output, "-")
     let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, output)
+    text.append_nonnegative_i64(magnitude, @output)
   else:
-    text.append_nonnegative_i64(value, output)
+    text.append_nonnegative_i64(value, @output)
 
-fn append_ownership(ownership: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_ownership(ownership: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let copy: Bool = ownership == 0
   if copy:
-    text.append_text(output, "copy")
+    text.append_text(@output, "copy")
   else:
     let view: Bool = ownership == 1
     if view:
-      text.append_text(output, "view")
+      text.append_text(@output, "view")
     else:
       let owned: Bool = ownership == 2
       if owned:
-        text.append_text(output, "owned")
+        text.append_text(@output, "owned")
       else:
-        let inout: Bool = ownership == 3
-        if inout:
-          text.append_text(output, "inout")
+        let exclusive: Bool = ownership == 3
+        if exclusive:
+          text.append_text(@output, "exclusive")
         else:
-          text.append_text(output, "unknown")
+          let shared: Bool = ownership == 4
+          if shared:
+            text.append_text(@output, "shared")
+          else:
+            text.append_text(@output, "unknown")
 
-fn emit_scope_and_usage(fact: BindingFact, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, ") (scope-end ")
-  append_i64(fact.scope_end, output)
-  text.append_text(output, ") (uses ")
-  append_i64(fact.uses, output)
-  text.append_text(output, ") (last-use ")
-  append_i64(fact.last_use, output)
-  text.append_text(output, ") (dependencies ")
-  append_i64(fact.dependencies, output)
-  text.append_text(output, "))")
+fn emit_scope_and_usage(fact: BindingFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, ") (scope-end ")
+  append_i64(fact.scope_end, @output)
+  text.append_text(@output, ") (uses ")
+  append_i64(fact.uses, @output)
+  text.append_text(@output, ") (last-use ")
+  append_i64(fact.last_use, @output)
+  text.append_text(@output, ") (dependencies ")
+  append_i64(fact.dependencies, @output)
+  text.append_text(@output, "))")
 
-fn emit_binding(source: Bytes, inout tokens: Vec[syntax.Token], fact: BindingFact, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (binding ")
-  append_i64(fact.id, output)
-  text.append_text(output, " ")
-  text.append_token(source, tokens, fact.name, output)
-  text.append_text(output, " (type ")
+fn emit_binding(source: Bytes, tokens: Vec[syntax.Token], fact: BindingFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (binding ")
+  append_i64(fact.id, @output)
+  text.append_text(@output, " ")
+  text.append_token(source, tokens, fact.name, @output)
+  text.append_text(@output, " (type ")
   let type_index: I64 = fact.type_index
   let known: Bool = type_index >= 0
   if known:
-    reduce.emit_original_form(source, tokens, type_index, output)
+    reduce.emit_original_form(source, tokens, type_index, @output)
   else:
-    text.append_text(output, "unknown")
-  text.append_text(output, ") (ownership ")
-  append_ownership(fact.ownership, output)
-  emit_scope_and_usage(fact, output)
+    text.append_text(@output, "unknown")
+  text.append_text(@output, ") (ownership ")
+  append_ownership(fact.ownership, @output)
+  emit_scope_and_usage(fact, @output)
 
-fn emit_bindings(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[BindingFact], index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[BindingFact], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
     void
   else:
     let fact: BindingFact = vec.get(facts, index)
-    emit_binding(source, tokens, fact, output)
+    emit_binding(source, tokens, fact, @output)
     let next: I64 = index + 1
-    recur(source, tokens, facts, next, output)
+    recur(source, tokens, facts, next, @output)
 
-fn dependency_count(inout facts: Vec[BindingFact], index: I64, total: I64) -> I64 effects[partial]:
+fn dependency_count(facts: Vec[BindingFact], index: I64, total: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -282,7 +294,7 @@ fn dependency_count(inout facts: Vec[BindingFact], index: I64, total: I64) -> I6
     let next: I64 = index + 1
     recur(facts, next, next_total)
 
-fn emit_function(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_item_name(item)
   let params: I64 = syntax.ast_function_parameters(item)
   let return_type: I64 = syntax.ast_function_return_type(tokens, item)
@@ -291,45 +303,45 @@ fn emit_function(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inou
   let scope_end: I64 = syntax.ast_next(tokens, item)
   let facts: Vec[BindingFact] = vec.new()
   let first_param: I64 = syntax.ast_parameters_first(params)
-  collect_parameters(source, tokens, first_param, scope_end, facts)
-  analyze_expression(source, tokens, body, facts)
+  collect_parameters(source, tokens, first_param, scope_end, @facts)
+  analyze_expression(source, tokens, body, @facts)
   let count: I64 = vec.len(facts)
   let dependencies: I64 = dependency_count(facts, 0, 0)
   let truncated: Bool = count >= 64
-  text.append_text(output, " (function ")
-  append_i64(item, output)
-  text.append_text(output, " ")
-  text.append_token(source, tokens, name, output)
-  text.append_text(output, " (declared-effects ")
-  reduce.emit_original_form(source, tokens, effects, output)
-  text.append_text(output, ") (body-node ")
-  append_i64(body, output)
-  text.append_text(output, ") (dependencies ")
-  append_i64(dependencies, output)
-  text.append_text(output, ") (facts-truncated ")
+  text.append_text(@output, " (function ")
+  append_i64(item, @output)
+  text.append_text(@output, " ")
+  text.append_token(source, tokens, name, @output)
+  text.append_text(@output, " (declared-effects ")
+  reduce.emit_original_form(source, tokens, effects, @output)
+  text.append_text(@output, ") (body-node ")
+  append_i64(body, @output)
+  text.append_text(@output, ") (dependencies ")
+  append_i64(dependencies, @output)
+  text.append_text(@output, ") (facts-truncated ")
   if truncated:
-    text.append_text(output, "true")
+    text.append_text(@output, "true")
   else:
-    text.append_text(output, "false")
-  emit_ownership_pressure(facts, truncated, output)
-  text.append_text(output, " (bindings")
-  emit_bindings(source, tokens, facts, 0, output)
-  text.append_text(output, "))")
+    text.append_text(@output, "false")
+  emit_ownership_pressure(facts, truncated, @output)
+  text.append_text(@output, " (bindings")
+  emit_bindings(source, tokens, facts, 0, @output)
+  text.append_text(@output, "))")
 
-fn emit_functions(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
     if function_item:
-      emit_function(source, tokens, cursor, output)
+      emit_function(source, tokens, cursor, @output)
     else:
       void
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, output)
+    recur(source, tokens, next, @output)
 
-fn emit_module(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_module(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let root: I64 = 0
   let name: I64 = syntax.ast_module_name(root)
   let items: I64 = syntax.ast_module_items(root)
@@ -337,19 +349,19 @@ fn emit_module(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts
   let range_view: ranges.View = ranges.analyze(source, tokens, typed_facts)
   let range_facts: Vec[ranges.Fact] = range_view.facts
   let parallel_view: parallel.View = parallel.analyze(source, tokens, typed_facts, range_view)
-  text.append_text(output, "(analysis 7 (module ")
-  text.append_token(source, tokens, name, output)
-  text.append_text(output, ") (tokens ")
-  append_i64(token_count, output)
-  text.append_text(output, ") (fact-limit 64)")
-  ranges.emit_module_facts(source, tokens, range_view, output)
-  quality.emit_module_facts(source, tokens, range_facts, output)
-  parallel.emit_module_facts(source, tokens, parallel_view, output)
-  emit_functions(source, tokens, items, output)
-  text.append_text(output, ")")
-  text.append_text(output, "\n")
+  text.append_text(@output, "(analysis 7 (module ")
+  text.append_token(source, tokens, name, @output)
+  text.append_text(@output, ") (tokens ")
+  append_i64(token_count, @output)
+  text.append_text(@output, ") (fact-limit 64)")
+  ranges.emit_module_facts(source, tokens, range_view, @output)
+  quality.emit_module_facts(source, tokens, range_facts, @output)
+  parallel.emit_module_facts(source, tokens, parallel_view, @output)
+  emit_functions(source, tokens, items, @output)
+  text.append_text(@output, ")")
+  text.append_text(@output, "\n")
 
-fn owned_count(inout facts: Vec[BindingFact], index: I64, total: I64) -> I64 effects[partial]:
+fn owned_count(facts: Vec[BindingFact], index: I64, total: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -371,7 +383,7 @@ fn fact_last(fact: BindingFact) -> I64:
   else:
     fact.id
 
-fn live_owned_at(inout facts: Vec[BindingFact], position: I64, index: I64, total: I64) -> I64 effects[partial]:
+fn live_owned_at(facts: Vec[BindingFact], position: I64, index: I64, total: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -391,7 +403,7 @@ fn live_owned_at(inout facts: Vec[BindingFact], position: I64, index: I64, total
     let next: I64 = index + 1
     recur(facts, position, next, next_total)
 
-fn max_live_owned(inout facts: Vec[BindingFact], index: I64, best: I64) -> I64 effects[partial]:
+fn max_live_owned(facts: Vec[BindingFact], index: I64, best: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -407,16 +419,16 @@ fn max_live_owned(inout facts: Vec[BindingFact], index: I64, best: I64) -> I64 e
     let next: I64 = index + 1
     recur(facts, next, next_best)
 
-fn emit_ownership_pressure(inout facts: Vec[BindingFact], truncated: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_ownership_pressure(facts: Vec[BindingFact], truncated: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let owned: I64 = owned_count(facts, 0, 0)
   let maximum: I64 = max_live_owned(facts, 0, 0)
-  text.append_text(output, ") (ownership-pressure (guarantee ")
+  text.append_text(@output, ") (ownership-pressure (guarantee ")
   if truncated:
-    text.append_text(output, "bounded")
+    text.append_text(@output, "bounded")
   else:
-    text.append_text(output, "exact")
-  text.append_text(output, ") (owned-bindings ")
-  append_i64(owned, output)
-  text.append_text(output, ") (max-live-owned ")
-  append_i64(maximum, output)
-  text.append_text(output, "))")
+    text.append_text(@output, "exact")
+  text.append_text(@output, ") (owned-bindings ")
+  append_i64(owned, @output)
+  text.append_text(@output, ") (max-live-owned ")
+  append_i64(maximum, @output)
+  text.append_text(@output, "))")

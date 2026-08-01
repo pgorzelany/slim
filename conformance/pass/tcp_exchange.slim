@@ -2,7 +2,7 @@ module tcp_exchange
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let output: Vec[U8] = vec.new()
-  let result: Bool = io.tcp_exchange("not-an-address", 8080, "PING", 64, 1000, output)
+  let result: Bool = io.tcp_exchange("not-an-address", 8080, "PING", 64, 1000, @output)
   if result:
     1
   else:

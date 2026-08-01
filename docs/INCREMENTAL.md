@@ -44,7 +44,7 @@ allocation sites, and destruction boundary, while the existing interface
 fingerprint already owns return storage, parameter modes, named layouts, and
 the `alloc` effect. A private body edit therefore rebuilds that function's plan
 with the existing one-declaration work item. A storage-bearing return type,
-`inout` mode, data layout, or effect edit follows the existing reverse
+shared/`@`/`^` parameter mode, data layout, or effect edit follows the existing reverse
 interface dependency closure. Failed checking never publishes a plan, so the
 transactional last-good rule also prevents stale destruction plans.
 

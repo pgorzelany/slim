@@ -3,9 +3,9 @@ module file_input
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let output: Vec[U8] = vec.new()
   let marker: U8 = i64.to_u8(79)
-  vec.push(output, marker)
-  let empty_read: Bool = io.read_file("conformance/pass/empty.input", output)
-  let bad_read: Bool = io.read_file("bad\x00path", output)
+  vec.push(@output, marker)
+  let empty_read: Bool = io.read_file("conformance/pass/empty.input", @output)
+  let bad_read: Bool = io.read_file("bad\x00path", @output)
   let rejected: Bool = !bad_read
   let length: I64 = vec.len(output)
   let length_ok: Bool = length == 1

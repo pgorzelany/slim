@@ -1,0 +1,6 @@
+module missing_builtin_exclusive_mode
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  vec.push(values, 42)
+  0

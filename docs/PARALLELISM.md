@@ -14,7 +14,7 @@ A user computation is reorder-safe only when the complete checked body and call
 graph prove:
 
 - no observed allocation or I/O;
-- no `inout` parameter or lexical mutation;
+- no `@` exclusive parameter or lexical mutation;
 - no unchecked trap hazard;
 - no unknown or unsafe callee; and
 - complete recurrence totality where recurrence is present.
@@ -63,7 +63,7 @@ worker context, environment parsing, thread include, or worker link flag.
 ## Explicit bounded host work
 
 `parallel:` admits exactly two leading immutable direct leaf calls followed by
-their continuation. Parameters are scalars or `Bytes`, never `inout`; neither
+their continuation. Parameters are scalars or `Bytes`, never exclusive; neither
 callee declares `partial`; each task has a checked bounded host-operation
 shape. Pure work remains governed by automatic selection.
 

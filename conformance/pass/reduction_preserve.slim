@@ -2,7 +2,7 @@ module reduction_preserve
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let values: Vec[I64] = vec.new()
-  vec.push(values, 1)
+  vec.push(@values, 1)
   let moved: Vec[I64] = values
   io.println("kept")
   (9223372036854775807 + 1) + 0

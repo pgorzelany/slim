@@ -28,7 +28,7 @@ program    = "module" identifier NEWLINE item*
 item       = function | struct | enum
 function   = "fn" identifier "(" parameters? ")" "->" type effects? ":" block
 parameters = parameter ("," parameter)*
-parameter  = ("var" | "inout")? identifier ":" type
+parameter  = "var"? identifier ":" ("@" | "^")? type
 effects    = "effects" "[" effect ("," effect)* "]"
 struct     = "struct" identifier ":" NEWLINE INDENT field* DEDENT
 field      = identifier ":" type NEWLINE
@@ -48,10 +48,14 @@ Effects are drawn from `alloc`, `io`, and `partial`, in that order without
 duplicates. Every executable defines exactly
 `fn main(args: Vec[Bytes]) -> I64 ...`.
 
-Applications are comma-separated and evaluated left to right:
+Applications are comma-separated and evaluated left to right. `@` marks an
+exclusive borrow argument and `^` marks ownership transfer across the call or
+recurrence boundary:
 
 ```slim
 function_name(first, second)
+mutate(@storage)
+consume(^storage)
 recur(next, total)
 Pair(left: 20, right: 22)
 Maybe::Some(value)
@@ -111,8 +115,11 @@ join, effect, and serial-fallback behavior.
 ## Bindings and Void
 
 `let` creates an immutable binding. `var` creates a mutable binding. Assignment
-is valid only for `var`, mutable parameters and pattern bindings, or `inout`.
-An `inout` parameter remains a non-escaping exclusive lexical borrow.
+is valid only for `var`, mutable parameters and pattern bindings, or an `@`
+parameter. An affine parameter without a mode is a shared, read-only,
+nonescaping lexical borrow. `@` grants an exclusive, read-write, nonescaping
+borrow. `^` receives ownership from the caller. Calls and `recur` must repeat
+`@` or `^` exactly; copyable parameters accept neither marker.
 
 Every non-final block expression must have exact type `Void`; silently
 discarding another result is an error. `void` is the explicit `Void` value.
@@ -134,6 +141,15 @@ or ABI effect.
   termination require `alloc`, `io`, and `partial`.
 - Calls and `recur` require exact arity and types. Assignment preserves the
   binding type. Branch results must agree.
+- Plain affine arguments are shared and remain usable after the call. `@name`
+  borrows a named owner exclusively for the call. `^name` transfers one whole
+  named affine owner and invalidates that name; `^expression` is otherwise
+  accepted only when the expression freshly produces the transferred owner.
+- `^` is the call-boundary marker, not a marker on every affine move. Existing
+  moves into local bindings, aggregate payloads, and owning collection slots
+  remain unmarked because the owning destination is explicit. Field
+  projections and branch-selected existing owners are not valid `^` sources
+  without partial- or conditional-move tracking.
 - A tail-position `recur` transfers control to the current function entry
   without growing the stack.
 - Resource failure remains an explicit typed result.
@@ -144,6 +160,8 @@ or ABI effect.
 
 Built-ins use snake_case names such as `io.print_i64`, `io.read_file`,
 `io.tcp_exchange`, `io.monotonic_ms`, `vec.get`, and `bytes.freeze`.
+Read-only storage operands are plain; mutation/output operands use `@`; and
+`bytes.freeze(^vector)` consumes its vector.
 Arithmetic, comparisons, and Boolean operations use the operator syntax above;
 their earlier callable spellings are not aliases.
 

@@ -1,74 +1,74 @@
 module merge_sort
 
-fn fill(inout values: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+fn fill(values: @Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
   if index == count:
     void
   else:
-    vec.push(values, count - index)
-    recur(values, index + 1, count)
+    vec.push(@values, count - index)
+    recur(@values, index + 1, count)
 
-fn copy_left(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, middle: I64, output: I64) -> Void effects[partial]:
+fn copy_left(values: @Vec[I64], scratch: @Vec[I64], index: I64, middle: I64, output: I64) -> Void effects[partial]:
   if index == middle:
     void
   else:
-    vec.set(scratch, output, vec.get(values, index))
-    recur(values, scratch, index + 1, middle, output + 1)
+    vec.set(@scratch, output, vec.get(values, index))
+    recur(@values, @scratch, index + 1, middle, output + 1)
 
-fn copy_right(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, right: I64, output: I64) -> Void effects[partial]:
+fn copy_right(values: @Vec[I64], scratch: @Vec[I64], index: I64, right: I64, output: I64) -> Void effects[partial]:
   if index == right:
     void
   else:
-    vec.set(scratch, output, vec.get(values, index))
-    recur(values, scratch, index + 1, right, output + 1)
+    vec.set(@scratch, output, vec.get(values, index))
+    recur(@values, @scratch, index + 1, right, output + 1)
 
-fn merge_fill(inout values: Vec[I64], inout scratch: Vec[I64], left_index: I64, middle: I64, right_index: I64, right: I64, output: I64) -> Void effects[partial]:
+fn merge_fill(values: @Vec[I64], scratch: @Vec[I64], left_index: I64, middle: I64, right_index: I64, right: I64, output: I64) -> Void effects[partial]:
   if left_index == middle:
-    copy_right(values, scratch, right_index, right, output)
+    copy_right(@values, @scratch, right_index, right, output)
   else:
     if right_index == right:
-      copy_left(values, scratch, left_index, middle, output)
+      copy_left(@values, @scratch, left_index, middle, output)
     else:
       if vec.get(values, left_index) <= vec.get(values, right_index):
-        vec.set(scratch, output, vec.get(values, left_index))
-        recur(values, scratch, left_index + 1, middle, right_index, right, output + 1)
+        vec.set(@scratch, output, vec.get(values, left_index))
+        recur(@values, @scratch, left_index + 1, middle, right_index, right, output + 1)
       else:
-        vec.set(scratch, output, vec.get(values, right_index))
-        recur(values, scratch, left_index, middle, right_index + 1, right, output + 1)
+        vec.set(@scratch, output, vec.get(values, right_index))
+        recur(@values, @scratch, left_index, middle, right_index + 1, right, output + 1)
 
-fn copy_back(inout values: Vec[I64], inout scratch: Vec[I64], index: I64, right: I64) -> Void effects[partial]:
+fn copy_back(values: @Vec[I64], scratch: @Vec[I64], index: I64, right: I64) -> Void effects[partial]:
   if index == right:
     void
   else:
-    vec.set(values, index, vec.get(scratch, index))
-    recur(values, scratch, index + 1, right)
+    vec.set(@values, index, vec.get(scratch, index))
+    recur(@values, @scratch, index + 1, right)
 
-fn merge(inout values: Vec[I64], inout scratch: Vec[I64], left: I64, middle: I64, right: I64) -> Void effects[partial]:
-  merge_fill(values, scratch, left, middle, middle, right, left)
-  copy_back(values, scratch, left, right)
+fn merge(values: @Vec[I64], scratch: @Vec[I64], left: I64, middle: I64, right: I64) -> Void effects[partial]:
+  merge_fill(@values, @scratch, left, middle, middle, right, left)
+  copy_back(@values, @scratch, left, right)
 
-fn sort(inout values: Vec[I64], inout scratch: Vec[I64], left: I64, right: I64) -> Void effects[partial]:
+fn sort(values: @Vec[I64], scratch: @Vec[I64], left: I64, right: I64) -> Void effects[partial]:
   if (right - left) <= 1:
     void
   else:
     let middle: I64 = left + ((right - left) / 2)
-    sort(values, scratch, left, middle)
-    sort(values, scratch, middle, right)
-    merge(values, scratch, left, middle, right)
+    sort(@values, @scratch, left, middle)
+    sort(@values, @scratch, middle, right)
+    merge(@values, @scratch, left, middle, right)
 
-fn checksum(inout values: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
+fn checksum(values: @Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
   if index == vec.len(values):
     total
   else:
-    recur(values, index + 1, total + (vec.get(values, index) * (index + 1)))
+    recur(@values, index + 1, total + (vec.get(values, index) * (index + 1)))
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let count: I64 = 20000
   let values: Vec[I64] = vec.new()
   let scratch: Vec[I64] = vec.new()
-  fill(values, 0, count)
-  fill(scratch, 0, count)
-  sort(values, scratch, 0, count)
-  let result: I64 = checksum(values, 0, 0)
+  fill(@values, 0, count)
+  fill(@scratch, 0, count)
+  sort(@values, @scratch, 0, count)
+  let result: I64 = checksum(@values, 0, 0)
   io.print_i64(result)
   io.println("")
   0

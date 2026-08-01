@@ -1,15 +1,15 @@
 module image_convolution
 
-fn fill(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
+fn fill(current: @Vec[I64], next: @Vec[I64], index: I64, count: I64) -> Void effects[alloc, partial]:
   if index == count:
     void
   else:
     let value: I64 = ((index * 31) + 7) % 256
-    vec.push(current, value)
-    vec.push(next, 0)
-    recur(current, next, index + 1, count)
+    vec.push(@current, value)
+    vec.push(@next, 0)
+    recur(@current, @next, index + 1, count)
 
-fn step(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64, size: I64) -> Void effects[partial]:
+fn step(current: @Vec[I64], next: @Vec[I64], index: I64, count: I64, size: I64) -> Void effects[partial]:
   if index == count:
     void
   else:
@@ -29,39 +29,39 @@ fn step(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64, s
     let third: I64 = second + vec.get(current, left_index)
     let total: I64 = third + vec.get(current, right_index)
     let value: I64 = total / 8
-    vec.set(next, index, value)
-    recur(current, next, index + 1, count, size)
+    vec.set(@next, index, value)
+    recur(@current, @next, index + 1, count, size)
 
-fn copy_image(inout current: Vec[I64], inout next: Vec[I64], index: I64, count: I64) -> Void effects[partial]:
+fn copy_image(current: @Vec[I64], next: @Vec[I64], index: I64, count: I64) -> Void effects[partial]:
   if index == count:
     void
   else:
     let value: I64 = vec.get(next, index)
-    vec.set(current, index, value)
-    recur(current, next, index + 1, count)
+    vec.set(@current, index, value)
+    recur(@current, @next, index + 1, count)
 
-fn rounds(inout current: Vec[I64], inout next: Vec[I64], round: I64, limit: I64, count: I64, size: I64) -> Void effects[partial]:
+fn rounds(current: @Vec[I64], next: @Vec[I64], round: I64, limit: I64, count: I64, size: I64) -> Void effects[partial]:
   if round == limit:
     void
   else:
-    step(current, next, 0, count, size)
-    copy_image(current, next, 0, count)
-    recur(current, next, round + 1, limit, count, size)
+    step(@current, @next, 0, count, size)
+    copy_image(@current, @next, 0, count)
+    recur(@current, @next, round + 1, limit, count, size)
 
-fn checksum(inout current: Vec[I64], index: I64, count: I64, total: I64) -> I64 effects[partial]:
+fn checksum(current: @Vec[I64], index: I64, count: I64, total: I64) -> I64 effects[partial]:
   if index == count:
     total
   else:
-    recur(current, index + 1, count, total + vec.get(current, index))
+    recur(@current, index + 1, count, total + vec.get(current, index))
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 256
   let count: I64 = size * size
   let current: Vec[I64] = vec.new()
   let next: Vec[I64] = vec.new()
-  fill(current, next, 0, count)
-  rounds(current, next, 0, 40, count, size)
-  let result: I64 = checksum(current, 0, count, 0)
+  fill(@current, @next, 0, count)
+  rounds(@current, @next, 0, 40, count, size)
+  let result: I64 = checksum(@current, 0, count, 0)
   io.print_i64(result)
   io.println("")
   0

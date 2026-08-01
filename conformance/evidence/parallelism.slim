@@ -22,8 +22,8 @@ fn allocates() -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
   0
 
-fn borrows(inout value: I64) -> Bool:
-  value > 0
+fn borrows(value: @Vec[I64]) -> Bool:
+  vec.len(value) > 0
 
 fn mutates(var value: I64) -> I64:
   value = 1

@@ -91,7 +91,7 @@ slimc interfaces MANIFEST [--jobs N] -o DIRECTORY
 `interfaces` is the only additional operation. It materializes the same
 canonical interface bytes used by checking and caching; it is not another way
 to compile. Project operations accept `--jobs N`; `--jobs 1` is the serial
-oracle and remains the default. CLI project operations use `.slim-cache/v2`
+oracle and remains the default. CLI project operations use `.slim-cache/v3`
 beside the manifest; the library's `compile`/`compile_with_jobs` entry points
 remain cache-free clean oracles. The compiler never searches upward for a
 manifest.
@@ -101,7 +101,7 @@ manifest.
 Each module has one UTF-8 interface artifact:
 
 ```text
-(interface 2 math
+(interface 3 math
   (struct Number ((value I64)))
   (fn add ((owned math.Number) (owned math.Number)) math.Number (effects)))
 ```
@@ -109,12 +109,12 @@ Each module has one UTF-8 interface artifact:
 The grammar is:
 
 ```text
-interface = (interface 2 MODULE declaration*)
+interface = (interface 3 MODULE declaration*)
 declaration = struct | enum | function
 struct   = (struct NAME ((NAME TYPE)*))
 enum     = (enum NAME ((NAME TYPE*)*))
 function = (fn NAME ((MODE TYPE)*) TYPE (effects EFFECT*))
-MODE     = owned | inout
+MODE     = copy | shared | exclusive | owned
 ```
 
 Artifacts contain only exported declarations. Declarations are sorted by
@@ -125,7 +125,7 @@ no source bodies, spans, paths, timestamps, host data, target data, hashes, or
 compiler scheduling data. Their stable fingerprint is computed over these
 exact bytes.
 
-Interface schemas other than `2` are rejected rather than guessed. A
+Interface schemas other than `3` are rejected rather than guessed. A
 schema change requires a compatibility decision and a compiler-version change;
 there is no permissive reader for unknown fields.
 
@@ -155,7 +155,7 @@ identity mismatch, and checksum mismatch. A rejected entry is ignored and
 rebuilt from source; it can never make an invalid program pass. Cache writes
 use a temporary file and atomic rename after successful checking.
 
-The default cache directory is `.slim-cache/v2` beside the manifest. Cache
+The default cache directory is `.slim-cache/v3` beside the manifest. Cache
 contents affect work performed, never diagnostics, interfaces, generated C, or
 native behavior. A fresh in-memory session with an empty cache is the clean
 oracle used by tests.
@@ -220,8 +220,8 @@ manifest, flattened source, lexical tokens, typed facts, and one original-source
 origin per flattened token. Scheduling, ordinary C emission, and persistent
 cache misses consume that same checked artifact. Structured issues retain an
 inclusive token interval, allowing point and whole-expression ranges to project
-back to module-local byte spans. Missing-effect, exclusive-inout-call,
-recursive-inout, nonexhaustive-Boolean, secondary Boolean-recovery,
+back to module-local byte spans. Missing-effect, exact ownership-mode call,
+recursive ownership-mode, nonexhaustive-Boolean, secondary Boolean-recovery,
 aggregate-move, and borrowed-return diagnostics use the finalized checked issue
 stream. Recovery retains its standalone order while projecting unknown names,
 duplicate arms, arm-type mismatches, repeated moves, borrowed transfers, and

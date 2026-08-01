@@ -53,6 +53,7 @@ benchmark. The website owns no second `.slim` implementation.
 - [Diagnostics](DIAGNOSTICS.md)
 - [Compatibility](COMPATIBILITY.md)
 - [SLIM 0.9 migration](MIGRATION-0.9.md)
+- [Ownership-mode migration](MIGRATION-0.10.md)
 - [Current implementation status](STATUS.md)
 
 Website examples use `slim-fixture` or `slim-project-fixture` markers that name

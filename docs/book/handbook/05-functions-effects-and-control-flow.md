@@ -50,8 +50,9 @@ not proved total.
 ## Calls
 
 Calls use `callee(arguments...)`, with required commas between arguments.
-Argument count, types, ownership transfer, borrow exclusivity, and
-effect compatibility are all checked.
+Argument count, types, ownership transfer, borrow exclusivity, and effect
+compatibility are all checked. Plain affine arguments are shared read-only.
+Exclusive calls use `@argument`; consuming calls use `^argument`.
 
 <!-- slim-fixture: call-arity -->
 
@@ -83,8 +84,8 @@ recursive call. Its fixed input produces `55`.
 
 <!-- slim-fixture: recur -->
 
-The checker verifies arity, types, ownership, and preservation of `inout`
-controllers.
+The checker verifies arity, types, ownership, and exact preservation of shared,
+`@`, and `^` controller modes.
 
 <!-- slim-fixture: recur-rebind -->
 

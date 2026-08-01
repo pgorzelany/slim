@@ -1,0 +1,6 @@
+module missing_builtin_owned_mode
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[U8] = vec.new()
+  let frozen: Bytes = bytes.freeze(values)
+  0

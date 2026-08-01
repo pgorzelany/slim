@@ -1,21 +1,21 @@
 module game_of_life
 
-fn fill(inout current: Vec[Bool], inout next: Vec[Bool], index: I64, count: I64) -> Void effects[alloc, partial]:
+fn fill(current: @Vec[Bool], next: @Vec[Bool], index: I64, count: I64) -> Void effects[alloc, partial]:
   if index == count:
     void
   else:
     let seed: I64 = ((index * 17) + 3) % 3
     let alive: Bool = seed == 0
-    vec.push(current, alive)
-    vec.push(next, false)
-    recur(current, next, index + 1, count)
+    vec.push(@current, alive)
+    vec.push(@next, false)
+    recur(@current, @next, index + 1, count)
 
-fn neighbor_count(inout current: Vec[Bool], row: I64, column: I64, offset: I64, size: I64, total: I64) -> I64 effects[partial]:
+fn neighbor_count(current: @Vec[Bool], row: I64, column: I64, offset: I64, size: I64, total: I64) -> I64 effects[partial]:
   if offset == 9:
     total
   else:
     if offset == 4:
-      recur(current, row, column, offset + 1, size, total)
+      recur(@current, row, column, offset + 1, size, total)
     else:
       let row_delta: I64 = (offset / 3) - 1
       let column_delta: I64 = (offset % 3) - 1
@@ -27,39 +27,39 @@ fn neighbor_count(inout current: Vec[Bool], row: I64, column: I64, offset: I64, 
         1
       else:
         0
-      recur(current, row, column, offset + 1, size, total + increment)
+      recur(@current, row, column, offset + 1, size, total + increment)
 
-fn step(inout current: Vec[Bool], inout next: Vec[Bool], index: I64, count: I64, size: I64) -> Void effects[partial]:
+fn step(current: @Vec[Bool], next: @Vec[Bool], index: I64, count: I64, size: I64) -> Void effects[partial]:
   if index == count:
     void
   else:
     let row: I64 = index / size
     let column: I64 = index % size
-    let neighbors: I64 = neighbor_count(current, row, column, 0, size, 0)
+    let neighbors: I64 = neighbor_count(@current, row, column, 0, size, 0)
     let alive: Bool = vec.get(current, index)
     let born: Bool = neighbors == 3
     let survives: Bool = alive && (neighbors == 2)
     let value: Bool = born || survives
-    vec.set(next, index, value)
-    recur(current, next, index + 1, count, size)
+    vec.set(@next, index, value)
+    recur(@current, @next, index + 1, count, size)
 
-fn copy_grid(inout current: Vec[Bool], inout next: Vec[Bool], index: I64, count: I64) -> Void effects[partial]:
+fn copy_grid(current: @Vec[Bool], next: @Vec[Bool], index: I64, count: I64) -> Void effects[partial]:
   if index == count:
     void
   else:
     let value: Bool = vec.get(next, index)
-    vec.set(current, index, value)
-    recur(current, next, index + 1, count)
+    vec.set(@current, index, value)
+    recur(@current, @next, index + 1, count)
 
-fn generations(inout current: Vec[Bool], inout next: Vec[Bool], generation: I64, rounds: I64, count: I64, size: I64) -> Void effects[partial]:
+fn generations(current: @Vec[Bool], next: @Vec[Bool], generation: I64, rounds: I64, count: I64, size: I64) -> Void effects[partial]:
   if generation == rounds:
     void
   else:
-    step(current, next, 0, count, size)
-    copy_grid(current, next, 0, count)
-    recur(current, next, generation + 1, rounds, count, size)
+    step(@current, @next, 0, count, size)
+    copy_grid(@current, @next, 0, count)
+    recur(@current, @next, generation + 1, rounds, count, size)
 
-fn checksum(inout current: Vec[Bool], index: I64, count: I64, total: I64) -> I64 effects[partial]:
+fn checksum(current: @Vec[Bool], index: I64, count: I64, total: I64) -> I64 effects[partial]:
   if index == count:
     total
   else:
@@ -68,16 +68,16 @@ fn checksum(inout current: Vec[Bool], index: I64, count: I64, total: I64) -> I64
       1
     else:
       0
-    recur(current, index + 1, count, total + increment)
+    recur(@current, index + 1, count, total + increment)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 128
   let count: I64 = size * size
   let current: Vec[Bool] = vec.new()
   let next: Vec[Bool] = vec.new()
-  fill(current, next, 0, count)
-  generations(current, next, 0, 100, count, size)
-  let result: I64 = checksum(current, 0, count, 0)
+  fill(@current, @next, 0, count)
+  generations(@current, @next, 0, 100, count, size)
+  let result: I64 = checksum(@current, 0, count, 0)
   io.print_i64(result)
   io.println("")
   0

@@ -1,0 +1,7 @@
+module shared_element_return
+
+fn invalid(values: Vec[Vec[I64]]) -> Vec[I64] effects[partial]:
+  vec.get(values, 0)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

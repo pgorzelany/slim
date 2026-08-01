@@ -4,12 +4,12 @@ struct Pair:
   values: Vec[I64]
   count: I64
 
-fn consume(pair: Pair) -> Void:
+fn consume(pair: ^Pair) -> Void:
   void
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
   let pair: Pair = Pair(values: values, count: 1)
-  consume(pair)
-  consume(pair)
+  consume(^pair)
+  consume(^pair)
   0

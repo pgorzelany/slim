@@ -1,0 +1,9 @@
+module missing_owned_mode
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  consume(values)
+  0

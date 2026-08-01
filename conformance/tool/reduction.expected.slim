@@ -36,7 +36,7 @@ fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let selected: Bool = first_selected && common
   if selected:
     let values: Vec[I64] = vec.new()
-    vec.push(values, multiplied)
+    vec.push(@values, multiplied)
     let result: I64 = vec.get(values, 0)
     let adjusted: I64 = result + helper_integer
     io.print_i64(adjusted)

@@ -1,18 +1,18 @@
 module format
 
-fn emit_name(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_token(source, tokens, node, output)
+fn emit_name(source: Bytes, tokens: Vec[syntax.Token], node: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_token(source, tokens, node, @output)
 
-fn emit_scalar(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_scalar(source: Bytes, tokens: Vec[syntax.Token], node: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let string_value: Bool = syntax.ast_node_is_string(tokens, node)
   let number: Bool = syntax.first_byte_is_number(source, tokens, node)
   let literal: Bool = string_value || number
   if literal:
-    text.append_token(source, tokens, node, output)
+    text.append_token(source, tokens, node, @output)
   else:
-    emit_name(source, tokens, node, output)
+    emit_name(source, tokens, node, @output)
 
-fn operator_text(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bytes effects[partial]:
+fn operator_text(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bytes effects[partial]:
   if syntax.ast_node_text_is(source, tokens, callee, "i64.add"):
     "+"
   else:
@@ -54,7 +54,7 @@ fn operator_text(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) ->
                           else:
                             ""
 
-fn expression_is_operator(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
+fn expression_is_operator(source: Bytes, tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
   let call: Bool = syntax.ast_expression_is_call(source, tokens, expression)
   if call:
     let callee: I64 = syntax.ast_call_callee(expression)
@@ -62,25 +62,25 @@ fn expression_is_operator(source: Bytes, inout tokens: Vec[syntax.Token], expres
   else:
     false
 
-fn emit_operator_operand(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_operator_operand(source: Bytes, tokens: Vec[syntax.Token], expression: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let operator: Bool = expression_is_operator(source, tokens, expression)
   if operator:
-    text.append_text(output, "(")
-    emit_inline_expression(source, tokens, expression, output)
-    text.append_text(output, ")")
+    text.append_text(@output, "(")
+    emit_inline_expression(source, tokens, expression, @output)
+    text.append_text(@output, ")")
   else:
-    emit_inline_expression(source, tokens, expression, output)
+    emit_inline_expression(source, tokens, expression, @output)
 
-fn append_indent(depth: I64, index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_indent(depth: I64, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = index >= depth
   if done:
     void
   else:
-    text.append_text(output, "  ")
+    text.append_text(@output, "  ")
     let next: I64 = index + 1
-    recur(depth, next, output)
+    recur(depth, next, @output)
 
-fn emit_type(source: Bytes, inout tokens: Vec[syntax.Token], type_node: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_type(source: Bytes, tokens: Vec[syntax.Token], type_node: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let vector: Bool = syntax.ast_type_is_vec(source, tokens, type_node)
   let arena: Bool = syntax.ast_type_is_arena(source, tokens, type_node)
   let identity: Bool = syntax.ast_type_is_id(source, tokens, type_node)
@@ -88,15 +88,15 @@ fn emit_type(source: Bytes, inout tokens: Vec[syntax.Token], type_node: I64, ino
   let composite: Bool = first || identity
   if composite:
     let head: I64 = syntax.ast_list_first(type_node)
-    emit_name(source, tokens, head, output)
-    text.append_text(output, "[")
+    emit_name(source, tokens, head, @output)
+    text.append_text(@output, "[")
     let argument: I64 = syntax.ast_type_argument(type_node)
-    emit_type(source, tokens, argument, output)
-    text.append_text(output, "]")
+    emit_type(source, tokens, argument, @output)
+    text.append_text(@output, "]")
   else:
-    emit_name(source, tokens, type_node, output)
+    emit_name(source, tokens, type_node, @output)
 
-fn forms_inline(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn forms_inline(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     true
@@ -108,7 +108,7 @@ fn forms_inline(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> 
     else:
       false
 
-fn fields_inline(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn fields_inline(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     true
@@ -121,7 +121,7 @@ fn fields_inline(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) ->
     else:
       false
 
-fn expression_inline(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
+fn expression_inline(source: Bytes, tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
   let scalar: Bool = syntax.ast_node_is_scalar(tokens, expression)
   if scalar:
     true
@@ -158,7 +158,7 @@ fn expression_inline(source: Bytes, inout tokens: Vec[syntax.Token], expression:
               else:
                 false
 
-fn emit_inline_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_inline_forms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -166,12 +166,22 @@ fn emit_inline_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64
     if first:
       void
     else:
-      text.append_text(output, ", ")
-    emit_inline_expression(source, tokens, cursor, output)
+      text.append_text(@output, ", ")
+    emit_inline_expression(source, tokens, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_inline_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_argument_mode(tokens: Vec[syntax.Token], argument: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let mode: I64 = syntax.ast_argument_mode(tokens, argument)
+  if mode == 1:
+    text.append_text(@output, "@")
+  else:
+    if mode == 2:
+      text.append_text(@output, "^")
+    else:
+      void
+
+fn emit_inline_arguments(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -179,19 +189,33 @@ fn emit_inline_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I6
     if first:
       void
     else:
-      text.append_text(output, ", ")
+      text.append_text(@output, ", ")
+    emit_argument_mode(tokens, cursor, @output)
+    emit_inline_expression(source, tokens, cursor, @output)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, false, @output)
+
+fn emit_inline_fields(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let done: Bool = syntax.ast_list_done(tokens, cursor)
+  if done:
+    void
+  else:
+    if first:
+      void
+    else:
+      text.append_text(@output, ", ")
     let name: I64 = syntax.ast_member_name(cursor)
     let value: I64 = syntax.ast_member_value(cursor)
-    emit_name(source, tokens, name, output)
-    text.append_text(output, ": ")
-    emit_inline_expression(source, tokens, value, output)
+    emit_name(source, tokens, name, @output)
+    text.append_text(@output, ": ")
+    emit_inline_expression(source, tokens, value, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_inline_expression(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_inline_expression(source: Bytes, tokens: Vec[syntax.Token], expression: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let scalar: Bool = syntax.ast_node_is_scalar(tokens, expression)
   if scalar:
-    emit_scalar(source, tokens, expression, output)
+    emit_scalar(source, tokens, expression, @output)
   else:
     let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expression)
     if call_form:
@@ -202,125 +226,136 @@ fn emit_inline_expression(source: Bytes, inout tokens: Vec[syntax.Token], expres
       if operator_length > 0:
         let unary: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
         if unary:
-          text.append_text(output, "!")
-          emit_operator_operand(source, tokens, arguments, output)
+          text.append_text(@output, "!")
+          emit_operator_operand(source, tokens, arguments, @output)
         else:
-          emit_operator_operand(source, tokens, arguments, output)
-          text.append_text(output, " ")
-          text.append_text(output, operator)
-          text.append_text(output, " ")
+          emit_operator_operand(source, tokens, arguments, @output)
+          text.append_text(@output, " ")
+          text.append_text(@output, operator)
+          text.append_text(@output, " ")
           let right: I64 = syntax.ast_next(tokens, arguments)
-          emit_operator_operand(source, tokens, right, output)
+          emit_operator_operand(source, tokens, right, @output)
       else:
-        emit_name(source, tokens, callee, output)
-        text.append_text(output, "(")
-        emit_inline_forms(source, tokens, arguments, true, output)
-        text.append_text(output, ")")
+        emit_name(source, tokens, callee, @output)
+        text.append_text(@output, "(")
+        emit_inline_arguments(source, tokens, arguments, true, @output)
+        text.append_text(@output, ")")
     else:
       let recur_form: Bool = syntax.ast_expression_is_recur(source, tokens, expression)
       if recur_form:
-        text.append_text(output, "recur(")
+        text.append_text(@output, "recur(")
         let arguments: I64 = syntax.ast_recur_arguments(expression)
-        emit_inline_forms(source, tokens, arguments, true, output)
-        text.append_text(output, ")")
+        emit_inline_arguments(source, tokens, arguments, true, @output)
+        text.append_text(@output, ")")
       else:
         let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expression)
         if make_form:
           let type_node: I64 = syntax.ast_make_type(expression)
-          emit_type(source, tokens, type_node, output)
-          text.append_text(output, "(")
+          emit_type(source, tokens, type_node, @output)
+          text.append_text(@output, "(")
           let fields: I64 = syntax.ast_make_fields(expression)
-          emit_inline_fields(source, tokens, fields, true, output)
-          text.append_text(output, ")")
+          emit_inline_fields(source, tokens, fields, true, @output)
+          text.append_text(@output, ")")
         else:
           let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expression)
           if get_form:
             let value: I64 = syntax.ast_get_value(expression)
-            emit_inline_expression(source, tokens, value, output)
-            text.append_text(output, ".")
+            emit_inline_expression(source, tokens, value, @output)
+            text.append_text(@output, ".")
             let field: I64 = syntax.ast_get_field(tokens, expression)
-            emit_name(source, tokens, field, output)
+            emit_name(source, tokens, field, @output)
           else:
             let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expression)
             if case_form:
               let type_node: I64 = syntax.ast_case_type(expression)
-              emit_type(source, tokens, type_node, output)
-              text.append_text(output, "::")
+              emit_type(source, tokens, type_node, @output)
+              text.append_text(@output, "::")
               let name: I64 = syntax.ast_case_name(tokens, expression)
-              emit_name(source, tokens, name, output)
-              text.append_text(output, "(")
+              emit_name(source, tokens, name, @output)
+              text.append_text(@output, "(")
               let payload: I64 = syntax.ast_case_payload(tokens, expression)
-              emit_inline_forms(source, tokens, payload, true, output)
-              text.append_text(output, ")")
+              emit_inline_forms(source, tokens, payload, true, @output)
+              text.append_text(@output, ")")
             else:
-              text.append_text(output, "<invalid>")
+              text.append_text(@output, "<invalid>")
 
-fn emit_expression_lines(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_expression_lines(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    emit_expression(source, tokens, cursor, depth, output)
+    emit_expression(source, tokens, cursor, depth, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, depth, output)
+    recur(source, tokens, next, depth, @output)
 
-fn emit_multiline_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_argument_lines(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    append_indent(depth, 0, output)
+    append_indent(depth, 0, @output)
+    emit_argument_mode(tokens, cursor, @output)
+    emit_expression_content(source, tokens, cursor, depth, @output)
+    let next: I64 = syntax.ast_next(tokens, cursor)
+    recur(source, tokens, next, depth, @output)
+
+fn emit_multiline_fields(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let done: Bool = syntax.ast_list_done(tokens, cursor)
+  if done:
+    void
+  else:
+    append_indent(depth, 0, @output)
     let name: I64 = syntax.ast_member_name(cursor)
-    emit_name(source, tokens, name, output)
-    text.append_text(output, ": ")
+    emit_name(source, tokens, name, @output)
+    text.append_text(@output, ": ")
     let value: I64 = syntax.ast_member_value(cursor)
-    emit_expression_content(source, tokens, value, depth, output)
+    emit_expression_content(source, tokens, value, depth, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, depth, output)
+    recur(source, tokens, next, depth, @output)
 
-fn emit_pattern_names(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_pattern_names(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
     let mutable: Bool = syntax.ast_pattern_name_is_mutable(tokens, cursor)
     if mutable:
-      text.append_text(output, "var ")
+      text.append_text(@output, "var ")
     else:
       void
-    emit_name(source, tokens, cursor, output)
+    emit_name(source, tokens, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
     let more: Bool = !syntax.ast_list_done(tokens, next)
     if more:
-      text.append_text(output, ", ")
+      text.append_text(@output, ", ")
     else:
       void
-    recur(source, tokens, next, output)
+    recur(source, tokens, next, @output)
 
-fn emit_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_match_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    append_indent(depth, 0, output)
+    append_indent(depth, 0, @output)
     let pattern: I64 = syntax.ast_arm_pattern(cursor)
-    emit_name(source, tokens, pattern, output)
+    emit_name(source, tokens, pattern, @output)
     let first_binding: I64 = syntax.ast_arm_bindings(tokens, cursor)
     let body: I64 = syntax.ast_arm_body(tokens, cursor)
     let has_bindings: Bool = first_binding < body
     if has_bindings:
-      text.append_text(output, "(")
+      text.append_text(@output, "(")
       let first_name: I64 = syntax.ast_list_first(first_binding)
-      emit_pattern_names(source, tokens, first_name, output)
-      text.append_text(output, ")")
+      emit_pattern_names(source, tokens, first_name, @output)
+      text.append_text(@output, ")")
     else:
       void
-    text.append_text(output, ":\n")
-    emit_expression(source, tokens, body, depth + 1, output)
+    text.append_text(@output, ":\n")
+    emit_expression(source, tokens, body, depth + 1, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, depth, output)
+    recur(source, tokens, next, depth, @output)
 
-fn find_match_arm_body(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, pattern: Bytes) -> I64 effects[partial]:
+fn find_match_arm_body(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, pattern: Bytes) -> I64 effects[partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     -1
@@ -331,30 +366,30 @@ fn find_match_arm_body(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I
     else:
       recur(source, tokens, syntax.ast_next(tokens, cursor), pattern)
 
-fn match_has_boolean_arms(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
+fn match_has_boolean_arms(source: Bytes, tokens: Vec[syntax.Token], expression: I64) -> Bool effects[partial]:
   let arms: I64 = syntax.ast_match_arms(tokens, expression)
   let true_body: I64 = find_match_arm_body(source, tokens, arms, "true")
   let false_body: I64 = find_match_arm_body(source, tokens, arms, "false")
   (true_body >= 0) && (false_body >= 0)
 
-fn emit_if_expression(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "if ")
+fn emit_if_expression(source: Bytes, tokens: Vec[syntax.Token], expression: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "if ")
   let value: I64 = syntax.ast_match_value(expression)
-  emit_inline_expression(source, tokens, value, output)
-  text.append_text(output, ":\n")
+  emit_inline_expression(source, tokens, value, @output)
+  text.append_text(@output, ":\n")
   let arms: I64 = syntax.ast_match_arms(tokens, expression)
   let true_body: I64 = find_match_arm_body(source, tokens, arms, "true")
-  emit_expression(source, tokens, true_body, depth + 1, output)
-  append_indent(depth, 0, output)
-  text.append_text(output, "else:\n")
+  emit_expression(source, tokens, true_body, depth + 1, @output)
+  append_indent(depth, 0, @output)
+  text.append_text(@output, "else:\n")
   let false_body: I64 = find_match_arm_body(source, tokens, arms, "false")
-  emit_expression(source, tokens, false_body, depth + 1, output)
+  emit_expression(source, tokens, false_body, depth + 1, @output)
 
-fn emit_expression_content(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_expression_content(source: Bytes, tokens: Vec[syntax.Token], expression: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let inline: Bool = expression_inline(source, tokens, expression)
   if inline:
-    emit_inline_expression(source, tokens, expression, output)
-    text.append_text(output, "\n")
+    emit_inline_expression(source, tokens, expression, @output)
+    text.append_text(@output, "\n")
   else:
     let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expression)
     if let_form:
@@ -363,108 +398,108 @@ fn emit_expression_content(source: Bytes, inout tokens: Vec[syntax.Token], expre
       let body: I64 = syntax.ast_let_body(tokens, expression)
       let statement: Bool = syntax.ast_expression_is_statement(tokens, expression)
       if statement:
-        emit_expression_content(source, tokens, value, depth, output)
-        emit_expression(source, tokens, body, depth, output)
+        emit_expression_content(source, tokens, value, depth, @output)
+        emit_expression(source, tokens, body, depth, @output)
       else:
         let mutable: Bool = syntax.ast_let_is_mutable(source, tokens, expression)
         if mutable:
-          text.append_text(output, "var ")
+          text.append_text(@output, "var ")
         else:
-          text.append_text(output, "let ")
+          text.append_text(@output, "let ")
         let name: I64 = syntax.ast_let_name(expression)
-        emit_name(source, tokens, name, output)
-        text.append_text(output, ": ")
-        emit_type(source, tokens, type_node, output)
-        text.append_text(output, " = ")
-        emit_expression_content(source, tokens, value, depth, output)
-        emit_expression(source, tokens, body, depth, output)
+        emit_name(source, tokens, name, @output)
+        text.append_text(@output, ": ")
+        emit_type(source, tokens, type_node, @output)
+        text.append_text(@output, " = ")
+        emit_expression_content(source, tokens, value, depth, @output)
+        emit_expression(source, tokens, body, depth, @output)
     else:
       let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expression)
       if set_form:
         let name: I64 = syntax.ast_set_name(expression)
-        emit_name(source, tokens, name, output)
-        text.append_text(output, " = ")
+        emit_name(source, tokens, name, @output)
+        text.append_text(@output, " = ")
         let value: I64 = syntax.ast_set_value(expression)
-        emit_expression_content(source, tokens, value, depth, output)
+        emit_expression_content(source, tokens, value, depth, @output)
         let body: I64 = syntax.ast_set_body(tokens, expression)
-        emit_expression(source, tokens, body, depth, output)
+        emit_expression(source, tokens, body, depth, @output)
       else:
         let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expression)
         if match_form:
           let boolean: Bool = match_has_boolean_arms(source, tokens, expression)
           if boolean:
-            emit_if_expression(source, tokens, expression, depth, output)
+            emit_if_expression(source, tokens, expression, depth, @output)
           else:
-            text.append_text(output, "match ")
+            text.append_text(@output, "match ")
             let value: I64 = syntax.ast_match_value(expression)
-            emit_inline_expression(source, tokens, value, output)
-            text.append_text(output, ":\n")
+            emit_inline_expression(source, tokens, value, @output)
+            text.append_text(@output, ":\n")
             let arms: I64 = syntax.ast_match_arms(tokens, expression)
-            emit_match_arms(source, tokens, arms, depth + 1, output)
+            emit_match_arms(source, tokens, arms, depth + 1, @output)
         else:
           let fork_form: Bool = syntax.ast_expression_is_fork(source, tokens, expression)
           if fork_form:
-            text.append_text(output, "parallel:\n")
+            text.append_text(@output, "parallel:\n")
             let body: I64 = syntax.ast_fork_body(expression)
-            emit_expression(source, tokens, body, depth + 1, output)
+            emit_expression(source, tokens, body, depth + 1, @output)
           else:
             let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expression)
             if call_form:
               let callee: I64 = syntax.ast_call_callee(expression)
-              emit_name(source, tokens, callee, output)
-              text.append_text(output, "(\n")
+              emit_name(source, tokens, callee, @output)
+              text.append_text(@output, "(\n")
               let arguments: I64 = syntax.ast_call_arguments(expression)
-              emit_expression_lines(source, tokens, arguments, depth + 1, output)
-              append_indent(depth, 0, output)
-              text.append_text(output, ")\n")
+              emit_argument_lines(source, tokens, arguments, depth + 1, @output)
+              append_indent(depth, 0, @output)
+              text.append_text(@output, ")\n")
             else:
               let recur_form: Bool = syntax.ast_expression_is_recur(source, tokens, expression)
               if recur_form:
-                text.append_text(output, "recur(\n")
+                text.append_text(@output, "recur(\n")
                 let arguments: I64 = syntax.ast_recur_arguments(expression)
-                emit_expression_lines(source, tokens, arguments, depth + 1, output)
-                append_indent(depth, 0, output)
-                text.append_text(output, ")\n")
+                emit_argument_lines(source, tokens, arguments, depth + 1, @output)
+                append_indent(depth, 0, @output)
+                text.append_text(@output, ")\n")
               else:
                 let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expression)
                 if make_form:
                   let type_node: I64 = syntax.ast_make_type(expression)
-                  emit_type(source, tokens, type_node, output)
-                  text.append_text(output, "(\n")
+                  emit_type(source, tokens, type_node, @output)
+                  text.append_text(@output, "(\n")
                   let fields: I64 = syntax.ast_make_fields(expression)
-                  emit_multiline_fields(source, tokens, fields, depth + 1, output)
-                  append_indent(depth, 0, output)
-                  text.append_text(output, ")\n")
+                  emit_multiline_fields(source, tokens, fields, depth + 1, @output)
+                  append_indent(depth, 0, @output)
+                  text.append_text(@output, ")\n")
                 else:
                   let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expression)
                   if get_form:
                     let value: I64 = syntax.ast_get_value(expression)
-                    emit_inline_expression(source, tokens, value, output)
-                    text.append_text(output, ".")
+                    emit_inline_expression(source, tokens, value, @output)
+                    text.append_text(@output, ".")
                     let field: I64 = syntax.ast_get_field(tokens, expression)
-                    emit_name(source, tokens, field, output)
-                    text.append_text(output, "\n")
+                    emit_name(source, tokens, field, @output)
+                    text.append_text(@output, "\n")
                   else:
                     let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expression)
                     if case_form:
                       let type_node: I64 = syntax.ast_case_type(expression)
-                      emit_type(source, tokens, type_node, output)
-                      text.append_text(output, "::")
+                      emit_type(source, tokens, type_node, @output)
+                      text.append_text(@output, "::")
                       let name: I64 = syntax.ast_case_name(tokens, expression)
-                      emit_name(source, tokens, name, output)
-                      text.append_text(output, "(\n")
+                      emit_name(source, tokens, name, @output)
+                      text.append_text(@output, "(\n")
                       let payload: I64 = syntax.ast_case_payload(tokens, expression)
-                      emit_expression_lines(source, tokens, payload, depth + 1, output)
-                      append_indent(depth, 0, output)
-                      text.append_text(output, ")\n")
+                      emit_expression_lines(source, tokens, payload, depth + 1, @output)
+                      append_indent(depth, 0, @output)
+                      text.append_text(@output, ")\n")
                     else:
-                      text.append_text(output, "<invalid>\n")
+                      text.append_text(@output, "<invalid>\n")
 
-fn emit_expression(source: Bytes, inout tokens: Vec[syntax.Token], expression: I64, depth: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  append_indent(depth, 0, output)
-  emit_expression_content(source, tokens, expression, depth, output)
+fn emit_expression(source: Bytes, tokens: Vec[syntax.Token], expression: I64, depth: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  append_indent(depth, 0, @output)
+  emit_expression_content(source, tokens, expression, depth, @output)
 
-fn emit_parameters(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parameters(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -472,25 +507,29 @@ fn emit_parameters(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, 
     if first:
       void
     else:
-      text.append_text(output, ", ")
-    let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
+      text.append_text(@output, ", ")
+    let mode: I64 = syntax.ast_binding_mode(source, tokens, cursor)
     let mutable: Bool = syntax.ast_binding_is_mutable(source, tokens, cursor)
-    if borrowed:
-      text.append_text(output, "inout ")
+    if mutable:
+      text.append_text(@output, "var ")
     else:
-      if mutable:
-        text.append_text(output, "var ")
+      void
+    let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
+    emit_name(source, tokens, name, @output)
+    text.append_text(@output, ": ")
+    if mode == 1:
+      text.append_text(@output, "@")
+    else:
+      if mode == 2:
+        text.append_text(@output, "^")
       else:
         void
-    let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
-    emit_name(source, tokens, name, output)
-    text.append_text(output, ": ")
     let type_node: I64 = syntax.ast_binding_type(source, tokens, cursor)
-    emit_type(source, tokens, type_node, output)
+    emit_type(source, tokens, type_node, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_effects(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_effects(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -498,51 +537,51 @@ fn emit_effects(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, fir
     if first:
       void
     else:
-      text.append_text(output, ", ")
-    emit_name(source, tokens, cursor, output)
+      text.append_text(@output, ", ")
+    emit_name(source, tokens, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_function(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "fn ")
+fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "fn ")
   let name: I64 = syntax.ast_item_name(item)
-  emit_name(source, tokens, name, output)
-  text.append_text(output, "(")
+  emit_name(source, tokens, name, @output)
+  text.append_text(@output, "(")
   let parameters: I64 = syntax.ast_function_parameters(item)
   let first_parameter: I64 = syntax.ast_parameters_first(parameters)
-  emit_parameters(source, tokens, first_parameter, true, output)
-  text.append_text(output, ") -> ")
+  emit_parameters(source, tokens, first_parameter, true, @output)
+  text.append_text(@output, ") -> ")
   let return_type: I64 = syntax.ast_function_return_type(tokens, item)
-  emit_type(source, tokens, return_type, output)
+  emit_type(source, tokens, return_type, @output)
   let effects_form: I64 = syntax.ast_function_effects(tokens, item)
   let first_effect: I64 = syntax.ast_effects_first(effects_form)
   let pure: Bool = syntax.ast_list_done(tokens, first_effect)
   if pure:
     void
   else:
-    text.append_text(output, " effects[")
-    emit_effects(source, tokens, first_effect, true, output)
-    text.append_text(output, "]")
-  text.append_text(output, ":\n")
+    text.append_text(@output, " effects[")
+    emit_effects(source, tokens, first_effect, true, @output)
+    text.append_text(@output, "]")
+  text.append_text(@output, ":\n")
   let body: I64 = syntax.ast_function_body(tokens, item)
-  emit_expression(source, tokens, body, 1, output)
+  emit_expression(source, tokens, body, 1, @output)
 
-fn emit_record_members(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_record_members(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    text.append_text(output, "  ")
+    text.append_text(@output, "  ")
     let name: I64 = syntax.ast_member_name(cursor)
-    emit_name(source, tokens, name, output)
-    text.append_text(output, ": ")
+    emit_name(source, tokens, name, @output)
+    text.append_text(@output, ": ")
     let type_node: I64 = syntax.ast_member_value(cursor)
-    emit_type(source, tokens, type_node, output)
-    text.append_text(output, "\n")
+    emit_type(source, tokens, type_node, @output)
+    text.append_text(@output, "\n")
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, output)
+    recur(source, tokens, next, @output)
 
-fn emit_variant_payload(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_variant_payload(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -550,46 +589,46 @@ fn emit_variant_payload(source: Bytes, inout tokens: Vec[syntax.Token], cursor: 
     if first:
       void
     else:
-      text.append_text(output, ", ")
-    emit_type(source, tokens, cursor, output)
+      text.append_text(@output, ", ")
+    emit_type(source, tokens, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_variant_members(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_variant_members(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    text.append_text(output, "  ")
+    text.append_text(@output, "  ")
     let name: I64 = syntax.ast_member_name(cursor)
-    emit_name(source, tokens, name, output)
+    emit_name(source, tokens, name, @output)
     let payload: I64 = syntax.ast_member_value(cursor)
     let has_payload: Bool = !syntax.ast_list_done(tokens, payload)
     if has_payload:
-      text.append_text(output, "(")
-      emit_variant_payload(source, tokens, payload, true, output)
-      text.append_text(output, ")")
+      text.append_text(@output, "(")
+      emit_variant_payload(source, tokens, payload, true, @output)
+      text.append_text(@output, ")")
     else:
       void
-    text.append_text(output, "\n")
+    text.append_text(@output, "\n")
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, output)
+    recur(source, tokens, next, @output)
 
-fn emit_data_item(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, record_item: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_data_item(source: Bytes, tokens: Vec[syntax.Token], item: I64, record_item: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if record_item:
-    text.append_text(output, "struct ")
+    text.append_text(@output, "struct ")
   else:
-    text.append_text(output, "enum ")
+    text.append_text(@output, "enum ")
   let name: I64 = syntax.ast_item_name(item)
-  emit_name(source, tokens, name, output)
-  text.append_text(output, ":\n")
+  emit_name(source, tokens, name, @output)
+  text.append_text(@output, ":\n")
   let first: I64 = syntax.ast_data_members_first(item)
   if record_item:
-    emit_record_members(source, tokens, first, output)
+    emit_record_members(source, tokens, first, @output)
   else:
-    emit_variant_members(source, tokens, first, output)
+    emit_variant_members(source, tokens, first, @output)
 
-fn emit_items(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_items(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
@@ -597,25 +636,25 @@ fn emit_items(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first
     if first:
       void
     else:
-      text.append_text(output, "\n")
+      text.append_text(@output, "\n")
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
     if function_item:
-      emit_function(source, tokens, cursor, output)
+      emit_function(source, tokens, cursor, @output)
     else:
       let record_item: Bool = syntax.ast_item_is_record(source, tokens, cursor)
-      emit_data_item(source, tokens, cursor, record_item, output)
+      emit_data_item(source, tokens, cursor, record_item, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_module(source: Bytes, inout tokens: Vec[syntax.Token], inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "module ")
+fn emit_module(source: Bytes, tokens: Vec[syntax.Token], output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "module ")
   let name: I64 = syntax.ast_module_name(0)
-  emit_name(source, tokens, name, output)
-  text.append_text(output, "\n")
+  emit_name(source, tokens, name, @output)
+  text.append_text(@output, "\n")
   let items: I64 = syntax.ast_module_items(0)
   let empty: Bool = syntax.ast_list_done(tokens, items)
   if empty:
     void
   else:
-    text.append_text(output, "\n")
-  emit_items(source, tokens, items, true, output)
+    text.append_text(@output, "\n")
+  emit_items(source, tokens, items, true, @output)

@@ -37,7 +37,7 @@ fn function_plan_allocates(plan: FunctionPlan) -> Bool:
   let count: I64 = vec.len(allocations)
   count > 0
 
-fn allocation_site_region_range(inout allocations: Vec[AllocationPlan], site: I64, low: I64, high: I64) -> I64 effects[partial]:
+fn allocation_site_region_range(allocations: Vec[AllocationPlan], site: I64, low: I64, high: I64) -> I64 effects[partial]:
   let done: Bool = low >= high
   if done:
     -1
@@ -58,11 +58,11 @@ fn allocation_site_region_range(inout allocations: Vec[AllocationPlan], site: I6
         let next: I64 = middle + 1
         recur(allocations, site, next, high)
 
-fn allocation_site_region(inout allocations: Vec[AllocationPlan], site: I64) -> I64 effects[partial]:
+fn allocation_site_region(allocations: Vec[AllocationPlan], site: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(allocations)
   allocation_site_region_range(allocations, site, 0, count)
 
-fn span_has_recur(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64) -> Bool effects[partial]:
+fn span_has_recur(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64) -> Bool effects[partial]:
   let done: Bool = cursor >= end
   if done:
     false
@@ -85,7 +85,7 @@ fn storage_join(left: I64, right: I64) -> I64:
   else:
     right
 
-fn record_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
+fn record_storage(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -101,7 +101,7 @@ fn record_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items: 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, module_items, next, depth, joined)
 
-fn payload_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
+fn payload_storage(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -116,7 +116,7 @@ fn payload_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items:
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, module_items, next, depth, joined)
 
-fn variant_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
+fn variant_storage(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, cursor: I64, depth: I64, current: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -131,7 +131,7 @@ fn variant_storage(source: Bytes, inout tokens: Vec[syntax.Token], module_items:
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, module_items, next, depth, storage)
 
-fn type_storage_kind_from(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, type_index: I64, depth: I64) -> I64 effects[partial]:
+fn type_storage_kind_from(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, type_index: I64, depth: I64) -> I64 effects[partial]:
   let too_deep: Bool = depth >= 64
   if too_deep:
     2
@@ -172,34 +172,34 @@ fn type_storage_kind_from(source: Bytes, inout tokens: Vec[syntax.Token], module
         else:
           2
 
-fn type_storage_kind(source: Bytes, inout tokens: Vec[syntax.Token], type_index: I64) -> I64 effects[partial]:
+fn type_storage_kind(source: Bytes, tokens: Vec[syntax.Token], type_index: I64) -> I64 effects[partial]:
   type_storage_kind_from(source, tokens, 3, type_index, 0)
 
-fn parameters_have_inout(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn parameters_have_exclusive(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     false
   else:
     let head: I64 = syntax.ast_list_first(cursor)
-    let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
+    let borrowed: Bool = syntax.ast_binding_is_exclusive(source, tokens, cursor)
     if borrowed:
       true
     else:
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn function_uses_local_region(source: Bytes, inout tokens: Vec[syntax.Token], function: I64) -> Bool effects[partial]:
+fn function_uses_local_region(source: Bytes, tokens: Vec[syntax.Token], function: I64) -> Bool effects[partial]:
   let params: I64 = syntax.ast_function_parameters(function)
   let return_type: I64 = syntax.ast_function_return_type(tokens, function)
   let return_storage: I64 = type_storage_kind(source, tokens, return_type)
   let no_return_storage: Bool = return_storage == 0
   let first_parameter: I64 = syntax.ast_parameters_first(params)
-  let output: Bool = parameters_have_inout(source, tokens, first_parameter)
+  let output: Bool = parameters_have_exclusive(source, tokens, first_parameter)
   let no_output: Bool = !output
   no_return_storage && no_output
 
-fn last_named_use(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64, last: I64) -> I64 effects[partial]:
+fn last_named_use(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64, last: I64) -> I64 effects[partial]:
   let done: Bool = cursor >= end
   if done:
     last
@@ -219,11 +219,11 @@ fn last_named_use(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, e
     let next: I64 = syntax.ast_node_after(cursor)
     recur(source, tokens, next, end, name_start, name_end, next_last)
 
-fn span_has_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+fn span_has_name(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let found: I64 = last_named_use(source, tokens, cursor, end, name_start, name_end, -1)
   found >= 0
 
-fn result_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn result_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
   if let_form:
     recur(source, tokens, syntax.ast_let_body(tokens, expr))
@@ -234,7 +234,7 @@ fn result_expression(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) 
     else:
       expr
 
-fn escapes_to_inout(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+fn escapes_to_exclusive(source: Bytes, tokens: Vec[syntax.Token], params: I64, cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let done: Bool = cursor >= end
   if done:
     false
@@ -255,11 +255,11 @@ fn escapes_to_inout(source: Bytes, inout tokens: Vec[syntax.Token], params: I64,
           let value_start: I64 = syntax.ast_node_start(tokens, value)
           let value_end: I64 = syntax.ast_node_end(tokens, value)
           let same_value: Bool = syntax.spans_equal(source, value_start, value_end, name_start, name_end)
-          let target_inout: Bool = if same_value:
-            syntax.name_is_inout(source, tokens, params, target)
+          let target_exclusive: Bool = if same_value:
+            syntax.name_is_exclusive(source, tokens, params, target)
           else:
             false
-          if target_inout:
+          if target_exclusive:
             true
           else:
             let next: I64 = syntax.ast_node_after(cursor)
@@ -274,11 +274,11 @@ fn escapes_to_inout(source: Bytes, inout tokens: Vec[syntax.Token], params: I64,
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, params, next, end, name_start, name_end)
 
-fn escape_kind(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
+fn escape_kind(source: Bytes, tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
   let result: I64 = result_expression(source, tokens, body)
   let result_end: I64 = syntax.ast_next(tokens, result)
   let result_escape: Bool = span_has_name(source, tokens, result, result_end, name_start, name_end)
-  let output_escape: Bool = escapes_to_inout(source, tokens, params, body, body_end, name_start, name_end)
+  let output_escape: Bool = escapes_to_exclusive(source, tokens, params, body, body_end, name_start, name_end)
   if result_escape:
     if output_escape:
       3
@@ -290,28 +290,31 @@ fn escape_kind(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body
     else:
       0
 
-fn append_value_plan(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, name: I64, type_index: I64, borrowed: Bool, declared: I64, inout values: Vec[ValuePlan]) -> Void effects[alloc, partial]:
+fn append_value_plan(source: Bytes, tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, name: I64, type_index: I64, borrowed: Bool, declared: I64, values: @Vec[ValuePlan]) -> Void effects[alloc, partial]:
   let name_start: I64 = syntax.ast_node_start(tokens, name)
   let name_end: I64 = syntax.ast_node_end(tokens, name)
   let storage: I64 = type_storage_kind(source, tokens, type_index)
   let plan: ValuePlan = ValuePlan(name: name, type_index: type_index, storage: storage, borrowed: borrowed, declared: declared, last_use: name_end, escape: 0)
-  vec.push(values, plan)
+  vec.push(@values, plan)
 
-fn append_parameter_plans(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, cursor: I64, inout values: Vec[ValuePlan]) -> Void effects[alloc, partial]:
+fn append_parameter_plans(source: Bytes, tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, cursor: I64, values: @Vec[ValuePlan]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     void
   else:
     let head: I64 = syntax.ast_list_first(cursor)
-    let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
     let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
     let type_index: I64 = syntax.ast_binding_type(source, tokens, cursor)
-    append_value_plan(source, tokens, params, body, body_end, name, type_index, borrowed, cursor, values)
+    let storage: I64 = type_storage_kind(source, tokens, type_index)
+    let affine: Bool = storage == 2
+    let mode: I64 = syntax.ast_binding_mode(source, tokens, cursor)
+    let borrowed: Bool = affine && (!(mode == 2))
+    append_value_plan(source, tokens, params, body, body_end, name, type_index, borrowed, cursor, @values)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, params, body, body_end, next, values)
+    recur(source, tokens, params, body, body_end, next, @values)
 
-fn append_local_plans(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, cursor: I64, inout values: Vec[ValuePlan]) -> Void effects[alloc, partial]:
+fn append_local_plans(source: Bytes, tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, cursor: I64, values: @Vec[ValuePlan]) -> Void effects[alloc, partial]:
   let done: Bool = cursor >= body_end
   if done:
     void
@@ -326,13 +329,13 @@ fn append_local_plans(source: Bytes, inout tokens: Vec[syntax.Token], params: I6
     if let_form:
       let name: I64 = syntax.ast_let_name(cursor)
       let type_index: I64 = syntax.ast_let_type(cursor)
-      append_value_plan(source, tokens, params, body, body_end, name, type_index, false, cursor, values)
+      append_value_plan(source, tokens, params, body, body_end, name, type_index, false, cursor, @values)
     else:
       void
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(source, tokens, params, body, body_end, next, values)
+    recur(source, tokens, params, body, body_end, next, @values)
 
-fn append_allocation_plans(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64, region: I64, inout allocations: Vec[AllocationPlan]) -> Void effects[alloc, partial]:
+fn append_allocation_plans(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, region: I64, allocations: @Vec[AllocationPlan]) -> Void effects[alloc, partial]:
   let done: Bool = cursor >= end
   if done:
     void
@@ -351,11 +354,11 @@ fn append_allocation_plans(source: Bytes, inout tokens: Vec[syntax.Token], curso
       false
     if allocation:
       let plan: AllocationPlan = AllocationPlan(site: cursor, region: region)
-      vec.push(allocations, plan)
+      vec.push(@allocations, plan)
     else:
       void
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(source, tokens, next, end, region, allocations)
+    recur(source, tokens, next, end, region, @allocations)
 
 fn conservative_escape(return_storage: I64, output: Bool) -> I64:
   let returns: Bool = return_storage > 0
@@ -370,7 +373,7 @@ fn conservative_escape(return_storage: I64, output: Bool) -> I64:
     else:
       0
 
-fn finalize_value_plans(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, return_storage: I64, output: Bool, inout values: Vec[ValuePlan], index: I64) -> Void effects[alloc, partial]:
+fn finalize_value_plans(source: Bytes, tokens: Vec[syntax.Token], params: I64, body: I64, body_end: I64, return_storage: I64, output: Bool, values: @Vec[ValuePlan], index: I64) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(values)
   let done: Bool = index >= length
   if done:
@@ -396,11 +399,11 @@ fn finalize_value_plans(source: Bytes, inout tokens: Vec[syntax.Token], params: 
       else:
         0
     let updated: ValuePlan = ValuePlan(name: name, type_index: value.type_index, storage: value.storage, borrowed: value.borrowed, declared: value.declared, last_use: last_use, escape: escape)
-    vec.set(values, index, updated)
+    vec.set(@values, index, updated)
     let next: I64 = index + 1
-    recur(source, tokens, params, body, body_end, return_storage, output, values, next)
+    recur(source, tokens, params, body, body_end, return_storage, output, @values, next)
 
-fn count_escaping_values(inout values: Vec[ValuePlan], index: I64, count: I64) -> I64 effects[partial]:
+fn count_escaping_values(values: Vec[ValuePlan], index: I64, count: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(values)
   let done: Bool = index >= length
   if done:
@@ -420,7 +423,7 @@ fn count_escaping_values(inout values: Vec[ValuePlan], index: I64, count: I64) -
     let next: I64 = index + 1
     recur(values, next, total)
 
-fn build_function_plan(source: Bytes, inout tokens: Vec[syntax.Token], function: I64) -> FunctionPlan effects[alloc, partial]:
+fn build_function_plan(source: Bytes, tokens: Vec[syntax.Token], function: I64) -> FunctionPlan effects[alloc, partial]:
   let params: I64 = syntax.ast_function_parameters(function)
   let return_type: I64 = syntax.ast_function_return_type(tokens, function)
   let return_storage: I64 = type_storage_kind(source, tokens, return_type)
@@ -430,30 +433,30 @@ fn build_function_plan(source: Bytes, inout tokens: Vec[syntax.Token], function:
   let body_end: I64 = syntax.ast_next(tokens, body)
   let values: Vec[ValuePlan] = vec.new()
   let first_parameter: I64 = syntax.ast_parameters_first(params)
-  append_parameter_plans(source, tokens, params, body, body_end, first_parameter, values)
-  append_local_plans(source, tokens, params, body, body_end, body, values)
+  append_parameter_plans(source, tokens, params, body, body_end, first_parameter, @values)
+  append_local_plans(source, tokens, params, body, body_end, body, @values)
   let value_count: I64 = vec.len(values)
   let liveness_precise: Bool = value_count <= 64
   let first_parameter_for_output: I64 = syntax.ast_parameters_first(params)
-  let output_escape: Bool = parameters_have_inout(source, tokens, first_parameter_for_output)
-  finalize_value_plans(source, tokens, params, body, body_end, return_storage, output_escape, values, 0)
+  let output_escape: Bool = parameters_have_exclusive(source, tokens, first_parameter_for_output)
+  finalize_value_plans(source, tokens, params, body, body_end, return_storage, output_escape, @values, 0)
   let allocations: Vec[AllocationPlan] = vec.new()
   let region: I64 = if local_region:
     0
   else:
     1
-  append_allocation_plans(source, tokens, body, body_end, region, allocations)
+  append_allocation_plans(source, tokens, body, body_end, region, @allocations)
   let destructions: Vec[DestructionPlan] = vec.new()
   if local_region:
     let plan: DestructionPlan = DestructionPlan(region: 0, end: body_end, reverse: true)
-    vec.push(destructions, plan)
+    vec.push(@destructions, plan)
   else:
     void
   let escaping: I64 = count_escaping_values(values, 0, 0)
   let recursive: Bool = span_has_recur(source, tokens, body, body_end)
   FunctionPlan(function: function, return_storage: return_storage, local_region: local_region, recursive: recursive, liveness_precise: liveness_precise, values: values, allocations: allocations, destructions: destructions, escaping_values: escaping)
 
-fn append_function_plans(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64, inout functions: Vec[FunctionPlan]) -> Void effects[alloc, partial]:
+fn append_function_plans(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, functions: @Vec[FunctionPlan]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(declarations)
   let done: Bool = index >= length
   if done:
@@ -464,13 +467,13 @@ fn append_function_plans(source: Bytes, inout tokens: Vec[syntax.Token], inout d
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, form)
     if function_item:
       let plan: FunctionPlan = build_function_plan(source, tokens, form)
-      vec.push(functions, plan)
+      vec.push(@functions, plan)
     else:
       void
     let next: I64 = index + 1
-    recur(source, tokens, declarations, next, functions)
+    recur(source, tokens, declarations, next, @functions)
 
-fn analyze(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration]) -> Plan effects[alloc, partial]:
+fn analyze(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> Plan effects[alloc, partial]:
   let functions: Vec[FunctionPlan] = vec.new()
-  append_function_plans(source, tokens, declarations, 0, functions)
+  append_function_plans(source, tokens, declarations, 0, @functions)
   Plan(functions: functions)

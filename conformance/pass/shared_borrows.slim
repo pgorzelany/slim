@@ -1,0 +1,14 @@
+module shared_borrows
+
+fn length(values: Vec[I64]) -> I64:
+  vec.len(values)
+
+fn combined_length(first: Vec[I64], second: Vec[I64]) -> I64:
+  length(first) + length(second)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 42)
+  io.print_i64(combined_length(values, values))
+  io.println("")
+  0

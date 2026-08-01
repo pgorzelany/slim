@@ -26,7 +26,7 @@ left string, and `repeat` resets the buffers for stable benchmark work.
 ## Ownership and effects
 
 The input `Bytes` values are copyable immutable views. The two row vectors are
-distinct affine owners borrowed through `inout`. Allocation occurs only while
+distinct affine owners borrowed exclusively through `@`. Allocation occurs only while
 building the buffers; later rounds reuse their capacity. Byte and vector reads,
 writes, conversions, and arithmetic remain checked.
 

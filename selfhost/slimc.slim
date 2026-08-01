@@ -10,9 +10,9 @@ fn check_input_path(path: Bytes) -> I64 effects[alloc, io, partial]:
 fn format_path(path: Bytes) -> I64 effects[alloc, io, partial]:
   let project: Bool = project.path_is_project(path)
   let input_bytes: Vec[U8] = vec.new()
-  let input_read: Bool = io.read_file(path, input_bytes)
+  let input_read: Bool = io.read_file(path, @input_bytes)
   if input_read:
-    let input: Bytes = bytes.freeze(input_bytes)
+    let input: Bytes = bytes.freeze(^input_bytes)
     if project:
       let status: I64 = project.check_project_path(path)
       let invalid: Bool = status > 0
@@ -23,13 +23,13 @@ fn format_path(path: Bytes) -> I64 effects[alloc, io, partial]:
         0
     else:
       let tokens: Vec[syntax.Token] = vec.new()
-      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, @tokens)
       if parsed.valid:
         let valid: Bool = validate.module_shape_valid(input, tokens)
         if valid:
           let output: Vec[U8] = vec.new()
-          format.emit_module(input, tokens, output)
-          let bytes: Bytes = bytes.freeze(output)
+          format.emit_module(input, tokens, @output)
+          let bytes: Bytes = bytes.freeze(^output)
           io.print_bytes(bytes)
           0
         else:
@@ -52,8 +52,8 @@ fn analyze_project_path(path: Bytes) -> I64 effects[alloc, io, partial]:
     let tokens: Vec[syntax.Token] = prepared.tokens
     let typed_facts: Vec[typing.Fact] = prepared.facts
     let output: Vec[U8] = vec.new()
-    analysis.emit_module(source, tokens, typed_facts, output)
-    let result: Bytes = bytes.freeze(output)
+    analysis.emit_module(source, tokens, typed_facts, @output)
+    let result: Bytes = bytes.freeze(^output)
     io.print_bytes(result)
     0
 
@@ -67,13 +67,13 @@ fn transform_path(path: Bytes, analysis_mode: Bool) -> I64 effects[alloc, io, pa
       1
   else:
     let input_bytes: Vec[U8] = vec.new()
-    let input_read: Bool = io.read_file(path, input_bytes)
+    let input_read: Bool = io.read_file(path, @input_bytes)
     if input_read:
-      let input: Bytes = bytes.freeze(input_bytes)
+      let input: Bytes = bytes.freeze(^input_bytes)
       let tokens: Vec[syntax.Token] = vec.new()
-      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, @tokens)
       if parsed.valid:
-        let checked: typing.Checked = check.check_source(input, tokens)
+        let checked: typing.Checked = check.check_source(input, @tokens)
         let status: I64 = checked.status
         let invalid: Bool = status > 0
         if invalid:
@@ -83,10 +83,10 @@ fn transform_path(path: Bytes, analysis_mode: Bool) -> I64 effects[alloc, io, pa
           let typed_facts: Vec[typing.Fact] = view.facts
           let output: Vec[U8] = vec.new()
           if analysis_mode:
-            analysis.emit_module(input, tokens, typed_facts, output)
+            analysis.emit_module(input, tokens, typed_facts, @output)
           else:
-            reduce.emit_normal_form(input, output)
-          let result: Bytes = bytes.freeze(output)
+            reduce.emit_normal_form(input, @output)
+          let result: Bytes = bytes.freeze(^output)
           io.print_bytes(result)
           0
       else:
@@ -101,13 +101,13 @@ fn compile_path(path: Bytes) -> I64 effects[alloc, io, partial]:
     project.compile_project_path(path)
   else:
     let input_bytes: Vec[U8] = vec.new()
-    let input_read: Bool = io.read_file(path, input_bytes)
+    let input_read: Bool = io.read_file(path, @input_bytes)
     if input_read:
-      let input: Bytes = bytes.freeze(input_bytes)
+      let input: Bytes = bytes.freeze(^input_bytes)
       let tokens: Vec[syntax.Token] = vec.new()
-      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(input, @tokens)
       if parsed.valid:
-        let checked: typing.Checked = check.check_source(input, tokens)
+        let checked: typing.Checked = check.check_source(input, @tokens)
         let status: I64 = checked.status
         let invalid: Bool = status > 0
         if invalid:
@@ -117,8 +117,8 @@ fn compile_path(path: Bytes) -> I64 effects[alloc, io, partial]:
           let facts: Vec[typing.Fact] = view.facts
           let plan: memory.Plan = checked.plan
           let output: Vec[U8] = vec.new()
-          codegen.emit_program(input, tokens, facts, plan, output)
-          let generated: Bytes = bytes.freeze(output)
+          codegen.emit_program(input, tokens, facts, plan, @output)
+          let generated: Bytes = bytes.freeze(^output)
           io.print_bytes(generated)
           0
       else:
@@ -139,14 +139,14 @@ fn proof_path(path: Bytes) -> I64 effects[alloc, io, partial]:
       checked
     else:
       let input_bytes: Vec[U8] = vec.new()
-      let input_read: Bool = io.read_file(path, input_bytes)
+      let input_read: Bool = io.read_file(path, @input_bytes)
       if input_read:
-        let input: Bytes = bytes.freeze(input_bytes)
+        let input: Bytes = bytes.freeze(^input_bytes)
         let tokens: Vec[syntax.Token] = vec.new()
-        let parsed: Bool = syntax.parse_program(input, tokens)
+        let parsed: Bool = syntax.parse_program(input, @tokens)
         let output: Vec[U8] = vec.new()
-        proof.emit_report(input, tokens, output)
-        let result: Bytes = bytes.freeze(output)
+        proof.emit_report(input, tokens, @output)
+        let result: Bytes = bytes.freeze(^output)
         io.print_bytes(result)
         0
       else:
@@ -172,16 +172,16 @@ fn verify_paths(original_path: Bytes, candidate_path: Bytes) -> I64 effects[allo
         candidate_checked
       else:
         let original_bytes: Vec[U8] = vec.new()
-        let original_read: Bool = io.read_file(original_path, original_bytes)
+        let original_read: Bool = io.read_file(original_path, @original_bytes)
         let candidate_bytes: Vec[U8] = vec.new()
-        let candidate_read: Bool = io.read_file(candidate_path, candidate_bytes)
+        let candidate_read: Bool = io.read_file(candidate_path, @candidate_bytes)
         let both_read: Bool = original_read && candidate_read
         if both_read:
-          let original: Bytes = bytes.freeze(original_bytes)
-          let candidate: Bytes = bytes.freeze(candidate_bytes)
+          let original: Bytes = bytes.freeze(^original_bytes)
+          let candidate: Bytes = bytes.freeze(^candidate_bytes)
           let output: Vec[U8] = vec.new()
-          proof.verify(original, candidate, output)
-          let result: Bytes = bytes.freeze(output)
+          proof.verify(original, candidate, @output)
+          let result: Bytes = bytes.freeze(^output)
           io.print_bytes(result)
           0
         else:
@@ -207,20 +207,20 @@ fn equivalent_paths(left_path: Bytes, right_path: Bytes) -> I64 effects[alloc, i
         right_checked
       else:
         let left_bytes: Vec[U8] = vec.new()
-        let left_read: Bool = io.read_file(left_path, left_bytes)
+        let left_read: Bool = io.read_file(left_path, @left_bytes)
         let right_bytes: Vec[U8] = vec.new()
-        let right_read: Bool = io.read_file(right_path, right_bytes)
+        let right_read: Bool = io.read_file(right_path, @right_bytes)
         let both_read: Bool = left_read && right_read
         if both_read:
-          let left: Bytes = bytes.freeze(left_bytes)
-          let right: Bytes = bytes.freeze(right_bytes)
+          let left: Bytes = bytes.freeze(^left_bytes)
+          let right: Bytes = bytes.freeze(^right_bytes)
           let left_tokens: Vec[syntax.Token] = vec.new()
-          let left_parsed: Bool = syntax.parse_program(left, left_tokens)
+          let left_parsed: Bool = syntax.parse_program(left, @left_tokens)
           let right_tokens: Vec[syntax.Token] = vec.new()
-          let right_parsed: Bool = syntax.parse_program(right, right_tokens)
+          let right_parsed: Bool = syntax.parse_program(right, @right_tokens)
           let output: Vec[U8] = vec.new()
-          equivalence.emit_comparison(left, left_tokens, right, right_tokens, output)
-          let result: Bytes = bytes.freeze(output)
+          equivalence.emit_comparison(left, left_tokens, right, right_tokens, @output)
+          let result: Bytes = bytes.freeze(^output)
           io.print_bytes(result)
           0
         else:
@@ -239,19 +239,19 @@ fn edit_paths(source_path: Bytes, patch_path: Bytes) -> I64 effects[alloc, io, p
       checked
     else:
       let source_bytes: Vec[U8] = vec.new()
-      let source_read: Bool = io.read_file(source_path, source_bytes)
+      let source_read: Bool = io.read_file(source_path, @source_bytes)
       let patch_bytes: Vec[U8] = vec.new()
-      let patch_read: Bool = io.read_file(patch_path, patch_bytes)
+      let patch_read: Bool = io.read_file(patch_path, @patch_bytes)
       let both_read: Bool = source_read && patch_read
       if both_read:
-        let source: Bytes = bytes.freeze(source_bytes)
-        let patch: Bytes = bytes.freeze(patch_bytes)
+        let source: Bytes = bytes.freeze(^source_bytes)
+        let patch: Bytes = bytes.freeze(^patch_bytes)
         let tokens: Vec[syntax.Token] = vec.new()
-        let parsed: Bool = syntax.parse_program(source, tokens)
+        let parsed: Bool = syntax.parse_program(source, @tokens)
         let output: Vec[U8] = vec.new()
-        let edited: Bool = edit.emit_candidate(source, tokens, patch, output)
+        let edited: Bool = edit.emit_candidate(source, tokens, patch, @output)
         if edited:
-          let result: Bytes = bytes.freeze(output)
+          let result: Bytes = bytes.freeze(^output)
           io.print_bytes(result)
           0
         else:
@@ -261,7 +261,7 @@ fn edit_paths(source_path: Bytes, patch_path: Bytes) -> I64 effects[alloc, io, p
         io.println("E0409@0:0")
         1
 
-fn run_proof_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_proof_command(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let enough: Bool = arg_count >= 3
   if enough:
     let source_path: Bytes = vec.get(args, 2)
@@ -270,7 +270,7 @@ fn run_proof_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[allo
     io.println("usage: slimc prove-reduction SOURCE")
     64
 
-fn run_verify_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_verify_command(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let enough: Bool = arg_count >= 4
   if enough:
     let original_path: Bytes = vec.get(args, 2)
@@ -280,7 +280,7 @@ fn run_verify_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[all
     io.println("usage: slimc verify-reduction ORIGINAL REDUCED")
     64
 
-fn run_equivalent_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_equivalent_command(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let enough: Bool = arg_count >= 4
   if enough:
     let left_path: Bytes = vec.get(args, 2)
@@ -290,7 +290,7 @@ fn run_equivalent_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects
     io.println("usage: slimc equivalent LEFT RIGHT")
     64
 
-fn run_edit_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_edit_command(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let enough: Bool = arg_count >= 4
   if enough:
     let source_path: Bytes = vec.get(args, 2)
@@ -300,7 +300,7 @@ fn run_edit_command(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc
     io.println("usage: slimc edit SOURCE PATCH")
     64
 
-fn run_evidence(inout args: Vec[Bytes], arg_count: I64, command: Bytes) -> I64 effects[alloc, io, partial]:
+fn run_evidence(args: Vec[Bytes], arg_count: I64, command: Bytes) -> I64 effects[alloc, io, partial]:
   let command_length: I64 = bytes.len(command)
   let proving: Bool = syntax.span_equal(command, 0, command_length, "prove-reduction")
   if proving:
@@ -316,7 +316,7 @@ fn run_evidence(inout args: Vec[Bytes], arg_count: I64, command: Bytes) -> I64 e
       else:
         run_edit_command(args, arg_count)
 
-fn compile_command_path(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
+fn compile_command_path(args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
   let project: Bool = project.path_is_project(path)
   if project:
     let enough: Bool = arg_count >= 4
@@ -335,7 +335,7 @@ fn compile_command_path(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> 
   else:
     compile_path(path)
 
-fn run_compile(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
+fn run_compile(args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effects[alloc, io, partial]:
   let length: I64 = bytes.len(path)
   let proving: Bool = syntax.span_equal(path, 0, length, "prove-reduction")
   let verifying: Bool = syntax.span_equal(path, 0, length, "verify-reduction")
@@ -349,7 +349,7 @@ fn run_compile(inout args: Vec[Bytes], arg_count: I64, path: Bytes) -> I64 effec
   else:
     compile_command_path(args, arg_count, path)
 
-fn run_cache(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_cache(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let has_paths: Bool = arg_count >= 4
   if has_paths:
     let manifest_path: Bytes = vec.get(args, 2)
@@ -359,7 +359,7 @@ fn run_cache(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, p
     io.println("usage: slimc cache MANIFEST CACHE")
     64
 
-fn run_session(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
+fn run_session(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
   let has_paths: Bool = arg_count >= 4
   if has_paths:
     let initial_path: Bytes = vec.get(args, 2)
@@ -374,7 +374,7 @@ fn run_session(inout args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io,
     io.println("usage: slimc session INITIAL UPDATED [RECOVERED]")
     64
 
-fn run_transform(inout args: Vec[Bytes], arg_count: I64, analysis_mode: Bool, usage: Bytes) -> I64 effects[alloc, io, partial]:
+fn run_transform(args: Vec[Bytes], arg_count: I64, analysis_mode: Bool, usage: Bytes) -> I64 effects[alloc, io, partial]:
   let has_source: Bool = arg_count >= 3
   if has_source:
     let source_path: Bytes = vec.get(args, 2)

@@ -1,0 +1,9 @@
+module shared_owned_overlap
+
+fn combined(shared: Vec[I64], owned: ^Vec[I64]) -> I64:
+  vec.len(shared) + vec.len(owned)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let observed: I64 = combined(values, ^values)
+  0

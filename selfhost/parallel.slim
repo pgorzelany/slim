@@ -93,11 +93,11 @@ fn merge_status(current: I64, candidate: I64) -> I64:
       else:
         1
 
-fn typed_expression(inout facts: Vec[typing.Fact], expr: I64) -> Bool effects[partial]:
+fn typed_expression(facts: Vec[typing.Fact], expr: I64) -> Bool effects[partial]:
   let typed: typing.TypeRef = typing.fact_type(facts, expr)
   typed.kind >= -1
 
-fn call_hazard(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], expr: I64, callee: I64) -> I64 effects[partial]:
+fn call_hazard(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[ranges.Fact], expr: I64, callee: I64) -> I64 effects[partial]:
   let alloc: Bool = effects.call_requires(source, tokens, callee, 1)
   let io: Bool = effects.call_requires(source, tokens, callee, 2)
   let effectful: Bool = alloc || io
@@ -115,17 +115,17 @@ fn call_hazard(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts
     else:
       0
 
-fn append_edge(caller: I64, callee: I64, inout edges: Vec[CallEdge]) -> Bool effects[alloc, partial]:
+fn append_edge(caller: I64, callee: I64, edges: @Vec[CallEdge]) -> Bool effects[alloc, partial]:
   let count: I64 = vec.len(edges)
   let bounded: Bool = count < 4096
   if bounded:
     let edge: CallEdge = CallEdge(caller: caller, callee: callee)
-    vec.push(edges, edge)
+    vec.push(@edges, edge)
     true
   else:
     false
 
-fn collect_span(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], index: I64, end: I64, caller: I64, inout edges: Vec[CallEdge], reason: I64, blockers: Blockers, calls: I64, complete: Bool) -> Scan effects[alloc, partial]:
+fn collect_span(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[ranges.Fact], index: I64, end: I64, caller: I64, edges: @Vec[CallEdge], reason: I64, blockers: Blockers, calls: I64, complete: Bool) -> Scan effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     Scan(reason: reason, blockers: blockers, calls: calls, complete: complete)
@@ -173,7 +173,7 @@ fn collect_span(source: Bytes, inout tokens: Vec[syntax.Token], inout range_fact
     else:
       -1
     let appended: Bool = if user_call:
-      append_edge(caller, callee_item, edges)
+      append_edge(caller, callee_item, @edges)
     else:
       true
     let next_calls: I64 = if user_call:
@@ -182,23 +182,23 @@ fn collect_span(source: Bytes, inout tokens: Vec[syntax.Token], inout range_fact
       calls
     let next_complete: Bool = complete && appended
     let next: I64 = syntax.ast_node_after(index)
-    recur(source, tokens, range_facts, next, end, caller, edges, next_reason, next_blockers, next_calls, next_complete)
+    recur(source, tokens, range_facts, next, end, caller, @edges, next_reason, next_blockers, next_calls, next_complete)
 
-fn params_have_inout(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn params_have_exclusive(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     false
   else:
     let head: I64 = syntax.ast_list_first(cursor)
-    let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
+    let borrowed: Bool = syntax.ast_binding_is_exclusive(source, tokens, cursor)
     if borrowed:
       true
     else:
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn collect_function(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_facts: Vec[ranges.Fact], item: I64, inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge]) -> Void effects[alloc, partial]:
+fn collect_function(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_facts: Vec[ranges.Fact], item: I64, facts: @Vec[FunctionFact], edges: @Vec[CallEdge]) -> Void effects[alloc, partial]:
   let fact_index: I64 = vec.len(facts)
   let name: I64 = syntax.ast_item_name(item)
   let params: I64 = syntax.ast_function_parameters(item)
@@ -207,11 +207,11 @@ fn collect_function(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_
   let body: I64 = syntax.ast_next(tokens, effects_form)
   let body_end: I64 = syntax.ast_next(tokens, body)
   let first_edge: I64 = vec.len(edges)
-  let scanned: Scan = collect_span(source, tokens, range_facts, body, body_end, fact_index, edges, 0, empty_blockers(), 0, true)
+  let scanned: Scan = collect_span(source, tokens, range_facts, body, body_end, fact_index, @edges, 0, empty_blockers(), 0, true)
   let edge_end: I64 = vec.len(edges)
   let edge_count: I64 = edge_end - first_edge
   let first_param: I64 = syntax.ast_parameters_first(params)
-  let borrowed: Bool = params_have_inout(source, tokens, first_param)
+  let borrowed: Bool = params_have_exclusive(source, tokens, first_param)
   let typed: Bool = typed_expression(typed_facts, body)
   let local_reason: I64 = if typed:
     if borrowed:
@@ -252,9 +252,9 @@ fn collect_function(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_
     else:
       0
   let fact: FunctionFact = FunctionFact(item: item, name: name, status: status, reason: reason, blockers: blockers, first_edge: first_edge, edge_count: edge_count, body: body, body_tokens: body_end - body)
-  vec.push(facts, fact)
+  vec.push(@facts, fact)
 
-fn collect_functions(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_facts: Vec[ranges.Fact], cursor: I64, inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], total: I64) -> I64 effects[alloc, partial]:
+fn collect_functions(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_facts: Vec[ranges.Fact], cursor: I64, facts: @Vec[FunctionFact], edges: @Vec[CallEdge], total: I64) -> I64 effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -269,13 +269,13 @@ fn collect_functions(source: Bytes, inout tokens: Vec[syntax.Token], inout typed
     let bounded: Bool = count < 64
     let selected: Bool = function_item && bounded
     if selected:
-      collect_function(source, tokens, typed_facts, range_facts, cursor, facts, edges)
+      collect_function(source, tokens, typed_facts, range_facts, cursor, @facts, @edges)
     else:
       void
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, typed_facts, range_facts, next, facts, edges, next_total)
+    recur(source, tokens, typed_facts, range_facts, next, @facts, @edges, next_total)
 
-fn find_fact_item(inout facts: Vec[FunctionFact], item: I64, index: I64) -> I64 effects[partial]:
+fn find_fact_item(facts: Vec[FunctionFact], item: I64, index: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -289,7 +289,7 @@ fn find_fact_item(inout facts: Vec[FunctionFact], item: I64, index: I64) -> I64 
       let next: I64 = index + 1
       recur(facts, item, next)
 
-fn link_edges(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64) -> Void effects[partial]:
+fn link_edges(facts: Vec[FunctionFact], edges: @Vec[CallEdge], index: I64) -> Void effects[partial]:
   let count: I64 = vec.len(edges)
   let done: Bool = index >= count
   if done:
@@ -298,11 +298,11 @@ fn link_edges(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index:
     let edge: CallEdge = vec.get(edges, index)
     let callee_index: I64 = find_fact_item(facts, edge.callee, 0)
     let updated: CallEdge = CallEdge(caller: edge.caller, callee: callee_index)
-    vec.set(edges, index, updated)
+    vec.set(@edges, index, updated)
     let next: I64 = index + 1
-    recur(facts, edges, next)
+    recur(facts, @edges, next)
 
-fn resolve_edges(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64, end: I64, status: I64, reason: I64) -> Evaluation effects[partial]:
+fn resolve_edges(facts: Vec[FunctionFact], edges: Vec[CallEdge], index: I64, end: I64, status: I64, reason: I64) -> Evaluation effects[partial]:
   let done: Bool = index >= end
   if done:
     Evaluation(status: status, reason: reason, calls: 0)
@@ -336,7 +336,7 @@ fn resolve_edges(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], ind
     let next: I64 = index + 1
     recur(facts, edges, next, end, next_status, next_reason)
 
-fn resolve_fact(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64) -> Bool effects[partial]:
+fn resolve_fact(facts: @Vec[FunctionFact], edges: Vec[CallEdge], index: I64) -> Bool effects[partial]:
   let fact: FunctionFact = vec.get(facts, index)
   let unresolved: Bool = fact.status == 0
   let no_reason: Bool = fact.reason == 0
@@ -352,41 +352,41 @@ fn resolve_fact(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], inde
       else:
         add_blocker(fact.blockers, resolution.reason)
       let updated: FunctionFact = FunctionFact(item: fact.item, name: fact.name, status: resolution.status, reason: resolution.reason, blockers: blockers, first_edge: fact.first_edge, edge_count: fact.edge_count, body: fact.body, body_tokens: fact.body_tokens)
-      vec.set(facts, index, updated)
+      vec.set(@facts, index, updated)
       true
     else:
       false
   else:
     false
 
-fn resolve_pass(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64, changes: I64) -> I64 effects[partial]:
+fn resolve_pass(facts: @Vec[FunctionFact], edges: Vec[CallEdge], index: I64, changes: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
     changes
   else:
-    let changed: Bool = resolve_fact(facts, edges, index)
+    let changed: Bool = resolve_fact(@facts, edges, index)
     let next_changes: I64 = if changed:
       changes + 1
     else:
       changes
     let next: I64 = index + 1
-    recur(facts, edges, next, next_changes)
+    recur(@facts, edges, next, next_changes)
 
-fn resolve_graph(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], pass: I64) -> Void effects[partial]:
+fn resolve_graph(facts: @Vec[FunctionFact], edges: Vec[CallEdge], pass: I64) -> Void effects[partial]:
   let exhausted: Bool = pass >= 64
   if exhausted:
     void
   else:
-    let changes: I64 = resolve_pass(facts, edges, 0, 0)
+    let changes: I64 = resolve_pass(@facts, edges, 0, 0)
     let stable: Bool = changes == 0
     if stable:
       void
     else:
       let next: I64 = pass + 1
-      recur(facts, edges, next)
+      recur(@facts, edges, next)
 
-fn finalize_unknowns(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64) -> Void effects[partial]:
+fn finalize_unknowns(facts: @Vec[FunctionFact], edges: Vec[CallEdge], index: I64) -> Void effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -404,13 +404,13 @@ fn finalize_unknowns(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge],
       else:
         8
       let next_fact: FunctionFact = FunctionFact(item: fact.item, name: fact.name, status: 0, reason: reason, blockers: add_blocker(fact.blockers, reason), first_edge: fact.first_edge, edge_count: fact.edge_count, body: fact.body, body_tokens: fact.body_tokens)
-      vec.set(facts, index, next_fact)
+      vec.set(@facts, index, next_fact)
     else:
       void
     let next: I64 = index + 1
-    recur(facts, edges, next)
+    recur(@facts, edges, next)
 
-fn graph_blockers(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64, end: I64, blockers: Blockers) -> Blockers effects[partial]:
+fn graph_blockers(facts: Vec[FunctionFact], edges: Vec[CallEdge], index: I64, end: I64, blockers: Blockers) -> Blockers effects[partial]:
   let done: Bool = index >= end
   if done:
     blockers
@@ -439,7 +439,7 @@ fn graph_blockers(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], in
     let next: I64 = index + 1
     recur(facts, edges, next, end, next_blockers)
 
-fn enrich_graph_blockers(inout facts: Vec[FunctionFact], inout edges: Vec[CallEdge], index: I64) -> Void effects[partial]:
+fn enrich_graph_blockers(facts: @Vec[FunctionFact], edges: Vec[CallEdge], index: I64) -> Void effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -449,11 +449,11 @@ fn enrich_graph_blockers(inout facts: Vec[FunctionFact], inout edges: Vec[CallEd
     let end: I64 = fact.first_edge + fact.edge_count
     let blockers: Blockers = graph_blockers(facts, edges, fact.first_edge, end, fact.blockers)
     let updated: FunctionFact = FunctionFact(item: fact.item, name: fact.name, status: fact.status, reason: fact.reason, blockers: blockers, first_edge: fact.first_edge, edge_count: fact.edge_count, body: fact.body, body_tokens: fact.body_tokens)
-    vec.set(facts, index, updated)
+    vec.set(@facts, index, updated)
     let next: I64 = index + 1
-    recur(facts, edges, next)
+    recur(@facts, edges, next)
 
-fn evaluate_span(source: Bytes, inout tokens: Vec[syntax.Token], inout range_facts: Vec[ranges.Fact], inout facts: Vec[FunctionFact], index: I64, end: I64, status: I64, reason: I64, calls: I64) -> Evaluation effects[partial]:
+fn evaluate_span(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[ranges.Fact], facts: Vec[FunctionFact], index: I64, end: I64, status: I64, reason: I64, calls: I64) -> Evaluation effects[partial]:
   let done: Bool = index >= end
   if done:
     Evaluation(status: status, reason: reason, calls: calls)
@@ -537,7 +537,7 @@ fn evaluate_span(source: Bytes, inout tokens: Vec[syntax.Token], inout range_fac
     let next: I64 = syntax.ast_node_after(index)
     recur(source, tokens, range_facts, facts, next, end, next_status, next_reason, next_calls)
 
-fn evaluate_expression(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_facts: Vec[ranges.Fact], inout facts: Vec[FunctionFact], expr: I64) -> Evaluation effects[partial]:
+fn evaluate_expression(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_facts: Vec[ranges.Fact], facts: Vec[FunctionFact], expr: I64) -> Evaluation effects[partial]:
   let typed: Bool = typed_expression(typed_facts, expr)
   if typed:
     let end: I64 = syntax.ast_next(tokens, expr)
@@ -545,7 +545,7 @@ fn evaluate_expression(source: Bytes, inout tokens: Vec[syntax.Token], inout typ
   else:
     Evaluation(status: 0, reason: 11, calls: 0)
 
-fn expression_uses_binding(inout tokens: Vec[syntax.Token], index: I64, end: I64, declaration: I64) -> Bool effects[partial]:
+fn expression_uses_binding(tokens: Vec[syntax.Token], index: I64, end: I64, declaration: I64) -> Bool effects[partial]:
   let done: Bool = index >= end
   if done:
     false
@@ -558,100 +558,100 @@ fn expression_uses_binding(inout tokens: Vec[syntax.Token], index: I64, end: I64
       let next: I64 = syntax.ast_node_after(index)
       recur(tokens, next, end, declaration)
 
-fn append_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_nonnegative_i64(value, output)
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_nonnegative_i64(value, @output)
 
-fn emit_reason(reason: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_reason(reason: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if reason == 1:
-    text.append_text(output, "declared-effects")
+    text.append_text(@output, "declared-effects")
   else:
     if reason == 2:
-      text.append_text(output, "exclusive-borrow")
+      text.append_text(@output, "exclusive-borrow")
     else:
       if reason == 3:
-        text.append_text(output, "mutation")
+        text.append_text(@output, "mutation")
       else:
         if reason == 4:
-          text.append_text(output, "checked-trap")
+          text.append_text(@output, "checked-trap")
         else:
           if reason == 5:
-            text.append_text(output, "allocation-or-io")
+            text.append_text(@output, "allocation-or-io")
           else:
             if reason == 6:
-              text.append_text(output, "recurrence")
+              text.append_text(@output, "recurrence")
             else:
               if reason == 7:
-                text.append_text(output, "callee-not-safe")
+                text.append_text(@output, "callee-not-safe")
               else:
                 if reason == 8:
-                  text.append_text(output, "call-cycle")
+                  text.append_text(@output, "call-cycle")
                 else:
                   if reason == 9:
-                    text.append_text(output, "function-limit")
+                    text.append_text(@output, "function-limit")
                   else:
                     if reason == 10:
-                      text.append_text(output, "edge-limit")
+                      text.append_text(@output, "edge-limit")
                     else:
-                      text.append_text(output, "missing-typed-fact")
+                      text.append_text(@output, "missing-typed-fact")
 
-fn emit_blocker(present: Bool, name: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_blocker(present: Bool, name: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if present:
-    text.append_text(output, " ")
-    text.append_text(output, name)
+    text.append_text(@output, " ")
+    text.append_text(@output, name)
   else:
     void
 
-fn emit_blockers(blockers: Blockers, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (blockers")
-  emit_blocker(blockers.declared_effects, "declared-effects", output)
-  emit_blocker(blockers.exclusive_borrow, "exclusive-borrow", output)
-  emit_blocker(blockers.mutation, "mutation", output)
-  emit_blocker(blockers.checked_trap, "checked-trap", output)
-  emit_blocker(blockers.allocation_or_io, "allocation-or-io", output)
-  emit_blocker(blockers.recurrence, "recurrence", output)
-  emit_blocker(blockers.callee_not_safe, "callee-not-safe", output)
-  emit_blocker(blockers.call_cycle, "call-cycle", output)
-  emit_blocker(blockers.function_limit, "function-limit", output)
-  emit_blocker(blockers.edge_limit, "edge-limit", output)
-  emit_blocker(blockers.missing_typed_fact, "missing-typed-fact", output)
-  text.append_text(output, ")")
+fn emit_blockers(blockers: Blockers, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (blockers")
+  emit_blocker(blockers.declared_effects, "declared-effects", @output)
+  emit_blocker(blockers.exclusive_borrow, "exclusive-borrow", @output)
+  emit_blocker(blockers.mutation, "mutation", @output)
+  emit_blocker(blockers.checked_trap, "checked-trap", @output)
+  emit_blocker(blockers.allocation_or_io, "allocation-or-io", @output)
+  emit_blocker(blockers.recurrence, "recurrence", @output)
+  emit_blocker(blockers.callee_not_safe, "callee-not-safe", @output)
+  emit_blocker(blockers.call_cycle, "call-cycle", @output)
+  emit_blocker(blockers.function_limit, "function-limit", @output)
+  emit_blocker(blockers.edge_limit, "edge-limit", @output)
+  emit_blocker(blockers.missing_typed_fact, "missing-typed-fact", @output)
+  text.append_text(@output, ")")
 
-fn emit_function_fact(source: Bytes, inout tokens: Vec[syntax.Token], fact: FunctionFact, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (function-parallel-safety ")
-  append_i64(fact.item, output)
-  text.append_text(output, " ")
-  text.append_token(source, tokens, fact.name, output)
+fn emit_function_fact(source: Bytes, tokens: Vec[syntax.Token], fact: FunctionFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (function-parallel-safety ")
+  append_i64(fact.item, @output)
+  text.append_text(@output, " ")
+  text.append_token(source, tokens, fact.name, @output)
   let safe: Bool = fact.status == 1
   let unavailable: Bool = fact.status == 2
   if safe:
-    text.append_text(output, " (guarantee exact) (status safe)")
+    text.append_text(@output, " (guarantee exact) (status safe)")
   else:
     if unavailable:
-      text.append_text(output, " (guarantee exact) (status unavailable) (reason ")
+      text.append_text(@output, " (guarantee exact) (status unavailable) (reason ")
     else:
-      text.append_text(output, " (guarantee unknown) (status unknown) (reason ")
+      text.append_text(@output, " (guarantee unknown) (status unknown) (reason ")
   if safe:
     void
   else:
-    emit_reason(fact.reason, output)
-    text.append_text(output, ")")
-  emit_blockers(fact.blockers, output)
-  text.append_text(output, " (body-tokens ")
-  append_i64(fact.body_tokens, output)
-  text.append_text(output, "))")
+    emit_reason(fact.reason, @output)
+    text.append_text(@output, ")")
+  emit_blockers(fact.blockers, @output)
+  text.append_text(@output, " (body-tokens ")
+  append_i64(fact.body_tokens, @output)
+  text.append_text(@output, "))")
 
-fn emit_function_facts(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[FunctionFact], index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_function_facts(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[FunctionFact], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
     void
   else:
     let fact: FunctionFact = vec.get(facts, index)
-    emit_function_fact(source, tokens, fact, output)
+    emit_function_fact(source, tokens, fact, @output)
     let next: I64 = index + 1
-    recur(source, tokens, facts, next, output)
+    recur(source, tokens, facts, next, @output)
 
-fn direct_user_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn direct_user_call(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let form: Bool = kind == 0
   let head: I64 = syntax.ast_list_first(expr)
@@ -670,7 +670,7 @@ fn direct_user_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -
     -1
   call_form && ((!builtin) && (linked >= 0))
 
-fn arguments_atomic(inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn arguments_atomic(tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -685,7 +685,7 @@ fn arguments_atomic(inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effect
     else:
       false
 
-fn call_work(source: Bytes, inout tokens: Vec[syntax.Token], inout range_view: ranges.View, expr: I64) -> ranges.Work effects[partial]:
+fn call_work(source: Bytes, tokens: Vec[syntax.Token], range_view: ranges.View, expr: I64) -> ranges.Work effects[partial]:
   let direct: Bool = direct_user_call(source, tokens, expr)
   if direct:
     let callee: I64 = syntax.ast_call_callee(expr)
@@ -701,17 +701,17 @@ fn work_value(work: ranges.Work) -> I64:
   else:
     -1
 
-fn emit_work(work: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_work(work: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let known: Bool = work >= 0
   if known:
-    append_i64(work, output)
+    append_i64(work, @output)
   else:
-    text.append_text(output, "unknown")
+    text.append_text(@output, "unknown")
 
 fn work_profitable(work: ranges.Work) -> Bool:
   work.known && (work.iterations >= 1000000)
 
-fn capture_ready(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn capture_ready(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let direct: Bool = direct_user_call(source, tokens, expr)
   let arguments: I64 = syntax.ast_call_arguments(expr)
   let atomic: Bool = if direct:
@@ -720,7 +720,7 @@ fn capture_ready(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> B
     false
   direct && atomic
 
-fn leading_let_site(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
+fn leading_let_site(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
   let found: Bool = cursor == site
   if found:
     true
@@ -740,7 +740,7 @@ fn leading_let_site(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64,
     else:
       false
 
-fn collect_sites_in_function(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_view: ranges.View, inout range_facts: Vec[ranges.Fact], inout facts: Vec[FunctionFact], root: I64, index: I64, end: I64, inout sites: Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
+fn collect_sites_in_function(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_view: ranges.View, range_facts: Vec[ranges.Fact], facts: Vec[FunctionFact], root: I64, index: I64, end: I64, sites: @Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     schedule
@@ -830,7 +830,7 @@ fn collect_sites_in_function(source: Bytes, inout tokens: Vec[syntax.Token], ino
     let executable: Bool = selected && (leading && (captures && profitable))
     if reported:
       let site: Site = Site(site: index, first: value, second: inner_value, join: inner_body, first_work: work_value(first_work), second_work: work_value(second_work), allocates: false, explicit: false, executable: executable)
-      vec.push(sites, site)
+      vec.push(@sites, site)
     else:
       void
     let next_candidates: I64 = if eligible:
@@ -860,9 +860,9 @@ fn collect_sites_in_function(source: Bytes, inout tokens: Vec[syntax.Token], ino
       schedule.selected_until
     let next_schedule: Schedule = Schedule(candidates: next_candidates, selected: next_selected, reported: next_reported, executable: next_executable, executed: next_executed, selected_until: next_until)
     let next: I64 = syntax.ast_node_after(index)
-    recur(source, tokens, typed_facts, range_view, range_facts, facts, root, next, end, sites, next_schedule)
+    recur(source, tokens, typed_facts, range_view, range_facts, facts, root, next, end, @sites, next_schedule)
 
-fn collect_sites(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_view: ranges.View, inout range_facts: Vec[ranges.Fact], inout facts: Vec[FunctionFact], index: I64, inout sites: Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
+fn collect_sites(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_view: ranges.View, range_facts: Vec[ranges.Fact], facts: Vec[FunctionFact], index: I64, sites: @Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
   let fact_count: I64 = vec.len(facts)
   let done: Bool = index >= fact_count
   if done:
@@ -870,11 +870,11 @@ fn collect_sites(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_fac
   else:
     let fact: FunctionFact = vec.get(facts, index)
     let end: I64 = syntax.ast_next(tokens, fact.body)
-    let next_schedule: Schedule = collect_sites_in_function(source, tokens, typed_facts, range_view, range_facts, facts, fact.body, fact.body, end, sites, schedule)
+    let next_schedule: Schedule = collect_sites_in_function(source, tokens, typed_facts, range_view, range_facts, facts, fact.body, fact.body, end, @sites, schedule)
     let next: I64 = index + 1
-    recur(source, tokens, typed_facts, range_view, range_facts, facts, next, sites, next_schedule)
+    recur(source, tokens, typed_facts, range_view, range_facts, facts, next, @sites, next_schedule)
 
-fn append_explicit_site(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, inout sites: Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
+fn append_explicit_site(source: Bytes, tokens: Vec[syntax.Token], index: I64, sites: @Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
   let first_let: I64 = syntax.ast_fork_body(index)
   let first_type: I64 = syntax.ast_let_type(first_let)
   let first_value: I64 = syntax.ast_let_value(tokens, first_let)
@@ -885,7 +885,7 @@ fn append_explicit_site(source: Bytes, inout tokens: Vec[syntax.Token], index: I
   let under_limit: Bool = schedule.reported < 64
   if under_limit:
     let site: Site = Site(site: index, first: first_value, second: second_value, join: join, first_work: -1, second_work: -1, allocates: effects.call_requires(source, tokens, syntax.ast_call_callee(first_value), 1) || effects.call_requires(source, tokens, syntax.ast_call_callee(second_value), 1), explicit: true, executable: true)
-    vec.push(sites, site)
+    vec.push(@sites, site)
   else:
     void
   let next_candidates: I64 = schedule.candidates + 1
@@ -904,7 +904,7 @@ fn append_explicit_site(source: Bytes, inout tokens: Vec[syntax.Token], index: I
     schedule.executed
   Schedule(candidates: next_candidates, selected: next_selected, reported: next_reported, executable: next_executable, executed: next_executed, selected_until: schedule.selected_until)
 
-fn collect_explicit_sites_in_function(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, end: I64, inout sites: Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
+fn collect_explicit_sites_in_function(source: Bytes, tokens: Vec[syntax.Token], index: I64, end: I64, sites: @Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     schedule
@@ -917,13 +917,13 @@ fn collect_explicit_sites_in_function(source: Bytes, inout tokens: Vec[syntax.To
     else:
       false
     let next_schedule: Schedule = if fork_form:
-      append_explicit_site(source, tokens, index, sites, schedule)
+      append_explicit_site(source, tokens, index, @sites, schedule)
     else:
       schedule
     let next: I64 = syntax.ast_node_after(index)
-    recur(source, tokens, next, end, sites, next_schedule)
+    recur(source, tokens, next, end, @sites, next_schedule)
 
-fn collect_explicit_sites(source: Bytes, inout tokens: Vec[syntax.Token], inout facts: Vec[FunctionFact], index: I64, inout sites: Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
+fn collect_explicit_sites(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[FunctionFact], index: I64, sites: @Vec[Site], schedule: Schedule) -> Schedule effects[alloc, partial]:
   let fact_count: I64 = vec.len(facts)
   let done: Bool = index >= fact_count
   if done:
@@ -931,11 +931,11 @@ fn collect_explicit_sites(source: Bytes, inout tokens: Vec[syntax.Token], inout 
   else:
     let fact: FunctionFact = vec.get(facts, index)
     let end: I64 = syntax.ast_next(tokens, fact.body)
-    let next_schedule: Schedule = collect_explicit_sites_in_function(source, tokens, fact.body, end, sites, schedule)
+    let next_schedule: Schedule = collect_explicit_sites_in_function(source, tokens, fact.body, end, @sites, schedule)
     let next: I64 = index + 1
-    recur(source, tokens, facts, next, sites, next_schedule)
+    recur(source, tokens, facts, next, @sites, next_schedule)
 
-fn edge_complete(inout facts: Vec[FunctionFact], index: I64) -> Bool effects[partial]:
+fn edge_complete(facts: Vec[FunctionFact], index: I64) -> Bool effects[partial]:
   let count: I64 = vec.len(facts)
   let done: Bool = index >= count
   if done:
@@ -949,116 +949,116 @@ fn edge_complete(inout facts: Vec[FunctionFact], index: I64) -> Bool effects[par
       let next: I64 = index + 1
       recur(facts, next)
 
-fn analyze(source: Bytes, inout tokens: Vec[syntax.Token], inout typed_facts: Vec[typing.Fact], inout range_view: ranges.View) -> View effects[alloc, partial]:
+fn analyze(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], range_view: ranges.View) -> View effects[alloc, partial]:
   let range_facts: Vec[ranges.Fact] = range_view.facts
   let facts: Vec[FunctionFact] = vec.new()
   let edges: Vec[CallEdge] = vec.new()
-  let total: I64 = collect_functions(source, tokens, typed_facts, range_facts, 3, facts, edges, 0)
-  link_edges(facts, edges, 0)
-  resolve_graph(facts, edges, 0)
-  finalize_unknowns(facts, edges, 0)
-  enrich_graph_blockers(facts, edges, 0)
+  let total: I64 = collect_functions(source, tokens, typed_facts, range_facts, 3, @facts, @edges, 0)
+  link_edges(facts, @edges, 0)
+  resolve_graph(@facts, edges, 0)
+  finalize_unknowns(@facts, edges, 0)
+  enrich_graph_blockers(@facts, edges, 0)
   let functions_bounded: Bool = total <= 64
   let edges_bounded: Bool = edge_complete(facts, 0)
   let exact: Bool = functions_bounded && edges_bounded
   let sites: Vec[Site] = vec.new()
   let initial: Schedule = Schedule(candidates: 0, selected: 0, reported: 0, executable: 0, executed: 0, selected_until: -1)
-  let explicit_schedule: Schedule = collect_explicit_sites(source, tokens, facts, 0, sites, initial)
-  let schedule: Schedule = collect_sites(source, tokens, typed_facts, range_view, range_facts, facts, 0, sites, explicit_schedule)
+  let explicit_schedule: Schedule = collect_explicit_sites(source, tokens, facts, 0, @sites, initial)
+  let schedule: Schedule = collect_sites(source, tokens, typed_facts, range_view, range_facts, facts, 0, @sites, explicit_schedule)
   View(facts: facts, sites: sites, functions: total, exact: exact, schedule: schedule)
 
-fn emit_site_intent(site: Site, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_site_intent(site: Site, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if site.explicit:
-    text.append_text(output, " (intent explicit)")
+    text.append_text(@output, " (intent explicit)")
   else:
-    text.append_text(output, " (intent automatic)")
+    text.append_text(@output, " (intent automatic)")
 
-fn emit_site_profitability(site: Site, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_site_profitability(site: Site, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if site.explicit:
-    text.append_text(output, " (profitability explicit) (profitable true) (target-tier posix-v1)")
+    text.append_text(@output, " (profitability explicit) (profitable true) (target-tier posix-v1)")
   else:
     if site.executable:
-      text.append_text(output, " (profitability exact) (profitable true) (target-tier posix-v1) (minimum-task-iterations 1000000)")
+      text.append_text(@output, " (profitability exact) (profitable true) (target-tier posix-v1) (minimum-task-iterations 1000000)")
     else:
       let work_known: Bool = (site.first_work >= 0) && (site.second_work >= 0)
       if work_known:
-        text.append_text(output, " (profitability exact) (profitable false) (profitability-reason below-posix-v1-threshold)")
+        text.append_text(@output, " (profitability exact) (profitable false) (profitability-reason below-posix-v1-threshold)")
       else:
-        text.append_text(output, " (profitability unknown) (profitability-reason target-work-unavailable)")
+        text.append_text(@output, " (profitability unknown) (profitability-reason target-work-unavailable)")
 
-fn emit_fork_site(inout tokens: Vec[syntax.Token], site: Site, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_fork_site(tokens: Vec[syntax.Token], site: Site, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let first: I64 = site.first
   let second: I64 = site.second
   let first_end: I64 = syntax.ast_next(tokens, first)
   let second_end: I64 = syntax.ast_next(tokens, second)
-  text.append_text(output, " (fork-site ")
-  append_i64(site.site, output)
-  emit_site_intent(site, output)
-  text.append_text(output, " (guarantee exact) (tasks ")
-  append_i64(first, output)
-  text.append_text(output, " ")
-  append_i64(second, output)
-  text.append_text(output, ") (join ")
-  append_i64(site.join, output)
-  text.append_text(output, ") (race-free true) (deadlock-free true)")
-  emit_site_profitability(site, output)
-  text.append_text(output, " (task-work ")
-  emit_work(site.first_work, output)
-  text.append_text(output, " ")
-  emit_work(site.second_work, output)
-  text.append_text(output, ") (task-tokens ")
-  append_i64(first_end - first, output)
-  text.append_text(output, " ")
-  append_i64(second_end - second, output)
+  text.append_text(@output, " (fork-site ")
+  append_i64(site.site, @output)
+  emit_site_intent(site, @output)
+  text.append_text(@output, " (guarantee exact) (tasks ")
+  append_i64(first, @output)
+  text.append_text(@output, " ")
+  append_i64(second, @output)
+  text.append_text(@output, ") (join ")
+  append_i64(site.join, @output)
+  text.append_text(@output, ") (race-free true) (deadlock-free true)")
+  emit_site_profitability(site, @output)
+  text.append_text(@output, " (task-work ")
+  emit_work(site.first_work, @output)
+  text.append_text(@output, " ")
+  emit_work(site.second_work, @output)
+  text.append_text(@output, ") (task-tokens ")
+  append_i64(first_end - first, @output)
+  text.append_text(@output, " ")
+  append_i64(second_end - second, @output)
   if site.executable:
-    text.append_text(output, ") (execution selected))")
+    text.append_text(@output, ") (execution selected))")
   else:
-    text.append_text(output, ") (execution not-selected))")
+    text.append_text(@output, ") (execution not-selected))")
 
-fn emit_sites(inout tokens: Vec[syntax.Token], inout sites: Vec[Site], index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_sites(tokens: Vec[syntax.Token], sites: Vec[Site], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(sites)
   let done: Bool = index >= count
   if done:
     void
   else:
     let site: Site = vec.get(sites, index)
-    emit_fork_site(tokens, site, output)
+    emit_fork_site(tokens, site, @output)
     let next: I64 = index + 1
-    recur(tokens, sites, next, output)
+    recur(tokens, sites, next, @output)
 
-fn emit_module_facts(source: Bytes, inout tokens: Vec[syntax.Token], view: View, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_module_facts(source: Bytes, tokens: Vec[syntax.Token], view: View, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let facts: Vec[FunctionFact] = view.facts
   let sites: Vec[Site] = view.sites
   let schedule: Schedule = view.schedule
-  text.append_text(output, " (parallelism (guarantee ")
+  text.append_text(@output, " (parallelism (guarantee ")
   if view.exact:
-    text.append_text(output, "exact")
+    text.append_text(@output, "exact")
   else:
-    text.append_text(output, "bounded")
-  text.append_text(output, ") (function-limit 64) (edge-limit 4096) (resolution-pass-limit 64) (schedule-limit 64) (profitability-model posix-v1) (minimum-task-iterations 1000000) (functions")
-  emit_function_facts(source, tokens, facts, 0, output)
-  text.append_text(output, ") (fork-sites")
-  emit_sites(tokens, sites, 0, output)
-  text.append_text(output, ") (schedule (policy lexical-earliest-nonoverlap) (guarantee ")
+    text.append_text(@output, "bounded")
+  text.append_text(@output, ") (function-limit 64) (edge-limit 4096) (resolution-pass-limit 64) (schedule-limit 64) (profitability-model posix-v1) (minimum-task-iterations 1000000) (functions")
+  emit_function_facts(source, tokens, facts, 0, @output)
+  text.append_text(@output, ") (fork-sites")
+  emit_sites(tokens, sites, 0, @output)
+  text.append_text(@output, ") (schedule (policy lexical-earliest-nonoverlap) (guarantee ")
   let schedule_exact: Bool = schedule.selected == schedule.reported
   if schedule_exact:
-    text.append_text(output, "exact")
+    text.append_text(@output, "exact")
   else:
-    text.append_text(output, "bounded")
-  text.append_text(output, ") (candidate-sites ")
-  append_i64(schedule.candidates, output)
-  text.append_text(output, ") (selected-sites ")
-  append_i64(schedule.selected, output)
-  text.append_text(output, ") (reported-sites ")
-  append_i64(schedule.reported, output)
-  text.append_text(output, ") (executable-sites ")
-  append_i64(schedule.executable, output)
-  text.append_text(output, ") (executed-sites ")
-  append_i64(schedule.executed, output)
-  text.append_text(output, ")) (eligible-sites ")
-  append_i64(schedule.candidates, output)
+    text.append_text(@output, "bounded")
+  text.append_text(@output, ") (candidate-sites ")
+  append_i64(schedule.candidates, @output)
+  text.append_text(@output, ") (selected-sites ")
+  append_i64(schedule.selected, @output)
+  text.append_text(@output, ") (reported-sites ")
+  append_i64(schedule.reported, @output)
+  text.append_text(@output, ") (executable-sites ")
+  append_i64(schedule.executable, @output)
+  text.append_text(@output, ") (executed-sites ")
+  append_i64(schedule.executed, @output)
+  text.append_text(@output, ")) (eligible-sites ")
+  append_i64(schedule.candidates, @output)
   let any: Bool = schedule.executed > 0
   if any:
-    text.append_text(output, ") (execution (guarantee exact) (status enabled) (tier posix-v1-with-serial-fallback)))")
+    text.append_text(@output, ") (execution (guarantee exact) (status enabled) (tier posix-v1-with-serial-fallback)))")
   else:
-    text.append_text(output, ") (execution (guarantee exact) (status disabled) (reason no-profitable-capture-safe-site)))")
+    text.append_text(@output, ") (execution (guarantee exact) (status disabled) (reason no-profitable-capture-safe-site)))")

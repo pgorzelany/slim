@@ -782,6 +782,26 @@ fn emits_c_deterministically() {
 }
 
 #[test]
+fn ownership_modes_have_distinct_checked_abi_capabilities() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/tool/format.slim");
+    let output = Command::new(slimc()).arg(source).output().unwrap();
+    assert!(output.status.success());
+    let generated = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        generated.contains(
+            "static int64_t slim_fn_read(SlimVec slim_v_values, SlimRegion *slim_region);"
+        )
+    );
+    assert!(generated.contains(
+        "static int64_t slim_fn_touch(SlimVec * slim_v_values, SlimRegion *slim_region);"
+    ));
+    assert!(generated.contains(
+        "static int64_t slim_fn_consume(SlimVec slim_v_values, SlimRegion *slim_region);"
+    ));
+}
+
+#[test]
 fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
     let directory = temporary_directory("parameter-constants");
 
@@ -1087,7 +1107,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let fallback_success = write_source(
         &directory,
-        "module versioned_get_fallback\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  if true:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
+        "module versioned_get_fallback\n\nfn read(values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 42)\n  if true:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
     );
     let fallback_c = directory.join("fallback.c");
     assert!(
@@ -1121,7 +1141,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let fallback_trap = write_source(
         &directory,
-        "module versioned_get_trap\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  if false:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
+        "module versioned_get_trap\n\nfn read(values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 42)\n  if false:\n    read(values, 0)\n  else:\n    read(values, 9)\n",
     );
     let trap_executable = directory.join("trap");
     assert!(
@@ -1144,7 +1164,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let versioned_set = write_source(
         &directory,
-        "module versioned_set_fallback\n\nfn store(inout values: Vec[I64], index: I64, value: I64) -> Void effects[partial]:\n  vec.set(values, index, value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 0)\n  if true:\n    store(values, 0, 42)\n  else:\n    store(values, 9, 42)\n  vec.get(values, 0)\n",
+        "module versioned_set_fallback\n\nfn store(values: @Vec[I64], index: I64, value: I64) -> Void effects[partial]:\n  vec.set(@values, index, value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 0)\n  if true:\n    store(@values, 0, 42)\n  else:\n    store(@values, 9, 42)\n  vec.get(values, 0)\n",
     );
     let set_c = directory.join("set.c");
     assert!(
@@ -1177,7 +1197,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
 
     let negative = write_source(
         &directory,
-        "module negative_index\n\nfn read(inout values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  read(values, -1)\n",
+        "module negative_index\n\nfn read(values: Vec[I64], index: I64) -> I64 effects[partial]:\n  vec.get(values, index)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 42)\n  read(values, -1)\n",
     );
     let negative_c = directory.join("negative.c");
     assert!(
@@ -1202,7 +1222,7 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
     let directory = temporary_directory("typed-vector-set");
     let source = write_source(
         &directory,
-        "module typed_vector_set\n\nstruct Pair:\n  left: I64\n  right: I64\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let pairs: Vec[Pair] = vec.new()\n  let first: Pair = Pair(left: 1, right: 2)\n  vec.push(pairs, first)\n  let second: Pair = Pair(left: 20, right: 22)\n  vec.set(pairs, 0, second)\n  let result: Pair = vec.get(pairs, 0)\n  (result.left + result.right)\n",
+        "module typed_vector_set\n\nstruct Pair:\n  left: I64\n  right: I64\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let pairs: Vec[Pair] = vec.new()\n  let first: Pair = Pair(left: 1, right: 2)\n  vec.push(@pairs, first)\n  let second: Pair = Pair(left: 20, right: 22)\n  vec.set(@pairs, 0, second)\n  let result: Pair = vec.get(pairs, 0)\n  (result.left + result.right)\n",
     );
     let generated = directory.join("program.c");
     assert!(
@@ -1245,7 +1265,7 @@ fn propagates_typed_allocation_failure() {
     let directory = temporary_directory("allocation-failure");
     let source = write_source(
         &directory,
-        "module allocation_failure\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  vec.push(values, 42)\n  0\n",
+        "module allocation_failure\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 42)\n  0\n",
     );
     let executable = directory.join("program");
     let build = Command::new(slimc())
@@ -1544,7 +1564,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     assert!(report.contains("(totality (guarantee unknown) (reason recursion-or-unproved-call))"));
     assert!(report.contains("(function 71 sum"));
     assert!(
-        report.contains("(binding 76 values (type (Vec I64)) (ownership owned) (scope-end 138)")
+        report.contains("(binding 76 values (type (Vec I64)) (ownership shared) (scope-end 138)")
     );
     assert!(report.contains("(uses 3)"));
     assert!(report.contains("(last-use 130)"));
@@ -1559,7 +1579,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     let pattern_report = String::from_utf8(pattern_report.stdout).unwrap();
     assert!(
         pattern_report.contains(
-            "(binding 230 items (type unknown) (ownership unknown) (scope-end 238) (uses 1) (last-use 235)"
+            "(binding 230 items (type unknown) (ownership shared) (scope-end 238) (uses 1) (last-use 235)"
         )
     );
 }
@@ -2360,7 +2380,7 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
     );
     assert_eq!(
         fs::read_to_string(interfaces.join("math.sli")).unwrap(),
-        "(interface 2 math (fn answer ((owned I64)) I64 (effects)))\n"
+        "(interface 3 math (fn answer ((copy I64)) I64 (effects)))\n"
     );
 
     let relocated = temporary_directory("project-relocated");

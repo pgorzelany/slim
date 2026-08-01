@@ -26,7 +26,7 @@ process, and `checksum` counts the remaining live cells.
 ## Ownership and effects
 
 `current` and `next` are distinct affine vectors passed through exclusive
-`inout` borrows. Double buffering prevents a new cell from observing a
+`@` borrows. Double buffering prevents a new cell from observing a
 partially updated generation. Initial growth requires `alloc`; all accesses,
 offset arithmetic, and writes are checked.
 

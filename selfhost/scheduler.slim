@@ -14,27 +14,27 @@ struct Schedule:
   tasks: Vec[Task]
   batches: Vec[Batch]
 
-fn collect_modules(inout tokens: Vec[syntax.Token], cursor: I64, inout modules: Vec[I64]) -> Void effects[alloc, partial]:
+fn collect_modules(tokens: Vec[syntax.Token], cursor: I64, modules: @Vec[I64]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     void
   else:
-    vec.push(modules, cursor)
+    vec.push(@modules, cursor)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(tokens, next, modules)
+    recur(tokens, next, @modules)
 
-fn fill_pending(length: I64, index: I64, inout scheduled: Vec[Bool]) -> Void effects[alloc, partial]:
+fn fill_pending(length: I64, index: I64, scheduled: @Vec[Bool]) -> Void effects[alloc, partial]:
   let done: Bool = index >= length
   if done:
     void
   else:
     let value: Bool = false
-    vec.push(scheduled, value)
+    vec.push(@scheduled, value)
     let next: I64 = index + 1
-    recur(length, next, scheduled)
+    recur(length, next, @scheduled)
 
-fn find_module(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: Vec[I64], name: I64, index: I64) -> I64 effects[partial]:
+fn find_module(source: Bytes, tokens: Vec[syntax.Token], modules: Vec[I64], name: I64, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(modules)
   let done: Bool = index >= length
   if done:
@@ -53,7 +53,7 @@ fn find_module(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: Ve
       let next: I64 = index + 1
       recur(source, tokens, modules, name, next)
 
-fn imports_ready(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: Vec[I64], inout scheduled: Vec[Bool], cursor: I64) -> Bool effects[partial]:
+fn imports_ready(source: Bytes, tokens: Vec[syntax.Token], modules: Vec[I64], scheduled: Vec[Bool], cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -71,7 +71,7 @@ fn imports_ready(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: 
     else:
       false
 
-fn collect_ready(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: Vec[I64], inout scheduled: Vec[Bool], index: I64, inout ready: Vec[I64]) -> Void effects[alloc, partial]:
+fn collect_ready(source: Bytes, tokens: Vec[syntax.Token], modules: Vec[I64], scheduled: Vec[Bool], index: I64, ready: @Vec[I64]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(modules)
   let done: Bool = index >= length
   if done:
@@ -85,13 +85,13 @@ fn collect_ready(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: 
     let dependencies_ready: Bool = imports_ready(source, tokens, modules, scheduled, first_import)
     let selectable: Bool = pending && dependencies_ready
     if selectable:
-      vec.push(ready, index)
+      vec.push(@ready, index)
     else:
       void
     let next: I64 = index + 1
-    recur(source, tokens, modules, scheduled, next, ready)
+    recur(source, tokens, modules, scheduled, next, @ready)
 
-fn append_tasks(inout ready: Vec[I64], index: I64, layer: I64, inout tasks: Vec[Task]) -> Void effects[alloc, partial]:
+fn append_tasks(ready: Vec[I64], index: I64, layer: I64, tasks: @Vec[Task]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(ready)
   let done: Bool = index >= length
   if done:
@@ -99,11 +99,11 @@ fn append_tasks(inout ready: Vec[I64], index: I64, layer: I64, inout tasks: Vec[
   else:
     let module: I64 = vec.get(ready, index)
     let task: Task = Task(module: module, layer: layer)
-    vec.push(tasks, task)
+    vec.push(@tasks, task)
     let next: I64 = index + 1
-    recur(ready, next, layer, tasks)
+    recur(ready, next, layer, @tasks)
 
-fn append_batches(start: I64, end: I64, workers: I64, inout batches: Vec[Batch]) -> Void effects[alloc, partial]:
+fn append_batches(start: I64, end: I64, workers: I64, batches: @Vec[Batch]) -> Void effects[alloc, partial]:
   let done: Bool = start >= end
   if done:
     void
@@ -115,10 +115,10 @@ fn append_batches(start: I64, end: I64, workers: I64, inout batches: Vec[Batch])
     else:
       candidate_end
     let batch: Batch = Batch(start: start, end: batch_end)
-    vec.push(batches, batch)
-    recur(batch_end, end, workers, batches)
+    vec.push(@batches, batch)
+    recur(batch_end, end, workers, @batches)
 
-fn mark_ready(inout ready: Vec[I64], index: I64, inout scheduled: Vec[Bool]) -> Void effects[partial]:
+fn mark_ready(ready: Vec[I64], index: I64, scheduled: @Vec[Bool]) -> Void effects[partial]:
   let length: I64 = vec.len(ready)
   let done: Bool = index >= length
   if done:
@@ -126,29 +126,29 @@ fn mark_ready(inout ready: Vec[I64], index: I64, inout scheduled: Vec[Bool]) -> 
   else:
     let module: I64 = vec.get(ready, index)
     let value: Bool = true
-    vec.set(scheduled, module, value)
+    vec.set(@scheduled, module, value)
     let next: I64 = index + 1
-    recur(ready, next, scheduled)
+    recur(ready, next, @scheduled)
 
-fn schedule_layers(source: Bytes, inout tokens: Vec[syntax.Token], inout modules: Vec[I64], inout scheduled: Vec[Bool], completed: I64, layer: I64, workers: I64, inout tasks: Vec[Task], inout batches: Vec[Batch]) -> Bool effects[alloc, partial]:
+fn schedule_layers(source: Bytes, tokens: Vec[syntax.Token], modules: Vec[I64], scheduled: @Vec[Bool], completed: I64, layer: I64, workers: I64, tasks: @Vec[Task], batches: @Vec[Batch]) -> Bool effects[alloc, partial]:
   let module_count: I64 = vec.len(modules)
   let done: Bool = completed >= module_count
   if done:
     true
   else:
     let ready: Vec[I64] = vec.new()
-    collect_ready(source, tokens, modules, scheduled, 0, ready)
+    collect_ready(source, tokens, modules, scheduled, 0, @ready)
     let ready_count: I64 = vec.len(ready)
     let progress: Bool = ready_count > 0
     if progress:
       let start: I64 = vec.len(tasks)
-      append_tasks(ready, 0, layer, tasks)
+      append_tasks(ready, 0, layer, @tasks)
       let end: I64 = vec.len(tasks)
-      append_batches(start, end, workers, batches)
-      mark_ready(ready, 0, scheduled)
+      append_batches(start, end, workers, @batches)
+      mark_ready(ready, 0, @scheduled)
       let next_completed: I64 = completed + ready_count
       let next_layer: I64 = layer + 1
-      recur(source, tokens, modules, scheduled, next_completed, next_layer, workers, tasks, batches)
+      recur(source, tokens, modules, @scheduled, next_completed, next_layer, workers, @tasks, @batches)
     else:
       false
 
@@ -169,22 +169,22 @@ fn bounded_workers(requested: I64, module_count: I64) -> I64:
   else:
     implementation_bound
 
-fn make_schedule(valid: Bool, workers: I64, tasks: Vec[Task], batches: Vec[Batch]) -> Schedule:
+fn make_schedule(valid: Bool, workers: I64, tasks: ^Vec[Task], batches: ^Vec[Batch]) -> Schedule:
   Schedule(valid: valid, workers: workers, tasks: tasks, batches: batches)
 
-fn plan(source: Bytes, inout tokens: Vec[syntax.Token], requested: I64) -> Schedule effects[alloc, partial]:
+fn plan(source: Bytes, tokens: Vec[syntax.Token], requested: I64) -> Schedule effects[alloc, partial]:
   let modules: Vec[I64] = vec.new()
   let entry_form: I64 = 3
   let first_module: I64 = syntax.ast_next(tokens, entry_form)
-  collect_modules(tokens, first_module, modules)
+  collect_modules(tokens, first_module, @modules)
   let module_count: I64 = vec.len(modules)
   let workers: I64 = bounded_workers(requested, module_count)
   let scheduled: Vec[Bool] = vec.new()
-  fill_pending(module_count, 0, scheduled)
+  fill_pending(module_count, 0, @scheduled)
   let tasks: Vec[Task] = vec.new()
   let batches: Vec[Batch] = vec.new()
-  let valid: Bool = schedule_layers(source, tokens, modules, scheduled, 0, 0, workers, tasks, batches)
-  make_schedule(valid, workers, tasks, batches)
+  let valid: Bool = schedule_layers(source, tokens, modules, @scheduled, 0, 0, workers, @tasks, @batches)
+  make_schedule(valid, workers, ^tasks, ^batches)
 
 fn parse_jobs_from(input: Bytes, index: I64, length: I64, value: I64) -> I64 effects[partial]:
   let done: Bool = index >= length

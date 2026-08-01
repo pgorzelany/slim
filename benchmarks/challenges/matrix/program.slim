@@ -1,39 +1,39 @@
 module matrix
 
-fn fill(inout values: Vec[I64], index: I64, count: I64, factor: I64) -> Void effects[alloc, partial]:
+fn fill(values: @Vec[I64], index: I64, count: I64, factor: I64) -> Void effects[alloc, partial]:
   if index == count:
     void
   else:
     let value: I64 = ((index * factor) + 1) % 97
-    vec.push(values, value)
-    recur(values, index + 1, count, factor)
+    vec.push(@values, value)
+    recur(@values, index + 1, count, factor)
 
-fn dot(inout left: Vec[I64], inout right: Vec[I64], row: I64, column: I64, index: I64, size: I64, total: I64) -> I64 effects[partial]:
+fn dot(left: @Vec[I64], right: @Vec[I64], row: I64, column: I64, index: I64, size: I64, total: I64) -> I64 effects[partial]:
   if index == size:
     total
   else:
     let left_index: I64 = (row * size) + index
     let right_index: I64 = (index * size) + column
     let product: I64 = vec.get(left, left_index) * vec.get(right, right_index)
-    recur(left, right, row, column, index + 1, size, total + product)
+    recur(@left, @right, row, column, index + 1, size, total + product)
 
-fn sum_cells(inout left: Vec[I64], inout right: Vec[I64], cell: I64, size: I64, total: I64) -> I64 effects[partial]:
+fn sum_cells(left: @Vec[I64], right: @Vec[I64], cell: I64, size: I64, total: I64) -> I64 effects[partial]:
   if cell == (size * size):
     total
   else:
     let row: I64 = cell / size
     let column: I64 = cell % size
-    let value: I64 = dot(left, right, row, column, 0, size, 0)
-    recur(left, right, cell + 1, size, total + value)
+    let value: I64 = dot(@left, @right, row, column, 0, size, 0)
+    recur(@left, @right, cell + 1, size, total + value)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 128
   let count: I64 = size * size
   let left: Vec[I64] = vec.new()
   let right: Vec[I64] = vec.new()
-  fill(left, 0, count, 17)
-  fill(right, 0, count, 31)
-  let result: I64 = sum_cells(left, right, 0, size, 0)
+  fill(@left, 0, count, 17)
+  fill(@right, 0, count, 31)
+  let result: I64 = sum_cells(@left, @right, 0, size, 0)
   io.print_i64(result)
   io.println("")
   0

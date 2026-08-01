@@ -1,0 +1,7 @@
+module shared_mutation
+
+fn mutate(values: Vec[I64]) -> Void effects[alloc]:
+  vec.push(@values, 42)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -11,14 +11,14 @@ handle.
 
 - `io.print_i64(I64) -> Void`, `io.print_bytes(Bytes) -> Void`, and
   `io.println(Bytes) -> Void` require `io`.
-- `io.read_file(Bytes, inout Vec[U8]) -> Bool` requires `effects[alloc, io]`. It appends
+- `io.read_file(Bytes, @Vec[U8]) -> Bool` requires `effects[alloc, io]`. It appends
   the complete file on success; transport failure returns `false` and leaves
   the output unchanged.
 - `io.monotonic_ms() -> I64` requires `io`, performs no SLIM allocation, and
   returns a nonnegative millisecond reading. Successive readings on one
   execution thread do not decrease. The epoch is unspecified; only differences
   are meaningful.
-- `io.tcp_exchange(Bytes, I64, Bytes, I64, I64, inout Vec[U8]) -> Bool`
+- `io.tcp_exchange(Bytes, I64, Bytes, I64, I64, @Vec[U8]) -> Bool`
   requires `effects[alloc, io]`. It sends one finite request to a numeric IP address and
   port, receives at most the declared response bytes before the positive
   timeout, closes the connection, and appends only a complete response.

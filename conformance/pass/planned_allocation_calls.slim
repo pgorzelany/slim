@@ -2,7 +2,7 @@ module planned_allocation_calls
 
 fn allocate(value: I64) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  vec.push(values, value)
+  vec.push(@values, value)
   vec.get(values, 0)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:

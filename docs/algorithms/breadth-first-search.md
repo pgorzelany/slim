@@ -24,7 +24,7 @@ reaches the current vector length.
 
 ## Ownership and effects
 
-`main` owns the queue. `visit` and `enqueue` borrow it through `inout`, allowing
+`main` owns the queue. `visit` and `enqueue` borrow it through `@`, allowing
 growth without moving the vector away from the caller. Growth requires
 `alloc`; recurrent traversal requires `partial`; printing requires `io`.
 Bounds and arithmetic remain checked.

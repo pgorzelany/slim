@@ -6,7 +6,7 @@ fn absolute_difference(left: I64, right: I64) -> I64:
   else:
     right - left
 
-fn safe(inout columns: Vec[I64], row: I64, column: I64, prior: I64) -> Bool effects[partial]:
+fn safe(columns: @Vec[I64], row: I64, column: I64, prior: I64) -> Bool effects[partial]:
   if prior == row:
     true
   else:
@@ -19,16 +19,16 @@ fn safe(inout columns: Vec[I64], row: I64, column: I64, prior: I64) -> Bool effe
     if conflict:
       false
     else:
-      recur(columns, row, column, prior + 1)
+      recur(@columns, row, column, prior + 1)
 
-fn fill(inout columns: Vec[I64], index: I64, size: I64) -> Void effects[alloc, partial]:
+fn fill(columns: @Vec[I64], index: I64, size: I64) -> Void effects[alloc, partial]:
   if index == size:
     void
   else:
-    vec.push(columns, -1)
-    recur(columns, index + 1, size)
+    vec.push(@columns, -1)
+    recur(@columns, index + 1, size)
 
-fn search(inout columns: Vec[I64], row: I64, column: I64, size: I64, total: I64) -> I64 effects[partial]:
+fn search(columns: @Vec[I64], row: I64, column: I64, size: I64, total: I64) -> I64 effects[partial]:
   if row < 0:
     total
   else:
@@ -39,25 +39,25 @@ fn search(inout columns: Vec[I64], row: I64, column: I64, size: I64, total: I64)
       else:
         let previous_row: I64 = row - 1
         let previous_column: I64 = vec.get(columns, previous_row)
-        vec.set(columns, row, -1)
-        recur(columns, previous_row, previous_column + 1, size, total)
+        vec.set(@columns, row, -1)
+        recur(@columns, previous_row, previous_column + 1, size, total)
     else:
-      let allowed: Bool = safe(columns, row, column, 0)
+      let allowed: Bool = safe(@columns, row, column, 0)
       if allowed:
-        vec.set(columns, row, column)
+        vec.set(@columns, row, column)
         let last: Bool = row == (size - 1)
         if last:
-          recur(columns, row, column + 1, size, total + 1)
+          recur(@columns, row, column + 1, size, total + 1)
         else:
-          recur(columns, row + 1, 0, size, total)
+          recur(@columns, row + 1, 0, size, total)
       else:
-        recur(columns, row, column + 1, size, total)
+        recur(@columns, row, column + 1, size, total)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 13
   let columns: Vec[I64] = vec.new()
-  fill(columns, 0, size)
-  let result: I64 = search(columns, 0, 0, size, 0)
+  fill(@columns, 0, size)
+  let result: I64 = search(@columns, 0, 0, size, 0)
   io.print_i64(result)
   io.println("")
   0

@@ -3,7 +3,8 @@
 SLIM stands for **Small Language for Intelligent Machines**. It is an
 compact systems language designed for AI-generated programs: small
 canonical syntax, strong static typing, explicit effects, affine ownership,
-exclusive borrows, deterministic output, and no tracing garbage collector.
+default shared borrows, explicit `@` mutation and `^` call-boundary transfer, deterministic
+output, and no tracing garbage collector.
 
 The repository contains a compiler written in SLIM itself, a portable generated
 C bootstrap seed, a small C runtime, governance gates for language growth,

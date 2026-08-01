@@ -353,7 +353,7 @@ fn check_coverage(root: &Path, fixtures: &[Fixture]) -> Result<(), String> {
             "ownership:exclusive-borrow",
             "ownership:move",
             "ownership:no-alias",
-            "ownership:inout-no-escape",
+            "ownership:exclusive-no-escape",
             "recovery:malformed",
             "recovery:parser",
             "runtime:allocation",

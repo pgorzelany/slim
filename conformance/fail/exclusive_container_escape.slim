@@ -1,0 +1,10 @@
+module exclusive_container_escape
+
+struct Owner:
+  values: Vec[I64]
+
+fn invalid(values: @Vec[I64]) -> Owner:
+  Owner(values: values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

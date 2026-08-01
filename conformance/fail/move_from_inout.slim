@@ -1,11 +1,11 @@
 module move_from_inout
 
-fn take(values: Vec[I64]) -> I64:
+fn take(values: ^Vec[I64]) -> I64:
   vec.len(values)
 
-fn inspect(inout values: Vec[I64]) -> I64:
-  take(values)
+fn inspect(values: @Vec[I64]) -> I64:
+  take(^values)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  inspect(values)
+  inspect(@values)

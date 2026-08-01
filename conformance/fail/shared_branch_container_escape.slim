@@ -1,0 +1,11 @@
+module shared_branch_container_escape
+
+fn invalid(output: @Vec[Vec[I64]], values: Vec[I64], first: Bool) -> Void effects[alloc]:
+  let selected: Vec[I64] = if first:
+    values
+  else:
+    values
+  vec.push(@output, selected)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

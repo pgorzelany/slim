@@ -243,7 +243,8 @@ those subsets the natural way to write most programs.
 
 ## Established implementation choices
 
-SLIM 0.9 has affine ownership, explicit mutable bindings, exclusive mutation,
+SLIM 0.9 has affine ownership, shared affine parameters by default, explicit
+`@` exclusive mutation and `^` call-boundary ownership transfer, explicit mutable bindings,
 algebraic data types, explicit effects, deterministic projects, incremental
 checking, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic parallel execution.

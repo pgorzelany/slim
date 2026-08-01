@@ -1,4 +1,16 @@
 module format
 
-fn main(args: Vec[Bytes]) -> I64:
-  0
+fn read(values: Vec[I64]) -> I64:
+  vec.len(values)
+
+fn touch(values: @Vec[I64]) -> I64:
+  vec.len(values)
+
+fn consume(values: ^Vec[I64]) -> I64:
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let shared: I64 = read(values)
+  let exclusive: I64 = touch(@values)
+  shared + exclusive + consume(^values)

@@ -1,0 +1,40 @@
+module ownership_modes
+
+struct Owner:
+  values: Vec[I64]
+
+enum OwnerChoice:
+  none
+  some(Vec[I64])
+
+fn read(values: Vec[I64]) -> I64:
+  vec.len(values)
+
+fn mutate(values: @Vec[I64]) -> I64 effects[alloc]:
+  vec.push(@values, 42)
+  read(values)
+
+fn forward(values: ^Vec[I64]) -> Vec[I64]:
+  values
+
+fn consume(values: ^Vec[I64]) -> I64:
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let first: Vec[I64] = vec.new()
+  let mutated: I64 = mutate(@first)
+  let retained: I64 = read(first)
+  let owner: Owner = Owner(values: first)
+  let extracted: Vec[I64] = owner.values
+  let choice: OwnerChoice = OwnerChoice::some(extracted)
+  let selected: Vec[I64] = match choice:
+    none:
+      vec.new()
+    some(values):
+      values
+  let forwarded: Vec[I64] = forward(^selected)
+  let consumed: I64 = consume(^forwarded)
+  let temporary: I64 = consume(^vec.new())
+  let first_total: I64 = mutated + retained
+  let second_total: I64 = consumed + temporary
+  first_total + second_total - 3

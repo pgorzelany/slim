@@ -1,0 +1,13 @@
+module owned_projection_transfer
+
+struct Owner:
+  values: Vec[I64]
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn invalid(owner: ^Owner) -> Void:
+  consume(^owner.values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

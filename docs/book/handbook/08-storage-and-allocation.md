@@ -13,8 +13,8 @@ indexing traps when out of bounds.
 
 <!-- slim-fixture: bytes-bounds -->
 
-File input appends into an `inout Vec[U8]` and returns `Bool`; freezing the
-completed vector consumes that unique owner and produces a `Bytes` view of the
+File input appends into an `@Vec[U8]` and returns `Bool`; freezing the completed
+vector with `bytes.freeze(^vector)` consumes that unique owner and produces a `Bytes` view of the
 same buffer without copying its contents.
 
 <!-- slim-fixture: example-bytes -->

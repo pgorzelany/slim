@@ -10,17 +10,17 @@ enum Choice:
 
 fn numbers(first: I64, second: I64) -> Vec[I64] effects[alloc]:
   let output: Vec[I64] = vec.new()
-  vec.push(output, first)
-  vec.push(output, second)
+  vec.push(@output, first)
+  vec.push(@output, second)
   output
 
 fn word() -> Bytes effects[alloc]:
   let output: Vec[U8] = vec.new()
   let o: U8 = i64.to_u8(79)
   let k: U8 = i64.to_u8(75)
-  vec.push(output, o)
-  vec.push(output, k)
-  bytes.freeze(output)
+  vec.push(@output, o)
+  vec.push(@output, k)
+  bytes.freeze(^output)
 
 fn choose(present: Bool) -> Choice effects[alloc]:
   if present:

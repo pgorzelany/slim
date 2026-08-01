@@ -42,19 +42,19 @@ fn last_path_slash(path: Bytes, index: I64, length: I64, last: I64) -> I64 effec
     let next: I64 = index + 1
     recur(path, next, length, next_last)
 
-fn project_module_path(manifest_path: Bytes, manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], path_token: I64) -> Bytes effects[alloc, partial]:
+fn project_module_path(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], path_token: I64) -> Bytes effects[alloc, partial]:
   let output: Vec[U8] = vec.new()
   let manifest_length: I64 = bytes.len(manifest_path)
   let prefix_end: I64 = last_path_slash(manifest_path, 0, manifest_length, 0)
-  text.append_span(manifest_path, 0, prefix_end, output)
+  text.append_span(manifest_path, 0, prefix_end, @output)
   let token_start_index: I64 = syntax.ast_node_start(manifest_tokens, path_token)
   let content_start: I64 = token_start_index + 1
   let token_end_index: I64 = syntax.ast_node_end(manifest_tokens, path_token)
   let content_end: I64 = token_end_index - 1
-  text.append_span(manifest_source, content_start, content_end, output)
-  bytes.freeze(output)
+  text.append_span(manifest_source, content_start, content_end, @output)
+  bytes.freeze(^output)
 
-fn append_qualification_replaced(source: Bytes, index: I64, end: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_qualification_replaced(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     void
@@ -64,13 +64,13 @@ fn append_qualification_replaced(source: Bytes, index: I64, end: I64, inout outp
     let slash: Bool = code == 47
     let dot: Bool = code == 46
     if slash || dot:
-      text.append_text(output, "_")
+      text.append_text(@output, "_")
     else:
-      vec.push(output, byte)
+      vec.push(@output, byte)
     let next: I64 = index + 1
-    recur(source, next, end, output)
+    recur(source, next, end, @output)
 
-fn append_project_atom(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, atom: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, atom: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let start: I64 = syntax.ast_node_start(module_tokens, atom)
   let end: I64 = syntax.ast_node_end(module_tokens, atom)
   let synthetic: Bool = start == end
@@ -79,15 +79,15 @@ fn append_project_atom(manifest_source: Bytes, inout manifest_tokens: Vec[syntax
     let tag: I64 = syntax.ast_node_tag(module_tokens, parent)
     let call_marker: Bool = tag == 10
     if call_marker:
-      text.append_text(output, "call")
+      text.append_text(@output, "call")
     else:
-      text.append_text(output, "effects")
+      text.append_text(@output, "effects")
   else:
     let dots: I64 = syntax.span_count_byte(module_source, start, end, 46, 0)
     let builtin: Bool = typing.builtin_known(module_source, module_tokens, atom)
     let qualified: Bool = (dots > 0) && (!builtin)
     if qualified:
-      append_qualification_replaced(module_source, start, end, output)
+      append_qualification_replaced(module_source, start, end, @output)
     else:
       let declaration_form: I64 = syntax.ast_node_link(module_tokens, atom)
       let declaration: Bool = declaration_form >= 0
@@ -98,11 +98,11 @@ fn append_project_atom(manifest_source: Bytes, inout manifest_tokens: Vec[syntax
       else:
         false
       if prefix:
-        text.append_token(manifest_source, manifest_tokens, module_name, output)
-        text.append_text(output, "_")
-        text.append_token(module_source, module_tokens, atom, output)
+        text.append_token(manifest_source, manifest_tokens, module_name, @output)
+        text.append_text(@output, "_")
+        text.append_token(module_source, module_tokens, atom, @output)
       else:
-        text.append_token(module_source, module_tokens, atom, output)
+        text.append_token(module_source, module_tokens, atom, @output)
 
 struct Origin:
   module: I64
@@ -120,40 +120,40 @@ struct PreparedProject:
   issues: Vec[typing.Issue]
   plan: memory.Plan
 
-fn append_origin(module: I64, start: I64, end: I64, inout origins: Vec[Origin]) -> Void effects[alloc]:
+fn append_origin(module: I64, start: I64, end: I64, origins: @Vec[Origin]) -> Void effects[alloc]:
   let origin: Origin = Origin(module: module, start: start, end: end)
-  vec.push(origins, origin)
+  vec.push(@origins, origin)
 
-fn push_flat_token(kind: I64, tag: I64, start: I64, end: I64, inout tokens: Vec[syntax.Token]) -> Void effects[alloc]:
+fn push_flat_token(kind: I64, tag: I64, start: I64, end: I64, tokens: @Vec[syntax.Token]) -> Void effects[alloc]:
   let token: syntax.Token = syntax.Token(kind: kind, tag: tag, start: start, end: end, link: -1, next: -1)
-  vec.push(tokens, token)
+  vec.push(@tokens, token)
 
-fn append_project_tokens(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, module_index: I64, index: I64, end: I64, inout output: Vec[U8], inout flat_tokens: Vec[syntax.Token], inout origins: Vec[Origin]) -> Void effects[alloc, partial]:
+fn append_project_tokens(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, module_index: I64, index: I64, end: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     void
   else:
     let kind: I64 = syntax.ast_node_kind(module_tokens, index)
-    let tag: I64 = syntax.ast_node_tag(module_tokens, index)
+    let tag: I64 = syntax.ast_node_encoded_tag(module_tokens, index)
     let flat_start: I64 = vec.len(output)
     let atom: Bool = kind == 2
     if atom:
-      append_project_atom(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, output)
+      append_project_atom(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, @output)
     else:
       let string_value: Bool = kind == 3
       if string_value:
-        text.append_token(module_source, module_tokens, index, output)
+        text.append_token(module_source, module_tokens, index, @output)
       else:
         void
     let flat_end: I64 = vec.len(output)
-    push_flat_token(kind, tag, flat_start, flat_end, flat_tokens)
+    push_flat_token(kind, tag, flat_start, flat_end, @flat_tokens)
     let start: I64 = syntax.ast_node_start(module_tokens, index)
     let finish: I64 = syntax.ast_node_end(module_tokens, index)
-    append_origin(module_index, start, finish, origins)
+    append_origin(module_index, start, finish, @origins)
     let next: I64 = index + 1
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, module_index, next, end, output, flat_tokens, origins)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, module_index, next, end, @output, @flat_tokens, @origins)
 
-fn append_loaded_project_modules(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], entry_name: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64, inout output: Vec[U8], inout flat_tokens: Vec[syntax.Token], inout origins: Vec[Origin]) -> Void effects[alloc, partial]:
+fn append_loaded_project_modules(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -171,38 +171,38 @@ fn append_loaded_project_modules(manifest_source: Bytes, inout manifest_tokens: 
     let entry_name_start: I64 = syntax.ast_node_start(manifest_tokens, entry_name)
     let entry_name_end: I64 = syntax.ast_node_end(manifest_tokens, entry_name)
     let entry: Bool = syntax.spans_equal(manifest_source, module_name_start, module_name_end, entry_name_start, entry_name_end)
-    append_project_tokens(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, module_items, end, output, flat_tokens, origins)
+    append_project_tokens(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, module_items, end, @output, @flat_tokens, @origins)
     let next: I64 = index + 1
-    recur(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, next, output, flat_tokens, origins)
+    recur(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, next, @output, @flat_tokens, @origins)
 
-fn flatten_loaded_project(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], entry_name: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], inout tokens: Vec[syntax.Token], inout origins: Vec[Origin]) -> Bytes effects[alloc, partial]:
+fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
   let atom_source: Vec[U8] = vec.new()
   let flat_tokens: Vec[syntax.Token] = vec.new()
-  push_flat_token(0, 1, 0, 0, flat_tokens)
-  append_origin(-1, 0, 0, origins)
-  push_flat_token(2, 0, 0, 0, flat_tokens)
-  append_origin(-1, 0, 0, origins)
+  push_flat_token(0, 1, 0, 0, @flat_tokens)
+  append_origin(-1, 0, 0, @origins)
+  push_flat_token(2, 0, 0, 0, @flat_tokens)
+  append_origin(-1, 0, 0, @origins)
   let name_start: I64 = vec.len(atom_source)
-  text.append_text(atom_source, "project")
+  text.append_text(@atom_source, "project")
   let name_end: I64 = vec.len(atom_source)
-  push_flat_token(2, 0, name_start, name_end, flat_tokens)
-  append_origin(-1, 0, 0, origins)
-  append_loaded_project_modules(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, 0, atom_source, flat_tokens, origins)
+  push_flat_token(2, 0, name_start, name_end, @flat_tokens)
+  append_origin(-1, 0, 0, @origins)
+  append_loaded_project_modules(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, 0, @atom_source, @flat_tokens, @origins)
   let close_position: I64 = vec.len(atom_source)
-  push_flat_token(1, 0, close_position, close_position, flat_tokens)
-  append_origin(-1, 0, 0, origins)
-  let atoms: Bytes = bytes.freeze(atom_source)
-  syntax.index_ast_boundaries(flat_tokens)
+  push_flat_token(1, 0, close_position, close_position, @flat_tokens)
+  append_origin(-1, 0, 0, @origins)
+  let atoms: Bytes = bytes.freeze(^atom_source)
+  syntax.index_ast_boundaries(@flat_tokens)
   let output: Vec[U8] = vec.new()
-  format.emit_module(atoms, flat_tokens, output)
-  let source: Bytes = bytes.freeze(output)
-  let parsed: Bool = syntax.parse_program(source, tokens)
+  format.emit_module(atoms, flat_tokens, @output)
+  let source: Bytes = bytes.freeze(^output)
+  let parsed: Bool = syntax.parse_program(source, @tokens)
   source
 
 fn path_is_project(path: Bytes) -> Bool effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
-  let source_read: Bool = io.read_file(path, source_bytes)
-  let source: Bytes = bytes.freeze(source_bytes)
+  let source_read: Bool = io.read_file(path, @source_bytes)
+  let source: Bytes = bytes.freeze(^source_bytes)
   let length: I64 = bytes.len(source)
   let available: Bool = length > 0
   let legacy: Bool = if available:
@@ -212,7 +212,7 @@ fn path_is_project(path: Bytes) -> Bool effects[alloc, io, partial]:
     false
   if legacy:
     let tokens: Vec[syntax.Token] = vec.new()
-    syntax.lex_data(source, 0, tokens)
+    syntax.lex_data(source, 0, @tokens)
     syntax.ast_node_text_is(source, tokens, 1, "project")
   else:
     false
@@ -223,8 +223,8 @@ fn generate_prepared_project(prepared: PreparedProject) -> Bytes effects[alloc, 
   let facts: Vec[typing.Fact] = prepared.facts
   let plan: memory.Plan = prepared.plan
   let output: Vec[U8] = vec.new()
-  codegen.emit_program(source, tokens, facts, plan, output)
-  bytes.freeze(output)
+  codegen.emit_program(source, tokens, facts, plan, @output)
+  bytes.freeze(^output)
 
 fn compile_project_path_jobs(path: Bytes, jobs: I64) -> I64 effects[alloc, io, partial]:
   let prepared: PreparedProject = prepare_project_path(path)
@@ -247,28 +247,28 @@ fn compile_project_path_jobs(path: Bytes, jobs: I64) -> I64 effects[alloc, io, p
 fn compile_project_path(path: Bytes) -> I64 effects[alloc, io, partial]:
   compile_project_path_jobs(path, 1)
 
-fn token_bytes(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> Bytes effects[alloc, partial]:
+fn token_bytes(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> Bytes effects[alloc, partial]:
   let output: Vec[U8] = vec.new()
   let start: I64 = syntax.ast_node_start(tokens, index)
   let end: I64 = syntax.ast_node_end(tokens, index)
-  text.append_span(source, start, end, output)
-  bytes.freeze(output)
+  text.append_span(source, start, end, @output)
+  bytes.freeze(^output)
 
 fn report_project_diagnostic(code: Bytes, module_name: Bytes, start: I64, end: I64) -> I64 effects[alloc, io, partial]:
   let output: Vec[U8] = vec.new()
-  text.append_text(output, code)
-  text.append_text(output, "@")
-  text.append_text(output, module_name)
-  text.append_text(output, "@")
-  text.append_nonnegative_i64(start, output)
-  text.append_text(output, ":")
-  text.append_nonnegative_i64(end, output)
-  text.append_text(output, "\n")
-  let bytes: Bytes = bytes.freeze(output)
+  text.append_text(@output, code)
+  text.append_text(@output, "@")
+  text.append_text(@output, module_name)
+  text.append_text(@output, "@")
+  text.append_nonnegative_i64(start, @output)
+  text.append_text(@output, ":")
+  text.append_nonnegative_i64(end, @output)
+  text.append_text(@output, "\n")
+  let bytes: Bytes = bytes.freeze(^output)
   io.print_bytes(bytes)
   1
 
-fn imports_has_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+fn imports_has_name(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -283,7 +283,7 @@ fn imports_has_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64,
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, next, name_start, name_end)
 
-fn find_manifest_module(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
+fn find_manifest_module(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -299,7 +299,7 @@ fn find_manifest_module(source: Bytes, inout tokens: Vec[syntax.Token], cursor: 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name_start, name_end)
 
-fn module_imports_name(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, module_name: I64, import_start: I64, import_end: I64) -> Bool effects[partial]:
+fn module_imports_name(source: Bytes, tokens: Vec[syntax.Token], modules: I64, module_name: I64, import_start: I64, import_end: I64) -> Bool effects[partial]:
   let name_start: I64 = syntax.ast_node_start(tokens, module_name)
   let name_end: I64 = syntax.ast_node_end(tokens, module_name)
   let module_form: I64 = find_manifest_module(source, tokens, modules, name_start, name_end)
@@ -311,7 +311,7 @@ fn module_imports_name(source: Bytes, inout tokens: Vec[syntax.Token], modules: 
   else:
     false
 
-fn module_cycle_imports(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, module_name: I64, cursor: I64) -> Bool effects[partial]:
+fn module_cycle_imports(source: Bytes, tokens: Vec[syntax.Token], modules: I64, module_name: I64, cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -336,7 +336,7 @@ fn module_cycle_imports(source: Bytes, inout tokens: Vec[syntax.Token], modules:
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, modules, module_name, next)
 
-fn find_reciprocal_cycle(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
+fn find_reciprocal_cycle(source: Bytes, tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -366,7 +366,7 @@ fn find_span_dot(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
       let next: I64 = index + 1
       recur(source, next, end)
 
-fn exports_has_segment(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, segment_start: I64, segment_end: I64) -> Bool effects[partial]:
+fn exports_has_segment(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, segment_start: I64, segment_end: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -390,7 +390,7 @@ fn invalid_prepared_project(status: I64) -> PreparedProject effects[alloc]:
   let plan: memory.Plan = memory.empty_plan()
   PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, issues: issues, plan: plan)
 
-fn report_project_issue(issue: typing.Issue, inout origins: Vec[Origin], manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let start_origin: Origin = vec.get(origins, issue.start)
   let end_origin: Origin = vec.get(origins, issue.end)
   let module_index: I64 = start_origin.module
@@ -403,7 +403,7 @@ fn report_project_issue(issue: typing.Issue, inout origins: Vec[Origin], manifes
     let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
     report_project_diagnostic(issue.code, module_name, start_origin.start, end_origin.end)
 
-fn report_project_issues(inout issues: Vec[typing.Issue], index: I64, inout origins: Vec[Origin], manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], count: I64) -> I64 effects[alloc, io, partial]:
+fn report_project_issues(issues: Vec[typing.Issue], index: I64, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], count: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(issues)
   let done: Bool = index >= length
   if done:
@@ -415,11 +415,11 @@ fn report_project_issues(inout issues: Vec[typing.Issue], index: I64, inout orig
     let total: I64 = count + reported
     recur(issues, next, origins, manifest_source, manifest_tokens, loaded, total)
 
-fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule]) -> PreparedProject effects[alloc, io, partial]:
+fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> PreparedProject effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
-  let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, tokens, origins)
-  let checked: typing.Checked = check.check_source_deferred(source, tokens)
+  let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, @tokens, @origins)
+  let checked: typing.Checked = check.check_source_deferred(source, @tokens)
   let status: I64 = checked.status
   let view: typing.View = checked.view
   let facts: Vec[typing.Fact] = view.facts
@@ -430,13 +430,15 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.To
 
 fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
-  let source_read: Bool = io.read_file(path, source_bytes)
-  let source: Bytes = bytes.freeze(source_bytes)
+  let source_read: Bool = io.read_file(path, @source_bytes)
+  let source: Bytes = bytes.freeze(^source_bytes)
   let tokens: Vec[syntax.Token] = vec.new()
   if source_read:
-    syntax.lex_data(source, 0, tokens)
+    syntax.lex_data(source, 0, @tokens)
     let version: I64 = 2
     let valid_version: Bool = syntax.ast_node_text_is(source, tokens, version, "1")
+    let version_start: I64 = syntax.ast_node_start(tokens, version)
+    let version_end: I64 = syntax.ast_node_end(tokens, version)
     if valid_version:
       let entry_form: I64 = 3
       let entry: I64 = entry_form + 2
@@ -456,7 +458,7 @@ fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, parti
         else:
           let module_tokens: Vec[syntax.Token] = vec.new()
           let loaded: Vec[LoadedModule] = vec.new()
-          let loaded_modules: I64 = load_project_modules(path, source, tokens, modules, module_tokens, loaded)
+          let loaded_modules: I64 = load_project_modules(path, source, tokens, modules, @module_tokens, @loaded)
           let invalid_loading: Bool = loaded_modules > 0
           if invalid_loading:
             invalid_prepared_project(loaded_modules)
@@ -466,11 +468,9 @@ fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, parti
             if invalid_project:
               invalid_prepared_project(project_errors)
             else:
-              prepare_loaded_project(source, tokens, entry, module_tokens, loaded)
+              prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded)
     else:
-      let start: I64 = syntax.ast_node_start(tokens, version)
-      let end: I64 = syntax.ast_node_end(tokens, version)
-      let reported: I64 = report_project_diagnostic("E0402", "-", start, end)
+      let reported: I64 = report_project_diagnostic("E0402", "-", version_start, version_end)
       invalid_prepared_project(1)
   else:
     let reported: I64 = report_project_diagnostic("E0409", "-", 0, 0)
@@ -480,17 +480,17 @@ fn check_project_path(path: Bytes) -> I64 effects[alloc, io, partial]:
   let prepared: PreparedProject = prepare_project_path(path)
   prepared.status
 
-fn append_interface_type(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], type_index: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_type(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], type_index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, type_index)
   let composite: Bool = kind == 0
   if composite:
     let head: I64 = syntax.ast_list_first(type_index)
     let inner: I64 = syntax.ast_type_argument(type_index)
-    text.append_text(output, "(")
-    text.append_token(module_source, module_tokens, head, output)
-    text.append_text(output, " ")
-    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, inner, output)
-    text.append_text(output, ")")
+    text.append_text(@output, "(")
+    text.append_token(module_source, module_tokens, head, @output)
+    text.append_text(@output, " ")
+    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, inner, @output)
+    text.append_text(@output, ")")
   else:
     let scalar_kind: I64 = syntax.scalar_type_kind(module_source, module_tokens, type_index)
     let scalar: Bool = scalar_kind >= 0
@@ -500,46 +500,54 @@ fn append_interface_type(manifest_source: Bytes, inout manifest_tokens: Vec[synt
     let qualified: Bool = dots > 0
     let raw: Bool = scalar || qualified
     if raw:
-      text.append_token(module_source, module_tokens, type_index, output)
+      text.append_token(module_source, module_tokens, type_index, @output)
     else:
-      text.append_token(manifest_source, manifest_tokens, module_name, output)
-      text.append_text(output, ".")
-      text.append_token(module_source, module_tokens, type_index, output)
+      text.append_token(manifest_source, manifest_tokens, module_name, @output)
+      text.append_text(@output, ".")
+      text.append_token(module_source, module_tokens, type_index, @output)
 
-fn append_interface_parameters(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_parameters(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
-    text.append_text(output, ")")
+    text.append_text(@output, ")")
   else:
     if first:
       void
     else:
-      text.append_text(output, " ")
-    let borrowed: Bool = syntax.ast_binding_is_inout(module_source, module_tokens, cursor)
+      text.append_text(@output, " ")
+    let mode: I64 = syntax.ast_binding_mode(module_source, module_tokens, cursor)
     let type_index: I64 = syntax.ast_binding_type(module_source, module_tokens, cursor)
-    text.append_text(output, "(")
-    if borrowed:
-      text.append_text(output, "inout ")
+    let storage: I64 = memory.type_storage_kind(module_source, module_tokens, type_index)
+    let affine: Bool = storage == 2
+    text.append_text(@output, "(")
+    if mode == 1:
+      text.append_text(@output, "exclusive ")
     else:
-      text.append_text(output, "owned ")
-    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, type_index, output)
-    text.append_text(output, ")")
+      if mode == 2:
+        text.append_text(@output, "owned ")
+      else:
+        if affine:
+          text.append_text(@output, "shared ")
+        else:
+          text.append_text(@output, "copy ")
+    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, type_index, @output)
+    text.append_text(@output, ")")
     let next: I64 = syntax.ast_next(module_tokens, cursor)
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, output)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, @output)
 
-fn append_interface_effects(module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_effects(module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
-    text.append_text(output, ")")
+    text.append_text(@output, ")")
   else:
-    text.append_text(output, " ")
-    text.append_token(module_source, module_tokens, cursor, output)
+    text.append_text(@output, " ")
+    text.append_token(module_source, module_tokens, cursor, @output)
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(module_source, module_tokens, next, output)
+    recur(module_source, module_tokens, next, @output)
 
-fn find_export_declaration(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], export_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_export_declaration(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], export_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -557,57 +565,57 @@ fn find_export_declaration(manifest_source: Bytes, inout manifest_tokens: Vec[sy
       let next: I64 = syntax.ast_next(module_tokens, cursor)
       recur(manifest_source, manifest_tokens, export_name, module_source, module_tokens, next)
 
-fn append_interface_fields(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_fields(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
-    text.append_text(output, ")")
+    text.append_text(@output, ")")
   else:
     if first:
       void
     else:
-      text.append_text(output, " ")
+      text.append_text(@output, " ")
     let name: I64 = syntax.ast_member_name(cursor)
     let type_index: I64 = syntax.ast_member_value(cursor)
-    text.append_text(output, "(")
-    text.append_token(module_source, module_tokens, name, output)
-    text.append_text(output, " ")
-    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, type_index, output)
-    text.append_text(output, ")")
+    text.append_text(@output, "(")
+    text.append_token(module_source, module_tokens, name, @output)
+    text.append_text(@output, " ")
+    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, type_index, @output)
+    text.append_text(@output, ")")
     let next: I64 = syntax.ast_next(module_tokens, cursor)
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, output)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, @output)
 
-fn append_interface_case_types(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_case_types(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     void
   else:
-    text.append_text(output, " ")
-    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, cursor, output)
+    text.append_text(@output, " ")
+    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, cursor, @output)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, output)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, @output)
 
-fn append_interface_cases(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_cases(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
-    text.append_text(output, ")")
+    text.append_text(@output, ")")
   else:
     if first:
       void
     else:
-      text.append_text(output, " ")
+      text.append_text(@output, " ")
     let name: I64 = syntax.ast_node_after(cursor)
     let first_type: I64 = syntax.ast_member_value(cursor)
-    text.append_text(output, "(")
-    text.append_token(module_source, module_tokens, name, output)
-    append_interface_case_types(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_type, output)
-    text.append_text(output, ")")
+    text.append_text(@output, "(")
+    text.append_token(module_source, module_tokens, name, @output)
+    append_interface_case_types(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_type, @output)
+    text.append_text(@output, ")")
     let next: I64 = syntax.ast_next(module_tokens, cursor)
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, output)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, next, false, @output)
 
-fn append_interface_declaration(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], item: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_declaration(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let function_item: Bool = syntax.ast_item_is_function(module_source, module_tokens, item)
   if function_item:
     let name: I64 = syntax.ast_item_name(item)
@@ -615,46 +623,46 @@ fn append_interface_declaration(manifest_source: Bytes, inout manifest_tokens: V
     let return_type: I64 = syntax.ast_function_return_type(module_tokens, item)
     let effects: I64 = syntax.ast_next(module_tokens, return_type)
     let first_effect: I64 = effects + 2
-    text.append_text(output, "(fn ")
-    text.append_token(module_source, module_tokens, name, output)
-    text.append_text(output, " (")
+    text.append_text(@output, "(fn ")
+    text.append_token(module_source, module_tokens, name, @output)
+    text.append_text(@output, " (")
     let first_parameter: I64 = syntax.ast_parameters_first(params)
-    append_interface_parameters(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_parameter, true, output)
-    text.append_text(output, " ")
-    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, return_type, output)
-    text.append_text(output, " (effects")
-    append_interface_effects(module_source, module_tokens, first_effect, output)
-    text.append_text(output, ")")
+    append_interface_parameters(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_parameter, true, @output)
+    text.append_text(@output, " ")
+    append_interface_type(manifest_source, manifest_tokens, module_name, module_source, module_tokens, return_type, @output)
+    text.append_text(@output, " (effects")
+    append_interface_effects(module_source, module_tokens, first_effect, @output)
+    text.append_text(@output, ")")
   else:
     let record_item: Bool = syntax.ast_item_is_record(module_source, module_tokens, item)
     let name: I64 = syntax.ast_item_name(item)
     let body: I64 = syntax.ast_data_body(item)
     let first_member: I64 = syntax.ast_data_members_first(item)
     if record_item:
-      text.append_text(output, "(record ")
+      text.append_text(@output, "(record ")
     else:
-      text.append_text(output, "(variant ")
-    text.append_token(module_source, module_tokens, name, output)
-    text.append_text(output, " (")
+      text.append_text(@output, "(variant ")
+    text.append_token(module_source, module_tokens, name, @output)
+    text.append_text(@output, " (")
     if record_item:
-      append_interface_fields(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_member, true, output)
+      append_interface_fields(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_member, true, @output)
     else:
-      append_interface_cases(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_member, true, output)
-    text.append_text(output, ")")
+      append_interface_cases(manifest_source, manifest_tokens, module_name, module_source, module_tokens, first_member, true, @output)
+    text.append_text(@output, ")")
 
-fn append_interface_exports(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], module_name: I64, cursor: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_interface_exports(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, cursor: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     void
   else:
     let item: I64 = find_export_declaration(manifest_source, manifest_tokens, cursor, module_source, module_tokens, module_items)
-    text.append_text(output, " ")
-    append_interface_declaration(manifest_source, manifest_tokens, module_name, module_source, module_tokens, item, output)
+    text.append_text(@output, " ")
+    append_interface_declaration(manifest_source, manifest_tokens, module_name, module_source, module_tokens, item, @output)
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(manifest_source, manifest_tokens, module_name, next, module_source, module_tokens, module_items, output)
+    recur(manifest_source, manifest_tokens, module_name, next, module_source, module_tokens, module_items, @output)
 
-fn append_project_interfaces(manifest_path: Bytes, manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Void effects[alloc, io, partial]:
+fn append_project_interfaces(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -667,17 +675,17 @@ fn append_project_interfaces(manifest_path: Bytes, manifest_source: Bytes, inout
     let first_export: I64 = exports_form + 2
     let module_path: Bytes = project_module_path(manifest_path, manifest_source, manifest_tokens, path_token)
     let module_source_bytes: Vec[U8] = vec.new()
-    let module_source_read: Bool = io.read_file(module_path, module_source_bytes)
-    let module_source: Bytes = bytes.freeze(module_source_bytes)
+    let module_source_read: Bool = io.read_file(module_path, @module_source_bytes)
+    let module_source: Bytes = bytes.freeze(^module_source_bytes)
     let module_tokens: Vec[syntax.Token] = vec.new()
-    let parsed: Bool = syntax.parse_program(module_source, module_tokens)
-    text.append_text(output, "(interface 2 ")
-    text.append_token(manifest_source, manifest_tokens, module_name, output)
+    let parsed: Bool = syntax.parse_program(module_source, @module_tokens)
+    text.append_text(@output, "(interface 3 ")
+    text.append_token(manifest_source, manifest_tokens, module_name, @output)
     let module_items: I64 = syntax.ast_module_items(0)
-    append_interface_exports(manifest_source, manifest_tokens, module_name, first_export, module_source, module_tokens, module_items, output)
-    text.append_text(output, ")\n")
+    append_interface_exports(manifest_source, manifest_tokens, module_name, first_export, module_source, module_tokens, module_items, @output)
+    text.append_text(@output, ")\n")
     let next: I64 = syntax.ast_next(manifest_tokens, cursor)
-    recur(manifest_path, manifest_source, manifest_tokens, next, output)
+    recur(manifest_path, manifest_source, manifest_tokens, next, @output)
 
 fn interfaces_path(path: Bytes) -> I64 effects[alloc, io, partial]:
   let checked: I64 = check_project_path(path)
@@ -686,15 +694,15 @@ fn interfaces_path(path: Bytes) -> I64 effects[alloc, io, partial]:
     checked
   else:
     let source_bytes: Vec[U8] = vec.new()
-    let source_read: Bool = io.read_file(path, source_bytes)
-    let source: Bytes = bytes.freeze(source_bytes)
+    let source_read: Bool = io.read_file(path, @source_bytes)
+    let source: Bytes = bytes.freeze(^source_bytes)
     let tokens: Vec[syntax.Token] = vec.new()
-    syntax.lex_data(source, 0, tokens)
+    syntax.lex_data(source, 0, @tokens)
     let entry_form: I64 = 3
     let modules: I64 = syntax.ast_next(tokens, entry_form)
     let output: Vec[U8] = vec.new()
-    append_project_interfaces(path, source, tokens, modules, output)
-    let bytes: Bytes = bytes.freeze(output)
+    append_project_interfaces(path, source, tokens, modules, @output)
+    let bytes: Bytes = bytes.freeze(^output)
     io.print_bytes(bytes)
     0
 
@@ -719,14 +727,14 @@ fn span_less_chars(source: Bytes, left: I64, left_end: I64, right: I64, right_en
       else:
         left_code < right_code
 
-fn span_less(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+fn span_less(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
   let left_start: I64 = syntax.ast_node_start(tokens, left)
   let left_end: I64 = syntax.ast_node_end(tokens, left)
   let right_start: I64 = syntax.ast_node_start(tokens, right)
   let right_end: I64 = syntax.ast_node_end(tokens, right)
   span_less_chars(source, left_start, left_end, right_start, right_end)
 
-fn find_unsorted_module(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
+fn find_unsorted_module(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -744,7 +752,7 @@ fn find_unsorted_module(source: Bytes, inout tokens: Vec[syntax.Token], cursor: 
     else:
       name
 
-fn find_prior_module_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, current: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
+fn find_prior_module_name(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, current: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
   let reached: Bool = cursor == current
   if reached:
     -1
@@ -759,7 +767,7 @@ fn find_prior_module_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, current, name_start, name_end)
 
-fn find_duplicate_module(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
+fn find_duplicate_module(source: Bytes, tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -776,7 +784,7 @@ fn find_duplicate_module(source: Bytes, inout tokens: Vec[syntax.Token], modules
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, modules, next)
 
-fn find_prior_path(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, current: I64, path_start: I64, path_end: I64) -> I64 effects[partial]:
+fn find_prior_path(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, current: I64, path_start: I64, path_end: I64) -> I64 effects[partial]:
   let reached: Bool = cursor == current
   if reached:
     -1
@@ -791,7 +799,7 @@ fn find_prior_path(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, current, path_start, path_end)
 
-fn find_duplicate_path(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
+fn find_duplicate_path(source: Bytes, tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -842,7 +850,7 @@ fn path_segments_valid(source: Bytes, index: I64, end: I64, segment_start: I64) 
         let next: I64 = index + 1
         recur(source, next, end, segment_start)
 
-fn path_token_invalid(source: Bytes, inout tokens: Vec[syntax.Token], path: I64) -> Bool effects[partial]:
+fn path_token_invalid(source: Bytes, tokens: Vec[syntax.Token], path: I64) -> Bool effects[partial]:
   let token_start: I64 = syntax.ast_node_start(tokens, path)
   let token_end: I64 = syntax.ast_node_end(tokens, path)
   let start: I64 = token_start + 1
@@ -860,7 +868,7 @@ fn path_token_invalid(source: Bytes, inout tokens: Vec[syntax.Token], path: I64)
   else:
     true
 
-fn find_invalid_path(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_invalid_path(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -874,7 +882,7 @@ fn find_invalid_path(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn find_self_import_in(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
+fn find_self_import_in(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name_start: I64, name_end: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -889,7 +897,7 @@ fn find_self_import_in(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, next, name_start, name_end)
 
-fn find_self_import(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_self_import(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -908,7 +916,7 @@ fn find_self_import(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64)
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn find_unknown_import_in(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
+fn find_unknown_import_in(source: Bytes, tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -924,7 +932,7 @@ fn find_unknown_import_in(source: Bytes, inout tokens: Vec[syntax.Token], module
     else:
       cursor
 
-fn find_unknown_import(source: Bytes, inout tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
+fn find_unknown_import(source: Bytes, tokens: Vec[syntax.Token], modules: I64, cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -940,7 +948,7 @@ fn find_unknown_import(source: Bytes, inout tokens: Vec[syntax.Token], modules: 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, modules, next)
 
-fn report_manifest_rules(source: Bytes, inout tokens: Vec[syntax.Token], entry_form: I64, modules: I64) -> I64 effects[alloc, io, partial]:
+fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I64, modules: I64) -> I64 effects[alloc, io, partial]:
   let entry: I64 = entry_form + 2
   let entry_start: I64 = syntax.ast_node_start(tokens, entry)
   let entry_end: I64 = syntax.ast_node_end(tokens, entry)
@@ -1000,7 +1008,7 @@ struct LoadedModule:
   source: Bytes
   root: I64
 
-fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], cursor: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1010,20 +1018,20 @@ fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, inout mani
     let path: I64 = cursor + 3
     let module_path: Bytes = project_module_path(manifest_path, manifest_source, manifest_tokens, path)
     let source_bytes: Vec[U8] = vec.new()
-    let source_read: Bool = io.read_file(module_path, source_bytes)
+    let source_read: Bool = io.read_file(module_path, @source_bytes)
     if source_read:
-      let source: Bytes = bytes.freeze(source_bytes)
+      let source: Bytes = bytes.freeze(^source_bytes)
       let root: I64 = vec.len(module_tokens)
-      let parsed: syntax.ProgramParse = syntax.parse_program_result(source, module_tokens)
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @module_tokens)
       let end: I64 = vec.len(module_tokens)
       let shaped: Bool = validate.module_shape_valid_from(source, module_tokens, root, end)
       let valid: Bool = parsed.valid && shaped
       if valid:
-        syntax.link_declaration_names_from(source, module_tokens, root)
+        syntax.link_declaration_names_from(source, @module_tokens, root)
         let module: LoadedModule = LoadedModule(manifest: cursor, name: name, path: path, source: source, root: root)
-        vec.push(loaded, module)
+        vec.push(@loaded, module)
         let next: I64 = syntax.ast_next(manifest_tokens, cursor)
-        recur(manifest_path, manifest_source, manifest_tokens, next, module_tokens, loaded)
+        recur(manifest_path, manifest_source, manifest_tokens, next, @module_tokens, @loaded)
       else:
         let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
         if parsed.valid:
@@ -1037,7 +1045,7 @@ fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, inout mani
       let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
       report_project_diagnostic("E0409", module_name, start, end)
 
-fn report_module_identities(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_module_identities(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1060,7 +1068,7 @@ fn report_module_identities(manifest_source: Bytes, inout manifest_tokens: Vec[s
       let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
       report_project_diagnostic("E0410", module_name, manifest_start, manifest_end)
 
-fn find_missing_export(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64) -> I64 effects[partial]:
+fn find_missing_export(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1074,7 +1082,7 @@ fn find_missing_export(manifest_source: Bytes, inout manifest_tokens: Vec[syntax
     else:
       cursor
 
-fn report_missing_exports(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_missing_exports(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1100,7 +1108,7 @@ fn report_missing_exports(manifest_source: Bytes, inout manifest_tokens: Vec[syn
       let next: I64 = index + 1
       recur(manifest_source, manifest_tokens, module_tokens, loaded, next)
 
-fn find_named_declaration(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name: Bytes) -> I64 effects[partial]:
+fn find_named_declaration(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: Bytes) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1114,7 +1122,7 @@ fn find_named_declaration(source: Bytes, inout tokens: Vec[syntax.Token], cursor
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name)
 
-fn loaded_is_entry(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], entry: I64, module: LoadedModule) -> Bool effects[partial]:
+fn loaded_is_entry(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module: LoadedModule) -> Bool effects[partial]:
   let name: I64 = module.name
   let name_start: I64 = syntax.ast_node_start(manifest_tokens, name)
   let name_end: I64 = syntax.ast_node_end(manifest_tokens, name)
@@ -1122,7 +1130,7 @@ fn loaded_is_entry(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Tok
   let entry_end: I64 = syntax.ast_node_end(manifest_tokens, entry)
   syntax.spans_equal(manifest_source, name_start, name_end, entry_start, entry_end)
 
-fn report_project_mains(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], entry: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_project_mains(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1159,7 +1167,7 @@ fn report_project_mains(manifest_source: Bytes, inout manifest_tokens: Vec[synta
         let next: I64 = index + 1
         recur(manifest_source, manifest_tokens, entry, module_tokens, loaded, next)
 
-fn find_loaded_segment(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], reference_source: Bytes, segment_start: I64, segment_end: I64, index: I64) -> I64 effects[partial]:
+fn find_loaded_segment(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], reference_source: Bytes, segment_start: I64, segment_end: I64, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1176,7 +1184,7 @@ fn find_loaded_segment(manifest_source: Bytes, inout manifest_tokens: Vec[syntax
       let next: I64 = index + 1
       recur(manifest_source, manifest_tokens, loaded, reference_source, segment_start, segment_end, next)
 
-fn find_declaration_segment(declaration_source: Bytes, inout module_tokens: Vec[syntax.Token], cursor: I64, reference_source: Bytes, segment_start: I64, segment_end: I64) -> I64 effects[partial]:
+fn find_declaration_segment(declaration_source: Bytes, module_tokens: Vec[syntax.Token], cursor: I64, reference_source: Bytes, segment_start: I64, segment_end: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1192,7 +1200,7 @@ fn find_declaration_segment(declaration_source: Bytes, inout module_tokens: Vec[
       let next: I64 = syntax.ast_next(module_tokens, cursor)
       recur(declaration_source, module_tokens, next, reference_source, segment_start, segment_end)
 
-fn target_call_status(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], current: LoadedModule, target_index: I64, reference_source: Bytes, prefix_start: I64, slash: I64, reference_end: I64) -> I64 effects[partial]:
+fn target_call_status(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, target_index: I64, reference_source: Bytes, prefix_start: I64, slash: I64, reference_end: I64) -> I64 effects[partial]:
   let current_manifest: I64 = current.manifest
   let imports: I64 = current_manifest + 4
   let first_import: I64 = imports + 2
@@ -1224,7 +1232,7 @@ fn target_call_status(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.
   else:
     2
 
-fn qualified_call_status(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], current: LoadedModule, callee: I64) -> I64 effects[partial]:
+fn qualified_call_status(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, callee: I64) -> I64 effects[partial]:
   let reference_source: Bytes = current.source
   let start: I64 = syntax.ast_node_start(module_tokens, callee)
   let end: I64 = syntax.ast_node_end(module_tokens, callee)
@@ -1251,7 +1259,7 @@ fn qualified_call_status(manifest_source: Bytes, inout manifest_tokens: Vec[synt
     else:
       0
 
-fn find_invalid_loaded_call(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], current: LoadedModule, cursor: I64, end: I64) -> I64 effects[partial]:
+fn find_invalid_loaded_call(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, cursor: I64, end: I64) -> I64 effects[partial]:
   let done: Bool = cursor >= end
   if done:
     -1
@@ -1270,7 +1278,7 @@ fn find_invalid_loaded_call(manifest_source: Bytes, inout manifest_tokens: Vec[s
       let next: I64 = syntax.ast_node_after(cursor)
       recur(manifest_source, manifest_tokens, module_tokens, loaded, current, next, end)
 
-fn report_qualified_calls(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_qualified_calls(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1305,7 +1313,7 @@ fn report_qualified_calls(manifest_source: Bytes, inout manifest_tokens: Vec[syn
       let next: I64 = index + 1
       recur(manifest_source, manifest_tokens, module_tokens, loaded, next)
 
-fn report_loaded_project(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], entry: I64, inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+fn report_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let identities: I64 = report_module_identities(manifest_source, manifest_tokens, module_tokens, loaded, 0)
   let invalid_identity: Bool = identities > 0
   if invalid_identity:
@@ -1328,7 +1336,7 @@ fn report_loaded_project(manifest_source: Bytes, inout manifest_tokens: Vec[synt
         else:
           report_private_type_leaks(manifest_source, manifest_tokens, module_tokens, loaded)
 
-fn report_interface_type(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, type_index: I64, diagnostic_start: I64, diagnostic_end: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_type(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, type_index: I64, diagnostic_start: I64, diagnostic_end: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, type_index)
   let composite: Bool = kind == 0
   if composite:
@@ -1365,7 +1373,7 @@ fn report_interface_type(manifest_source: Bytes, inout manifest_tokens: Vec[synt
         else:
           report_project_diagnostic("E0418", module_name, diagnostic_start, diagnostic_end)
 
-fn report_interface_bindings(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_bindings(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1377,7 +1385,7 @@ fn report_interface_bindings(manifest_source: Bytes, inout manifest_tokens: Vec[
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
 
-fn report_interface_payload(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_payload(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1388,7 +1396,7 @@ fn report_interface_payload(manifest_source: Bytes, inout manifest_tokens: Vec[s
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
 
-fn report_interface_cases(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_cases(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1400,7 +1408,7 @@ fn report_interface_cases(manifest_source: Bytes, inout manifest_tokens: Vec[syn
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
 
-fn report_export_interfaces(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, inout module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_export_interfaces(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1429,7 +1437,7 @@ fn report_export_interfaces(manifest_source: Bytes, inout manifest_tokens: Vec[s
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, total)
 
-fn report_private_type_leaks_from(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule], index: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_private_type_leaks_from(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1450,7 +1458,7 @@ fn report_private_type_leaks_from(manifest_source: Bytes, inout manifest_tokens:
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, module_tokens, loaded, next, total)
 
-fn report_private_type_leaks(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+fn report_private_type_leaks(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let errors: I64 = report_private_type_leaks_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, 0)
   let invalid: Bool = errors > 0
   if invalid:

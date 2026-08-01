@@ -1,11 +1,11 @@
 module inout
 
-fn append_answer(inout values: Vec[I64]) -> Void effects[alloc]:
-  vec.push(values, 42)
+fn append_answer(values: @Vec[I64]) -> Void effects[alloc]:
+  vec.push(@values, 42)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io]:
   let values: Vec[I64] = vec.new()
-  append_answer(values)
+  append_answer(@values)
   let answer: I64 = vec.get(values, 0)
   io.print_i64(answer)
   io.println("")

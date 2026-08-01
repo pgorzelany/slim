@@ -26,7 +26,7 @@ fn invalid_key() -> Key:
 fn make_key(flag: Bool, content: Bytes) -> Key:
   Key(valid: flag, bytes: content)
 
-fn append_u64(value: I64, divisor: I64, remaining: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_u64(value: I64, divisor: I64, remaining: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = remaining == 0
   if done:
     void
@@ -34,10 +34,10 @@ fn append_u64(value: I64, divisor: I64, remaining: I64, inout output: Vec[U8]) -
     let quotient: I64 = value / divisor
     let code: I64 = quotient % 256
     let byte: U8 = i64.to_u8(code)
-    vec.push(output, byte)
+    vec.push(@output, byte)
     let next_divisor: I64 = divisor / 256
     let next_remaining: I64 = remaining - 1
-    recur(value, next_divisor, next_remaining, output)
+    recur(value, next_divisor, next_remaining, @output)
 
 fn read_bounded_u64_from(source: Bytes, index: I64, remaining: I64, limit: I64, value: I64) -> Number effects[partial]:
   let done: Bool = remaining == 0
@@ -83,7 +83,7 @@ fn weighted_checksum(source: Bytes, index: I64, end: I64, sum: I64) -> I64 effec
     let next: I64 = index + 1
     recur(source, next, end, next_sum)
 
-fn append_module_key(manifest_path: Bytes, manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], cursor: I64, inout output: Vec[U8]) -> Bool effects[alloc, io, partial]:
+fn append_module_key(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -92,8 +92,8 @@ fn append_module_key(manifest_path: Bytes, manifest_source: Bytes, inout manifes
     let path_token: I64 = cursor + 3
     let module_path: Bytes = project.project_module_path(manifest_path, manifest_source, manifest_tokens, path_token)
     let source_bytes: Vec[U8] = vec.new()
-    let read: Bool = io.read_file(module_path, source_bytes)
-    let source: Bytes = bytes.freeze(source_bytes)
+    let read: Bool = io.read_file(module_path, @source_bytes)
+    let source: Bytes = bytes.freeze(^source_bytes)
     if read:
       let source_length: I64 = bytes.len(source)
       let current: I64 = vec.len(output)
@@ -106,10 +106,10 @@ fn append_module_key(manifest_path: Bytes, manifest_source: Bytes, inout manifes
       let fits: Bool = source_length <= content_room
       let valid: Bool = has_frame && fits
       if valid:
-        append_u64(source_length, 72057594037927936, 8, output)
-        text.append_text(output, source)
+        append_u64(source_length, 72057594037927936, 8, @output)
+        text.append_text(@output, source)
         let next: I64 = syntax.ast_next(manifest_tokens, cursor)
-        recur(manifest_path, manifest_source, manifest_tokens, next, output)
+        recur(manifest_path, manifest_source, manifest_tokens, next, @output)
       else:
         false
     else:
@@ -117,22 +117,22 @@ fn append_module_key(manifest_path: Bytes, manifest_source: Bytes, inout manifes
 
 fn project_key(manifest_path: Bytes) -> Key effects[alloc, io, partial]:
   let manifest_bytes: Vec[U8] = vec.new()
-  let read: Bool = io.read_file(manifest_path, manifest_bytes)
-  let manifest_source: Bytes = bytes.freeze(manifest_bytes)
+  let read: Bool = io.read_file(manifest_path, @manifest_bytes)
+  let manifest_source: Bytes = bytes.freeze(^manifest_bytes)
   if read:
     let manifest_length: I64 = bytes.len(manifest_source)
     let maximum_manifest: I64 = 67108856
     let manifest_fits: Bool = manifest_length <= maximum_manifest
     if manifest_fits:
       let manifest_tokens: Vec[syntax.Token] = vec.new()
-      syntax.lex_data(manifest_source, 0, manifest_tokens)
+      syntax.lex_data(manifest_source, 0, @manifest_tokens)
       let output: Vec[U8] = vec.new()
-      append_u64(manifest_length, 72057594037927936, 8, output)
-      text.append_text(output, manifest_source)
+      append_u64(manifest_length, 72057594037927936, 8, @output)
+      text.append_text(@output, manifest_source)
       let entry_form: I64 = 3
       let modules: I64 = syntax.ast_next(manifest_tokens, entry_form)
-      let valid: Bool = append_module_key(manifest_path, manifest_source, manifest_tokens, modules, output)
-      let bytes: Bytes = bytes.freeze(output)
+      let valid: Bool = append_module_key(manifest_path, manifest_source, manifest_tokens, modules, @output)
+      let bytes: Bytes = bytes.freeze(^output)
       make_key(valid, bytes)
     else:
       invalid_key()
@@ -143,20 +143,20 @@ fn encode(key: Bytes, artifact: Bytes) -> Bytes effects[alloc, partial]:
   let key_length: I64 = bytes.len(key)
   let artifact_length: I64 = bytes.len(artifact)
   let prefix: Vec[U8] = vec.new()
-  text.append_text(prefix, "SLIMCACHE\x00")
-  let schema: U8 = i64.to_u8(2)
-  vec.push(prefix, schema)
-  append_u64(key_length, 72057594037927936, 8, prefix)
-  append_u64(artifact_length, 72057594037927936, 8, prefix)
-  text.append_text(prefix, key)
-  text.append_text(prefix, artifact)
-  let prefix_bytes: Bytes = bytes.freeze(prefix)
+  text.append_text(@prefix, "SLIMCACHE\x00")
+  let schema: U8 = i64.to_u8(3)
+  vec.push(@prefix, schema)
+  append_u64(key_length, 72057594037927936, 8, @prefix)
+  append_u64(artifact_length, 72057594037927936, 8, @prefix)
+  text.append_text(@prefix, key)
+  text.append_text(@prefix, artifact)
+  let prefix_bytes: Bytes = bytes.freeze(^prefix)
   let prefix_length: I64 = bytes.len(prefix_bytes)
   let checksum: I64 = weighted_checksum(prefix_bytes, 0, prefix_length, 0)
   let output: Vec[U8] = vec.new()
-  text.append_text(output, prefix_bytes)
-  append_u64(checksum, 72057594037927936, 8, output)
-  bytes.freeze(output)
+  text.append_text(@output, prefix_bytes)
+  append_u64(checksum, 72057594037927936, 8, @output)
+  bytes.freeze(^output)
 
 fn invalid_probe() -> Probe:
   Probe(valid: false, artifact_start: 0, artifact_end: 0)
@@ -169,7 +169,7 @@ fn probe(cache: Bytes, key: Bytes) -> Probe effects[partial]:
     let magic_equal: Bool = project.cross_span_chars_equal(cache, 0, magic, 0, 0, 10)
     let schema_byte: U8 = bytes.get(cache, 10)
     let schema_code: I64 = u8.to_i64(schema_byte)
-    let schema_equal: Bool = schema_code == 2
+    let schema_equal: Bool = schema_code == 3
     let header_valid: Bool = magic_equal && schema_equal
     let key_number: Number = read_bounded_u64(cache, 11, 67108864)
     let key_valid: Bool = key_number.valid
@@ -210,11 +210,11 @@ fn probe(cache: Bytes, key: Bytes) -> Probe effects[partial]:
 
 fn emit_hit(cache: Bytes, probe: Probe) -> I64 effects[alloc, io, partial]:
   let output: Vec[U8] = vec.new()
-  text.append_text(output, "H")
+  text.append_text(@output, "H")
   let start: I64 = probe.artifact_start
   let end: I64 = probe.artifact_end
-  text.append_span(cache, start, end, output)
-  let bytes: Bytes = bytes.freeze(output)
+  text.append_span(cache, start, end, @output)
+  let bytes: Bytes = bytes.freeze(^output)
   io.print_bytes(bytes)
   0
 
@@ -228,9 +228,9 @@ fn emit_miss(manifest_path: Bytes, key: Bytes) -> I64 effects[alloc, io, partial
     let artifact: Bytes = project.generate_prepared_project(prepared)
     let entry: Bytes = encode(key, artifact)
     let output: Vec[U8] = vec.new()
-    text.append_text(output, "M")
-    text.append_text(output, entry)
-    let bytes: Bytes = bytes.freeze(output)
+    text.append_text(@output, "M")
+    text.append_text(@output, entry)
+    let bytes: Bytes = bytes.freeze(^output)
     io.print_bytes(bytes)
     0
 
@@ -240,8 +240,8 @@ fn run(manifest_path: Bytes, cache_path: Bytes) -> I64 effects[alloc, io, partia
   if key_valid:
     let key: Bytes = key_result.bytes
     let cache_bytes: Vec[U8] = vec.new()
-    let cache_read: Bool = io.read_file(cache_path, cache_bytes)
-    let cache: Bytes = bytes.freeze(cache_bytes)
+    let cache_read: Bool = io.read_file(cache_path, @cache_bytes)
+    let cache: Bytes = bytes.freeze(^cache_bytes)
     let cache_probe: Probe = if cache_read:
       probe(cache, key)
     else:

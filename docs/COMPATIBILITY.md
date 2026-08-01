@@ -20,8 +20,8 @@ spellings do not remain as aliases, and there is no legacy parser in the final
 compiler.
 
 Project manifest schema 1 remains current because its structure is unchanged.
-Interface and cache schemas are 2 because qualified names and stored source
-identities changed. Generated C retains runtime ABI 1 because runtime
+Interface and cache schemas are 3 because ownership modes, qualified names,
+and stored source identities changed. Generated C retains runtime ABI 1 because runtime
 semantics and representation did not change.
 
 ## Future 1.0 freeze

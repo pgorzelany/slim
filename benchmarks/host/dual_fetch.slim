@@ -6,7 +6,7 @@ struct Reply:
 
 fn fetch(port: I64, request: Bytes) -> Reply effects[alloc, io]:
   let body: Vec[U8] = vec.new()
-  let ok: Bool = io.tcp_exchange("127.0.0.1", port, request, 64, 2000, body)
+  let ok: Bool = io.tcp_exchange("127.0.0.1", port, request, 64, 2000, @body)
   Reply(ok: ok, body: body)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:

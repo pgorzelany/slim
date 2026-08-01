@@ -1,0 +1,8 @@
+module unexpected_owned_mode
+
+fn read(values: Vec[I64]) -> I64:
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  read(^values)

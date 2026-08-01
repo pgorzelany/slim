@@ -1,6 +1,6 @@
 module effects
 
-fn list_has(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, effect_code: I64) -> Bool effects[partial]:
+fn list_has(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, effect_code: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -24,7 +24,7 @@ fn list_has(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, effect_
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, next, effect_code)
 
-fn builtin_requires(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
+fn builtin_requires(source: Bytes, tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
   let alloc_effect: Bool = effect_code == 1
   let io_effect: Bool = effect_code == 2
   if alloc_effect:
@@ -52,7 +52,7 @@ fn builtin_requires(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64,
     else:
       false
 
-fn params_have(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, effect_code: I64) -> Bool effects[partial]:
+fn params_have(source: Bytes, tokens: Vec[syntax.Token], item: I64, effect_code: I64) -> Bool effects[partial]:
   let valid: Bool = item >= 0
   if valid:
     let effect_form: I64 = syntax.ast_function_effects(tokens, item)
@@ -61,7 +61,7 @@ fn params_have(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, effect
   else:
     false
 
-fn call_requires(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
+fn call_requires(source: Bytes, tokens: Vec[syntax.Token], callee: I64, effect_code: I64) -> Bool effects[partial]:
   let builtin: Bool = builtin_requires(source, tokens, callee, effect_code)
   if builtin:
     true

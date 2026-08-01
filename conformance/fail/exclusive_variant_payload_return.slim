@@ -1,0 +1,15 @@
+module exclusive_variant_payload_return
+
+enum OwnerChoice:
+  none
+  some(Vec[I64])
+
+fn invalid(value: @OwnerChoice) -> Vec[I64] effects[alloc]:
+  match value:
+    none:
+      vec.new()
+    some(values):
+      values
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

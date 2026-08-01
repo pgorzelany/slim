@@ -1,9 +1,9 @@
 module inout_return
 
-fn expose(inout values: Vec[I64]) -> Vec[I64]:
+fn expose(values: @Vec[I64]) -> Vec[I64]:
   values
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let values: Vec[I64] = vec.new()
-  let exposed: Vec[I64] = expose(values)
+  let exposed: Vec[I64] = expose(@values)
   0

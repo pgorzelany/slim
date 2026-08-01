@@ -1,0 +1,11 @@
+module shared_variant_escape
+
+enum MaybeValues:
+  None
+  Some(Vec[I64])
+
+fn invalid(values: Vec[I64]) -> MaybeValues:
+  MaybeValues::Some(values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

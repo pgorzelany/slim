@@ -1,0 +1,9 @@
+module unexpected_exclusive_mode
+
+fn length(values: Vec[I64]) -> I64:
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  let observed: I64 = length(@values)
+  0

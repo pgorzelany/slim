@@ -1,0 +1,9 @@
+module owned_owned_overlap
+
+fn pair(left: ^Vec[I64], right: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  pair(^values, ^values)
+  0

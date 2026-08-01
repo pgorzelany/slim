@@ -1,56 +1,56 @@
 module proof
 
-fn append_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let negative: Bool = value < 0
   if negative:
-    text.append_text(output, "-")
+    text.append_text(@output, "-")
     let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, output)
+    text.append_nonnegative_i64(magnitude, @output)
   else:
-    text.append_nonnegative_i64(value, output)
+    text.append_nonnegative_i64(value, @output)
 
-fn emit_rule(node: I64, kind: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (rewrite ")
-  append_i64(node, output)
+fn emit_rule(node: I64, kind: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (rewrite ")
+  append_i64(node, @output)
   let literal_false: Bool = kind == 1
   let literal_true: Bool = kind == 2
   let literal: Bool = literal_false || literal_true
   if literal:
-    text.append_text(output, " literal-call (justification total-literal-evaluation))")
+    text.append_text(@output, " literal-call (justification total-literal-evaluation))")
   else:
     let identity: Bool = kind == 3
     if identity:
-      text.append_text(output, " right-identity (justification total-identity))")
+      text.append_text(@output, " right-identity (justification total-identity))")
     else:
       let selected: Bool = kind == 4
       if selected:
-        text.append_text(output, " literal-match (justification exhaustive-literal-selection))")
+        text.append_text(@output, " literal-match (justification exhaustive-literal-selection))")
       else:
         let dead: Bool = kind == 5
         if dead:
-          text.append_text(output, " dead-scalar-binding (justification unused-immutable-literal))")
+          text.append_text(@output, " dead-scalar-binding (justification unused-immutable-literal))")
         else:
           let idempotent: Bool = kind == 6
           if idempotent:
-            text.append_text(output, " boolean-idempotence (justification repeated-total-atom))")
+            text.append_text(@output, " boolean-idempotence (justification repeated-total-atom))")
           else:
             let identity_match: Bool = kind == 7
             if identity_match:
-              text.append_text(output, " boolean-identity-match (justification total-atom-selection))")
+              text.append_text(@output, " boolean-identity-match (justification total-atom-selection))")
             else:
-              text.append_text(output, " common-match-result (justification total-atom-scrutinee-and-result))")
+              text.append_text(@output, " common-match-result (justification total-atom-scrutinee-and-result))")
 
-fn walk_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, remaining: I64, inout output: Vec[U8]) -> I64 effects[alloc, partial]:
+fn walk_children(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, remaining: I64, output: @Vec[U8]) -> I64 effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     remaining
   else:
-    let next_remaining: I64 = walk_form(source, tokens, cursor, remaining, output)
+    let next_remaining: I64 = walk_form(source, tokens, cursor, remaining, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, next_remaining, output)
+    recur(source, tokens, next, next_remaining, @output)
 
-fn walk_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64, remaining: I64, inout output: Vec[U8]) -> I64 effects[alloc, partial]:
+fn walk_form(source: Bytes, tokens: Vec[syntax.Token], form: I64, remaining: I64, output: @Vec[U8]) -> I64 effects[alloc, partial]:
   let exhausted: Bool = remaining <= 0
   if exhausted:
     0
@@ -61,7 +61,7 @@ fn walk_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64, remainin
       let reduction: I64 = reduce.reduction_kind(source, tokens, form)
       let reducible: Bool = reduction > 0
       if reducible:
-        emit_rule(form, reduction, output)
+        emit_rule(form, reduction, @output)
       else:
         void
       let after: I64 = if reducible:
@@ -69,50 +69,50 @@ fn walk_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64, remainin
       else:
         remaining
       let first: I64 = syntax.ast_list_first(form)
-      walk_children(source, tokens, first, after, output)
+      walk_children(source, tokens, first, after, @output)
     else:
       remaining
 
 fn token_count(source: Bytes) -> I64 effects[alloc, partial]:
   let tokens: Vec[syntax.Token] = vec.new()
-  let parsed: Bool = syntax.parse_program(source, tokens)
+  let parsed: Bool = syntax.parse_program(source, @tokens)
   vec.len(tokens)
 
-fn emit_metric(name: Bytes, value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (")
-  text.append_text(output, name)
-  text.append_text(output, " ")
-  append_i64(value, output)
-  text.append_text(output, ")")
+fn emit_metric(name: Bytes, value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (")
+  text.append_text(@output, name)
+  text.append_text(@output, " ")
+  append_i64(value, @output)
+  text.append_text(@output, ")")
 
-fn emit_report(source: Bytes, inout tokens: Vec[syntax.Token], inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_report(source: Bytes, tokens: Vec[syntax.Token], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let canonical: Bytes = reduce.canonicalize(source)
   let normalized: Bytes = reduce.normalize(source)
   let source_bytes: I64 = bytes.len(canonical)
   let result_bytes: I64 = bytes.len(normalized)
   let source_tokens: I64 = token_count(canonical)
   let result_tokens: I64 = token_count(normalized)
-  text.append_text(output, "(reduction-proof 2 (guarantee bounded) (cost-model canonical-tokens-v1) (pass-limit 8) (site-limit 64)")
-  emit_metric("source-bytes", source_bytes, output)
-  emit_metric("source-tokens", source_tokens, output)
-  emit_metric("result-bytes", result_bytes, output)
-  emit_metric("result-tokens", result_tokens, output)
-  text.append_text(output, " (rewrites")
-  let remaining: I64 = walk_form(source, tokens, 0, 64, output)
-  text.append_text(output, ")")
+  text.append_text(@output, "(reduction-proof 2 (guarantee bounded) (cost-model canonical-tokens-v1) (pass-limit 8) (site-limit 64)")
+  emit_metric("source-bytes", source_bytes, @output)
+  emit_metric("source-tokens", source_tokens, @output)
+  emit_metric("result-bytes", result_bytes, @output)
+  emit_metric("result-tokens", result_tokens, @output)
+  text.append_text(@output, " (rewrites")
+  let remaining: I64 = walk_form(source, tokens, 0, 64, @output)
+  text.append_text(@output, ")")
   let truncated: Bool = remaining == 0
   if truncated:
-    text.append_text(output, " (sites-truncated true)")
+    text.append_text(@output, " (sites-truncated true)")
   else:
-    text.append_text(output, " (sites-truncated false)")
-  text.append_text(output, ")\n")
+    text.append_text(@output, " (sites-truncated false)")
+  text.append_text(@output, ")\n")
 
-fn verify(original: Bytes, candidate: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn verify(original: Bytes, candidate: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let expected: Bytes = reduce.normalize(original)
   let actual: Bytes = reduce.canonicalize(candidate)
   let expected_length: I64 = bytes.len(expected)
   let same: Bool = syntax.span_equal(expected, 0, expected_length, actual)
   if same:
-    text.append_text(output, "(reduction-verification 1 (status verified))\n")
+    text.append_text(@output, "(reduction-verification 1 (status verified))\n")
   else:
-    text.append_text(output, "(reduction-verification 1 (status different))\n")
+    text.append_text(@output, "(reduction-verification 1 (status different))\n")

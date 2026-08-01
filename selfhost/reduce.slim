@@ -1,13 +1,13 @@
 module reduce
 
-fn tokens_equal(source: Bytes, inout tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
+fn tokens_equal(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
   let left_start: I64 = syntax.ast_node_start(tokens, left)
   let left_end: I64 = syntax.ast_node_end(tokens, left)
   let right_start: I64 = syntax.ast_node_start(tokens, right)
   let right_end: I64 = syntax.ast_node_end(tokens, right)
   syntax.spans_equal(source, left_start, left_end, right_start, right_end)
 
-fn boolean_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: I64) -> I64 effects[partial]:
+fn boolean_literal(source: Bytes, tokens: Vec[syntax.Token], value: I64) -> I64 effects[partial]:
   let is_true: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
   if is_true:
     1
@@ -18,7 +18,7 @@ fn boolean_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: I64) -
     else:
       -1
 
-fn atom_value(inout tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
+fn atom_value(tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, value)
   kind == 2
 
@@ -38,7 +38,7 @@ fn decimal_digits(source: Bytes, index: I64, end: I64) -> Bool effects[partial]:
     else:
       false
 
-fn small_integer_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
+fn small_integer_literal(source: Bytes, tokens: Vec[syntax.Token], value: I64) -> Bool effects[partial]:
   let atom: Bool = atom_value(tokens, value)
   if atom:
     let start: I64 = syntax.ast_node_start(tokens, value)
@@ -66,7 +66,7 @@ fn small_integer_literal(source: Bytes, inout tokens: Vec[syntax.Token], value: 
   else:
     false
 
-fn matching_scalar_literal(source: Bytes, inout tokens: Vec[syntax.Token], type_index: I64, value: I64) -> Bool effects[partial]:
+fn matching_scalar_literal(source: Bytes, tokens: Vec[syntax.Token], type_index: I64, value: I64) -> Bool effects[partial]:
   let void_type: Bool = syntax.ast_node_text_is(source, tokens, type_index, "Void")
   if void_type:
     let void_value: Bool = syntax.ast_node_text_is(source, tokens, value, "void")
@@ -83,7 +83,7 @@ fn matching_scalar_literal(source: Bytes, inout tokens: Vec[syntax.Token], type_
       else:
         false
 
-fn name_used(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, cursor: I64, end: I64) -> Bool effects[partial]:
+fn name_used(source: Bytes, tokens: Vec[syntax.Token], name: I64, cursor: I64, end: I64) -> Bool effects[partial]:
   let done: Bool = cursor >= end
   if done:
     false
@@ -100,7 +100,7 @@ fn name_used(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, cursor: 
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, name, next, end)
 
-fn find_boolean_arm(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, wanted: I64) -> I64 effects[partial]:
+fn find_boolean_arm(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, wanted: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -115,7 +115,7 @@ fn find_boolean_arm(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64,
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, wanted)
 
-fn selected_match_body(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn selected_match_body(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let value: I64 = syntax.ast_match_value(expr)
   let literal: I64 = boolean_literal(source, tokens, value)
   let known: Bool = literal >= 0
@@ -130,7 +130,7 @@ fn selected_match_body(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64
   else:
     -1
 
-fn unary_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, one_argument: Bool) -> I64 effects[partial]:
+fn unary_call_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, one_argument: Bool) -> I64 effects[partial]:
   let not_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
   let valid: Bool = not_call && one_argument
   if valid:
@@ -145,7 +145,7 @@ fn unary_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], cal
   else:
     0
 
-fn boolean_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+fn boolean_call_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
   let and_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and")
   let or_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.or")
   let boolean_call: Bool = and_call || or_call
@@ -193,7 +193,7 @@ fn boolean_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], c
   else:
     0
 
-fn equality_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+fn equality_call_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
   let equal_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
   let valid: Bool = equal_call && two_arguments
   if valid:
@@ -211,7 +211,7 @@ fn equality_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], 
   else:
     0
 
-fn arithmetic_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
+fn arithmetic_call_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, two_arguments: Bool) -> I64 effects[partial]:
   let add_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.add")
   let sub_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.sub")
   let mul_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.mul")
@@ -233,7 +233,7 @@ fn arithmetic_call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token]
   else:
     0
 
-fn call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn call_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   let first: I64 = syntax.ast_call_arguments(expr)
   let second: I64 = syntax.ast_next(tokens, first)
@@ -262,7 +262,7 @@ fn call_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64
       else:
         arithmetic_call_reduction_kind(source, tokens, callee, first, second, two_arguments)
 
-fn match_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn match_reduction_kind(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let selected: I64 = selected_match_body(source, tokens, expr)
   let selected_found: Bool = selected >= 0
   if selected_found:
@@ -302,7 +302,7 @@ fn match_reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I6
     else:
       0
 
-fn match_replacement(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, kind: I64) -> I64 effects[partial]:
+fn match_replacement(source: Bytes, tokens: Vec[syntax.Token], expr: I64, kind: I64) -> I64 effects[partial]:
   let identity: Bool = kind == 7
   if identity:
     syntax.ast_match_value(expr)
@@ -316,7 +316,7 @@ fn match_replacement(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, 
     else:
       -1
 
-fn emit_original_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, first: Bool, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_original_children(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -325,19 +325,19 @@ fn emit_original_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor
     if first:
       void
     else:
-      text.append_text(output, " ")
-    emit_original_form(source, tokens, cursor, output)
+      text.append_text(@output, " ")
+    emit_original_form(source, tokens, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, output)
+    recur(source, tokens, next, false, @output)
 
-fn emit_original_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_original_form(source: Bytes, tokens: Vec[syntax.Token], form: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, form)
   let composite: Bool = kind == 0
   if composite:
-    text.append_text(output, "(")
+    text.append_text(@output, "(")
     let first: I64 = syntax.ast_list_first(form)
-    emit_original_children(source, tokens, first, true, output)
-    text.append_text(output, ")")
+    emit_original_children(source, tokens, first, true, @output)
+    text.append_text(@output, ")")
   else:
     let atom: Bool = kind == 2
     let start: I64 = syntax.ast_node_start(tokens, form)
@@ -349,19 +349,19 @@ fn emit_original_form(source: Bytes, inout tokens: Vec[syntax.Token], form: I64,
       let tag: I64 = syntax.ast_node_tag(tokens, parent)
       let call_marker: Bool = tag == 10
       if call_marker:
-        text.append_text(output, "call")
+        text.append_text(@output, "call")
       else:
-        text.append_text(output, "effects")
+        text.append_text(@output, "effects")
     else:
-      text.append_token(source, tokens, form, output)
+      text.append_token(source, tokens, form, @output)
 
-fn push_reduced_token(kind: I64, tag: I64, start: I64, end: I64, inout reduced: Vec[syntax.Token]) -> Void effects[alloc]:
+fn push_reduced_token(kind: I64, tag: I64, start: I64, end: I64, reduced: @Vec[syntax.Token]) -> Void effects[alloc]:
   let token: syntax.Token = syntax.Token(kind: kind, tag: tag, start: start, end: end, link: -1, next: -1)
-  vec.push(reduced, token)
+  vec.push(@reduced, token)
 
-fn clone_scalar(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_scalar(source: Bytes, tokens: Vec[syntax.Token], node: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, node)
-  let tag: I64 = syntax.ast_node_tag(tokens, node)
+  let tag: I64 = syntax.ast_node_encoded_tag(tokens, node)
   let original_start: I64 = syntax.ast_node_start(tokens, node)
   let original_end: I64 = syntax.ast_node_end(tokens, node)
   let synthetic: Bool = original_start == original_end
@@ -369,106 +369,106 @@ fn clone_scalar(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout
   if synthetic:
     void
   else:
-    text.append_token(source, tokens, node, atom_source)
+    text.append_token(source, tokens, node, @atom_source)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(kind, tag, start, end, reduced)
+  push_reduced_token(kind, tag, start, end, @reduced)
 
-fn clone_literal(value: Bytes, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_literal(value: Bytes, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let start: I64 = vec.len(atom_source)
-  text.append_text(atom_source, value)
+  text.append_text(@atom_source, value)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(2, 0, start, end, reduced)
+  push_reduced_token(2, 0, start, end, @reduced)
 
-fn clone_reduced_children(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_reduced_children(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
-    clone_reduced_node(source, tokens, cursor, atom_source, reduced)
+    clone_reduced_node(source, tokens, cursor, @atom_source, @reduced)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, atom_source, reduced)
+    recur(source, tokens, next, @atom_source, @reduced)
 
-fn clone_form(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_form(source: Bytes, tokens: Vec[syntax.Token], node: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let position: I64 = vec.len(atom_source)
-  let tag: I64 = syntax.ast_node_tag(tokens, node)
-  push_reduced_token(0, tag, position, position, reduced)
+  let tag: I64 = syntax.ast_node_encoded_tag(tokens, node)
+  push_reduced_token(0, tag, position, position, @reduced)
   let first: I64 = syntax.ast_list_first(node)
-  clone_reduced_children(source, tokens, first, atom_source, reduced)
+  clone_reduced_children(source, tokens, first, @atom_source, @reduced)
   let end: I64 = vec.len(atom_source)
-  push_reduced_token(1, 0, end, end, reduced)
+  push_reduced_token(1, 0, end, end, @reduced)
 
-fn clone_reduced_call(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_reduced_call(source: Bytes, tokens: Vec[syntax.Token], node: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let reduction: I64 = call_reduction_kind(source, tokens, node)
   if reduction == 1:
-    clone_literal("false", atom_source, reduced)
+    clone_literal("false", @atom_source, @reduced)
   else:
     if reduction == 2:
-      clone_literal("true", atom_source, reduced)
+      clone_literal("true", @atom_source, @reduced)
     else:
       let right_identity: Bool = reduction == 3
       let idempotent: Bool = reduction == 6
       let first: Bool = right_identity || idempotent
       if first:
-        clone_reduced_node(source, tokens, syntax.ast_call_arguments(node), atom_source, reduced)
+        clone_reduced_node(source, tokens, syntax.ast_call_arguments(node), @atom_source, @reduced)
       else:
-        clone_form(source, tokens, node, atom_source, reduced)
+        clone_form(source, tokens, node, @atom_source, @reduced)
 
-fn clone_reduced_match(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_reduced_match(source: Bytes, tokens: Vec[syntax.Token], node: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let reduction: I64 = match_reduction_kind(source, tokens, node)
   let selected: Bool = reduction == 4
   if selected:
     let body: I64 = selected_match_body(source, tokens, node)
-    clone_reduced_node(source, tokens, body, atom_source, reduced)
+    clone_reduced_node(source, tokens, body, @atom_source, @reduced)
   else:
     let replacement: I64 = match_replacement(source, tokens, node, reduction)
     let found: Bool = replacement >= 0
     if found:
-      clone_reduced_node(source, tokens, replacement, atom_source, reduced)
+      clone_reduced_node(source, tokens, replacement, @atom_source, @reduced)
     else:
-      clone_form(source, tokens, node, atom_source, reduced)
+      clone_form(source, tokens, node, @atom_source, @reduced)
 
-fn clone_reduced_node(source: Bytes, inout tokens: Vec[syntax.Token], node: I64, inout atom_source: Vec[U8], inout reduced: Vec[syntax.Token]) -> Void effects[alloc, partial]:
+fn clone_reduced_node(source: Bytes, tokens: Vec[syntax.Token], node: I64, atom_source: @Vec[U8], reduced: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
   let scalar: Bool = syntax.ast_node_is_scalar(tokens, node)
   if scalar:
-    clone_scalar(source, tokens, node, atom_source, reduced)
+    clone_scalar(source, tokens, node, @atom_source, @reduced)
   else:
     let let_form: Bool = syntax.ast_expression_is_let(source, tokens, node)
     if let_form:
       let removable: Bool = let_reducible(source, tokens, node)
       if removable:
         let body: I64 = syntax.ast_let_body(tokens, node)
-        clone_reduced_node(source, tokens, body, atom_source, reduced)
+        clone_reduced_node(source, tokens, body, @atom_source, @reduced)
       else:
-        clone_form(source, tokens, node, atom_source, reduced)
+        clone_form(source, tokens, node, @atom_source, @reduced)
     else:
       let call_form: Bool = syntax.ast_expression_is_call(source, tokens, node)
       if call_form:
-        clone_reduced_call(source, tokens, node, atom_source, reduced)
+        clone_reduced_call(source, tokens, node, @atom_source, @reduced)
       else:
         let match_form: Bool = syntax.ast_expression_is_match(source, tokens, node)
         if match_form:
-          clone_reduced_match(source, tokens, node, atom_source, reduced)
+          clone_reduced_match(source, tokens, node, @atom_source, @reduced)
         else:
-          clone_form(source, tokens, node, atom_source, reduced)
+          clone_form(source, tokens, node, @atom_source, @reduced)
 
 fn canonicalize(source: Bytes) -> Bytes effects[alloc, partial]:
   let tokens: Vec[syntax.Token] = vec.new()
-  let parsed: Bool = syntax.parse_program(source, tokens)
+  let parsed: Bool = syntax.parse_program(source, @tokens)
   let output: Vec[U8] = vec.new()
-  format.emit_module(source, tokens, output)
-  bytes.freeze(output)
+  format.emit_module(source, tokens, @output)
+  bytes.freeze(^output)
 
 fn normalize_from(source: Bytes, fallback: Bytes, remaining: I64) -> Bytes effects[alloc, partial]:
   let tokens: Vec[syntax.Token] = vec.new()
-  let parsed: Bool = syntax.parse_program(source, tokens)
+  let parsed: Bool = syntax.parse_program(source, @tokens)
   let reduced_tokens: Vec[syntax.Token] = vec.new()
   let atom_source: Vec[U8] = vec.new()
-  clone_reduced_node(source, tokens, 0, atom_source, reduced_tokens)
-  syntax.index_ast_boundaries(reduced_tokens)
-  let atoms: Bytes = bytes.freeze(atom_source)
+  clone_reduced_node(source, tokens, 0, @atom_source, @reduced_tokens)
+  syntax.index_ast_boundaries(@reduced_tokens)
+  let atoms: Bytes = bytes.freeze(^atom_source)
   let output: Vec[U8] = vec.new()
-  format.emit_module(atoms, reduced_tokens, output)
-  let next: Bytes = bytes.freeze(output)
+  format.emit_module(atoms, reduced_tokens, @output)
+  let next: Bytes = bytes.freeze(^output)
   let source_length: I64 = bytes.len(source)
   let same: Bool = syntax.span_equal(source, 0, source_length, next)
   if same:
@@ -485,11 +485,11 @@ fn normalize(source: Bytes) -> Bytes effects[alloc, partial]:
   let canonical: Bytes = canonicalize(source)
   normalize_from(canonical, canonical, 7)
 
-fn emit_normal_form(source: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_normal_form(source: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let normalized: Bytes = normalize(source)
-  text.append_text(output, normalized)
+  text.append_text(@output, normalized)
 
-fn let_reducible(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn let_reducible(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let name: I64 = syntax.ast_let_name(expr)
   let type_index: I64 = syntax.ast_let_type(expr)
   let value: I64 = syntax.ast_let_value(tokens, expr)
@@ -505,7 +505,7 @@ fn let_reducible(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> B
   else:
     false
 
-fn reduction_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn reduction_kind(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let composite: Bool = kind == 0
   if composite:

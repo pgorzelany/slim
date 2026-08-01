@@ -5,7 +5,7 @@ struct Diagnostic:
   start: I64
   end: I64
 
-fn parameter_has_name(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+fn parameter_has_name(source: Bytes, tokens: Vec[syntax.Token], parameter: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, parameter)
   let done: Bool = kind == 1
   if done:
@@ -21,7 +21,7 @@ fn parameter_has_name(source: Bytes, inout tokens: Vec[syntax.Token], parameter:
       let next: I64 = syntax.ast_next(tokens, parameter)
       recur(source, tokens, next, name_start, name_end)
 
-fn prior_let_has_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
+fn prior_let_has_name(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let done: Bool = cursor >= end
   if done:
     false
@@ -46,7 +46,7 @@ fn prior_let_has_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I6
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, next, end, name_start, name_end)
 
-fn match_name_is_known(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body_start: I64, name: I64) -> Bool effects[partial]:
+fn match_name_is_known(source: Bytes, tokens: Vec[syntax.Token], params: I64, body_start: I64, name: I64) -> Bool effects[partial]:
   let actual: I64 = atom_type_kind(source, tokens, name)
   let scalar: Bool = actual >= 0
   if scalar:
@@ -61,7 +61,7 @@ fn match_name_is_known(source: Bytes, inout tokens: Vec[syntax.Token], params: I
     else:
       prior_let_has_name(source, tokens, body_start, name, name_start, name_end)
 
-fn append_boolean_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body_start: I64, expected: I64, cursor: I64, seen_true: Bool, seen_false: Bool, inout issues: Vec[typing.Issue], count: I64) -> I64 effects[alloc, partial]:
+fn append_boolean_match_arms(source: Bytes, tokens: Vec[syntax.Token], params: I64, body_start: I64, expected: I64, cursor: I64, seen_true: Bool, seen_false: Bool, issues: @Vec[typing.Issue], count: I64) -> I64 effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -79,7 +79,7 @@ fn append_boolean_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], par
         false
     let next: I64 = syntax.ast_next(tokens, cursor)
     let duplicate_report: I64 = if duplicate:
-      append_form_issue("E0335", cursor, tokens, issues)
+      append_form_issue("E0335", cursor, tokens, @issues)
     else:
       0
     let first: I64 = syntax.ast_arm_pattern(cursor)
@@ -92,7 +92,7 @@ fn append_boolean_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], par
       true
     let unknown: Bool = !known
     let unknown_report: I64 = if unknown:
-      append_token_issue("E0314", body, issues)
+      append_token_issue("E0314", body, @issues)
     else:
       0
     let actual: I64 = atom_type_kind(source, tokens, body)
@@ -103,7 +103,7 @@ fn append_boolean_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], par
     let different: Bool = !same_type
     let mismatch: Bool = both_known && different
     let mismatch_report: I64 = if mismatch:
-      append_token_issue("E0344", body, issues)
+      append_token_issue("E0344", body, @issues)
     else:
       0
     let first_total: I64 = duplicate_report + unknown_report
@@ -111,9 +111,9 @@ fn append_boolean_match_arms(source: Bytes, inout tokens: Vec[syntax.Token], par
     let total: I64 = count + reported
     let next_seen_true: Bool = seen_true || true_pattern
     let next_seen_false: Bool = seen_false || false_pattern
-    recur(source, tokens, params, body_start, expected, next, next_seen_true, next_seen_false, issues, total)
+    recur(source, tokens, params, body_start, expected, next, next_seen_true, next_seen_false, @issues, total)
 
-fn append_boolean_match_span(source: Bytes, inout tokens: Vec[syntax.Token], params: I64, body_start: I64, expected: I64, cursor: I64, end: I64, inout issues: Vec[typing.Issue], count: I64) -> I64 effects[alloc, partial]:
+fn append_boolean_match_span(source: Bytes, tokens: Vec[syntax.Token], params: I64, body_start: I64, expected: I64, cursor: I64, end: I64, issues: @Vec[typing.Issue], count: I64) -> I64 effects[alloc, partial]:
   let done: Bool = cursor >= end
   if done:
     count
@@ -132,14 +132,14 @@ fn append_boolean_match_span(source: Bytes, inout tokens: Vec[syntax.Token], par
     let reported: I64 = if incomplete:
       let value: I64 = syntax.ast_match_value(cursor)
       let arms: I64 = syntax.ast_match_arms(tokens, cursor)
-      append_boolean_match_arms(source, tokens, params, body_start, expected, arms, false, false, issues, 0)
+      append_boolean_match_arms(source, tokens, params, body_start, expected, arms, false, false, @issues, 0)
     else:
       0
     let next: I64 = syntax.ast_node_after(cursor)
     let total: I64 = count + reported
-    recur(source, tokens, params, body_start, expected, next, end, issues, total)
+    recur(source, tokens, params, body_start, expected, next, end, @issues, total)
 
-fn append_boolean_match_items(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue], index: I64, count: I64) -> I64 effects[alloc, partial]:
+fn append_boolean_match_items(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue], index: I64, count: I64) -> I64 effects[alloc, partial]:
   let declaration_count: I64 = vec.len(declarations)
   let done: Bool = index >= declaration_count
   if done:
@@ -155,22 +155,22 @@ fn append_boolean_match_items(source: Bytes, inout tokens: Vec[syntax.Token], in
       let effects: I64 = syntax.ast_function_effects(tokens, cursor)
       let body: I64 = syntax.ast_function_body(tokens, cursor)
       let body_end: I64 = syntax.ast_next(tokens, body)
-      append_boolean_match_span(source, tokens, params, body, expected, body, body_end, issues, 0)
+      append_boolean_match_span(source, tokens, params, body, expected, body, body_end, @issues, 0)
     else:
       0
     let next: I64 = index + 1
     let total: I64 = count + reported
-    recur(source, tokens, declarations, issues, next, total)
+    recur(source, tokens, declarations, @issues, next, total)
 
-fn check_source_mode(input: Bytes, inout tokens: Vec[syntax.Token], render_typed: Bool) -> typing.Checked effects[alloc, io, partial]:
+fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool) -> typing.Checked effects[alloc, io, partial]:
   let valid: Bool = validate.executable_shape_valid(input, tokens)
   if valid:
     let declarations: Vec[ir.Declaration] = syntax.index_declarations(input, tokens)
     let syntax_issues: Vec[typing.Issue] = vec.new()
-    let syntax_status: I64 = check_path_exhaustive(input, tokens, declarations, syntax_issues)
+    let syntax_status: I64 = check_path_exhaustive(input, tokens, declarations, @syntax_issues)
     let syntax_error: Bool = syntax_status > 0
     if syntax_error:
-      let recovered: I64 = append_boolean_match_items(input, tokens, declarations, syntax_issues, 0, 0)
+      let recovered: I64 = append_boolean_match_items(input, tokens, declarations, @syntax_issues, 0, 0)
       let rendered: I64 = if render_typed:
         report_issues(tokens, syntax_issues, 0, 0)
       else:
@@ -179,7 +179,7 @@ fn check_source_mode(input: Bytes, inout tokens: Vec[syntax.Token], render_typed
       let plan: memory.Plan = memory.empty_plan()
       typing.Checked(status: syntax_status, view: view, issues: syntax_issues, plan: plan)
     else:
-      let view: typing.View = typing.analyze(input, tokens, declarations)
+      let view: typing.View = typing.analyze(input, @tokens, declarations)
       let plan: memory.Plan = memory.analyze(input, tokens, declarations)
       let issues: Vec[typing.Issue] = view.issues
       let issue_count: I64 = vec.len(issues)
@@ -190,7 +190,7 @@ fn check_source_mode(input: Bytes, inout tokens: Vec[syntax.Token], render_typed
         else:
           1
       else:
-        check_path_fork(input, tokens, declarations, issues)
+        check_path_fork(input, tokens, declarations, @issues)
       let prior_error: Bool = checked > 0
       let status: I64 = if prior_error:
         let recovered: I64 = if typed_error:
@@ -200,7 +200,7 @@ fn check_source_mode(input: Bytes, inout tokens: Vec[syntax.Token], render_typed
             report_issues(tokens, issues, 0, 0)
           else:
             0
-          let additional: I64 = append_boolean_match_items(input, tokens, declarations, issues, 0, 0)
+          let additional: I64 = append_boolean_match_items(input, tokens, declarations, @issues, 0, 0)
           rendered + additional
         checked
       else:
@@ -214,35 +214,35 @@ fn check_source_mode(input: Bytes, inout tokens: Vec[syntax.Token], render_typed
     let plan: memory.Plan = memory.empty_plan()
     typing.Checked(status: status, view: view, issues: issues, plan: plan)
 
-fn check_source(input: Bytes, inout tokens: Vec[syntax.Token]) -> typing.Checked effects[alloc, io, partial]:
-  check_source_mode(input, tokens, true)
+fn check_source(input: Bytes, tokens: @Vec[syntax.Token]) -> typing.Checked effects[alloc, io, partial]:
+  check_source_mode(input, @tokens, true)
 
-fn check_source_deferred(input: Bytes, inout tokens: Vec[syntax.Token]) -> typing.Checked effects[alloc, io, partial]:
-  check_source_mode(input, tokens, false)
+fn check_source_deferred(input: Bytes, tokens: @Vec[syntax.Token]) -> typing.Checked effects[alloc, io, partial]:
+  check_source_mode(input, @tokens, false)
 
-fn check_source_all(input: Bytes, inout tokens: Vec[syntax.Token]) -> I64 effects[alloc, io, partial]:
-  let checked: typing.Checked = check_source(input, tokens)
+fn check_source_all(input: Bytes, tokens: @Vec[syntax.Token]) -> I64 effects[alloc, io, partial]:
+  let checked: typing.Checked = check_source(input, @tokens)
   checked.status
 
 fn check_path_all(path: Bytes) -> I64 effects[alloc, io, partial]:
   let input_bytes: Vec[U8] = vec.new()
-  let input_read: Bool = io.read_file(path, input_bytes)
+  let input_read: Bool = io.read_file(path, @input_bytes)
   if input_read:
-    let input: Bytes = bytes.freeze(input_bytes)
+    let input: Bytes = bytes.freeze(^input_bytes)
     let tokens: Vec[syntax.Token] = vec.new()
-    let parsed: syntax.ProgramParse = syntax.parse_program_result(input, tokens)
+    let parsed: syntax.ProgramParse = syntax.parse_program_result(input, @tokens)
     if parsed.valid:
-      check_source_all(input, tokens)
+      check_source_all(input, @tokens)
     else:
       report_diagnostic(parsed.code, parsed.start, parsed.end)
   else:
     io.println("E0409@0:0")
     1
 
-fn recur_parameter_name(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64) -> I64 effects[partial]:
+fn recur_parameter_name(source: Bytes, tokens: Vec[syntax.Token], parameter: I64) -> I64 effects[partial]:
   syntax.ast_binding_name(source, tokens, parameter)
 
-fn builtin_group_math(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_group_math(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.add")
   let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.sub")
   let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.mul")
@@ -253,7 +253,7 @@ fn builtin_group_math(source: Bytes, inout tokens: Vec[syntax.Token], callee: I6
   let left: Bool = first || second
   left || e
 
-fn builtin_group_compare(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_group_compare(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
   let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.lt")
   let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.le")
@@ -264,7 +264,7 @@ fn builtin_group_compare(source: Bytes, inout tokens: Vec[syntax.Token], callee:
   let left: Bool = first || second
   left || e
 
-fn builtin_group_scalar(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_group_scalar(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
   let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and")
   let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.or")
@@ -275,7 +275,7 @@ fn builtin_group_scalar(source: Bytes, inout tokens: Vec[syntax.Token], callee: 
   let left: Bool = first || second
   left || e
 
-fn builtin_group_bytes_io(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_group_bytes_io(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.len")
   let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.get")
   let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.freeze")
@@ -290,7 +290,7 @@ fn builtin_group_bytes_io(source: Bytes, inout tokens: Vec[syntax.Token], callee
   let right: Bool = third || g
   left || right
 
-fn builtin_group_storage(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_group_storage(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let a: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
   let b: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.len")
   let c: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.get")
@@ -307,7 +307,7 @@ fn builtin_group_storage(source: Bytes, inout tokens: Vec[syntax.Token], callee:
   let right: Bool = third || fourth
   left || right
 
-fn builtin_is_known(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn builtin_is_known(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let math: Bool = builtin_group_math(source, tokens, callee)
   let compare: Bool = builtin_group_compare(source, tokens, callee)
   let scalar: Bool = builtin_group_scalar(source, tokens, callee)
@@ -318,246 +318,31 @@ fn builtin_is_known(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64)
   let left: Bool = first || second
   left || storage
 
-fn linked_function_params(inout tokens: Vec[syntax.Token], callee: I64) -> I64 effects[partial]:
-  let item: I64 = syntax.ast_node_link(tokens, callee)
-  let found: Bool = item >= 0
-  if found:
-    syntax.ast_function_parameters(item)
-  else:
-    -1
+fn parameter_is_exclusive(source: Bytes, tokens: Vec[syntax.Token], parameter: I64) -> Bool effects[partial]:
+  syntax.ast_binding_is_exclusive(source, tokens, parameter)
 
-fn parameter_is_inout(source: Bytes, inout tokens: Vec[syntax.Token], parameter: I64) -> Bool effects[partial]:
-  syntax.ast_binding_is_inout(source, tokens, parameter)
-
-fn find_inout_temporary_args(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, parameter: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax.ast_node_kind(tokens, parameter)
-  let done: Bool = kind == 1
-  if done:
-    -1
-  else:
-    let borrowed: Bool = parameter_is_inout(source, tokens, parameter)
-    let argument_kind: I64 = syntax.ast_node_kind(tokens, argument)
-    let named: Bool = argument_kind == 2
-    let not_named: Bool = !named
-    let invalid: Bool = borrowed && not_named
-    if invalid:
-      argument
-    else:
-      let next_argument: I64 = syntax.ast_next(tokens, argument)
-      let next_parameter: I64 = syntax.ast_next(tokens, parameter)
-      recur(source, tokens, next_argument, next_parameter)
-
-fn find_inout_temporary_call(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64) -> I64 effects[partial]:
-  let callee: I64 = syntax.ast_call_callee(cursor)
-  let builtin: Bool = builtin_is_known(source, tokens, callee)
-  if builtin:
-    -1
-  else:
-    let params: I64 = linked_function_params(tokens, callee)
-    let found: Bool = params >= 0
-    if found:
-      let argument: I64 = syntax.ast_call_arguments(cursor)
-      let parameter: I64 = syntax.ast_parameters_first(params)
-      find_inout_temporary_args(source, tokens, argument, parameter)
-    else:
-      -1
-
-fn find_inout_temporary_span(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64, end: I64) -> I64 effects[partial]:
-  let done: Bool = cursor >= end
-  if done:
-    -1
-  else:
-    let kind: I64 = syntax.ast_node_kind(tokens, cursor)
-    let form: Bool = kind == 0
-    let head: I64 = syntax.ast_list_first(cursor)
-    let call_form: Bool = if form:
-      syntax.ast_expression_is_call(source, tokens, cursor)
-    else:
-      false
-    let invalid: I64 = if call_form:
-      find_inout_temporary_call(source, tokens, module_items, cursor)
-    else:
-      -1
-    let found: Bool = invalid >= 0
-    if found:
-      invalid
-    else:
-      let next: I64 = syntax.ast_node_after(cursor)
-      recur(source, tokens, module_items, next, end)
-
-fn find_inout_temporary_items(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, inout declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
-  let declaration_count: I64 = vec.len(declarations)
-  let done: Bool = index >= declaration_count
-  if done:
-    -1
-  else:
-    let declaration: ir.Declaration = vec.get(declarations, index)
-    let cursor: I64 = declaration.form
-    let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
-    let invalid: I64 = if function_item:
-      let params: I64 = syntax.ast_function_parameters(cursor)
-      let return_type: I64 = syntax.ast_function_return_type(tokens, cursor)
-      let effects: I64 = syntax.ast_function_effects(tokens, cursor)
-      let body: I64 = syntax.ast_function_body(tokens, cursor)
-      let body_end: I64 = syntax.ast_next(tokens, body)
-      find_inout_temporary_span(source, tokens, module_items, body, body_end)
-    else:
-      -1
-    let found: Bool = invalid >= 0
-    if found:
-      invalid
-    else:
-      let next: I64 = index + 1
-      recur(source, tokens, module_items, declarations, next)
-
-fn prior_inout_alias(source: Bytes, inout tokens: Vec[syntax.Token], argument: I64, parameter: I64, current_argument: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
-  let reached: Bool = argument == current_argument
-  if reached:
-    false
-  else:
-    let borrowed: Bool = parameter_is_inout(source, tokens, parameter)
-    let kind: I64 = syntax.ast_node_kind(tokens, argument)
-    let named: Bool = kind == 2
-    let comparable: Bool = borrowed && named
-    let candidate_start: I64 = syntax.ast_node_start(tokens, argument)
-    let candidate_end: I64 = syntax.ast_node_end(tokens, argument)
-    let same: Bool = if comparable:
-      syntax.spans_equal(source, candidate_start, candidate_end, name_start, name_end)
-    else:
-      false
-    if same:
-      true
-    else:
-      let next_argument: I64 = syntax.ast_next(tokens, argument)
-      let next_parameter: I64 = syntax.ast_next(tokens, parameter)
-      recur(source, tokens, next_argument, next_parameter, current_argument, name_start, name_end)
-
-fn find_inout_alias_args(source: Bytes, inout tokens: Vec[syntax.Token], first_argument: I64, first_parameter: I64, argument: I64, parameter: I64) -> I64 effects[partial]:
-  let kind: I64 = syntax.ast_node_kind(tokens, parameter)
-  let done: Bool = kind == 1
-  if done:
-    -1
-  else:
-    let borrowed: Bool = parameter_is_inout(source, tokens, parameter)
-    let argument_kind: I64 = syntax.ast_node_kind(tokens, argument)
-    let named: Bool = argument_kind == 2
-    let comparable: Bool = borrowed && named
-    let name_start: I64 = syntax.ast_node_start(tokens, argument)
-    let name_end: I64 = syntax.ast_node_end(tokens, argument)
-    let duplicate: Bool = if comparable:
-      prior_inout_alias(source, tokens, first_argument, first_parameter, argument, name_start, name_end)
-    else:
-      false
-    if duplicate:
-      argument
-    else:
-      let next_argument: I64 = syntax.ast_next(tokens, argument)
-      let next_parameter: I64 = syntax.ast_next(tokens, parameter)
-      recur(source, tokens, first_argument, first_parameter, next_argument, next_parameter)
-
-fn find_inout_alias_call(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64) -> I64 effects[partial]:
-  let callee: I64 = syntax.ast_call_callee(cursor)
-  let builtin: Bool = builtin_is_known(source, tokens, callee)
-  if builtin:
-    -1
-  else:
-    let params: I64 = linked_function_params(tokens, callee)
-    let found: Bool = params >= 0
-    if found:
-      let argument: I64 = syntax.ast_call_arguments(cursor)
-      let parameter: I64 = syntax.ast_parameters_first(params)
-      find_inout_alias_args(source, tokens, argument, parameter, argument, parameter)
-    else:
-      -1
-
-fn find_inout_alias_span(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, cursor: I64, end: I64) -> I64 effects[partial]:
-  let done: Bool = cursor >= end
-  if done:
-    -1
-  else:
-    let kind: I64 = syntax.ast_node_kind(tokens, cursor)
-    let form: Bool = kind == 0
-    let head: I64 = syntax.ast_list_first(cursor)
-    let call_form: Bool = if form:
-      syntax.ast_expression_is_call(source, tokens, cursor)
-    else:
-      false
-    let invalid: I64 = if call_form:
-      find_inout_alias_call(source, tokens, module_items, cursor)
-    else:
-      -1
-    let found: Bool = invalid >= 0
-    if found:
-      invalid
-    else:
-      let next: I64 = syntax.ast_node_after(cursor)
-      recur(source, tokens, module_items, next, end)
-
-fn find_inout_alias_items(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, inout declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
-  let declaration_count: I64 = vec.len(declarations)
-  let done: Bool = index >= declaration_count
-  if done:
-    -1
-  else:
-    let declaration: ir.Declaration = vec.get(declarations, index)
-    let cursor: I64 = declaration.form
-    let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
-    let invalid: I64 = if function_item:
-      let params: I64 = syntax.ast_function_parameters(cursor)
-      let return_type: I64 = syntax.ast_function_return_type(tokens, cursor)
-      let effects: I64 = syntax.ast_function_effects(tokens, cursor)
-      let body: I64 = syntax.ast_function_body(tokens, cursor)
-      let body_end: I64 = syntax.ast_next(tokens, body)
-      find_inout_alias_span(source, tokens, module_items, body, body_end)
-    else:
-      -1
-    let found: Bool = invalid >= 0
-    if found:
-      invalid
-    else:
-      let next: I64 = index + 1
-      recur(source, tokens, module_items, declarations, next)
-
-fn append_form_issue(code: Bytes, form: I64, inout tokens: Vec[syntax.Token], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+fn append_form_issue(code: Bytes, form: I64, tokens: Vec[syntax.Token], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   let next: I64 = syntax.ast_next(tokens, form)
   let closing: I64 = next - 1
-  typing.append_issue(code, form, closing, issues)
+  typing.append_issue(code, form, closing, @issues)
   1
 
-fn append_token_issue(code: Bytes, token: I64, inout issues: Vec[typing.Issue]) -> I64 effects[alloc]:
-  typing.append_issue(code, token, token, issues)
+fn append_token_issue(code: Bytes, token: I64, issues: @Vec[typing.Issue]) -> I64 effects[alloc]:
+  typing.append_issue(code, token, token, @issues)
   1
 
-fn check_path_inout_alias(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, partial]:
-  let duplicate: I64 = find_inout_alias_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
-  let has_duplicate: Bool = duplicate >= 0
-  if has_duplicate:
-    append_token_issue("E0349", duplicate, issues)
-  else:
-    0
-
-fn check_path_fork(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+fn check_path_fork(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   let fork: I64 = find_invalid_fork(input, tokens, 3)
   let invalid: Bool = fork >= 0
   if invalid:
-    append_form_issue("E0356", fork, tokens, issues)
+    append_form_issue("E0356", fork, tokens, @issues)
   else:
-    check_path_inout(input, tokens, declarations, issues)
+    check_path_exclusive(input, tokens, declarations, @issues)
 
-fn check_path_inout(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, partial]:
-  let effects: I64 = check_path_effects(input, tokens, declarations, issues)
-  let prior_error: Bool = effects > 0
-  if prior_error:
-    effects
-  else:
-    let temporary: I64 = find_inout_temporary_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
-    let has_temporary: Bool = temporary >= 0
-    if has_temporary:
-      append_form_issue("E0348", temporary, tokens, issues)
-    else:
-      check_path_inout_alias(input, tokens, declarations, issues)
+fn check_path_exclusive(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+  check_path_effects(input, tokens, declarations, @issues)
 
-fn boolean_arms_have(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, pattern: Bytes) -> Bool effects[partial]:
+fn boolean_arms_have(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, pattern: Bytes) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -571,7 +356,7 @@ fn boolean_arms_have(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, pattern)
 
-fn boolean_match_incomplete(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn boolean_match_incomplete(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let value: I64 = syntax.ast_match_value(expr)
   let true_value: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
   let false_value: Bool = syntax.ast_node_text_is(source, tokens, value, "false")
@@ -585,7 +370,7 @@ fn boolean_match_incomplete(source: Bytes, inout tokens: Vec[syntax.Token], expr
   else:
     false
 
-fn find_nonexhaustive_in_span(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, end: I64) -> I64 effects[partial]:
+fn find_nonexhaustive_in_span(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64) -> I64 effects[partial]:
   let done: Bool = cursor >= end
   if done:
     -1
@@ -607,7 +392,7 @@ fn find_nonexhaustive_in_span(source: Bytes, inout tokens: Vec[syntax.Token], cu
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, next, end)
 
-fn find_nonexhaustive_items(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, inout declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
+fn find_nonexhaustive_items(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
   let declaration_count: I64 = vec.len(declarations)
   let done: Bool = index >= declaration_count
   if done:
@@ -632,13 +417,13 @@ fn find_nonexhaustive_items(source: Bytes, inout tokens: Vec[syntax.Token], modu
       let next: I64 = index + 1
       recur(source, tokens, module_items, declarations, next)
 
-fn fork_parameters_safe(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
+fn fork_parameters_safe(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
     true
   else:
-    let borrowed: Bool = parameter_is_inout(source, tokens, cursor)
+    let borrowed: Bool = parameter_is_exclusive(source, tokens, cursor)
     let type: I64 = syntax.ast_binding_type(source, tokens, cursor)
     let scalar: I64 = syntax.scalar_type_kind(source, tokens, type)
     let safe: Bool = (!borrowed) && (scalar >= 0)
@@ -648,7 +433,7 @@ fn fork_parameters_safe(source: Bytes, inout tokens: Vec[syntax.Token], cursor: 
     else:
       false
 
-fn fork_arguments_safe(source: Bytes, inout tokens: Vec[syntax.Token], arguments: I64, parameters: I64) -> Bool effects[partial]:
+fn fork_arguments_safe(source: Bytes, tokens: Vec[syntax.Token], arguments: I64, parameters: I64) -> Bool effects[partial]:
   let argument_kind: I64 = syntax.ast_node_kind(tokens, arguments)
   let parameter_kind: I64 = syntax.ast_node_kind(tokens, parameters)
   let arguments_done: Bool = argument_kind == 1
@@ -660,7 +445,7 @@ fn fork_arguments_safe(source: Bytes, inout tokens: Vec[syntax.Token], arguments
     let atom: Bool = argument_kind == 2
     let string_value: Bool = argument_kind == 3
     let atomic: Bool = atom || string_value
-    let borrowed: Bool = parameter_is_inout(source, tokens, parameters)
+    let borrowed: Bool = parameter_is_exclusive(source, tokens, parameters)
     let type: I64 = syntax.ast_binding_type(source, tokens, parameters)
     let scalar: I64 = syntax.scalar_type_kind(source, tokens, type)
     let safe: Bool = atomic && ((!borrowed) && (scalar >= 0))
@@ -671,7 +456,7 @@ fn fork_arguments_safe(source: Bytes, inout tokens: Vec[syntax.Token], arguments
     else:
       false
 
-fn fork_builtin_safe(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn fork_builtin_safe(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
   let clock: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.monotonic_ms")
   let vec_new: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
@@ -692,7 +477,7 @@ fn fork_builtin_safe(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64
   let storage: Bool = vec_new || (vec_len || (bytes_len || u8_i64))
   host || (booleans || (compares || storage))
 
-fn fork_task_body_scan(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, end: I64, state: I64) -> I64 effects[partial]:
+fn fork_task_body_scan(source: Bytes, tokens: Vec[syntax.Token], index: I64, end: I64, state: I64) -> I64 effects[partial]:
   let done: Bool = index >= end
   if done:
     state
@@ -745,7 +530,7 @@ fn fork_task_body_scan(source: Bytes, inout tokens: Vec[syntax.Token], index: I6
     else:
       0
 
-fn fork_call_valid(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn fork_call_valid(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   let builtin: Bool = builtin_is_known(source, tokens, callee)
   let item: I64 = syntax.ast_node_link(tokens, callee)
@@ -770,14 +555,14 @@ fn fork_call_valid(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) ->
   else:
     false
 
-fn fork_task_valid(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn fork_task_valid(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
   if call_form:
     fork_call_valid(source, tokens, expr)
   else:
     false
 
-fn fork_arguments_use_name(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, name: I64) -> Bool effects[partial]:
+fn fork_arguments_use_name(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -794,7 +579,7 @@ fn fork_arguments_use_name(source: Bytes, inout tokens: Vec[syntax.Token], curso
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name)
 
-fn fork_second_let_valid(source: Bytes, inout tokens: Vec[syntax.Token], first_name: I64, first_value: I64, second: I64) -> Bool effects[partial]:
+fn fork_second_let_valid(source: Bytes, tokens: Vec[syntax.Token], first_name: I64, first_value: I64, second: I64) -> Bool effects[partial]:
   let second_value: I64 = syntax.ast_let_value(tokens, second)
   let second_body: I64 = syntax.ast_let_body(tokens, second)
   let after_body: I64 = syntax.ast_next(tokens, second_body)
@@ -809,7 +594,7 @@ fn fork_second_let_valid(source: Bytes, inout tokens: Vec[syntax.Token], first_n
   else:
     false
 
-fn fork_first_let_valid(source: Bytes, inout tokens: Vec[syntax.Token], first: I64) -> Bool effects[partial]:
+fn fork_first_let_valid(source: Bytes, tokens: Vec[syntax.Token], first: I64) -> Bool effects[partial]:
   let first_name: I64 = syntax.ast_let_name(first)
   let first_value: I64 = syntax.ast_let_value(tokens, first)
   let second: I64 = syntax.ast_let_body(tokens, first)
@@ -821,7 +606,7 @@ fn fork_first_let_valid(source: Bytes, inout tokens: Vec[syntax.Token], first: I
   else:
     false
 
-fn fork_leading_expression(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
+fn fork_leading_expression(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
   let found: Bool = cursor == site
   if found:
     true
@@ -833,7 +618,7 @@ fn fork_leading_expression(source: Bytes, inout tokens: Vec[syntax.Token], curso
     else:
       false
 
-fn fork_leading_items(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
+fn fork_leading_items(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, site: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -854,7 +639,7 @@ fn fork_leading_items(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I6
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, site)
 
-fn fork_form_valid(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn fork_form_valid(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let first: I64 = syntax.ast_fork_body(expr)
   let after_first: I64 = syntax.ast_next(tokens, first)
   let exact: Bool = syntax.ast_list_done(tokens, after_first)
@@ -866,7 +651,7 @@ fn fork_form_valid(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) ->
   else:
     false
 
-fn find_invalid_fork(source: Bytes, inout tokens: Vec[syntax.Token], index: I64) -> I64 effects[partial]:
+fn find_invalid_fork(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(tokens)
   let done: Bool = index >= count
   if done:
@@ -889,7 +674,7 @@ fn find_invalid_fork(source: Bytes, inout tokens: Vec[syntax.Token], index: I64)
     else:
       index
 
-fn check_path_exhaustive(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, io, partial]:
+fn check_path_exhaustive(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, io, partial]:
   let checked: I64 = check_path_project(input, tokens, declarations)
   let prior_error: Bool = checked > 0
   if prior_error:
@@ -898,11 +683,11 @@ fn check_path_exhaustive(input: Bytes, inout tokens: Vec[syntax.Token], inout de
     let incomplete: I64 = find_nonexhaustive_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
     let invalid: Bool = incomplete >= 0
     if invalid:
-      append_form_issue("E0336", incomplete, tokens, issues)
+      append_form_issue("E0336", incomplete, tokens, @issues)
     else:
       0
 
-fn call_missing_effect(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, callee: I64, effect_code: I64) -> Bool effects[partial]:
+fn call_missing_effect(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, callee: I64, effect_code: I64) -> Bool effects[partial]:
   let done: Bool = effect_code > 3
   if done:
     false
@@ -918,7 +703,7 @@ fn call_missing_effect(source: Bytes, inout tokens: Vec[syntax.Token], module_it
       let next: I64 = effect_code + 1
       recur(source, tokens, module_items, declared_effects, callee, next)
 
-fn find_missing_effect_in_span(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, cursor: I64, end: I64) -> I64 effects[partial]:
+fn find_missing_effect_in_span(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, cursor: I64, end: I64) -> I64 effects[partial]:
   let done: Bool = cursor >= end
   if done:
     -1
@@ -941,7 +726,7 @@ fn find_missing_effect_in_span(source: Bytes, inout tokens: Vec[syntax.Token], m
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, module_items, declared_effects, next, end)
 
-fn find_missing_effect_items(source: Bytes, inout tokens: Vec[syntax.Token], module_items: I64, inout declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
+fn find_missing_effect_items(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
   let declaration_count: I64 = vec.len(declarations)
   let done: Bool = index >= declaration_count
   if done:
@@ -966,15 +751,15 @@ fn find_missing_effect_items(source: Bytes, inout tokens: Vec[syntax.Token], mod
       let next: I64 = index + 1
       recur(source, tokens, module_items, declarations, next)
 
-fn check_path_effects(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], inout issues: Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+fn check_path_effects(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   let missing: I64 = find_missing_effect_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
   let invalid: Bool = missing >= 0
   if invalid:
-    append_form_issue("E0343", missing, tokens, issues)
+    append_form_issue("E0343", missing, tokens, @issues)
   else:
     0
 
-fn find_overqualified(source: Bytes, inout tokens: Vec[syntax.Token], index: I64, length: I64) -> I64 effects[partial]:
+fn find_overqualified(source: Bytes, tokens: Vec[syntax.Token], index: I64, length: I64) -> I64 effects[partial]:
   let done: Bool = index >= length
   if done:
     -1
@@ -994,7 +779,7 @@ fn find_overqualified(source: Bytes, inout tokens: Vec[syntax.Token], index: I64
       let next: I64 = index + 1
       recur(source, tokens, next, length)
 
-fn check_path_project(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
+fn check_path_project(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
   let core: I64 = check_path_full(input, tokens, declarations)
   let core_error: Bool = core > 0
   if core_error:
@@ -1010,7 +795,7 @@ fn check_path_project(input: Bytes, inout tokens: Vec[syntax.Token], inout decla
     else:
       0
 
-fn atom_type_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn atom_type_kind(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let string_value: Bool = kind == 3
   if string_value:
@@ -1032,14 +817,14 @@ fn atom_type_kind(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> 
         else:
           -1
 
-fn report_issue(inout tokens: Vec[syntax.Token], issue: typing.Issue) -> I64 effects[alloc, io, partial]:
+fn report_issue(tokens: Vec[syntax.Token], issue: typing.Issue) -> I64 effects[alloc, io, partial]:
   let start_token: I64 = issue.start
   let end_token: I64 = issue.end
   let start: I64 = syntax.ast_node_start(tokens, start_token)
   let end: I64 = syntax.ast_node_end(tokens, end_token)
   report_diagnostic(issue.code, start, end)
 
-fn report_issues(inout tokens: Vec[syntax.Token], inout issues: Vec[typing.Issue], index: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_issues(tokens: Vec[syntax.Token], issues: Vec[typing.Issue], index: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(issues)
   let done: Bool = index >= length
   if done:
@@ -1055,7 +840,7 @@ fn report_issues(inout tokens: Vec[syntax.Token], inout issues: Vec[typing.Issue
     let total: I64 = count + reported
     recur(tokens, issues, next, total)
 
-fn find_unterminated(inout tokens: Vec[syntax.Token], index: I64, length: I64, depth: I64, form_start: I64) -> I64 effects[partial]:
+fn find_unterminated(tokens: Vec[syntax.Token], index: I64, length: I64, depth: I64, form_start: I64) -> I64 effects[partial]:
   let done: Bool = index >= length
   if done:
     let open: Bool = depth > 0
@@ -1084,18 +869,18 @@ fn find_unterminated(inout tokens: Vec[syntax.Token], index: I64, length: I64, d
     let next: I64 = syntax.ast_node_after(index)
     recur(tokens, next, length, next_depth, next_start)
 
-fn append_diagnostic_identity(diagnostic: Diagnostic, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_diagnostic_identity(diagnostic: Diagnostic, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let code: Bytes = diagnostic.code
   let start: I64 = diagnostic.start
   let end: I64 = diagnostic.end
-  text.append_text(output, code)
-  text.append_text(output, "@")
-  text.append_nonnegative_i64(start, output)
-  text.append_text(output, ":")
-  text.append_nonnegative_i64(end, output)
-  text.append_text(output, "\n")
+  text.append_text(@output, code)
+  text.append_text(@output, "@")
+  text.append_nonnegative_i64(start, @output)
+  text.append_text(@output, ":")
+  text.append_nonnegative_i64(end, @output)
+  text.append_text(@output, "\n")
 
-fn check_path(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
+fn check_path(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
   let token_count: I64 = vec.len(tokens)
   let unterminated: I64 = find_unterminated(tokens, 0, token_count, 0, 0)
   let delimiters_valid: Bool = unterminated < 0
@@ -1107,12 +892,12 @@ fn check_path(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations:
     let input_length: I64 = bytes.len(input)
     let diagnostic: Diagnostic = Diagnostic(code: "E0102", start: 0, end: input_length)
     let output: Vec[U8] = vec.new()
-    append_diagnostic_identity(diagnostic, output)
-    let bytes: Bytes = bytes.freeze(output)
+    append_diagnostic_identity(diagnostic, @output)
+    let bytes: Bytes = bytes.freeze(^output)
     io.print_bytes(bytes)
     1
 
-fn last_form_in_list(inout tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
+fn last_form_in_list(tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1122,7 +907,7 @@ fn last_form_in_list(inout tokens: Vec[syntax.Token], cursor: I64, previous: I64
     let old_cursor: I64 = cursor
     recur(tokens, next, old_cursor)
 
-fn known_expr_head(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+fn known_expr_head(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
   let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
   let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
   let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
@@ -1140,7 +925,7 @@ fn known_expr_head(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) ->
   let right: Bool = third || fourth
   left || (right || fork_form)
 
-fn find_unknown_pair(source: Bytes, inout tokens: Vec[syntax.Token], value: I64, body: I64) -> I64 effects[partial]:
+fn find_unknown_pair(source: Bytes, tokens: Vec[syntax.Token], value: I64, body: I64) -> I64 effects[partial]:
   let value_unknown: I64 = find_unknown_expr(source, tokens, value)
   let found: Bool = value_unknown >= 0
   if found:
@@ -1148,7 +933,7 @@ fn find_unknown_pair(source: Bytes, inout tokens: Vec[syntax.Token], value: I64,
   else:
     find_unknown_expr(source, tokens, body)
 
-fn find_unknown_control(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn find_unknown_control(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
   if match_form:
     let value: I64 = syntax.ast_match_value(expr)
@@ -1167,7 +952,7 @@ fn find_unknown_control(source: Bytes, inout tokens: Vec[syntax.Token], expr: I6
       syntax.ast_recur_arguments(expr)
     find_unknown_forms(source, tokens, first)
 
-fn find_unknown_data(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn find_unknown_data(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
   if make_form:
     find_unknown_fields(source, tokens, syntax.ast_make_fields(expr))
@@ -1182,7 +967,7 @@ fn find_unknown_data(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) 
       else:
         find_unknown_control(source, tokens, expr)
 
-fn find_unknown_known(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn find_unknown_known(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
   if let_form:
     find_unknown_pair(source, tokens, syntax.ast_let_value(tokens, expr), syntax.ast_let_body(tokens, expr))
@@ -1197,7 +982,7 @@ fn find_unknown_known(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64)
       else:
         find_unknown_data(source, tokens, expr)
 
-fn find_unknown_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn find_unknown_expr(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let scalar: Bool = syntax.ast_node_is_scalar(tokens, expr)
   if scalar:
     -1
@@ -1208,7 +993,7 @@ fn find_unknown_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) 
     else:
       syntax.ast_expression_marker(expr)
 
-fn find_unknown_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_unknown_forms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1222,7 +1007,7 @@ fn find_unknown_forms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I6
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn find_unknown_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_unknown_fields(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1237,7 +1022,7 @@ fn find_unknown_fields(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn find_unknown_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_unknown_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -1253,7 +1038,7 @@ fn find_unknown_arms(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn find_unknown_items(source: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
+fn find_unknown_items(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
   let count: I64 = vec.len(declarations)
   let done: Bool = index >= count
   if done:
@@ -1280,15 +1065,15 @@ fn find_unknown_items(source: Bytes, inout tokens: Vec[syntax.Token], inout decl
 fn report_diagnostic(code: Bytes, start: I64, end: I64) -> I64 effects[alloc, io, partial]:
   let diagnostic: Diagnostic = Diagnostic(code: code, start: start, end: end)
   let output: Vec[U8] = vec.new()
-  append_diagnostic_identity(diagnostic, output)
-  let bytes: Bytes = bytes.freeze(output)
+  append_diagnostic_identity(diagnostic, @output)
+  let bytes: Bytes = bytes.freeze(^output)
   io.print_bytes(bytes)
   1
 
 fn report_program_parse(parsed: syntax.ProgramParse) -> I64 effects[alloc, io, partial]:
   report_diagnostic(parsed.code, parsed.start, parsed.end)
 
-fn check_path_full(input: Bytes, inout tokens: Vec[syntax.Token], inout declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
+fn check_path_full(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
   let lexical: I64 = check_path(input, tokens, declarations)
   let lexical_error: Bool = lexical > 0
   if lexical_error:

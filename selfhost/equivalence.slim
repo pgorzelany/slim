@@ -1,15 +1,15 @@
 module equivalence
 
-fn append_i64(value: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let negative: Bool = value < 0
   if negative:
-    text.append_text(output, "-")
+    text.append_text(@output, "-")
     let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, output)
+    text.append_nonnegative_i64(magnitude, @output)
   else:
-    text.append_nonnegative_i64(value, output)
+    text.append_nonnegative_i64(value, @output)
 
-fn find_subject(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+fn find_subject(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -27,7 +27,7 @@ fn find_subject(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64) -> 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next)
 
-fn collect_params(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, count: I64, inout names: Vec[I64]) -> I64 effects[alloc, partial]:
+fn collect_params(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, count: I64, names: @Vec[I64]) -> I64 effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -36,7 +36,7 @@ fn collect_params(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, c
     let within_limit: Bool = count < 8
     if within_limit:
       let parameter_form: Bool = kind == 0
-      let borrowed: Bool = syntax.ast_binding_is_inout(source, tokens, cursor)
+      let borrowed: Bool = syntax.ast_binding_is_exclusive(source, tokens, cursor)
       let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
       let type_index: I64 = syntax.ast_binding_type(source, tokens, cursor)
       let type_kind: I64 = syntax.scalar_type_kind(source, tokens, type_index)
@@ -48,19 +48,19 @@ fn collect_params(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, c
       let plain: Bool = !borrowed
       let valid: Bool = parameter_form && (plain && (supported_type && closing))
       if valid:
-        vec.push(names, name)
+        vec.push(@names, name)
         let next: I64 = syntax.ast_next(tokens, cursor)
         let next_count: I64 = count + 1
-        recur(source, tokens, next, next_count, names)
+        recur(source, tokens, next, next_count, @names)
       else:
         -1
     else:
       -1
 
-fn subject_body(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inout names: Vec[I64]) -> I64 effects[alloc, partial]:
+fn subject_body(source: Bytes, tokens: Vec[syntax.Token], item: I64, names: @Vec[I64]) -> I64 effects[alloc, partial]:
   let params: I64 = syntax.ast_function_parameters(item)
   let first_param: I64 = syntax.ast_parameters_first(params)
-  let count: I64 = collect_params(source, tokens, first_param, 0, names)
+  let count: I64 = collect_params(source, tokens, first_param, 0, @names)
   let params_valid: Bool = count >= 0
   if params_valid:
     let result_type: I64 = syntax.ast_function_return_type(tokens, item)
@@ -77,7 +77,7 @@ fn subject_body(source: Bytes, inout tokens: Vec[syntax.Token], item: I64, inout
   else:
     -1
 
-fn all_bool_params(source: Bytes, inout tokens: Vec[syntax.Token], inout names: Vec[I64], index: I64, count: I64) -> Bool effects[partial]:
+fn all_bool_params(source: Bytes, tokens: Vec[syntax.Token], names: Vec[I64], index: I64, count: I64) -> Bool effects[partial]:
   let done: Bool = index >= count
   if done:
     true
@@ -92,7 +92,7 @@ fn all_bool_params(source: Bytes, inout tokens: Vec[syntax.Token], inout names: 
     else:
       false
 
-fn params_domain(source: Bytes, inout tokens: Vec[syntax.Token], inout names: Vec[I64]) -> I64 effects[partial]:
+fn params_domain(source: Bytes, tokens: Vec[syntax.Token], names: Vec[I64]) -> I64 effects[partial]:
   let count: I64 = vec.len(names)
   let empty: Bool = count == 0
   if empty:
@@ -136,7 +136,7 @@ fn parse_digits(source: Bytes, index: I64, end: I64, value: I64) -> I64 effects[
     else:
       -1
 
-fn parse_unsigned_atom(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
+fn parse_unsigned_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64 effects[partial]:
   let start: I64 = syntax.ast_node_start(tokens, expr)
   let end: I64 = syntax.ast_node_end(tokens, expr)
   let nonempty: Bool = start < end
@@ -145,7 +145,7 @@ fn parse_unsigned_atom(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64
   else:
     -1
 
-fn lookup_name(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, inout names: Vec[I64], inout values: Vec[I64], index: I64) -> I64 effects[partial]:
+fn lookup_name(source: Bytes, tokens: Vec[syntax.Token], name: I64, names: Vec[I64], values: Vec[I64], index: I64) -> I64 effects[partial]:
   let done: Bool = index < 0
   if done:
     -1
@@ -162,7 +162,7 @@ fn lookup_name(source: Bytes, inout tokens: Vec[syntax.Token], name: I64, inout 
       let previous: I64 = index - 1
       recur(source, tokens, name, names, values, previous)
 
-fn eval_atom(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[partial]:
+fn eval_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, names: Vec[I64], values: Vec[I64], limit: I64) -> I64 effects[partial]:
   let literal_true: Bool = syntax.ast_node_text_is(source, tokens, expr, "true")
   if literal_true:
     1
@@ -178,12 +178,12 @@ fn eval_atom(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout na
         let last: I64 = limit - 1
         lookup_name(source, tokens, expr, names, values, last)
 
-fn boolean_binary_supported(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn boolean_binary_supported(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let and_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and")
   let or_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.or")
   and_call || or_call
 
-fn compare_binary_supported(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
+fn compare_binary_supported(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
   let equal_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
   let less_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.lt")
   let less_equal_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.le")
@@ -199,7 +199,7 @@ fn encode_bool(value: Bool) -> I64:
   else:
     0
 
-fn eval_boolean_binary(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, left: I64, right: I64) -> I64 effects[partial]:
+fn eval_boolean_binary(source: Bytes, tokens: Vec[syntax.Token], callee: I64, left: I64, right: I64) -> I64 effects[partial]:
   let left_lower: Bool = left >= 0
   let left_upper: Bool = left <= 1
   let right_lower: Bool = right >= 0
@@ -222,7 +222,7 @@ fn eval_boolean_binary(source: Bytes, inout tokens: Vec[syntax.Token], callee: I
   else:
     -1
 
-fn eval_compare_binary(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, left: I64, right: I64) -> I64 effects[partial]:
+fn eval_compare_binary(source: Bytes, tokens: Vec[syntax.Token], callee: I64, left: I64, right: I64) -> I64 effects[partial]:
   let known: Bool = (left >= 0) && (right >= 0)
   if known:
     let equal_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.eq")
@@ -249,12 +249,12 @@ fn eval_compare_binary(source: Bytes, inout tokens: Vec[syntax.Token], callee: I
   else:
     -1
 
-fn eval_unary_call(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_unary_call(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let not_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
   let widen_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "u8.to_i64")
   let supported: Bool = not_call || widen_call
   if supported:
-    let value: I64 = eval_expr(source, tokens, first, names, values, limit)
+    let value: I64 = eval_expr(source, tokens, first, @names, @values, limit)
     let known: Bool = value >= 0
     if known:
       if widen_call:
@@ -272,15 +272,15 @@ fn eval_unary_call(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, 
   else:
     -1
 
-fn eval_binary_call(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, after_second: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_binary_call(source: Bytes, tokens: Vec[syntax.Token], callee: I64, first: I64, second: I64, after_second: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let exact_end: Bool = syntax.ast_node_kind(tokens, after_second) == 1
   let boolean_call: Bool = boolean_binary_supported(source, tokens, callee)
   let compare_call: Bool = compare_binary_supported(source, tokens, callee)
   let supported: Bool = boolean_call || compare_call
   let valid: Bool = exact_end && supported
   if valid:
-    let left: I64 = eval_expr(source, tokens, first, names, values, limit)
-    let right: I64 = eval_expr(source, tokens, second, names, values, limit)
+    let left: I64 = eval_expr(source, tokens, first, @names, @values, limit)
+    let right: I64 = eval_expr(source, tokens, second, @names, @values, limit)
     if boolean_call:
       eval_boolean_binary(source, tokens, callee, left, right)
     else:
@@ -288,29 +288,29 @@ fn eval_binary_call(source: Bytes, inout tokens: Vec[syntax.Token], callee: I64,
   else:
     -1
 
-fn eval_call(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_call(source: Bytes, tokens: Vec[syntax.Token], expr: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   let first: I64 = syntax.ast_call_arguments(expr)
   let after_first: I64 = syntax.ast_next(tokens, first)
   let unary_end: Bool = syntax.ast_node_kind(tokens, after_first) == 1
   if unary_end:
-    eval_unary_call(source, tokens, callee, first, names, values, limit)
+    eval_unary_call(source, tokens, callee, first, @names, @values, limit)
   else:
     let second: I64 = after_first
     let after_second: I64 = syntax.ast_next(tokens, second)
-    eval_binary_call(source, tokens, callee, first, second, after_second, names, values, limit)
+    eval_binary_call(source, tokens, callee, first, second, after_second, @names, @values, limit)
 
-fn bind_value(inout names: Vec[I64], inout values: Vec[I64], limit: I64, name: I64, value: I64) -> Void effects[alloc, partial]:
+fn bind_value(names: @Vec[I64], values: @Vec[I64], limit: I64, name: I64, value: I64) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(names)
   let reusable: Bool = limit < length
   if reusable:
-    vec.set(names, limit, name)
-    vec.set(values, limit, value)
+    vec.set(@names, limit, name)
+    vec.set(@values, limit, value)
   else:
-    vec.push(names, name)
-    vec.push(values, value)
+    vec.push(@names, name)
+    vec.push(@values, value)
 
-fn eval_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_let(source: Bytes, tokens: Vec[syntax.Token], expr: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let name: I64 = syntax.ast_let_name(expr)
   let type_index: I64 = syntax.ast_let_type(expr)
   let type_kind: I64 = syntax.scalar_type_kind(source, tokens, type_index)
@@ -324,18 +324,18 @@ fn eval_let(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout nam
   let exact_end: Bool = syntax.ast_node_kind(tokens, after_body) == 1
   let supported: Bool = supported_type && exact_end
   if supported:
-    let value: I64 = eval_expr(source, tokens, value_expr, names, values, limit)
+    let value: I64 = eval_expr(source, tokens, value_expr, @names, @values, limit)
     let valid: Bool = value >= 0
     if valid:
-      bind_value(names, values, limit, name, value)
+      bind_value(@names, @values, limit, name, value)
       let next_limit: I64 = limit + 1
-      eval_expr(source, tokens, body, names, values, next_limit)
+      eval_expr(source, tokens, body, @names, @values, next_limit)
     else:
       -1
   else:
     -1
 
-fn arm_body(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, wanted: Bool) -> I64 effects[partial]:
+fn arm_body(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, wanted: Bool) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -360,7 +360,7 @@ fn arm_body(source: Bytes, inout tokens: Vec[syntax.Token], cursor: I64, wanted:
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, wanted)
 
-fn count_arms(inout tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
+fn count_arms(tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
   let done: Bool = syntax.ast_node_kind(tokens, cursor) == 1
   if done:
     count
@@ -369,20 +369,20 @@ fn count_arms(inout tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 e
     let next_count: I64 = count + 1
     recur(tokens, next, next_count)
 
-fn eval_match(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_match(source: Bytes, tokens: Vec[syntax.Token], expr: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let value_expr: I64 = syntax.ast_match_value(expr)
   let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
   let arm_count: I64 = count_arms(tokens, first_arm, 0)
   let exactly_two: Bool = arm_count == 2
   if exactly_two:
-    let value: I64 = eval_expr(source, tokens, value_expr, names, values, limit)
+    let value: I64 = eval_expr(source, tokens, value_expr, @names, @values, limit)
     let valid: Bool = (value >= 0) && (value <= 1)
     if valid:
       let wanted: Bool = value == 1
       let body: I64 = arm_body(source, tokens, first_arm, wanted)
       let found: Bool = body >= 0
       if found:
-        eval_expr(source, tokens, body, names, values, limit)
+        eval_expr(source, tokens, body, @names, @values, limit)
       else:
         -1
     else:
@@ -390,7 +390,7 @@ fn eval_match(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout n
   else:
     -1
 
-fn eval_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout names: Vec[I64], inout values: Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
+fn eval_expr(source: Bytes, tokens: Vec[syntax.Token], expr: I64, names: @Vec[I64], values: @Vec[I64], limit: I64) -> I64 effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let atom: Bool = kind == 2
   if atom:
@@ -401,15 +401,15 @@ fn eval_expr(source: Bytes, inout tokens: Vec[syntax.Token], expr: I64, inout na
       let head: I64 = syntax.ast_list_first(expr)
       let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
       if call_form:
-        eval_call(source, tokens, expr, names, values, limit)
+        eval_call(source, tokens, expr, @names, @values, limit)
       else:
         let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
         if let_form:
-          eval_let(source, tokens, expr, names, values, limit)
+          eval_let(source, tokens, expr, @names, @values, limit)
         else:
           let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
           if match_form:
-            eval_match(source, tokens, expr, names, values, limit)
+            eval_match(source, tokens, expr, @names, @values, limit)
           else:
             -1
     else:
@@ -431,11 +431,11 @@ fn mask_value(mask: I64, position: I64, count: I64) -> Bool effects[partial]:
   let bit: I64 = quotient % 2
   bit == 1
 
-fn append_case_values(domain: I64, mask: I64, position: I64, count: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn append_case_values(domain: I64, mask: I64, position: I64, count: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let u8_domain: Bool = domain == 2
   if u8_domain:
-    text.append_text(output, " ")
-    append_i64(mask, output)
+    text.append_text(@output, " ")
+    append_i64(mask, @output)
   else:
     let done: Bool = position >= count
     if done:
@@ -446,14 +446,14 @@ fn append_case_values(domain: I64, mask: I64, position: I64, count: I64, inout o
         " true"
       else:
         " false"
-      text.append_text(output, spelling)
+      text.append_text(@output, spelling)
       let next: I64 = position + 1
-      recur(domain, mask, next, count, output)
+      recur(domain, mask, next, count, @output)
 
-fn build_case_values(domain: I64, mask: I64, position: I64, count: I64, inout values: Vec[I64]) -> Void effects[alloc, partial]:
+fn build_case_values(domain: I64, mask: I64, position: I64, count: I64, values: @Vec[I64]) -> Void effects[alloc, partial]:
   let u8_domain: Bool = domain == 2
   if u8_domain:
-    vec.push(values, mask)
+    vec.push(@values, mask)
   else:
     let done: Bool = position >= count
     if done:
@@ -464,82 +464,82 @@ fn build_case_values(domain: I64, mask: I64, position: I64, count: I64, inout va
         1
       else:
         0
-      vec.push(values, encoded)
+      vec.push(@values, encoded)
       let next: I64 = position + 1
-      recur(domain, mask, next, count, values)
+      recur(domain, mask, next, count, @values)
 
-fn eval_case(source: Bytes, inout tokens: Vec[syntax.Token], body: I64, inout params: Vec[I64], domain: I64, mask: I64, count: I64) -> I64 effects[alloc, partial]:
+fn eval_case(source: Bytes, tokens: Vec[syntax.Token], body: I64, params: Vec[I64], domain: I64, mask: I64, count: I64) -> I64 effects[alloc, partial]:
   let names: Vec[I64] = vec.new()
   let values: Vec[I64] = vec.new()
-  copy_names(params, 0, count, names)
-  build_case_values(domain, mask, 0, count, values)
-  eval_expr(source, tokens, body, names, values, count)
+  copy_names(params, 0, count, @names)
+  build_case_values(domain, mask, 0, count, @values)
+  eval_expr(source, tokens, body, @names, @values, count)
 
-fn copy_names(inout source_names: Vec[I64], index: I64, count: I64, inout output: Vec[I64]) -> Void effects[alloc, partial]:
+fn copy_names(source_names: Vec[I64], index: I64, count: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
   let done: Bool = index >= count
   if done:
     void
   else:
     let name: I64 = vec.get(source_names, index)
-    vec.push(output, name)
+    vec.push(@output, name)
     let next: I64 = index + 1
-    recur(source_names, next, count, output)
+    recur(source_names, next, count, @output)
 
-fn emit_unknown(reason: Bytes, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "(equivalence 2 (status unknown) (reason ")
-  text.append_text(output, reason)
-  text.append_text(output, "))\n")
+fn emit_unknown(reason: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "(equivalence 2 (status unknown) (reason ")
+  text.append_text(@output, reason)
+  text.append_text(@output, "))\n")
 
-fn emit_domain(domain: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_domain(domain: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if domain == 2:
-    text.append_text(output, "u8")
+    text.append_text(@output, "u8")
   else:
-    text.append_text(output, "boolean-product")
+    text.append_text(@output, "boolean-product")
 
-fn emit_costs(left_cost: I64, right_cost: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, " (cost-model expression-tokens-v1) (left-cost ")
-  append_i64(left_cost, output)
-  text.append_text(output, ") (right-cost ")
-  append_i64(right_cost, output)
-  text.append_text(output, ")")
+fn emit_costs(left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " (cost-model expression-tokens-v1) (left-cost ")
+  append_i64(left_cost, @output)
+  text.append_text(@output, ") (right-cost ")
+  append_i64(right_cost, @output)
+  text.append_text(@output, ")")
 
-fn emit_equivalent(domain: I64, cases: I64, accepted: I64, left_cost: I64, right_cost: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "(equivalence 2 (status equivalent) (domain exact) (domain-kind ")
-  emit_domain(domain, output)
-  text.append_text(output, ") (cases ")
-  append_i64(cases, output)
-  text.append_text(output, ") (accepted-states ")
-  append_i64(accepted, output)
-  text.append_text(output, ")")
-  emit_costs(left_cost, right_cost, output)
-  text.append_text(output, ")\n")
+fn emit_equivalent(domain: I64, cases: I64, accepted: I64, left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "(equivalence 2 (status equivalent) (domain exact) (domain-kind ")
+  emit_domain(domain, @output)
+  text.append_text(@output, ") (cases ")
+  append_i64(cases, @output)
+  text.append_text(@output, ") (accepted-states ")
+  append_i64(accepted, @output)
+  text.append_text(@output, ")")
+  emit_costs(left_cost, right_cost, @output)
+  text.append_text(@output, ")\n")
 
-fn emit_different(domain: I64, mask: I64, count: I64, left: I64, right: I64, left_accepted: I64, right_accepted: I64, left_cost: I64, right_cost: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_text(output, "(equivalence 2 (status different) (domain exact) (domain-kind ")
-  emit_domain(domain, output)
-  text.append_text(output, ") (left-accepted-states ")
-  append_i64(left_accepted, output)
-  text.append_text(output, ") (right-accepted-states ")
-  append_i64(right_accepted, output)
-  text.append_text(output, ") (counterexample (inputs")
-  append_case_values(domain, mask, 0, count, output)
-  text.append_text(output, ") (left ")
+fn emit_different(domain: I64, mask: I64, count: I64, left: I64, right: I64, left_accepted: I64, right_accepted: I64, left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "(equivalence 2 (status different) (domain exact) (domain-kind ")
+  emit_domain(domain, @output)
+  text.append_text(@output, ") (left-accepted-states ")
+  append_i64(left_accepted, @output)
+  text.append_text(@output, ") (right-accepted-states ")
+  append_i64(right_accepted, @output)
+  text.append_text(@output, ") (counterexample (inputs")
+  append_case_values(domain, mask, 0, count, @output)
+  text.append_text(@output, ") (left ")
   let left_text: Bytes = if left == 1:
     "true"
   else:
     "false"
-  text.append_text(output, left_text)
-  text.append_text(output, ") (right ")
+  text.append_text(@output, left_text)
+  text.append_text(@output, ") (right ")
   let right_text: Bytes = if right == 1:
     "true"
   else:
     "false"
-  text.append_text(output, right_text)
-  text.append_text(output, "))")
-  emit_costs(left_cost, right_cost, output)
-  text.append_text(output, ")\n")
+  text.append_text(@output, right_text)
+  text.append_text(@output, "))")
+  emit_costs(left_cost, right_cost, @output)
+  text.append_text(@output, ")\n")
 
-fn count_accepted(source: Bytes, inout tokens: Vec[syntax.Token], body: I64, inout params: Vec[I64], domain: I64, count: I64, mask: I64, cases: I64, accepted: I64) -> I64 effects[alloc, partial]:
+fn count_accepted(source: Bytes, tokens: Vec[syntax.Token], body: I64, params: Vec[I64], domain: I64, count: I64, mask: I64, cases: I64, accepted: I64) -> I64 effects[alloc, partial]:
   let done: Bool = mask >= cases
   if done:
     accepted
@@ -556,10 +556,10 @@ fn count_accepted(source: Bytes, inout tokens: Vec[syntax.Token], body: I64, ino
     else:
       -1
 
-fn compare_cases(left_source: Bytes, inout left_tokens: Vec[syntax.Token], left_body: I64, inout left_params: Vec[I64], right_source: Bytes, inout right_tokens: Vec[syntax.Token], right_body: I64, inout right_params: Vec[I64], domain: I64, count: I64, mask: I64, cases: I64, accepted: I64, left_cost: I64, right_cost: I64, inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn compare_cases(left_source: Bytes, left_tokens: Vec[syntax.Token], left_body: I64, left_params: Vec[I64], right_source: Bytes, right_tokens: Vec[syntax.Token], right_body: I64, right_params: Vec[I64], domain: I64, count: I64, mask: I64, cases: I64, accepted: I64, left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = mask >= cases
   if done:
-    emit_equivalent(domain, cases, accepted, left_cost, right_cost, output)
+    emit_equivalent(domain, cases, accepted, left_cost, right_cost, @output)
   else:
     let left: I64 = eval_case(left_source, left_tokens, left_body, left_params, domain, mask, count)
     let right: I64 = eval_case(right_source, right_tokens, right_body, right_params, domain, mask, count)
@@ -570,15 +570,15 @@ fn compare_cases(left_source: Bytes, inout left_tokens: Vec[syntax.Token], left_
       let same: Bool = left == right
       if same:
         let next: I64 = mask + 1
-        recur(left_source, left_tokens, left_body, left_params, right_source, right_tokens, right_body, right_params, domain, count, next, cases, accepted, left_cost, right_cost, output)
+        recur(left_source, left_tokens, left_body, left_params, right_source, right_tokens, right_body, right_params, domain, count, next, cases, accepted, left_cost, right_cost, @output)
       else:
         let left_accepted: I64 = count_accepted(left_source, left_tokens, left_body, left_params, domain, count, 0, cases, 0)
         let right_accepted: I64 = count_accepted(right_source, right_tokens, right_body, right_params, domain, count, 0, cases, 0)
-        emit_different(domain, mask, count, left, right, left_accepted, right_accepted, left_cost, right_cost, output)
+        emit_different(domain, mask, count, left, right, left_accepted, right_accepted, left_cost, right_cost, @output)
     else:
-      emit_unknown("unsupported-expression", output)
+      emit_unknown("unsupported-expression", @output)
 
-fn emit_comparison(left_source: Bytes, inout left_tokens: Vec[syntax.Token], right_source: Bytes, inout right_tokens: Vec[syntax.Token], inout output: Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_comparison(left_source: Bytes, left_tokens: Vec[syntax.Token], right_source: Bytes, right_tokens: Vec[syntax.Token], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let left_item: I64 = find_subject(left_source, left_tokens, 3)
   let right_item: I64 = find_subject(right_source, right_tokens, 3)
   let left_found: Bool = left_item >= 0
@@ -587,8 +587,8 @@ fn emit_comparison(left_source: Bytes, inout left_tokens: Vec[syntax.Token], rig
   if both_found:
     let left_params: Vec[I64] = vec.new()
     let right_params: Vec[I64] = vec.new()
-    let left_body: I64 = subject_body(left_source, left_tokens, left_item, left_params)
-    let right_body: I64 = subject_body(right_source, right_tokens, right_item, right_params)
+    let left_body: I64 = subject_body(left_source, left_tokens, left_item, @left_params)
+    let right_body: I64 = subject_body(right_source, right_tokens, right_item, @right_params)
     let left_supported: Bool = left_body >= 0
     let right_supported: Bool = right_body >= 0
     let both_supported: Bool = left_supported && right_supported
@@ -616,14 +616,14 @@ fn emit_comparison(left_source: Bytes, inout left_tokens: Vec[syntax.Token], rig
           let right_accepted: I64 = count_accepted(right_source, right_tokens, right_body, right_params, right_domain, right_count, 0, cases, 0)
           let counts_known: Bool = (left_accepted >= 0) && (right_accepted >= 0)
           if counts_known:
-            compare_cases(left_source, left_tokens, left_body, left_params, right_source, right_tokens, right_body, right_params, left_domain, left_count, 0, cases, left_accepted, left_size, right_size, output)
+            compare_cases(left_source, left_tokens, left_body, left_params, right_source, right_tokens, right_body, right_params, left_domain, left_count, 0, cases, left_accepted, left_size, right_size, @output)
           else:
-            emit_unknown("unsupported-expression", output)
+            emit_unknown("unsupported-expression", @output)
         else:
-          emit_unknown("token-limit", output)
+          emit_unknown("token-limit", @output)
       else:
-        emit_unknown("signature-mismatch", output)
+        emit_unknown("signature-mismatch", @output)
     else:
-      emit_unknown("unsupported-signature", output)
+      emit_unknown("unsupported-signature", @output)
   else:
-    emit_unknown("subject-not-found", output)
+    emit_unknown("subject-not-found", @output)

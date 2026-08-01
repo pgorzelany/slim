@@ -19,9 +19,9 @@ is an error rather than a dynamic lookup.
 
 `let` applies to the binding, not recursively to all storage reachable through
 its value. A `let Vec[T]` remains the unique owner of mutable vector storage and
-can be supplied to `vec.push`, `vec.set`, or an `inout` parameter. It cannot be
-directly replaced with `values = another_vector`. `var` permits that direct
-replacement.
+can be supplied explicitly as `@values` to `vec.push`, `vec.set`, or an `@`
+parameter. It cannot be directly replaced with `values = another_vector`.
+`var` permits that direct replacement.
 
 Binding mutability is independent of ownership: both `let` and `var` can hold
 copyable values, copyable `Bytes` views, or affine owners. A move can invalidate
@@ -51,18 +51,18 @@ The checker rejects a value of the wrong type:
 
 <!-- slim-fixture: set-type -->
 
-## Exclusive mutation through `inout`
+## Exclusive mutation through `@`
 
-An `inout` parameter is an exclusive, nonescaping borrow of a named caller
-binding. The parameter declaration marks the borrow; the ordinary call must
-supply a named unique binding. The same binding cannot be passed to two
-simultaneous `inout` parameters, and temporaries cannot be borrowed.
+An `@` parameter is an exclusive, nonescaping borrow of a named caller binding.
+The declaration writes `values: @Vec[I64]`; the call writes `@values`. The same
+binding cannot be passed to two simultaneous exclusive parameters, and
+temporaries cannot be borrowed.
 
 The borrow lets a function inspect or mutate an affine owner without taking
-ownership from the caller. It ends when the call returns. `inout` is not a
+ownership from the caller. It ends when the call returns. `@` is not a
 storable reference type and does not allocate or perform reference counting.
 
-<!-- slim-fixture: inout -->
+<!-- slim-fixture: exclusive-borrow -->
 
 See [ownership and borrowing](07-ownership-borrowing-and-memory.md) for the move,
 alias, and lifetime rules.
@@ -71,7 +71,7 @@ alias, and lifetime rules.
 
 SLIM has no hidden property setters, implicit copying, reference identity, or
 general aliasing mutation. Mutation is syntactically visible and statically
-exclusive. Assignment to `let`, incorrect assignment types, aliased `inout`
+exclusive. Assignment to `let`, incorrect assignment types, aliased exclusive
 arguments, temporary borrows, and use after a move are rejected.
 
 ## Next

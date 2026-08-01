@@ -36,7 +36,7 @@ Declaring `io` permits the capability but does not create hidden control flow.
 `io.print_i64`, `io.print_bytes`, and `io.println` require `io`. Output follows
 ordinary left-to-right evaluation.
 
-`io.read_file(Bytes, inout Vec[U8]) -> Bool` appends the complete file on
+`io.read_file(Bytes, @Vec[U8]) -> Bool` appends the complete file on
 success. Failure returns `false` and leaves the output unchanged. The operation
 requires `alloc` and `io`.
 

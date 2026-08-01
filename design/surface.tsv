@@ -14,7 +14,9 @@ syntax	match	enum-branching	RFC-0107
 syntax	recur	repetition	RFC-0006
 syntax	assignment	unique-mutation	RFC-0107
 syntax	parallel	lexical-two-call-parallelism	RFC-0078
-syntax	inout	exclusive-borrow-parameter	RFC-0007
+syntax	plain-affine-parameter	shared-read-only-borrow	RFC-0110
+syntax	at-mode	exclusive-borrow-and-argument	RFC-0110
+syntax	caret-mode	owned-transfer-and-argument	RFC-0110
 syntax	qualified-reference	cross-module-declaration-reference	RFC-0018
 syntax	comma	list-separator	RFC-0107
 syntax	operators	checked-scalar-and-boolean-operations	RFC-0107

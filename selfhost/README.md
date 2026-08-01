@@ -29,8 +29,9 @@ Boolean/variant match selection and arbitrary computed scrutinee materialization
 also consume the same expression fact; codegen no longer decodes the older
 packed binding-type link.
 The checked local link still retains type and declaration identity for typed
-ownership, and now carries the binding's `inout` mode in the same bounded
-integer. Code generation and borrowed-return checking query that mode directly
+ownership, and now carries the binding's shared, exclusive, or owned mode in
+the same bounded integer. Code generation and borrowed-return checking query
+that mode directly
 instead of rescanning parameter names.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
@@ -97,7 +98,7 @@ standalone corpus: records, variants, `make`, `get`, `case`, variant `match`,
 `set`, vector update, arenas, canonical formatting, and structured checking.
 Its lexer dogfoods this support with a `Token` record and a single `Vec Token`.
 The checker diagnoses malformed forms, scalar/effect errors, non-exhaustive or
-duplicate Boolean arms, use-after-move, and invalid `inout`/`recur` ownership.
+duplicate Boolean arms, use-after-move, and invalid `@`/`^`/`recur` ownership.
 The compiler also resolves canonical project manifests, reads explicit
 manifest-relative modules, lowers qualified references into one deterministic
 translation unit, and checks the original project visibility/cycle/schema

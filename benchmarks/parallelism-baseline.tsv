@@ -1,22 +1,22 @@
 # schema=5
 # challenge	source_bytes	functions	checked_sites	reported_total_sites	refinements	safe_functions	declared_effects	exclusive_borrow	mutation	checked_trap	allocation_or_io	recurrence	callee_not_safe	call_cycle	function_limit	edge_limit	missing_typed_fact	blocker_declared_effects	blocker_exclusive_borrow	blocker_mutation	blocker_checked_trap	blocker_allocation_or_io	blocker_recurrence	blocker_callee_not_safe	blocker_call_cycle	blocker_function_limit	blocker_edge_limit	blocker_missing_typed_fact	candidate_sites	selected_sites	reported_sites	executable_sites	executed_sites	eligible_sites
 gcd_fib	443	3	4	0	0	0	0	0	0	1	0	2	0	0	0	0	0	0	0	0	3	1	2	1	0	0	0	0	0	0	0	0	0	0
-sieve	1293	5	14	3	6	0	0	4	0	0	1	0	0	0	0	0	0	0	4	0	4	2	4	2	0	0	0	0	0	0	0	0	0	0
-bfs	735	3	6	0	2	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	3	1	2	0	0	0	0	0	0	0	0	0	0
-matrix	1380	4	19	11	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
-merge_sort	2857	9	32	1	0	0	0	8	0	0	1	0	0	0	0	0	0	0	8	0	7	2	6	4	0	0	0	0	0	0	0	0	0	0
-bytefreq	1240	4	12	3	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	1	0	0	0	0	0	0	0	0	0	0
-binary_search	1171	4	12	4	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
-prefix_sum	706	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
+sieve	1287	5	14	3	6	0	0	4	0	0	1	0	0	0	0	0	0	0	4	0	4	2	4	2	0	0	0	0	0	0	0	0	0	0
+bfs	731	3	6	0	2	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	3	1	2	0	0	0	0	0	0	0	0	0	0
+matrix	1367	4	19	11	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
+merge_sort	2824	9	32	1	0	0	0	8	0	0	1	0	0	0	0	0	0	0	8	0	7	2	6	4	0	0	0	0	0	0	0	0	0	0
+bytefreq	1235	4	12	3	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	1	0	0	0	0	0	0	0	0	0	0
+binary_search	1164	4	12	4	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
+prefix_sum	702	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
 records	601	3	6	0	0	0	0	0	0	2	0	1	0	0	0	0	0	0	0	0	3	1	1	2	0	0	0	0	0	0	0	0	0	0
 variants	785	4	6	4	0	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	1	1	2	0	0	0	0	0	0	0	0	0	0
 state_machine	1172	4	1	1	2	3	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	4	3	3	1	1	4
 signal_network	1806	4	1	1	2	3	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	8	5	5	1	1	8
-arena_sum	827	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
-knapsack	1256	4	15	2	4	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	2	0	0	0	0	0	0	0	0	0	0
-floyd_warshall	2052	6	25	12	0	0	0	4	0	0	1	1	0	0	0	0	0	0	4	0	3	2	5	3	0	0	0	0	0	0	0	0	0	0
-n_queens	1921	5	16	3	2	0	0	3	0	1	1	0	0	0	0	0	0	0	3	0	3	2	3	3	0	0	0	0	0	0	0	0	0	0
-union_find	1699	7	11	7	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	5	5	0	0	0	0	0	0	0	0	0	0
-game_of_life	2915	7	33	26	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	6	3	0	0	0	0	0	0	0	0	0	0
-image_convolution	2496	6	45	30	0	0	0	5	0	0	1	0	0	0	0	0	0	0	5	0	3	2	5	2	0	0	0	0	0	0	0	0	0	0
-edit_distance	3330	9	26	0	0	2	0	6	0	0	1	0	0	0	0	0	0	0	6	0	7	2	6	3	0	0	0	0	0	0	0	0	0	0
+arena_sum	817	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
+knapsack	1249	4	15	2	4	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	2	0	0	0	0	0	0	0	0	0	0
+floyd_warshall	2042	6	25	12	0	0	0	4	0	0	1	1	0	0	0	0	0	0	4	0	3	2	5	3	0	0	0	0	0	0	0	0	0	0
+n_queens	1918	5	16	3	2	0	0	3	0	1	1	0	0	0	0	0	0	0	3	0	3	2	3	3	0	0	0	0	0	0	0	0	0	0
+union_find	1684	7	11	7	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	5	5	0	0	0	0	0	0	0	0	0	0
+game_of_life	2890	7	33	26	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	6	3	0	0	0	0	0	0	0	0	0	0
+image_convolution	2473	6	45	30	0	0	0	5	0	0	1	0	0	0	0	0	0	0	5	0	3	2	5	2	0	0	0	0	0	0	0	0	0	0
+edit_distance	3303	9	26	0	0	2	0	6	0	0	1	0	0	0	0	0	0	0	6	0	7	2	6	3	0	0	0	0	0	0	0	0	0	0

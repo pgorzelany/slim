@@ -2,11 +2,11 @@ module tcp_client
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let output: Vec[U8] = vec.new()
-  let received: Bool = io.tcp_exchange("127.0.0.1", 8080, "PING", 64, 1000, output)
+  let received: Bool = io.tcp_exchange("127.0.0.1", 8080, "PING", 64, 1000, @output)
   let first_length: I64 = vec.len(output)
-  let invalid: Bool = io.tcp_exchange("not-an-address", 8080, "PING", 64, 1000, output)
+  let invalid: Bool = io.tcp_exchange("not-an-address", 8080, "PING", 64, 1000, @output)
   let second_length: I64 = vec.len(output)
-  let limited: Bool = io.tcp_exchange("127.0.0.1", 8080, "PING", 2, 1000, output)
+  let limited: Bool = io.tcp_exchange("127.0.0.1", 8080, "PING", 2, 1000, @output)
   let third_length: I64 = vec.len(output)
   let first: I64 = u8.to_i64(vec.get(output, 0))
   let last: I64 = u8.to_i64(vec.get(output, 3))

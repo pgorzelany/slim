@@ -1,0 +1,11 @@
+module derived_exclusive_alias_overlap
+
+fn pair(shared: Vec[I64], exclusive: @Vec[I64]) -> Void:
+  void
+
+fn invalid(values: @Vec[I64]) -> Void:
+  let alias: Vec[I64] = values
+  pair(alias, @values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

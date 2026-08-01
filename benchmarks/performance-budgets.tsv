@@ -4,12 +4,13 @@ check-exponent	generated-declarations	1.25	exponent	RFC-0030
 check-exponent	generated-nested-bindings	1.25	exponent	RFC-0030
 check-exponent	generated-named-type-parameters	1.25	exponent	RFC-0042
 check-exponent	generated-owned-transfers	1.25	exponent	RFC-0049
+check-normalized-ratio	generated-owned-transfers-over-nested-bindings	1.30	ratio	RFC-0030
 check-exponent	generated-separator-lists	1.25	exponent	RFC-0107
 emit-exponent	generated-declarations	1.25	exponent	RFC-0030
 emit-exponent	generated-computed-arguments	1.25	exponent	RFC-0053
 emit-exponent	generated-aggregate-temporaries	1.25	exponent	RFC-0054
 emit-exponent	generated-planned-allocation-calls	1.25	exponent	RFC-0055
-emit-exponent	generated-inout-binding-reads	1.25	exponent	RFC-0057
+emit-exponent	generated-shared-binding-reads	1.25	exponent	RFC-0057
 emit-check-ratio	generated-2000	4.00	ratio	RFC-0030
 reduction-exponent	generated-declarations	1.25	exponent	RFC-0028
 analysis-exponent	generated-declarations	1.25	exponent	RFC-0062

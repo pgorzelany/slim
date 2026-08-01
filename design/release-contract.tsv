@@ -1,8 +1,8 @@
 # artifact	version	compatibility	canonical-source
-source-surface	2	pre-1.0-minor	design/surface.tsv
+source-surface	3	pre-1.0-minor	design/surface.tsv
 project-manifest	1	pre-1.0-minor	docs/PROJECTS.md
-project-interface	2	pre-1.0-minor	docs/PROJECTS.md
-persistent-cache	2	rebuildable	selfhost/cache.slim
+project-interface	3	pre-1.0-minor	docs/PROJECTS.md
+persistent-cache	3	rebuildable	selfhost/cache.slim
 diagnostic-codes	1	pre-1.0-minor	docs/DIAGNOSTICS.md
 diagnostic-json	1	pre-1.0-minor	docs/DIAGNOSTICS.md
 analysis	7	versioned-tooling	docs/QUALITY.md

@@ -284,10 +284,10 @@ fn check_core_1l_contracts(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &m
     }
 
     let expected_contracts = [
-        "source-surface\t2\tpre-1.0-minor\tdesign/surface.tsv",
+        "source-surface\t3\tpre-1.0-minor\tdesign/surface.tsv",
         "project-manifest\t1\tpre-1.0-minor\tdocs/PROJECTS.md",
-        "project-interface\t2\tpre-1.0-minor\tdocs/PROJECTS.md",
-        "persistent-cache\t2\trebuildable\tselfhost/cache.slim",
+        "project-interface\t3\tpre-1.0-minor\tdocs/PROJECTS.md",
+        "persistent-cache\t3\trebuildable\tselfhost/cache.slim",
         "diagnostic-codes\t1\tpre-1.0-minor\tdocs/DIAGNOSTICS.md",
         "diagnostic-json\t1\tpre-1.0-minor\tdocs/DIAGNOSTICS.md",
         "analysis\t7\tversioned-tooling\tdocs/QUALITY.md",
@@ -758,7 +758,7 @@ fn check_parallelism_evidence(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors:
     let analysis = fs::read_to_string(root.join("selfhost/analysis.slim")).unwrap_or_default();
     for required in [
         "(analysis 7",
-        "(inout typed-facts (Vec typing/Fact))",
+        "fn emit_module(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact]",
         "(call parallel/analyze source tokens typed-facts range-view)",
         "(call parallel/emit_module_facts source tokens parallel-view output)",
     ] {
@@ -2074,7 +2074,7 @@ fn check_runtime_fast_paths(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &
 
     let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
     for required in [
-        "(fn emit_vec_set_call ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "fn emit_vec_set_call(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact]",
         "(let vector-type I64 (call fact_type_index facts arguments)",
         "(fn emit_versioned_index ",
         "\").len > INT64_C(\"",
@@ -2142,7 +2142,7 @@ fn check_core_1d_acceptance(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &
     let codegen = fs::read_to_string(root.join("selfhost/codegen.slim")).unwrap_or_default();
     for forbidden in [
         "link_declaration_names",
-        "syntax/name_is_inout",
+        "syntax/name_is_exclusive",
         "effects/",
         "(fn find_parameter_type",
         "(fn find_record_item",
@@ -2332,7 +2332,7 @@ fn check_performance_architecture(
         "emit-exponent/generated-computed-arguments",
         "emit-exponent/generated-aggregate-temporaries",
         "emit-exponent/generated-planned-allocation-calls",
-        "emit-exponent/generated-inout-binding-reads",
+        "emit-exponent/generated-shared-binding-reads",
         "emit-check-ratio/generated-2000",
         "incremental-exponent/wide-no-change",
         "incremental-exponent/wide-private-body",
@@ -2411,14 +2411,14 @@ fn check_performance_architecture(
         "\"generated-computed-arguments\"",
         "\"generated-aggregate-temporaries\"",
         "\"generated-planned-allocation-calls\"",
-        "\"generated-inout-binding-reads\"",
+        "\"generated-shared-binding-reads\"",
         "let rounds = balanced_round_count(samples);",
         "order.reverse();",
         "let elapsed = median_duration(&mut times);",
         "fn generated_computed_argument_program(calls: usize)",
         "fn generated_aggregate_temporary_program(fields: usize)",
         "fn generated_planned_allocation_call_program(calls: usize)",
-        "fn generated_inout_read_program(parameters: usize)",
+        "fn generated_shared_read_program(parameters: usize)",
         "fn generated_named_type_program(functions: usize)",
         "fn generated_owned_transfer_program(transfers: usize)",
         "fn agent_manifest()",
@@ -3363,7 +3363,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(module codegen \"codegen.slim\" (imports memory parallel ranges syntax text typing) (exports emit_program))",
         "(module memory \"memory.slim\" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze empty_plan function_plan_allocates type_storage_kind))",
         "(module project \"project.slim\" (imports check codegen format memory scheduler syntax text typing validate)",
-        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue builtin_known empty_view fact_type linked_binding_declaration linked_binding_is_inout))",
+        "(module typing \"typing.slim\" (imports ir memory syntax) (exports Checked Fact Issue TypeRef View analyze append_issue builtin_known empty_view fact_type linked_binding_declaration linked_binding_is_exclusive))",
         "(module validate \"validate.slim\" (imports syntax) (exports executable_shape_valid module_shape_valid module_shape_valid_from))",
     ] {
         if !contains_slim_pattern(&project, required) {
@@ -3436,8 +3436,6 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call append_token_issue \"E0314\" body issues)",
         "(call append_token_issue \"E0344\" body issues)",
         "(call append_form_issue \"E0343\" missing tokens issues)",
-        "(call append_form_issue \"E0348\" temporary tokens issues)",
-        "(call append_token_issue \"E0349\" duplicate issues)",
     ] {
         if !contains_slim_pattern(&check, required) {
             errors.push(format!(
@@ -3447,21 +3445,40 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     }
     for required in [
         "(record Issue ((code Bytes) (start I64) (end I64) (blocks_inference Bool)))",
-        "(record Binding ((name I64) (type I64) (borrowed Bool) (moved Bool) (parent I64)))",
+        "(record Binding ((name I64) (type I64) (mode I64) (mutable Bool) (moved Bool) (owner I64) (parent I64) (access-call I64) (access-mode I64)))",
         "(fn append_ownership_issue",
         "(fn issues_block_inference",
+        "(fn linked_binding_index",
         "(fn mark_named_move",
+        "(fn check_exclusive_argument",
+        "(fn check_argument_overlap",
         "(fn check_owned_argument",
-        "(fn append_inout_return_issue",
+        "(fn arm_values_borrow_mode",
+        "(fn arm_values_borrow_owner",
+        "(fn value_borrow_owner",
+        "(fn result_arms_are_borrowed",
+        "(fn append_borrowed_return_issue",
         "(call i64.mul type_mode base)",
         "(call i64.rem packed base)",
-        "(call append_ownership_issue \"E0315\" argument issues)",
+        "(call append_ownership_issue \"E0315\" expr issues)",
         "(call append_ownership_issue \"E0347\" argument issues)",
+        "(call append_ownership_issue \"E0348\" argument issues)",
+        "(call append_ownership_issue \"E0349\" argument issues)",
         "(call append_ownership_issue \"E0347\" result issues)",
     ] {
         if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
                 "self-host typed ownership diagnostics are missing `{required}`"
+            ));
+        }
+    }
+    for removed in [
+        "(fn find_exclusive_temporary_items",
+        "(fn find_exclusive_alias_items",
+    ] {
+        if contains_slim_pattern(&check, removed) {
+            errors.push(format!(
+                "self-host checker restored redundant whole-program ownership scan `{removed}`"
             ));
         }
     }
@@ -3496,16 +3513,16 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     ] {
         if check.contains(superseded) {
             errors.push(format!(
-                "self-host checker retains superseded recursive-inout pipeline `{superseded}`"
+                "self-host checker retains superseded recursive-exclusive pipeline `{superseded}`"
             ));
         }
     }
     let project_manifest =
         fs::read_to_string(root.join("conformance/projects/manifest.tsv")).unwrap_or_default();
     if !project_manifest.contains(
-        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@98:103,E0350@app@105:109",
+        "project-recur-rebind\tcheck-fail\tconformance/projects/recur-rebind/slim.project\tparity\tE0350@app@89:94,E0350@app@97:101",
     ) {
-        errors.push("recursive-inout project projection fixture is missing".to_owned());
+        errors.push("recursive-exclusive project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
         "project-nonexhaustive\tcheck-fail\tconformance/projects/nonexhaustive/slim.project\tparity\tE0336@app@48:77",
@@ -3518,7 +3535,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         errors.push("Boolean recovery project projection fixture is missing".to_owned());
     }
     if !project_manifest.contains(
-        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@172:178,E0347@app@232:238,E0315@app@359:365,E0347@app@430:436",
+        "project-ownership\tcheck-fail\tconformance/projects/ownership/slim.project\tparity\tE0315@app@177:183,E0347@app@233:239,E0315@app@363:369,E0347@app@429:435",
     ) {
         errors.push("ownership project projection fixture is missing".to_owned());
     }
@@ -3648,11 +3665,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
     if codegen.contains("(fn find_record_field") {
         errors.push("self-host code generation restored record field scans".to_owned());
     }
-    if codegen.contains("syntax/name_is_inout") {
+    if codegen.contains("syntax/name_is_exclusive") {
         errors.push("self-host code generation restored parameter-mode scans".to_owned());
     }
     for required in [
-        "(call typing/linked_binding_is_inout tokens name)",
+        "(call typing/linked_binding_is_exclusive tokens name)",
         "(fn emit_binding_value",
         "(fn emit_binding_address",
     ] {
@@ -3667,11 +3684,11 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         return;
     };
     for required in [
-        "(fn linked_binding_is_inout",
-        "(let type_scaled I64 (call i64.mul type_value 2)",
-        "(let type_mode I64 (call i64.add type_scaled borrowed_value)",
-        "(call i64.div type_mode 2)",
-        "(call linked_binding_is_inout tokens result)",
+        "(fn linked_binding_is_exclusive",
+        "(let type_scaled I64 (call i64.mul type_value 3)",
+        "(let type_mode I64 (call i64.add type_scaled mode)",
+        "(call i64.div type_mode 3)",
+        "(call named_binding_mode tokens result bindings)",
     ] {
         if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
@@ -3679,7 +3696,7 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
             ));
         }
     }
-    if typing.contains("syntax/name_is_inout source tokens params result") {
+    if typing.contains("syntax/name_is_exclusive source tokens params result") {
         errors.push("self-host typing restored borrowed-return parameter scans".to_owned());
     }
     for required in [
@@ -3843,17 +3860,17 @@ fn check_memory_architecture(root: &Path, errors: &mut Vec<String>) {
         "(call syntax/ast_node_link tokens type_index)",
         "(let view typing/View (call typing/analyze input tokens declarations) (let plan memory/Plan (call memory/analyze input tokens declarations)",
         "(make typing/Checked (status status) (view view) (issues issues) (plan plan))",
-        "(fn emit_program ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (plan memory/Plan)",
+        "fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan",
         "(fn fact_type_index",
         "(call typing/fact_type facts expr)",
         "(call fact_type_index facts argument)",
-        "(fn emit_match_value_binding ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (value I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact)))",
+        "fn emit_match_value_binding(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan]",
         "(let type_index I64 (call fact_type_index facts value) (let boolean_match Bool (call i64.eq type_index -2)",
-        "(fn emit_variant_match ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "fn emit_variant_match(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact]",
         "(let variant_type I64 (call fact_type_index facts value)",
         "(call checked_record_field_link source tokens cursor definition name_start name_end)",
-        "(fn emit_case_bindings ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact)) (inout allocations (Vec memory/AllocationPlan)) (module_items I64) (params I64) (cursor I64) (payload_type I64) (inout output (Vec U8)) (inout range-facts (Vec ranges/Fact))) Unit (effects alloc partial) (let kind I64 (call syntax/ast_node_kind tokens cursor) (let done Bool (call i64.eq kind 1) (match done (true unit) (false (let type_index I64 (call fact_type_index facts cursor)",
-        "(fn emit_expr_full ((source Bytes) (inout tokens (Vec syntax/Token)) (inout facts (Vec typing/Fact))",
+        "fn emit_case_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan]",
+        "fn emit_expr_full(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact]",
         "(get view facts)",
         "(get prepared facts)",
         "(call codegen/emit_program input tokens facts plan output)",

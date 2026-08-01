@@ -14,13 +14,16 @@ Values are classified as `none`, `view`, or `owned`. Scalars and typed IDs have
 no dynamic storage identity. `Bytes` is a copyable immutable view. Vectors and
 arenas are affine owners. Structs and enums derive the join of their members.
 
-A plain parameter copies a copyable value or moves an affine owner. An `inout`
-parameter provides one nonescaping exclusive borrow. `let` and `var` control
-rebinding and do not alter those ownership categories.
+A plain parameter copies a copyable value or shares an affine owner read-only
+for the call. An `@` parameter provides one nonescaping exclusive borrow. A
+`^` parameter receives a whole affine owner across the call boundary. `^`
+accepts a named owner or a freshly produced owner; it is not a partial-move
+operator. `let` and `var` control rebinding and do not alter those ownership
+categories.
 
 The checker records:
 
-- local, result, or numbered `inout` escape destinations;
+- local, result, or numbered exclusive-borrow escape destinations;
 - final required source uses of named values and disjoint owned fields;
 - allocation-capable calls and their lexical order; and
 - the narrowest conservative region containing every use and escape.
@@ -38,9 +41,9 @@ matching, and copying a `Bytes` view do not dynamically allocate by themselves.
 | --- | --- |
 | `vec.new()` / `arena.new()` | Creates an empty region-associated owner; no element buffer is required yet. |
 | `vec.push`, `arena.add`, output growth | Allocates or reallocates only when current capacity is insufficient. |
-| `bytes.freeze(vector)` | Consumes the vector and exposes the same buffer as `Bytes`; it does not copy or allocate another buffer. |
+| `bytes.freeze(^vector)` | Consumes the vector and exposes the same buffer as `Bytes`; it does not copy or allocate another buffer. |
 | String literals and process arguments | Produce views over process-region storage. |
-| File and bounded network operations | May grow an explicit `inout Vec[U8]` and may use operation-local scratch storage. |
+| File and bounded network operations | May grow an explicit `@Vec[U8]` and may use operation-local scratch storage. |
 
 The `alloc` effect is a checked capability ceiling, not proof that every
 execution obtains a block. Allocation and growth commit atomically or report
@@ -50,9 +53,9 @@ the single typed exhaustion outcome.
 
 Each dynamic block belongs to exactly one generated `SlimRegion`.
 
-- An allocating function with no storage/view result and no `inout` output uses
+- An allocating function with no storage/view result and no exclusive output uses
   a child region destroyed on normal return and allocation-failure exit.
-- A function returning storage or a view, or mutating through `inout`, uses the
+- A function returning storage or a view, or mutating through `@`, uses the
   caller-provided destination region.
 - An allocation-free function creates no empty child region.
 - Successful vector reallocation releases the replaced buffer after copying.

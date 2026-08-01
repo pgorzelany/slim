@@ -26,7 +26,7 @@ targets and accumulates the returned indexes.
 ## Ownership and effects
 
 The vector is an affine owner created under `alloc`. Search receives it through
-`inout`, which provides temporary exclusive access without consuming the
+`@`, which provides temporary exclusive access without consuming the
 owner. Every vector read is bounds checked. Recurrence requires `partial`
 because the general checker does not use the informal range argument as a
 termination proof.

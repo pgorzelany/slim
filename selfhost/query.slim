@@ -27,8 +27,8 @@ struct State:
 
 fn copy_span(source: Bytes, start: I64, end: I64) -> Bytes effects[alloc, partial]:
   let output: Vec[U8] = vec.new()
-  text.append_span(source, start, end, output)
-  bytes.freeze(output)
+  text.append_span(source, start, end, @output)
+  bytes.freeze(^output)
 
 fn bytes_equal_from(left: Bytes, right: Bytes, index: I64, length: I64) -> Bool effects[partial]:
   let done: Bool = index >= length
@@ -55,7 +55,7 @@ fn bytes_equal(left: Bytes, right: Bytes) -> Bool effects[partial]:
   else:
     false
 
-fn declaration_kind(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
+fn declaration_kind(source: Bytes, tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
   let function_item: Bool = syntax.ast_item_is_function(source, tokens, item)
   if function_item:
     0
@@ -66,7 +66,7 @@ fn declaration_kind(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -
     else:
       2
 
-fn declaration_interface_end(source: Bytes, inout tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
+fn declaration_interface_end(source: Bytes, tokens: Vec[syntax.Token], item: I64) -> I64 effects[partial]:
   let function_item: Bool = syntax.ast_item_is_function(source, tokens, item)
   if function_item:
     let params: I64 = syntax.ast_function_parameters(item)
@@ -80,7 +80,7 @@ fn declaration_interface_end(source: Bytes, inout tokens: Vec[syntax.Token], ite
     let closing: I64 = next - 1
     syntax.ast_node_end(tokens, closing)
 
-fn append_module_snapshots(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], module: project.LoadedModule, cursor: I64, module_name: Bytes, inout output: Vec[Snapshot]) -> Void effects[alloc, partial]:
+fn append_module_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], module: project.LoadedModule, cursor: I64, module_name: Bytes, output: @Vec[Snapshot]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -98,10 +98,10 @@ fn append_module_snapshots(manifest_source: Bytes, inout manifest_tokens: Vec[sy
     let closing: I64 = next - 1
     let end: I64 = syntax.ast_node_end(module_tokens, closing)
     let snapshot: Snapshot = Snapshot(module: module_name, kind: declaration_kind, name: name, source: source, form: cursor, next: next, start: start, interface_end: interface_end, end: end)
-    vec.push(output, snapshot)
-    recur(manifest_source, manifest_tokens, module_tokens, module, next, module_name, output)
+    vec.push(@output, snapshot)
+    recur(manifest_source, manifest_tokens, module_tokens, module, next, module_name, @output)
 
-fn build_snapshots_from(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule], index: I64, inout output: Vec[Snapshot]) -> Void effects[alloc, partial]:
+fn build_snapshots_from(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[project.LoadedModule], index: I64, output: @Vec[Snapshot]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -114,13 +114,13 @@ fn build_snapshots_from(manifest_source: Bytes, inout manifest_tokens: Vec[synta
     let module_name: Bytes = copy_span(manifest_source, name_start, name_end)
     let root: I64 = module.root
     let first: I64 = syntax.ast_module_items(root)
-    append_module_snapshots(manifest_source, manifest_tokens, module_tokens, module, first, module_name, output)
+    append_module_snapshots(manifest_source, manifest_tokens, module_tokens, module, first, module_name, @output)
     let next: I64 = index + 1
-    recur(manifest_source, manifest_tokens, module_tokens, loaded, next, output)
+    recur(manifest_source, manifest_tokens, module_tokens, loaded, next, @output)
 
-fn build_snapshots(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> Vec[Snapshot] effects[alloc, partial]:
+fn build_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[project.LoadedModule]) -> Vec[Snapshot] effects[alloc, partial]:
   let output: Vec[Snapshot] = vec.new()
-  build_snapshots_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, output)
+  build_snapshots_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, @output)
   output
 
 fn snapshot_identity_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]:
@@ -151,7 +151,7 @@ fn snapshot_body_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]
   else:
     false
 
-fn find_snapshot(inout snapshots: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
+fn find_snapshot(snapshots: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(snapshots)
   let done: Bool = index >= length
   if done:
@@ -207,7 +207,7 @@ fn provider_name_equal(atom: Bytes, snapshot: Snapshot) -> Bool effects[partial]
   else:
     false
 
-fn find_provider(atom: Bytes, inout snapshots: Vec[Snapshot], index: I64) -> I64 effects[partial]:
+fn find_provider(atom: Bytes, snapshots: Vec[Snapshot], index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(snapshots)
   let done: Bool = index >= length
   if done:
@@ -221,7 +221,7 @@ fn find_provider(atom: Bytes, inout snapshots: Vec[Snapshot], index: I64) -> I64
       let next: I64 = index + 1
       recur(atom, snapshots, next)
 
-fn dependency_exists(inout dependencies: Vec[Dependency], consumer: I64, provider: I64, index: I64) -> Bool effects[partial]:
+fn dependency_exists(dependencies: Vec[Dependency], consumer: I64, provider: I64, index: I64) -> Bool effects[partial]:
   let length: I64 = vec.len(dependencies)
   let done: Bool = index >= length
   if done:
@@ -239,7 +239,7 @@ fn dependency_exists(inout dependencies: Vec[Dependency], consumer: I64, provide
       let next: I64 = index + 1
       recur(dependencies, consumer, provider, next)
 
-fn append_snapshot_dependencies(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot], consumer: I64, cursor: I64, end: I64, inout output: Vec[Dependency]) -> Void effects[alloc, partial]:
+fn append_snapshot_dependencies(tokens: Vec[syntax.Token], snapshots: Vec[Snapshot], consumer: I64, cursor: I64, end: I64, output: @Vec[Dependency]) -> Void effects[alloc, partial]:
   let done: Bool = cursor >= end
   if done:
     void
@@ -272,13 +272,13 @@ fn append_snapshot_dependencies(inout tokens: Vec[syntax.Token], inout snapshots
     let append: Bool = cross && unique
     if append:
       let dependency: Dependency = Dependency(consumer: consumer, provider: provider)
-      vec.push(output, dependency)
+      vec.push(@output, dependency)
     else:
       void
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(tokens, snapshots, consumer, next, end, output)
+    recur(tokens, snapshots, consumer, next, end, @output)
 
-fn build_dependencies_from(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot], index: I64, inout output: Vec[Dependency]) -> Void effects[alloc, partial]:
+fn build_dependencies_from(tokens: Vec[syntax.Token], snapshots: Vec[Snapshot], index: I64, output: @Vec[Dependency]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(snapshots)
   let done: Bool = index >= length
   if done:
@@ -287,16 +287,16 @@ fn build_dependencies_from(inout tokens: Vec[syntax.Token], inout snapshots: Vec
     let snapshot: Snapshot = vec.get(snapshots, index)
     let form: I64 = snapshot.form
     let next_form: I64 = snapshot.next
-    append_snapshot_dependencies(tokens, snapshots, index, form, next_form, output)
+    append_snapshot_dependencies(tokens, snapshots, index, form, next_form, @output)
     let next: I64 = index + 1
-    recur(tokens, snapshots, next, output)
+    recur(tokens, snapshots, next, @output)
 
-fn build_dependencies(inout tokens: Vec[syntax.Token], inout snapshots: Vec[Snapshot]) -> Vec[Dependency] effects[alloc, partial]:
+fn build_dependencies(tokens: Vec[syntax.Token], snapshots: Vec[Snapshot]) -> Vec[Dependency] effects[alloc, partial]:
   let output: Vec[Dependency] = vec.new()
-  build_dependencies_from(tokens, snapshots, 0, output)
+  build_dependencies_from(tokens, snapshots, 0, @output)
   output
 
-fn build_state(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
+fn build_state(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
   let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded)
   let dependencies: Vec[Dependency] = build_dependencies(module_tokens, snapshots)
   State(snapshots: snapshots, dependencies: dependencies)
@@ -316,17 +316,17 @@ fn snapshot_interface_equal(left: Snapshot, right: Snapshot) -> Bool effects[par
   else:
     false
 
-fn fill_flags(length: I64, index: I64, inout flags: Vec[Bool]) -> Void effects[alloc, partial]:
+fn fill_flags(length: I64, index: I64, flags: @Vec[Bool]) -> Void effects[alloc, partial]:
   let done: Bool = index >= length
   if done:
     void
   else:
     let initial: Bool = false
-    vec.push(flags, initial)
+    vec.push(@flags, initial)
     let next: I64 = index + 1
-    recur(length, next, flags)
+    recur(length, next, @flags)
 
-fn find_aligned_snapshot(inout previous: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
+fn find_aligned_snapshot(previous: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(previous)
   let available: Bool = index < length
   let same: Bool = if available:
@@ -339,7 +339,7 @@ fn find_aligned_snapshot(inout previous: Vec[Snapshot], candidate: Snapshot, ind
   else:
     find_snapshot(previous, candidate, 0)
 
-fn classify_changes(inout previous: Vec[Snapshot], inout current: Vec[Snapshot], index: I64, count: I64, inout invalidated: Vec[Bool], inout queue: Vec[I64]) -> I64 effects[alloc, partial]:
+fn classify_changes(previous: Vec[Snapshot], current: Vec[Snapshot], index: I64, count: I64, invalidated: @Vec[Bool], queue: @Vec[I64]) -> I64 effects[alloc, partial]:
   let length: I64 = vec.len(current)
   let done: Bool = index >= length
   if done:
@@ -362,11 +362,11 @@ fn classify_changes(inout previous: Vec[Snapshot], inout current: Vec[Snapshot],
       true
     if body_changed:
       let value: Bool = true
-      vec.set(invalidated, index, value)
+      vec.set(@invalidated, index, value)
     else:
       void
     if interface_changed:
-      vec.push(queue, index)
+      vec.push(@queue, index)
     else:
       void
     let increment: I64 = if body_changed:
@@ -375,9 +375,9 @@ fn classify_changes(inout previous: Vec[Snapshot], inout current: Vec[Snapshot],
       0
     let total: I64 = count + increment
     let next: I64 = index + 1
-    recur(previous, current, next, total, invalidated, queue)
+    recur(previous, current, next, total, @invalidated, @queue)
 
-fn mark_consumers(inout dependencies: Vec[Dependency], provider: I64, index: I64, inout invalidated: Vec[Bool], inout queue: Vec[I64]) -> Void effects[alloc, partial]:
+fn mark_consumers(dependencies: Vec[Dependency], provider: I64, index: I64, invalidated: @Vec[Bool], queue: @Vec[I64]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(dependencies)
   let done: Bool = index >= length
   if done:
@@ -392,28 +392,28 @@ fn mark_consumers(inout dependencies: Vec[Dependency], provider: I64, index: I64
     let mark: Bool = same && fresh
     if mark:
       let value: Bool = true
-      vec.set(invalidated, consumer, value)
+      vec.set(@invalidated, consumer, value)
     else:
       void
     if mark:
-      vec.push(queue, consumer)
+      vec.push(@queue, consumer)
     else:
       void
     let next: I64 = index + 1
-    recur(dependencies, provider, next, invalidated, queue)
+    recur(dependencies, provider, next, @invalidated, @queue)
 
-fn propagate_invalidations(inout dependencies: Vec[Dependency], inout queue: Vec[I64], cursor: I64, inout invalidated: Vec[Bool]) -> Void effects[alloc, partial]:
+fn propagate_invalidations(dependencies: Vec[Dependency], queue: @Vec[I64], cursor: I64, invalidated: @Vec[Bool]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(queue)
   let done: Bool = cursor >= length
   if done:
     void
   else:
     let provider: I64 = vec.get(queue, cursor)
-    mark_consumers(dependencies, provider, 0, invalidated, queue)
+    mark_consumers(dependencies, provider, 0, @invalidated, @queue)
     let next: I64 = syntax.ast_node_after(cursor)
-    recur(dependencies, queue, next, invalidated)
+    recur(dependencies, @queue, next, @invalidated)
 
-fn count_flags(inout flags: Vec[Bool], index: I64, count: I64) -> I64 effects[partial]:
+fn count_flags(flags: Vec[Bool], index: I64, count: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(flags)
   let done: Bool = index >= length
   if done:
@@ -428,17 +428,17 @@ fn count_flags(inout flags: Vec[Bool], index: I64, count: I64) -> I64 effects[pa
     let next: I64 = index + 1
     recur(flags, next, total)
 
-fn build_snapshot_state(manifest_source: Bytes, inout manifest_tokens: Vec[syntax.Token], inout module_tokens: Vec[syntax.Token], inout loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
+fn build_snapshot_state(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[project.LoadedModule]) -> State effects[alloc, partial]:
   let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded)
   let dependencies: Vec[Dependency] = vec.new()
   State(snapshots: snapshots, dependencies: dependencies)
 
-fn measure_update(inout previous: Vec[Snapshot], inout current: Vec[Snapshot], inout dependencies: Vec[Dependency]) -> Work effects[alloc, partial]:
+fn measure_update(previous: Vec[Snapshot], current: Vec[Snapshot], dependencies: Vec[Dependency]) -> Work effects[alloc, partial]:
   let length: I64 = vec.len(current)
   let invalidated: Vec[Bool] = vec.new()
-  fill_flags(length, 0, invalidated)
+  fill_flags(length, 0, @invalidated)
   let queue: Vec[I64] = vec.new()
-  let parsed: I64 = classify_changes(previous, current, 0, 0, invalidated, queue)
-  propagate_invalidations(dependencies, queue, 0, invalidated)
+  let parsed: I64 = classify_changes(previous, current, 0, 0, @invalidated, @queue)
+  propagate_invalidations(dependencies, @queue, 0, @invalidated)
   let checked: I64 = count_flags(invalidated, 0, 0)
   Work(parsed: parsed, lowered: parsed, checked: checked, generated: checked)

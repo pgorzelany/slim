@@ -1,0 +1,7 @@
+module shared_container_escape
+
+fn invalid(output: @Vec[Vec[I64]], values: Vec[I64]) -> Void effects[alloc]:
+  vec.push(@output, values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0
