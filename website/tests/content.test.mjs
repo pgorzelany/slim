@@ -69,7 +69,10 @@ test("Handbook inventory derives stable metadata from canonical filenames", asyn
     assert.ok(chapter.headings.length >= 3);
     await access(path.join(repositoryRoot, chapter.path));
   }
-  assert.equal(generated.appendices.length, 5);
+  assert.equal(generated.appendices.length, 6);
+  const migration = generated.appendices.find((appendix) => appendix.slug === "migration-0.10");
+  assert.equal(migration?.path, "docs/MIGRATION-0.10.md");
+  assert.equal(migration?.route, "/handbook/appendix/migration-0.10");
   assert.equal(new Set(generated.routes).size, generated.routes.length);
 });
 
@@ -110,7 +113,8 @@ test("embedded Handbook fixtures execute through production SLIM", async () => {
     "example-countdown",
     "example-data",
     "example-vector-sum",
-    "example-inout",
+    "shared-borrows",
+    "exclusive-borrow",
     "example-bytes",
     "structured-parallel",
   ]) {
@@ -215,11 +219,11 @@ test("surface JSON exactly projects accepted RFC ownership", async () => {
 });
 
 test("RFC migration preserves legacy history and validates the new process", async () => {
-  assert.equal(generated.rfcs.length, 107);
+  assert.equal(generated.rfcs.length, 109);
   assert.deepEqual(generated.rfcCounts, {
     proposed: 0,
-    accepted: 99,
-    rejected: 8,
+    accepted: 100,
+    rejected: 9,
     withdrawn: 0,
     superseded: 0,
   });
@@ -236,6 +240,11 @@ test("RFC migration preserves legacy history and validates the new process", asy
   assert.equal(current?.implementation, "complete");
   assert.equal(current?.process, "1");
   assert.equal(current?.route, "/rfcs/0108-documentation-and-rfc-process");
+  const ownership = generated.rfcs.find((rfc) => rfc.id === "RFC-0110");
+  assert.equal(ownership?.status, "accepted");
+  assert.equal(ownership?.implementation, "complete");
+  assert.equal(ownership?.process, "1");
+  assert.equal(ownership?.route, "/rfcs/0110-default-shared-ownership-modes");
   for (const rfc of generated.rfcs) {
     assert.match(path.basename(rfc.path), /^\d{4}-[a-z0-9-]+\.md$/);
     assert.equal(rfc.id, `RFC-${String(rfc.number).padStart(4, "0")}`);
@@ -278,9 +287,9 @@ test("search keeps current, development, RFC, and evidence scopes distinct", () 
     ]),
   );
   assert.deepEqual(counts, {
-    current: 37,
+    current: 38,
     development: 19,
-    rfc: 107,
+    rfc: 109,
     evidence: 27,
   });
   assert.equal(new Set(search.map((entry) => `${entry.scope}:${entry.route}`)).size, search.length);

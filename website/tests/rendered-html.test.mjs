@@ -149,9 +149,9 @@ test("RFC index filters records and detail pages expose disposition and ratings"
   assert.match(index, /Search RFCs/);
   assert.match(index, /All statuses/);
   assert.match(index, /All kinds/);
-  assert.match(index, /RFC-0108/);
-  assert.match(index, /99 accepted/);
-  assert.match(index, /8 rejected/);
+  assert.match(index, /RFC-0110/);
+  assert.match(index, /100 accepted/);
+  assert.match(index, /9 rejected/);
 
   const detail = await render("/rfcs/0108-documentation-and-rfc-process");
   assert.match(detail, /implementation complete/);

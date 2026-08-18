@@ -20,6 +20,7 @@ const appendixSources = [
   ["diagnostics", "docs/DIAGNOSTICS.md", "Diagnostic records and schemas"],
   ["compatibility", "docs/COMPATIBILITY.md", "Compatibility and version policy"],
   ["migration-0.9", "docs/MIGRATION-0.9.md", "Migration to SLIM 0.9"],
+  ["migration-0.10", "docs/MIGRATION-0.10.md", "Migration to SLIM 0.10"],
 ].map(([slug, sourcePath, label], index) => ({
   slug,
   order: index + 13,
