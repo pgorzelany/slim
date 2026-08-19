@@ -1,0 +1,16 @@
+module lz4_model
+
+struct Match:
+  position: I64
+  length: I64
+
+struct Length:
+  valid: Bool
+  value: I64
+  next: I64
+  position: I64
+
+struct Result:
+  valid: Bool
+  code: I64
+  position: I64

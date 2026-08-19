@@ -1,0 +1,78 @@
+module http_app
+
+fn component_valid(value: Bytes, index: I64, length: I64) -> Bool effects[partial]:
+  if index >= length:
+    true
+  else:
+    let code: I64 = u8.to_i64(bytes.get(value, index))
+    let visible: Bool = (code >= 33) && (code <= 126)
+    if visible:
+      recur(value, index + 1, length)
+    else:
+      false
+
+fn request_valid(host: Bytes, path: Bytes) -> Bool effects[partial]:
+  let host_length: I64 = bytes.len(host)
+  let path_length: I64 = bytes.len(path)
+  let host_size: Bool = (host_length > 0) && (host_length <= 255)
+  let path_size: Bool = (path_length > 0) && (path_length <= 2048)
+  let slash: Bool = if path_size:
+    u8.to_i64(bytes.get(path, 0)) == 47
+  else:
+    false
+  host_size && (path_size && (slash && (component_valid(host, 0, host_length) && component_valid(path, 0, path_length))))
+
+fn parse_port(value: Bytes) -> I64 effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(value, 0, bytes.len(value))
+  match parsed:
+    Invalid(position):
+      0 - position
+    Overflow(position):
+      0 - position
+    Value(port, next):
+      if (next == bytes.len(value)) && ((port > 0) && (port <= 65535)):
+        port
+      else:
+        0
+
+fn build_request(host: Bytes, path: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "GET ")
+  std_text.append_bytes(@output, path)
+  std_text.append_bytes(@output, " HTTP/1.1\r\nHost: ")
+  std_text.append_bytes(@output, host)
+  std_text.append_bytes(@output, "\r\nConnection: close\r\nUser-Agent: slim-http/1\r\n\r\n")
+
+fn run(host: Bytes, port_text: Bytes, path: Bytes) -> I64 effects[alloc, io, partial]:
+  let port: I64 = parse_port(port_text)
+  if !(port > 0):
+    http_emit.print_error(20, 0)
+    64
+  else:
+    if !request_valid(host, path):
+      http_emit.print_error(21, 0)
+      64
+    else:
+      let request_bytes: Vec[U8] = vec.new()
+      build_request(host, path, @request_bytes)
+      let request: Bytes = bytes.freeze(^request_bytes)
+      let response_bytes: Vec[U8] = vec.new()
+      let exchanged: Bool = io.tcp_exchange(host, port, request, 65536, 2000, @response_bytes)
+      if !exchanged:
+        http_emit.print_error(30, 0)
+        69
+      else:
+        let source: Bytes = bytes.freeze(^response_bytes)
+        let response: http_model.Response = http_parser.parse(source)
+        if response.valid:
+          http_emit.print_response(source, response)
+          0
+        else:
+          http_emit.print_error(response.code, response.position)
+          65
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 4:
+    run(vec.get(args, 1), vec.get(args, 2), vec.get(args, 3))
+  else:
+    http_emit.print_error(2, 0)
+    64

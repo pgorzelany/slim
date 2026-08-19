@@ -1,0 +1,24 @@
+module ledger
+
+fn run(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let source: Bytes = bytes.freeze(^input)
+    let accounts: Vec[ledger_model.Account] = vec.new()
+    let result: ledger_model.Run = ledger_state.process(source, 0, @accounts, 0, 0)
+    if result.valid:
+      ledger_emit.print_report(source, accounts, result)
+      0
+    else:
+      ledger_emit.print_error(result.code, result.position)
+      1
+  else:
+    io.println("ledger: input read failed")
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) >= 2:
+    run(vec.get(args, 1))
+  else:
+    io.println("usage: slim-ledger INPUT")
+    64

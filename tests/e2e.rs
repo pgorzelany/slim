@@ -35,6 +35,495 @@ fn write_source(directory: &Path, source: &str) -> PathBuf {
     path
 }
 
+#[test]
+fn experimental_standard_library_is_canonical_and_deterministic() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let project = root.join("library/slim.project");
+
+    let formatted = Command::new(slimc())
+        .args(["fmt", project.to_str().unwrap(), "--check"])
+        .output()
+        .unwrap();
+    assert!(
+        formatted.status.success(),
+        "{}",
+        String::from_utf8_lossy(&formatted.stderr)
+    );
+
+    let checked = Command::new(slimc())
+        .arg("check")
+        .arg(&project)
+        .output()
+        .unwrap();
+    assert!(
+        checked.status.success(),
+        "{}",
+        String::from_utf8_lossy(&checked.stderr)
+    );
+
+    let first = Command::new(slimc())
+        .arg("run")
+        .arg(&project)
+        .output()
+        .unwrap();
+    let second = Command::new(slimc())
+        .arg("run")
+        .arg(&project)
+        .output()
+        .unwrap();
+    assert!(first.status.success());
+    assert_eq!(first.stdout, second.stdout);
+    assert_eq!(
+        first.stdout,
+        b"ok ascii\nok i64\nok span\nok text\nok bytes\nok ascii-colon\nok decimal\nok cursor\nok args\nok i64-vec\nok u8-vec\npassed 11 failed 0\n"
+    );
+    assert!(first.stderr.is_empty());
+    assert!(second.stderr.is_empty());
+
+    let directory = temporary_directory("stdlib-interfaces");
+    let left = directory.join("left");
+    let right = directory.join("right");
+    for output in [&left, &right] {
+        let interfaces = Command::new(slimc())
+            .arg("interfaces")
+            .arg(&project)
+            .arg("-o")
+            .arg(output)
+            .output()
+            .unwrap();
+        assert!(
+            interfaces.status.success(),
+            "{}",
+            String::from_utf8_lossy(&interfaces.stderr)
+        );
+    }
+    for module in [
+        "std_ascii",
+        "std_bytes",
+        "std_cursor",
+        "std_decimal",
+        "std_i64",
+        "std_i64_vec",
+        "std_span",
+        "std_test",
+        "std_text",
+        "std_u8_vec",
+    ] {
+        assert_eq!(
+            fs::read(left.join(format!("{module}.sli"))).unwrap(),
+            fs::read(right.join(format!("{module}.sli"))).unwrap()
+        );
+    }
+
+    let executable = directory.join("standard-library-tests");
+    let built = Command::new(slimc())
+        .arg("build")
+        .arg(&project)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        built.status.success(),
+        "{}",
+        String::from_utf8_lossy(&built.stderr)
+    );
+    let allocation_failure = Command::new(&executable)
+        .env("SLIM_ALLOC_FAIL_AT", "1")
+        .output()
+        .unwrap();
+    assert_eq!(allocation_failure.status.code(), Some(71));
+    assert!(allocation_failure.stdout.is_empty());
+    assert_eq!(
+        allocation_failure.stderr,
+        b"SLIM allocation failure: exhausted at allocation 1\n"
+    );
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn interface_diff_reports_compatible_and_breaking_api_changes() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("interface-diff");
+    let executable = directory.join("slim-api-diff");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/api-diff.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/tools/fixtures");
+    let previous = fixtures.join("api-previous.sli");
+    let current = fixtures.join("api-current.sli");
+    let breaking = Command::new(&executable)
+        .arg(&previous)
+        .arg(&current)
+        .output()
+        .unwrap();
+    assert_eq!(breaking.status.code(), Some(1));
+    assert_eq!(
+        breaking.stdout,
+        b"interface-diff 1\nremoved remove\nchanged update\nadded added\nsummary added 1 changed 1 removed 1\ncompatible no\n"
+    );
+    assert!(breaking.stderr.is_empty());
+
+    let compatible = Command::new(&executable)
+        .arg(&current)
+        .arg(&current)
+        .output()
+        .unwrap();
+    assert!(compatible.status.success());
+    assert_eq!(
+        compatible.stdout,
+        b"interface-diff 1\nsummary added 0 changed 0 removed 0\ncompatible yes\n"
+    );
+    assert!(compatible.stderr.is_empty());
+
+    let malformed = directory.join("malformed.sli");
+    fs::write(&malformed, b"(interface 2 sample)\n").unwrap();
+    let rejected = Command::new(&executable)
+        .arg(&malformed)
+        .arg(&current)
+        .output()
+        .unwrap();
+    assert_eq!(rejected.status.code(), Some(65));
+    assert_eq!(rejected.stdout, b"interface-diff: invalid interface\n");
+    assert!(rejected.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn ndjson_application_parses_nested_json_and_validates_telemetry() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("ndjson");
+    let executable = directory.join("slim-ndjson");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/ndjson.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/applications/ndjson/fixtures");
+    let valid = Command::new(&executable)
+        .arg(fixtures.join("telemetry.ndjson"))
+        .output()
+        .unwrap();
+    assert!(valid.status.success());
+    assert_eq!(
+        valid.stdout,
+        b"device alpha count 2 ok 1 sum 52\ndevice beta count 1 ok 0 sum -5\n"
+    );
+    assert!(valid.stderr.is_empty());
+
+    for (fixture, expected) in [
+        ("duplicate.ndjson", "error 11 at 2\n"),
+        ("fraction.ndjson", "error 17 at 37\n"),
+        ("malformed.ndjson", "error 5 at 64\n"),
+        ("nested-unknown.ndjson", "error 12 at 39\n"),
+        ("overflow.ndjson", "error 18 at 54\n"),
+        ("unseparated.ndjson", "error 6 at 38\n"),
+    ] {
+        let rejected = Command::new(&executable)
+            .arg(fixtures.join(fixture))
+            .output()
+            .unwrap();
+        assert_eq!(rejected.status.code(), Some(1), "{fixture}");
+        assert_eq!(rejected.stdout, expected.as_bytes(), "{fixture}");
+        assert!(rejected.stderr.is_empty(), "{fixture}");
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn ledger_application_preserves_rejected_transaction_state() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("ledger");
+    let executable = directory.join("slim-ledger");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/ledger.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/applications/ledger/fixtures");
+    let valid = Command::new(&executable)
+        .arg(fixtures.join("ledger.log"))
+        .output()
+        .unwrap();
+    assert!(valid.status.success());
+    assert_eq!(
+        valid.stdout,
+        b"accepted 6 rejected 2\naccount alice balance 80 open yes credits 1 debits 1\naccount bob balance 0 open no credits 1 debits 1\ntotal 80\n"
+    );
+    assert!(valid.stderr.is_empty());
+
+    let rollback = Command::new(&executable)
+        .arg(fixtures.join("rollback.log"))
+        .output()
+        .unwrap();
+    assert!(rollback.status.success());
+    assert_eq!(
+        rollback.stdout,
+        b"accepted 2 rejected 1\naccount alice balance 10 open yes credits 0 debits 0\naccount bob balance 0 open yes credits 0 debits 0\ntotal 10\n"
+    );
+    assert!(rollback.stderr.is_empty());
+
+    for (fixture, expected) in [
+        ("invalid.log", "error 20 at 0\n"),
+        ("overflow.log", "error 24 at 29\n"),
+        ("trailing.log", "error 22 at 13\n"),
+    ] {
+        let rejected = Command::new(&executable)
+            .arg(fixtures.join(fixture))
+            .output()
+            .unwrap();
+        assert_eq!(rejected.status.code(), Some(1), "{fixture}");
+        assert_eq!(rejected.stdout, expected.as_bytes(), "{fixture}");
+        assert!(rejected.stderr.is_empty(), "{fixture}");
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn sat_application_solves_and_rejects_dimacs_inputs() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("sat");
+    let executable = directory.join("slim-sat");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/sat.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/applications/sat/fixtures");
+    let satisfiable = Command::new(&executable)
+        .arg(fixtures.join("sat.cnf"))
+        .output()
+        .unwrap();
+    assert!(satisfiable.status.success());
+    assert_eq!(satisfiable.stdout, b"s SATISFIABLE\nv -1 2 3 4 0\n");
+    assert!(satisfiable.stderr.is_empty());
+
+    let unsatisfiable = Command::new(&executable)
+        .arg(fixtures.join("unsat.cnf"))
+        .output()
+        .unwrap();
+    assert!(unsatisfiable.status.success());
+    assert_eq!(unsatisfiable.stdout, b"s UNSATISFIABLE\n");
+    assert!(unsatisfiable.stderr.is_empty());
+
+    let invalid = Command::new(&executable)
+        .arg(fixtures.join("invalid.cnf"))
+        .output()
+        .unwrap();
+    assert_eq!(invalid.status.code(), Some(65));
+    assert_eq!(invalid.stdout, b"error 14 at 10\n");
+    assert!(invalid.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn raster_application_emits_deterministic_pgm_pixels() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("raster");
+    let executable = directory.join("slim-raster");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/raster.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/applications/raster/fixtures");
+    let image = Command::new(&executable)
+        .arg(fixtures.join("scene.txt"))
+        .output()
+        .unwrap();
+    assert!(image.status.success());
+    assert!(image.stderr.is_empty());
+    let header = b"P5\n16 12\n255\n";
+    assert!(image.stdout.starts_with(header));
+    let pixels = &image.stdout[header.len()..];
+    assert_eq!(pixels.len(), 192);
+    assert_eq!(
+        pixels.iter().map(|value| u64::from(*value)).sum::<u64>(),
+        8040
+    );
+    assert_eq!(pixels.iter().filter(|value| **value != 0).count(), 68);
+    assert_eq!(pixels.iter().filter(|value| **value == 80).count(), 42);
+    assert_eq!(pixels.iter().filter(|value| **value == 180).count(), 26);
+
+    let invalid = Command::new(&executable)
+        .arg(fixtures.join("invalid.txt"))
+        .output()
+        .unwrap();
+    assert_eq!(invalid.status.code(), Some(65));
+    assert_eq!(invalid.stdout, b"error 25 at 4\n");
+    assert!(invalid.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn lz4_application_round_trips_and_decodes_overlapping_matches() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("lz4");
+    let executable = directory.join("slim-lz4");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/lz4.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let fixtures = root.join("library/applications/lz4/fixtures");
+    let source_path = fixtures.join("repetitive.txt");
+    let source = fs::read(&source_path).unwrap();
+    let compressed = Command::new(&executable)
+        .args(["compress", source_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(compressed.status.success());
+    assert_eq!(compressed.stdout.len(), 84);
+    assert!(compressed.stdout.len() < source.len());
+    assert!(compressed.stderr.is_empty());
+
+    let compressed_path = directory.join("roundtrip.lz4");
+    fs::write(&compressed_path, &compressed.stdout).unwrap();
+    let decompressed = Command::new(&executable)
+        .args(["decompress", compressed_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(decompressed.status.success());
+    assert_eq!(decompressed.stdout, source);
+    assert!(decompressed.stderr.is_empty());
+
+    let overlap_path = directory.join("overlap.lz4");
+    fs::write(&overlap_path, [0x11_u8, b'a', 1, 0]).unwrap();
+    let overlap = Command::new(&executable)
+        .args(["decompress", overlap_path.to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert!(overlap.status.success());
+    assert_eq!(overlap.stdout, b"aaaaaa");
+
+    let invalid = Command::new(&executable)
+        .args(["decompress", fixtures.join("invalid.lz4").to_str().unwrap()])
+        .output()
+        .unwrap();
+    assert_eq!(invalid.status.code(), Some(65));
+    assert_eq!(invalid.stdout, b"error 3 at 1\n");
+    assert!(invalid.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[cfg(unix)]
+#[test]
+fn bounded_http_application_validates_and_reports_loopback_responses() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("http");
+    let executable = directory.join("slim-http");
+    let build = Command::new(slimc())
+        .arg("build")
+        .arg(root.join("library/http.project"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+
+    let listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let port = listener.local_addr().unwrap().port();
+    let server = thread::spawn(move || {
+        let (mut stream, _) = listener.accept().unwrap();
+        let mut request = Vec::new();
+        stream.read_to_end(&mut request).unwrap();
+        assert_eq!(
+            request,
+            b"GET /health HTTP/1.1\r\nHost: 127.0.0.1\r\nConnection: close\r\nUser-Agent: slim-http/1\r\n\r\n"
+        );
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\ncOnTeNt-LeNgTh: 5\r\nX-Test: yes\r\n\r\nhello")
+            .unwrap();
+    });
+    let valid = Command::new(&executable)
+        .args(["127.0.0.1", &port.to_string(), "/health"])
+        .output()
+        .unwrap();
+    server.join().unwrap();
+    assert!(
+        valid.status.success(),
+        "stdout={} stderr={}",
+        String::from_utf8_lossy(&valid.stdout),
+        String::from_utf8_lossy(&valid.stderr)
+    );
+    assert_eq!(valid.stdout, b"status 200\nlength 5\nhello");
+    assert!(valid.stderr.is_empty());
+
+    let invalid_listener = TcpListener::bind("127.0.0.1:0").unwrap();
+    let invalid_port = invalid_listener.local_addr().unwrap().port();
+    let invalid_server = thread::spawn(move || {
+        let (mut stream, _) = invalid_listener.accept().unwrap();
+        let mut request = Vec::new();
+        stream.read_to_end(&mut request).unwrap();
+        stream
+            .write_all(b"HTTP/1.1 200 OK\r\nContent-Length: 6\r\n\r\nhello")
+            .unwrap();
+    });
+    let invalid = Command::new(&executable)
+        .args(["127.0.0.1", &invalid_port.to_string(), "/health"])
+        .output()
+        .unwrap();
+    invalid_server.join().unwrap();
+    assert_eq!(invalid.status.code(), Some(65));
+    assert_eq!(invalid.stdout, b"error 17 at 38\n");
+    assert!(invalid.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
 fn nested_refinement_expression(remaining: usize, depth: usize) -> String {
     let indentation = "  ".repeat(depth);
     if remaining == 0 {
@@ -790,14 +1279,14 @@ fn ownership_modes_have_distinct_checked_abi_capabilities() {
     let generated = String::from_utf8(output.stdout).unwrap();
     assert!(
         generated.contains(
-            "static int64_t slim_fn_read(SlimVec slim_v_values, SlimRegion *slim_region);"
+            "static SLIM_UNUSED_FUNCTION int64_t slim_fn_read(SlimVec slim_v_values, SlimRegion *slim_region);"
         )
     );
     assert!(generated.contains(
-        "static int64_t slim_fn_touch(SlimVec * slim_v_values, SlimRegion *slim_region);"
+        "static SLIM_UNUSED_FUNCTION int64_t slim_fn_touch(SlimVec * slim_v_values, SlimRegion *slim_region);"
     ));
     assert!(generated.contains(
-        "static int64_t slim_fn_consume(SlimVec slim_v_values, SlimRegion *slim_region);"
+        "static SLIM_UNUSED_FUNCTION int64_t slim_fn_consume(SlimVec slim_v_values, SlimRegion *slim_region);"
     ));
 }
 

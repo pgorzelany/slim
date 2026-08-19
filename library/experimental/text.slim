@@ -1,0 +1,26 @@
+module std_text
+
+fn append_byte(output: @Vec[U8], value: U8) -> Void effects[alloc]:
+  vec.push(@output, value)
+
+fn append_bytes(output: @Vec[U8], value: Bytes) -> Void effects[alloc, partial]:
+  std_bytes.append(value, @output)
+
+fn append_span(output: @Vec[U8], source: Bytes, start: I64, end: I64) -> Bool effects[alloc, partial]:
+  std_bytes.append_range(source, start, end, @output)
+
+fn append_negative_digits(output: @Vec[U8], value: I64) -> Void effects[alloc, partial]:
+  if value <= -10:
+    append_negative_digits(@output, value / 10)
+  else:
+    void
+  let remainder: I64 = value % 10
+  let digit: I64 = 0 - remainder
+  vec.push(@output, i64.to_u8(digit + 48))
+
+fn append_i64(output: @Vec[U8], value: I64) -> Void effects[alloc, partial]:
+  if value < 0:
+    vec.push(@output, i64.to_u8(45))
+    append_negative_digits(@output, value)
+  else:
+    append_negative_digits(@output, 0 - value)

@@ -1,0 +1,4 @@
+size 16 12
+clear 0
+triangle 1 1 14 2 5 10 80
+triangle 3 3 12 4 10 9 180

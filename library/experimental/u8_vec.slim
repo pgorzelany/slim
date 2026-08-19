@@ -1,0 +1,31 @@
+module std_u8_vec
+
+fn count(values: Vec[U8], length: I64, target: U8, index: I64, total: I64) -> I64 effects[partial]:
+  if index >= length:
+    total
+  else:
+    let increment: I64 = if u8.to_i64(vec.get(values, index)) == u8.to_i64(target):
+      1
+    else:
+      0
+    recur(values, length, target, index + 1, total + increment)
+
+fn filled(length: I64, value: U8, index: I64, output: @Vec[U8]) -> Void effects[alloc]:
+  if index >= length:
+    void
+  else:
+    vec.push(@output, value)
+    recur(length, value, index + 1, @output)
+
+fn push_at(values: @Vec[U8], length: I64, value: U8) -> I64 effects[alloc, partial]:
+  if length < vec.len(values):
+    vec.set(@values, length, value)
+  else:
+    vec.push(@values, value)
+  length + 1
+
+fn sum(values: Vec[U8], length: I64, index: I64, total: I64) -> I64 effects[partial]:
+  if index >= length:
+    total
+  else:
+    recur(values, length, index + 1, total + u8.to_i64(vec.get(values, index)))

@@ -1,0 +1,170 @@
+module raster_parser
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn skip_space(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || (code == 9):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn word_end(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || (code == 9):
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn word(source: Bytes, index: I64, end: I64) -> raster_model.Word effects[partial]:
+  let start: I64 = skip_space(source, index, end)
+  let finish: I64 = word_end(source, start, end)
+  raster_model.Word(valid: finish > start, start: start, end: finish, next: finish)
+
+fn word_is(source: Bytes, value: raster_model.Word, expected: Bytes) -> Bool effects[partial]:
+  let length: I64 = value.end - value.start
+  if value.valid && (length == bytes.len(expected)):
+    std_bytes.range_equal(source, value.start, expected, 0, length)
+  else:
+    false
+
+fn append_numbers(source: Bytes, index: I64, end: I64, count: I64, target: I64, output: @Vec[I64]) -> raster_model.Numbers effects[alloc, partial]:
+  if count >= target:
+    let trailing: I64 = skip_space(source, index, end)
+    raster_model.Numbers(valid: trailing == end, code: 22, position: trailing)
+  else:
+    let value_word: raster_model.Word = word(source, index, end)
+    if !value_word.valid:
+      raster_model.Numbers(valid: false, code: 21, position: value_word.start)
+    else:
+      let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, value_word.start, value_word.end)
+      match parsed:
+        Invalid(position):
+          raster_model.Numbers(valid: false, code: 23, position: position)
+        Overflow(position):
+          raster_model.Numbers(valid: false, code: 24, position: position)
+        Value(value, next):
+          if next == value_word.end:
+            vec.push(@output, value)
+            recur(source, value_word.next, end, count + 1, target, @output)
+          else:
+            raster_model.Numbers(valid: false, code: 23, position: next)
+
+fn parse_size(source: Bytes, index: I64, end: I64) -> raster_model.Line effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  let parsed: raster_model.Numbers = append_numbers(source, index, end, 0, 2, @values)
+  if !parsed.valid:
+    raster_model.Line::Invalid(parsed.code, parsed.position)
+  else:
+    let width: I64 = vec.get(values, 0)
+    let height: I64 = vec.get(values, 1)
+    let bounded: Bool = (width > 0) && ((height > 0) && ((width <= 256) && (height <= 256)))
+    if bounded:
+      raster_model.Line::Size(width, height)
+    else:
+      raster_model.Line::Invalid(25, index)
+
+fn parse_clear(source: Bytes, index: I64, end: I64) -> raster_model.Line effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  let parsed: raster_model.Numbers = append_numbers(source, index, end, 0, 1, @values)
+  if !parsed.valid:
+    raster_model.Line::Invalid(parsed.code, parsed.position)
+  else:
+    let shade: I64 = vec.get(values, 0)
+    if (shade >= 0) && (shade <= 255):
+      raster_model.Line::Clear(i64.to_u8(shade))
+    else:
+      raster_model.Line::Invalid(26, index)
+
+fn parse_triangle(source: Bytes, index: I64, end: I64) -> raster_model.Line effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  let parsed: raster_model.Numbers = append_numbers(source, index, end, 0, 7, @values)
+  if !parsed.valid:
+    raster_model.Line::Invalid(parsed.code, parsed.position)
+  else:
+    let shade: I64 = vec.get(values, 6)
+    if (shade >= 0) && (shade <= 255):
+      let triangle: raster_model.Triangle = raster_model.Triangle(x0: vec.get(values, 0), y0: vec.get(values, 1), x1: vec.get(values, 2), y1: vec.get(values, 3), x2: vec.get(values, 4), y2: vec.get(values, 5), shade: i64.to_u8(shade))
+      raster_model.Line::TriangleValue(triangle)
+    else:
+      raster_model.Line::Invalid(26, index)
+
+fn parse_line(source: Bytes, start: I64, end: I64) -> raster_model.Line effects[alloc, partial]:
+  let command: raster_model.Word = word(source, start, end)
+  if word_is(source, command, "size"):
+    parse_size(source, command.next, end)
+  else:
+    if word_is(source, command, "clear"):
+      parse_clear(source, command.next, end)
+    else:
+      if word_is(source, command, "triangle"):
+        parse_triangle(source, command.next, end)
+      else:
+        raster_model.Line::Invalid(20, command.start)
+
+fn next_line(source: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  if index >= length:
+    index
+  else:
+    if code_at(source, index) == 10:
+      index
+    else:
+      recur(source, index + 1, length)
+
+fn trim_return(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if (end > start) && (code_at(source, end - 1) == 13):
+    end - 1
+  else:
+    end
+
+fn invalid(code: I64, position: I64, width: I64, height: I64, clear: U8) -> raster_model.Parse:
+  raster_model.Parse(valid: false, code: code, position: position, width: width, height: height, clear: clear)
+
+fn process(source: Bytes, index: I64, stage: I64, width: I64, height: I64, clear: U8, triangles: @Vec[raster_model.Triangle]) -> raster_model.Parse effects[alloc, partial]:
+  let length: I64 = bytes.len(source)
+  if index >= length:
+    if (stage >= 2) && (vec.len(triangles) > 0):
+      raster_model.Parse(valid: true, code: 0, position: index, width: width, height: height, clear: clear)
+    else:
+      invalid(27, index, width, height, clear)
+  else:
+    let raw_end: I64 = next_line(source, index, length)
+    let end: I64 = trim_return(source, index, raw_end)
+    let following: I64 = if raw_end < length:
+      raw_end + 1
+    else:
+      length
+    let content: I64 = skip_space(source, index, end)
+    if content >= end:
+      recur(source, following, stage, width, height, clear, @triangles)
+    else:
+      let line: raster_model.Line = parse_line(source, content, end)
+      match line:
+        Invalid(code, position):
+          invalid(code, position, width, height, clear)
+        Size(next_width, next_height):
+          if stage == 0:
+            recur(source, following, 1, next_width, next_height, clear, @triangles)
+          else:
+            invalid(28, content, width, height, clear)
+        Clear(next_clear):
+          if stage == 1:
+            recur(source, following, 2, width, height, next_clear, @triangles)
+          else:
+            invalid(28, content, width, height, clear)
+        TriangleValue(triangle):
+          if stage >= 2:
+            vec.push(@triangles, triangle)
+            recur(source, following, 2, width, height, clear, @triangles)
+          else:
+            invalid(28, content, width, height, clear)
+
+fn parse(source: Bytes, triangles: @Vec[raster_model.Triangle]) -> raster_model.Parse effects[alloc, partial]:
+  process(source, 0, 0, 0, 0, i64.to_u8(0), @triangles)

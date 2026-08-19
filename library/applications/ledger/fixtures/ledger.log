@@ -1,0 +1,8 @@
+open alice 100
+open bob 50
+transfer alice bob 25
+debit bob 100
+credit alice 5
+debit bob 75
+close bob
+open alice 1

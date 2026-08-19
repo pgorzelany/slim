@@ -1,0 +1,37 @@
+module ledger_model
+
+enum Command:
+  Open(I64, I64, I64)
+  Credit(I64, I64, I64)
+  Debit(I64, I64, I64)
+  Transfer(I64, I64, I64, I64, I64)
+  Close(I64, I64)
+
+enum Parsed:
+  Invalid(I64, I64)
+  Valid(Command)
+
+enum Applied:
+  Accepted
+  Rejected(I64)
+
+struct Account:
+  name_start: I64
+  name_end: I64
+  balance: I64
+  open: Bool
+  credits: I64
+  debits: I64
+
+struct Run:
+  valid: Bool
+  code: I64
+  position: I64
+  accepted: I64
+  rejected: I64
+
+struct Word:
+  valid: Bool
+  start: I64
+  end: I64
+  next: I64

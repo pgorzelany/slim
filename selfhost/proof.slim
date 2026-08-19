@@ -1,17 +1,8 @@
 module proof
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let negative: Bool = value < 0
-  if negative:
-    text.append_text(@output, "-")
-    let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, @output)
-  else:
-    text.append_nonnegative_i64(value, @output)
-
 fn emit_rule(node: I64, kind: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (rewrite ")
-  append_i64(node, @output)
+  text.append_i64(node, @output)
   let literal_false: Bool = kind == 1
   let literal_true: Bool = kind == 2
   let literal: Bool = literal_false || literal_true
@@ -82,7 +73,7 @@ fn emit_metric(name: Bytes, value: I64, output: @Vec[U8]) -> Void effects[alloc,
   text.append_text(@output, " (")
   text.append_text(@output, name)
   text.append_text(@output, " ")
-  append_i64(value, @output)
+  text.append_i64(value, @output)
   text.append_text(@output, ")")
 
 fn emit_report(source: Bytes, tokens: Vec[syntax.Token], output: @Vec[U8]) -> Void effects[alloc, partial]:

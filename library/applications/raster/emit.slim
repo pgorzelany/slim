@@ -1,0 +1,27 @@
+module raster_emit
+
+fn append_pixels(pixels: Vec[U8], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= vec.len(pixels):
+    void
+  else:
+    vec.push(@output, vec.get(pixels, index))
+    recur(pixels, index + 1, @output)
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn print_pgm(width: I64, height: I64, pixels: Vec[U8]) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "P5\n")
+  std_text.append_i64(@output, width)
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, height)
+  std_text.append_bytes(@output, "\n255\n")
+  append_pixels(pixels, 0, @output)
+  io.print_bytes(bytes.freeze(^output))

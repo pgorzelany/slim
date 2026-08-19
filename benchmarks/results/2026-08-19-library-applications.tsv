@@ -1,0 +1,15 @@
+# Apple M1 Max, 10 cores, 64 GB; macOS 26.6.1 Darwin 25.6.0 arm64
+# rustc 1.96.0; cargo 1.96.0; Apple clang 21.0.0
+# cargo run --release --bin slim-bench -- applications --quick
+# median of four balanced fresh process samples after warmup; absolute times are tracking evidence, not portable gates
+application	modules	source_bytes	check_us	emit_us	generated_bytes	emit_check_ratio
+api-diff	3	15434	5083	6457	71607	1.270
+http	8	18380	5177	7042	84538	1.360
+ledger	9	25048	6112	8335	117674	1.364
+lz4	6	13952	4414	5746	65666	1.302
+ndjson	9	32617	7433	10685	153978	1.438
+raster	10	21156	5492	7845	105502	1.428
+sat	10	26357	6288	9002	122011	1.431
+source-gen	5	12685	4125	5509	61984	1.336
+standard-library	11	21440	5177	7882	105896	1.523
+std-docs	3	9279	4148	5108	43734	1.231

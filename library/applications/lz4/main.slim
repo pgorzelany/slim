@@ -1,0 +1,34 @@
+module lz4_app
+
+fn run(mode: Bytes, path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input_bytes: Vec[U8] = vec.new()
+  if io.read_file(path, @input_bytes):
+    let input: Bytes = bytes.freeze(^input_bytes)
+    if std_bytes.equal(mode, "compress"):
+      let output: Vec[U8] = vec.new()
+      lz4_codec.compress(input, @output)
+      io.print_bytes(bytes.freeze(^output))
+      0
+    else:
+      if std_bytes.equal(mode, "decompress"):
+        let output: Vec[U8] = vec.new()
+        let result: lz4_model.Result = lz4_codec.decompress(input, 1048576, @output)
+        if result.valid:
+          io.print_bytes(bytes.freeze(^output))
+          0
+        else:
+          lz4_emit.print_error(result.code, result.position)
+          65
+      else:
+        lz4_emit.print_error(2, 0)
+        64
+  else:
+    lz4_emit.print_error(1, 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 3:
+    run(vec.get(args, 1), vec.get(args, 2))
+  else:
+    lz4_emit.print_error(2, 0)
+    64

@@ -1,0 +1,28 @@
+module sat
+
+fn run(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let source: Bytes = bytes.freeze(^input)
+    let literals: Vec[I64] = vec.new()
+    let starts: Vec[I64] = vec.new()
+    let ends: Vec[I64] = vec.new()
+    let parsed: sat_model.Parse = sat_parser.parse(source, @literals, @starts, @ends)
+    if parsed.valid:
+      let assignments: Vec[I64] = vec.new()
+      let solution: sat_model.Solution = sat_solver.solve(literals, starts, ends, parsed.variables, 100000, @assignments)
+      sat_emit.print_solution(solution, assignments, parsed.variables)
+      0
+    else:
+      sat_emit.print_error(parsed.code, parsed.position)
+      65
+  else:
+    sat_emit.print_error(1, 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    run(vec.get(args, 1))
+  else:
+    sat_emit.print_error(2, 0)
+    64

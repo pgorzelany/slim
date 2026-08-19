@@ -1,0 +1,11 @@
+# name	project
+api-diff	library/api-diff.project
+http	library/http.project
+ledger	library/ledger.project
+lz4	library/lz4.project
+ndjson	library/ndjson.project
+raster	library/raster.project
+sat	library/sat.project
+source-gen	library/source-gen.project
+standard-library	library/slim.project
+std-docs	library/std-docs.project

@@ -887,7 +887,7 @@ fn parse_record_members(source: Bytes, lexemes: Vec[Lexeme], index: I64, depth: 
     false
   if same_depth:
     let line: I64 = lexeme_line(lexemes, index)
-    let member: I64 = begin_plain_form(lexemes, index, @tokens)
+    let member: I64 = begin_tagged_form(lexemes, index, 21, @tokens)
     let named: Bool = push_name_lexeme(lexemes, index, @tokens)
     if named:
       let colon: I64 = index + 1
@@ -1414,7 +1414,7 @@ fn emit_make_edges(source: Bytes, lexemes: Vec[Lexeme], nodes: Vec[ExprNode], ed
     let name: I64 = edge.name
     let start: I64 = lexeme_start(lexemes, name)
     let end: I64 = lexeme_end(lexemes, name)
-    begin_span_form(@tokens, 0, start, end)
+    begin_span_form(@tokens, 21, start, end)
     push_span_token(@tokens, 2, 0, start, end)
     emit_expr_node(source, lexemes, nodes, edges, edge.node, @tokens)
     finish_span_form(@tokens, end)
@@ -1448,7 +1448,9 @@ fn emit_expr_node(source: Bytes, lexemes: Vec[Lexeme], nodes: Vec[ExprNode], edg
           let first: ExprEdge = expr_edge(edges, node.first_edge)
           let second: ExprEdge = expr_edge(edges, first.next_edge)
           emit_expr_node(source, lexemes, nodes, edges, first.node, @tokens)
+          let field_token: I64 = vec.len(tokens)
           emit_expr_node(source, lexemes, nodes, edges, second.node, @tokens)
+          set_token_tag(@tokens, field_token, 22)
           finish_span_form(@tokens, end)
         else:
           if kind == 4:
@@ -1456,7 +1458,9 @@ fn emit_expr_node(source: Bytes, lexemes: Vec[Lexeme], nodes: Vec[ExprNode], edg
             push_virtual_token(@tokens, 113, start)
             push_span_token(@tokens, 2, 0, start, end)
             let first: ExprEdge = expr_edge(edges, node.first_edge)
+            let case_token: I64 = vec.len(tokens)
             emit_expr_node(source, lexemes, nodes, edges, first.node, @tokens)
+            set_token_tag(@tokens, case_token, 23)
             emit_expr_edges(source, lexemes, nodes, edges, first.next_edge, @tokens)
             finish_span_form(@tokens, end)
           else:
@@ -1801,8 +1805,12 @@ fn parse_familiar_pattern_bindings(source: Bytes, lexemes: Vec[Lexeme], index: I
 fn parse_familiar_match_arm(source: Bytes, lexemes: Vec[Lexeme], index: I64, depth: I64, tokens: @Vec[Token]) -> Parse effects[alloc, partial]:
   if lexeme_at_indent(lexemes, index, depth):
     let opened: I64 = begin_plain_form(lexemes, index, @tokens)
-    let pattern: Bool = push_name_lexeme(lexemes, index, @tokens)
-    if pattern:
+    let pattern_valid: Bool = lexeme_is_kind(lexemes, index, 0)
+    if pattern_valid:
+      push_tagged_token(@tokens, 2, 23, lexeme_start(lexemes, index), lexeme_end(lexemes, index))
+    else:
+      void
+    if pattern_valid:
       let after_pattern: I64 = index + 1
       let bindings: Parse = if lexeme_is_kind(lexemes, after_pattern, 2):
         parse_familiar_pattern_bindings(source, lexemes, after_pattern, @tokens)
@@ -2019,7 +2027,7 @@ fn parse_familiar_enum_members(source: Bytes, lexemes: Vec[Lexeme], index: I64, 
     false
   if same_depth:
     let line: I64 = lexeme_line(lexemes, index)
-    let member: I64 = begin_plain_form(lexemes, index, @tokens)
+    let member: I64 = begin_tagged_form(lexemes, index, 21, @tokens)
     let named: Bool = push_name_lexeme(lexemes, index, @tokens)
     if named:
       let payload: I64 = index + 1

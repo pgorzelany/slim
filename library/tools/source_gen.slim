@@ -1,0 +1,111 @@
+module source_gen
+
+enum SeedResult:
+  Invalid
+  Value(I64)
+
+struct Program:
+  left: I64
+  right: I64
+  depth: I64
+  choose_left: Bool
+  mutation: I64
+
+fn next_seed(seed: I64) -> I64 effects[partial]:
+  ((seed * 48271) + 1) % 2147483647
+
+fn parse_seed(source: Bytes) -> SeedResult effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, 0, bytes.len(source))
+  match parsed:
+    Invalid(index):
+      if index < 0:
+        SeedResult::Invalid()
+      else:
+        SeedResult::Invalid()
+    Overflow(index):
+      if index < 0:
+        SeedResult::Invalid()
+      else:
+        SeedResult::Invalid()
+    Value(value, next):
+      if (next == bytes.len(source)) && ((value >= 0) && (value < 2147483647)):
+        SeedResult::Value(value)
+      else:
+        SeedResult::Invalid()
+
+fn program(seed: I64, mutation: I64) -> Program effects[partial]:
+  let first: I64 = next_seed(seed)
+  let second: I64 = next_seed(first)
+  let third: I64 = next_seed(second)
+  let fourth: I64 = next_seed(third)
+  Program(left: (first % 90) + 10, right: (second % 90) + 10, depth: (third % 9) + 1, choose_left: (fourth % 2) == 0, mutation: mutation)
+
+fn append_pair(value: Program, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "  let pair: Pair = Pair(")
+  if value.mutation == 0:
+    std_text.append_bytes(@output, "left: ")
+    std_text.append_i64(@output, value.left)
+    std_text.append_bytes(@output, ", missing: ")
+  else:
+    std_text.append_bytes(@output, "left: ")
+    std_text.append_i64(@output, value.left)
+    std_text.append_bytes(@output, ", right: ")
+  std_text.append_i64(@output, value.right)
+  std_text.append_bytes(@output, ")\n")
+
+fn append_choice(value: Program, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "  let choice: Choice = ")
+  if value.mutation == 1:
+    std_text.append_bytes(@output, "7\n")
+  else:
+    if value.choose_left:
+      std_text.append_bytes(@output, "Choice::Left(pair.left)\n")
+    else:
+      std_text.append_bytes(@output, "Choice::Right(pair.right)\n")
+
+fn render(value: Program) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "module generated\n\nstruct Pair:\n  left: I64\n  right: I64\n\nenum Choice:\n  Left(I64)\n  Right(I64)\n\nfn sum_to(remaining: I64, total: I64) -> I64 effects[partial]:\n  if remaining <= 0:\n    total\n  else:\n    recur(remaining - 1, total + remaining)\n\nfn select(value: Choice) -> I64:\n  match value:\n    Left(number):\n      number\n")
+  if !(value.mutation == 3):
+    std_text.append_bytes(@output, "    Right(number):\n      number\n")
+  else:
+    void
+  std_text.append_bytes(@output, "\nfn main(args: Vec[Bytes]) -> I64")
+  if value.mutation == 2:
+    std_text.append_bytes(@output, ":\n")
+  else:
+    std_text.append_bytes(@output, " effects[io, partial]:\n")
+  append_pair(value, @output)
+  append_choice(value, @output)
+  std_text.append_bytes(@output, "  let answer: I64 = select(choice) + sum_to(")
+  std_text.append_i64(@output, value.depth)
+  std_text.append_bytes(@output, ", 0)\n  io.print_i64(answer)\n  io.println(\"\")\n  if vec.len(args) >= 0:\n    0\n  else:\n    1\n")
+  bytes.freeze(^output)
+
+fn emit(mode: Bytes, seed: I64) -> I64 effects[alloc, io, partial]:
+  let mutation: I64 = if std_bytes.equal(mode, "valid"):
+    -1
+  else:
+    if std_bytes.equal(mode, "mutant"):
+      seed % 4
+    else:
+      -2
+  if mutation >= -1:
+    io.print_bytes(render(program(seed, mutation)))
+    0
+  else:
+    io.println("usage: slim-source-gen valid|mutant SEED")
+    64
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 3:
+    let parsed: SeedResult = parse_seed(vec.get(args, 2))
+    match parsed:
+      Invalid:
+        io.println("source-gen: seed must be in 0..2147483646")
+        65
+      Value(seed):
+        emit(vec.get(args, 1), seed)
+  else:
+    io.println("usage: slim-source-gen valid|mutant SEED")
+    64

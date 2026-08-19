@@ -1,0 +1,29 @@
+module std_span
+
+struct Span:
+  start: I64
+  end: I64
+
+enum CheckedSpan:
+  Invalid
+  Valid(Span)
+
+fn valid(span: Span, limit: I64) -> Bool:
+  let nonnegative: Bool = (span.start >= 0) && (span.end >= span.start)
+  nonnegative && (span.end <= limit)
+
+fn checked(start: I64, end: I64, limit: I64) -> CheckedSpan:
+  let candidate: Span = Span(start: start, end: end)
+  if valid(candidate, limit):
+    CheckedSpan::Valid(candidate)
+  else:
+    CheckedSpan::Invalid()
+
+fn length(span: Span) -> I64 effects[partial]:
+  span.end - span.start
+
+fn empty(span: Span) -> Bool:
+  span.start == span.end
+
+fn contains(span: Span, position: I64) -> Bool:
+  (position >= span.start) && (position < span.end)

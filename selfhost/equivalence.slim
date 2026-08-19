@@ -1,14 +1,5 @@
 module equivalence
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let negative: Bool = value < 0
-  if negative:
-    text.append_text(@output, "-")
-    let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, @output)
-  else:
-    text.append_nonnegative_i64(value, @output)
-
 fn find_subject(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
@@ -435,7 +426,7 @@ fn append_case_values(domain: I64, mask: I64, position: I64, count: I64, output:
   let u8_domain: Bool = domain == 2
   if u8_domain:
     text.append_text(@output, " ")
-    append_i64(mask, @output)
+    text.append_i64(mask, @output)
   else:
     let done: Bool = position >= count
     if done:
@@ -498,18 +489,18 @@ fn emit_domain(domain: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
 
 fn emit_costs(left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (cost-model expression-tokens-v1) (left-cost ")
-  append_i64(left_cost, @output)
+  text.append_i64(left_cost, @output)
   text.append_text(@output, ") (right-cost ")
-  append_i64(right_cost, @output)
+  text.append_i64(right_cost, @output)
   text.append_text(@output, ")")
 
 fn emit_equivalent(domain: I64, cases: I64, accepted: I64, left_cost: I64, right_cost: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "(equivalence 2 (status equivalent) (domain exact) (domain-kind ")
   emit_domain(domain, @output)
   text.append_text(@output, ") (cases ")
-  append_i64(cases, @output)
+  text.append_i64(cases, @output)
   text.append_text(@output, ") (accepted-states ")
-  append_i64(accepted, @output)
+  text.append_i64(accepted, @output)
   text.append_text(@output, ")")
   emit_costs(left_cost, right_cost, @output)
   text.append_text(@output, ")\n")
@@ -518,9 +509,9 @@ fn emit_different(domain: I64, mask: I64, count: I64, left: I64, right: I64, lef
   text.append_text(@output, "(equivalence 2 (status different) (domain exact) (domain-kind ")
   emit_domain(domain, @output)
   text.append_text(@output, ") (left-accepted-states ")
-  append_i64(left_accepted, @output)
+  text.append_i64(left_accepted, @output)
   text.append_text(@output, ") (right-accepted-states ")
-  append_i64(right_accepted, @output)
+  text.append_i64(right_accepted, @output)
   text.append_text(@output, ") (counterexample (inputs")
   append_case_values(domain, mask, 0, count, @output)
   text.append_text(@output, ") (left ")

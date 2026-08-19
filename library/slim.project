@@ -1,0 +1,13 @@
+(project 1
+  (entry std_tests)
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value hex_value is_alpha is_alphanumeric is_digit is_hex_digit is_lower is_space is_upper))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_cursor "experimental/cursor.slim" (imports) (exports CheckedCursor Cursor Read checked done read remaining valid))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64 parse_u8))
+  (module std_i64 "experimental/i64.slim" (imports) (exports Absolute absolute clamp maximum minimum))
+  (module std_i64_vec "experimental/i64_vec.slim" (imports) (exports contains filled push_at top))
+  (module std_span "experimental/span.slim" (imports) (exports CheckedSpan Span checked contains empty length valid))
+  (module std_test "experimental/test.slim" (imports std_bytes) (exports Stats check equal_bytes equal_i64 finish start))
+  (module std_tests "tests/main.slim" (imports std_ascii std_bytes std_cursor std_decimal std_i64 std_i64_vec std_span std_test std_text std_u8_vec) (exports))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span))
+  (module std_u8_vec "experimental/u8_vec.slim" (imports) (exports count filled push_at sum)))

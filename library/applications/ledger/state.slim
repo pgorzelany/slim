@@ -1,0 +1,167 @@
+module ledger_state
+
+fn names_equal(source: Bytes, account: ledger_model.Account, start: I64, end: I64) -> Bool effects[partial]:
+  let left_length: I64 = account.name_end - account.name_start
+  let right_length: I64 = end - start
+  if left_length == right_length:
+    std_bytes.range_equal(source, account.name_start, source, start, left_length)
+  else:
+    false
+
+fn find_account(source: Bytes, accounts: Vec[ledger_model.Account], start: I64, end: I64, index: I64) -> I64 effects[partial]:
+  if index == vec.len(accounts):
+    -1
+  else:
+    if names_equal(source, vec.get(accounts, index), start, end):
+      index
+    else:
+      recur(source, accounts, start, end, index + 1)
+
+fn accepted() -> ledger_model.Applied:
+  ledger_model.Applied::Accepted()
+
+fn rejected(code: I64) -> ledger_model.Applied:
+  ledger_model.Applied::Rejected(code)
+
+fn open_account(source: Bytes, start: I64, end: I64, balance: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[alloc, partial]:
+  if balance < 0:
+    rejected(31)
+  else:
+    if find_account(source, accounts, start, end, 0) >= 0:
+      rejected(32)
+    else:
+      let account: ledger_model.Account = ledger_model.Account(name_start: start, name_end: end, balance: balance, open: true, credits: 0, debits: 0)
+      vec.push(@accounts, account)
+      accepted()
+
+fn credit_account(source: Bytes, start: I64, end: I64, amount: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
+  let found: I64 = find_account(source, accounts, start, end, 0)
+  if (found < 0) || (amount <= 0):
+    rejected(33)
+  else:
+    let account: ledger_model.Account = vec.get(accounts, found)
+    if !account.open:
+      rejected(34)
+    else:
+      let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance + amount, open: true, credits: account.credits + 1, debits: account.debits)
+      vec.set(@accounts, found, next)
+      accepted()
+
+fn debit_account(source: Bytes, start: I64, end: I64, amount: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
+  let found: I64 = find_account(source, accounts, start, end, 0)
+  if (found < 0) || (amount <= 0):
+    rejected(35)
+  else:
+    let account: ledger_model.Account = vec.get(accounts, found)
+    if !account.open:
+      rejected(36)
+    else:
+      if account.balance < amount:
+        rejected(37)
+      else:
+        let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance - amount, open: true, credits: account.credits, debits: account.debits + 1)
+        vec.set(@accounts, found, next)
+        accepted()
+
+fn transfer(source: Bytes, from_start: I64, from_end: I64, to_start: I64, to_end: I64, amount: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
+  let from_index: I64 = find_account(source, accounts, from_start, from_end, 0)
+  let to_index: I64 = find_account(source, accounts, to_start, to_end, 0)
+  if (from_index < 0) || ((to_index < 0) || (amount <= 0)):
+    rejected(38)
+  else:
+    if from_index == to_index:
+      rejected(39)
+    else:
+      let from: ledger_model.Account = vec.get(accounts, from_index)
+      let to: ledger_model.Account = vec.get(accounts, to_index)
+      let usable: Bool = from.open && (to.open && (from.balance >= amount))
+      if !usable:
+        rejected(40)
+      else:
+        let next_from: ledger_model.Account = ledger_model.Account(name_start: from.name_start, name_end: from.name_end, balance: from.balance - amount, open: true, credits: from.credits, debits: from.debits + 1)
+        let next_to: ledger_model.Account = ledger_model.Account(name_start: to.name_start, name_end: to.name_end, balance: to.balance + amount, open: true, credits: to.credits + 1, debits: to.debits)
+        vec.set(@accounts, from_index, next_from)
+        vec.set(@accounts, to_index, next_to)
+        accepted()
+
+fn close_account(source: Bytes, start: I64, end: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
+  let found: I64 = find_account(source, accounts, start, end, 0)
+  if found < 0:
+    rejected(41)
+  else:
+    let account: ledger_model.Account = vec.get(accounts, found)
+    if !account.open:
+      rejected(42)
+    else:
+      if account.balance > 0:
+        rejected(43)
+      else:
+        let closed: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance, open: false, credits: account.credits, debits: account.debits)
+        vec.set(@accounts, found, closed)
+        accepted()
+
+fn apply(source: Bytes, command: ledger_model.Command, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[alloc, partial]:
+  match command:
+    Open(start, end, balance):
+      open_account(source, start, end, balance, @accounts)
+    Credit(start, end, amount):
+      credit_account(source, start, end, amount, @accounts)
+    Debit(start, end, amount):
+      debit_account(source, start, end, amount, @accounts)
+    Transfer(from_start, from_end, to_start, to_end, amount):
+      transfer(source, from_start, from_end, to_start, to_end, amount, @accounts)
+    Close(start, end):
+      close_account(source, start, end, @accounts)
+
+fn next_line(source: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  let newline: U8 = bytes.get("\n", 0)
+  let found: I64 = std_bytes.find_byte(source, newline, index, length)
+  if found < 0:
+    length
+  else:
+    found
+
+fn trim_return(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if end > start:
+    if u8.to_i64(bytes.get(source, end - 1)) == 13:
+      end - 1
+    else:
+      end
+  else:
+    end
+
+fn process(source: Bytes, index: I64, accounts: @Vec[ledger_model.Account], accepted_count: I64, rejected_count: I64) -> ledger_model.Run effects[alloc, partial]:
+  let length: I64 = bytes.len(source)
+  if index >= length:
+    ledger_model.Run(valid: true, code: 0, position: index, accepted: accepted_count, rejected: rejected_count)
+  else:
+    let raw_end: I64 = next_line(source, index, length)
+    let end: I64 = trim_return(source, index, raw_end)
+    let following: I64 = if raw_end < length:
+      raw_end + 1
+    else:
+      length
+    if end == index:
+      recur(source, following, @accounts, accepted_count, rejected_count)
+    else:
+      let parsed: ledger_model.Parsed = ledger_parser.parse_line(source, index, end)
+      match parsed:
+        Invalid(code, position):
+          ledger_model.Run(valid: false, code: code, position: position, accepted: accepted_count, rejected: rejected_count)
+        Valid(command):
+          let result: ledger_model.Applied = apply(source, command, @accounts)
+          match result:
+            Accepted:
+              recur(source, following, @accounts, accepted_count + 1, rejected_count)
+            Rejected(code):
+              if code >= 0:
+                recur(source, following, @accounts, accepted_count, rejected_count + 1)
+              else:
+                ledger_model.Run(valid: false, code: code, position: index, accepted: accepted_count, rejected: rejected_count)
+
+fn total(accounts: Vec[ledger_model.Account], index: I64, value: I64) -> I64 effects[partial]:
+  if index == vec.len(accounts):
+    value
+  else:
+    let account: ledger_model.Account = vec.get(accounts, index)
+    recur(accounts, index + 1, value + account.balance)

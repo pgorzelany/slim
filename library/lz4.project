@@ -1,0 +1,8 @@
+(project 1
+  (entry lz4_app)
+  (module lz4_app "applications/lz4/main.slim" (imports lz4_codec lz4_emit lz4_model std_bytes) (exports))
+  (module lz4_codec "applications/lz4/codec.slim" (imports lz4_model) (exports compress decompress))
+  (module lz4_emit "applications/lz4/emit.slim" (imports std_text) (exports print_error))
+  (module lz4_model "applications/lz4/model.slim" (imports) (exports Length Match Result))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span)))

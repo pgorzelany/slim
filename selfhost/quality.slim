@@ -184,15 +184,6 @@ fn analyze_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Me
   else:
     add_node(zero(), 0, 0, 0, 0, 0, 0, 0)
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let negative: Bool = value < 0
-  if negative:
-    text.append_text(@output, "-")
-    let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, @output)
-  else:
-    text.append_nonnegative_i64(value, @output)
-
 fn effect_present(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: Bytes) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
@@ -210,7 +201,7 @@ fn emit_metric(name: Bytes, value: I64, output: @Vec[U8]) -> Void effects[alloc,
   text.append_text(@output, " (")
   text.append_text(@output, name)
   text.append_text(@output, " ")
-  append_i64(value, @output)
+  text.append_i64(value, @output)
   text.append_text(@output, ")")
 
 fn emit_totality(metrics: Metrics, range_total: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -231,7 +222,7 @@ fn emit_exact_cost(name: Bytes, model: Bytes, value: I64, output: @Vec[U8]) -> V
   text.append_text(@output, " (model ")
   text.append_text(@output, model)
   text.append_text(@output, ") (guarantee exact) (value ")
-  append_i64(value, @output)
+  text.append_i64(value, @output)
   text.append_text(@output, "))")
 
 fn emit_unknown_cost(name: Bytes, model: Bytes, reason: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -275,7 +266,7 @@ fn emit_function_metrics(source: Bytes, tokens: Vec[syntax.Token], range_facts: 
   let io_effect: Bool = effect_present(source, tokens, first_effect, "io")
   let partial_effect: Bool = effect_present(source, tokens, first_effect, "partial")
   text.append_text(@output, " (function-quality ")
-  append_i64(item, @output)
+  text.append_i64(item, @output)
   text.append_text(@output, " ")
   text.append_token(source, tokens, name, @output)
   text.append_text(@output, " (guarantee exact) (effects")
@@ -394,7 +385,7 @@ fn emit_variant_terms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, out
     let first_type: I64 = syntax.ast_member_value(cursor)
     let bits: I64 = variant_payload_bits(source, tokens, first_type, 0)
     text.append_text(@output, " (pow2 ")
-    append_i64(bits, @output)
+    text.append_i64(bits, @output)
     text.append_text(@output, ")")
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, next, @output)
@@ -407,7 +398,7 @@ fn emit_record_state(source: Bytes, tokens: Vec[syntax.Token], first: I64, outpu
   let known: Bool = bits >= 0
   if known:
     text.append_text(@output, " (guarantee exact) (cardinality (pow2 ")
-    append_i64(bits, @output)
+    text.append_i64(bits, @output)
     text.append_text(@output, "))")
   else:
     emit_unknown_state(@output)

@@ -1,0 +1,3 @@
+open alice 10
+open bob 0
+transfer alice bob 20

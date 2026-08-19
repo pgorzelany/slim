@@ -1,0 +1,1 @@
+(interface 3 sample (struct Item ((value I64))) (fn added ((copy Bool)) Bool (effects)) (fn keep ((copy I64)) I64 (effects)) (fn update ((copy I64)) I64 (effects)))

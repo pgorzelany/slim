@@ -13,6 +13,7 @@ file-input	run	conformance/pass/file_input.slim	parity	exit=0;stdout=OK\n;stderr
 monotonic-clock	run	conformance/pass/monotonic_clock.slim	parity	exit=0;stdout=OK\n;stderr=	builtin:io.monotonic_ms,effect:io
 tcp-exchange	check-pass	conformance/pass/tcp_exchange.slim	parity	-	builtin:io.tcp_exchange,effect:alloc,effect:io,host:bounded-network
 structured-parallel	run	conformance/pass/structured_parallel.slim	parity	exit=0;stdout=OK\n;stderr=	syntax:parallel,parallel:explicit-region,parallel:race-free,parallel:deadlock-free
+unused-function	run	conformance/pass/unused_function.slim	parity	exit=0;stdout=OK\n;stderr=	backend:unused-function
 data	run	conformance/pass/data.slim	parity	exit=0;stdout=42\n;stderr=	syntax:struct,syntax:parenthesized-fields,syntax:dot,syntax:enum,syntax:double-colon,syntax:match,syntax:var,syntax:assignment
 familiar-syntax	run	conformance/pass/familiar_syntax.slim	parity	exit=0;stdout=;stderr=	syntax:struct,syntax:parenthesized-fields,syntax:dot,syntax:enum,syntax:double-colon,syntax:match,syntax:if,syntax:var,syntax:assignment,syntax:comma,syntax:operators,type:Void,semantics:left-to-right
 typed-temporaries	run	conformance/pass/typed_temporaries.slim	parity	exit=0;stdout=42\n;stderr=	backend:typed-fact-temporaries,backend:aggregate-links,syntax:parenthesized-fields,syntax:enum-case,syntax:match

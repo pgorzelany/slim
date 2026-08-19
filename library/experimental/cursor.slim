@@ -1,0 +1,42 @@
+module std_cursor
+
+struct Cursor:
+  position: I64
+  end: I64
+
+enum CheckedCursor:
+  Invalid
+  Valid(Cursor)
+
+enum Read:
+  End
+  Invalid
+  Value(U8, Cursor)
+
+fn valid(cursor: Cursor, limit: I64) -> Bool:
+  let nonnegative: Bool = (cursor.position >= 0) && (cursor.end >= cursor.position)
+  nonnegative && (cursor.end <= limit)
+
+fn checked(start: I64, end: I64, limit: I64) -> CheckedCursor:
+  let cursor: Cursor = Cursor(position: start, end: end)
+  if valid(cursor, limit):
+    CheckedCursor::Valid(cursor)
+  else:
+    CheckedCursor::Invalid()
+
+fn done(cursor: Cursor) -> Bool:
+  cursor.position == cursor.end
+
+fn remaining(cursor: Cursor) -> I64 effects[partial]:
+  cursor.end - cursor.position
+
+fn read(source: Bytes, cursor: Cursor) -> Read effects[partial]:
+  if !valid(cursor, bytes.len(source)):
+    Read::Invalid()
+  else:
+    if done(cursor):
+      Read::End()
+    else:
+      let byte: U8 = bytes.get(source, cursor.position)
+      let next: Cursor = Cursor(position: cursor.position + 1, end: cursor.end)
+      Read::Value(byte, next)

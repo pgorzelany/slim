@@ -1,0 +1,35 @@
+module std_test
+
+struct Stats:
+  passed: I64
+  failed: I64
+
+fn start() -> Stats:
+  Stats(passed: 0, failed: 0)
+
+fn check(name: Bytes, condition: Bool, stats: Stats) -> Stats effects[io, partial]:
+  if condition:
+    io.print_bytes("ok ")
+    io.println(name)
+    Stats(passed: stats.passed + 1, failed: stats.failed)
+  else:
+    io.print_bytes("not ok ")
+    io.println(name)
+    Stats(passed: stats.passed, failed: stats.failed + 1)
+
+fn equal_i64(name: Bytes, actual: I64, expected: I64, stats: Stats) -> Stats effects[io, partial]:
+  check(name, actual == expected, stats)
+
+fn equal_bytes(name: Bytes, actual: Bytes, expected: Bytes, stats: Stats) -> Stats effects[io, partial]:
+  check(name, std_bytes.equal(actual, expected), stats)
+
+fn finish(stats: Stats) -> I64 effects[io]:
+  io.print_bytes("passed ")
+  io.print_i64(stats.passed)
+  io.print_bytes(" failed ")
+  io.print_i64(stats.failed)
+  io.println("")
+  if stats.failed == 0:
+    0
+  else:
+    1

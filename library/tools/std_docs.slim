@@ -1,0 +1,138 @@
+module std_docs
+
+struct Atom:
+  valid: Bool
+  start: I64
+  end: I64
+  next: I64
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn skip_space(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || ((code == 9) || ((code == 10) || (code == 13))):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn atom_end(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    let boundary: Bool = (code == 32) || ((code == 9) || ((code == 10) || ((code == 13) || ((code == 40) || (code == 41)))))
+    if boundary:
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn next_atom(source: Bytes, index: I64, end: I64) -> Atom effects[partial]:
+  let start: I64 = skip_space(source, index, end)
+  let finish: I64 = atom_end(source, start, end)
+  Atom(valid: finish > start, start: start, end: finish, next: finish)
+
+fn atom_is(source: Bytes, atom: Atom, expected: Bytes) -> Bool effects[partial]:
+  let length: I64 = atom.end - atom.start
+  atom.valid && ((length == bytes.len(expected)) && std_bytes.range_equal(source, atom.start, expected, 0, length))
+
+fn form_end(source: Bytes, index: I64, end: I64, depth: I64) -> I64 effects[partial]:
+  if index >= end:
+    -1
+  else:
+    let code: I64 = code_at(source, index)
+    let next_depth: I64 = if code == 40:
+      depth + 1
+    else:
+      if code == 41:
+        depth - 1
+      else:
+        depth
+    let next: I64 = index + 1
+    if next_depth == 0:
+      next
+    else:
+      if next_depth < 0:
+        -1
+      else:
+        recur(source, next, end, next_depth)
+
+fn append_declarations(source: Bytes, index: I64, outer_end: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let cursor: I64 = skip_space(source, index, outer_end)
+  if cursor >= outer_end:
+    false
+  else:
+    let code: I64 = code_at(source, cursor)
+    if code == 41:
+      true
+    else:
+      if !(code == 40):
+        false
+      else:
+        let finish: I64 = form_end(source, cursor, outer_end, 0)
+        if finish < 0:
+          false
+        else:
+          let appended: Bool = std_text.append_span(@output, source, cursor, finish)
+          if appended:
+            std_text.append_bytes(@output, "\n")
+            recur(source, finish, outer_end, @output)
+          else:
+            false
+
+fn append_interface(path: Bytes, output: @Vec[U8]) -> Bool effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if !io.read_file(path, @input):
+    false
+  else:
+    let source: Bytes = bytes.freeze(^input)
+    let length: I64 = bytes.len(source)
+    let first: I64 = skip_space(source, 0, length)
+    if (first >= length) || !(code_at(source, first) == 40):
+      false
+    else:
+      let head: Atom = next_atom(source, first + 1, length)
+      let version: Atom = next_atom(source, head.next, length)
+      let module_name: Atom = next_atom(source, version.next, length)
+      let header_valid: Bool = atom_is(source, head, "interface") && (atom_is(source, version, "3") && module_name.valid)
+      if !header_valid:
+        false
+      else:
+        std_text.append_bytes(@output, "## `")
+        let named: Bool = std_text.append_span(@output, source, module_name.start, module_name.end)
+        if !named:
+          false
+        else:
+          std_text.append_bytes(@output, "`\n\n```slim-interface\n")
+          let declarations: Bool = append_declarations(source, module_name.next, length, @output)
+          if declarations:
+            std_text.append_bytes(@output, "```\n")
+            true
+          else:
+            false
+
+fn append_all(args: Vec[Bytes], index: I64, output: @Vec[U8]) -> Bool effects[alloc, io, partial]:
+  if index >= vec.len(args):
+    true
+  else:
+    if index > 1:
+      std_text.append_bytes(@output, "\n")
+    else:
+      void
+    if append_interface(vec.get(args, index), @output):
+      recur(args, index + 1, @output)
+    else:
+      false
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "# SLIM experimental library reference\n\nGenerated from canonical interface schema 3. Do not edit by hand.\n\n")
+  if append_all(args, 1, @output):
+    io.print_bytes(bytes.freeze(^output))
+    0
+  else:
+    io.print_bytes("std-docs: invalid interface\n")
+    65
