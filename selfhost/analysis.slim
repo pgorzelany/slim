@@ -213,15 +213,6 @@ fn analyze_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64, facts
   else:
     record_use(source, tokens, @facts, expr, expr)
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let negative: Bool = value < 0
-  if negative:
-    text.append_text(@output, "-")
-    let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, @output)
-  else:
-    text.append_nonnegative_i64(value, @output)
-
 fn append_ownership(ownership: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let copy: Bool = ownership == 0
   if copy:
@@ -247,18 +238,18 @@ fn append_ownership(ownership: I64, output: @Vec[U8]) -> Void effects[alloc, par
 
 fn emit_scope_and_usage(fact: BindingFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, ") (scope-end ")
-  append_i64(fact.scope_end, @output)
+  text.append_i64(fact.scope_end, @output)
   text.append_text(@output, ") (uses ")
-  append_i64(fact.uses, @output)
+  text.append_i64(fact.uses, @output)
   text.append_text(@output, ") (last-use ")
-  append_i64(fact.last_use, @output)
+  text.append_i64(fact.last_use, @output)
   text.append_text(@output, ") (dependencies ")
-  append_i64(fact.dependencies, @output)
+  text.append_i64(fact.dependencies, @output)
   text.append_text(@output, "))")
 
 fn emit_binding(source: Bytes, tokens: Vec[syntax.Token], fact: BindingFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (binding ")
-  append_i64(fact.id, @output)
+  text.append_i64(fact.id, @output)
   text.append_text(@output, " ")
   text.append_token(source, tokens, fact.name, @output)
   text.append_text(@output, " (type ")
@@ -309,15 +300,15 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @V
   let dependencies: I64 = dependency_count(facts, 0, 0)
   let truncated: Bool = count >= 64
   text.append_text(@output, " (function ")
-  append_i64(item, @output)
+  text.append_i64(item, @output)
   text.append_text(@output, " ")
   text.append_token(source, tokens, name, @output)
   text.append_text(@output, " (declared-effects ")
   reduce.emit_original_form(source, tokens, effects, @output)
   text.append_text(@output, ") (body-node ")
-  append_i64(body, @output)
+  text.append_i64(body, @output)
   text.append_text(@output, ") (dependencies ")
-  append_i64(dependencies, @output)
+  text.append_i64(dependencies, @output)
   text.append_text(@output, ") (facts-truncated ")
   if truncated:
     text.append_text(@output, "true")
@@ -352,7 +343,7 @@ fn emit_module(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing
   text.append_text(@output, "(analysis 7 (module ")
   text.append_token(source, tokens, name, @output)
   text.append_text(@output, ") (tokens ")
-  append_i64(token_count, @output)
+  text.append_i64(token_count, @output)
   text.append_text(@output, ") (fact-limit 64)")
   ranges.emit_module_facts(source, tokens, range_view, @output)
   quality.emit_module_facts(source, tokens, range_facts, @output)
@@ -428,7 +419,7 @@ fn emit_ownership_pressure(facts: Vec[BindingFact], truncated: Bool, output: @Ve
   else:
     text.append_text(@output, "exact")
   text.append_text(@output, ") (owned-bindings ")
-  append_i64(owned, @output)
+  text.append_i64(owned, @output)
   text.append_text(@output, ") (max-live-owned ")
-  append_i64(maximum, @output)
+  text.append_i64(maximum, @output)
   text.append_text(@output, "))")

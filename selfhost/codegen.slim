@@ -762,7 +762,7 @@ fn emit_prototype(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @
   let name: I64 = syntax.ast_item_name(item)
   let params: I64 = syntax.ast_function_parameters(item)
   let return_type: I64 = syntax.ast_function_return_type(tokens, item)
-  text.append_text(@output, "static ")
+  text.append_text(@output, "static SLIM_UNUSED_FUNCTION ")
   emit_type(source, tokens, return_type, @output)
   text.append_text(@output, " ")
   emit_function_name(source, tokens, name, @output)
@@ -1779,7 +1779,7 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fac
   let effects: I64 = syntax.ast_function_effects(tokens, item)
   let body: I64 = syntax.ast_function_body(tokens, item)
   let body_end: I64 = syntax.ast_next(tokens, body)
-  text.append_text(@output, "static ")
+  text.append_text(@output, "static SLIM_UNUSED_FUNCTION ")
   emit_type(source, tokens, return_type, @output)
   text.append_text(@output, " ")
   emit_function_name(source, tokens, name, @output)
@@ -1863,7 +1863,7 @@ fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact
     text.append_text(@output, "#define SLIM_PARALLEL 1\n")
   else:
     void
-  text.append_text(@output, "/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");\n#include <string.h>\n\n")
+  text.append_text(@output, "/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");\n#include <string.h>\n#if defined(__GNUC__) || defined(__clang__)\n#define SLIM_UNUSED_FUNCTION __attribute__((unused))\n#else\n#define SLIM_UNUSED_FUNCTION\n#endif\n\n")
   let module_items: I64 = syntax.ast_module_items(0)
   emit_forward_types(source, tokens, module_items, @output)
   emit_data_items(source, tokens, module_items, @output)

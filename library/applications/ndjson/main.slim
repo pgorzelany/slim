@@ -1,0 +1,26 @@
+module ndjson
+
+fn run(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let source: Bytes = bytes.freeze(^input)
+    let nodes: Arena[json_model.Node] = arena.new()
+    let edges: Vec[json_model.Edge] = vec.new()
+    let devices: Vec[telemetry.Device] = vec.new()
+    let stream: telemetry.Stream = telemetry.process(source, 0, @nodes, @edges, @devices)
+    if stream.valid:
+      telemetry_emit.print_devices(source, devices)
+      0
+    else:
+      telemetry_emit.print_error(stream.code, stream.position)
+      1
+  else:
+    io.println("ndjson: input read failed")
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) >= 2:
+    run(vec.get(args, 1))
+  else:
+    io.println("usage: slim-ndjson INPUT")
+    64

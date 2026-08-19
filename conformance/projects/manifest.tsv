@@ -2,6 +2,7 @@
 project-check	check-pass	conformance/projects/basic/slim.project	parity	-	project:manifest-shape,project:module-identity,project:entry,project:imports,project:selfhost-classification,syntax:qualified-reference
 project-interfaces	interfaces	conformance/projects/basic/slim.project	parity	-	project:interfaces
 project-run	run	conformance/projects/basic/slim.project	parity	exit=0;stdout=41\n;stderr=	project:runtime
+project-member-name-collision	run	conformance/projects/member-collision/slim.project	parity	exit=0;stdout=6\n;stderr=	project:qualification,syntax:record-fields,syntax:record-projection,syntax:variant-case
 project-emit	emit	conformance/projects/basic/slim.project	parity	-	project:determinism
 project-format	format	conformance/projects/basic/slim.project	parity	-	project:format
 project-relocate	relocate	conformance/projects/basic/slim.project	parity	-	project:relocation

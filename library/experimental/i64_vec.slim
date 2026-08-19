@@ -1,0 +1,27 @@
+module std_i64_vec
+
+fn contains(values: Vec[I64], length: I64, target: I64, index: I64) -> Bool effects[partial]:
+  if index >= length:
+    false
+  else:
+    if vec.get(values, index) == target:
+      true
+    else:
+      recur(values, length, target, index + 1)
+
+fn filled(length: I64, value: I64, index: I64, output: @Vec[I64]) -> Void effects[alloc]:
+  if index >= length:
+    void
+  else:
+    vec.push(@output, value)
+    recur(length, value, index + 1, @output)
+
+fn push_at(values: @Vec[I64], length: I64, value: I64) -> I64 effects[alloc, partial]:
+  if length < vec.len(values):
+    vec.set(@values, length, value)
+  else:
+    vec.push(@values, value)
+  length + 1
+
+fn top(values: Vec[I64], length: I64) -> I64 effects[partial]:
+  vec.get(values, length - 1)

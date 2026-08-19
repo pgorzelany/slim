@@ -21,6 +21,7 @@ fn main() {
         "reduction" => run_reduction(),
         "incremental" => run_incremental(),
         "project" => run_project(),
+        "applications" => run_applications(),
         "compare" => run_comparison(),
         "parallelism" => run_parallelism_evidence(),
         "resources" => run_resource_evidence(),
@@ -29,7 +30,7 @@ fn main() {
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -734,6 +735,139 @@ fn run_project() {
         }
         enforce_scaling_series("project-emit-exponent", graph.name(), &serial_series);
     }
+}
+
+fn run_applications() {
+    let quick = has_quick_flag();
+    let samples = if quick { 3 } else { 7 };
+    let rounds = balanced_round_count(samples);
+    let compiler = selfhost_compiler();
+    println!(
+        "application\tmodules\tsource_bytes\tcheck_us\temit_us\tgenerated_bytes\temit_check_ratio"
+    );
+    for (application, manifest) in library_application_projects() {
+        let (modules, source_bytes) = project_source_measurements(&manifest);
+        require_clean_output(
+            compiler_output(&compiler, "check", &manifest),
+            "application check warmup",
+        );
+        let emitted = require_transform_output(
+            Command::new(&compiler)
+                .arg(&manifest)
+                .output()
+                .expect("run application emit warmup"),
+            "application emit warmup",
+        );
+        let mut check_times = Vec::with_capacity(rounds);
+        let mut emit_times = Vec::with_capacity(rounds);
+        for round in 0..rounds {
+            if round % 2 == 0 {
+                measure_application_check(&compiler, &manifest, &mut check_times);
+                measure_application_emit(&compiler, &manifest, &emitted, &mut emit_times);
+            } else {
+                measure_application_emit(&compiler, &manifest, &emitted, &mut emit_times);
+                measure_application_check(&compiler, &manifest, &mut check_times);
+            }
+        }
+        let check = median_duration(&mut check_times);
+        let emit = median_duration(&mut emit_times);
+        let ratio = emit.as_nanos() as f64 / check.as_nanos() as f64;
+        println!(
+            "{application}\t{modules}\t{source_bytes}\t{}\t{}\t{}\t{ratio:.3}",
+            check.as_micros(),
+            emit.as_micros(),
+            emitted.len()
+        );
+        let limit = performance_budget("application-emit-check-ratio", &application);
+        if ratio > limit {
+            eprintln!(
+                "performance gate: application-emit-check-ratio/{application} {ratio:.3} exceeds {limit:.3}"
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
+fn measure_application_check(compiler: &Path, manifest: &Path, times: &mut Vec<Duration>) {
+    let (elapsed, output) = timed_output(
+        Command::new(compiler).arg("check").arg(manifest),
+        "application check",
+    );
+    require_clean_output(output, "application check");
+    times.push(elapsed);
+}
+
+fn measure_application_emit(
+    compiler: &Path,
+    manifest: &Path,
+    expected: &[u8],
+    times: &mut Vec<Duration>,
+) {
+    let (elapsed, output) = timed_output(Command::new(compiler).arg(manifest), "application emit");
+    let generated = require_transform_output(output, "application emit");
+    assert_eq!(
+        generated, expected,
+        "application emit must be deterministic"
+    );
+    black_box(&generated);
+    times.push(elapsed);
+}
+
+fn library_application_projects() -> Vec<(String, PathBuf)> {
+    let root = repository_root();
+    let contents = fs::read_to_string(root.join("library/corpus.tsv"))
+        .expect("read library application corpus");
+    let mut projects = Vec::new();
+    let mut names = BTreeSet::new();
+    for (line_number, line) in contents.lines().enumerate() {
+        if line.is_empty() || line.starts_with('#') {
+            continue;
+        }
+        let columns: Vec<_> = line.split('\t').collect();
+        assert_eq!(
+            columns.len(),
+            2,
+            "library corpus line {} must have two columns",
+            line_number + 1
+        );
+        assert!(
+            names.insert(columns[0].to_owned()),
+            "duplicate library corpus application {}",
+            columns[0]
+        );
+        let manifest = root.join(columns[1]);
+        assert!(
+            manifest.is_file(),
+            "missing library corpus manifest {}",
+            columns[1]
+        );
+        projects.push((columns[0].to_owned(), manifest));
+    }
+    assert!(
+        !projects.is_empty(),
+        "library application corpus must not be empty"
+    );
+    projects
+}
+
+fn project_source_measurements(manifest: &Path) -> (usize, u64) {
+    let contents = fs::read_to_string(manifest).expect("read application project manifest");
+    let parent = manifest.parent().expect("application manifest parent");
+    let mut modules = 0usize;
+    let mut source_bytes = fs::metadata(manifest)
+        .expect("measure application project manifest")
+        .len();
+    for (index, segment) in contents.split('"').enumerate() {
+        if index % 2 == 1 && segment.ends_with(".slim") {
+            let source = parent.join(segment);
+            source_bytes += fs::metadata(&source)
+                .unwrap_or_else(|_| panic!("measure application source {}", source.display()))
+                .len();
+            modules += 1;
+        }
+    }
+    assert!(modules > 0, "application project must declare modules");
+    (modules, source_bytes)
 }
 
 fn update_series(

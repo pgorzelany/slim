@@ -1,0 +1,12 @@
+(project 1
+  (entry raster_app)
+  (module raster "applications/raster/raster.slim" (imports raster_model) (exports render))
+  (module raster_app "applications/raster/main.slim" (imports raster raster_emit raster_model raster_parser std_u8_vec) (exports))
+  (module raster_emit "applications/raster/emit.slim" (imports std_text) (exports print_error print_pgm))
+  (module raster_model "applications/raster/model.slim" (imports) (exports Line Numbers Parse Triangle Word))
+  (module raster_parser "applications/raster/parser.slim" (imports raster_model std_bytes std_decimal) (exports parse))
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value hex_value is_alpha is_alphanumeric is_digit is_hex_digit is_lower is_space is_upper))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64 parse_u8))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span))
+  (module std_u8_vec "experimental/u8_vec.slim" (imports) (exports count filled push_at sum)))

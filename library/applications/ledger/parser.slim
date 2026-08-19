@@ -1,0 +1,133 @@
+module ledger_parser
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn skip_space(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || (code == 9):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn word_end(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || (code == 9):
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn word(source: Bytes, index: I64, end: I64) -> ledger_model.Word effects[partial]:
+  let start: I64 = skip_space(source, index, end)
+  let finish: I64 = word_end(source, start, end)
+  if finish > start:
+    ledger_model.Word(valid: true, start: start, end: finish, next: finish)
+  else:
+    ledger_model.Word(valid: false, start: start, end: finish, next: finish)
+
+fn word_is(source: Bytes, value: ledger_model.Word, expected: Bytes) -> Bool effects[partial]:
+  let length: I64 = value.end - value.start
+  if length == bytes.len(expected):
+    std_bytes.range_equal(source, value.start, expected, 0, length)
+  else:
+    false
+
+fn invalid(code: I64, position: I64) -> ledger_model.Parsed:
+  ledger_model.Parsed::Invalid(code, position)
+
+fn amount(source: Bytes, value: ledger_model.Word) -> std_decimal.Parsed effects[partial]:
+  std_decimal.parse_i64(source, value.start, value.end)
+
+fn parse_named_amount(source: Bytes, command: I64, index: I64, end: I64) -> ledger_model.Parsed effects[partial]:
+  let name: ledger_model.Word = word(source, index, end)
+  if !name.valid:
+    invalid(21, name.start)
+  else:
+    let amount_word: ledger_model.Word = word(source, name.next, end)
+    if !amount_word.valid:
+      invalid(21, amount_word.start)
+    else:
+      let trailing: I64 = skip_space(source, amount_word.next, end)
+      if trailing < end:
+        invalid(22, trailing)
+      else:
+        let parsed: std_decimal.Parsed = amount(source, amount_word)
+        match parsed:
+          Invalid(position):
+            invalid(23, position)
+          Overflow(position):
+            invalid(24, position)
+          Value(value, next):
+            if next == amount_word.end:
+              if command == 1:
+                ledger_model.Parsed::Valid(ledger_model.Command::Open(name.start, name.end, value))
+              else:
+                if command == 2:
+                  ledger_model.Parsed::Valid(ledger_model.Command::Credit(name.start, name.end, value))
+                else:
+                  ledger_model.Parsed::Valid(ledger_model.Command::Debit(name.start, name.end, value))
+            else:
+              invalid(23, next)
+
+fn parse_transfer(source: Bytes, index: I64, end: I64) -> ledger_model.Parsed effects[partial]:
+  let from: ledger_model.Word = word(source, index, end)
+  let to: ledger_model.Word = word(source, from.next, end)
+  let amount_word: ledger_model.Word = word(source, to.next, end)
+  let words_valid: Bool = from.valid && (to.valid && amount_word.valid)
+  if !words_valid:
+    invalid(21, index)
+  else:
+    let trailing: I64 = skip_space(source, amount_word.next, end)
+    if trailing < end:
+      invalid(22, trailing)
+    else:
+      let parsed: std_decimal.Parsed = amount(source, amount_word)
+      match parsed:
+        Invalid(position):
+          invalid(23, position)
+        Overflow(position):
+          invalid(24, position)
+        Value(value, next):
+          if next == amount_word.end:
+            ledger_model.Parsed::Valid(ledger_model.Command::Transfer(from.start, from.end, to.start, to.end, value))
+          else:
+            invalid(23, next)
+
+fn parse_close(source: Bytes, index: I64, end: I64) -> ledger_model.Parsed effects[partial]:
+  let name: ledger_model.Word = word(source, index, end)
+  if !name.valid:
+    invalid(21, name.start)
+  else:
+    let trailing: I64 = skip_space(source, name.next, end)
+    if trailing < end:
+      invalid(22, trailing)
+    else:
+      ledger_model.Parsed::Valid(ledger_model.Command::Close(name.start, name.end))
+
+fn parse_line(source: Bytes, start: I64, end: I64) -> ledger_model.Parsed effects[partial]:
+  let command: ledger_model.Word = word(source, start, end)
+  if !command.valid:
+    invalid(20, command.start)
+  else:
+    if word_is(source, command, "open"):
+      parse_named_amount(source, 1, command.next, end)
+    else:
+      if word_is(source, command, "credit"):
+        parse_named_amount(source, 2, command.next, end)
+      else:
+        if word_is(source, command, "debit"):
+          parse_named_amount(source, 3, command.next, end)
+        else:
+          if word_is(source, command, "transfer"):
+            parse_transfer(source, command.next, end)
+          else:
+            if word_is(source, command, "close"):
+              parse_close(source, command.next, end)
+            else:
+              invalid(20, command.start)

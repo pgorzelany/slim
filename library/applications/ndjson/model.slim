@@ -1,0 +1,19 @@
+module json_model
+
+enum Node:
+  Null
+  Boolean(Bool)
+  Number(I64, I64)
+  String(I64, I64)
+  Array(I64, I64)
+  Object(I64, I64)
+
+struct Edge:
+  key_start: I64
+  key_end: I64
+  value: Id[Node]
+  next: I64
+
+enum Parsed:
+  Invalid(I64, I64)
+  Valid(I64, Id[Node])

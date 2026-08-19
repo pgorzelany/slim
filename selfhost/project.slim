@@ -70,6 +70,20 @@ fn append_qualification_replaced(source: Bytes, index: I64, end: I64, output: @V
     let next: I64 = index + 1
     recur(source, next, end, @output)
 
+fn atom_is_member_name(tokens: Vec[syntax.Token], atom: I64) -> Bool effects[partial]:
+  let tag: I64 = syntax.ast_node_tag(tokens, atom)
+  let member_atom: Bool = (tag == 22) || (tag == 23)
+  if member_atom:
+    true
+  else:
+    if atom <= 0:
+      false
+    else:
+      let previous: I64 = atom - 1
+      let kind: I64 = syntax.ast_node_kind(tokens, previous)
+      let previous_tag: I64 = syntax.ast_node_tag(tokens, previous)
+      (kind == 0) && (previous_tag == 21)
+
 fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, atom: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let start: I64 = syntax.ast_node_start(module_tokens, atom)
   let end: I64 = syntax.ast_node_end(module_tokens, atom)
@@ -91,9 +105,11 @@ fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token
     else:
       let declaration_form: I64 = syntax.ast_node_link(module_tokens, atom)
       let declaration: Bool = declaration_form >= 0
+      let member_name: Bool = atom_is_member_name(module_tokens, atom)
       let main_name: Bool = syntax.ast_node_text_is(module_source, module_tokens, atom, "main")
       let entry_main: Bool = entry && main_name
-      let prefix: Bool = if declaration:
+      let referenced_declaration: Bool = declaration && (!member_name)
+      let prefix: Bool = if referenced_declaration:
         !entry_main
       else:
         false

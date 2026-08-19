@@ -48,6 +48,13 @@ checked arithmetic, bounds, storage, and recurrence costs differ by algorithm.
 Host and parallel gates compare the same operation or generated program on the
 same warmed host.
 
+The source-library corpus adds ten real multi-module projects. Its application
+gate alternates checking and C emission, requires byte-identical repeated C,
+reports source and generated sizes independently, and limits each same-host
+emit/check ratio. This supplements geometric generated-source series with
+records, variants, ownership, parsing, recursion, binary output, and bounded
+host-I/O shapes exercised by maintained programs.
+
 Checked operations remain checked unless a positive fact for the exact node
 justifies direct lowering. The canonical native build uses portable `-O3`
 without LTO, profiles, or target-specific flags.
@@ -60,6 +67,7 @@ The complete gate is `./scripts/verify.sh`. Focused commands are:
 cargo run --release --bin slim-bench -- performance --quick
 cargo run --release --bin slim-bench -- reduction --quick
 cargo run --release --bin slim-bench -- parallelism
+cargo run --release --bin slim-bench -- applications --quick
 cargo run --release --bin slim-bench -- compare --quick
 cargo run --release --bin slim-bench -- host
 cargo run --release --bin slim-bench -- agent

@@ -1,0 +1,249 @@
+module api_diff
+
+struct Declaration:
+  start: I64
+  end: I64
+  name_start: I64
+  name_end: I64
+
+struct Parsed:
+  valid: Bool
+  module_start: I64
+  module_end: I64
+  declarations: Vec[Declaration]
+
+struct Counts:
+  added: I64
+  changed: I64
+  removed: I64
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn is_space(code: I64) -> Bool:
+  ((code == 32) || (code == 10)) || ((code == 13) || (code == 9))
+
+fn skip_space(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    if is_space(code_at(source, index)):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn atom_end(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if is_space(code) || ((code == 40) || (code == 41)):
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn form_end(source: Bytes, index: I64, end: I64, depth: I64) -> I64 effects[partial]:
+  if index >= end:
+    -1
+  else:
+    let code: I64 = code_at(source, index)
+    let opening: Bool = code == 40
+    let closing: Bool = code == 41
+    let next_depth: I64 = if opening:
+      depth + 1
+    else:
+      if closing:
+        depth - 1
+      else:
+        depth
+    if closing && (depth == 1):
+      index + 1
+    else:
+      if next_depth < 0:
+        -1
+      else:
+        recur(source, index + 1, end, next_depth)
+
+fn append_declarations(source: Bytes, index: I64, outer_end: I64, declarations: @Vec[Declaration]) -> Bool effects[alloc, partial]:
+  let cursor: I64 = skip_space(source, index, outer_end)
+  if cursor == (outer_end - 1):
+    code_at(source, cursor) == 41
+  else:
+    if (cursor >= outer_end) || (code_at(source, cursor) == 41):
+      false
+    else:
+      if code_at(source, cursor) == 40:
+        let declaration_end: I64 = form_end(source, cursor, outer_end, 0)
+        if declaration_end < 0:
+          false
+        else:
+          let kind_start: I64 = cursor + 1
+          let kind_end: I64 = atom_end(source, kind_start, declaration_end)
+          let name_start: I64 = skip_space(source, kind_end, declaration_end)
+          let name_end: I64 = atom_end(source, name_start, declaration_end)
+          let name_valid: Bool = (name_start > kind_end) && (name_end > name_start)
+          if name_valid:
+            let declaration: Declaration = Declaration(start: cursor, end: declaration_end, name_start: name_start, name_end: name_end)
+            vec.push(@declarations, declaration)
+            recur(source, declaration_end, outer_end, @declarations)
+          else:
+            false
+      else:
+        false
+
+fn invalid_parsed() -> Parsed effects[alloc]:
+  let declarations: Vec[Declaration] = vec.new()
+  Parsed(valid: false, module_start: 0, module_end: 0, declarations: declarations)
+
+fn parse_interface(source: Bytes) -> Parsed effects[alloc, partial]:
+  let length: I64 = bytes.len(source)
+  if length < 16:
+    invalid_parsed()
+  else:
+    let outer_end: I64 = form_end(source, 0, length, 0)
+    if outer_end < 0:
+      invalid_parsed()
+    else:
+      let tag_start: I64 = skip_space(source, 1, outer_end)
+      let tag_end: I64 = atom_end(source, tag_start, outer_end)
+      let version_start: I64 = skip_space(source, tag_end, outer_end)
+      let version_end: I64 = atom_end(source, version_start, outer_end)
+      let module_start: I64 = skip_space(source, version_end, outer_end)
+      let module_end: I64 = atom_end(source, module_start, outer_end)
+      let tag_valid: Bool = std_bytes.range_equal(source, tag_start, "interface", 0, tag_end - tag_start)
+      let tag_length_valid: Bool = (tag_end - tag_start) == 9
+      let version_valid: Bool = std_bytes.range_equal(source, version_start, "3", 0, version_end - version_start)
+      let version_length_valid: Bool = (version_end - version_start) == 1
+      let header_valid: Bool = (tag_valid && tag_length_valid) && (version_valid && version_length_valid)
+      if header_valid && (module_end > module_start):
+        let declarations: Vec[Declaration] = vec.new()
+        let valid: Bool = append_declarations(source, module_end, outer_end, @declarations)
+        Parsed(valid: valid, module_start: module_start, module_end: module_end, declarations: declarations)
+      else:
+        invalid_parsed()
+
+fn find_declaration(source: Bytes, declarations: Vec[Declaration], name_source: Bytes, name_start: I64, name_end: I64, index: I64) -> I64 effects[partial]:
+  if index == vec.len(declarations):
+    -1
+  else:
+    let declaration: Declaration = vec.get(declarations, index)
+    let left_length: I64 = declaration.name_end - declaration.name_start
+    let right_length: I64 = name_end - name_start
+    let same_length: Bool = left_length == right_length
+    let same: Bool = if same_length:
+      std_bytes.range_equal(source, declaration.name_start, name_source, name_start, left_length)
+    else:
+      false
+    if same:
+      index
+    else:
+      recur(source, declarations, name_source, name_start, name_end, index + 1)
+
+fn declarations_equal(left_source: Bytes, left: Declaration, right_source: Bytes, right: Declaration) -> Bool effects[partial]:
+  let left_length: I64 = left.end - left.start
+  let right_length: I64 = right.end - right.start
+  if left_length == right_length:
+    std_bytes.range_equal(left_source, left.start, right_source, right.start, left_length)
+  else:
+    false
+
+fn append_change(label: Bytes, source: Bytes, declaration: Declaration, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, label)
+  let appended: Bool = std_text.append_span(@output, source, declaration.name_start, declaration.name_end)
+  if appended:
+    std_text.append_bytes(@output, "\n")
+  else:
+    std_text.append_bytes(@output, "invalid\n")
+
+fn compare_previous(left_source: Bytes, left: Vec[Declaration], right_source: Bytes, right: Vec[Declaration], index: I64, counts: Counts, output: @Vec[U8]) -> Counts effects[alloc, partial]:
+  if index == vec.len(left):
+    counts
+  else:
+    let declaration: Declaration = vec.get(left, index)
+    let found: I64 = find_declaration(right_source, right, left_source, declaration.name_start, declaration.name_end, 0)
+    if found < 0:
+      append_change("removed ", left_source, declaration, @output)
+      let next: Counts = Counts(added: counts.added, changed: counts.changed, removed: counts.removed + 1)
+      recur(left_source, left, right_source, right, index + 1, next, @output)
+    else:
+      let candidate: Declaration = vec.get(right, found)
+      if declarations_equal(left_source, declaration, right_source, candidate):
+        recur(left_source, left, right_source, right, index + 1, counts, @output)
+      else:
+        append_change("changed ", left_source, declaration, @output)
+        let next: Counts = Counts(added: counts.added, changed: counts.changed + 1, removed: counts.removed)
+        recur(left_source, left, right_source, right, index + 1, next, @output)
+
+fn compare_added(left_source: Bytes, left: Vec[Declaration], right_source: Bytes, right: Vec[Declaration], index: I64, counts: Counts, output: @Vec[U8]) -> Counts effects[alloc, partial]:
+  if index == vec.len(right):
+    counts
+  else:
+    let declaration: Declaration = vec.get(right, index)
+    let found: I64 = find_declaration(left_source, left, right_source, declaration.name_start, declaration.name_end, 0)
+    if found < 0:
+      append_change("added ", right_source, declaration, @output)
+      let next: Counts = Counts(added: counts.added + 1, changed: counts.changed, removed: counts.removed)
+      recur(left_source, left, right_source, right, index + 1, next, @output)
+    else:
+      recur(left_source, left, right_source, right, index + 1, counts, @output)
+
+fn append_summary(counts: Counts, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "summary added ")
+  std_text.append_i64(@output, counts.added)
+  std_text.append_bytes(@output, " changed ")
+  std_text.append_i64(@output, counts.changed)
+  std_text.append_bytes(@output, " removed ")
+  std_text.append_i64(@output, counts.removed)
+  std_text.append_bytes(@output, "\ncompatible ")
+  if (counts.changed == 0) && (counts.removed == 0):
+    std_text.append_bytes(@output, "yes\n")
+  else:
+    std_text.append_bytes(@output, "no\n")
+
+fn compare(left_source: Bytes, left: Parsed, right_source: Bytes, right: Parsed) -> I64 effects[alloc, io, partial]:
+  let modules_equal: Bool = std_bytes.range_equal(left_source, left.module_start, right_source, right.module_start, left.module_end - left.module_start)
+  let module_lengths_equal: Bool = (left.module_end - left.module_start) == (right.module_end - right.module_start)
+  let left_declarations: Vec[Declaration] = left.declarations
+  let right_declarations: Vec[Declaration] = right.declarations
+  if modules_equal && module_lengths_equal:
+    let output: Vec[U8] = vec.new()
+    std_text.append_bytes(@output, "interface-diff 1\n")
+    let initial: Counts = Counts(added: 0, changed: 0, removed: 0)
+    let previous: Counts = compare_previous(left_source, left_declarations, right_source, right_declarations, 0, initial, @output)
+    let counts: Counts = compare_added(left_source, left_declarations, right_source, right_declarations, 0, previous, @output)
+    append_summary(counts, @output)
+    let result: Bytes = bytes.freeze(^output)
+    io.print_bytes(result)
+    if (counts.changed == 0) && (counts.removed == 0):
+      0
+    else:
+      1
+  else:
+    io.println("interface-diff: module mismatch")
+    65
+
+fn read_and_compare(left_path: Bytes, right_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let left_bytes: Vec[U8] = vec.new()
+  let right_bytes: Vec[U8] = vec.new()
+  let left_read: Bool = io.read_file(left_path, @left_bytes)
+  let right_read: Bool = io.read_file(right_path, @right_bytes)
+  if left_read && right_read:
+    let left_source: Bytes = bytes.freeze(^left_bytes)
+    let right_source: Bytes = bytes.freeze(^right_bytes)
+    let left: Parsed = parse_interface(left_source)
+    let right: Parsed = parse_interface(right_source)
+    if left.valid && right.valid:
+      compare(left_source, left, right_source, right)
+    else:
+      io.println("interface-diff: invalid interface")
+      65
+  else:
+    io.println("interface-diff: input read failed")
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) >= 3:
+    read_and_compare(vec.get(args, 1), vec.get(args, 2))
+  else:
+    io.println("usage: slim-api-diff LEFT RIGHT")
+    64

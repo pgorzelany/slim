@@ -1,0 +1,5 @@
+(project 1
+  (entry std_docs)
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_docs "tools/std_docs.slim" (imports std_bytes std_text) (exports))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span)))

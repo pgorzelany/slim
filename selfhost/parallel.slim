@@ -558,9 +558,6 @@ fn expression_uses_binding(tokens: Vec[syntax.Token], index: I64, end: I64, decl
       let next: I64 = syntax.ast_node_after(index)
       recur(tokens, next, end, declaration)
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  text.append_nonnegative_i64(value, @output)
-
 fn emit_reason(reason: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if reason == 1:
     text.append_text(@output, "declared-effects")
@@ -618,7 +615,7 @@ fn emit_blockers(blockers: Blockers, output: @Vec[U8]) -> Void effects[alloc, pa
 
 fn emit_function_fact(source: Bytes, tokens: Vec[syntax.Token], fact: FunctionFact, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (function-parallel-safety ")
-  append_i64(fact.item, @output)
+  text.append_i64(fact.item, @output)
   text.append_text(@output, " ")
   text.append_token(source, tokens, fact.name, @output)
   let safe: Bool = fact.status == 1
@@ -637,7 +634,7 @@ fn emit_function_fact(source: Bytes, tokens: Vec[syntax.Token], fact: FunctionFa
     text.append_text(@output, ")")
   emit_blockers(fact.blockers, @output)
   text.append_text(@output, " (body-tokens ")
-  append_i64(fact.body_tokens, @output)
+  text.append_i64(fact.body_tokens, @output)
   text.append_text(@output, "))")
 
 fn emit_function_facts(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[FunctionFact], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -704,7 +701,7 @@ fn work_value(work: ranges.Work) -> I64:
 fn emit_work(work: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let known: Bool = work >= 0
   if known:
-    append_i64(work, @output)
+    text.append_i64(work, @output)
   else:
     text.append_text(@output, "unknown")
 
@@ -992,14 +989,14 @@ fn emit_fork_site(tokens: Vec[syntax.Token], site: Site, output: @Vec[U8]) -> Vo
   let first_end: I64 = syntax.ast_next(tokens, first)
   let second_end: I64 = syntax.ast_next(tokens, second)
   text.append_text(@output, " (fork-site ")
-  append_i64(site.site, @output)
+  text.append_i64(site.site, @output)
   emit_site_intent(site, @output)
   text.append_text(@output, " (guarantee exact) (tasks ")
-  append_i64(first, @output)
+  text.append_i64(first, @output)
   text.append_text(@output, " ")
-  append_i64(second, @output)
+  text.append_i64(second, @output)
   text.append_text(@output, ") (join ")
-  append_i64(site.join, @output)
+  text.append_i64(site.join, @output)
   text.append_text(@output, ") (race-free true) (deadlock-free true)")
   emit_site_profitability(site, @output)
   text.append_text(@output, " (task-work ")
@@ -1007,9 +1004,9 @@ fn emit_fork_site(tokens: Vec[syntax.Token], site: Site, output: @Vec[U8]) -> Vo
   text.append_text(@output, " ")
   emit_work(site.second_work, @output)
   text.append_text(@output, ") (task-tokens ")
-  append_i64(first_end - first, @output)
+  text.append_i64(first_end - first, @output)
   text.append_text(@output, " ")
-  append_i64(second_end - second, @output)
+  text.append_i64(second_end - second, @output)
   if site.executable:
     text.append_text(@output, ") (execution selected))")
   else:
@@ -1046,17 +1043,17 @@ fn emit_module_facts(source: Bytes, tokens: Vec[syntax.Token], view: View, outpu
   else:
     text.append_text(@output, "bounded")
   text.append_text(@output, ") (candidate-sites ")
-  append_i64(schedule.candidates, @output)
+  text.append_i64(schedule.candidates, @output)
   text.append_text(@output, ") (selected-sites ")
-  append_i64(schedule.selected, @output)
+  text.append_i64(schedule.selected, @output)
   text.append_text(@output, ") (reported-sites ")
-  append_i64(schedule.reported, @output)
+  text.append_i64(schedule.reported, @output)
   text.append_text(@output, ") (executable-sites ")
-  append_i64(schedule.executable, @output)
+  text.append_i64(schedule.executable, @output)
   text.append_text(@output, ") (executed-sites ")
-  append_i64(schedule.executed, @output)
+  text.append_i64(schedule.executed, @output)
   text.append_text(@output, ")) (eligible-sites ")
-  append_i64(schedule.candidates, @output)
+  text.append_i64(schedule.candidates, @output)
   let any: Bool = schedule.executed > 0
   if any:
     text.append_text(@output, ") (execution (guarantee exact) (status enabled) (tier posix-v1-with-serial-fallback)))")

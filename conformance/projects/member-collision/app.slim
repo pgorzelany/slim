@@ -1,0 +1,28 @@
+module app
+
+fn Accepted() -> I64:
+  1
+
+fn Rejected() -> I64:
+  2
+
+fn accepted() -> I64:
+  Accepted()
+
+fn rejected() -> I64:
+  Rejected()
+
+fn inspect(value: model.Result, state: model.State) -> I64:
+  let fields: I64 = value.accepted + value.rejected
+  match state:
+    Accepted:
+      fields
+    Rejected(code):
+      fields + code
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let value: model.Result = model.Result(accepted: accepted(), rejected: rejected())
+  let state: model.State = model.State::Rejected(3)
+  io.print_i64(inspect(value, state))
+  io.println("")
+  0

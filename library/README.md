@@ -1,0 +1,58 @@
+# SLIM experimental source library
+
+This directory is the application-driven proving ground for reusable SLIM
+code. The modules are ordinary source files: a project vendors the file,
+declares it in `slim.project`, and imports only its explicit exports. There is
+no package lookup, compiler-predeclared library namespace, implicit effect, or
+hidden allocation.
+
+The library remains experimental while
+[RFC-0111](../design/rfcs/0111-explicit-source-standard-library.md) is proposed.
+Interfaces can change until that RFC is accepted. The compiler's canonical
+schema-3 interface output is the compatibility authority; the generated
+[reference](REFERENCE.md) is a readable view of that data.
+
+## Modules
+
+| Module | Purpose |
+| --- | --- |
+| `std_ascii` | ASCII classification and digit conversion |
+| `std_bytes` | Explicit byte-range comparison, search, count, and append |
+| `std_text` | Explicit UTF-8-agnostic byte rendering, including `I64` |
+| `std_decimal` | Checked decimal parsing with invalid/overflow positions |
+| `std_span` | Validated half-open spans |
+| `std_cursor` | Validated bounded byte cursors |
+| `std_test` | Tiny deterministic assertion and summary helpers |
+| `std_i64` | Integer min/max/clamp and checked absolute value |
+| `std_i64_vec` | Application-justified helpers for `Vec[I64]` |
+| `std_u8_vec` | Application-justified helpers for `Vec[U8]` |
+
+The type-specific vector modules are intentionally separate. SLIM does not
+yet have accepted generic source declarations, and ordinary duplicated modules
+are preferable to new type-system machinery without application evidence.
+
+## Substantial programs
+
+The corpus includes a schema-validating NDJSON processor, transactional ledger
+replayer, bounded DPLL SAT solver, deterministic triangle rasterizer, LZ4 block
+compressor/decompressor, and bounded HTTP/1.1 client. Tooling includes canonical
+API comparison, interface-derived reference generation, and a seeded typed
+source generator whose mutations exercise records, variants, effects, and
+exhaustive matching.
+
+Run the complete library and application corpus with:
+
+```sh
+./scripts/check-library-corpus.sh
+```
+
+Regenerate or verify the reference with:
+
+```sh
+./scripts/generate-library-docs.sh
+./scripts/generate-library-docs.sh --check
+```
+
+The HTTP implementation is built by the corpus script; its loopback protocol
+test lives in the Rust end-to-end suite so the shell corpus requires no network
+access.

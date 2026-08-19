@@ -1,0 +1,178 @@
+module lz4_codec
+
+fn match_length(input: Bytes, left: I64, right: I64, length: I64, limit: I64) -> I64 effects[partial]:
+  if right + length >= limit:
+    length
+  else:
+    let left_byte: I64 = u8.to_i64(bytes.get(input, left + length))
+    let right_byte: I64 = u8.to_i64(bytes.get(input, right + length))
+    if left_byte == right_byte:
+      recur(input, left, right, length + 1, limit)
+    else:
+      length
+
+fn best_match(input: Bytes, index: I64, candidate: I64, end: I64, best_position: I64, best_length: I64) -> lz4_model.Match effects[partial]:
+  if candidate >= index:
+    lz4_model.Match(position: best_position, length: best_length)
+  else:
+    let length: I64 = match_length(input, candidate, index, 0, end)
+    let better: Bool = (length > best_length) && (length >= 4)
+    let next_position: I64 = if better:
+      candidate
+    else:
+      best_position
+    let next_length: I64 = if better:
+      length
+    else:
+      best_length
+    recur(input, index, candidate + 1, end, next_position, next_length)
+
+fn find_match(input: Bytes, index: I64, end: I64) -> lz4_model.Match effects[partial]:
+  let candidate: I64 = if index > 256:
+    index - 256
+  else:
+    0
+  best_match(input, index, candidate, end, -1, 0)
+
+fn append_extension(length: I64, output: @Vec[U8]) -> Void effects[alloc]:
+  if length >= 255:
+    vec.push(@output, i64.to_u8(255))
+    recur(length - 255, @output)
+  else:
+    vec.push(@output, i64.to_u8(length))
+
+fn append_literals(input: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= end:
+    void
+  else:
+    vec.push(@output, bytes.get(input, index))
+    recur(input, index + 1, end, @output)
+
+fn append_sequence(input: Bytes, anchor: I64, literal_end: I64, match_position: I64, match_length: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let literal_length: I64 = literal_end - anchor
+  let literal_nibble: I64 = if literal_length >= 15:
+    15
+  else:
+    literal_length
+  let match_code: I64 = if match_length >= 4:
+    match_length - 4
+  else:
+    0
+  let match_nibble: I64 = if match_code >= 15:
+    15
+  else:
+    match_code
+  vec.push(@output, i64.to_u8(literal_nibble * 16 + match_nibble))
+  if literal_length >= 15:
+    append_extension(literal_length - 15, @output)
+  else:
+    void
+  append_literals(input, anchor, literal_end, @output)
+  if match_position >= 0:
+    let offset: I64 = literal_end - match_position
+    vec.push(@output, i64.to_u8(offset % 256))
+    vec.push(@output, i64.to_u8(offset / 256))
+    if match_code >= 15:
+      append_extension(match_code - 15, @output)
+    else:
+      void
+  else:
+    void
+
+fn compress_from(input: Bytes, index: I64, anchor: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= end:
+    append_sequence(input, anchor, end, -1, 0, @output)
+  else:
+    let found: lz4_model.Match = find_match(input, index, end)
+    if found.length >= 4:
+      append_sequence(input, anchor, index, found.position, found.length, @output)
+      let next: I64 = index + found.length
+      recur(input, next, next, end, @output)
+    else:
+      recur(input, index + 1, anchor, end, @output)
+
+fn compress(input: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  compress_from(input, 0, 0, bytes.len(input), @output)
+
+fn invalid_length(position: I64) -> lz4_model.Length:
+  lz4_model.Length(valid: false, value: 0, next: position, position: position)
+
+fn extended_length(input: Bytes, index: I64, value: I64) -> lz4_model.Length effects[partial]:
+  if index >= bytes.len(input):
+    invalid_length(index)
+  else:
+    let byte: I64 = u8.to_i64(bytes.get(input, index))
+    let next_value: I64 = value + byte
+    if byte == 255:
+      recur(input, index + 1, next_value)
+    else:
+      lz4_model.Length(valid: true, value: next_value, next: index + 1, position: index)
+
+fn decode_length(input: Bytes, index: I64, nibble: I64) -> lz4_model.Length effects[partial]:
+  if nibble < 15:
+    lz4_model.Length(valid: true, value: nibble, next: index, position: index)
+  else:
+    extended_length(input, index, 15)
+
+fn copy_literals(input: Bytes, index: I64, end: I64, maximum: I64, output: @Vec[U8]) -> lz4_model.Result effects[alloc, partial]:
+  if index >= end:
+    lz4_model.Result(valid: true, code: 0, position: end)
+  else:
+    if vec.len(output) >= maximum:
+      lz4_model.Result(valid: false, code: 6, position: index)
+    else:
+      vec.push(@output, bytes.get(input, index))
+      recur(input, index + 1, end, maximum, @output)
+
+fn copy_match(offset: I64, remaining: I64, maximum: I64, position: I64, output: @Vec[U8]) -> lz4_model.Result effects[alloc, partial]:
+  if remaining == 0:
+    lz4_model.Result(valid: true, code: 0, position: position)
+  else:
+    if vec.len(output) >= maximum:
+      lz4_model.Result(valid: false, code: 6, position: position)
+    else:
+      let source_index: I64 = vec.len(output) - offset
+      vec.push(@output, vec.get(output, source_index))
+      recur(offset, remaining - 1, maximum, position, @output)
+
+fn decompress_from(input: Bytes, index: I64, maximum: I64, output: @Vec[U8]) -> lz4_model.Result effects[alloc, partial]:
+  let input_length: I64 = bytes.len(input)
+  if index >= input_length:
+    lz4_model.Result(valid: true, code: 0, position: index)
+  else:
+    let token: I64 = u8.to_i64(bytes.get(input, index))
+    let literal: lz4_model.Length = decode_length(input, index + 1, token / 16)
+    if !literal.valid:
+      lz4_model.Result(valid: false, code: 2, position: literal.position)
+    else:
+      let literal_end: I64 = literal.next + literal.value
+      if literal_end > input_length:
+        lz4_model.Result(valid: false, code: 3, position: literal.next)
+      else:
+        let copied: lz4_model.Result = copy_literals(input, literal.next, literal_end, maximum, @output)
+        if !copied.valid:
+          copied
+        else:
+          if literal_end == input_length:
+            lz4_model.Result(valid: true, code: 0, position: literal_end)
+          else:
+            if literal_end + 2 > input_length:
+              lz4_model.Result(valid: false, code: 4, position: literal_end)
+            else:
+              let offset: I64 = u8.to_i64(bytes.get(input, literal_end)) + u8.to_i64(bytes.get(input, literal_end + 1)) * 256
+              let offset_valid: Bool = (offset > 0) && (offset <= vec.len(output))
+              if !offset_valid:
+                lz4_model.Result(valid: false, code: 5, position: literal_end)
+              else:
+                let match_length: lz4_model.Length = decode_length(input, literal_end + 2, token % 16)
+                if !match_length.valid:
+                  lz4_model.Result(valid: false, code: 2, position: match_length.position)
+                else:
+                  let copied_match: lz4_model.Result = copy_match(offset, match_length.value + 4, maximum, match_length.next, @output)
+                  if copied_match.valid:
+                    recur(input, match_length.next, maximum, @output)
+                  else:
+                    copied_match
+
+fn decompress(input: Bytes, maximum: I64, output: @Vec[U8]) -> lz4_model.Result effects[alloc, partial]:
+  decompress_from(input, 0, maximum, @output)

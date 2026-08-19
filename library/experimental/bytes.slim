@@ -1,0 +1,114 @@
+module std_bytes
+
+fn range_valid(start: I64, length: I64, limit: I64) -> Bool:
+  if (start < 0) || (length < 0):
+    false
+  else:
+    if start > limit:
+      false
+    else:
+      length <= (limit - start)
+
+fn equal_from(left: Bytes, left_start: I64, right: Bytes, right_start: I64, index: I64, length: I64) -> Bool effects[partial]:
+  if index == length:
+    true
+  else:
+    let left_value: U8 = bytes.get(left, left_start + index)
+    let right_value: U8 = bytes.get(right, right_start + index)
+    if u8.to_i64(left_value) == u8.to_i64(right_value):
+      recur(left, left_start, right, right_start, index + 1, length)
+    else:
+      false
+
+fn range_equal(left: Bytes, left_start: I64, right: Bytes, right_start: I64, length: I64) -> Bool effects[partial]:
+  let left_valid: Bool = range_valid(left_start, length, bytes.len(left))
+  let right_valid: Bool = range_valid(right_start, length, bytes.len(right))
+  if left_valid && right_valid:
+    equal_from(left, left_start, right, right_start, 0, length)
+  else:
+    false
+
+fn equal(left: Bytes, right: Bytes) -> Bool effects[partial]:
+  let length: I64 = bytes.len(left)
+  if length == bytes.len(right):
+    range_equal(left, 0, right, 0, length)
+  else:
+    false
+
+fn starts_with(source: Bytes, prefix: Bytes) -> Bool effects[partial]:
+  range_equal(source, 0, prefix, 0, bytes.len(prefix))
+
+fn ends_with(source: Bytes, suffix: Bytes) -> Bool effects[partial]:
+  let source_length: I64 = bytes.len(source)
+  let suffix_length: I64 = bytes.len(suffix)
+  if suffix_length > source_length:
+    false
+  else:
+    range_equal(source, source_length - suffix_length, suffix, 0, suffix_length)
+
+fn find_byte_from(source: Bytes, value: U8, index: I64, end: I64) -> I64 effects[partial]:
+  if index == end:
+    -1
+  else:
+    if u8.to_i64(bytes.get(source, index)) == u8.to_i64(value):
+      index
+    else:
+      recur(source, value, index + 1, end)
+
+fn find_byte(source: Bytes, value: U8, start: I64, end: I64) -> I64 effects[partial]:
+  let length: I64 = bytes.len(source)
+  let span_length: I64 = if end >= start:
+    end - start
+  else:
+    -1
+  if range_valid(start, span_length, length):
+    find_byte_from(source, value, start, end)
+  else:
+    -1
+
+fn count_byte_from(source: Bytes, value: U8, index: I64, end: I64, count: I64) -> I64 effects[partial]:
+  if index == end:
+    count
+  else:
+    let increment: I64 = if u8.to_i64(bytes.get(source, index)) == u8.to_i64(value):
+      1
+    else:
+      0
+    recur(source, value, index + 1, end, count + increment)
+
+fn count_byte(source: Bytes, value: U8, start: I64, end: I64) -> I64 effects[partial]:
+  let length: I64 = bytes.len(source)
+  let span_length: I64 = if end >= start:
+    end - start
+  else:
+    -1
+  if range_valid(start, span_length, length):
+    count_byte_from(source, value, start, end, 0)
+  else:
+    -1
+
+fn append_range_from(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index == end:
+    void
+  else:
+    vec.push(@output, bytes.get(source, index))
+    recur(source, index + 1, end, @output)
+
+fn append_range(source: Bytes, start: I64, end: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let length: I64 = bytes.len(source)
+  let span_length: I64 = if end >= start:
+    end - start
+  else:
+    -1
+  if range_valid(start, span_length, length):
+    append_range_from(source, start, end, @output)
+    true
+  else:
+    false
+
+fn append(source: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let appended: Bool = append_range(source, 0, bytes.len(source), @output)
+  if appended:
+    void
+  else:
+    void

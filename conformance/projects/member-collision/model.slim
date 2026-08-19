@@ -1,0 +1,9 @@
+module model
+
+struct Result:
+  accepted: I64
+  rejected: I64
+
+enum State:
+  Accepted
+  Rejected(I64)

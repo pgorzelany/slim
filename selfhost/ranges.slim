@@ -1476,24 +1476,15 @@ fn recurrence_work(source: Bytes, tokens: Vec[syntax.Token], view: View, item: I
   else:
     Work(known: false, iterations: 0)
 
-fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let negative: Bool = value < 0
-  if negative:
-    text.append_text(@output, "-")
-    let magnitude: I64 = 0 - value
-    text.append_nonnegative_i64(magnitude, @output)
-  else:
-    text.append_nonnegative_i64(value, @output)
-
 fn emit_bound(known: Bool, value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if known:
-    append_i64(value, @output)
+    text.append_i64(value, @output)
   else:
     text.append_text(@output, "unknown")
 
 fn emit_site(expr: I64, fact: Fact, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (checked-site ")
-  append_i64(expr, @output)
+  text.append_i64(expr, @output)
   if fact.total:
     text.append_text(@output, " (status total) (lower ")
   else:
@@ -1541,24 +1532,24 @@ fn emit_sites(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[Fact], index:
 
 fn emit_counted_fact(source: Bytes, tokens: Vec[syntax.Token], fact: Counted, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (counted-loop ")
-  append_i64(fact.item, @output)
+  text.append_i64(fact.item, @output)
   text.append_text(@output, " ")
   let name_index: I64 = fact.item + 2
   text.append_token(source, tokens, name_index, @output)
   text.append_text(@output, " (guarantee exact) (controller ")
-  append_i64(fact.controller, @output)
+  text.append_i64(fact.controller, @output)
   text.append_text(@output, ") (start ")
-  append_i64(fact.start, @output)
+  text.append_i64(fact.start, @output)
   text.append_text(@output, ") (bound ")
-  append_i64(fact.bound, @output)
+  text.append_i64(fact.bound, @output)
   text.append_text(@output, ") (step ")
-  append_i64(fact.step, @output)
+  text.append_i64(fact.step, @output)
   text.append_text(@output, ") (iterations ")
-  append_i64(fact.iterations, @output)
+  text.append_i64(fact.iterations, @output)
   text.append_text(@output, ") (body ")
-  append_i64(fact.body, @output)
+  text.append_i64(fact.body, @output)
   text.append_text(@output, ") (base ")
-  append_i64(fact.base, @output)
+  text.append_i64(fact.base, @output)
   text.append_text(@output, "))")
 
 fn emit_counted_facts(source: Bytes, tokens: Vec[syntax.Token], counted: Vec[Counted], index: I64, limit: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -1582,9 +1573,9 @@ fn emit_counted_evidence(source: Bytes, tokens: Vec[syntax.Token], view: View, o
   text.append_text(@output, " (counted-loops (fact-limit 64) (facts")
   emit_counted_facts(source, tokens, counted, 0, limit, @output)
   text.append_text(@output, ") (counted-loop-count ")
-  append_i64(count, @output)
+  text.append_i64(count, @output)
   text.append_text(@output, ") (reported-facts ")
-  append_i64(limit, @output)
+  text.append_i64(limit, @output)
   text.append_text(@output, ") (facts-truncated ")
   if within_limit:
     text.append_text(@output, "false")
@@ -1600,7 +1591,7 @@ fn emit_counted_evidence(source: Bytes, tokens: Vec[syntax.Token], view: View, o
 fn emit_module_facts(source: Bytes, tokens: Vec[syntax.Token], view: View, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let facts: Vec[Fact] = view.facts
   text.append_text(@output, " (integer-proofs (domain -1000000000 1000000000) (refinement-limit 64) (parameter-pass-limit 4) (refinements ")
-  append_i64(view.refinements, @output)
+  text.append_i64(view.refinements, @output)
   text.append_text(@output, ") (refinements-truncated ")
   if view.refinements_truncated:
     text.append_text(@output, "true")
@@ -1609,7 +1600,7 @@ fn emit_module_facts(source: Bytes, tokens: Vec[syntax.Token], view: View, outpu
   text.append_text(@output, ") (checked-site-report-limit 64) (checked-sites")
   let site_count: I64 = emit_sites(source, tokens, facts, 0, @output, 0, 0)
   text.append_text(@output, ") (checked-site-count ")
-  append_i64(site_count, @output)
+  text.append_i64(site_count, @output)
   if site_count <= 64:
     text.append_text(@output, ") (guarantee exact))")
   else:
@@ -1640,16 +1631,16 @@ fn find_retained_profile(recurrences: Vec[Recurrence], item: I64, index: I64, li
 
 fn emit_resource_profile(source: Bytes, tokens: Vec[syntax.Token], profile: Recurrence, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (recurrence-profile ")
-  append_i64(profile.item, @output)
+  text.append_i64(profile.item, @output)
   text.append_text(@output, " ")
   let name_index: I64 = profile.item + 2
   text.append_token(source, tokens, name_index, @output)
   text.append_text(@output, " (guarantee exact) (controller-position ")
-  append_i64(profile.position, @output)
+  text.append_i64(profile.position, @output)
   text.append_text(@output, ") (stop-bound ")
-  append_i64(profile.bound, @output)
+  text.append_i64(profile.bound, @output)
   text.append_text(@output, ") (step ")
-  append_i64(profile.step, @output)
+  text.append_i64(profile.step, @output)
   text.append_text(@output, "))")
 
 fn emit_resource_profiles(source: Bytes, tokens: Vec[syntax.Token], recurrences: Vec[Recurrence], index: I64, limit: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -1664,15 +1655,15 @@ fn emit_resource_profiles(source: Bytes, tokens: Vec[syntax.Token], recurrences:
 
 fn emit_resource_call_work(source: Bytes, tokens: Vec[syntax.Token], expr: I64, item: I64, work: Work, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, " (call-work ")
-  append_i64(expr, @output)
+  text.append_i64(expr, @output)
   text.append_text(@output, " ")
-  append_i64(item, @output)
+  text.append_i64(item, @output)
   text.append_text(@output, " ")
   let name_index: I64 = syntax.ast_item_name(item)
   text.append_token(source, tokens, name_index, @output)
   if work.known:
     text.append_text(@output, " (guarantee exact) (iterations ")
-    append_i64(work.iterations, @output)
+    text.append_i64(work.iterations, @output)
     text.append_text(@output, "))")
   else:
     text.append_text(@output, " (guarantee unknown) (reason nonliteral-controller))")
@@ -1762,9 +1753,9 @@ fn emit_resource_evidence(source: Bytes, tokens: Vec[syntax.Token], view: View, 
   text.append_text(@output, " (resource-evidence (profile-limit 16) (call-site-report-limit 64) (recurrence-profiles")
   emit_resource_profiles(source, tokens, recurrences, 0, retained, @output)
   text.append_text(@output, ") (recurrence-profile-count ")
-  append_i64(profile_count, @output)
+  text.append_i64(profile_count, @output)
   text.append_text(@output, ") (reported-recurrence-profiles ")
-  append_i64(retained, @output)
+  text.append_i64(retained, @output)
   text.append_text(@output, ") (recurrence-profiles-truncated ")
   emit_resource_bool(profiles_truncated, @output)
   text.append_text(@output, ") (range-refinements-truncated ")
@@ -1773,15 +1764,15 @@ fn emit_resource_evidence(source: Bytes, tokens: Vec[syntax.Token], view: View, 
   let initial: ResourceScan = ResourceScan(profiled: 0, reported: 0, exact_sites: 0, unknown_sites: 0, maximum: 0)
   let scan: ResourceScan = scan_resource_calls(source, tokens, view, recurrences, retained, 0, initial, @output)
   text.append_text(@output, ") (profiled-call-site-count ")
-  append_i64(scan.profiled, @output)
+  text.append_i64(scan.profiled, @output)
   text.append_text(@output, ") (reported-call-site-count ")
-  append_i64(scan.reported, @output)
+  text.append_i64(scan.reported, @output)
   text.append_text(@output, ") (exact-call-work-sites ")
-  append_i64(scan.exact_sites, @output)
+  text.append_i64(scan.exact_sites, @output)
   text.append_text(@output, ") (unknown-call-work-sites ")
-  append_i64(scan.unknown_sites, @output)
+  text.append_i64(scan.unknown_sites, @output)
   text.append_text(@output, ") (maximum-exact-iterations ")
-  append_i64(scan.maximum, @output)
+  text.append_i64(scan.maximum, @output)
   let calls_truncated: Bool = scan.profiled > scan.reported
   let bounded: Bool = view.refinements_truncated || (profiles_truncated || calls_truncated)
   text.append_text(@output, ") (guarantee ")

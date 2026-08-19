@@ -1,0 +1,143 @@
+module http_parser
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn find_crlf(source: Bytes, index: I64, length: I64) -> I64 effects[partial]:
+  if index + 1 >= length:
+    -1
+  else:
+    if (code_at(source, index) == 13) && (code_at(source, index + 1) == 10):
+      index
+    else:
+      recur(source, index + 1, length)
+
+fn find_colon(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    -1
+  else:
+    if code_at(source, index) == 58:
+      index
+    else:
+      recur(source, index + 1, end)
+
+fn lower(code: I64) -> I64:
+  if (code >= 65) && (code <= 90):
+    code + 32
+  else:
+    code
+
+fn name_equal(source: Bytes, start: I64, end: I64, expected: Bytes, index: I64) -> Bool effects[partial]:
+  let length: I64 = end - start
+  if !(length == bytes.len(expected)):
+    false
+  else:
+    if index >= length:
+      true
+    else:
+      let left: I64 = lower(code_at(source, start + index))
+      let right: I64 = lower(u8.to_i64(bytes.get(expected, index)))
+      if left == right:
+        recur(source, start, end, expected, index + 1)
+      else:
+        false
+
+fn trim_left(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 32) || (code == 9):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn trim_right(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if end <= start:
+    end
+  else:
+    let code: I64 = code_at(source, end - 1)
+    if (code == 32) || (code == 9):
+      recur(source, start, end - 1)
+    else:
+      end
+
+fn invalid_headers(code: I64, position: I64) -> http_model.Headers:
+  http_model.Headers(valid: false, code: code, position: position, body_start: position, has_length: false, length: 0)
+
+fn parse_headers(source: Bytes, index: I64, header_start: I64, has_length: Bool, declared_length: I64) -> http_model.Headers effects[partial]:
+  let length: I64 = bytes.len(source)
+  if index - header_start > 8192:
+    invalid_headers(13, index)
+  else:
+    let line_end: I64 = find_crlf(source, index, length)
+    if line_end < 0:
+      invalid_headers(11, index)
+    else:
+      if line_end == index:
+        http_model.Headers(valid: true, code: 0, position: index, body_start: line_end + 2, has_length: has_length, length: declared_length)
+      else:
+        let colon: I64 = find_colon(source, index, line_end)
+        if colon < 0:
+          invalid_headers(12, index)
+        else:
+          let value_start: I64 = trim_left(source, colon + 1, line_end)
+          let value_end: I64 = trim_right(source, value_start, line_end)
+          let content_length: Bool = name_equal(source, index, colon, "content-length", 0)
+          let transfer_encoding: Bool = name_equal(source, index, colon, "transfer-encoding", 0)
+          if transfer_encoding:
+            invalid_headers(15, index)
+          else:
+            if content_length:
+              if has_length:
+                invalid_headers(16, index)
+              else:
+                let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, value_start, value_end)
+                match parsed:
+                  Invalid(position):
+                    invalid_headers(14, position)
+                  Overflow(position):
+                    invalid_headers(14, position)
+                  Value(value, next):
+                    let valid: Bool = (next == value_end) && ((value >= 0) && (value <= 65536))
+                    if valid:
+                      recur(source, line_end + 2, header_start, true, value)
+                    else:
+                      invalid_headers(14, value_start)
+            else:
+              recur(source, line_end + 2, header_start, has_length, declared_length)
+
+fn invalid_response(code: I64, position: I64) -> http_model.Response:
+  http_model.Response(valid: false, code: code, position: position, status: 0, body_start: position, body_end: position)
+
+fn parse(source: Bytes) -> http_model.Response effects[partial]:
+  let length: I64 = bytes.len(source)
+  let status_end: I64 = find_crlf(source, 0, length)
+  if status_end < 0:
+    invalid_response(10, 0)
+  else:
+    let prefix: Bool = (status_end >= 12) && std_bytes.range_equal(source, 0, "HTTP/1.1 ", 0, 9)
+    if !prefix:
+      invalid_response(10, 0)
+    else:
+      let parsed_status: std_decimal.Parsed = std_decimal.parse_i64(source, 9, 12)
+      match parsed_status:
+        Invalid(position):
+          invalid_response(10, position)
+        Overflow(position):
+          invalid_response(10, position)
+        Value(status, next):
+          let valid_status: Bool = (next == 12) && ((status >= 100) && (status <= 999))
+          if !valid_status:
+            invalid_response(10, 9)
+          else:
+            let headers: http_model.Headers = parse_headers(source, status_end + 2, status_end + 2, false, 0)
+            if !headers.valid:
+              invalid_response(headers.code, headers.position)
+            else:
+              let body_length: I64 = length - headers.body_start
+              let exact: Bool = (!headers.has_length) || (body_length == headers.length)
+              if exact:
+                http_model.Response(valid: true, code: 0, position: length, status: status, body_start: headers.body_start, body_end: length)
+              else:
+                invalid_response(17, headers.body_start)

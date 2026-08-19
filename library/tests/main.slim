@@ -1,0 +1,153 @@
+module std_tests
+
+fn test_ascii(stats: std_test.Stats) -> std_test.Stats effects[io, partial]:
+  let zero: U8 = bytes.get("0", 0)
+  let nine: U8 = bytes.get("9", 0)
+  let upper_a: U8 = bytes.get("A", 0)
+  let lower_f: U8 = bytes.get("f", 0)
+  let space: U8 = bytes.get(" ", 0)
+  let digit_checks: Bool = std_ascii.is_digit(zero) && std_ascii.is_digit(nine)
+  let alpha_checks: Bool = std_ascii.is_alpha(upper_a) && (std_ascii.is_upper(upper_a) && std_ascii.is_lower(lower_f))
+  let class_checks: Bool = std_ascii.is_alphanumeric(upper_a) && std_ascii.is_hex_digit(lower_f)
+  let value_checks: Bool = (std_ascii.digit_value(nine) == 9) && (std_ascii.hex_value(lower_f) == 15)
+  std_test.check("ascii", (digit_checks && alpha_checks) && (class_checks && (value_checks && std_ascii.is_space(space))), stats)
+
+fn test_i64(stats: std_test.Stats) -> std_test.Stats effects[io, partial]:
+  let bounds: Bool = (std_i64.minimum(4, 9) == 4) && (std_i64.maximum(4, 9) == 9)
+  let clamped: Bool = (std_i64.clamp(12, 0, 10) == 10) && (std_i64.clamp(-2, 0, 10) == 0)
+  let absolute: std_i64.Absolute = std_i64.absolute(-42)
+  let absolute_ok: Bool = match absolute:
+    Overflow:
+      false
+    Value(value):
+      value == 42
+  let overflow: std_i64.Absolute = std_i64.absolute(-9223372036854775807 - 1)
+  let overflow_ok: Bool = match overflow:
+    Overflow:
+      true
+    Value(value):
+      value == 0
+  std_test.check("i64", bounds && (clamped && (absolute_ok && overflow_ok)), stats)
+
+fn test_span(stats: std_test.Stats) -> std_test.Stats effects[io, partial]:
+  let result: std_span.CheckedSpan = std_span.checked(2, 7, 10)
+  let accepted: Bool = match result:
+    Invalid:
+      false
+    Valid(span):
+      std_span.valid(span, 10) && ((std_span.length(span) == 5) && std_span.contains(span, 4))
+  let rejected: std_span.CheckedSpan = std_span.checked(-1, 3, 10)
+  let rejected_ok: Bool = match rejected:
+    Invalid:
+      true
+    Valid(span):
+      std_span.empty(span) && false
+  std_test.check("span", accepted && rejected_ok, stats)
+
+fn test_bytes_and_text(stats: std_test.Stats) -> std_test.Stats effects[alloc, io, partial]:
+  let comma: U8 = bytes.get(",", 0)
+  let colon: U8 = bytes.get(":", 0)
+  let source: Bytes = "alpha,beta,alpha"
+  let equal_checks: Bool = std_bytes.equal("same", "same") && std_bytes.range_equal(source, 0, "alpha", 0, 5)
+  let boundary_checks: Bool = std_bytes.starts_with(source, "alpha") && std_bytes.ends_with(source, "alpha")
+  let scan_checks: Bool = (std_bytes.find_byte(source, comma, 0, bytes.len(source)) == 5) && (std_bytes.count_byte(source, comma, 0, bytes.len(source)) == 2)
+  let output: Vec[U8] = vec.new()
+  let span_ok: Bool = std_text.append_span(@output, "abc", 0, 2)
+  std_text.append_byte(@output, bytes.get("c", 0))
+  std_text.append_bytes(@output, ":")
+  std_text.append_i64(@output, -9223372036854775807 - 1)
+  let rendered: Bytes = bytes.freeze(^output)
+  let content: std_test.Stats = std_test.equal_bytes("text", rendered, "abc:-9223372036854775808", stats)
+  let all_checks: Bool = span_ok && (equal_checks && (boundary_checks && scan_checks))
+  let scanned: std_test.Stats = std_test.check("bytes", all_checks, content)
+  std_test.equal_i64("ascii-colon", u8.to_i64(colon), 58, scanned)
+
+fn parsed_value(parsed: std_decimal.Parsed, expected: I64, expected_next: I64) -> Bool:
+  match parsed:
+    Invalid(index):
+      index < 0
+    Overflow(index):
+      index < 0
+    Value(value, next):
+      (value == expected) && (next == expected_next)
+
+fn parsed_overflow(parsed: std_decimal.Parsed) -> Bool:
+  match parsed:
+    Invalid(index):
+      index < 0
+    Overflow(index):
+      index >= 0
+    Value(value, next):
+      (value == next) && false
+
+fn parsed_invalid(parsed: std_decimal.Parsed) -> Bool:
+  match parsed:
+    Invalid(index):
+      index >= 0
+    Overflow(index):
+      index < 0
+    Value(value, next):
+      (value == next) && false
+
+fn test_decimal(stats: std_test.Stats) -> std_test.Stats effects[io, partial]:
+  let positive: Bool = parsed_value(std_decimal.parse_i64("9223372036854775807!", 0, 20), 9223372036854775807, 19)
+  let negative: Bool = parsed_value(std_decimal.parse_i64("-9223372036854775808", 0, 20), -9223372036854775807 - 1, 20)
+  let overflow: Bool = parsed_overflow(std_decimal.parse_i64("9223372036854775808", 0, 19))
+  let invalid: Bool = parsed_invalid(std_decimal.parse_i64("-x", 0, 2))
+  let byte_value: Bool = parsed_value(std_decimal.parse_u8("255,", 0, 4), 255, 3)
+  let byte_overflow: Bool = parsed_overflow(std_decimal.parse_u8("256", 0, 3))
+  std_test.check("decimal", positive && (negative && (overflow && (invalid && (byte_value && byte_overflow)))), stats)
+
+fn read_two(source: Bytes, cursor: std_cursor.Cursor) -> Bool effects[partial]:
+  let first: std_cursor.Read = std_cursor.read(source, cursor)
+  match first:
+    End:
+      false
+    Invalid:
+      false
+    Value(first_byte, next):
+      let second: std_cursor.Read = std_cursor.read(source, next)
+      match second:
+        End:
+          false
+        Invalid:
+          false
+        Value(second_byte, done):
+          let values: Bool = (u8.to_i64(first_byte) == 97) && (u8.to_i64(second_byte) == 98)
+          values && std_cursor.done(done)
+
+fn test_cursor(stats: std_test.Stats) -> std_test.Stats effects[io, partial]:
+  let result: std_cursor.CheckedCursor = std_cursor.checked(0, 2, 2)
+  let accepted: Bool = match result:
+    Invalid:
+      false
+    Valid(cursor):
+      std_cursor.valid(cursor, 2) && ((std_cursor.remaining(cursor) == 2) && read_two("ab", cursor))
+  let rejected: std_cursor.CheckedCursor = std_cursor.checked(2, 1, 2)
+  let rejected_ok: Bool = match rejected:
+    Invalid:
+      true
+    Valid(cursor):
+      std_cursor.done(cursor) && false
+  std_test.check("cursor", accepted && rejected_ok, stats)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let initial: std_test.Stats = std_test.start()
+  let ascii: std_test.Stats = test_ascii(initial)
+  let integers: std_test.Stats = test_i64(ascii)
+  let spans: std_test.Stats = test_span(integers)
+  let text: std_test.Stats = test_bytes_and_text(spans)
+  let decimal: std_test.Stats = test_decimal(text)
+  let cursor: std_test.Stats = test_cursor(decimal)
+  let arguments: std_test.Stats = std_test.check("args", vec.len(args) >= 0, cursor)
+  let values: Vec[I64] = vec.new()
+  std_i64_vec.filled(3, -1, 0, @values)
+  let stack_length: I64 = std_i64_vec.push_at(@values, 1, 7)
+  let vector_ok: Bool = (stack_length == 2) && ((std_i64_vec.top(values, stack_length) == 7) && std_i64_vec.contains(values, stack_length, -1, 0))
+  let vector: std_test.Stats = std_test.check("i64-vec", vector_ok, arguments)
+  let pixels: Vec[U8] = vec.new()
+  std_u8_vec.filled(2, i64.to_u8(4), 0, @pixels)
+  let pixel_length: I64 = std_u8_vec.push_at(@pixels, 1, i64.to_u8(9))
+  let pixels_ok: Bool = (pixel_length == 2) && ((std_u8_vec.count(pixels, pixel_length, i64.to_u8(4), 0, 0) == 1) && (std_u8_vec.sum(pixels, pixel_length, 0, 0) == 13))
+  let pixel: std_test.Stats = std_test.check("u8-vec", pixels_ok, vector)
+  std_test.finish(pixel)

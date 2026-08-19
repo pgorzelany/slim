@@ -38,6 +38,23 @@ fn append_nonnegative_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, p
     let byte: U8 = i64.to_u8(code)
     vec.push(@output, byte)
 
+fn append_negative_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value <= -10:
+    append_negative_i64(value / 10, @output)
+  else:
+    void
+  let remainder: I64 = value % 10
+  let digit: I64 = 0 - remainder
+  let byte: U8 = i64.to_u8(digit + 48)
+  vec.push(@output, byte)
+
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value < 0:
+    append_text(@output, "-")
+    append_negative_i64(value, @output)
+  else:
+    append_negative_i64(0 - value, @output)
+
 fn append_token(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let start: I64 = syntax.ast_node_start(tokens, index)
   let end: I64 = syntax.ast_node_end(tokens, index)

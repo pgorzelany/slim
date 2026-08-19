@@ -1,0 +1,38 @@
+module raster
+
+fn edge(ax: I64, ay: I64, bx: I64, by: I64, px: I64, py: I64) -> I64:
+  (px - ax) * (by - ay) - (py - ay) * (bx - ax)
+
+fn inside(triangle: raster_model.Triangle, x: I64, y: I64) -> Bool:
+  let first: I64 = edge(triangle.x0, triangle.y0, triangle.x1, triangle.y1, x, y)
+  let second: I64 = edge(triangle.x1, triangle.y1, triangle.x2, triangle.y2, x, y)
+  let third: I64 = edge(triangle.x2, triangle.y2, triangle.x0, triangle.y0, x, y)
+  let nonnegative: Bool = (first >= 0) && ((second >= 0) && (third >= 0))
+  let nonpositive: Bool = (first <= 0) && ((second <= 0) && (third <= 0))
+  let area: I64 = edge(triangle.x0, triangle.y0, triangle.x1, triangle.y1, triangle.x2, triangle.y2)
+  !(area == 0) && (nonnegative || nonpositive)
+
+fn render_row(triangle: raster_model.Triangle, width: I64, y: I64, x: I64, pixels: @Vec[U8]) -> Void effects[partial]:
+  if x >= width:
+    void
+  else:
+    if inside(triangle, x, y):
+      let index: I64 = y * width + x
+      vec.set(@pixels, index, triangle.shade)
+    else:
+      void
+    recur(triangle, width, y, x + 1, @pixels)
+
+fn render_triangle(triangle: raster_model.Triangle, width: I64, height: I64, y: I64, pixels: @Vec[U8]) -> Void effects[partial]:
+  if y >= height:
+    void
+  else:
+    render_row(triangle, width, y, 0, @pixels)
+    recur(triangle, width, height, y + 1, @pixels)
+
+fn render(triangles: Vec[raster_model.Triangle], width: I64, height: I64, index: I64, pixels: @Vec[U8]) -> Void effects[partial]:
+  if index >= vec.len(triangles):
+    void
+  else:
+    render_triangle(vec.get(triangles, index), width, height, 0, @pixels)
+    recur(triangles, width, height, index + 1, @pixels)

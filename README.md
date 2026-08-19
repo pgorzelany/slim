@@ -33,6 +33,12 @@ The accepted canonical Core and compiler commands are documented in
 recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
 their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 
+The [experimental source library](library/README.md) contains reusable modules,
+substantial application workloads, canonical API/reference tools, and a seeded
+typed source generator. Its deterministic corpus gate is:
+
+    ./scripts/check-library-corpus.sh
+
 The generated language website is published from this repository at
 <https://pgorzelany.github.io/slim/>. The progressive
 [SLIM Handbook](docs/HANDBOOK.md), canonical appendices, development contracts,
@@ -60,6 +66,7 @@ For the executable Core oracle and incremental measurements:
     cargo run --release --bin slim-bench -- performance
     cargo run --release --bin slim-bench -- incremental
     cargo run --release --bin slim-bench -- project
+    cargo run --release --bin slim-bench -- applications
     cargo run --release --bin slim-bench -- compare
     cargo run --release --bin slim-bench -- parallelism
     cargo run --release --bin slim-bench -- resources

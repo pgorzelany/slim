@@ -1,0 +1,170 @@
+module sat_solver
+
+struct Clause:
+  status: I64
+  unit: I64
+
+struct Scan:
+  conflict: Bool
+  satisfied: Bool
+  unit: I64
+
+struct Assigned:
+  valid: Bool
+  trail_length: I64
+
+struct Backtrack:
+  found: Bool
+  variable: I64
+  trail_length: I64
+  decision_length: I64
+
+fn variable(literal: I64) -> I64:
+  if literal < 0:
+    0 - literal
+  else:
+    literal
+
+fn desired(literal: I64) -> I64:
+  if literal < 0:
+    0
+  else:
+    1
+
+fn evaluate_clause(literals: Vec[I64], assignments: Vec[I64], index: I64, end: I64, unknowns: I64, unit: I64) -> Clause effects[partial]:
+  if index >= end:
+    if unknowns == 0:
+      Clause(status: -1, unit: 0)
+    else:
+      if unknowns == 1:
+        Clause(status: 0, unit: unit)
+      else:
+        Clause(status: 0, unit: 0)
+  else:
+    let literal: I64 = vec.get(literals, index)
+    let current: I64 = vec.get(assignments, variable(literal))
+    if current < 0:
+      recur(literals, assignments, index + 1, end, unknowns + 1, literal)
+    else:
+      if current == desired(literal):
+        Clause(status: 1, unit: 0)
+      else:
+        recur(literals, assignments, index + 1, end, unknowns, unit)
+
+fn scan_clauses(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], assignments: Vec[I64], index: I64, satisfied: Bool, unit: I64) -> Scan effects[partial]:
+  if index >= vec.len(starts):
+    Scan(conflict: false, satisfied: satisfied, unit: unit)
+  else:
+    let start: I64 = vec.get(starts, index)
+    let end: I64 = vec.get(ends, index)
+    let clause: Clause = evaluate_clause(literals, assignments, start, end, 0, 0)
+    if clause.status < 0:
+      Scan(conflict: true, satisfied: false, unit: 0)
+    else:
+      let next_satisfied: Bool = satisfied && (clause.status == 1)
+      let next_unit: I64 = if unit == 0:
+        clause.unit
+      else:
+        unit
+      recur(literals, starts, ends, assignments, index + 1, next_satisfied, next_unit)
+
+fn assign(variable: I64, value: I64, assignments: @Vec[I64], trail: @Vec[I64], trail_length: I64) -> Assigned effects[alloc, partial]:
+  let current: I64 = vec.get(assignments, variable)
+  if current < 0:
+    vec.set(@assignments, variable, value)
+    let next: I64 = std_i64_vec.push_at(@trail, trail_length, variable)
+    Assigned(valid: true, trail_length: next)
+  else:
+    Assigned(valid: current == value, trail_length: trail_length)
+
+fn rollback(assignments: @Vec[I64], trail: Vec[I64], index: I64, target: I64) -> Void effects[partial]:
+  if index <= target:
+    void
+  else:
+    let previous: I64 = index - 1
+    let variable: I64 = vec.get(trail, previous)
+    vec.set(@assignments, variable, -1)
+    recur(@assignments, trail, previous, target)
+
+fn backtrack(assignments: @Vec[I64], trail: Vec[I64], phases: @Vec[I64], variables: Vec[I64], marks: Vec[I64], decision_length: I64, trail_length: I64) -> Backtrack effects[partial]:
+  if decision_length == 0:
+    rollback(@assignments, trail, trail_length, 0)
+    Backtrack(found: false, variable: 0, trail_length: 0, decision_length: 0)
+  else:
+    let index: I64 = decision_length - 1
+    let mark: I64 = vec.get(marks, index)
+    rollback(@assignments, trail, trail_length, mark)
+    let phase: I64 = vec.get(phases, index)
+    if phase == 0:
+      vec.set(@phases, index, 1)
+      Backtrack(found: true, variable: vec.get(variables, index), trail_length: mark, decision_length: decision_length)
+    else:
+      recur(@assignments, trail, @phases, variables, marks, index, mark)
+
+fn first_unknown(assignments: Vec[I64], variable: I64, variables: I64) -> I64 effects[partial]:
+  if variable > variables:
+    0
+  else:
+    if vec.get(assignments, variable) < 0:
+      variable
+    else:
+      recur(assignments, variable + 1, variables)
+
+fn complete(assignments: @Vec[I64], variable: I64, variables: I64) -> Void effects[partial]:
+  if variable > variables:
+    void
+  else:
+    if vec.get(assignments, variable) < 0:
+      vec.set(@assignments, variable, 0)
+    else:
+      void
+    recur(@assignments, variable + 1, variables)
+
+fn search(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], variable_count: I64, budget: I64, steps: I64, assignments: @Vec[I64], trail: @Vec[I64], trail_length: I64, decision_variables: @Vec[I64], decision_phases: @Vec[I64], decision_marks: @Vec[I64], decision_length: I64) -> sat_model.Solution effects[alloc, partial]:
+  if steps >= budget:
+    sat_model.Solution::Bounded(steps)
+  else:
+    let scan: Scan = scan_clauses(literals, starts, ends, assignments, 0, true, 0)
+    if scan.conflict:
+      let back: Backtrack = backtrack(@assignments, trail, @decision_phases, decision_variables, decision_marks, decision_length, trail_length)
+      if !back.found:
+        sat_model.Solution::Unsat(steps + 1)
+      else:
+        let assigned: Assigned = assign(back.variable, 1, @assignments, @trail, back.trail_length)
+        if assigned.valid:
+          recur(literals, starts, ends, variable_count, budget, steps + 1, @assignments, @trail, assigned.trail_length, @decision_variables, @decision_phases, @decision_marks, back.decision_length)
+        else:
+          sat_model.Solution::Unsat(steps + 1)
+    else:
+      if !(scan.unit == 0):
+        let assigned: Assigned = assign(variable(scan.unit), desired(scan.unit), @assignments, @trail, trail_length)
+        if assigned.valid:
+          recur(literals, starts, ends, variable_count, budget, steps + 1, @assignments, @trail, assigned.trail_length, @decision_variables, @decision_phases, @decision_marks, decision_length)
+        else:
+          sat_model.Solution::Unsat(steps + 1)
+      else:
+        if scan.satisfied:
+          complete(@assignments, 1, variable_count)
+          sat_model.Solution::Sat(steps + 1)
+        else:
+          let next_variable: I64 = first_unknown(assignments, 1, variable_count)
+          if next_variable == 0:
+            sat_model.Solution::Unsat(steps + 1)
+          else:
+            let next_decision_length: I64 = std_i64_vec.push_at(@decision_variables, decision_length, next_variable)
+            let phase_length: I64 = std_i64_vec.push_at(@decision_phases, decision_length, 0)
+            let mark_length: I64 = std_i64_vec.push_at(@decision_marks, decision_length, trail_length)
+            let aligned: Bool = (phase_length == next_decision_length) && (mark_length == next_decision_length)
+            if aligned:
+              let assigned: Assigned = assign(next_variable, 0, @assignments, @trail, trail_length)
+              recur(literals, starts, ends, variable_count, budget, steps + 1, @assignments, @trail, assigned.trail_length, @decision_variables, @decision_phases, @decision_marks, next_decision_length)
+            else:
+              sat_model.Solution::Bounded(steps + 1)
+
+fn solve(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], variables: I64, budget: I64, assignments: @Vec[I64]) -> sat_model.Solution effects[alloc, partial]:
+  std_i64_vec.filled(variables + 1, -1, 0, @assignments)
+  let trail: Vec[I64] = vec.new()
+  let decision_variables: Vec[I64] = vec.new()
+  let decision_phases: Vec[I64] = vec.new()
+  let decision_marks: Vec[I64] = vec.new()
+  search(literals, starts, ends, variables, budget, 0, @assignments, @trail, 0, @decision_variables, @decision_phases, @decision_marks, 0)

@@ -1,0 +1,74 @@
+module std_decimal
+
+enum Parsed:
+  Invalid(I64)
+  Overflow(I64)
+  Value(I64, I64)
+
+fn finish(value: I64, negative: Bool, index: I64) -> Parsed effects[partial]:
+  if negative:
+    Parsed::Value(value, index)
+  else:
+    Parsed::Value(0 - value, index)
+
+fn digits(source: Bytes, index: I64, end: I64, value: I64, limit: I64, negative: Bool) -> Parsed effects[partial]:
+  if index == end:
+    finish(value, negative, index)
+  else:
+    let byte: U8 = bytes.get(source, index)
+    if std_ascii.is_digit(byte):
+      let digit: I64 = std_ascii.digit_value(byte)
+      let multiplication_limit: I64 = limit / 10
+      if value < multiplication_limit:
+        Parsed::Overflow(index)
+      else:
+        let multiplied: I64 = value * 10
+        let threshold: I64 = limit + digit
+        if multiplied < threshold:
+          Parsed::Overflow(index)
+        else:
+          recur(source, index + 1, end, multiplied - digit, limit, negative)
+    else:
+      finish(value, negative, index)
+
+fn parse_i64(source: Bytes, start: I64, end: I64) -> Parsed effects[partial]:
+  let length: I64 = bytes.len(source)
+  let bounds_valid: Bool = (start >= 0) && ((end >= start) && (end <= length))
+  if !bounds_valid:
+    Parsed::Invalid(start)
+  else:
+    if start == end:
+      Parsed::Invalid(start)
+    else:
+      let first: U8 = bytes.get(source, start)
+      let negative: Bool = u8.to_i64(first) == 45
+      let digit_start: I64 = if negative:
+        start + 1
+      else:
+        start
+      if digit_start == end:
+        Parsed::Invalid(digit_start)
+      else:
+        let first_digit: U8 = bytes.get(source, digit_start)
+        if std_ascii.is_digit(first_digit):
+          let digit: I64 = std_ascii.digit_value(first_digit)
+          let limit: I64 = if negative:
+            -9223372036854775807 - 1
+          else:
+            -9223372036854775807
+          digits(source, digit_start + 1, end, 0 - digit, limit, negative)
+        else:
+          Parsed::Invalid(digit_start)
+
+fn parse_u8(source: Bytes, start: I64, end: I64) -> Parsed effects[partial]:
+  let parsed: Parsed = parse_i64(source, start, end)
+  match parsed:
+    Invalid(index):
+      Parsed::Invalid(index)
+    Overflow(index):
+      Parsed::Overflow(index)
+    Value(value, next):
+      if (value >= 0) && (value <= 255):
+        Parsed::Value(value, next)
+      else:
+        Parsed::Overflow(next)

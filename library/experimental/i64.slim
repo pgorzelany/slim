@@ -1,0 +1,29 @@
+module std_i64
+
+enum Absolute:
+  Overflow
+  Value(I64)
+
+fn minimum(left: I64, right: I64) -> I64:
+  if left <= right:
+    left
+  else:
+    right
+
+fn maximum(left: I64, right: I64) -> I64:
+  if left >= right:
+    left
+  else:
+    right
+
+fn clamp(value: I64, lower: I64, upper: I64) -> I64:
+  maximum(lower, minimum(value, upper))
+
+fn absolute(value: I64) -> Absolute:
+  if value == (-9223372036854775807 - 1):
+    Absolute::Overflow()
+  else:
+    if value < 0:
+      Absolute::Value(0 - value)
+    else:
+      Absolute::Value(value)

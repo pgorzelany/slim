@@ -1,0 +1,51 @@
+module ledger_emit
+
+fn append_account(source: Bytes, account: ledger_model.Account, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "account ")
+  let name: Bool = std_text.append_span(@output, source, account.name_start, account.name_end)
+  if name:
+    std_text.append_bytes(@output, " balance ")
+  else:
+    std_text.append_bytes(@output, "<invalid> balance ")
+  std_text.append_i64(@output, account.balance)
+  std_text.append_bytes(@output, " open ")
+  if account.open:
+    std_text.append_bytes(@output, "yes")
+  else:
+    std_text.append_bytes(@output, "no")
+  std_text.append_bytes(@output, " credits ")
+  std_text.append_i64(@output, account.credits)
+  std_text.append_bytes(@output, " debits ")
+  std_text.append_i64(@output, account.debits)
+  std_text.append_bytes(@output, "\n")
+
+fn append_accounts(source: Bytes, accounts: Vec[ledger_model.Account], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index == vec.len(accounts):
+    void
+  else:
+    append_account(source, vec.get(accounts, index), @output)
+    recur(source, accounts, index + 1, @output)
+
+fn print_report(source: Bytes, accounts: Vec[ledger_model.Account], run: ledger_model.Run) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "accepted ")
+  std_text.append_i64(@output, run.accepted)
+  std_text.append_bytes(@output, " rejected ")
+  std_text.append_i64(@output, run.rejected)
+  std_text.append_bytes(@output, "\n")
+  append_accounts(source, accounts, 0, @output)
+  std_text.append_bytes(@output, "total ")
+  std_text.append_i64(@output, ledger_state.total(accounts, 0, 0))
+  std_text.append_bytes(@output, "\n")
+  let rendered: Bytes = bytes.freeze(^output)
+  io.print_bytes(rendered)
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  let rendered: Bytes = bytes.freeze(^output)
+  io.print_bytes(rendered)

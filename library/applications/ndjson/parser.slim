@@ -1,0 +1,281 @@
+module json_parser
+
+struct Scan:
+  valid: Bool
+  next: I64
+  error: I64
+
+struct StringScan:
+  valid: Bool
+  start: I64
+  end: I64
+  next: I64
+  error: I64
+
+fn code_at(source: Bytes, index: I64) -> I64 effects[partial]:
+  u8.to_i64(bytes.get(source, index))
+
+fn skip_space(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
+  if index >= end:
+    index
+  else:
+    if std_ascii.is_space(bytes.get(source, index)):
+      recur(source, index + 1, end)
+    else:
+      index
+
+fn scan_hex(source: Bytes, index: I64, end: I64, remaining: I64) -> Scan effects[partial]:
+  if remaining == 0:
+    Scan(valid: true, next: index, error: 0)
+  else:
+    if index >= end:
+      Scan(valid: false, next: index, error: index)
+    else:
+      if std_ascii.is_hex_digit(bytes.get(source, index)):
+        recur(source, index + 1, end, remaining - 1)
+      else:
+        Scan(valid: false, next: index, error: index)
+
+fn scan_string_chars(source: Bytes, index: I64, end: I64, content_start: I64) -> StringScan effects[partial]:
+  if index >= end:
+    StringScan(valid: false, start: content_start, end: index, next: index, error: index)
+  else:
+    let code: I64 = code_at(source, index)
+    if code == 34:
+      StringScan(valid: true, start: content_start, end: index, next: index + 1, error: 0)
+    else:
+      if code < 32:
+        StringScan(valid: false, start: content_start, end: index, next: index, error: index)
+      else:
+        if code == 92:
+          let escaped: I64 = index + 1
+          if escaped >= end:
+            StringScan(valid: false, start: content_start, end: index, next: index, error: index)
+          else:
+            let escape: I64 = code_at(source, escaped)
+            let simple_quote: Bool = (escape == 34) || (escape == 92)
+            let simple_slash: Bool = (escape == 47) || (escape == 98)
+            let simple_control: Bool = ((escape == 102) || (escape == 110)) || ((escape == 114) || (escape == 116))
+            let simple: Bool = simple_quote || (simple_slash || simple_control)
+            if simple:
+              recur(source, escaped + 1, end, content_start)
+            else:
+              if escape == 117:
+                let hex: Scan = scan_hex(source, escaped + 1, end, 4)
+                if hex.valid:
+                  recur(source, hex.next, end, content_start)
+                else:
+                  StringScan(valid: false, start: content_start, end: index, next: index, error: hex.error)
+              else:
+                StringScan(valid: false, start: content_start, end: index, next: index, error: escaped)
+        else:
+          recur(source, index + 1, end, content_start)
+
+fn scan_string(source: Bytes, index: I64, end: I64) -> StringScan effects[partial]:
+  if (index >= end) || !(code_at(source, index) == 34):
+    StringScan(valid: false, start: index, end: index, next: index, error: index)
+  else:
+    scan_string_chars(source, index + 1, end, index + 1)
+
+fn scan_digits(source: Bytes, index: I64, end: I64) -> Scan effects[partial]:
+  if index >= end:
+    Scan(valid: false, next: index, error: index)
+  else:
+    if std_ascii.is_digit(bytes.get(source, index)):
+      scan_digits_tail(source, index + 1, end)
+    else:
+      Scan(valid: false, next: index, error: index)
+
+fn scan_digits_tail(source: Bytes, index: I64, end: I64) -> Scan effects[partial]:
+  if index >= end:
+    Scan(valid: true, next: index, error: 0)
+  else:
+    if std_ascii.is_digit(bytes.get(source, index)):
+      recur(source, index + 1, end)
+    else:
+      Scan(valid: true, next: index, error: 0)
+
+fn scan_fraction(source: Bytes, index: I64, end: I64) -> Scan effects[partial]:
+  if (index < end) && (code_at(source, index) == 46):
+    scan_digits(source, index + 1, end)
+  else:
+    Scan(valid: true, next: index, error: 0)
+
+fn scan_exponent(source: Bytes, index: I64, end: I64) -> Scan effects[partial]:
+  if index >= end:
+    Scan(valid: true, next: index, error: 0)
+  else:
+    let code: I64 = code_at(source, index)
+    if (code == 101) || (code == 69):
+      let sign_index: I64 = index + 1
+      if sign_index >= end:
+        Scan(valid: false, next: sign_index, error: sign_index)
+      else:
+        let sign: I64 = code_at(source, sign_index)
+        let digit_index: I64 = if (sign == 43) || (sign == 45):
+          sign_index + 1
+        else:
+          sign_index
+        scan_digits(source, digit_index, end)
+    else:
+      Scan(valid: true, next: index, error: 0)
+
+fn scan_number(source: Bytes, index: I64, end: I64) -> Scan effects[partial]:
+  if index >= end:
+    Scan(valid: false, next: index, error: index)
+  else:
+    let first: I64 = code_at(source, index)
+    let integer_start: I64 = if first == 45:
+      index + 1
+    else:
+      index
+    if integer_start >= end:
+      Scan(valid: false, next: integer_start, error: integer_start)
+    else:
+      let integer_first: I64 = code_at(source, integer_start)
+      let integer: Scan = if integer_first == 48:
+        let next: I64 = integer_start + 1
+        if (next < end) && std_ascii.is_digit(bytes.get(source, next)):
+          Scan(valid: false, next: next, error: next)
+        else:
+          Scan(valid: true, next: next, error: 0)
+      else:
+        scan_digits(source, integer_start, end)
+      if integer.valid:
+        let fraction: Scan = scan_fraction(source, integer.next, end)
+        if fraction.valid:
+          scan_exponent(source, fraction.next, end)
+        else:
+          fraction
+      else:
+        integer
+
+fn literal_matches(source: Bytes, index: I64, end: I64, literal: Bytes) -> Bool effects[partial]:
+  let length: I64 = bytes.len(literal)
+  if length <= (end - index):
+    std_bytes.range_equal(source, index, literal, 0, length)
+  else:
+    false
+
+fn invalid(code: I64, index: I64) -> json_model.Parsed:
+  json_model.Parsed::Invalid(code, index)
+
+fn add_node(node: json_model.Node, next: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed effects[alloc]:
+  let id: Id[json_model.Node] = arena.add(@nodes, node)
+  json_model.Parsed::Valid(next, id)
+
+fn parse_literal(source: Bytes, index: I64, end: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed effects[alloc, partial]:
+  if literal_matches(source, index, end, "null"):
+    add_node(json_model.Node::Null(), index + 4, @nodes)
+  else:
+    if literal_matches(source, index, end, "true"):
+      add_node(json_model.Node::Boolean(true), index + 4, @nodes)
+    else:
+      if literal_matches(source, index, end, "false"):
+        add_node(json_model.Node::Boolean(false), index + 5, @nodes)
+      else:
+        invalid(2, index)
+
+fn parse_array_items(source: Bytes, index: I64, end: I64, previous_edge: I64, count: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge]) -> json_model.Parsed effects[alloc, partial]:
+  let value: json_model.Parsed = parse_value(source, index, end, @nodes, @edges)
+  match value:
+    Invalid(code, position):
+      invalid(code, position)
+    Valid(next, id):
+      let edge_index: I64 = vec.len(edges)
+      let edge: json_model.Edge = json_model.Edge(key_start: -1, key_end: -1, value: id, next: previous_edge)
+      vec.push(@edges, edge)
+      let cursor: I64 = skip_space(source, next, end)
+      if cursor >= end:
+        invalid(4, cursor)
+      else:
+        let code: I64 = code_at(source, cursor)
+        if code == 93:
+          add_node(json_model.Node::Array(edge_index, count + 1), cursor + 1, @nodes)
+        else:
+          if code == 44:
+            let following: I64 = skip_space(source, cursor + 1, end)
+            parse_array_items(source, following, end, edge_index, count + 1, @nodes, @edges)
+          else:
+            invalid(4, cursor)
+
+fn parse_array(source: Bytes, index: I64, end: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge]) -> json_model.Parsed effects[alloc, partial]:
+  let cursor: I64 = skip_space(source, index + 1, end)
+  if cursor >= end:
+    invalid(4, cursor)
+  else:
+    if code_at(source, cursor) == 93:
+      add_node(json_model.Node::Array(-1, 0), cursor + 1, @nodes)
+    else:
+      parse_array_items(source, cursor, end, -1, 0, @nodes, @edges)
+
+fn parse_object_items(source: Bytes, index: I64, end: I64, previous_edge: I64, count: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge]) -> json_model.Parsed effects[alloc, partial]:
+  let key: StringScan = scan_string(source, index, end)
+  if !key.valid:
+    invalid(5, key.error)
+  else:
+    let colon: I64 = skip_space(source, key.next, end)
+    if (colon >= end) || !(code_at(source, colon) == 58):
+      invalid(5, colon)
+    else:
+      let value_start: I64 = skip_space(source, colon + 1, end)
+      let value: json_model.Parsed = parse_value(source, value_start, end, @nodes, @edges)
+      match value:
+        Invalid(code, position):
+          invalid(code, position)
+        Valid(next, id):
+          let edge_index: I64 = vec.len(edges)
+          let edge: json_model.Edge = json_model.Edge(key_start: key.start, key_end: key.end, value: id, next: previous_edge)
+          vec.push(@edges, edge)
+          let cursor: I64 = skip_space(source, next, end)
+          if cursor >= end:
+            invalid(5, cursor)
+          else:
+            let code: I64 = code_at(source, cursor)
+            if code == 125:
+              add_node(json_model.Node::Object(edge_index, count + 1), cursor + 1, @nodes)
+            else:
+              if code == 44:
+                let following: I64 = skip_space(source, cursor + 1, end)
+                parse_object_items(source, following, end, edge_index, count + 1, @nodes, @edges)
+              else:
+                invalid(5, cursor)
+
+fn parse_object(source: Bytes, index: I64, end: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge]) -> json_model.Parsed effects[alloc, partial]:
+  let cursor: I64 = skip_space(source, index + 1, end)
+  if cursor >= end:
+    invalid(5, cursor)
+  else:
+    if code_at(source, cursor) == 125:
+      add_node(json_model.Node::Object(-1, 0), cursor + 1, @nodes)
+    else:
+      parse_object_items(source, cursor, end, -1, 0, @nodes, @edges)
+
+fn parse_value(source: Bytes, index: I64, end: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge]) -> json_model.Parsed effects[alloc, partial]:
+  let cursor: I64 = skip_space(source, index, end)
+  if cursor >= end:
+    invalid(1, cursor)
+  else:
+    let code: I64 = code_at(source, cursor)
+    if code == 34:
+      let string: StringScan = scan_string(source, cursor, end)
+      if string.valid:
+        add_node(json_model.Node::String(string.start, string.end), string.next, @nodes)
+      else:
+        invalid(3, string.error)
+    else:
+      if code == 91:
+        parse_array(source, cursor, end, @nodes, @edges)
+      else:
+        if code == 123:
+          parse_object(source, cursor, end, @nodes, @edges)
+        else:
+          let number: Bool = (code == 45) || ((code >= 48) && (code <= 57))
+          if number:
+            let scan: Scan = scan_number(source, cursor, end)
+            if scan.valid:
+              add_node(json_model.Node::Number(cursor, scan.next), scan.next, @nodes)
+            else:
+              invalid(2, scan.error)
+          else:
+            parse_literal(source, cursor, end, @nodes)
