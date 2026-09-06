@@ -1,0 +1,6 @@
+module shadowed_type
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: I64 = 42
+  let value: Bool = value
+  0

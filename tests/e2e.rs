@@ -35,6 +35,33 @@ fn write_source(directory: &Path, source: &str) -> PathBuf {
     path
 }
 
+// Optimization/ABI assertions intentionally ignore local identifier suffixes.
+// Binding identity itself is tested through raw C and native lexical-scope cases.
+fn codegen_without_local_ids(source: &str) -> String {
+    source
+        .split_inclusive(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+        .map(|piece| {
+            let end = piece
+                .bytes()
+                .take_while(|byte| byte.is_ascii_alphanumeric() || *byte == b'_')
+                .count();
+            let token = &piece[..end];
+            if token.starts_with("slim_v_")
+                && let Some((base, digits)) = token.rsplit_once("_n")
+                && !digits.is_empty()
+                && digits.bytes().all(|byte| byte.is_ascii_digit())
+            {
+                return format!("{base}{}", &piece[end..]);
+            }
+            piece.to_owned()
+        })
+        .collect()
+}
+
+fn read_codegen_for_assertions(path: impl AsRef<Path>) -> std::io::Result<String> {
+    fs::read_to_string(path).map(|source| codegen_without_local_ids(&source))
+}
+
 #[test]
 fn experimental_standard_library_is_canonical_and_deterministic() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -698,7 +725,7 @@ fn monotonic_clock_is_typed_effectful_and_allocation_free() {
     let emitted = Command::new(slimc()).arg(&source).output().unwrap();
     assert!(emitted.status.success());
     assert!(emitted.stderr.is_empty());
-    let generated = String::from_utf8(emitted.stdout).unwrap();
+    let generated = codegen_without_local_ids(&String::from_utf8(emitted.stdout).unwrap());
     assert_eq!(generated.matches("slim_monotonic_ms()").count(), 2);
 
     let analysis = Command::new(slimc())
@@ -786,7 +813,7 @@ fn bounded_tcp_exchange_preserves_failure_state_and_closes_connections() {
 
     let emitted = Command::new(slimc()).arg(&source).output().unwrap();
     assert!(emitted.status.success());
-    let generated = String::from_utf8(emitted.stdout).unwrap();
+    let generated = codegen_without_local_ids(&String::from_utf8(emitted.stdout).unwrap());
     assert_eq!(generated.matches("slim_tcp_exchange(").count(), 3);
 
     let analysis = Command::new(slimc())
@@ -1243,7 +1270,7 @@ fn emits_c_deterministically() {
         assert!(status.success());
     }
     assert_eq!(fs::read(first).unwrap(), fs::read(&second).unwrap());
-    let generated = fs::read_to_string(&second).unwrap();
+    let generated = read_codegen_for_assertions(&second).unwrap();
     assert!(generated.contains("slim_result = INT64_C(40) + INT64_C(2);"));
     assert!(!generated.contains("slim_i64_add"));
     assert!(generated.contains("slim_fn_main"));
@@ -1262,7 +1289,7 @@ fn emits_c_deterministically() {
         .unwrap();
     assert!(status.success());
     assert!(
-        fs::read_to_string(unknown_generated)
+        read_codegen_for_assertions(unknown_generated)
             .unwrap()
             .contains("slim_result = slim_i64_add(slim_v_value, INT64_C(1));"),
         "unknown arithmetic must retain its checked runtime operation"
@@ -1276,7 +1303,7 @@ fn ownership_modes_have_distinct_checked_abi_capabilities() {
     let source = root.join("conformance/tool/format.slim");
     let output = Command::new(slimc()).arg(source).output().unwrap();
     assert!(output.status.success());
-    let generated = String::from_utf8(output.stdout).unwrap();
+    let generated = codegen_without_local_ids(&String::from_utf8(output.stdout).unwrap());
     assert!(
         generated.contains(
             "static SLIM_UNUSED_FUNCTION int64_t slim_fn_read(SlimVec slim_v_values, SlimRegion *slim_region);"
@@ -1309,7 +1336,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .unwrap()
             .success()
     );
-    let exact_generated = fs::read_to_string(exact_c).unwrap();
+    let exact_generated = read_codegen_for_assertions(exact_c).unwrap();
     assert!(exact_generated.contains("slim_result = slim_v_value / slim_v_divisor;"));
     assert!(!exact_generated.contains("slim_i64_div"));
 
@@ -1328,7 +1355,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .unwrap()
             .success()
     );
-    let conflicting_generated = fs::read_to_string(conflicting_c).unwrap();
+    let conflicting_generated = read_codegen_for_assertions(conflicting_c).unwrap();
     assert!(
         conflicting_generated.contains("slim_result = slim_v_value / slim_v_divisor;"),
         "a joined positive divisor interval should prove division total"
@@ -1351,7 +1378,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .success()
     );
     assert!(
-        fs::read_to_string(possible_zero_c)
+        read_codegen_for_assertions(possible_zero_c)
             .unwrap()
             .contains("slim_result = slim_i64_div(slim_v_value, slim_v_divisor);"),
         "a divisor interval containing zero must retain the checked operation"
@@ -1372,7 +1399,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .unwrap()
             .success()
     );
-    let changed_recurrence_generated = fs::read_to_string(changed_recurrence_c).unwrap();
+    let changed_recurrence_generated = read_codegen_for_assertions(changed_recurrence_c).unwrap();
     assert!(
         changed_recurrence_generated.contains("slim_v_quotient = slim_v_index / slim_v_divisor;"),
         "a positively bounded recurrence accumulator should prove division total"
@@ -1394,7 +1421,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .success()
     );
     assert!(
-        fs::read_to_string(decreasing_divisor_c)
+        read_codegen_for_assertions(decreasing_divisor_c)
             .unwrap()
             .contains("slim_v_quotient = slim_i64_div(slim_v_index, slim_v_divisor);"),
         "an unsupported decreasing recurrence must retain checked division"
@@ -1416,7 +1443,7 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
             .success()
     );
     assert!(
-        fs::read_to_string(bounded_c)
+        read_codegen_for_assertions(bounded_c)
             .unwrap()
             .contains("slim_result = slim_i64_div(slim_v_value, slim_v_divisor);"),
         "facts beyond the fixed propagation budget must remain unknown"
@@ -1513,7 +1540,7 @@ fn replacement_executes_counted_stages_and_retains_mutation_evidence() {
     );
     let emitted = Command::new(&compiler).arg(&source).output().unwrap();
     assert!(emitted.status.success(), "{emitted:?}");
-    let generated = String::from_utf8(emitted.stdout).unwrap();
+    let generated = codegen_without_local_ids(&String::from_utf8(emitted.stdout).unwrap());
     assert_eq!(
         generated
             .matches("if (slim_v_index < INT64_C(3)) do {")
@@ -1553,7 +1580,7 @@ fn exclusive_assignment_executes_through_counted_lowering() {
     assert!(report.contains("(counted-loop-count 1) (reported-facts 1)"));
     let emitted = Command::new(&compiler).arg(&source).output().unwrap();
     assert!(emitted.status.success(), "{emitted:?}");
-    let generated = String::from_utf8(emitted.stdout).unwrap();
+    let generated = codegen_without_local_ids(&String::from_utf8(emitted.stdout).unwrap());
     assert_eq!(
         generated
             .matches("if (slim_v_index < INT64_C(3)) do {")
@@ -1597,7 +1624,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
         "{}",
         String::from_utf8_lossy(&emitted.stderr)
     );
-    let early_generated = fs::read_to_string(&early_c).unwrap();
+    let early_generated = read_codegen_for_assertions(&early_c).unwrap();
     assert_eq!(
         early_generated
             .matches("if (slim_v_index < INT64_C(4)) do {")
@@ -1648,7 +1675,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
             .success()
     );
     assert_eq!(
-        fs::read_to_string(maximum_c)
+        read_codegen_for_assertions(maximum_c)
             .unwrap()
             .matches("if (slim_v_index < INT64_C(16)) do {")
             .count(),
@@ -1670,7 +1697,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
             .unwrap()
             .success()
     );
-    let conflicting_generated = fs::read_to_string(conflicting_c).unwrap();
+    let conflicting_generated = read_codegen_for_assertions(conflicting_c).unwrap();
     assert!(!conflicting_generated.contains("do {"));
     assert!(conflicting_generated.contains("slim_recur: ;"));
 
@@ -1689,7 +1716,7 @@ fn exact_counted_recurrences_expand_only_under_complete_proof() {
             .unwrap()
             .success()
     );
-    let over_budget_generated = fs::read_to_string(over_budget_c).unwrap();
+    let over_budget_generated = read_codegen_for_assertions(over_budget_c).unwrap();
     assert!(!over_budget_generated.contains("do {"));
     assert!(over_budget_generated.contains("slim_recur: ;"));
 
@@ -1731,7 +1758,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
             .unwrap()
             .success()
     );
-    let propagated_generated = fs::read_to_string(propagated_c).unwrap();
+    let propagated_generated = read_codegen_for_assertions(propagated_c).unwrap();
     assert!(propagated_generated.contains("slim_v_value % INT64_C(10)"));
     assert!(propagated_generated.contains("slim_v_value + INT64_C(1)"));
     assert!(!propagated_generated.contains("slim_i64_add(slim_v_value"));
@@ -1760,7 +1787,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
             .unwrap()
             .success()
     );
-    let fallback_generated = fs::read_to_string(&fallback_c).unwrap();
+    let fallback_generated = read_codegen_for_assertions(&fallback_c).unwrap();
     assert!(fallback_generated.contains(".len > INT64_C(9) ? slim_v_index"));
     assert!(fallback_generated.contains("slim_vec_check_index"));
     let fallback_executable = directory.join("fallback");
@@ -1817,7 +1844,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
             .unwrap()
             .success()
     );
-    let set_generated = fs::read_to_string(&set_c).unwrap();
+    let set_generated = read_codegen_for_assertions(&set_c).unwrap();
     assert!(set_generated.contains(".len > INT64_C(9) ? slim_v_index"));
     let set_executable = directory.join("set");
     assert!(
@@ -1850,7 +1877,7 @@ fn bounded_ranges_cross_calls_and_version_collection_checks_safely() {
             .unwrap()
             .success()
     );
-    let negative_generated = fs::read_to_string(negative_c).unwrap();
+    let negative_generated = read_codegen_for_assertions(negative_c).unwrap();
     assert!(!negative_generated.contains(".len > INT64_C("));
     assert!(negative_generated.contains("slim_vec_check_index"));
 
@@ -1875,7 +1902,7 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
             .unwrap()
             .success()
     );
-    let generated = fs::read_to_string(generated).unwrap();
+    let generated = read_codegen_for_assertions(generated).unwrap();
     assert!(!generated.contains("slim_vec_set("));
     assert!(generated.contains(".len > INT64_C(0)"));
     assert!(generated.contains("slim_vec_check_index"));
@@ -3561,6 +3588,72 @@ fn missing_partial_stays_rejected_when_refinement_budget_is_exhausted() {
                 String::from_utf8(output.stdout).unwrap(),
                 "E0343@2978:2983\n"
             );
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn lexical_shadowing_matches_alpha_renamed_native_programs() {
+    let directory = temporary_directory("lexical-shadowing");
+    let compiler = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("build/toolchain/slimc");
+    // Fixed domain: two branch values, four depths, parameter/local roots,
+    // and original/alpha-renamed programs. Expected result is independent of C.
+    for depth in [1, 2, 8, 32] {
+        for branch in [false, true] {
+            for parameter in [false, true] {
+                for renamed in [false, true] {
+                    let name = |level| {
+                        if renamed {
+                            format!("value_{level}")
+                        } else {
+                            String::from("value")
+                        }
+                    };
+                    let mut source = if parameter {
+                        format!("module lexical\n\nfn exercise({}: I64) -> I64:\n", name(0))
+                    } else {
+                        format!(
+                            "module lexical\n\nfn exercise() -> I64:\n  let {}: I64 = 10\n",
+                            name(0)
+                        )
+                    };
+                    for level in 1..=depth {
+                        source.push_str(&format!("  let {}: I64 = if {branch}:\n    let {}: I64 = {} + 1\n    {}\n  else:\n    let {}: I64 = {} + 2\n    {}\n", name(level), name(level), name(level-1), name(level), name(level), name(level-1), name(level)));
+                    }
+                    source.push_str(&format!(
+                        "  {}\n\nfn main(args: Vec[Bytes]) -> I64:\n  exercise({})\n",
+                        name(depth),
+                        if parameter { "10" } else { "" }
+                    ));
+                    let path = write_source(&directory, &source);
+                    let generated = Command::new(&compiler).arg(path).output().unwrap();
+                    assert!(generated.status.success(), "{source}: {generated:?}");
+                    let text = String::from_utf8(generated.stdout.clone()).unwrap();
+                    assert!(text.contains("slim_v_value") && text.contains("_n"));
+                    let c = directory.join("program.c");
+                    let binary = directory.join("program");
+                    fs::write(&c, generated.stdout).unwrap();
+                    let output = Command::new(native_compiler())
+                        .args([
+                            "-std=c11", "-O1", "-Wall", "-Wextra", "-Werror", "-I", "runtime",
+                        ])
+                        .arg(c)
+                        .arg("runtime/slim_rt.c")
+                        .arg("-o")
+                        .arg(&binary)
+                        .output()
+                        .unwrap();
+                    assert!(output.status.success(), "{source}: {output:?}");
+                    let run = Command::new(binary).output().unwrap();
+                    assert_eq!(
+                        run.status.code(),
+                        Some(10 + depth * if branch { 1 } else { 2 }),
+                        "{source}: {run:?}"
+                    );
+                    assert!(run.stdout.is_empty() && run.stderr.is_empty());
+                }
+            }
         }
     }
     fs::remove_dir_all(directory).unwrap();

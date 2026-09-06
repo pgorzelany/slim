@@ -1,0 +1,44 @@
+# same-host; workload=selfhost/slim.project at RFC-0122; command=native emission; one warmup; seven alternating AB/BA pairs; excludes external C compiler
+# compiler_0=build/slim-next-shadow/baseline-slimc; sha256=86ee3b35afaaeb9ef37d643c62fae5532de5772d5a2015ece0b579ec458b93e4
+# compiler_1=build/toolchain/slimc; sha256=83bf6cb3c25b9f38b955e004b99bb73079dd0c296185e90474ca49a1b9d913cf
+# source=selfhost/analysis.slim; sha256=20ebb786fcdac8fcf8c62b6221e6e5475cbd5f886a7436343e168bd28ba932af
+# source=selfhost/cache.slim; sha256=2611c0bb0a35dcd2f2c26d93c14128602478c72b94051f1a41e5169f2cdfd895
+# source=selfhost/check.slim; sha256=c1626cea58855567cd29d1104230c51ca2f16c150e6d949ebaaecfa81aef644a
+# source=selfhost/codegen.slim; sha256=6105d7734e993d1b1dca38a8e02a4d314500d804779e011fa55d0c178bcdc3bf
+# source=selfhost/driver.slim; sha256=19969233cc6bf0aba385ca9fa33295e3a43f3e83be3eef68bab57759934dff4d
+# source=selfhost/edit.slim; sha256=b72fa5131f622852ab932253b963c78d93f08780f76256876a701ee75504bba7
+# source=selfhost/effects.slim; sha256=72e791bbe3e4c92c9ad3bced1dbfa13047ee4521a3042432aefdaa8f8a24ba0f
+# source=selfhost/equivalence.slim; sha256=66c1318ac61b992b0c2a5465dcabae507e4a0c0c9401a5dbb09709fba97bb6f1
+# source=selfhost/format.slim; sha256=2443ada8ecc772e7b82d6f07b794b725883548d3084c3db28ebae2e8bb661330
+# source=selfhost/ir.slim; sha256=679fad5f439d37164c9de223566f1bcc9c07b38b875fbd8eb4dd2dde906fd465
+# source=selfhost/memory.slim; sha256=239fd3e532a9a82a6e224621c9b5930c7b9ba8b4d71ab75ef611f9d2dc8366ad
+# source=selfhost/ownership.slim; sha256=df3aa938361c3d6e6e91c9e97121e19348a0634268bfeffeb7bd495569c82846
+# source=selfhost/parallel.slim; sha256=48bf3c6c1c4e0b0b668450627720394dcc6e0459a8c35e520d75b391c02fa856
+# source=selfhost/project.slim; sha256=b2c5a55393d6add38431ad365aef56fac807254d193b9a2c58885e0489ee9cc7
+# source=selfhost/proof.slim; sha256=81dc74167154ce663f49b4ce925d7291cf9bc25ffa83d11087cb564c8d78bee9
+# source=selfhost/quality.slim; sha256=8baf11be75e4c2eacbf176c57a31f72d627b85888fc745ac2bbbf20ff0383286
+# source=selfhost/query.slim; sha256=0e62c6bc546342196669465adb962ae10b71acf6c3f47921ee3706309849363b
+# source=selfhost/ranges.slim; sha256=c4525cea2faf83d866cf28c7bf9462b1a38daac7d979a96fd4353804c253da21
+# source=selfhost/reduce.slim; sha256=4396e9de32ca4e78817ccf968ae1660a29356d37ada31ce40dbe2b3e8fe25ae0
+# source=selfhost/scheduler.slim; sha256=65de980440f6d50c191c2cd516b2775935503973ff3de009793dfa057907a347
+# source=selfhost/session.slim; sha256=2cb21f34e0e88bd75e1cbdc7c0652d807ff351986c2600adcc337eb5ddfbd16c
+# source=selfhost/slimc.slim; sha256=45b823d7e928010627ac5e9f3c8abc24b85e9757df33e5b4b6cbde2b5551864d
+# source=selfhost/syntax.slim; sha256=e4fbb50bd76aac346cd7b465198fe95ae80afbebdc459c1b6d38a1ccdb784592
+# source=selfhost/text.slim; sha256=cf10092cb33f80902e120b917a20825e2d382234119addcefe5c236352f619db
+# source=selfhost/typing.slim; sha256=ec030593d8b1a228ef713ddfe45f98543a8e1e9ecd2e7dde9270a9588ba0877a
+# source=selfhost/validate.slim; sha256=5e1707730216ea9d6eeb7f723121c504325bf3f9dae3a6aa1cf6585e651c7814
+pair	order	compiler	emit_ns	output_bytes
+0	0	0	178356875	3021041
+0	1	1	182834166	3516365
+1	0	1	182864250	3516365
+1	1	0	181732250	3021041
+2	0	0	179264250	3021041
+2	1	1	182519166	3516365
+3	0	1	181234959	3516365
+3	1	0	175952750	3021041
+4	0	0	175007083	3021041
+4	1	1	178104083	3516365
+5	0	1	180047792	3516365
+5	1	0	176049000	3021041
+6	0	0	173812000	3021041
+6	1	1	178014667	3516365

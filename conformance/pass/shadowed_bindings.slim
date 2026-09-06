@@ -1,0 +1,58 @@
+module shadowed_bindings
+
+struct Owner:
+  values: Vec[I64]
+
+enum Choice:
+  Some(I64)
+
+fn scalar(value: I64) -> I64:
+  let value: I64 = value + 1
+  let value: I64 = if true:
+    let value: I64 = value + 1
+    value
+  else:
+    value
+  value
+
+fn mutate(value: @Vec[I64]) -> I64 effects[alloc]:
+  let value: I64 = if true:
+    vec.push(@value, 41)
+    vec.get(value, 0)
+  else:
+    0
+  value + 1
+
+fn payload(value: Choice) -> I64:
+  match value:
+    Some(value):
+      let value: I64 = value + 1
+      value
+
+fn owned(owner: ^Owner) -> I64 effects[alloc, partial]:
+  let owner: Owner = owner
+  let owner: Owner = owner
+  vec.get(owner.values, 0)
+
+fn loop(value: I64, count: I64) -> I64 effects[partial]:
+  if count > 0:
+    let value: I64 = value + 1
+    recur(value, count - 1)
+  else:
+    value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  var value: I64 = 40
+  let a: I64 = scalar(value)
+  let values: Vec[I64] = vec.new()
+  let b: I64 = mutate(@values)
+  let c: I64 = payload(Choice::Some(41))
+  let numbers: Vec[I64] = vec.new()
+  vec.push(@numbers, 42)
+  let d: I64 = owned(^Owner(values: numbers))
+  let e: I64 = loop(40, 2)
+  let value_n42: I64 = 42
+  if (a == 42) && ((b == 42) && ((c == 42) && ((d == 42) && ((e == 42) && ((value == 40) && (value_n42 == 42)))))):
+    0
+  else:
+    1

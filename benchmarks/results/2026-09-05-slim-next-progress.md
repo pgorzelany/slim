@@ -12,7 +12,7 @@ complete any milestone. Production semantics remain in SLIM and the portable C s
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Shadowed-initializer lowering, the remaining claim audit, successor process decisions, and the milestone release gate remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Lexical binding lowering is repaired. The remaining claim audit, successor process decisions, and milestone release gate remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -886,3 +886,68 @@ The checked initializer refers to the outer binding, so this is an exact
 lowering defect. The witness is preserved for repair; it is not accepted as a
 passing conformance row with the wrong result. M0 also retains its claim audit,
 successor process decisions, and full release gate. M1-M7 remain pending.
+
+## Lexical binding identity checkpoint (2026-09-06)
+
+RFC-0122 repairs the shadowed-initializer witness: native execution now returns
+42. Every generated source variable carries its checked declaration node as a
+suffix. References, declarations, mutation destinations, payload extraction,
+recurrence arguments, and parallel captures share that emitter. The seven-line
+production change adds no checker pass, metadata table, runtime operation,
+source syntax, or semantic fallback. Compiler-generated anonymous Void bindings
+also receive distinct names.
+
+An initial attempt to mark only shadowed declarations was overwritten by the
+checker's binding indexing; its witness still returned 2. It was removed. The
+final implementation uses the use-to-declaration links already retained by the
+checker, including the original unlinked node for declarations. Source underscores
+are mangled as `_95`, so source names cannot collide with the `_n` node suffix.
+
+The six permanent conformance rows comprise three executions and three exact
+rejections: original initializer, nested scalar/owned/enum/exclusive/recurrence
+bindings, structured parallel captures, undefined initializer, moved initializer,
+and wrong type. Unsupported scalar exclusive parameters and non-effectful
+explicit parallel tasks were rejected while preparing the fixtures; positive
+cases use the already accepted source contract. A separate 32-program domain
+checks shadowed and alpha-renamed variants across depths 1, 2, 8, and 32, both
+branch values, and parameter/local roots. Its expected arithmetic results are
+independent of the backend. This is exact for that domain, not a universal proof.
+
+All positives pass ASan/UBSan. The parallel fixture passes both inline and POSIX
+worker tiers. Across application fault ordinals 1 through 64, the witness reaches
+one failure, the mixed-binding fixture three, and each parallel tier one. Other
+ordinals produce the expected result with empty output. The sanitized compiler
+checks itself; all 128 fault ordinals on the mixed-binding source reach clean
+exit-71 failure. This bounds the tested failure domain, not all allocations.
+
+All 20 complete native analysis reports remain byte-identical, including every
+blocker and resource fact. Generated C differs only in local identifiers, with
+[every native size change recorded](2026-09-06-binding-identity-native-changes.tsv).
+Existing ABI and arithmetic-lowering assertions ignore only those suffixes; their
+other predicates and native execution requirements remain unchanged.
+
+The seed grows from 3,020,129 to 3,516,365 C bytes (16.4%). This representation cost
+is explicit. Same-host checking on 2,000/4,000/8,000/16,000 call-heavy declarations
+has baseline/candidate medians of 11.757/11.663, 21.588/21.031, 44.208/42.969, and
+86.539/87.401 ms. The final ratio is 1.010, with no general checking-speed claim.
+[Frontend pairs](2026-09-06-binding-identity-frontend-pair.tsv) identify both
+binaries and retain all seven alternating AB/BA pairs after one warmup.
+
+[Emission pairs](2026-09-06-binding-identity-emission-pair.tsv) offer the same
+current compiler source to both binaries and exclude external C compilation.
+All seven candidate runs are slower; medians are 176.049 versus 181.235 ms,
+ratio 1.029. RFC-0122 therefore records Compile -1 and score 10. No budget is
+relaxed, and the generated size increase is not disguised as a performance gain.
+No agent productivity conclusion follows from compiler timings.
+
+Bootstrap, governance, formatting, Clippy, all 10 unit and 59 integration tests,
+331 conformance fixtures plus 2,000 malformed mutations, quick performance and
+reduction, parallelism, resources, quick native comparison, quick parallel runtime,
+and agent gates pass. The work campaign passes with the new seed in ordinary and
+sanitizer modes; input-byte hooks resolve suffixed formals in exact generated
+signatures. Native SLIM/C and SLIM/Rust means are 1.066 and 1.025; parallel/serial
+ratios are 0.642 (`state_machine`) and 0.567 (`signal_network`). The seed SHA-256 is
+`a7e4b2f8de6696c27880ebaf170392c7f491b73bdd9157846bf5a9ddc05ae9e4`.
+Logs, failed attempts, and sanitizer artifacts are in ignored
+`build/slim-next-shadow/`. M0 still requires the final claim audit, successor
+process decisions, and full release gate. M1-M7 remain pending.

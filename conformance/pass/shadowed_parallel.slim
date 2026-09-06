@@ -1,0 +1,14 @@
+module shadowed_parallel
+
+fn add(value: I64) -> I64 effects[io]:
+  let now: I64 = io.monotonic_ms()
+  value
+
+fn exercise(first: I64, second: I64) -> I64 effects[io]:
+  parallel:
+    let first: I64 = add(first)
+    let second: I64 = add(second)
+    first + second
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  exercise(21, 21)

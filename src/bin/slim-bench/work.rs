@@ -234,6 +234,39 @@ fn replace_once(source: &str, anchor: &str, replacement: &str) -> Result<String,
     Ok(source.replacen(anchor, replacement, 1))
 }
 
+// Resolve a source-owned formal in this exact generated function signature.
+// Declaration suffixes are emitted by RFC-0122; never guess a node number.
+fn hook_amount(hook: &Hook, signature: &str) -> Result<String, String> {
+    if hook.amount == "1" {
+        return Ok(String::from("1"));
+    }
+    let base = hook
+        .amount
+        .strip_prefix("(uint64_t)")
+        .unwrap()
+        .strip_suffix(".len")
+        .unwrap();
+    let candidates: Vec<_> = signature
+        .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
+        .filter(|token| {
+            *token == base
+                || token.strip_prefix(base).is_some_and(|suffix| {
+                    suffix.strip_prefix("_n").is_some_and(|digits| {
+                        !digits.is_empty() && digits.bytes().all(|byte| byte.is_ascii_digit())
+                    })
+                })
+        })
+        .collect();
+    if candidates.len() != 1 {
+        return Err(format!(
+            "{} formal anchor count is {}, expected one",
+            hook.metric,
+            candidates.len()
+        ));
+    }
+    Ok(format!("(uint64_t){}.len", candidates[0]))
+}
+
 fn instrument(seed: &str) -> Result<String, String> {
     let lines: Vec<_> = seed.split_inclusive('\n').collect();
     let mut result = String::from("#include \"work_probe.h\"\n");
@@ -254,7 +287,7 @@ fn instrument(seed: &str) -> Result<String, String> {
                     hits[index] += 1;
                     result.push_str(&format!(
                         "slim_work_add({index}, {});\n",
-                        HOOKS[index].amount
+                        hook_amount(&HOOKS[index], line)?
                     ));
                 }
             }

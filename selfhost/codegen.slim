@@ -279,6 +279,13 @@ fn emit_mangled_token(source: Bytes, tokens: Vec[syntax.Token], index: I64, outp
 fn emit_source_name(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_v_")
   emit_mangled_token(source, tokens, index, @output)
+  let linked: I64 = typing.linked_binding_declaration(tokens, index)
+  let declaration: I64 = if linked >= 0:
+    linked
+  else:
+    index
+  text.append_text(@output, "_n")
+  text.append_nonnegative_i64(declaration, @output)
 
 fn emit_function_name(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_fn_")

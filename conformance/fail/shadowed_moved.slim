@@ -1,0 +1,10 @@
+module shadowed_moved
+
+fn consume(value: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Vec[I64] = vec.new()
+  consume(^value)
+  let value: Vec[I64] = value
+  vec.len(value)
