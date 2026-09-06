@@ -1,19 +1,20 @@
 # SLIM Next implementation and evaluation
 
-Status: M0 complete; M1-M7 pending
+Status: M0 complete; M1 in progress; M2-M7 pending
 Decision: RFC-0112 accepted by the maintainer on 2026-09-05
 Baseline source: 97412bf
 
-The accepted roadmap covers M0-M7; the current goal is limited to completing
-M0. Later milestone implementation is outside this goal. Approval does not
-complete any milestone. Production semantics remain in SLIM and the portable C seed.
+The accepted roadmap covers M0-M7. M0 is complete; the current goal is to finish
+M1 from checkpoint 0265c6d. M2-M7 implementation is outside this goal. Approval
+does not complete a milestone. Production semantics remain in SLIM and the
+portable C seed.
 
 ## Milestone status
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
+| M1: compiler substrate | in progress | RFC-0124 defines revision identities, derived control flow, dependency completeness, and transactional reuse. Implementation and measured incremental reuse remain pending. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -1050,3 +1051,37 @@ agent productivity result, or OS implementation implied by M0 completion.
 The observed 16.4% seed-size increase and 1.029 compiler-source emission ratio
 from RFC-0122 remain explicit costs. Future counterexamples require new repairs;
 passing this bounded evidence is not a universal safety proof.
+
+## M1 architecture checkpoint (2026-09-06)
+
+The maintainer started a new goal to finish M1 from the clean M0 checkpoint
+0265c6d. RFC-0124 records the retained-substrate contract before production changes.
+It covers the whole M1 scope; individual stages do not substitute for completion.
+
+The code audit establishes the following implementation constraints:
+
+- `session.run` retains two source snapshot models and prints estimates. It has
+  no retained checked result or generated fragment.
+- `query.find_snapshot` can scan all previous declarations, provider lookup scans
+  snapshots by qualified spelling, and invalidation scans the edge list for each
+  provider. These routines are not the new semantic dependency authority.
+- `typing.analyze` mutates canonical links and produces facts for the whole source.
+  Reusable checking needs explicit declaration-owned results and complete mapping
+  into any transitional flat view.
+- `project.PreparedProject` owns flattened source/tokens, facts, diagnostics and
+  a memory plan for one operation. Cached results need session-owned immutable
+  records and revision-checked references, rather than aliases into these mutable
+  buffers.
+- Generated C names include global canonical node numbers. Insertion and reordering
+  change those numbers. Retained emission needs stable owner-local naming or typed
+  emitter relocation records, with clean and updated output using the same rules.
+- Optimization dependencies include caller argument facts, callee body facts,
+  lexical order, and shared analysis/refinement limits. Interface-only invalidation
+  is insufficient; globally consumed bounds cannot be relabelled local constants.
+
+The first implementation stage is lossless declaration/source mapping and typed
+revision-owned identities, followed by the derived function view and reusable
+checker entry points. Retained dependency queries, successful-only publication,
+analysis/emission/backend reuse, corruption recovery, and full differential and
+scaling evidence remain required stages. No production code, runtime, seed,
+dependency, language syntax, or performance budget changes at this checkpoint.
