@@ -1841,6 +1841,67 @@ fn formatter_is_idempotent_through_cli() {
 }
 
 #[test]
+fn formatter_preserves_statement_boundaries_and_generated_c() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("format-boundaries");
+    let mut sources = Vec::new();
+    // Complete bounded domain: three preceding local/assignment forms crossed
+    // with eight operator/grouping shapes, plus the borrowed-name witness and
+    // multiline call/constructor/recurrence arguments.
+    for prefix in [
+        "  let alias: I64 = a\n",
+        "  var alias: I64 = b\n  alias = a\n",
+        "  let alias: I64 = if true:\n    a\n  else:\n    b\n",
+    ] {
+        for (result_type, expression) in [
+            ("I64", "alias + b - 2"),
+            ("I64", "(alias + b) * 2"),
+            ("I64", "alias - (b - 2)"),
+            ("I64", "alias + b * 2"),
+            ("I64", "(alias + b) / 2"),
+            ("I64", "scalar(alias, b) + scalar(b, alias) - 2"),
+            ("Bool", "(alias + b) == (b + alias)"),
+            ("Bool", "(alias < b) || (b <= alias)"),
+        ] {
+            sources.push(format!("module format_boundaries\n\nfn scalar(a: I64, b: I64) -> I64:\n  a + b\n\nfn exercise(a: I64, b: I64) -> {result_type}:\n{prefix}  {expression}\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"));
+        }
+    }
+    for fixture in [
+        "benchmarks/reproducers/formatter_leading_group.slim",
+        "conformance/pass/multiline_call_arguments.slim",
+    ] {
+        sources.push(fs::read_to_string(root.join(fixture)).unwrap());
+    }
+    for (index, source) in sources.iter().enumerate() {
+        let path = directory.join(format!("case-{index}.slim"));
+        fs::write(&path, source).unwrap();
+        let emit = |path: &Path| {
+            let output = Command::new(&compiler).arg(path).output().unwrap();
+            assert!(output.status.success(), "case {index}: {output:?}");
+            output.stdout
+        };
+        let original_c = emit(&path);
+        let formatted = Command::new(&compiler)
+            .arg("fmt")
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert!(formatted.status.success(), "case {index}: {formatted:?}");
+        fs::write(&path, &formatted.stdout).unwrap();
+        assert_eq!(original_c, emit(&path), "case {index}");
+        let repeated = Command::new(&compiler)
+            .arg("fmt")
+            .arg(&path)
+            .output()
+            .unwrap();
+        assert!(repeated.status.success(), "case {index}: {repeated:?}");
+        assert_eq!(formatted.stdout, repeated.stdout, "case {index}");
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn rejects_every_removed_pre_09_spelling() {
     let directory = temporary_directory("legacy-syntax");
     let cases = [

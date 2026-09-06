@@ -1,0 +1,9 @@
+module split_call
+
+struct Value:
+  number: I64
+
+fn main(args: Vec[Bytes]) -> I64 effects[partial]:
+  let value: Value = Value
+  (number: 0)
+  value.number

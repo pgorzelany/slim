@@ -1261,16 +1261,20 @@ fn parse_familiar_name(source: Bytes, lexemes: Vec[Lexeme], index: I64, nodes: @
   let valid_name: Bool = qualified_span_valid(source, start, end, start)
   if valid_name:
     let following: I64 = index + 1
-    let enum_separator: Bool = lexeme_is_kind(lexemes, following, 7)
+    let line: I64 = lexeme_line(lexemes, index)
+    let enum_separator: Bool = lexeme_is_kind(lexemes, following, 7) && lexeme_on_line(lexemes, following, line)
     if enum_separator:
       let case_index: I64 = following + 1
-      let case_valid: Bool = lexeme_is_kind(lexemes, case_index, 0)
+      let case_valid: Bool = lexeme_is_kind(lexemes, case_index, 0) && lexeme_on_line(lexemes, case_index, line)
       if case_valid:
         let case_start: I64 = lexeme_start(lexemes, case_index)
         let case_end: I64 = lexeme_end(lexemes, case_index)
         let case_name: I64 = append_expr_node(0, case_start, case_end, 2, -1, -1, @nodes)
         let arguments_open: I64 = case_index + 1
-        let arguments: ArgumentParse = parse_familiar_arguments(source, lexemes, arguments_open, @nodes, @edges)
+        let arguments: ArgumentParse = if lexeme_on_line(lexemes, arguments_open, line):
+          parse_familiar_arguments(source, lexemes, arguments_open, @nodes, @edges)
+        else:
+          argument_failure(arguments_open, "E0102", empty_edges(), false)
         if arguments.valid:
           let initial: EdgeList = EdgeList(first: arguments.first, last: arguments.last, count: arguments.count)
           let with_name: EdgeList = if initial.first < 0:
@@ -1285,7 +1289,7 @@ fn parse_familiar_name(source: Bytes, lexemes: Vec[Lexeme], index: I64, nodes: @
       else:
         expr_failure(case_index, "E0102")
     else:
-      let call: Bool = lexeme_is_kind(lexemes, following, 2)
+      let call: Bool = lexeme_is_kind(lexemes, following, 2) && lexeme_on_line(lexemes, following, line)
       if call:
         let named_operator: Bool = named_operator_span(source, start, end)
         if named_operator:
@@ -1358,7 +1362,7 @@ fn parse_familiar_prefix(source: Bytes, lexemes: Vec[Lexeme], index: I64, nodes:
           if atom:
             let recur_form: Bool = lexeme_equal(source, lexemes, index, "recur")
             let following: I64 = index + 1
-            let called: Bool = lexeme_is_kind(lexemes, following, 2)
+            let called: Bool = lexeme_is_kind(lexemes, following, 2) && lexeme_on_line(lexemes, following, lexeme_line(lexemes, index))
             let recurrence: Bool = recur_form && called
             if recurrence:
               let arguments: ArgumentParse = parse_familiar_arguments(source, lexemes, following, @nodes, @edges)

@@ -65,6 +65,10 @@ Pair(left: 20, right: 22)
 Maybe::Some(value)
 ```
 
+Keep the callee and opening `(` on one line, including `recur(` and the entire
+`Type::Case(` prefix. Arguments may span lines inside the parentheses. A group
+on the next statement line does not call a name in the preceding initializer.
+
 Function arguments remain positional. Named, colon-separated elements identify
 struct construction and must provide every field once in declaration order.
 `Pair()` is empty-struct construction when `Pair` resolves to a struct and a

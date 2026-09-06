@@ -1,0 +1,8 @@
+module split_call
+
+fn value(number: I64) -> I64:
+  number
+
+fn main(args: Vec[Bytes]) -> I64 effects[partial]:
+  value
+  (0)

@@ -31,7 +31,7 @@ fn main() {
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <frontend-pair BASELINE CANDIDATE | performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <frontend-pair BASELINE CANDIDATE [--separator-lists] | performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -368,10 +368,18 @@ fn generated_common_prefix_program(size: usize) -> String {
 
 fn run_frontend_pair() {
     let arguments: Vec<_> = std::env::args_os().skip(2).collect();
-    if arguments.len() != 2 {
-        eprintln!("usage: slim-bench frontend-pair BASELINE CANDIDATE");
+    let separator_lists = arguments
+        .get(2)
+        .is_some_and(|arg| arg == "--separator-lists");
+    if arguments.len() != 2 && !(arguments.len() == 3 && separator_lists) {
+        eprintln!("usage: slim-bench frontend-pair BASELINE CANDIDATE [--separator-lists]");
         std::process::exit(64);
     }
+    let workload = if separator_lists {
+        "generated-separator-lists"
+    } else {
+        "generated-common-prefix-declarations"
+    };
     let paths = [PathBuf::from(&arguments[0]), PathBuf::from(&arguments[1])];
     let identities: Vec<_> = paths
         .iter()
@@ -381,7 +389,7 @@ fn run_frontend_pair() {
         "# schema=1; same-host process latency; one warmup per compiler/size; seven AB/BA pairs"
     );
     println!(
-        "# host={}-{}; command=check; workload=generated-common-prefix-declarations",
+        "# host={}-{}; command=check; workload={workload}",
         std::env::consts::OS,
         std::env::consts::ARCH
     );
@@ -399,7 +407,11 @@ fn run_frontend_pair() {
     let directory = TemporaryDirectory::new("frontend-pair");
     println!("declarations\tsource_bytes\tpair\torder\tcompiler\tcheck_ns");
     for size in [2_000, 4_000, 8_000, 16_000] {
-        let source = generated_common_prefix_program(size);
+        let source = if separator_lists {
+            generated_separator_dense_program(size)
+        } else {
+            generated_common_prefix_program(size)
+        };
         let path = directory.path.join(format!("declarations-{size}.slim"));
         fs::write(&path, &source).expect("write paired frontend fixture");
         for compiler in &paths {

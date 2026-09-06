@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local borrow loans, and termination-effect enforcement validated. Field transfers, borrowed enum payloads, reinitialization, formatter round trips, and actual-work instrumentation remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local borrow loans, termination-effect enforcement, and the call-prefix formatter round trip validated. Field transfers, borrowed enum payloads, reinitialization, and actual-work instrumentation remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -434,6 +434,78 @@ output fails parsing with `E0102@144:146`. A local initializer ending in a bare
 name precedes an expression that the formatter wraps in leading parentheses.
 The parser treats the next line as continuation of the initializer. Direct
 arithmetic without that preceding local does not reproduce the failure.
-The same failure occurs in the current candidate. This remains an explicit M0
-round-trip repair; the local-borrow fixtures use ordinary intermediate scalar
-bindings to remain canonical. No formatter support is claimed by this checkpoint.
+The same failure occurs in `e884563`. At that checkpoint it remained an explicit
+M0 round-trip repair; the local-borrow fixtures use ordinary intermediate scalar
+bindings to remain canonical. The following checkpoint addresses this witness.
+
+## Call-prefix boundary checkpoint (2026-09-06)
+
+RFC-0117 requires an ordinary call, struct constructor, or recurrence opener
+to share its callee's line; an enum constructor's `Type::Case(` prefix stays
+on one line. Arguments inside the parentheses may span lines. The parser uses
+existing indexed line metadata. No formatter output change, semantic fallback,
+new syntax form, dependency, or runtime operation is introduced.
+
+The durable formatter witness now checks before and after formatting. A
+permanent bounded matrix crosses three preceding local/assignment forms with
+eight grouping/operator expressions, then adds the borrowed-name witness and
+multiline function/struct/enum/recurrence arguments: 26 complete cases.
+For every case, checking and C generation succeed before and after formatting,
+generated C is byte-identical, and a second format is byte-identical to the
+first. This proves those round trips, not every possible source program.
+
+Six formerly accepted split prefixes now have exact rejection fixtures:
+ordinary function, struct, recurrence, and enum splits before `::`, before the
+case name, and before `(`. This source restriction affects noncanonical inputs;
+canonical programs and multiline argument lists are preserved. Native execution
+also covers the witness and multiline arguments. The witness returns 2 under
+the conformance runner's two-element argument vector, and 0 without an extra
+argument; its result is exactly `2 * vec.len(args) - 2` in this tested domain.
+
+ASan/UBSan pass on compiler self-check, formatting and checking the witness,
+and native execution of both positive fixtures. Fault injection into the
+formatted witness check tests ordinals 1 through 128: 1 through 51 are reached
+and produce exit 71, no generated output, and the exact allocation-failure
+diagnostic. Ordinals 52 through 128 are not reached and the check succeeds.
+This covers this fixture's allocation sequence, not every parser path.
+Entire native challenge analysis reports remain byte-identical to `e884563`.
+Ignored logs and sanitizer artifacts are in `build/slim-next-call-boundaries/`.
+
+The existing separator-dense series retains its exact structural counts:
+250/500/1,000/2,000 declarations have 6,771/13,521/27,021/54,021 lexical tokens,
+1,000/2,000/4,000/8,000 commas, and 1,005/2,005/4,005/8,005 expression nodes.
+Its measured check exponent is 0.554, below the unchanged 1.25 ceiling.
+All previous scaling fixtures remain; the owned-transfer normalized ratio is
+0.962 against its unchanged 1.30 ceiling.
+
+`slim-bench frontend-pair BASELINE CANDIDATE --separator-lists` now selects
+the same durable call-heavy generator for paired measurements. The default
+declaration workload is preserved. One warmup and seven alternating AB/BA pairs
+per size compare the retained `e884563` compiler against this checkpoint.
+Binary identities and every sample are in
+[the dated TSV](2026-09-06-call-boundary-frontend-pair.tsv).
+
+| Call-heavy declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 12.061 ms | 12.215 ms | 1.013 |
+| 4,000 | 21.382 ms | 21.480 ms | 1.005 |
+| 8,000 | 43.190 ms | 42.786 ms | 0.991 |
+| 16,000 | 87.559 ms | 88.773 ms | 1.014 |
+
+These native process latencies describe this workload only; no incremental
+reuse, general speedup, or controlled agent-effectiveness result is inferred.
+
+The portable fixed point is 2,954,387 C bytes, SHA-256
+`910af12f0002f2e9c0f8ee92522aa71eec27951889a9f8606fe9fb4abd541f19`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 53 integration tests,
+256 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. Native SLIM/C and SLIM/Rust geometric means
+across 20 challenges are 1.115 and 1.025; generated parallel/serial ratios are
+0.717 for `state_machine` and 0.678 for `signal_network`. No budget or native
+analysis/resource baseline changed.
+
+M0 remains in progress: owned projections, borrowed enum payload scopes,
+definite reinitialization, actual checker/generator/cache work counters, and
+successor process decisions still need implementation evidence. M1-M7 and
+controlled agent outcomes remain pending.

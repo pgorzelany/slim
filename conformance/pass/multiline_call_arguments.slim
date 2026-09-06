@@ -1,0 +1,39 @@
+module multiline_calls
+
+struct Pair:
+  left: I64
+  right: I64
+
+enum Maybe:
+  Some(I64)
+  None
+
+fn add(left: I64, right: I64) -> I64:
+  left + right
+
+fn down(value: I64) -> I64:
+  if value <= 0:
+    0
+  else:
+    recur(
+      value - 1
+    )
+
+fn main(args: Vec[Bytes]) -> I64:
+  let pair: Pair = Pair(
+    left: add(
+      1,
+      2
+    ),
+    right: down(
+      2
+    )
+  )
+  let option: Maybe = Maybe::Some(
+    pair.left
+  )
+  match option:
+    Some(value):
+      value - 3
+    None:
+      1
