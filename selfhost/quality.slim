@@ -103,7 +103,11 @@ fn analyze_call(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Metrics 
     1
   else:
     0
-  add_node(children, 1, 0, 0, 0, allocation_count, trap_count, rewrite_count)
+  let mutations: I64 = if syntax.ast_node_text_is(source, tokens, callee, "mem.replace"):
+    1
+  else:
+    0
+  add_node(children, 1, 0, mutations, 0, allocation_count, trap_count, rewrite_count)
 
 fn analyze_let(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Metrics effects[partial]:
   let type_index: I64 = syntax.ast_let_type(expr)

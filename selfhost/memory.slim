@@ -234,6 +234,12 @@ fn result_expression(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> I64
     else:
       expr
 
+fn replacement_root(source: Bytes, tokens: Vec[syntax.Token], place: I64) -> I64 effects[partial]:
+  if syntax.ast_expression_is_get(source, tokens, place):
+    recur(source, tokens, syntax.ast_get_value(place))
+  else:
+    place
+
 fn escapes_to_exclusive(source: Bytes, tokens: Vec[syntax.Token], params: I64, cursor: I64, end: I64, name_start: I64, name_end: I64) -> Bool effects[partial]:
   let done: Bool = cursor >= end
   if done:
@@ -248,15 +254,23 @@ fn escapes_to_exclusive(source: Bytes, tokens: Vec[syntax.Token], params: I64, c
         let callee: I64 = syntax.ast_call_callee(cursor)
         let vector_push: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.push")
         let arena_add: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
-        let store: Bool = vector_push || arena_add
+        let replace: Bool = syntax.ast_node_text_is(source, tokens, callee, "mem.replace")
+        let store: Bool = replace || (vector_push || arena_add)
         if store:
           let target: I64 = syntax.ast_call_arguments(cursor)
           let value: I64 = syntax.ast_next(tokens, target)
           let value_start: I64 = syntax.ast_node_start(tokens, value)
           let value_end: I64 = syntax.ast_node_end(tokens, value)
-          let same_value: Bool = syntax.spans_equal(source, value_start, value_end, name_start, name_end)
+          let same_value: Bool = if replace:
+            span_has_name(source, tokens, value, syntax.ast_next(tokens, value), name_start, name_end)
+          else:
+            syntax.spans_equal(source, value_start, value_end, name_start, name_end)
+          let target_root: I64 = if replace:
+            replacement_root(source, tokens, target)
+          else:
+            target
           let target_exclusive: Bool = if same_value:
-            syntax.name_is_exclusive(source, tokens, params, target)
+            syntax.name_is_exclusive(source, tokens, params, target_root)
           else:
             false
           if target_exclusive:

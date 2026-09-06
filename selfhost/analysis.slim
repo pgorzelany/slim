@@ -111,19 +111,19 @@ fn analyze_make_fields(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, fa
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, next, @facts)
 
-fn collect_pattern_bindings(tokens: Vec[syntax.Token], cursor: I64, body: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
-  let done: Bool = cursor == body
-  if done:
+fn collect_pattern_names(tokens: Vec[syntax.Token], cursor: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
     void
   else:
-    let binding: Bool = syntax.ast_node_is_list(tokens, cursor)
-    if binding:
-      let name: I64 = syntax.ast_pattern_binding_name(cursor)
-      append_binding(name, -1, 4, scope_end, @facts)
-    else:
-      void
+    append_binding(cursor, -1, -1, scope_end, @facts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(tokens, next, body, scope_end, @facts)
+    recur(tokens, next, scope_end, @facts)
+
+fn collect_pattern_bindings(tokens: Vec[syntax.Token], cursor: I64, body: I64, scope_end: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
+  if cursor == body:
+    void
+  else:
+    collect_pattern_names(tokens, syntax.ast_list_first(cursor), scope_end, @facts)
 
 fn analyze_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, facts: @Vec[BindingFact]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
@@ -285,7 +285,36 @@ fn dependency_count(facts: Vec[BindingFact], index: I64, total: I64) -> I64 effe
     let next: I64 = index + 1
     recur(facts, next, next_total)
 
-fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn retain_checked_ownership(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], index: I64, facts: @Vec[BindingFact]) -> Void effects[partial]:
+  if index >= vec.len(facts):
+    void
+  else:
+    let fact: BindingFact = vec.get(facts, index)
+    let checked: typing.Fact = vec.get(typed_facts, fact.name)
+    let mode: I64 = typing.fact_borrow_mode(checked)
+    let known: Bool = mode >= 0
+    let type_index: I64 = if known:
+      checked.form
+    else:
+      fact.type_index
+    let storage: I64 = if known:
+      memory.type_storage_kind(source, tokens, type_index)
+    else:
+      -1
+    let ownership: I64 = if storage == 2:
+      if mode == 1:
+        4
+      else:
+        if mode == 2:
+          3
+        else:
+          2
+    else:
+      storage
+    vec.set(@facts, index, BindingFact(id: fact.id, name: fact.name, type_index: type_index, ownership: ownership, scope_end: fact.scope_end, uses: fact.uses, last_use: fact.last_use, dependencies: fact.dependencies))
+    recur(source, tokens, typed_facts, index + 1, @facts)
+
+fn emit_function(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_item_name(item)
   let params: I64 = syntax.ast_function_parameters(item)
   let return_type: I64 = syntax.ast_function_return_type(tokens, item)
@@ -296,6 +325,7 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @V
   let first_param: I64 = syntax.ast_parameters_first(params)
   collect_parameters(source, tokens, first_param, scope_end, @facts)
   analyze_expression(source, tokens, body, @facts)
+  retain_checked_ownership(source, tokens, typed_facts, 0, @facts)
   let count: I64 = vec.len(facts)
   let dependencies: I64 = dependency_count(facts, 0, 0)
   let truncated: Bool = count >= 64
@@ -319,18 +349,18 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @V
   emit_bindings(source, tokens, facts, 0, @output)
   text.append_text(@output, "))")
 
-fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
   if done:
     void
   else:
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
     if function_item:
-      emit_function(source, tokens, cursor, @output)
+      emit_function(source, tokens, typed_facts, cursor, @output)
     else:
       void
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, @output)
+    recur(source, tokens, typed_facts, next, @output)
 
 fn emit_module(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let root: I64 = 0
@@ -348,7 +378,7 @@ fn emit_module(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing
   ranges.emit_module_facts(source, tokens, range_view, @output)
   quality.emit_module_facts(source, tokens, range_facts, @output)
   parallel.emit_module_facts(source, tokens, parallel_view, @output)
-  emit_functions(source, tokens, items, @output)
+  emit_functions(source, tokens, typed_facts, items, @output)
   text.append_text(@output, ")")
   text.append_text(@output, "\n")
 
@@ -410,14 +440,28 @@ fn max_live_owned(facts: Vec[BindingFact], index: I64, best: I64) -> I64 effects
     let next: I64 = index + 1
     recur(facts, next, next_best)
 
+fn ownership_facts_known(facts: Vec[BindingFact], index: I64) -> Bool effects[partial]:
+  if index >= vec.len(facts):
+    true
+  else:
+    let fact: BindingFact = vec.get(facts, index)
+    if fact.ownership < 0:
+      false
+    else:
+      recur(facts, index + 1)
+
 fn emit_ownership_pressure(facts: Vec[BindingFact], truncated: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let owned: I64 = owned_count(facts, 0, 0)
   let maximum: I64 = max_live_owned(facts, 0, 0)
   text.append_text(@output, ") (ownership-pressure (guarantee ")
-  if truncated:
-    text.append_text(@output, "bounded")
+  let known: Bool = ownership_facts_known(facts, 0)
+  if !known:
+    text.append_text(@output, "unknown) (reason missing-checked-binding")
   else:
-    text.append_text(@output, "exact")
+    if truncated:
+      text.append_text(@output, "bounded")
+    else:
+      text.append_text(@output, "exact")
   text.append_text(@output, ") (owned-bindings ")
   text.append_i64(owned, @output)
   text.append_text(@output, ") (max-live-owned ")

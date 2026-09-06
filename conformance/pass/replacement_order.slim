@@ -1,0 +1,25 @@
+module replacement_order
+
+struct Owner:
+  values: Vec[I64]
+
+fn make(events: @Vec[I64]) -> Vec[I64] effects[alloc]:
+  vec.push(@events, 2)
+  let result: Vec[I64] = vec.new()
+  vec.push(@result, 42)
+  result
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let initial: Vec[I64] = vec.new()
+  vec.push(@initial, 7)
+  let owner: Owner = Owner(values: initial)
+  let events: Vec[I64] = vec.new()
+  vec.push(@events, 1)
+  let old: Vec[I64] = mem.replace(@owner.values, make(@events))
+  vec.push(@events, 3)
+  let previous: I64 = vec.get(old, 0)
+  let current: I64 = vec.get(owner.values, 0)
+  let order: I64 = ((vec.get(events, 0) * 100) + (vec.get(events, 1) * 10)) + vec.get(events, 2)
+  let count: I64 = vec.len(events)
+  let sum: I64 = ((previous + current) + order) + count
+  sum - 175

@@ -1,0 +1,13 @@
+module field_repair
+
+struct Owner:
+  values: Vec[I64]
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn invalid(owner: ^Owner) -> Boxed:
+  Boxed::Some(owner.values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

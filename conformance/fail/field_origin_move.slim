@@ -1,0 +1,15 @@
+module field_repair
+
+struct Owner:
+  values: Vec[I64]
+
+fn consume(owner: ^Owner) -> Void:
+  void
+
+fn invalid(owner: ^Owner) -> I64:
+  let alias: Vec[I64] = owner.values
+  consume(^owner)
+  vec.len(alias)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -437,10 +437,9 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.T
   let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, @tokens, @origins)
   let checked: typing.Checked = check.check_source_deferred(source, @tokens)
   let status: I64 = checked.status
-  let view: typing.View = checked.view
-  let facts: Vec[typing.Fact] = view.facts
-  let issues: Vec[typing.Issue] = checked.issues
-  let plan: memory.Plan = checked.plan
+  let facts: Vec[typing.Fact] = mem.replace(@checked.view.facts, vec.new())
+  let issues: Vec[typing.Issue] = mem.replace(@checked.issues, vec.new())
+  let plan: memory.Plan = mem.replace(@checked.plan, memory.empty_plan())
   let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
   PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, issues: issues, plan: plan)
 

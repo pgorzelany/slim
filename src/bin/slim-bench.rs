@@ -461,6 +461,7 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
         ),
         ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
         ("generated-local-loans", &[125, 250, 500, 1_000][..]),
+        ("generated-field-replacement", &[125, 250, 500, 1_000][..]),
         (
             "generated-enum-match-ownership",
             &[125, 250, 500, 1_000][..],
@@ -521,6 +522,14 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
                     }
                 }
                 source.push_str("\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            } else if workload == "generated-field-replacement" {
+                source.push_str("struct Owner:\n  values: Vec[I64]\n\nfn exercise(owner: @Owner) -> I64 effects[alloc]:\n");
+                for index in 0..size {
+                    source.push_str(&format!("  let count_{index}: I64 = if true:\n    let alias: Vec[I64] = owner.values\n    vec.len(alias)\n  else:\n    0\n  let old_{index}: Vec[I64] = mem.replace(@owner.values, vec.new())\n  vec.push(@old_{index}, count_{index})\n"));
+                }
+                source.push_str(
+                    "  vec.len(owner.values)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+                );
             } else if workload == "generated-local-loans" {
                 source.push_str("fn observe(value: Vec[I64]) -> I64:\n");
                 for index in 0..size {
@@ -591,6 +600,7 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             "generated-branch-moves"
         } else if workload == "generated-nested-loans"
             || workload == "generated-local-loans"
+            || workload == "generated-field-replacement"
             || workload == "generated-enum-match-ownership"
             || workload == "generated-disjoint-local-loans"
         {

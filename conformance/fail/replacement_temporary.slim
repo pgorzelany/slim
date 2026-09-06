@@ -1,0 +1,13 @@
+module replacement_temporary
+
+struct Owner:
+  values: Vec[I64]
+
+fn make() -> Owner effects[alloc]:
+  Owner(values: vec.new())
+
+fn invalid() -> Owner effects[alloc]:
+  mem.replace(@make(), make())
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

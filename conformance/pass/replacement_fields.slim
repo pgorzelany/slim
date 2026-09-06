@@ -1,0 +1,26 @@
+module replacement_fields
+
+struct Inner:
+  values: Vec[I64]
+
+struct Owner:
+  left: Inner
+  right: Vec[I64]
+  number: I64
+
+fn take(owner: @Owner) -> Vec[I64] effects[alloc]:
+  mem.replace(@owner.left.values, vec.new())
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let owner: Owner = Owner(left: Inner(values: vec.new()), right: vec.new(), number: 7)
+  let number: I64 = owner.number
+  let left: Vec[I64] = take(@owner)
+  let right: Vec[I64] = mem.replace(@owner.right, vec.new())
+  vec.push(@left, 1)
+  vec.push(@right, 2)
+  let left_count: I64 = vec.len(owner.left.values)
+  let right_count: I64 = vec.len(owner.right)
+  let extracted: I64 = vec.len(left) + vec.len(right)
+  let remaining: I64 = left_count + right_count
+  let sum: I64 = extracted + remaining
+  (sum + number) - 9

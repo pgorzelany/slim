@@ -1,0 +1,11 @@
+module field_repair
+
+struct Owner:
+  values: Vec[I64]
+
+fn invalid(owner: ^Owner, values: ^Vec[I64]) -> I64:
+  let old: Vec[I64] = mem.replace(@owner.values, values)
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -1,0 +1,14 @@
+module field_fresh_owner_shared
+
+struct Owner:
+  values: Vec[I64]
+
+fn make() -> Owner effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 7)
+  Owner(values: values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let owner: Owner = make()
+  let alias: Vec[I64] = owner.values
+  vec.get(alias, 0) - 7

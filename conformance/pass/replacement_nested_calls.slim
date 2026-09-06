@@ -1,0 +1,16 @@
+module replacement_nested_calls
+
+struct Owner:
+  values: Vec[I64]
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let first: Vec[I64] = vec.new()
+  vec.push(@first, 7)
+  let second: Vec[I64] = vec.new()
+  vec.push(@second, 42)
+  let left: Owner = Owner(values: first)
+  let right: Owner = Owner(values: second)
+  let old: Vec[I64] = mem.replace(@left.values, mem.replace(@right.values, vec.new()))
+  let before: I64 = vec.get(old, 0)
+  let after: I64 = vec.get(left.values, 0)
+  ((before + after) + vec.len(right.values)) - 49

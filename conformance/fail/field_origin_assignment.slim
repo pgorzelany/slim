@@ -1,0 +1,12 @@
+module field_repair
+
+struct Owner:
+  values: Vec[I64]
+
+fn invalid(var owner: ^Owner) -> I64 effects[alloc]:
+  let alias: Vec[I64] = owner.values
+  owner = Owner(values: vec.new())
+  vec.len(alias)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

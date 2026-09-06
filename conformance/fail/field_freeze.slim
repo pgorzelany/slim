@@ -1,0 +1,10 @@
+module field_freeze
+
+struct Owner:
+  values: Vec[U8]
+
+fn invalid(owner: ^Owner) -> Bytes:
+  bytes.freeze(^owner.values)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

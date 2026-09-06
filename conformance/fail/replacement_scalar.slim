@@ -1,0 +1,10 @@
+module field_repair
+
+struct Owner:
+  values: Vec[I64]
+
+fn invalid(var number: I64) -> I64:
+  mem.replace(@number, 7)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

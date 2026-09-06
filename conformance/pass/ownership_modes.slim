@@ -25,7 +25,7 @@ fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
   let mutated: I64 = mutate(@first)
   let retained: I64 = read(first)
   let owner: Owner = Owner(values: first)
-  let extracted: Vec[I64] = owner.values
+  let extracted: Vec[I64] = mem.replace(@owner.values, vec.new())
   let choice: OwnerChoice = OwnerChoice::some(extracted)
   let selected: Vec[I64] = match choice:
     none:

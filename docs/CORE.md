@@ -2,7 +2,7 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 
-Known implementation gaps, including field transfers and longer-lived aliases,
+Known implementation gaps, including definite ownership reinitialization,
 are tracked in the [SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 The intended safety contract below is not yet completely enforced.
 
@@ -79,6 +79,16 @@ Projection uses `value.field`; module qualification uses `module.name`; enum
 construction uses `Type::Case`. A match pattern uses the case name within the
 scrutinee's known enum. Nested projection is allowed.
 
+An affine struct field projection is a shared read, including through an owned
+or exclusive root. A local field borrow retains a loan of the root through its
+lexical scope. Scalar fields copy. To extract an affine field, use
+`mem.replace(@owner.values, replacement)`: it evaluates the replacement once,
+installs it in the actual field, and returns the old value as an owner. The
+replacement must have exactly the field's type and cannot access the reserved
+root. A named affine owner is also a supported place. Shared or unknown roots,
+temporaries, and collection reads are not replacement places. General partial
+moves remain unsupported.
+
 ## Expressions and control flow
 
 The scalar and Boolean operators are:
@@ -122,8 +132,7 @@ selected payload bindings receive ownership. A borrowed match gives affine
 payloads shared read access for the arm's lexical lifetime, including when
 the enum parameter is exclusive. The origin cannot be replaced, transferred,
 or accessed exclusively during that loan. Scalar payloads copy without a
-storage loan, and copyable enums may be matched repeatedly. General owned
-field projections remain a known implementation gap in the repair report.
+storage loan, and copyable enums may be matched repeatedly.
 
 `parallel:` is the one explicit concurrency form. It has checked execution,
 join, effect, and serial-fallback behavior.
@@ -176,8 +185,8 @@ or ABI effect.
   usable; mutation, replacement, or transfer of its origin is rejected.
   Copying a scalar does not retain a storage loan. Unknown origins are
   conservative. Borrowed enum payloads retain their origin loan for the match
-  arm as described above. General owned projections remain a gap recorded in
-  the SLIM Next progress report.
+  arm as described above. Affine struct projections follow the same shared
+  access rule, and extraction uses checked replacement.
 - `^` is the call-boundary marker, not a marker on every affine move. Existing
   moves into local bindings, aggregate payloads, and owning collection slots
   remain unmarked because the owning destination is explicit. Field
@@ -202,7 +211,7 @@ Read-only storage operands are plain; mutation/output operands use `@`; and
 Arithmetic, comparisons, and Boolean operations use the operator syntax above;
 their earlier callable spellings are not aliases.
 
-The complete signatures are emitted by `slimc builtins`. Host behavior is
+The accepted built-in names are emitted by `slimc builtins`. Host behavior is
 specified in `docs/HOST.md`.
 
 ## Diagnostics and tooling

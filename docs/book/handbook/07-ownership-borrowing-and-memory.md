@@ -1,8 +1,9 @@
 # Ownership, borrowing, and memory
 
 Affine ownership, default shared borrowing, explicit `@` exclusive borrowing,
-and explicit `^` transfer prevent use-after-move, untracked aliases, escaping
-mutable borrows, and nondeterministic destruction in safe SLIM.
+and explicit `^` transfer define SLIM's intended safety contract. Remaining
+implementation limitations and validated repairs are recorded in the
+[SLIM Next progress report](../../../benchmarks/results/2026-09-05-slim-next-progress.md).
 
 ## Three value categories
 
@@ -30,6 +31,12 @@ Ordinary affine moves into a local binding, aggregate, variant, or owning
 collection slot do not use `^`; their destination already states the ownership
 change. SLIM does not currently support `^owner.field` or a branch-selected
 existing owner because that would require partial- or conditional-move state.
+
+An affine field read such as `owner.values` creates a shared borrow. To take
+ownership, use `mem.replace(@owner.values, vec.new())`: the original vector is
+returned and an empty vector is installed in its field. This requires exclusive
+access to the root and leaves every field initialized. A live field borrow
+prevents replacement until its lexical scope ends.
 
 After a move, the old binding cannot be used:
 

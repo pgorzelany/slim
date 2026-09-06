@@ -21,6 +21,14 @@ accepts a named owner or a freshly produced owner; it is not a partial-move
 operator. `let` and `var` control rebinding and do not alter those ownership
 categories.
 
+Affine field projections borrow their root. `mem.replace(@place, replacement)`
+extracts a whole affine value while installing an equally typed owner. The
+replacement runs before the exchange; failure prevents the exchange. The
+exchange itself cannot allocate or fail. It copies no buffer and exposes no
+uninitialized place. The root must permit exclusive access and have no live
+loan; the result owns the extracted storage. Named roots and nested struct
+fields are supported, while collection reads and unknown places are rejected.
+
 The checker records:
 
 - local, result, or numbered exclusive-borrow escape destinations;

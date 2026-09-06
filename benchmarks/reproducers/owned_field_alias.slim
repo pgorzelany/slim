@@ -1,0 +1,19 @@
+module field_alias
+
+struct Owner:
+  values: Vec[I64]
+
+fn grow(values: @Vec[I64], index: I64) -> Void effects[alloc, partial]:
+  if index == 128:
+    void
+  else:
+    vec.push(@values, index)
+    recur(@values, index + 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 7)
+  let owner: Owner = Owner(values: values)
+  let alias: Vec[I64] = owner.values
+  grow(@alias, 0)
+  vec.get(owner.values, 0) - 7

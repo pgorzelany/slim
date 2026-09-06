@@ -98,6 +98,12 @@ fn typed_expression(facts: Vec[typing.Fact], expr: I64) -> Bool effects[partial]
   typed.kind >= -1
 
 fn call_hazard(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[ranges.Fact], expr: I64, callee: I64) -> I64 effects[partial]:
+  if syntax.ast_node_text_is(source, tokens, callee, "mem.replace"):
+    3
+  else:
+    ordinary_call_hazard(source, tokens, range_facts, expr, callee)
+
+fn ordinary_call_hazard(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[ranges.Fact], expr: I64, callee: I64) -> I64 effects[partial]:
   let alloc: Bool = effects.call_requires(source, tokens, callee, 1)
   let io: Bool = effects.call_requires(source, tokens, callee, 2)
   let effectful: Bool = alloc || io

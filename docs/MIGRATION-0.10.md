@@ -33,9 +33,12 @@ mutate, move, or escape a borrow retain the existing ownership diagnostics.
 built-in boundary. It accepts a whole named owner or a freshly produced affine
 owner. It is not written on ordinary moves into `let`, `var`, structs, enum
 payloads, or owning collection slots. A projection such as `^owner.values` is
-rejected because SLIM does not track partially moved aggregate owners; first
-move the field through the ordinary owning destination supported by the
-program's data flow, then transfer that whole named owner.
+rejected because SLIM does not track partially moved aggregate owners. Plain
+`owner.values` is a shared read, including in a local initializer. Use
+`let values: Vec[I64] = mem.replace(@owner.values, vec.new())` to extract the
+old vector while leaving a valid empty vector in the field, then transfer
+that whole named owner. The operation reserves the entire root during replacement
+evaluation; compute any needed scalar observation before reserving it.
 
 Project interface schema 3 records parameter modes as `copy`, `shared`,
 `exclusive`, or `owned`. Schema 2 artifacts must be regenerated.

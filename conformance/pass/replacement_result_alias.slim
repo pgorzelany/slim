@@ -1,0 +1,7 @@
+module replacement_result_alias
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  vec.push(@values, 7)
+  values = mem.replace(@values, vec.new())
+  vec.get(values, 0) - 7

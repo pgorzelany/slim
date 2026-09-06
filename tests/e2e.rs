@@ -1426,6 +1426,117 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 }
 
 #[test]
+fn ownership_reports_use_checked_local_and_payload_modes() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    for (fixture, expected) in [
+        (
+            "field_fresh_owner_shared",
+            vec!["alias (type (Vec I64)) (ownership shared)"],
+        ),
+        (
+            "enum_owned_multiple",
+            vec![
+                "first (type (Vec I64)) (ownership owned)",
+                "second (type (Vec I64)) (ownership owned)",
+            ],
+        ),
+        (
+            "enum_multiple_payloads",
+            vec![
+                "first (type (Vec I64)) (ownership shared)",
+                "second (type (Vec I64)) (ownership shared)",
+            ],
+        ),
+        (
+            "enum_copyable_repeated",
+            vec!["number (type I64) (ownership copy)"],
+        ),
+    ] {
+        let output = Command::new(&compiler)
+            .arg("analyze")
+            .arg(root.join(format!("conformance/pass/{fixture}.slim")))
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{fixture}: {output:?}");
+        let report = String::from_utf8(output.stdout).unwrap();
+        for fact in expected {
+            assert!(report.contains(fact), "{fixture}: missing {fact}: {report}");
+        }
+        assert!(!report.contains("missing-checked-binding"), "{report}");
+    }
+    let directory = temporary_directory("payload-report-limit");
+    let types = vec!["Vec[I64]"; 65].join(", ");
+    let names = (0..65)
+        .map(|i| format!("payload_{i}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    let source = directory.join("payloads.slim");
+    fs::write(&source, format!("module payloads\n\nenum Many:\n  All({types})\n\nfn observe(value: Many) -> I64:\n  match value:\n    All({names}):\n      0\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")).unwrap();
+    let output = Command::new(compiler)
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(output.status.success(), "{output:?}");
+    let report = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        report.contains("(facts-truncated true) (ownership-pressure (guarantee bounded)"),
+        "{report}"
+    );
+    assert!(
+        report.contains("payload_62 (type (Vec I64)) (ownership shared)"),
+        "{report}"
+    );
+    assert!(!report.contains("payload_63 (type"), "{report}");
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn replacement_executes_counted_stages_and_retains_mutation_evidence() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/pass/replacement_counted.slim");
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("counted-replacement");
+    let analysis = Command::new(&compiler)
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success(), "{analysis:?}");
+    let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains("(counted-loop-count 1) (reported-facts 1)"));
+    assert!(report.contains("(mutations 1)"), "{report}");
+    assert!(
+        report.contains("(blockers exclusive-borrow mutation"),
+        "{report}"
+    );
+    let emitted = Command::new(&compiler).arg(&source).output().unwrap();
+    assert!(emitted.status.success(), "{emitted:?}");
+    let generated = String::from_utf8(emitted.stdout).unwrap();
+    assert_eq!(
+        generated
+            .matches("if (slim_v_index < INT64_C(3)) do {")
+            .count(),
+        3,
+        "the specialized path must execute"
+    );
+    let executable = directory.join("replacement");
+    let built = Command::new(slimc())
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(built.status.success(), "{built:?}");
+    let output = Command::new(executable).output().unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stdout.is_empty() && output.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn exclusive_assignment_executes_through_counted_lowering() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let source = root.join("conformance/pass/exclusive_assignment_counted.slim");
@@ -2169,7 +2280,7 @@ fn semantic_analysis_is_stable_and_bounded() {
     let pattern_report = String::from_utf8(pattern_report.stdout).unwrap();
     assert!(
         pattern_report.contains(
-            "(binding 230 items (type unknown) (ownership shared) (scope-end 238) (uses 1) (last-use 235)"
+            "(binding 230 items (type (Vec I64)) (ownership shared) (scope-end 238) (uses 1) (last-use 235)"
         )
     );
 }

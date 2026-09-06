@@ -1034,7 +1034,43 @@ fn emit_proven_math(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[r
   else:
     false
 
+fn emit_replacement_place(source: Bytes, tokens: Vec[syntax.Token], place: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if syntax.ast_node_kind(tokens, place) == 2:
+    emit_binding_value(source, tokens, 0, place, @output)
+  else:
+    text.append_text(@output, "(")
+    emit_replacement_place(source, tokens, syntax.ast_get_value(place), @output)
+    text.append_text(@output, ").")
+    emit_field_name(source, tokens, syntax.ast_get_field(tokens, place), @output)
+
+fn emit_replace(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, call_form: I64, destination: I64, result: Bool, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
+  let place: I64 = syntax.ast_call_arguments(call_form)
+  let value: I64 = syntax.ast_next(tokens, place)
+  let type: I64 = fact_type_index(facts, place)
+  text.append_text(@output, "{\n")
+  emit_type(source, tokens, type, @output)
+  text.append_text(@output, " slim_replacement = {0};\n")
+  emit_match_value_binding(source, tokens, facts, allocations, module_items, params, value, @output, range_facts)
+  text.append_text(@output, "slim_replacement = ")
+  emit_value(source, tokens, params, value, @output)
+  text.append_text(@output, ";\n")
+  emit_type(source, tokens, type, @output)
+  text.append_text(@output, " slim_replaced = ")
+  emit_replacement_place(source, tokens, place, @output)
+  text.append_text(@output, ";\n")
+  emit_replacement_place(source, tokens, place, @output)
+  text.append_text(@output, " = slim_replacement;\n")
+  emit_destination(source, tokens, destination, result, @output)
+  text.append_text(@output, " = slim_replaced;\n}\n")
+
 fn emit_call(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, call_form: I64, destination: I64, result: Bool, destination_type: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
+  let callee: I64 = syntax.ast_call_callee(call_form)
+  if syntax.ast_node_text_is(source, tokens, callee, "mem.replace"):
+    emit_replace(source, tokens, facts, allocations, module_items, params, call_form, destination, result, @output, range_facts)
+  else:
+    emit_ordinary_call(source, tokens, facts, allocations, module_items, params, call_form, destination, result, destination_type, @output, range_facts)
+
+fn emit_ordinary_call(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, call_form: I64, destination: I64, result: Bool, destination_type: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let callee: I64 = syntax.ast_call_callee(call_form)
   let arguments: I64 = syntax.ast_call_arguments(call_form)
   let callee_form: I64 = syntax.ast_node_link(tokens, callee)

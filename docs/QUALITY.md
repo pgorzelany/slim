@@ -53,6 +53,15 @@ pressure therefore has at most 4,096 comparisons. Other analyzers publish
 their own limits. Exceeding any bound is explicit; it never silently shortens a
 lifetime or turns missing evidence into an exact result.
 
+Binding types and ownership modes come from the normal checker's retained facts,
+including local field borrows and every enum payload. Storage type alone does
+not establish ownership. Missing checked binding evidence reports `unknown`
+with reason `missing-checked-binding`; reaching the report limit remains bounded.
+Owned-binding counts and live-range pressure describe the retained lexical
+binding intervals, not runtime peak memory or an application invariant.
+`mem.replace` contributes an explicit mutation site and a parallel mutation
+blocker even when another blocker already prevents parallel execution.
+
 Standalone sources and explicit project manifests use the same command. Project
 analysis consumes the ordinary prepared project artifact after module,
 visibility, type, effect, ownership, and memory-plan checking; it does not

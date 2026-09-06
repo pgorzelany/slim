@@ -1,0 +1,27 @@
+module replacement_types
+
+enum Choice:
+  Items(Vec[I64])
+
+struct Owner:
+  choice: Choice
+  bytes: Vec[U8]
+  arena: Arena[I64]
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let bytes: Vec[U8] = vec.new()
+  vec.push(@bytes, i64.to_u8(7))
+  let arena: Arena[I64] = arena.new()
+  let identity: Id[I64] = arena.add(@arena, 42)
+  let owner: Owner = Owner(choice: Choice::Items(vec.new()), bytes: bytes, arena: arena)
+  let frozen: Bytes = bytes.freeze(^mem.replace(@owner.bytes, vec.new()))
+  let old_arena: Arena[I64] = mem.replace(@owner.arena, arena.new())
+  let old_choice: Choice = mem.replace(@owner.choice, Choice::Items(vec.new()))
+  let count: I64 = match old_choice:
+    Items(values):
+      vec.push(@values, 1)
+      vec.len(values)
+  let arena_value: I64 = arena.get(old_arena, identity)
+  let byte: I64 = u8.to_i64(bytes.get(frozen, 0))
+  let remaining: I64 = vec.len(owner.bytes)
+  (((count + arena_value) + byte) + remaining) - 50

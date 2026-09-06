@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local/enum-payload borrow loans, enum match consumption, exclusive assignment lowering, termination-effect enforcement, and the call-prefix formatter round trip validated. Field transfers, reinitialization, and actual-work instrumentation remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive assignment lowering, termination effects, and formatter round trips validated. Definite reinitialization, actual-work instrumentation, and successor process decisions remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -595,3 +595,118 @@ the final verification. No gate or baseline is relaxed.
 M0 remains in progress: general owned projections, definite reinitialization,
 actual checker/generator/cache work counters, and successor process decisions
 still require evidence. M1-M7 and controlled agent outcomes remain pending.
+
+## Checked field replacement checkpoint (2026-09-06)
+
+RFC-0119 makes affine struct projections shared reads and introduces the one
+explicit extraction operation `mem.replace(@place, replacement)`. It reserves
+the named root, evaluates the equally typed replacement once, installs it in
+the actual place, and returns the old owner. Nested struct fields and whole
+affine names are supported. Shared, moved, unknown, temporary, and collection
+places cannot grant replacement access. Root-level loans conservatively exclude
+simultaneous access to disjoint fields. No partial-move state, raw pointer,
+buffer copy, runtime ABI change, or allocation by the exchange is introduced.
+
+The durable [field-alias witness](../reproducers/owned_field_alias.slim) was
+accepted by de031be and produces heap-use-after-free under ASan/UBSan. Its
+canonical source generates C byte-identical to the retained failing native
+artifact. The repaired compiler rejects the mutating alias with E0347 and
+E0349 at 426:431. Projected returns, aggregates, collection insertion,
+assignment, enum construction, and freezing are also permanent rejections.
+`bytes.freeze` now uses the same owned-argument check as user calls, closing
+its previously unchecked projected-argument path.
+
+The compiler's checker issue-vector extraction and project preparation now
+use explicit replacement. The existing `ownership_modes` conformance fixture
+also uses replacement before forwarding the extracted vector. Empty replacements
+create no element buffers. The checked SLIM source and regenerated portable
+seed reach the same fixed point; ignored transition compilers are not production
+fallbacks.
+
+Thirty-two added conformance rows comprise 24 rejection cases and eight native
+positive cases. They cover nested places, shared/moved/unknown roots, active
+loans, markers, arity and types, replacement ownership, scalar copies, lexical
+scope exit, evaluation order, nested independent exchanges, result assignment
+back to the replaced name, vectors, arenas, enum storage, and byte freezing.
+The dedicated counted-loop integration test requires three specialized stages
+and verifies caller-visible contents, mutation counts, and the parallel mutation
+blocker independently of its exclusive-parameter blocker.
+
+All eight positive fixtures pass ASan/UBSan. Runtime fault injection checks
+ordinals 1 through 64 for each of `replacement_order`, `replacement_counted`,
+`replacement_types`, and `replacement_nested_calls`: respectively 4, 3, 4, and
+3 ordinals are reached. Reached ordinals fail with exit 71, empty output, and
+the exact allocation-failure diagnostic; later ordinals succeed. The final
+sanitized compiler checks its own source and emits replacement/payload analysis
+without sanitizer diagnostics. Compiler checking of `replacement_nested_calls`
+covers ordinals 1 through 128: 1 through 77 fail cleanly and 78 through 128
+succeed. These are bounded experiments on the named fixtures, not a proof of
+all memory paths.
+
+### Retained ownership evidence
+
+The audit found that binding reports inferred local ownership from storage type
+and labelled enum payloads shared with unknown type. The checker now retains
+each binding's actual type and mode on its stable canonical name fact. Reports
+consume those facts and enumerate every payload. Missing binding evidence has
+stable reason `missing-checked-binding`; the existing 64-binding report limit
+remains explicit. Permanent tests cover local field borrows, owned/shared/scalar
+payloads, multiple payloads, and 65 payloads crossing the reporting limit.
+
+Only two complete native report records change: `variants.apply` bindings 131
+and 143, both named `amount`, change from unknown/shared to `I64`/copy. Their
+uses, scopes, last uses, and dependencies are unchanged. Every other complete
+native report field is byte-identical. All 20 native analysis/resource summary
+rows, complete blocker sets, and parallel site counts remain unchanged.
+[The exact changed rows](2026-09-06-field-ownership-analysis-changes.tsv) are
+retained separately. The existing `lifetimes` report assertion now checks its
+known `Vec[I64]` payload type while preserving the same shared mode and spans.
+
+The first representation added a third I64 to every fact. All seven paired
+16,000-declaration comparisons were slower, with a 1.040 median latency ratio;
+[those contrary samples](2026-09-06-field-replacement-wide-facts-pair.tsv) remain
+recorded. That representation was replaced before committing. The final tagged
+fact retains the original two-I64 size and encodes only the fixed type/mode
+domain 0 through 30, whose arithmetic cannot overflow. The normal accessor
+decodes types; no second ownership analysis or parsed representation is added.
+
+The final same-host frontend comparison uses one warmup and seven alternating
+AB/BA pairs against de031be on the call-heavy separator workload. Binary
+identities and all samples are in
+[the final TSV](2026-09-06-field-replacement-frontend-pair.tsv).
+
+| Call-heavy declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 12.473 ms | 12.855 ms | 1.031 |
+| 4,000 | 22.197 ms | 22.459 ms | 1.012 |
+| 8,000 | 44.778 ms | 45.220 ms | 1.010 |
+| 16,000 | 88.982 ms | 90.108 ms | 1.013 |
+
+The final large-input median difference lies within the observed run variation;
+no general speedup or incremental-reuse claim is made. The wide-fact regression
+was addressed without a budget exception. Native compiler measurements and
+source/edit proxies remain independent of unmeasured agent effectiveness.
+
+The portable fixed point is 2,999,465 C bytes, SHA-256
+`fc76bf91cb8e0b0fdf3628a1a84ef03307e33c84b9f5695a92c86123fa7899b1`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 56 integration tests,
+312 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. The complete test suite uses authorized local
+socket access for its three localhost tests. The new field-replacement check
+series has exponent 0.814 under the unchanged 1.25 ceiling; the existing owned
+transfer normalized ratio is 0.973. Native SLIM/C and SLIM/Rust geometric means
+across 20 challenges are 1.087 and 1.012. Generated parallel/serial ratios are
+0.634 for `state_machine` and 0.618 for `signal_network`. Logs and sanitizer
+artifacts are retained in ignored `build/slim-next-fields/`. No gate or baseline
+is relaxed.
+
+### Remaining M0 work
+
+The [definite-reinitialization witness](../reproducers/ownership_reinitialization.slim)
+moves a vector, assigns a fresh vector, and then reads it. The current compiler
+still rejects that read with E0315 at 206:212. This is an exact false rejection,
+not evidence of an accepted unsafe execution. Its repair needs branch-sensitive
+initialization evidence and must retain all prior move/loan gates. Real
+checker/generator/cache work counters, the remaining claim audit, and successor
+process decisions also remain. M0 and M1-M7 are not declared complete here.

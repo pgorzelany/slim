@@ -1,0 +1,6 @@
+# schema=1; complete native analysis comparison; baseline=de031be
+# candidate_seed_sha256=fc76bf91cb8e0b0fdf3628a1a84ef03307e33c84b9f5695a92c86123fa7899b1
+# All other complete-report fields and all 20 native summary rows are unchanged.
+challenge	function	binding_node	name	before_type	after_type	before_ownership	after_ownership	reason
+variants	apply	131	amount	unknown	I64	shared	copy	checked scalar enum payload
+variants	apply	143	amount	unknown	I64	shared	copy	checked scalar enum payload

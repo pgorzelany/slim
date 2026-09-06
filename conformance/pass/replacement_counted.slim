@@ -1,0 +1,25 @@
+module replacement_counted
+
+struct Owner:
+  values: Vec[I64]
+
+fn make() -> Vec[I64] effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 42)
+  values
+
+fn exercise(owner: @Owner, index: I64) -> I64 effects[alloc, partial]:
+  if index == 3:
+    vec.get(owner.values, 0) - 42
+  else:
+    let replacement: Vec[I64] = if index == 0:
+      vec.new()
+    else:
+      make()
+    let old: Vec[I64] = mem.replace(@owner.values, replacement)
+    recur(@owner, index + 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let owner: Owner = Owner(values: vec.new())
+  let result: I64 = exercise(@owner, 0)
+  (result + vec.get(owner.values, 0)) - 42

@@ -1,0 +1,15 @@
+module replacement_scope
+
+struct Owner:
+  values: Vec[I64]
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let owner: Owner = Owner(values: vec.new())
+  let count: I64 = if true:
+    let alias: Vec[I64] = owner.values
+    vec.len(alias)
+  else:
+    1
+  let old: Vec[I64] = mem.replace(@owner.values, vec.new())
+  vec.push(@old, 7)
+  count + vec.len(owner.values)
