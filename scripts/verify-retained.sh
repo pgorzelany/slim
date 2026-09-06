@@ -35,9 +35,10 @@ done
 SLIM_RETAINED_REPORT="$retained_dir/boundary.tsv" "$retained_dir/observed" examples/hello.slim conformance/fail/use_after_move.slim boundaries > "$retained_dir/boundary-observed.out"
 cmp "$retained_dir/boundary-ordinary.out" "$retained_dir/boundary-observed.out"
 awk -F '\t' 'NR == 1 { if ($0 != "slim-retained\t1\texact\t1000000000") exit 1 }
-  NR == 6 || NR == 7 || NR == 11 || NR == 13 { if ($2 != 0) exit 1 }
-  NR == 4 || NR == 5 || NR == 8 || NR == 9 || NR == 10 || NR == 12 || NR == 14 { if ($2 != 1) exit 1 }
-  END { if (NR != 14) exit 1 }' "$retained_dir/boundary.tsv"
+  NR == 6 || NR == 7 || NR == 11 || NR == 13 || NR == 15 || NR == 17 { if ($2 != 0) exit 1 }
+  NR == 4 || NR == 5 || NR == 8 || NR == 9 || NR == 10 || NR == 12 || NR == 14 || NR == 16 || NR == 18 { if ($2 != 1) exit 1 }
+  NR >= 19 { if ($1 != NR - 2 || $2 != (NR % 2 == 0)) exit 1 }
+  END { if (NR != 32) exit 1 }' "$retained_dir/boundary.tsv"
 retained_failed=0
 retained_succeeded=0
 retained_at=1

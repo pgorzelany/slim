@@ -4514,7 +4514,7 @@ fn retained_typing_reuses_only_valid_current_semantics() {
     assert!(recovery.status.success(), "{recovery:?}");
     let observed = fs::read_to_string(report).unwrap();
     let lines: Vec<_> = observed.lines().collect();
-    assert_eq!(lines.len(), 14);
+    assert_eq!(lines.len(), 32);
     assert_eq!(lines[3], "2\t4");
     assert_eq!(lines[4], "3\t4");
     assert_eq!(lines[5], "4\t0");
@@ -4526,6 +4526,16 @@ fn retained_typing_reuses_only_valid_current_semantics() {
     assert_eq!(lines[11], "10\t4");
     assert_eq!(lines[12], "11\t0");
     assert_eq!(lines[13], "12\t4");
+    assert_eq!(lines[14], "13\t0");
+    assert_eq!(lines[15], "14\t2");
+    assert_eq!(lines[16], "15\t0");
+    assert_eq!(lines[17], "16\t2");
+    // Invalid storage falls back before writing any imported facts.
+    for (case, expected) in [1, 1, 2, 2, 1, 1, 1].into_iter().enumerate() {
+        let phase = 17 + case * 2;
+        assert_eq!(lines[phase + 1], format!("{phase}\t0"));
+        assert_eq!(lines[phase + 2], format!("{}\t{expected}", phase + 1));
+    }
     for size in [125, 250, 500, 1_000] {
         let mut source = String::from("module geometric\n\n");
         for i in 0..size {

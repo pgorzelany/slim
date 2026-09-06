@@ -355,6 +355,11 @@ public session is unchanged. Measured snapshot setup/copying overhead still exce
 the inference savings in the two-revision workload. Public query integration,
 service transactions and retained analysis/emission remain pending.
 
+RFC-0131 compacts retained storage while preserving full typed semantic handles at
+query boundaries. It reduces measured setup/update overhead and permanently gates
+fixed payload sizes; the two-revision workload remains slower than two clean checks.
+It does not change the remaining parent milestones or service obligations.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale

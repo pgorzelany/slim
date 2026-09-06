@@ -190,20 +190,23 @@ RFC-0130's internal entry point has native-observed inference reuse; the public
 session remains an estimate command. Its geometric family executes zero function
 checks for unchanged updates and one for a single helper-body edit. Parsing,
 linking, global checks and generation still run. Native counts and repeated
-clean-equivalence checks are in the [work table](../benchmarks/results/2026-09-06-m1-retained-typing-work.tsv).
-The [latency table](../benchmarks/results/2026-09-06-m1-retained-typing-latency.tsv)
-separates ordinary compiler checks from two-revision operations. Constructing a
-retained snapshot plus one update is slower than two clean checks in this measured
-workload; those totals are not isolated warm-query latency. Snapshot construction,
-copying and storage overhead remain M1 optimization work. No existing gate is relaxed.
+clean-equivalence checks are in the [current work table](../benchmarks/results/2026-09-06-m1-compact-retained-work.tsv).
+The [current latency table](../benchmarks/results/2026-09-06-m1-compact-retained-latency.tsv)
+separates ordinary checks, old/new retained storage and two-clean-check comparisons.
+RFC-0131 reduces retained setup/update overhead, but constructing a retained snapshot
+plus one update is still slower than two clean checks in this measured workload.
+Those totals are not isolated warm-query latency. Snapshot construction, copying
+and public service integration remain M1 work. No existing gate is relaxed.
 
-A retained node record occupies 264 bytes on the measured host before index storage,
-vector capacity slack and copied source spans. The API's configurable token limit
+RFC-0131 reduces the saved node record from 264 to 64 bytes and the temporary
+pre-inference link from 104 to eight bytes on the measured host. Native probe
+compilation gates these fixed-payload ceilings. These are not peak RSS measurements;
+index storage, vector capacity slack and copied source spans are additional. The API's configurable token limit
 is 1..1,000,000, not a byte or RSS cap. Over-limit or invalid configurations execute
 ordinary checking and report capacity misses. Nonnegative Work counters are exact
 within this token domain. `executed = -1` means work was not counted by the retained
 loop: capacity misses use the ordinary checker; early rejected inputs do not enter
 typing. Missing counters are never treated as zero work. The separate native
 observer has 64 phases and checked saturation at 1,000,000,000 calls; phase returns
-do not certify successful publication. [Fault observations](../benchmarks/results/2026-09-06-m1-retained-typing-faults.tsv)
+do not certify successful publication. [Current fault observations](../benchmarks/results/2026-09-06-m1-compact-retained-faults.tsv)
 cover 512 allocation ordinals through the full differential probe.

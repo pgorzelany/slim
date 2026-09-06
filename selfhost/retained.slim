@@ -21,12 +21,20 @@ enum Link:
   Source(identity.NodeId)
   Binding(BindingId)
   Local(LocalLink)
+  Invalid
+
+struct StoredType:
+  position: I64
+
+struct StoredLink:
+  value: I64
 
 struct Saved:
+  owner: identity.DeclarationId
   tag: I64
-  type: TypeId
-  link: Link
-  prior: Link
+  type: StoredType
+  link: StoredLink
+  prior: StoredLink
 
 struct Shape:
   kind: I64
@@ -183,46 +191,79 @@ fn node_ref(index: Index, node: I64) -> NodeRef effects[partial]:
     NodeRef::Missing()
   else:
     let owner: I64 = vec.get(index.owners, node)
-    if owner < 0:
+    if (owner < 0) || (owner >= vec.len(index.declarations)):
       NodeRef::Missing()
     else:
       let declaration: Declaration = vec.get(index.declarations, owner)
-      NodeRef::Found(identity.NodeId(declaration: declaration.owner.declaration, ordinal: node - declaration.owner.first))
+      let same: Bool = identity.same_revision(index.revision, declaration.owner.declaration.file.revision)
+      let slot: Bool = (declaration.owner.declaration.file.slot == 0) && (declaration.owner.declaration.slot == owner)
+      let valid: Bool = identity.valid_view(declaration.owner, vec.len(index.owners)) && (same && slot)
+      if valid && (node >= declaration.owner.first):
+        let ordinal: I64 = node - declaration.owner.first
+        if ordinal < declaration.owner.count:
+          NodeRef::Found(identity.NodeId(declaration: declaration.owner.declaration, ordinal: ordinal))
+        else:
+          NodeRef::Missing()
+      else:
+        NodeRef::Missing()
+
+fn valid_saved(saved: Saved, owner: identity.DeclarationId) -> Bool:
+  identity.same_declaration(saved.owner, owner) && (((saved.tag >= 0) && (saved.tag <= 30)) && ((saved.tag % 8) <= 6))
+
+fn saved_type(index: Index, saved: Saved) -> TypeId effects[partial]:
+  TypeId(node: node_ref(index, saved.type.position))
+
+fn saved_link(index: Index, saved: Saved) -> Link effects[partial]:
+  if saved.tag >= 8:
+    Link::Binding(BindingId(owner: saved.owner, slot: saved.link.value))
+  else:
+    capture_link(index, saved.link.value)
 
 fn source_link(index: Index, node: I64) -> Link effects[partial]:
   match node_ref(index, node):
     Missing:
-      Link::Missing()
+      Link::Invalid()
     Found(id):
       Link::Source(id)
 
 fn capture_link(index: Index, link: I64) -> Link effects[partial]:
-  if link == -1:
-    Link::Missing()
+  let total: I64 = vec.len(index.owners)
+  if (total < 1) || (total > 1000000):
+    Link::Invalid()
   else:
-    if link >= 0:
-      source_link(index, link)
+    if link == -1:
+      Link::Missing()
     else:
-      let packed: I64 = (0 - link) - 2
-      let base: I64 = vec.len(index.owners) + 1
-      let binding: I64 = packed % base
-      let mode_type: I64 = packed / base
-      let type: I64 = mode_type / 3
-      match node_ref(index, binding):
-        Missing:
-          Link::Missing()
-        Found(id):
-          let type_node: NodeRef = if type > 0:
-            node_ref(index, type)
-          else:
-            NodeRef::Missing()
-          Link::Local(LocalLink(binding: id, type: type_node, mode: mode_type % 3))
+      if link >= 0:
+        source_link(index, link)
+      else:
+        let base: I64 = total + 1
+        let maximum: I64 = ((((total * 3) + 2) * base) + total) + 2
+        if link < (0 - maximum):
+          Link::Invalid()
+        else:
+          let packed: I64 = (0 - link) - 2
+          let binding: I64 = packed % base
+          let mode_type: I64 = packed / base
+          let type: I64 = mode_type / 3
+          match node_ref(index, binding):
+            Missing:
+              Link::Invalid()
+            Found(id):
+              if type == 0:
+                Link::Local(LocalLink(binding: id, type: NodeRef::Missing(), mode: mode_type % 3))
+              else:
+                match node_ref(index, type):
+                  Missing:
+                    Link::Invalid()
+                  Found(type_id):
+                    Link::Local(LocalLink(binding: id, type: NodeRef::Found(type_id), mode: mode_type % 3))
 
-fn prior_links(index: Index, tokens: Vec[syntax.Token], at: I64, output: @Vec[Link]) -> Void effects[alloc, partial]:
+fn prior_links(index: Index, tokens: Vec[syntax.Token], at: I64, output: @Vec[StoredLink]) -> Void effects[alloc, partial]:
   if at >= vec.len(tokens):
     void
   else:
-    vec.push(@output, capture_link(index, syntax.ast_node_link(tokens, at)))
+    vec.push(@output, StoredLink(value: syntax.ast_node_link(tokens, at)))
     recur(index, tokens, at + 1, @output)
 
 fn fill_missing(count: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
@@ -297,6 +338,8 @@ fn same_link(old: Index, current: Index, after: Vec[I64], before: Link, link: Li
           false
         Local(local):
           false
+        Invalid:
+          false
     Source(id):
       let mapped: I64 = corresponding(old, current, after, id)
       match link:
@@ -308,6 +351,8 @@ fn same_link(old: Index, current: Index, after: Vec[I64], before: Link, link: Li
         Binding(target):
           false
         Local(local):
+          false
+        Invalid:
           false
     Binding(id):
       false
@@ -330,21 +375,36 @@ fn same_link(old: Index, current: Index, after: Vec[I64], before: Link, link: Li
               let declaration: Declaration = vec.get(current.declarations, id.declaration.slot)
               declaration.owner.first + id.ordinal
           (binding == (owner.owner.first + target.binding.ordinal)) && ((type == target_type) && (local.mode == target.mode))
+        Invalid:
+          false
+    Invalid:
+      false
 
-fn same_nodes(old: Cache, current: Index, prior: Vec[Link], after: Vec[I64], first: I64, previous: I64, at: I64, count: I64) -> Bool effects[partial]:
+fn same_nodes(old: Cache, current: Index, prior: Vec[StoredLink], after: Vec[I64], first: I64, previous: I64, at: I64, count: I64) -> Bool effects[partial]:
   if at >= count:
     true
   else:
     let old_shape: Shape = vec.get(old.index.shapes, previous + at)
     let shape: Shape = vec.get(current.shapes, first + at)
     let saved: Saved = vec.get(old.nodes, previous + at)
-    let link: Link = vec.get(prior, first + at)
-    if ((old_shape.kind == shape.kind) && (old_shape.tag == shape.tag)) && (((old_shape.next == shape.next) || ((old_shape.next > (count - at)) && (shape.next > (count - at)))) && same_link(old.index, current, after, saved.prior, link)):
-      recur(old, current, prior, after, first, previous, at + 1, count)
-    else:
+    let owner: I64 = vec.get(old.index.owners, previous + at)
+    if (owner < 0) || (owner >= vec.len(old.index.declarations)):
       false
+    else:
+      let declaration: Declaration = vec.get(old.index.declarations, owner)
+      let shape_same: Bool = ((old_shape.kind == shape.kind) && (old_shape.tag == shape.tag)) && ((old_shape.next == shape.next) || ((old_shape.next > (count - at)) && (shape.next > (count - at))))
+      if shape_same && valid_saved(saved, declaration.owner.declaration):
+        let stored: StoredLink = vec.get(prior, first + at)
+        let link: Link = capture_link(current, stored.value)
+        let before: Link = capture_link(old.index, saved.prior.value)
+        if same_link(old.index, current, after, before, link):
+          recur(old, current, prior, after, first, previous, at + 1, count)
+        else:
+          false
+      else:
+        false
 
-fn classify(old: Cache, current: Index, prior: Vec[Link], before: Vec[I64], after: Vec[I64], at: I64, interfaces: @Vec[Bool], bodies: @Vec[Bool], queue: @Vec[I64]) -> Void effects[alloc, partial]:
+fn classify(old: Cache, current: Index, prior: Vec[StoredLink], before: Vec[I64], after: Vec[I64], at: I64, interfaces: @Vec[Bool], bodies: @Vec[Bool], queue: @Vec[I64]) -> Void effects[alloc, partial]:
   if at >= vec.len(current.declarations):
     void
   else:
@@ -386,13 +446,14 @@ fn append_edge(current: Index, consumer: I64, at: I64, target: identity.NodeId, 
     vec.push(@edges, Edge(consumer: consumer, interface: interface, next: previous))
     vec.set(@heads, provider, next)
 
-fn dependencies(current: Index, prior: Vec[Link], at: I64, heads: @Vec[I64], edges: @Vec[Edge]) -> Void effects[alloc, partial]:
+fn dependencies(current: Index, prior: Vec[StoredLink], at: I64, heads: @Vec[I64], edges: @Vec[Edge]) -> Void effects[alloc, partial]:
   if at >= vec.len(prior):
     void
   else:
     let consumer: I64 = vec.get(current.owners, at)
     if consumer >= 0:
-      match vec.get(prior, at):
+      let stored: StoredLink = vec.get(prior, at)
+      match capture_link(current, stored.value):
         Missing:
           void
         Source(target):
@@ -405,6 +466,8 @@ fn dependencies(current: Index, prior: Vec[Link], at: I64, heads: @Vec[I64], edg
               void
             Found(target):
               append_edge(current, consumer, at, target, @heads, @edges)
+        Invalid:
+          void
     else:
       void
     recur(current, prior, at + 1, @heads, @edges)
@@ -430,7 +493,7 @@ fn propagate(heads: Vec[I64], edges: Vec[Edge], at: I64, interfaces: @Vec[Bool],
     propagate_edges(edges, vec.get(heads, provider), @interfaces, @bodies, @queue)
     recur(heads, edges, at + 1, @interfaces, @bodies, @queue)
 
-fn update(old: Cache, current: Index, prior: Vec[Link]) -> Update effects[alloc, partial]:
+fn update(old: Cache, current: Index, prior: Vec[StoredLink]) -> Update effects[alloc, partial]:
   let before: Vec[I64] = vec.new()
   let after: Vec[I64] = vec.new()
   fill_missing(vec.len(old.index.declarations), @after)
@@ -497,16 +560,22 @@ fn relocate_link(old: Index, current: Index, mapping: Update, owner: identity.De
         0 - (((((type_node * 3) + local.mode) * base) + binding) + 2)
       else:
         -2
+    Invalid:
+      -2
 
 fn import_valid(old: Cache, current: Index, mapping: Update, declaration: Declaration, at: I64) -> Bool effects[partial]:
   if at >= declaration.owner.count:
     true
   else:
     let saved: Saved = vec.get(old.nodes, declaration.owner.first + at)
-    let type: I64 = relocate_ref(old.index, current, mapping, saved.type.node)
-    let link: I64 = relocate_link(old.index, current, mapping, declaration.owner.declaration, saved.link)
-    if (type >= 0) && (!(link == -2)):
-      recur(old, current, mapping, declaration, at + 1)
+    if valid_saved(saved, declaration.owner.declaration):
+      let stored_type: TypeId = saved_type(old.index, saved)
+      let type: I64 = relocate_ref(old.index, current, mapping, stored_type.node)
+      let link: I64 = relocate_link(old.index, current, mapping, declaration.owner.declaration, saved_link(old.index, saved))
+      if (type >= 0) && (!(link == -2)):
+        recur(old, current, mapping, declaration, at + 1)
+      else:
+        false
     else:
       false
 
@@ -515,8 +584,9 @@ fn import_nodes(old: Cache, current: Index, mapping: Update, declaration: Declar
     void
   else:
     let saved: Saved = vec.get(old.nodes, declaration.owner.first + at)
-    let type: I64 = relocate_ref(old.index, current, mapping, saved.type.node)
-    let link: I64 = relocate_link(old.index, current, mapping, declaration.owner.declaration, saved.link)
+    let stored_type: TypeId = saved_type(old.index, saved)
+    let type: I64 = relocate_ref(old.index, current, mapping, stored_type.node)
+    let link: I64 = relocate_link(old.index, current, mapping, declaration.owner.declaration, saved_link(old.index, saved))
     vec.set(@facts, first + at, typing.Fact(tag: saved.tag, form: type))
     syntax.ast_node_set_link(@tokens, first + at, link)
     recur(old, current, mapping, declaration, first, at + 1, @tokens, @facts)
@@ -559,19 +629,20 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], old: Cache, curren
       imported
     recur(source, @tokens, old, current, mapping, at + 1, @facts, @issues, next_executed, next_reused, next_imported)
 
-fn save_nodes(index: Index, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], prior: Vec[Link], at: I64, output: @Vec[Saved]) -> Void effects[alloc, partial]:
+fn save_nodes(index: Index, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], prior: Vec[StoredLink], at: I64, output: @Vec[Saved]) -> Void effects[alloc, partial]:
   if at >= vec.len(tokens):
     void
   else:
     let fact: typing.Fact = vec.get(facts, at)
     let raw: I64 = syntax.ast_node_link(tokens, at)
     let owner: I64 = vec.get(index.owners, at)
-    let link: Link = if (typing.fact_borrow_mode(fact) >= 0) && (owner >= 0):
-      let declaration: Declaration = vec.get(index.declarations, owner)
-      Link::Binding(BindingId(owner: declaration.owner.declaration, slot: raw))
+    let declaration: identity.DeclarationId = if owner >= 0:
+      let declared: Declaration = vec.get(index.declarations, owner)
+      declared.owner.declaration
     else:
-      capture_link(index, raw)
-    vec.push(@output, Saved(tag: fact.tag, type: TypeId(node: node_ref(index, fact.form)), link: link, prior: vec.get(prior, at)))
+      let file: identity.FileId = identity.FileId(revision: index.revision, slot: 0)
+      identity.DeclarationId(file: file, slot: -1)
+    vec.push(@output, Saved(owner: declaration, tag: fact.tag, type: StoredType(position: fact.form), link: StoredLink(value: raw), prior: vec.get(prior, at)))
     recur(index, tokens, facts, prior, at + 1, @output)
 
 fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], old: Cache, revision: identity.Revision, token_limit: I64) -> Analyzed effects[alloc, partial]:
@@ -584,7 +655,7 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
   else:
     let view: typing.View = typing.prepare(source, @tokens, declarations)
     let index: Index = build_index(source, tokens, declarations, revision)
-    let prior: Vec[Link] = vec.new()
+    let prior: Vec[StoredLink] = vec.new()
     prior_links(index, tokens, 0, @prior)
     let mapping: Update = update(old, index, prior)
     let facts: Vec[typing.Fact] = mem.replace(@view.facts, vec.new())

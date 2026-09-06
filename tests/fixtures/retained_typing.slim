@@ -138,6 +138,93 @@ fn missing_metadata(source: Bytes, cache: retained.Cache, names: Bool) -> I64 ef
     void
   boundary(source, first.cache, identity.Revision(epoch: 1, serial: 6), false, true)
 
+fn first_function(cache: retained.Cache, at: I64) -> I64 effects[partial]:
+  let declaration: retained.Declaration = vec.get(cache.index.declarations, at)
+  if declaration.kind == 0:
+    at
+  else:
+    recur(cache, at + 1)
+
+fn wrong_saved_owner(source: Bytes, cache: retained.Cache, stale: Bool) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let first: check.Attempt = check.check_source_retained(source, @tokens, cache, identity.Revision(epoch: 1, serial: 7), 1000000)
+  let slot: I64 = first_function(first.cache, 0)
+  let declaration: retained.Declaration = vec.get(first.cache.index.declarations, slot)
+  let nodes: Vec[retained.Saved] = mem.replace(@first.cache.nodes, vec.new())
+  let saved: retained.Saved = vec.get(nodes, declaration.owner.first)
+  let wrong: identity.DeclarationId = if stale:
+    let file: identity.FileId = identity.FileId(revision: identity.Revision(epoch: 1, serial: 6), slot: saved.owner.file.slot)
+    identity.DeclarationId(file: file, slot: saved.owner.slot)
+  else:
+    let count: I64 = vec.len(first.cache.index.declarations)
+    let other: I64 = if count > 1:
+      (saved.owner.slot + 1) % count
+    else:
+      saved.owner.slot + 1
+    identity.DeclarationId(file: saved.owner.file, slot: other)
+  vec.set(@nodes, declaration.owner.first, retained.Saved(owner: wrong, tag: saved.tag, type: saved.type, link: saved.link, prior: saved.prior))
+  let empty: Vec[retained.Saved] = mem.replace(@first.cache.nodes, nodes)
+  let fresh: Vec[syntax.Token] = vec.new()
+  let fresh_parse: syntax.ProgramParse = syntax.parse_program_result(source, @fresh)
+  let updated: check.Attempt = check.check_source_retained(source, @fresh, first.cache, identity.Revision(epoch: 1, serial: 8), 1000000)
+  let compared: I64 = compare(source, fresh, updated)
+  if (compared == 0) && (updated.cache.valid && (updated.work.executed > 0)):
+    0
+  else:
+    17
+
+fn stored_boundary(source: Bytes, cache: retained.Cache, mode: I64) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let first: check.Attempt = check.check_source_retained(source, @tokens, cache, identity.Revision(epoch: 1, serial: 9), 1000000)
+  let slot: I64 = first_function(first.cache, 0)
+  let declaration: retained.Declaration = vec.get(first.cache.index.declarations, slot)
+  let nodes: Vec[retained.Saved] = mem.replace(@first.cache.nodes, vec.new())
+  let saved: retained.Saved = vec.get(nodes, declaration.owner.first)
+  let minimum: I64 = -9223372036854775807 - 1
+  let position: I64 = if mode == 0:
+    -1
+  else:
+    if mode == 4:
+      vec.len(first.cache.index.owners)
+    else:
+      saved.type.position
+  let link: I64 = if mode == 1:
+    minimum
+  else:
+    if mode == 5:
+      9223372036854775807
+    else:
+      saved.link.value
+  let prior: I64 = if mode == 2:
+    minimum
+  else:
+    saved.prior.value
+  let tag: I64 = if mode == 3:
+    31
+  else:
+    if mode == 6:
+      6
+    else:
+      saved.tag
+  vec.set(@nodes, declaration.owner.first, retained.Saved(owner: saved.owner, tag: tag, type: retained.StoredType(position: position), link: retained.StoredLink(value: link), prior: retained.StoredLink(value: prior)))
+  if mode == 6:
+    let last: I64 = (declaration.owner.first + declaration.owner.count) - 1
+    let final: retained.Saved = vec.get(nodes, last)
+    vec.set(@nodes, last, retained.Saved(owner: final.owner, tag: final.tag, type: final.type, link: retained.StoredLink(value: minimum), prior: final.prior))
+  else:
+    void
+  let empty: Vec[retained.Saved] = mem.replace(@first.cache.nodes, nodes)
+  let fresh: Vec[syntax.Token] = vec.new()
+  let fresh_parse: syntax.ProgramParse = syntax.parse_program_result(source, @fresh)
+  let updated: check.Attempt = check.check_source_retained(source, @fresh, first.cache, identity.Revision(epoch: 1, serial: 10), 1000000)
+  let compared: I64 = compare(source, fresh, updated)
+  if (compared == 0) && (updated.cache.valid && (updated.work.executed > 0)):
+    0
+  else:
+    18
+
 fn check_boundaries(source: Bytes, cache: retained.Cache) -> I64 effects[alloc, io, partial]:
   let stale: I64 = boundary(source, cache, identity.Revision(epoch: 1, serial: 1), false, false)
   let reset: I64 = boundary(source, cache, identity.Revision(epoch: 2, serial: 1), false, true)
@@ -148,7 +235,17 @@ fn check_boundaries(source: Bytes, cache: retained.Cache) -> I64 effects[alloc, 
   let above: I64 = capacity_boundary(source, cache, 0, 1000001)
   let missing_nodes: I64 = missing_metadata(source, cache, false)
   let missing_names: I64 = missing_metadata(source, cache, true)
-  ((((stale + reset) + recovery) + (exact + below)) + (zero + above)) + (missing_nodes + missing_names)
+  let stale_row: I64 = wrong_saved_owner(source, cache, true)
+  let wrong_declaration: I64 = wrong_saved_owner(source, cache, false)
+  let missing_type: I64 = stored_boundary(source, cache, 0)
+  let minimum_link: I64 = stored_boundary(source, cache, 1)
+  let minimum_prior: I64 = stored_boundary(source, cache, 2)
+  let invalid_tag: I64 = stored_boundary(source, cache, 3)
+  let excess_type: I64 = stored_boundary(source, cache, 4)
+  let excess_link: I64 = stored_boundary(source, cache, 5)
+  let atomic: I64 = stored_boundary(source, cache, 6)
+  let previous: I64 = (((((stale + reset) + recovery) + (exact + below)) + (zero + above)) + (missing_nodes + missing_names)) + (stale_row + wrong_declaration)
+  previous + (((missing_type + minimum_link) + (minimum_prior + invalid_tag)) + ((excess_type + excess_link) + atomic))
 
 fn run(previous: Bytes, source: Bytes, boundaries: Bool) -> I64 effects[alloc, io, partial]:
   let before: Vec[syntax.Token] = vec.new()

@@ -11,4 +11,9 @@ phase && /^return slim_result;$/ { ends++; print "slim_retained_probe_end();" }
     mains++; print; print "slim_retained_probe_init();"; next
 }
 { print }
-END { if (begins != 1 || checks != 1 || ends != 1 || mains != 1) exit 1 }
+END {
+    if (begins != 1 || checks != 1 || ends != 1 || mains != 1) exit 1
+    # RFC-0131 durable fixed-payload budgets, excluding vector/index storage.
+    print "_Static_assert(sizeof(Slim_type_retained_95Saved) <= 64, \"retained saved-row storage budget\");"
+    print "_Static_assert(sizeof(Slim_type_retained_95StoredLink) <= 8, \"retained temporary-link storage budget\");"
+}

@@ -10,8 +10,11 @@ still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
 
 The retained entry point calls the same isolated SLIM function checker on misses.
-It retains nominal type and binding references, translates source nodes and packed
-local links explicitly, and validates all imported nodes before writing them.
+[RFC-0131](../design/rfcs/0131-compact-retained-storage.md) stores one typed
+revision/declaration owner per row and compact owner-scoped type/link words.
+It reconstructs nominal type, binding and node references against the original
+index, then translates them explicitly. Wrong owners and invalid storage cause
+misses; all imported nodes are validated before the first write.
 Unchanged bodies can survive insertion/reordering of other declarations; changed
 callee signatures and transitive data interfaces invalidate their consumers.
 Only full successful checks can produce eligible history. Rejected candidates and

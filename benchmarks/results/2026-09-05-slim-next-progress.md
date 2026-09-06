@@ -1596,3 +1596,77 @@ orchestration over flow, typed place facts, full transactional service limits an
 reclamation, cached analysis/C/backend work, and final differential/locality/release
 closure. The minimum-I64 literal emission issue and recursive-checker sanitizer
 stack limit remain recorded. This checkpoint does not shrink those obligations.
+
+
+## M1 compact retained storage — 2026-09-06
+
+RFC-0131 replaces repeated expanded identities in immutable saved rows with one
+typed declaration owner and nominal StoredType/StoredLink words. A word is decoded
+only against its original source index, then materialized as a typed semantic
+handle for the existing checked revision map. Owner equality includes epoch,
+revision, file and declaration slot. Source-node decoding checks owner-table and
+view bounds; invalid tags/links cause misses. The packed-link decoder rejects
+out-of-domain magnitudes before negation, including I64 minimum. It distinguishes
+invalid references from genuine missing references. All rows are validated before
+the first imported fact or token write. The sole normal checker remains the
+producer of new accepted semantic facts.
+
+[Fixed storage measurements](2026-09-06-m1-compact-retained-storage.tsv) show Saved
+shrinking from 264 to **64 bytes** and transient pre-inference links from 104 to
+**eight bytes**. These ceilings are permanent native-probe compilation gates.
+Saved occupied payload falls from 22,181,808 to 5,377,408 bytes for the 4,000-helper
+family (84,022 canonical nodes). It excludes vector capacity slack, original input,
+copied declaration/interface bytes, index storage and allocator overhead. It is
+not peak RSS or a service storage bound. TypeId/BindingId/Link remain 48/40/104
+bytes at semantic boundaries; Index and Cache remain 248 and 296 bytes.
+
+Validation and observations:
+
+- The production retained probe passes all 94 accepted conformance/native files,
+  with exact clean facts, token fields, diagnostics and C. Unchanged updates
+  execute no function-inference calls. Existing edit/dependency/recovery gates
+  remain intact. Added boundary trials cover wrong revision and declaration
+  owners, missing/excess type positions, extreme packed/source links, invalid
+  fact tags and all-before-write fallback when a final row is invalid.
+- [Geometric actual work](2026-09-06-m1-compact-retained-work.tsv) still observes
+  zero updated checks and N+1 reused functions on unchanged input, or one check
+  and N reused functions on a helper-body edit. Imported counts remain 21N+18
+  and 21N-3. N=125 through 4,000, plus small boundary sizes, repeat identically
+  with ASan/UBSan and complete clean-result comparison. No metric is redefined.
+- The ordinary and sanitized probes pass all storage/revision/capacity boundaries
+  and [512 allocation-fault ordinals](2026-09-06-m1-compact-retained-faults.tsv):
+  509 status-71 failures with empty stdout, three successes, and identical
+  status/stdout/stderr. Native phase returns are observations of control flow,
+  not publication certificates. The corpus includes clean checking and C
+  comparison outside the retained operation.
+- All 193 rejected fixtures keep exact status/stdout/stderr relative to 4dfd31d.
+  All 20 native applications keep complete identical analysis, unchanged resource
+  rows and [byte-identical generated C](2026-09-06-m1-compact-retained-native.tsv).
+- Bootstrap reaches **3,861,132 C bytes**, 15,203 above 4dfd31d, SHA-256
+  `e8accfbc15ab9436213e8648ba31b434c2124bdc87a8578a5572f98d36c1caff`.
+  All 10 unit and 66 integration tests pass. Conformance passes 333 fixtures and
+  2,000 deterministic malformed mutations. Governance, formatting, Clippy,
+  required performance/reduction/parallelism/comparison/agent gates, resources,
+  parallel-runtime, incremental and the existing 44-counter ordinary work
+  campaign pass. No existing gate is relaxed.
+
+[Paired uninstrumented timings](2026-09-06-m1-compact-retained-latency.tsv) use
+O2 binaries, two warmup pairs and eleven alternating measured pairs after other
+CPU-intensive checks finish. At 4,000 helpers, old/new retained medians are
+59.125/49.764 ms for unchanged input and 59.907/49.782 ms for a body edit.
+These improvements accompany substantially smaller stored payload. Separately,
+two clean checks versus compact retained construction plus update take
+31.419/50.190 ms unchanged and 30.539/49.226 ms with a body edit. The retained
+operation is still slower overall for this family. All these totals include
+startup, I/O, parsing, linking and complete checking; they are not isolated warm
+query timings. Default-check medians are 17.433/17.361 ms at 4,000; no portable
+ordinary-check speedup is claimed. Compile +1, other dimensions zero, score 10,
+records the measured retained-storage improvement. Detailed logs and recipes are
+under `build/slim-next-m1/compact-retained/`.
+
+M1 remains **in progress**. This checkpoint reduces storage overhead; it does not
+complete ownership orchestration over flow, typed place facts, retained parsing,
+public transactional query/session integration and reclamation, cached analysis/C/
+backend work, or the full differential/locality/release closure. The recorded
+minimum-I64 literal emission bug and recursive-checker sanitizer stack limit
+remain open. The complete M1 goal and historical evidence are unchanged.

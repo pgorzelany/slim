@@ -1,0 +1,4 @@
+# date=2026-09-06; baseline=4dfd31d; candidate_seed_sha256=e8accfbc15ab9436213e8648ba31b434c2124bdc87a8578a5572f98d36c1caff; sizeof fixed C payload on current host; excludes capacity slack, index/source storage, allocator overhead and RSS
+record	baseline_bytes	candidate_bytes
+Saved	264	64
+TransientPriorLink	104	8
