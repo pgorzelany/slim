@@ -968,8 +968,10 @@ fn prefix_total_to_tail(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[Fac
       let value: I64 = syntax.ast_let_value(tokens, expr)
       let body: I64 = syntax.ast_let_body(tokens, expr)
       let value_total: Bool = fact_total(facts, value)
-      let rest_total: Bool = recur(source, tokens, facts, body, tail)
-      value_total && rest_total
+      if value_total:
+        recur(source, tokens, facts, body, tail)
+      else:
+        false
     else:
       false
 
@@ -981,8 +983,10 @@ fn forms_total(tokens: Vec[syntax.Token], facts: Vec[Fact], cursor: I64) -> Bool
   else:
     let current_total: Bool = fact_total(facts, cursor)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    let rest_total: Bool = recur(tokens, facts, next)
-    current_total && rest_total
+    if current_total:
+      recur(tokens, facts, next)
+    else:
+      false
 
 fn parameter_position(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, declaration: I64, position: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)

@@ -66,6 +66,13 @@ series uses 125, 250, 500, and 1,000 live owners and independently obeys the
 existing owned-transfer exponent ceiling of 1.25. Original transfer and
 normalized-cost gates remain in place.
 
+RFC-0115 adds acyclic call chains, shared-dependency call graphs, and growing
+declaration contexts containing one proven pure recurrence. Each geometric
+series independently obeys the existing 1.25 check-exponent ceiling. The
+recurrence-context series measures the optional totality analysis cost without
+exhausting its fixed 64-refinement budget; separate permanent negative tests
+cross that budget at 33 countdown functions.
+
 The `project` command generates geometric wide and deep import graphs and
 measures deterministic C emission at one, two, and four requested workers.
 Repeated runs and every worker count must produce identical bytes. Serial

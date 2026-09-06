@@ -1,0 +1,13 @@
+module termination
+
+fn down(value: I64, state: Bool) -> Bool:
+  if value <= 0:
+    state
+  else:
+    recur(value - 1, !state)
+
+fn main(args: Vec[Bytes]) -> I64:
+  if down(20, true):
+    0
+  else:
+    1

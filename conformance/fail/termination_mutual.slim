@@ -1,0 +1,10 @@
+module termination
+
+fn left(value: I64) -> I64:
+  right(value)
+
+fn right(value: I64) -> I64:
+  left(value)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -1,0 +1,10 @@
+module termination
+
+fn down(value: I64) -> I64:
+  if value <= 0:
+    0
+  else:
+    recur(value - 1000000001)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -193,7 +193,11 @@ fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Boo
         else:
           1
       else:
-        check_path_fork(input, tokens, declarations, @issues)
+        let ordinary: I64 = check_path_fork(input, tokens, declarations, @issues)
+        if ordinary > 0:
+          ordinary
+        else:
+          check_termination(input, tokens, declarations, view.facts, @issues)
       let prior_error: Bool = checked > 0
       let status: I64 = if prior_error:
         let recovered: I64 = if typed_error:
@@ -761,6 +765,146 @@ fn check_path_effects(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec
     append_form_issue("E0343", missing, tokens, @issues)
   else:
     0
+
+struct TerminationFrame:
+  item: I64
+  cursor: I64
+  end: I64
+
+fn termination_initialize(length: I64, colors: @Vec[I64]) -> Void effects[alloc, partial]:
+  if vec.len(colors) >= length:
+    void
+  else:
+    vec.push(@colors, 0)
+    recur(length, @colors)
+
+fn termination_enter(tokens: Vec[syntax.Token], item: I64, depth: I64, colors: @Vec[I64], frames: @Vec[TerminationFrame]) -> Void effects[alloc, partial]:
+  let body: I64 = syntax.ast_function_body(tokens, item)
+  let frame: TerminationFrame = TerminationFrame(item: item, cursor: body, end: syntax.ast_next(tokens, body))
+  vec.set(@colors, item, 1)
+  if depth >= vec.len(frames):
+    vec.push(@frames, frame)
+  else:
+    vec.set(@frames, depth, frame)
+
+fn termination_walk(source: Bytes, tokens: Vec[syntax.Token], depth: I64, colors: @Vec[I64], frames: @Vec[TerminationFrame]) -> I64 effects[alloc, partial]:
+  if depth < 0:
+    -1
+  else:
+    let frame: TerminationFrame = vec.get(frames, depth)
+    if frame.cursor >= frame.end:
+      vec.set(@colors, frame.item, 2)
+      recur(source, tokens, depth - 1, @colors, @frames)
+    else:
+      let cursor: I64 = frame.cursor
+      let next: I64 = syntax.ast_node_after(cursor)
+      vec.set(@frames, depth, TerminationFrame(item: frame.item, cursor: next, end: frame.end))
+      let call: Bool = if syntax.ast_node_kind(tokens, cursor) == 0:
+        syntax.ast_expression_is_call(source, tokens, cursor)
+      else:
+        false
+      let target: I64 = if call:
+        let callee: I64 = syntax.ast_call_callee(cursor)
+        syntax.ast_node_link(tokens, callee)
+      else:
+        -1
+      let follow: Bool = if target >= 0:
+        syntax.ast_item_is_function(source, tokens, target) && (!effects.params_have(source, tokens, target, 3))
+      else:
+        false
+      let color: I64 = if follow:
+        vec.get(colors, target)
+      else:
+        2
+      if color == 1:
+        cursor
+      else:
+        let next_depth: I64 = if color == 0:
+          let child_depth: I64 = depth + 1
+          termination_enter(tokens, target, child_depth, @colors, @frames)
+          child_depth
+        else:
+          depth
+        recur(source, tokens, next_depth, @colors, @frames)
+
+fn termination_cycles(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, colors: @Vec[I64], frames: @Vec[TerminationFrame]) -> I64 effects[alloc, partial]:
+  if index >= vec.len(declarations):
+    -1
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    let function: Bool = syntax.ast_item_is_function(source, tokens, item)
+    let inspect: Bool = if function:
+      (!effects.params_have(source, tokens, item, 3)) && (vec.get(colors, item) == 0)
+    else:
+      false
+    let cycle: I64 = if inspect:
+      termination_enter(tokens, item, 0, @colors, @frames)
+      termination_walk(source, tokens, 0, @colors, @frames)
+    else:
+      -1
+    if cycle >= 0:
+      cycle
+    else:
+      recur(source, tokens, declarations, index + 1, @colors, @frames)
+
+fn termination_recur_span(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, facts: Vec[ranges.Fact], checked: Bool) -> I64 effects[partial]:
+  if cursor >= end:
+    -1
+  else:
+    let recurrence: Bool = if syntax.ast_node_kind(tokens, cursor) == 0:
+      syntax.ast_expression_is_recur(source, tokens, cursor)
+    else:
+      false
+    let proven: Bool = if checked && recurrence:
+      ranges.fact_total(facts, cursor)
+    else:
+      false
+    if recurrence && (!proven):
+      cursor
+    else:
+      recur(source, tokens, syntax.ast_node_after(cursor), end, facts, checked)
+
+fn termination_recur_items(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, facts: Vec[ranges.Fact], checked: Bool) -> I64 effects[partial]:
+  if index >= vec.len(declarations):
+    -1
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    let function: Bool = syntax.ast_item_is_function(source, tokens, item)
+    let inspect: Bool = if function:
+      !effects.params_have(source, tokens, item, 3)
+    else:
+      false
+    let missing: I64 = if inspect:
+      let body: I64 = syntax.ast_function_body(tokens, item)
+      termination_recur_span(source, tokens, body, syntax.ast_next(tokens, body), facts, checked)
+    else:
+      -1
+    if missing >= 0:
+      missing
+    else:
+      recur(source, tokens, declarations, index + 1, facts, checked)
+
+fn check_termination(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], typed_facts: Vec[typing.Fact], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+  let empty: Vec[ranges.Fact] = vec.new()
+  let recurrence: I64 = termination_recur_items(source, tokens, declarations, 0, empty, false)
+  let missing: I64 = if recurrence >= 0:
+    let view: ranges.View = ranges.analyze(source, tokens, typed_facts)
+    termination_recur_items(source, tokens, declarations, 0, view.facts, true)
+  else:
+    -1
+  if missing >= 0:
+    append_form_issue("E0343", missing, tokens, @issues)
+  else:
+    let colors: Vec[I64] = vec.new()
+    let frames: Vec[TerminationFrame] = vec.new()
+    termination_initialize(vec.len(tokens), @colors)
+    let cycle: I64 = termination_cycles(source, tokens, declarations, 0, @colors, @frames)
+    if cycle >= 0:
+      append_form_issue("E0343", cycle, tokens, @issues)
+    else:
+      0
 
 fn find_overqualified(source: Bytes, tokens: Vec[syntax.Token], index: I64, length: I64) -> I64 effects[partial]:
   let done: Bool = index >= length

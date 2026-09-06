@@ -64,7 +64,7 @@ Generated from canonical interface schema 3. Do not edit by hand.
 
 ```slim-interface
 (fn contains ((shared (Vec I64)) (copy I64) (copy I64) (copy I64)) Bool (effects partial))
-(fn filled ((copy I64) (copy I64) (copy I64) (exclusive (Vec I64))) Void (effects alloc))
+(fn filled ((copy I64) (copy I64) (copy I64) (exclusive (Vec I64))) Void (effects alloc partial))
 (fn push_at ((exclusive (Vec I64)) (copy I64) (copy I64)) I64 (effects alloc partial))
 (fn top ((shared (Vec I64)) (copy I64)) I64 (effects partial))
 ```
@@ -105,7 +105,7 @@ Generated from canonical interface schema 3. Do not edit by hand.
 
 ```slim-interface
 (fn count ((shared (Vec U8)) (copy I64) (copy U8) (copy I64) (copy I64)) I64 (effects partial))
-(fn filled ((copy I64) (copy U8) (copy I64) (exclusive (Vec U8))) Void (effects alloc))
+(fn filled ((copy I64) (copy U8) (copy I64) (exclusive (Vec U8))) Void (effects alloc partial))
 (fn push_at ((exclusive (Vec U8)) (copy I64) (copy U8)) I64 (effects alloc partial))
 (fn sum ((shared (Vec U8)) (copy I64) (copy I64) (copy I64)) I64 (effects partial))
 ```

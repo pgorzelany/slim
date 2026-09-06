@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, and call-argument loan lifetimes validated. Field transfers and termination checks remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call-argument loans, and termination-effect enforcement validated. Field transfers, longer-lived aliases, and actual-work instrumentation remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -150,8 +150,8 @@ measurement of this later candidate.
   toward the approved explicit-replacement design. General partial moves are
   initially rejected by the successor; do not build a different ownership
   model merely to preserve every legacy spelling.
-- Enforce the declared termination-effect contract for unconditional recurrence
-  and direct or mutual recursive calls; preserve exact totality evidence.
+- Declared termination-effect enforcement is now repaired in RFC-0115; retain
+  its exact/unknown boundary through the successor's effect migration.
 - Finish the audit of claims against production behavior, including actual
   incremental work counters and compiler identity in cached artifacts.
 - Carry every repaired case and performance workload into M1-M7. M0 remains
@@ -269,3 +269,92 @@ runtime gates pass. Across 20 native challenges, the SLIM/C geometric mean is
 for `state_machine` and 0.726 for `signal_network`, within existing budgets.
 M0 remains in progress: projected-field transfers, longer-lived aliases,
 termination checking, and actual incremental work are still outstanding.
+
+## Termination-effect checkpoint (2026-09-06)
+
+RFC-0115 restores the current 0.9 capability ceiling. An unproven recurrence
+now reports E0343 unless its function declares `partial`. A positive totality
+fact must name that exact recurrence node. A linear iterative DFS rejects
+cycles among functions lacking `partial`, including unused functions and
+cycles beyond the parallel analyzer's 64-function reporting boundary. The
+existing effect checker continues to reject callers missing a callee's
+declared capability. This is current-contract repair; the successor's separate
+operation effects and progress contracts remain pending.
+
+During integration, the negative prefix test exposed two faulty totality
+walkers. Their `let rest = recur(...); current && rest` shape transferred
+control before combining the current fact, so a trapping prefix or recurrent
+argument could be ignored. Both walkers now reject an unproven current element
+before continuing. The original trapping-prefix source was accepted and
+reported with an exact recurrence profile; the repaired compiler rejects its
+missing `partial`, and its declared-partial variant reports no such profile.
+This is a reproduced repair, not a general proof of analyzer correctness.
+
+Three library declarations gain `partial`: `std_i64_vec.filled`,
+`std_u8_vec.filled`, and `lz4_codec.append_extension`. The two call-cycle
+functions in the parallel-analysis fixture gain the same capability. Generated
+library interfaces record the change. Algorithms, argument evaluation, and
+storage behavior are unchanged. Existing library/native execution tests pass.
+The declared-recursion conformance fixture retains a nonterminating branch
+without provoking Clang's unconditional-self-recursion warning; a separate
+fixture executes terminating direct and mutual recursion under `partial`.
+
+The 12 new production fixtures cover unconditional/direct/mutual recursion,
+unknown or zero steps, wrong controllers, out-of-domain steps, trapping prefixes
+and arguments, declared recursion, and a proven countdown. An independent
+transitive-closure oracle exhausts all 512 directed graphs on three functions;
+the checker agrees on acyclicity throughout that complete domain. Additional
+acyclic/cyclic chains of 65 and 2,048 functions cross reporting and native-stack
+boundaries. None of this evidence establishes termination for arbitrary code.
+
+The fixed range budget stays at 64 refinements. Thirty-two countdown functions
+pass; adding the 33rd reports E0343 at bytes 2978:2983, and 65 functions retain
+the same diagnostic. The first proposed scaling fixture exceeded this budget
+and correctly failed. The permanent timing fixture instead grows the context
+around one proven recurrence; the exhaustive-budget rejection remains a
+separate permanent test. Missing evidence never becomes an acceptance fact.
+
+The new check-exponent measurements are 0.318 for acyclic chains, 0.324 for
+shared-dependency DAGs, and 0.380 for the pure-recurrence context. Each obeys
+the unchanged 1.25 ceiling. Existing ownership/declaration fixtures and the
+1.30 owned-transfer normalized-cost gate also pass (measured ratio 1.026).
+Small-fixture exponents include fixed process startup, not sublinear algorithm
+claims. No performance budget or native analysis/resource baseline changed.
+
+The permanent paired frontend command compares the retained compiler from
+checkpoint `4a858de` with this candidate, with one warmup and seven alternating
+AB/BA pairs per size. Raw samples and binary identities are in
+[the dated TSV](2026-09-06-termination-frontend-pair.tsv).
+
+| Common-prefix declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 6.130 ms | 5.982 ms | 0.976 |
+| 4,000 | 8.936 ms | 9.020 ms | 1.009 |
+| 8,000 | 15.457 ms | 15.731 ms | 1.018 |
+| 16,000 | 29.282 ms | 30.002 ms | 1.025 |
+
+These same-host native process latencies measure the named declaration fixture,
+not general compiler latency, incremental work, or agent productivity.
+
+The portable fixed point is 2,950,748 C bytes, SHA-256
+`f2583b347c3770128da17dcdc739d0c9b8f3942451e81fb2f357a46b0ef396be`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 52 integration tests,
+232 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. Native SLIM/C and SLIM/Rust geometric means
+across 20 challenges are 1.092 and 1.002; generated parallel/serial ratios are
+0.891 for `state_machine` and 0.654 for `signal_network`, within existing gates.
+
+ASan/UBSan pass while checking the compiler itself and the positive termination
+fixtures, and while running both positive native executables. Allocation-fault
+injection into the sanitized proven-countdown check covers exactly ordinals
+1 through 128: every injected failure returns exit 71, no source output, and
+the expected failure diagnostic. All 128 ordinals are reached, so this is a
+bounded prefix of the allocation sequence, not exhaustive allocation coverage.
+Logs, binaries, and the injection record are in ignored
+`build/slim-next-termination/`.
+
+M0 remains in progress. Projected ownership, longer-lived alias tracking,
+actual checker/generator/cache work counters, and the needed successor policy
+decisions remain before milestone closure. M1-M7 and controlled agent outcomes
+are still pending.

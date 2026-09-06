@@ -52,10 +52,10 @@ fn overlap(value: I64) -> Bool:
   let third: Bool = safe_left(3)
   first && (second && third)
 
-fn cycle_left() -> Bool:
+fn cycle_left() -> Bool effects[partial]:
   cycle_right()
 
-fn cycle_right() -> Bool:
+fn cycle_right() -> Bool effects[partial]:
   cycle_left()
 
 fn dependent(value: I64) -> Bool:

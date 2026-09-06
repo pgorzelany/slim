@@ -9,7 +9,7 @@ fn contains(values: Vec[I64], length: I64, target: I64, index: I64) -> Bool effe
     else:
       recur(values, length, target, index + 1)
 
-fn filled(length: I64, value: I64, index: I64, output: @Vec[I64]) -> Void effects[alloc]:
+fn filled(length: I64, value: I64, index: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
   if index >= length:
     void
   else:

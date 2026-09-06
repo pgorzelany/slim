@@ -10,7 +10,7 @@ fn count(values: Vec[U8], length: I64, target: U8, index: I64, total: I64) -> I6
       0
     recur(values, length, target, index + 1, total + increment)
 
-fn filled(length: I64, value: U8, index: I64, output: @Vec[U8]) -> Void effects[alloc]:
+fn filled(length: I64, value: U8, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if index >= length:
     void
   else:

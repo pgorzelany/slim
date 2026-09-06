@@ -1,0 +1,19 @@
+module termination
+
+fn spin(value: I64) -> I64 effects[partial]:
+  recur(value)
+
+fn direct(value: I64) -> I64 effects[partial]:
+  if value == 0:
+    0
+  else:
+    direct(value)
+
+fn left(value: I64) -> I64 effects[partial]:
+  right(value)
+
+fn right(value: I64) -> I64 effects[partial]:
+  left(value)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

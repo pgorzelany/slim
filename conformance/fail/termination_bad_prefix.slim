@@ -1,0 +1,11 @@
+module termination
+
+fn down(value: I64) -> I64:
+  if value <= 0:
+    0
+  else:
+    let invalid: I64 = 1 / 0
+    recur(value - 1)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -3005,3 +3005,160 @@ fn branch_ownership_matches_all_paths_in_bounded_action_domain() {
     }
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn termination_graph_matches_all_three_function_graphs_and_deep_chains() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("termination-graphs");
+    // Complete domain: all 512 directed graphs on three functions, including
+    // self edges. Transitive closure is independent of the compiler's DFS.
+    for edges in 0..512usize {
+        let mut reachable = [[false; 3]; 3];
+        let mut source = String::from("module termination_graph\n\n");
+        for (from, row) in reachable.iter_mut().enumerate() {
+            source.push_str(&format!("fn vertex_{from}() -> Void:\n"));
+            for (to, edge) in row.iter_mut().enumerate() {
+                *edge = edges & (1 << (from * 3 + to)) != 0;
+                if *edge {
+                    source.push_str(&format!("  vertex_{to}()\n"));
+                }
+            }
+            source.push_str("  void\n\n");
+        }
+        source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        for via in 0..3 {
+            for from in 0..3 {
+                for to in 0..3 {
+                    reachable[from][to] |= reachable[from][via] && reachable[via][to];
+                }
+            }
+        }
+        let cyclic = (0..3).any(|vertex| reachable[vertex][vertex]);
+        let path = write_source(&directory, &source);
+        let output = Command::new(&compiler)
+            .arg("check")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert_eq!(
+            output.status.success(),
+            !cyclic,
+            "edges={edges}\n{source}\n{}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        if cyclic {
+            assert!(String::from_utf8_lossy(&output.stdout).starts_with("E0343@"));
+        }
+    }
+    // Cross the parallel analyzer's unrelated 64-function reporting limit and
+    // exercise a deep graph without using the native call stack for DFS.
+    for size in [65, 2_048] {
+        for cyclic in [false, true] {
+            let mut source = String::from("module deep_termination\n\n");
+            for index in 0..size {
+                source.push_str(&format!("fn vertex_{index}() -> I64:\n"));
+                if index + 1 < size {
+                    source.push_str(&format!("  vertex_{}()\n\n", index + 1));
+                } else if cyclic {
+                    source.push_str("  vertex_0()\n\n");
+                } else {
+                    source.push_str("  0\n\n");
+                }
+            }
+            source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            let path = write_source(&directory, &source);
+            let output = Command::new(&compiler)
+                .arg("check")
+                .arg(path)
+                .output()
+                .unwrap();
+            assert_eq!(
+                output.status.success(),
+                !cyclic,
+                "size={size}, cyclic={cyclic}: {}",
+                String::from_utf8_lossy(&output.stdout)
+            );
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn recurrence_totality_requires_every_prefix_and_argument() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("termination-proof-prefixes");
+    for name in [
+        "bad_prefix",
+        "bad_argument",
+        "wrong_controller",
+        "zero_step",
+        "out_of_domain",
+    ] {
+        let source =
+            fs::read_to_string(root.join(format!("conformance/fail/termination_{name}.slim")))
+                .unwrap();
+        let source = source.replacen("-> I64:", "-> I64 effects[partial]:", 1);
+        let path = write_source(&directory, &source);
+        let output = Command::new(&compiler)
+            .arg("analyze")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{name}: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        let report = String::from_utf8(output.stdout).unwrap();
+        assert!(
+            report.contains("(recurrence-profile-count 0)"),
+            "{name}: {report}"
+        );
+        assert!(
+            report.split("(blockers ").skip(1).any(|part| {
+                part.split(')')
+                    .next()
+                    .unwrap()
+                    .split_whitespace()
+                    .any(|reason| reason == "recurrence")
+            }),
+            "{name}: {report}"
+        );
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn missing_partial_stays_rejected_when_refinement_budget_is_exhausted() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("termination-refinement-limit");
+    for size in [32, 33, 65] {
+        let mut source = String::from("module recurrence_budget\n\n");
+        for index in 0..size {
+            source.push_str(&format!("fn down_{index:08}(value: I64) -> I64:\n  if value <= 0:\n    0\n  else:\n    recur(value - 1)\n\n"));
+        }
+        source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        let path = write_source(&directory, &source);
+        let output = Command::new(&compiler)
+            .arg("check")
+            .arg(path)
+            .output()
+            .unwrap();
+        assert_eq!(
+            output.status.success(),
+            size == 32,
+            "size={size}: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        if size > 32 {
+            assert_eq!(
+                String::from_utf8(output.stdout).unwrap(),
+                "E0343@2978:2983\n"
+            );
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}

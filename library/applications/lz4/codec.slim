@@ -34,7 +34,7 @@ fn find_match(input: Bytes, index: I64, end: I64) -> lz4_model.Match effects[par
     0
   best_match(input, index, candidate, end, -1, 0)
 
-fn append_extension(length: I64, output: @Vec[U8]) -> Void effects[alloc]:
+fn append_extension(length: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if length >= 255:
     vec.push(@output, i64.to_u8(255))
     recur(length - 255, @output)

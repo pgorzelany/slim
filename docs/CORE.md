@@ -2,7 +2,7 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 
-Known implementation gaps, including field-transfer and termination checking,
+Known implementation gaps, including field transfers and longer-lived aliases,
 are tracked in the [SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 The intended safety contract below is not yet completely enforced.
 
@@ -146,6 +146,10 @@ or ABI effect.
   remainder by zero are defined traps.
 - Pure functions omit the effects clause. Allocation, I/O, and unproven
   termination require `alloc`, `io`, and `partial`.
+- An unproven `recur` requires `partial`; only a positive totality fact for
+  that exact node discharges the requirement. The fixed range/refinement
+  budgets remain conservative on exhaustion. Recursive user-call cycles
+  require `partial`, and callers obey the declared capability ceiling.
 - Calls and `recur` require exact arity and types. Assignment preserves the
   binding type. Branch results must agree.
 - Plain affine arguments are shared and remain usable after the call. `@name`

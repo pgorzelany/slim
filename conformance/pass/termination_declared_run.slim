@@ -1,0 +1,22 @@
+module termination_declared_run
+
+fn direct(value: I64) -> I64 effects[partial]:
+  if value <= 0:
+    0
+  else:
+    direct(value - 1)
+
+fn left(value: I64) -> I64 effects[partial]:
+  if value <= 0:
+    0
+  else:
+    right(value - 1)
+
+fn right(value: I64) -> I64 effects[partial]:
+  if value <= 0:
+    0
+  else:
+    left(value - 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[partial]:
+  direct(16) + left(17)

@@ -181,3 +181,15 @@ loan-unknown-nested-shared	run	conformance/pass/loan_unknown_nested_shared.slim	
 loan-nested-freeze	check-fail	conformance/fail/loan_nested_freeze.slim	parity	E0349@210:215	ownership:no-alias
 loan-scalar-field-before-mutation	run	conformance/pass/loan_scalar_field_before_mutation.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
 loan-scalar-field-during-exclusive	check-fail	conformance/fail/loan_scalar_field_during_exclusive.slim	parity	E0349@236:242	ownership:no-alias
+termination-bad-argument	check-fail	conformance/fail/termination_bad_argument.slim	parity	E0343@95:100	effect:partial
+termination-bad-prefix	check-fail	conformance/fail/termination_bad_prefix.slim	parity	E0343@112:117	effect:partial
+termination-direct	check-fail	conformance/fail/termination_direct.slim	parity	E0343@50:54	effect:partial
+termination-mutual	check-fail	conformance/fail/termination_mutual.slim	parity	E0343@95:99	effect:partial
+termination-out-of-domain	check-fail	conformance/fail/termination_out_of_domain.slim	parity	E0343@83:88	effect:partial
+termination-unconditional	check-fail	conformance/fail/termination_unconditional.slim	parity	E0343@50:55	effect:partial
+termination-unknown-step	check-fail	conformance/fail/termination_unknown_step.slim	parity	E0343@94:99	effect:partial
+termination-wrong-controller	check-fail	conformance/fail/termination_wrong_controller.slim	parity	E0343@95:100	effect:partial
+termination-zero-step	check-fail	conformance/fail/termination_zero_step.slim	parity	E0343@83:88	effect:partial
+termination-declared	check-pass	conformance/pass/termination_declared.slim	parity	-	effect:partial
+termination-proven	run	conformance/pass/termination_proven.slim	parity	exit=0;stdout=;stderr=	effect:partial
+termination-declared-run	run	conformance/pass/termination_declared_run.slim	parity	exit=0;stdout=;stderr=	effect:partial

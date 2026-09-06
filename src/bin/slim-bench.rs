@@ -448,6 +448,12 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             &[125, 250, 500, 1_000][..],
         ),
         ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
+        ("generated-call-chain", &[125, 250, 500, 1_000][..]),
+        ("generated-shared-call-dag", &[125, 250, 500, 1_000][..]),
+        (
+            "generated-pure-recurrence-context",
+            &[125, 250, 500, 1_000][..],
+        ),
     ] {
         println!("{workload}\tsource_bytes\tcheck_us");
         let mut endpoints = Vec::new();
@@ -455,6 +461,29 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             let mut source = String::from("module ownership_scaling\n\n");
             if workload == "generated-common-prefix-declarations" {
                 source = generated_common_prefix_program(size);
+            } else if workload == "generated-call-chain" || workload == "generated-shared-call-dag"
+            {
+                for index in 0..size {
+                    source.push_str(&format!("fn vertex_{index:08}() -> I64:\n"));
+                    if index + 1 < size {
+                        if workload == "generated-shared-call-dag" && index + 2 < size {
+                            source.push_str(&format!(
+                                "  let shared: I64 = vertex_{:08}()\n",
+                                index + 2
+                            ));
+                        }
+                        source.push_str(&format!("  vertex_{:08}()\n\n", index + 1));
+                    } else {
+                        source.push_str("  0\n\n");
+                    }
+                }
+                source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            } else if workload == "generated-pure-recurrence-context" {
+                source.push_str("fn down(value: I64) -> I64:\n  if value <= 0:\n    0\n  else:\n    recur(value - 1)\n\n");
+                for index in 0..size {
+                    source.push_str(&format!("fn value_{index:08}() -> I64:\n  0\n\n"));
+                }
+                source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
             } else if workload == "generated-nested-loans" {
                 source.push_str("fn observe(value: Vec[I64], ignored: I64) -> I64:\n  vec.len(value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n");
                 for index in 0..size {
@@ -505,6 +534,11 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             "generated-branch-moves"
         } else if workload == "generated-nested-loans" {
             "generated-owned-transfers"
+        } else if workload == "generated-call-chain"
+            || workload == "generated-shared-call-dag"
+            || workload == "generated-pure-recurrence-context"
+        {
+            "generated-common-prefix-declarations"
         } else {
             workload
         };
