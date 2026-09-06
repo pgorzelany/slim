@@ -1085,3 +1085,80 @@ checker entry points. Retained dependency queries, successful-only publication,
 analysis/emission/backend reuse, corruption recovery, and full differential and
 scaling evidence remain required stages. No production code, runtime, seed,
 dependency, language syntax, or performance budget changes at this checkpoint.
+
+
+## M1 source identity checkpoint — 2026-09-06
+
+RFC-0125 implements the first source ownership boundary under RFC-0124. Production
+`selfhost/identity.slim` now defines nominal revisions, files, declarations, nodes,
+spans, and flat-view adapters. Node ordinals are local to a declaration version;
+full file/declaration identity and bounds are checked before index arithmetic.
+Span resolution retains the original bytes and validates half-open bounds. Revision
+advance/reset reject invalid or exhausted counters instead of wrapping.
+
+`query.Snapshot` stores typed declaration views and source spans. State construction
+validates them before dependency scanning, which resolves a declaration-owned root
+before traversing current canonical tokens. The session invocation owns its three
+possible revision numbers. No identity is serialized or accepted from another
+process. This is a transitional checked boundary, not retained semantic authority.
+
+The session path also validates manifest token shape before loading modules and
+propagates failed reads/parses instead of reporting estimates from a partial index.
+Invalid source-index state returns status 65 and `Q0001: invalid source identity`.
+Valid historical output remains unchanged. Existing module/source errors continue
+to carry their diagnostics. No source syntax, type rule, runtime ABI, dependency,
+or performance budget changed.
+
+Validation at this checkpoint:
+
+- Exact within the named boundary domain: 2,401 node-range cases, 49 byte-span
+  cases, 2,401 owner combinations checked for both nodes and spans, and 98 revision
+  advance/reset results: **7,350 results** compared with an independent Rust oracle
+  using I128 arithmetic. Cases cross I64 minimum/maximum, stale epochs/revisions,
+  wrong files/declarations, negative slots, empty ranges, and zero-width EOF spans.
+  Nominal file-to-node substitution is rejected with E0344 through the production
+  compiler. This is a bounded test domain, not a universal semantic proof.
+- Production sessions preserve comparisons after relocation, leading comments,
+  declaration reordering, and identical CRLF source; a changed body changes its
+  estimate. Missing manifests/modules, malformed manifests/modules, and recovery
+  are permanent regressions. The existing conformance recovery fixture still passes.
+- Bootstrap reproduced **3,566,205 C bytes**, SHA-256
+  `b59a9272485a643c922f797c16cec4348e9341700fe86a1418f4f51c8e13b629`.
+  Seed growth from M0 is 49,840 bytes (1.42%); global generated identifiers explain
+  much of the textual diff. The ordinary clean path allocates no new per-node table.
+- Cargo passes all 10 unit and 61 integration tests; conformance passes all 331
+  fixtures and 2,000 deterministic malformed-input mutations. Governance, canonical
+  formatting, Clippy, and the required performance, reduction, parallelism,
+  comparison, and agent gates pass. Resource, parallel-runtime, incremental, and
+  actual-work gates also pass; native baseline gates were not relaxed.
+- ASan/UBSan compile and run the actual production identity module and match ordinary
+  output. A permanent source-index fault campaign crosses 128 allocation ordinals:
+  **109 injected failures** exit 71 with exact runtime diagnostics and no estimate;
+  19 ordinals beyond the input's allocations preserve normal output. The gate lives
+  in `scripts/verify.sh`. These counts describe this input and runtime only.
+- All 18 website tests pass with the new RFC. The full release/package gate remains
+  required at M1 closure; this checkpoint does not claim a new complete release.
+
+The [same-host measurements](2026-09-06-m1-source-identities.tsv) retain two warmups
+and 11 alternating-order pairs per operation (warmups discarded). Median candidate
+ratios to the M0 binary are 1.0084 for emitting the current compiler source, 1.0038
+for checking 1,000 declarations, and 0.9816 for an unchanged 1,000-declaration
+session. Every paired stdout is identical. These observations establish no speedup
+claim or cross-machine timing budget. The actual-work gate continues to show fresh
+parsing and zero retained checker/generator queries for the session estimator.
+
+Two existing generated-C limitations were exposed while constructing the probe:
+inline aggregate definitions follow source order (the new leaf identity module
+must precede its consumers), and spelling the minimum I64 directly emits an
+`INT64_C` literal rejected by the strict C warning gate. The probe constructs the
+same minimum value by checked subtraction, so the boundary domain still includes
+I64 minimum. Neither C limitation is claimed repaired here; both are explicit
+follow-up obligations for the M1 emission work.
+
+M1 remains **in progress**. Cross-revision declaration/node/span translation is not
+yet enabled; full keys and source bytes still drive only historical comparisons.
+Typed semantic identities, derived function control flow, reusable checker queries,
+complete dependency observation, transactional retained publication, cached
+analysis/C/backend work, and their differential/locality evidence remain required.
+RFC-0125 is complete as a child boundary; RFC-0124 remains implementation pending.
+Ignored detailed logs are under `build/slim-next-m1/source-identity/`.

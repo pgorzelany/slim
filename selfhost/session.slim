@@ -1,20 +1,47 @@
 module session
 
-fn state_for_path(path: Bytes, with_dependencies: Bool) -> query.State effects[alloc, io, partial]:
+fn invalid_state() -> query.State effects[alloc]:
+  let snapshots: Vec[query.Snapshot] = vec.new()
+  let dependencies: Vec[query.Dependency] = vec.new()
+  query.State(valid: false, snapshots: snapshots, dependencies: dependencies)
+
+fn state_for_path(path: Bytes, with_dependencies: Bool, revision: identity.Revision) -> query.State effects[alloc, io, partial]:
   let manifest_bytes: Vec[U8] = vec.new()
   let manifest_read: Bool = io.read_file(path, @manifest_bytes)
-  let manifest_source: Bytes = bytes.freeze(^manifest_bytes)
-  let manifest_tokens: Vec[syntax.Token] = vec.new()
-  syntax.lex_data(manifest_source, 0, @manifest_tokens)
-  let entry_form: I64 = 3
-  let modules: I64 = syntax.ast_next(manifest_tokens, entry_form)
-  let module_tokens: Vec[syntax.Token] = vec.new()
-  let loaded: Vec[project.LoadedModule] = vec.new()
-  let loaded_result: I64 = project.load_project_modules(path, manifest_source, manifest_tokens, modules, @module_tokens, @loaded)
-  if with_dependencies:
-    query.build_state(manifest_source, manifest_tokens, module_tokens, loaded)
+  if manifest_read:
+    let manifest_source: Bytes = bytes.freeze(^manifest_bytes)
+    let manifest_tokens: Vec[syntax.Token] = vec.new()
+    syntax.lex_data(manifest_source, 0, @manifest_tokens)
+    let entry_form: I64 = 3
+    let modules: I64 = syntax.ast_next(manifest_tokens, entry_form)
+    let shaped: Bool = manifest_shape_valid(manifest_source, manifest_tokens)
+    let version: Bool = syntax.ast_node_text_is(manifest_source, manifest_tokens, 2, "1")
+    if shaped && version:
+      let module_tokens: Vec[syntax.Token] = vec.new()
+      let loaded: Vec[project.LoadedModule] = vec.new()
+      let loaded_result: I64 = project.load_project_modules(path, manifest_source, manifest_tokens, modules, @module_tokens, @loaded)
+      if loaded_result == 0:
+        if with_dependencies:
+          query.build_state(manifest_source, manifest_tokens, module_tokens, loaded, revision)
+        else:
+          query.build_snapshot_state(manifest_source, manifest_tokens, module_tokens, loaded, revision)
+      else:
+        invalid_state()
+    else:
+      invalid_state()
   else:
-    query.build_snapshot_state(manifest_source, manifest_tokens, module_tokens, loaded)
+    invalid_state()
+
+fn report_update(previous_state: query.State, current_state: query.State) -> I64 effects[alloc, io, partial]:
+  if previous_state.valid && current_state.valid:
+    let previous: Vec[query.Snapshot] = previous_state.snapshots
+    let current: Vec[query.Snapshot] = current_state.snapshots
+    let dependencies: Vec[query.Dependency] = current_state.dependencies
+    let work: query.Work = query.measure_update(previous, current, dependencies)
+    print_work(work)
+  else:
+    io.println("Q0001: invalid source identity")
+    65
 
 fn print_work(work: query.Work) -> I64 effects[io]:
   let parsed: I64 = work.parsed
@@ -32,13 +59,11 @@ fn print_work(work: query.Work) -> I64 effects[io]:
   0
 
 fn run(initial_path: Bytes, updated_path: Bytes) -> I64 effects[alloc, io, partial]:
-  let previous_state: query.State = state_for_path(initial_path, false)
-  let current_state: query.State = state_for_path(updated_path, true)
-  let previous: Vec[query.Snapshot] = previous_state.snapshots
-  let current: Vec[query.Snapshot] = current_state.snapshots
-  let dependencies: Vec[query.Dependency] = current_state.dependencies
-  let work: query.Work = query.measure_update(previous, current, dependencies)
-  print_work(work)
+  let initial_revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+  let updated_revision: identity.Revision = identity.Revision(epoch: 1, serial: 2)
+  let previous_state: query.State = state_for_path(initial_path, false, initial_revision)
+  let current_state: query.State = state_for_path(updated_path, true, updated_revision)
+  report_update(previous_state, current_state)
 
 fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes) -> I64 effects[alloc, io, partial]:
   let initial_errors: I64 = project.check_project_path(initial_path)
@@ -46,7 +71,8 @@ fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes)
   if initial_invalid:
     initial_errors
   else:
-    let previous_state: query.State = state_for_path(initial_path, false)
+    let initial_revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+    let previous_state: query.State = state_for_path(initial_path, false, initial_revision)
     let rejected: I64 = project.check_project_path(invalid_path)
     let invalid: Bool = rejected > 0
     if invalid:
@@ -55,11 +81,54 @@ fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes)
       if recovered_invalid:
         recovered_errors
       else:
-        let current_state: query.State = state_for_path(recovered_path, true)
-        let previous: Vec[query.Snapshot] = previous_state.snapshots
-        let current: Vec[query.Snapshot] = current_state.snapshots
-        let dependencies: Vec[query.Dependency] = current_state.dependencies
-        let work: query.Work = query.measure_update(previous, current, dependencies)
-        print_work(work)
+        let recovered_revision: identity.Revision = identity.Revision(epoch: 1, serial: 3)
+        let current_state: query.State = state_for_path(recovered_path, true, recovered_revision)
+        report_update(previous_state, current_state)
     else:
       65
+
+fn names_valid(tokens: Vec[syntax.Token], cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor >= end:
+    cursor == end
+  else:
+    if syntax.ast_node_kind(tokens, cursor) == 2:
+      let next: I64 = cursor + 1
+      recur(tokens, next, end)
+    else:
+      false
+
+fn name_list_valid(source: Bytes, tokens: Vec[syntax.Token], form: I64, after: I64, tag: Bytes) -> Bool effects[partial]:
+  if after >= form + 3 && syntax.ast_node_kind(tokens, form) == 0:
+    let closing: I64 = after - 1
+    syntax.ast_node_kind(tokens, closing) == 1 && syntax.ast_node_text_is(source, tokens, form + 1, tag) && names_valid(tokens, form + 2, closing)
+  else:
+    false
+
+fn module_forms_valid(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor >= end:
+    cursor == end
+  else:
+    let after: I64 = syntax.ast_next(tokens, cursor)
+    if after > cursor && after <= end && after - cursor >= 11:
+      let imports: I64 = cursor + 4
+      let exports: I64 = syntax.ast_next(tokens, imports)
+      let closing: I64 = after - 1
+      let exports_end: I64 = syntax.ast_next(tokens, exports)
+      let header: Bool = syntax.ast_node_kind(tokens, cursor) == 0 && syntax.ast_node_text_is(source, tokens, cursor + 1, "module") && syntax.ast_node_kind(tokens, cursor + 2) == 2 && syntax.ast_node_kind(tokens, cursor + 3) == 3
+      let lists: Bool = name_list_valid(source, tokens, imports, exports, "imports") && name_list_valid(source, tokens, exports, exports_end, "exports")
+      if header && lists && exports_end == closing && syntax.ast_node_kind(tokens, closing) == 1:
+        recur(source, tokens, after, end)
+      else:
+        false
+    else:
+      false
+
+fn manifest_shape_valid(source: Bytes, tokens: Vec[syntax.Token]) -> Bool effects[partial]:
+  let length: I64 = vec.len(tokens)
+  if length >= 8:
+    let closing: I64 = length - 1
+    let header: Bool = syntax.ast_node_kind(tokens, 0) == 0 && syntax.ast_node_text_is(source, tokens, 1, "project") && syntax.ast_node_kind(tokens, 2) == 2
+    let entry: Bool = syntax.ast_node_kind(tokens, 3) == 0 && syntax.ast_node_text_is(source, tokens, 4, "entry") && syntax.ast_node_kind(tokens, 5) == 2 && syntax.ast_node_kind(tokens, 6) == 1
+    header && entry && syntax.ast_node_kind(tokens, closing) == 1 && syntax.ast_next(tokens, 0) == length && module_forms_valid(source, tokens, 7, closing)
+  else:
+    false

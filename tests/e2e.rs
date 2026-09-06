@@ -3658,3 +3658,227 @@ fn lexical_shadowing_matches_alpha_renamed_native_programs() {
     }
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn production_source_identity_resolution_rejects_stale_and_extreme_handles() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("source-identity");
+    fs::copy(
+        root.join("selfhost/identity.slim"),
+        directory.join("identity.slim"),
+    )
+    .unwrap();
+    fs::write(
+        directory.join("probe.slim"),
+        include_str!("fixtures/source_identity.slim"),
+    )
+    .unwrap();
+    let manifest = directory.join("slim.project");
+    fs::write(&manifest, "(project 1 (entry probe)\n  (module identity \"identity.slim\" (imports) (exports DeclarationId FileId Index NextRevision NodeId Revision Span View reset resolve_node resolve_span successor))\n  (module probe \"probe.slim\" (imports identity) (exports)))\n").unwrap();
+    let generated = Command::new(root.join("build/toolchain/slimc"))
+        .arg(&manifest)
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stdout)
+    );
+    let c = directory.join("probe.c");
+    fs::write(&c, &generated.stdout).unwrap();
+    let executable = directory.join("probe");
+    let compiled = Command::new(native_compiler())
+        .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(&c)
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let values = [i64::MIN, -1, 0, 1, 3, i64::MAX - 1, i64::MAX];
+    let mut expected = String::new();
+    for total in values {
+        for first in values {
+            for count in values {
+                for ordinal in values {
+                    // Wider independent arithmetic ensures the oracle itself cannot overflow.
+                    let valid = total >= 0
+                        && first >= 0
+                        && count >= 0
+                        && ordinal >= 0
+                        && i128::from(first) + i128::from(count) <= i128::from(total)
+                        && ordinal < count;
+                    let result = if valid {
+                        i128::from(first) + i128::from(ordinal)
+                    } else {
+                        -1
+                    };
+                    expected.push_str(&format!("{result}\n"));
+                }
+            }
+        }
+    }
+    for start in values {
+        for end in values {
+            let result = if 0 <= start && start <= end && end <= 3 {
+                start
+            } else {
+                -1
+            };
+            expected.push_str(&format!("{result}\n"));
+        }
+    }
+    for epoch in values {
+        for serial in values {
+            for file in values {
+                for declaration in values {
+                    let file_matches = epoch == 1 && serial == 1 && file == 0;
+                    let node = if file_matches && declaration == 0 {
+                        3
+                    } else {
+                        -1
+                    };
+                    let span = if file_matches { 0 } else { -1 };
+                    expected.push_str(&format!("{node} {span}\n"));
+                }
+            }
+        }
+    }
+    for epoch in values {
+        for serial in values {
+            if epoch > 0 && serial > 0 && serial < i64::MAX {
+                expected.push_str(&format!("{epoch} {}\n", serial + 1));
+            } else {
+                expected.push_str("none\n");
+            }
+            if epoch > 0 && serial > 0 && epoch < i64::MAX {
+                expected.push_str(&format!("{} 1\n", epoch + 1));
+            } else {
+                expected.push_str("none\n");
+            }
+        }
+    }
+    let output = Command::new(&executable).output().unwrap();
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert_eq!(output.stdout, expected.as_bytes());
+    assert!(output.stderr.is_empty());
+
+    // Nominal identities must not become interchangeable scalar positions.
+    fs::write(directory.join("probe.slim"), "module probe\n\nfn main(args: Vec[Bytes]) -> I64:\n  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)\n  let file: identity.FileId = identity.FileId(revision: revision, slot: 0)\n  let node: identity.NodeId = file\n  node.ordinal\n").unwrap();
+    let rejected = Command::new(root.join("build/toolchain/slimc"))
+        .arg("check")
+        .arg(&manifest)
+        .output()
+        .unwrap();
+    assert!(!rejected.status.success());
+    let diagnostic = String::from_utf8(rejected.stdout).unwrap();
+    assert!(diagnostic.contains("E0344@probe@"), "{diagnostic}");
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn production_session_rejects_partial_indexes_and_preserves_source_comparisons() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("session-source-index");
+    let initial = directory.join("initial");
+    let updated = directory.join("relocated");
+    for folder in [&initial, &updated] {
+        fs::create_dir(folder).unwrap();
+        fs::write(
+            folder.join("slim.project"),
+            "(project 1 (entry app) (module app \"app.slim\" (imports) (exports)))\n",
+        )
+        .unwrap();
+    }
+    let source =
+        "module app\n\nfn value() -> I64:\n  42\n\nfn main(args: Vec[Bytes]) -> I64:\n  value()\n";
+    fs::write(initial.join("app.slim"), source).unwrap();
+    let invoke = |left: &Path, right: &Path| {
+        let mut child = Command::new(&compiler)
+            .arg("session")
+            .arg(left)
+            .arg(right)
+            .stdout(std::process::Stdio::piped())
+            .stderr(std::process::Stdio::piped())
+            .spawn()
+            .unwrap();
+        let deadline = Instant::now() + Duration::from_secs(5);
+        loop {
+            if child.try_wait().unwrap().is_some() {
+                break;
+            }
+            if Instant::now() >= deadline {
+                child.kill().unwrap();
+                let _ = child.wait();
+                panic!("session did not reject bounded malformed input");
+            }
+            thread::sleep(Duration::from_millis(5));
+        }
+        child.wait_with_output().unwrap()
+    };
+    let first = initial.join("slim.project");
+    let second = updated.join("slim.project");
+    for changed in [
+        source.to_owned(),
+        format!("# comment\n{source}"),
+        "module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  value()\n\nfn value() -> I64:\n  42\n"
+            .to_owned(),
+    ] {
+        fs::write(updated.join("app.slim"), changed).unwrap();
+        let output = invoke(&first, &second);
+        assert!(output.status.success(), "{:?}", output);
+        assert_eq!(output.stdout, b"0 0 0 0\n");
+        assert!(output.stderr.is_empty());
+    }
+    let crlf = source.replace("\n", "\r\n");
+    fs::write(initial.join("app.slim"), &crlf).unwrap();
+    fs::write(updated.join("app.slim"), &crlf).unwrap();
+    assert_eq!(invoke(&first, &second).stdout, b"0 0 0 0\n");
+    fs::write(initial.join("app.slim"), source).unwrap();
+    fs::write(updated.join("app.slim"), source.replace("42", "43")).unwrap();
+    assert_eq!(invoke(&first, &second).stdout, b"1 1 1 1\n");
+    for broken in [
+        "",
+        "()",
+        "(project 1 (entry app)",
+        "(project 1 (entry app) (module app \"app.slim\" (imports)))",
+    ] {
+        fs::write(&second, broken).unwrap();
+        let output = invoke(&first, &second);
+        assert_eq!(output.status.code(), Some(65));
+        assert_eq!(output.stdout, b"Q0001: invalid source identity\n");
+    }
+    fs::copy(&first, &second).unwrap();
+    fs::write(
+        updated.join("app.slim"),
+        "module app\n\nfn main(args: Vec[Bytes]) -> I64:\n",
+    )
+    .unwrap();
+    let malformed = invoke(&first, &second);
+    assert_eq!(malformed.status.code(), Some(65));
+    assert!(
+        String::from_utf8(malformed.stdout)
+            .unwrap()
+            .contains("Q0001: invalid source identity")
+    );
+    fs::remove_file(updated.join("app.slim")).unwrap();
+    assert_eq!(invoke(&first, &second).status.code(), Some(65));
+    fs::remove_file(&second).unwrap();
+    assert_eq!(invoke(&first, &second).status.code(), Some(65));
+    fs::write(&second, fs::read(&first).unwrap()).unwrap();
+    fs::write(updated.join("app.slim"), source).unwrap();
+    assert_eq!(invoke(&first, &second).stdout, b"0 0 0 0\n");
+    fs::remove_dir_all(directory).unwrap();
+}

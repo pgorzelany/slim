@@ -1,0 +1,113 @@
+module probe
+
+fn value(index: I64) -> I64:
+  if index == 0:
+    -9223372036854775807 - 1
+  else:
+    if index == 1:
+      -1
+    else:
+      if index == 2:
+        0
+      else:
+        if index == 3:
+          1
+        else:
+          if index == 4:
+            3
+          else:
+            if index == 5:
+              9223372036854775806
+            else:
+              9223372036854775807
+
+fn result(index: identity.Index) -> I64:
+  match index:
+    Invalid:
+      -1
+    Found(position):
+      position
+
+fn nodes(declaration: identity.DeclarationId, row: I64) -> Void effects[io, partial]:
+  if row >= 2401:
+    void
+  else:
+    let total: I64 = value(row / 343)
+    let first: I64 = value((row / 49) % 7)
+    let count: I64 = value((row / 7) % 7)
+    let ordinal: I64 = value(row % 7)
+    let view: identity.View = identity.View(declaration: declaration, first: first, count: count)
+    let node: identity.NodeId = identity.NodeId(declaration: declaration, ordinal: ordinal)
+    let resolved: identity.Index = identity.resolve_node(view, node, total)
+    io.print_i64(result(resolved))
+    io.println("")
+    let next: I64 = row + 1
+    recur(declaration, next)
+
+fn spans(file: identity.FileId, row: I64) -> Void effects[io, partial]:
+  if row >= 49:
+    void
+  else:
+    let start: I64 = value(row / 7)
+    let end: I64 = value(row % 7)
+    let span: identity.Span = identity.Span(file: file, start: start, end: end)
+    let resolved: identity.Index = identity.resolve_span(file, "a\r\n", span)
+    io.print_i64(result(resolved))
+    io.println("")
+    let next: I64 = row + 1
+    recur(file, next)
+
+fn owners(view: identity.View, row: I64) -> Void effects[io, partial]:
+  if row >= 2401:
+    void
+  else:
+    let epoch: I64 = value(row / 343)
+    let serial: I64 = value((row / 49) % 7)
+    let file_slot: I64 = value((row / 7) % 7)
+    let declaration_slot: I64 = value(row % 7)
+    let revision: identity.Revision = identity.Revision(epoch: epoch, serial: serial)
+    let file: identity.FileId = identity.FileId(revision: revision, slot: file_slot)
+    let declaration: identity.DeclarationId = identity.DeclarationId(file: file, slot: declaration_slot)
+    let node: identity.NodeId = identity.NodeId(declaration: declaration, ordinal: 0)
+    let span: identity.Span = identity.Span(file: file, start: 0, end: 3)
+    let resolved: identity.Index = identity.resolve_node(view, node, 9)
+    let source: identity.Index = identity.resolve_span(view.declaration.file, "a\r\n", span)
+    io.print_i64(result(resolved))
+    io.print_bytes(" ")
+    io.print_i64(result(source))
+    io.println("")
+    let next: I64 = row + 1
+    recur(view, next)
+
+fn print_revision(next: identity.NextRevision) -> Void effects[io]:
+  match next:
+    None:
+      io.println("none")
+    Some(revision):
+      io.print_i64(revision.epoch)
+      io.print_bytes(" ")
+      io.print_i64(revision.serial)
+      io.println("")
+
+fn revisions(row: I64) -> Void effects[io, partial]:
+  if row >= 49:
+    void
+  else:
+    let revision: identity.Revision = identity.Revision(epoch: value(row / 7), serial: value(row % 7))
+    let next: identity.NextRevision = identity.successor(revision)
+    let reset: identity.NextRevision = identity.reset(revision)
+    print_revision(next)
+    print_revision(reset)
+    let next_row: I64 = row + 1
+    recur(next_row)
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+  let file: identity.FileId = identity.FileId(revision: revision, slot: 0)
+  let declaration: identity.DeclarationId = identity.DeclarationId(file: file, slot: 0)
+  let view: identity.View = identity.View(declaration: declaration, first: 3, count: 3)
+  nodes(declaration, 0)
+  spans(file, 0)
+  owners(view, 0)
+  revisions(0)
+  0

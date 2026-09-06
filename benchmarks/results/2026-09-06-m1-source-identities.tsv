@@ -1,0 +1,44 @@
+# M1 source identity checkpoint, 2026-09-06, same host, uninstrumented process times.
+# Baseline binary: M0 0265c6d, seed a7e4b2f8de6696c27880ebaf170392c7f491b73bdd9157846bf5a9ddc05ae9e4.
+# Candidate seed: b59a9272485a643c922f797c16cec4348e9341700fe86a1418f4f51c8e13b629.
+# 2 discarded warmups, 11 alternating-order pairs per operation; every stdout pair identical.
+# The session operation reports historical invalidation estimates, not actual semantic reuse.
+operation	sample	baseline_us	candidate_us	candidate_over_baseline
+compiler-source-emission	1	184130.625	184575.583	1.002417
+compiler-source-emission	2	182569.125	183704.916	1.006221
+compiler-source-emission	3	183582.750	186843.375	1.017761
+compiler-source-emission	4	187285.625	187272.041	0.999927
+compiler-source-emission	5	187151.292	188360.083	1.006459
+compiler-source-emission	6	189355.917	187646.792	0.990974
+compiler-source-emission	7	185690.416	184361.458	0.992843
+compiler-source-emission	8	185201.458	186149.334	1.005118
+compiler-source-emission	9	185809.000	187989.875	1.011737
+compiler-source-emission	10	186206.709	189203.875	1.016096
+compiler-source-emission	11	184975.917	187253.791	1.012314
+compiler-source-emission	median	185690.416	187253.791	1.008419
+1000-declaration-check	1	6883.833	6714.125	0.975347
+1000-declaration-check	2	7031.875	6581.667	0.935976
+1000-declaration-check	3	7775.000	7390.625	0.950563
+1000-declaration-check	4	6926.500	7353.416	1.061635
+1000-declaration-check	5	7040.583	6869.625	0.975718
+1000-declaration-check	6	6911.791	7037.500	1.018188
+1000-declaration-check	7	6899.000	6938.166	1.005677
+1000-declaration-check	8	6660.917	6853.500	1.028912
+1000-declaration-check	9	8249.500	7013.333	0.850152
+1000-declaration-check	10	6820.250	7290.834	1.068998
+1000-declaration-check	11	6872.917	6800.541	0.989469
+1000-declaration-check	median	6911.791	6938.166	1.003816
+1000-declaration-session	1	5491.000	5557.917	1.012187
+1000-declaration-session	2	5504.625	5444.209	0.989025
+1000-declaration-session	3	5837.042	5463.291	0.935969
+1000-declaration-session	4	5561.292	5378.917	0.967206
+1000-declaration-session	5	5347.125	5458.958	1.020915
+1000-declaration-session	6	5679.750	5391.500	0.949250
+1000-declaration-session	7	5985.666	5650.958	0.944082
+1000-declaration-session	8	5552.750	5326.708	0.959292
+1000-declaration-session	9	5508.333	5310.125	0.964017
+1000-declaration-session	10	5943.209	5496.958	0.924914
+1000-declaration-session	11	6120.375	5767.209	0.942297
+1000-declaration-session	median	5561.292	5458.958	0.981599
+# Native sizeof query.Snapshot baseline: 96 bytes (same host C ABI).
+# Native sizeof query.Snapshot candidate: 184 bytes (same host C ABI).
