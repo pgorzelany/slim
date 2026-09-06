@@ -1,0 +1,32 @@
+module layout
+
+struct Root:
+  left: Left
+  right: Right
+
+enum Left:
+  Some(Leaf)
+  None
+
+struct Right:
+  leaf: Leaf
+
+struct Leaf:
+  value: I64
+
+struct Forest:
+  roots: Vec[Root]
+  children: Vec[Forest]
+
+fn total(root: Root) -> I64 effects[partial]:
+  match root.left:
+    Some(leaf):
+      leaf.value + root.right.leaf.value
+    None:
+      root.right.leaf.value
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let root: Root = Root(left: Left::Some(Leaf(value: 20)), right: Right(leaf: Leaf(value: 22)))
+  io.print_i64(total(root))
+  io.println("")
+  0

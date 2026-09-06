@@ -84,6 +84,12 @@ for function_fixture in conformance/pass/*.slim benchmarks/challenges/*/program.
   test "$("$verify_dir/functions-sanitized" "$function_fixture")" = "ok isolated function checking"
 done
 
+"$verify_dir/slimc-seed-sanitized" conformance/pass/inline_forward_layouts.slim > "$verify_dir/layouts.c"
+clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Wall -Wextra -Werror -I runtime \
+  "$verify_dir/layouts.c" runtime/slim_rt.c -o "$verify_dir/layouts-sanitized"
+test "$("$verify_dir/layouts-sanitized")" = "42"
+
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1

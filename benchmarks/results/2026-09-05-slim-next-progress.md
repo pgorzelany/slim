@@ -1336,3 +1336,84 @@ analysis/C/backend work. Those requirements, the two recorded C emission defects
 and full M1 differential/locality/release validation remain outstanding. Detailed
 logs and the separate measurement recipe are under
 `build/slim-next-m1/function-checking/`.
+
+## M1 checked layout order — 2026-09-06
+
+RFC-0128 resolves the recorded C aggregate-definition ordering defect before
+introducing more nominal compiler records for the flow view. The old compiler
+accepted a record/enum with an inline reference to a later definition, then emitted
+C which failed strict native compilation with an incomplete-field-type error.
+Forward typedefs did not supply the complete field layout.
+
+The existing inline-layout checker already traverses each acyclic dependency before
+marking its owner complete. It now retains that completion order in `typing.View`;
+project preparation carries the same result, and both generator callers pass it
+alongside checked facts and the memory plan. The backend consumes it once, with no
+second graph traversal or type checker. Existing completion marks deduplicate shared
+dependencies. Forward typedefs remain lexical; complete definitions follow checked
+field/payload dependencies. Containers and Id continue to break inline dependencies.
+Field/case order, tags, C representation, function bodies, and runtime ABI do not
+change. This is current-source checked data, not a cross-revision cache entry.
+
+Validation and observations:
+
+- All 24 permutations of a four-type mixed record/enum diamond compile and run
+  with result 42. Each definition occurs exactly once and after its inline
+  dependencies. A collection wrapper is emitted before those definitions and
+  supports its existing legal collection-mediated self-reference. Repeated C is
+  byte-identical for every input. A separate three-module forward-inline case
+  also compiles and runs through the production compiler.
+- The new permanent `inline_forward_layouts.slim` conformance fixture reproduces
+  the baseline C compiler failure and succeeds with the candidate. The verification
+  script emits it with the sanitized compiler and runs the generated native
+  program under ASan/UBSan. The independent function-checking probe now covers 93
+  accepted files, including this fixture; its reverse/repeated fact comparisons
+  remain passing.
+- All 193 rejected fixtures retain exact status/stdout/stderr, including inline
+  cycles, unknown types and malformed declarations. All 20 native applications
+  retain byte-identical generated C and complete analysis. The layout order is
+  not used to authorize invalid source; ordinary failure gates remain in force.
+- The seed reaches **3,613,447 C bytes**, SHA-256
+  `099228edbfc22e62cc81ff5ef29ea932ff9103f7c0f7389a391cc77c2cad4987`,
+  3,278 bytes above 8d7b504. All 10 unit and 64 integration tests pass, together
+  with 332 conformance fixtures and 2,000 deterministic malformed-input mutations.
+  Bootstrap, governance, formatting, Clippy, required performance/reduction/
+  parallelism/comparison/agent gates, resources, parallel-runtime, incremental,
+  work and sanitizer gates pass. The existing memory-plan API gate is preserved.
+- The observer adds inline-type visits and complete aggregate-emission calls, for
+  44 total counters. At 125, 250, 500 and 1,000 four-type groups, it observes exactly
+  5N inline-type visits and 4N complete definitions on emission, with no definitions
+  on checking. Both commands stay within the permanent 16N+128 attempt budget.
+  At 1,000 groups, check and emission make 125 and 384 allocation attempts.
+  [352 geometric work rows](2026-09-06-m1-layout-work.tsv) retain ordinary versus
+  sanitized output equality and repeated exact counts.
+- The added [256-ordinal fault campaign](2026-09-06-m1-layout-faults.tsv) observes
+  196 failures with status 71, exact attempted ordinals, and no partial C output;
+  60 later ordinals succeed. Four failures (63–66) occur while inline traversal
+  is incomplete, before function checking. Three failures (194–196) occur after
+  aggregate emission has begun; those observations do not claim that all three
+  allocations occur inside aggregate definitions rather than subsequent output.
+  Older identity/map/ownership fault campaigns and sanitizers remain intact.
+
+[Paired uninstrumented timings](2026-09-06-m1-layout-order.tsv) use eleven pairs
+after two warmups, alternating compiler order. The layout timing fixture defines
+dependencies first so both baseline and candidate C are valid and byte-identical;
+the work/ordering regressions separately use forward definitions. At 1,000 groups
+(4,000 aggregates), checking is 8.625 ms versus 8.793 ms, emission 18.818 ms versus
+19.336 ms. At 4,000 groups, ratios are 0.985 and 1.008. The no-aggregate function
+family has check/emission ratios 1.015/1.008 at 1,000 and 0.991/1.003 at 4,000.
+These same-host observations do not establish a portable speed improvement.
+
+The order adds one 40-byte vector descriptor to the checked view and project
+preparation record on this host, plus 8 bytes per aggregate before capacity slack.
+A source with no data declarations allocates no order-buffer payload. This compiler storage cost
+is explicit; there is no generated-program runtime cost. RFC-0128 retains Compile
+0, Analysis +1 and Dogfood +1, score 10. Detailed logs and the measurement recipe
+are under `build/slim-next-m1/layout-order/`.
+
+M1 remains **in progress**. The aggregate ordering blocker is repaired; the
+minimum-I64 literal emission issue remains open. The derived function flow and
+ownership foundation, typed persistent semantic identities, retained queries with
+complete dependencies, transactional publication, cached analysis/C/backend work,
+and full M1 differential/locality/release gates remain required. Retaining the
+layout completion vector is not claimed to complete those obligations.

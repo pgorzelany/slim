@@ -111,6 +111,18 @@ const HOOKS: &[Hook] = &[
         amount: "1",
     },
     Hook {
+        metric: "inline_layout_type_visits",
+        function: "typing.check_inline_layout_type",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "c_data_emit_calls",
+        function: "codegen.emit_data_item",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
         metric: "function_check_calls",
         function: "typing.check_function",
         point: Point::Entry,
@@ -810,6 +822,7 @@ pub(super) fn run() {
         assert_eq!(result.exact("ownership_frame_close_calls"), 3 * size as u64);
         assert!(result.exact("ownership_find_calls") <= 16 * size as u64 + 32);
     }
+    layout_order_campaign(&mut runner);
     revision_mapping_campaign(&mut runner);
     project_campaign(&mut runner);
     let root = repository_root();
@@ -1264,6 +1277,65 @@ fn revision_mapping_campaign(runner: &mut Runner) {
         passed_beyond_allocations,
         "fault campaign did not cross all allocations of its fixture"
     );
+}
+
+fn layout_order_campaign(runner: &mut Runner) {
+    for size in [125, 250, 500, 1_000] {
+        let mut source = String::from("module layouts\n\n");
+        for index in 0..size {
+            source.push_str(&format!(
+                "struct Root_{index}:\n  left: Left_{index}\n  right: Right_{index}\n\nenum Left_{index}:\n  Some(Leaf_{index})\n  None\n\nstruct Right_{index}:\n  leaf: Leaf_{index}\n\nstruct Leaf_{index}:\n  value: I64\n\n"
+            ));
+        }
+        source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        let path = runner.directory.join(format!("layouts-{size}.slim"));
+        fs::write(&path, &source).unwrap();
+        for command in ["check", "emit"] {
+            let arguments = if command == "check" {
+                args(&[Path::new("check"), &path])
+            } else {
+                args(&[&path])
+            };
+            let result = runner.observe(&format!("layouts-{command}-{size}"), &arguments, None);
+            assert!(result.output.status.success());
+            assert_eq!(result.exact("inline_layout_type_visits"), 5 * size as u64);
+            assert_eq!(
+                result.exact("c_data_emit_calls"),
+                if command == "emit" {
+                    4 * size as u64
+                } else {
+                    0
+                }
+            );
+            assert_eq!(result.exact("function_check_calls"), 1);
+            assert!(result.exact(ALLOC_ATTEMPTS) <= 16 * size as u64 + 128);
+        }
+    }
+    let witness = repository_root().join("conformance/pass/inline_forward_layouts.slim");
+    let mut failed_during_layout = false;
+    let mut failed_during_emission = false;
+    let mut passed_beyond_allocations = false;
+    for ordinal in 1..=256 {
+        let result = runner.observe(
+            &format!("layouts-fault-{ordinal}"),
+            &args(&[&witness]),
+            Some(ordinal),
+        );
+        match result.output.status.code() {
+            Some(71) => {
+                assert!(result.output.stdout.is_empty());
+                assert_eq!(result.exact(ALLOC_ATTEMPTS), ordinal as u64);
+                failed_during_layout |= result.exact("inline_layout_type_visits") > 0
+                    && result.exact("c_generation_calls") == 0;
+                failed_during_emission |= result.exact("c_data_emit_calls") > 0;
+            }
+            Some(0) => passed_beyond_allocations = true,
+            status => panic!("unexpected layout allocation-fault status: {status:?}"),
+        }
+    }
+    assert!(failed_during_layout);
+    assert!(failed_during_emission);
+    assert!(passed_beyond_allocations);
 }
 
 #[cfg(test)]

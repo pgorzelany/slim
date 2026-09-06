@@ -20,6 +20,7 @@ struct Issue:
 struct View:
   facts: Vec[Fact]
   issues: Vec[Issue]
+  layouts: Vec[I64]
 
 struct Checked:
   status: I64
@@ -54,7 +55,8 @@ struct ScopeChange:
 fn empty_view() -> View effects[alloc]:
   let facts: Vec[Fact] = vec.new()
   let issues: Vec[Issue] = vec.new()
-  View(facts: facts, issues: issues)
+  let layouts: Vec[I64] = vec.new()
+  View(facts: facts, issues: issues, layouts: layouts)
 
 fn append_scope_node(value: I64, nodes: @Vec[ScopeNode]) -> I64 effects[alloc]:
   let index: I64 = vec.len(nodes)
@@ -2384,7 +2386,7 @@ fn inline_layout_mark(marks: Vec[I64], item: I64) -> I64 effects[partial]:
   else:
     0
 
-fn check_inline_layout_type(source: Bytes, tokens: Vec[syntax.Token], type: I64, marks: @Vec[I64], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+fn check_inline_layout_type(source: Bytes, tokens: Vec[syntax.Token], type: I64, marks: @Vec[I64], issues: @Vec[Issue], layouts: @Vec[I64]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, type)
   let scalar: I64 = syntax.scalar_type_kind(source, tokens, type)
   if (kind == 2) && (scalar < 0):
@@ -2396,44 +2398,45 @@ fn check_inline_layout_type(source: Bytes, tokens: Vec[syntax.Token], type: I64,
       if mark == 1:
         record_issue("E0354", type, @issues)
       else:
-        check_inline_layout_item(source, tokens, item, @marks, @issues)
+        check_inline_layout_item(source, tokens, item, @marks, @issues, @layouts)
     else:
       void
   else:
     void
 
-fn check_inline_layout_payload(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, marks: @Vec[I64], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+fn check_inline_layout_payload(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, marks: @Vec[I64], issues: @Vec[Issue], layouts: @Vec[I64]) -> Void effects[alloc, partial]:
   if syntax.ast_node_kind(tokens, cursor) == 1:
     void
   else:
-    check_inline_layout_type(source, tokens, cursor, @marks, @issues)
+    check_inline_layout_type(source, tokens, cursor, @marks, @issues, @layouts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, @marks, @issues)
+    recur(source, tokens, next, @marks, @issues, @layouts)
 
-fn check_inline_layout_members(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, record: Bool, marks: @Vec[I64], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+fn check_inline_layout_members(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, record: Bool, marks: @Vec[I64], issues: @Vec[Issue], layouts: @Vec[I64]) -> Void effects[alloc, partial]:
   if syntax.ast_node_kind(tokens, cursor) == 1:
     void
   else:
     let value: I64 = syntax.ast_member_value(cursor)
     if record:
-      check_inline_layout_type(source, tokens, value, @marks, @issues)
+      check_inline_layout_type(source, tokens, value, @marks, @issues, @layouts)
     else:
-      check_inline_layout_payload(source, tokens, value, @marks, @issues)
+      check_inline_layout_payload(source, tokens, value, @marks, @issues, @layouts)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, record, @marks, @issues)
+    recur(source, tokens, next, record, @marks, @issues, @layouts)
 
-fn check_inline_layout_item(source: Bytes, tokens: Vec[syntax.Token], item: I64, marks: @Vec[I64], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+fn check_inline_layout_item(source: Bytes, tokens: Vec[syntax.Token], item: I64, marks: @Vec[I64], issues: @Vec[Issue], layouts: @Vec[I64]) -> Void effects[alloc, partial]:
   if inline_layout_mark(marks, item) == 0:
     initialize_layout_marks(item + 1, @marks)
     vec.set(@marks, item, 1)
     let record: Bool = syntax.ast_item_is_record(source, tokens, item)
     let members: I64 = syntax.ast_data_members_first(item)
-    check_inline_layout_members(source, tokens, members, record, @marks, @issues)
+    check_inline_layout_members(source, tokens, members, record, @marks, @issues, @layouts)
     vec.set(@marks, item, 2)
+    vec.push(@layouts, item)
   else:
     void
 
-fn check_inline_layouts(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, marks: @Vec[I64], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+fn check_inline_layouts(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, marks: @Vec[I64], issues: @Vec[Issue], layouts: @Vec[I64]) -> Void effects[alloc, partial]:
   if index >= vec.len(declarations):
     void
   else:
@@ -2442,8 +2445,8 @@ fn check_inline_layouts(source: Bytes, tokens: Vec[syntax.Token], declarations: 
     if syntax.ast_item_is_function(source, tokens, item):
       void
     else:
-      check_inline_layout_item(source, tokens, item, @marks, @issues)
-    recur(source, tokens, declarations, index + 1, @marks, @issues)
+      check_inline_layout_item(source, tokens, item, @marks, @issues, @layouts)
+    recur(source, tokens, declarations, index + 1, @marks, @issues, @layouts)
 
 fn check_declaration_types(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, issues: @Vec[Issue]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
@@ -2579,10 +2582,11 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
   initialize_facts(tokens, 0, @facts)
   let issues: Vec[Issue] = vec.new()
   let layout_marks: Vec[I64] = vec.new()
-  check_inline_layouts(source, tokens, declarations, 0, @layout_marks, @issues)
+  let layouts: Vec[I64] = vec.new()
+  check_inline_layouts(source, tokens, declarations, 0, @layout_marks, @issues, @layouts)
   if issues_block_inference(issues):
     void
   else:
     check_declaration_types(source, tokens, declarations, 0, @issues)
   check_functions(source, @tokens, declarations, 0, @facts, @issues)
-  View(facts: facts, issues: issues)
+  View(facts: facts, issues: issues, layouts: layouts)

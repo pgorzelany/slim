@@ -507,24 +507,19 @@ fn emit_variant(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Ve
   emit_variant_payloads(source, tokens, first_case, @output)
   text.append_text(@output, "} data;\n};\n\n")
 
-fn emit_data_items(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
-  let done: Bool = kind == 1
-  if done:
+fn emit_data_item(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if syntax.ast_item_is_record(source, tokens, item):
+    emit_record(source, tokens, item, @output)
+  else:
+    emit_variant(source, tokens, item, @output)
+
+fn emit_data_items(source: Bytes, tokens: Vec[syntax.Token], layouts: Vec[I64], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= vec.len(layouts):
     void
   else:
-    let record_item: Bool = syntax.ast_item_is_record(source, tokens, cursor)
-    if record_item:
-      emit_record(source, tokens, cursor, @output)
-    else:
-      void
-    let variant_item: Bool = syntax.ast_item_is_variant(source, tokens, cursor)
-    if variant_item:
-      emit_variant(source, tokens, cursor, @output)
-    else:
-      void
-    let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, @output)
+    let item: I64 = vec.get(layouts, index)
+    emit_data_item(source, tokens, item, @output)
+    recur(source, tokens, layouts, index + 1, @output)
 
 fn emit_binding_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, name: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let borrowed: Bool = typing.linked_binding_is_exclusive(tokens, name)
@@ -1902,7 +1897,7 @@ fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fa
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, facts, sites, counted, module_items, function_plans, next, next_plan, @output, range_facts)
 
-fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let range_view: ranges.View = ranges.analyze(source, tokens, facts)
   let range_facts: Vec[ranges.Fact] = range_view.facts
   let parallel_view: parallel.View = parallel.analyze(source, tokens, facts, range_view)
@@ -1916,7 +1911,7 @@ fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact
   text.append_text(@output, "/* generated deterministically by self-hosted slimc */\n#include \"slim_rt.h\"\n_Static_assert(SLIM_RUNTIME_ABI_VERSION == 1, \"SLIM runtime ABI mismatch\");\n#include <string.h>\n#if defined(__GNUC__) || defined(__clang__)\n#define SLIM_UNUSED_FUNCTION __attribute__((unused))\n#else\n#define SLIM_UNUSED_FUNCTION\n#endif\n\n")
   let module_items: I64 = syntax.ast_module_items(0)
   emit_forward_types(source, tokens, module_items, @output)
-  emit_data_items(source, tokens, module_items, @output)
+  emit_data_items(source, tokens, layouts, 0, @output)
   emit_prototypes(source, tokens, module_items, @output)
   emit_parallel_wrappers(source, tokens, facts, sites, 0, @output)
   let function_plans: Vec[memory.FunctionPlan] = plan.functions

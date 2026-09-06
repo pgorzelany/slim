@@ -133,6 +133,7 @@ struct PreparedProject:
   manifest_source: Bytes
   manifest_tokens: Vec[syntax.Token]
   facts: Vec[typing.Fact]
+  layouts: Vec[I64]
   issues: Vec[typing.Issue]
   plan: memory.Plan
 
@@ -237,9 +238,10 @@ fn generate_prepared_project(prepared: PreparedProject) -> Bytes effects[alloc, 
   let source: Bytes = prepared.source
   let tokens: Vec[syntax.Token] = prepared.tokens
   let facts: Vec[typing.Fact] = prepared.facts
+  let layouts: Vec[I64] = prepared.layouts
   let plan: memory.Plan = prepared.plan
   let output: Vec[U8] = vec.new()
-  codegen.emit_program(source, tokens, facts, plan, @output)
+  codegen.emit_program(source, tokens, facts, plan, layouts, @output)
   bytes.freeze(^output)
 
 fn compile_project_path_jobs(path: Bytes, jobs: I64) -> I64 effects[alloc, io, partial]:
@@ -402,9 +404,10 @@ fn invalid_prepared_project(status: I64) -> PreparedProject effects[alloc]:
   let origins: Vec[Origin] = vec.new()
   let manifest_tokens: Vec[syntax.Token] = vec.new()
   let facts: Vec[typing.Fact] = vec.new()
+  let layouts: Vec[I64] = vec.new()
   let issues: Vec[typing.Issue] = vec.new()
   let plan: memory.Plan = memory.empty_plan()
-  PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, issues: issues, plan: plan)
+  PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
 
 fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let start_origin: Origin = vec.get(origins, issue.start)
@@ -438,10 +441,11 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.T
   let checked: typing.Checked = check.check_source_deferred(source, @tokens)
   let status: I64 = checked.status
   let facts: Vec[typing.Fact] = mem.replace(@checked.view.facts, vec.new())
+  let layouts: Vec[I64] = mem.replace(@checked.view.layouts, vec.new())
   let issues: Vec[typing.Issue] = mem.replace(@checked.issues, vec.new())
   let plan: memory.Plan = mem.replace(@checked.plan, memory.empty_plan())
   let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
-  PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, issues: issues, plan: plan)
+  PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
 
 fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()

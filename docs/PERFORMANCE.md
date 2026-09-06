@@ -148,6 +148,13 @@ allows at most 16N+128 attempts. The 128-ordinal ownership fixture must reach a
 function check before at least one failure and must also reach successful
 ordinals beyond its allocations. Failed attempts equal the injected ordinal and
 produce no partial standard output.
+RFC-0128's geometric shared-layout family contains four aggregate declarations
+per group. It requires exactly 5N inline-type visits, 4N emitted definitions for
+emission (zero for checking), and at most 16N+128 allocation attempts. Shared leaf
+dependencies are completed once by the existing checker. A 256-ordinal campaign
+must cross failures after layout traversal starts, failures after aggregate
+emission starts, and successful ordinals beyond all fixture allocations; failures
+must preserve exact attempt counts and produce no partial C output.
 The two-module edit/cache campaign distinguishes the three parses of a clean
 build from zero program parses on a hit and four parses for an unchanged
 snapshot comparison. All 20 native challenges are emitted by both compilers

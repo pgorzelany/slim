@@ -28,6 +28,12 @@ produce identical facts and links over the accepted regression corpus. Physical
 scratch allocations still live in the caller's region. This is a prerequisite
 for declaration queries; it does not yet retain checked results across revisions.
 
+[RFC-0128](../design/rfcs/0128-checked-layout-emission-order.md) retains inline
+layout completion order from the normal checker and passes it to C generation.
+Aggregate definitions therefore follow their checked dependencies across source
+and module order. This result belongs to its current checked source; it has no
+cross-revision cache or independent validation authority.
+
 The four integers printed by the internal `session` command retain historical
 field names `parsed lowered checked generated`. They are **invalidation
 estimates**, not counters of operations performed. In `query.measure_update`,

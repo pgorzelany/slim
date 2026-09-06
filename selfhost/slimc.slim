@@ -115,9 +115,10 @@ fn compile_path(path: Bytes) -> I64 effects[alloc, io, partial]:
         else:
           let view: typing.View = checked.view
           let facts: Vec[typing.Fact] = view.facts
+          let layouts: Vec[I64] = view.layouts
           let plan: memory.Plan = checked.plan
           let output: Vec[U8] = vec.new()
-          codegen.emit_program(input, tokens, facts, plan, @output)
+          codegen.emit_program(input, tokens, facts, plan, layouts, @output)
           let generated: Bytes = bytes.freeze(^output)
           io.print_bytes(generated)
           0

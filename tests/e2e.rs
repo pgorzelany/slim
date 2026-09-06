@@ -4043,3 +4043,94 @@ fn production_function_checks_are_independent_of_order_and_scratch_history() {
     }
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn checked_layout_order_builds_every_aggregate_permutation_and_forward_module() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("checked-layout-order");
+    let compile_run = |input: &Path| {
+        let generate = || {
+            let result = Command::new(root.join("build/toolchain/slimc"))
+                .arg(input)
+                .output()
+                .unwrap();
+            assert!(result.status.success(), "{result:?}");
+            assert!(result.stderr.is_empty());
+            result.stdout
+        };
+        let generated = generate();
+        assert_eq!(generated, generate());
+        let c = directory.join("generated.c");
+        let executable = directory.join("generated");
+        fs::write(&c, &generated).unwrap();
+        let compiled = Command::new(native_compiler())
+            .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(&c)
+            .arg(root.join("runtime/slim_rt.c"))
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(compiled.status.success(), "{compiled:?}");
+        let executed = Command::new(executable).output().unwrap();
+        assert!(executed.status.success(), "{executed:?}");
+        assert_eq!(executed.stdout, b"42\n");
+        assert!(executed.stderr.is_empty());
+        String::from_utf8(generated).unwrap()
+    };
+    let fixture =
+        fs::read_to_string(root.join("conformance/pass/inline_forward_layouts.slim")).unwrap();
+    let sections: Vec<_> = fixture.split("\n\n").collect();
+    let mut cases = 0;
+    for a in 0..4 {
+        for b in 0..4 {
+            for c in 0..4 {
+                for d in 0..4 {
+                    if a == b || a == c || a == d || b == c || b == d || c == d {
+                        continue;
+                    }
+                    let mut source = String::from("module layout\n\n");
+                    // Forest uses opaque collection storage and may precede the
+                    // inline DAG, including its legal collection self-reference.
+                    source.push_str(sections[5]);
+                    source.push_str("\n\n");
+                    for index in [a, b, c, d] {
+                        source.push_str(sections[index + 1]);
+                        source.push_str("\n\n");
+                    }
+                    source.push_str(&sections[6..].join("\n\n"));
+                    let input = write_source(&directory, &source);
+                    let generated = compile_run(&input);
+                    let mut positions = Vec::new();
+                    for name in ["Root", "Left", "Right", "Leaf", "Forest"] {
+                        let definition = format!("struct Slim_type_{name} {{");
+                        assert_eq!(generated.matches(&definition).count(), 1);
+                        positions.push(generated.find(&definition).unwrap());
+                    }
+                    assert!(positions[3] < positions[1] && positions[3] < positions[2]);
+                    assert!(positions[1] < positions[0] && positions[2] < positions[0]);
+                    assert!(positions[4] < positions[0]);
+                    cases += 1;
+                }
+            }
+        }
+    }
+    assert_eq!(cases, 24);
+    fs::write(directory.join("app.slim"), "module app\n\nstruct Wrapper:\n  payload: shapes.Choice\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let wrapper: Wrapper = Wrapper(payload: shapes.Choice::Some(zstorage.Leaf(value: 42)))\n  match wrapper.payload:\n    Some(leaf):\n      io.print_i64(leaf.value)\n      io.println(\"\")\n      0\n    None:\n      1\n").unwrap();
+    fs::write(
+        directory.join("shapes.slim"),
+        "module shapes\n\nenum Choice:\n  Some(zstorage.Leaf)\n  None\n",
+    )
+    .unwrap();
+    fs::write(
+        directory.join("zstorage.slim"),
+        "module zstorage\n\nstruct Leaf:\n  value: I64\n",
+    )
+    .unwrap();
+    let manifest = directory.join("slim.project");
+    fs::write(&manifest, "(project 1 (entry app)\n  (module app \"app.slim\" (imports shapes zstorage) (exports))\n  (module shapes \"shapes.slim\" (imports zstorage) (exports Choice))\n  (module zstorage \"zstorage.slim\" (imports) (exports Leaf)))\n").unwrap();
+    compile_run(&manifest);
+    fs::remove_dir_all(directory).unwrap();
+}

@@ -340,7 +340,9 @@ In progress. RFC-0125's checked source identities and RFC-0126's exact revision
 maps and lazy declaration index are implemented in production. RFC-0127 adds
 the independently callable function checker with isolated scratch state and
 materialized facts; it does not retain semantic results or reclaim backing
-storage per function. Typed semantic
+storage per function. RFC-0128 retains the existing layout checker's completion
+order for dependency-ordered C definitions, removing the recorded forward-type
+emission blocker. Typed semantic
 identities, derived control flow, retained checker/analysis/emission queries,
 transactional publication, and the full M1 validation remain pending. The SLIM
 Next progress report records each checkpoint; M0 remains the historical comparison
