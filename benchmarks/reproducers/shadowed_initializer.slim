@@ -1,0 +1,10 @@
+module shadowed_initializer
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: I64 = 40
+  let answer: I64 = if true:
+    let value: I64 = value + 2
+    value
+  else:
+    0
+  answer

@@ -4,15 +4,15 @@ Status: in progress
 Decision: RFC-0112 accepted by the maintainer on 2026-09-05
 Baseline source: 97412bf
 
-The active implementation goal covers the full M0-M7 roadmap and measurement
-of compiler latency and agent effectiveness. Approval does not complete any
-milestone. Production semantics remain in SLIM and the portable C seed.
+The accepted roadmap covers M0-M7; the current goal is limited to completing
+M0. Later milestone implementation is outside this goal. Approval does not
+complete any milestone. Production semantics remain in SLIM and the portable C seed.
 
 ## Milestone status
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation, the remaining claim audit, successor process decisions, and the milestone release gate remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Shadowed-initializer lowering, the remaining claim audit, successor process decisions, and the milestone release gate remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -811,3 +811,78 @@ ran after the tests and sanitizer campaigns completed, without that contention.
 M0 still needs actual checker/generator/cache work counters, the remaining
 claim audit and process decisions, and the full release gate. No M1-M7
 completion is claimed.
+
+## Observed compiler-work checkpoint (2026-09-06)
+
+RFC-0121 adds an opt-in measurement binary made from the byte-verified production
+seed. Thirty-two counters observe actual native function entries, loop-header
+visits, parse input bytes, and runtime file reads. The ordinary compiler, runtime,
+and seed are unchanged and incur no instrumentation cost. Counter values are
+exact for each observed process up to the fixed 1,000,000,000 cap; overflow reports
+bounded evidence, and missing or incomplete reports are unknown, never zero.
+The cap-7 native UBSan test crosses saturation with `UINT64_MAX` without overflow.
+Missing and duplicated observation anchors fail closed.
+
+The [full-size records](2026-09-06-observed-compiler-work.tsv) contain 214 compiler
+operations, each compared with ordinary production output/diagnostics/exit status
+and repeated twice with identical counters. The 6,858 measurement rows comprise
+32 counters for each operation plus ten separately counted external C builds.
+The generated native project programs also run successfully. Setup compilation,
+seed reproduction, backend compilation, and frontend observations are distinct.
+All 20 native challenge C outputs match the ordinary compiler byte for byte.
+Compiler, seed, input, output, instrumentation, and configuration identities are
+recorded; their FNV hashes are identity aids, not authentication.
+
+| Two-module operation | Program parses | Checker calls | Generator calls | File-read calls |
+| --- | ---: | ---: | ---: | ---: |
+| Clean emission | 3 | 1 | 1 | 4 |
+| Cold cache miss | 3 | 1 | 1 | 7 |
+| Unchanged cache hit | 0 | 0 | 0 | 4 |
+| Unchanged snapshot comparison | 4 | 0 | 0 | 6 |
+
+Clean project loading parses both modules and reparses the flattened source.
+The first campaign expected two parses and failed; observing three exposed that
+additional production work, and the assertion now names the real behavior.
+An unchanged snapshot prints `0 0 0 0` invalidation estimates while still doing
+four source parses. A real artifact hit avoids the checker and generator but
+still reads source and lexes its key manifest. These results establish no M1
+retained-query implementation. Failed-then-recovered session comparisons actually
+check their inputs; invalidation estimates are not a substitute for those calls.
+
+Permanent deterministic gates cover geometric declarations (1,000 through 8,000
+in full mode; 125 through 1,000 in quick mode), lexer and name lookup work, and
+owner reinitialization. At 1,000 owners, the availability campaign records 3,000
+frame closes and 5,006 root calls, inside its fixed 3N and 16N+32 bounds. Edits
+cover body, signature, layout, effects, borrow mode, insertion, deletion, rename,
+and ordering; relocation, corrupt frames, rejected source, and recovery retain
+clean-output equivalence. The 128 allocation-fault ordinals observe partial work
+and agree with the ordinary compiler; 107 reach the named failure point.
+
+The work campaign runs in ordinary quick/full modes and quick ASan/UBSan mode.
+It is part of `scripts/verify.sh`. Instrumented timing is deliberately not used
+as ordinary compilation latency or evidence of agent effectiveness. No existing
+performance budget, analysis baseline, or accepted source behavior is relaxed.
+
+Bootstrap retains the 3,020,129-byte seed with SHA-256
+`71c1ecfd9a2abbff28e13ce1f0e87e37c382284a3072c2493a7ecfb579cf6e4f`.
+Governance, formatting, Clippy, all 10 unit and 58 integration tests, 325 conformance
+fixtures plus 2,000 malformed mutations, quick performance/reduction, parallelism,
+resources, quick native comparison, quick parallel runtime, and agent gates pass.
+The native SLIM/C and SLIM/Rust means are 1.172 and 1.042; parallel/serial ratios
+are 0.761 (`state_machine`) and 0.743 (`signal_network`). The earlier part of the
+benchmark batch overlapped other verification, so these passing gate values
+establish no latency comparison. Raw verification logs are in ignored
+`build/slim-next-work/`. The initial Rust classification failure was resolved by
+adding the measurement module to the infrastructure ledger, without a production
+Rust exception or budget relaxation.
+
+### Remaining M0 defect
+
+The new [shadowed-initializer witness](../reproducers/shadowed_initializer.slim)
+checks and builds, but its native ASan/UBSan execution returns 2 instead of the
+source result 42. Code generation gives both lexical bindings the same C name
+and declares the inner zero-initialized C local before evaluating its initializer.
+The checked initializer refers to the outer binding, so this is an exact
+lowering defect. The witness is preserved for repair; it is not accepted as a
+passing conformance row with the wrong result. M0 also retains its claim audit,
+successor process decisions, and full release gate. M1-M7 remain pending.

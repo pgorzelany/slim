@@ -12,6 +12,7 @@ cargo run --quiet --bin slim-govern -- check
 cargo run --quiet --bin slim-conform -- check
 ./scripts/check-library-corpus.sh
 cargo run --release --quiet --bin slim-bench -- performance --quick
+cargo run --release --quiet --bin slim-bench -- work --quick
 cargo run --release --quiet --bin slim-bench -- reduction --quick
 cargo run --release --quiet --bin slim-bench -- parallelism
 cargo run --release --quiet --bin slim-bench -- resources

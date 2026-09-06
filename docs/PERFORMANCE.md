@@ -11,7 +11,8 @@ to improve a measurement. RFC-0030 owns the architecture.
 The repository maintains three independent layers:
 
 1. **Deterministic work gates** check output, repeated byte identity,
-   incremental work, cache behavior, and bootstrap fixed points.
+   observed compiler work, invalidation estimates, cache behavior, and bootstrap
+   fixed points. Invalidation estimates are not executed incremental work.
 2. **Portable regression gates** use geometric scaling exponents and same-host
    ratios, avoiding comparisons between unlike machines.
 3. **Dated measurements** record medians, source/output sizes, toolchains,
@@ -65,6 +66,7 @@ The complete gate is `./scripts/verify.sh`. Focused commands are:
 
 ```text
 cargo run --release --bin slim-bench -- performance --quick
+cargo run --release --bin slim-bench -- work --quick
 cargo run --release --bin slim-bench -- reduction --quick
 cargo run --release --bin slim-bench -- parallelism
 cargo run --release --bin slim-bench -- applications --quick
@@ -72,6 +74,74 @@ cargo run --release --bin slim-bench -- compare --quick
 cargo run --release --bin slim-bench -- host
 cargo run --release --bin slim-bench -- agent
 ```
+
+## Observed compiler work
+
+`slim-bench work` instruments an opt-in copy of the reproduced production C
+compiler. The normal compiler, SLIM semantics, seed, runtime ABI, and generated
+application code remain unchanged. Rust only constructs and checks observations;
+it supplies no compiler semantics. Every measured operation must match ordinary
+compiler stdout, stderr, and exit status, and two observed executions must have
+identical counts and output. The full verification command includes the quick
+campaign. `work --quick --sanitize` additionally checks the observed compiler
+under ASan/UBSan.
+
+The versioned hook table is in `src/bin/slim-bench/work.rs`. Its records identify
+the actual source function and whether they count native entries, loop-header
+visits, or input bytes. Input-byte counters measure bytes offered to that parser
+entry, not bytes successfully parsed before an error. Header visits include the
+terminal test; a tail `recur`
+is a new header visit, not a new native function entry. Calls count attempts at
+that entry point, not successfully checked declarations or all semantic work.
+
+| Counter group | Observed operations |
+| --- | --- |
+| Parsing | Program-parser entries/input bytes, source lexer headers, data-lexer entries/input bytes, declaration-index entries/headers, name-trie insertion/lookup/edge headers |
+| Checking | Checker and typer entries, typed-declaration headers, expression-check entries, ownership find entries/frame closures, memory-plan and range-analysis entries |
+| Generation | C-program, C-function, and full-expression emitter entries |
+| Cache | Requests, key builds, probes, hit/miss handlers, checksum headers |
+| Snapshot model | Snapshot-builder and invalidation-estimate entries |
+| File input | Actual runtime read calls and bytes delivered by `fread`, including metadata/artifacts and repeated reads |
+| External backend | Harness-observed C compilation calls, separate elapsed time, and native fixture exit status |
+
+The 32 native counters use a fixed 1,000,000,000 cap and arithmetic that checks
+remaining capacity before addition. A counter that exceeds the cap reports
+`bounded`; unsaturated counts report `exact` for that observed process. A count
+exactly equal to the cap remains exact until another increment exceeds it.
+Missing, malformed, or incomplete exit reports are unknown and fail the
+campaign. Signals and report I/O failures must never appear as zero work.
+Small-cap native tests exercise saturation with `UINT64_MAX` under UBSan.
+
+The observer reports to its own temporary file, outside compiler output and
+diagnostics. Its reporting I/O is excluded from compiler read counters. The
+observed binary is serial, built without worker macros. Setup compilation,
+seed reproduction, application C compilation, and native frontend work have
+separate records. Instrumented timings are not production compiler latency;
+the ordinary performance and paired-latency commands remain independent.
+
+The campaign records seed/compiler/instrumented-source/runtime/probe/harness
+identities, host, C toolchain, flags, input bundles, and output identities.
+FNV fingerprints are identity aids, not authentication or proof of semantic
+equivalence. Seed reproduction and byte-by-byte output comparisons supply
+the relevant equality checks. Missing or duplicated observation anchors fail
+instead of silently recording zero.
+
+Geometric declaration fixtures gate actual parser/checker/generator visits and
+name-trie work. A separate many-owner reinitialization series gates frame
+closures and union-find calls rather than inferring them from source size.
+For the fixed N-declaration fixture, declaration-index and type-declaration
+headers each visit N+2 times, expression checking enters 2N+3 times, and C
+function emission enters N+1 times. Lexer headers are capped at twice input
+bytes plus one; name-edge headers at 64 times (input bytes plus one). For N owners
+reset in both arms, the tracker closes 3N frames and performs at most 16N+32
+union-find calls. These are permanent work gates for these named fixtures,
+not a claim that their formulas apply to every program.
+The two-module edit/cache campaign distinguishes the three parses of a clean
+build from zero program parses on a hit and four parses for an unchanged
+snapshot comparison. All 20 native challenges are emitted by both compilers
+and compared byte for byte. Bounded compiler allocation-fault ordinals verify
+partial-work reports without changing failure diagnostics. No result establishes
+M1 retained incremental queries or an LLM effectiveness rate.
 
 A performance-directed compiler or runtime change records baseline and
 candidate measurements on the same host after warmup. Full release evidence

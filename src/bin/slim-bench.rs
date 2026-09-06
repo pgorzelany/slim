@@ -12,6 +12,9 @@ use std::sync::atomic::{AtomicU64, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
+#[path = "slim-bench/work.rs"]
+mod work;
+
 fn main() {
     let command = std::env::args()
         .nth(1)
@@ -19,6 +22,7 @@ fn main() {
     match command.as_str() {
         "performance" => run_performance(),
         "frontend-pair" => run_frontend_pair(),
+        "work" => work::run(),
         "reduction" => run_reduction(),
         "incremental" => run_incremental(),
         "project" => run_project(),
@@ -31,7 +35,7 @@ fn main() {
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <frontend-pair BASELINE CANDIDATE [--separator-lists] | performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <work [--quick] [--sanitize] | frontend-pair BASELINE CANDIDATE [--separator-lists] | performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
