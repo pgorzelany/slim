@@ -34,6 +34,15 @@ Aggregate definitions therefore follow their checked dependencies across source
 and module order. This result belongs to its current checked source; it has no
 cross-revision cache or independent validation authority.
 
+[RFC-0129](../design/rfcs/0129-bounded-function-flow-view.md) supplies an optional
+bounded per-function flow view. It uses typed source/block identities, explicit
+work-stack traversal, structural branch joins, lexical boundaries, ordered call
+arguments, and terminal recurrence edges. Complete describes structural normal
+topology; call outcomes and feasible-path reachability are not proved. Bounded
+views cannot resolve blocks as complete. The existing checker still supplies all
+semantic acceptance, and ownership orchestration has not yet migrated to this
+view. Default checking does not build an unused graph.
+
 The four integers printed by the internal `session` command retain historical
 field names `parsed lowered checked generated`. They are **invalidation
 estimates**, not counters of operations performed. In `query.measure_update`,

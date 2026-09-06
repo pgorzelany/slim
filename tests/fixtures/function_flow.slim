@@ -1,0 +1,299 @@
+module zzprobe
+
+fn operation(value: flow.Operation) -> I64:
+  match value:
+    Entry:
+      0
+    Return:
+      1
+    Abrupt:
+      2
+    Eval:
+      3
+    Bind:
+      4
+    Statement:
+      5
+    ScopeExit:
+      6
+    Assign:
+      7
+    Argument:
+      8
+    Call:
+      9
+    CallExit:
+      10
+    Make:
+      11
+    Project:
+      12
+    Case:
+      13
+    Branch:
+      14
+    ArmEnter:
+      15
+    ArmExit:
+      16
+    Join:
+      17
+    Recur:
+      18
+    ForkEnter:
+      19
+    ForkJoin:
+      20
+
+fn edge_kind(value: flow.EdgeKind) -> I64:
+  match value:
+    Next:
+      0
+    Alternative:
+      1
+    Join:
+      2
+    Recur:
+      3
+    PotentialAbrupt:
+      4
+
+fn status(graph: flow.Graph) -> I64:
+  match graph.status:
+    Complete:
+      0
+    Bounded:
+      1
+    InvalidSource:
+      2
+    InvalidBudget:
+      3
+
+fn complete(graph: flow.Graph) -> Bool:
+  match graph.status:
+    Complete:
+      true
+    Bounded:
+      false
+    InvalidSource:
+      false
+    InvalidBudget:
+      false
+
+fn bounded(graph: flow.Graph) -> Bool:
+  match graph.status:
+    Complete:
+      false
+    Bounded:
+      true
+    InvalidSource:
+      false
+    InvalidBudget:
+      false
+
+fn valid_blocks(graph: flow.Graph, total: I64, index: I64) -> Bool effects[partial]:
+  if index >= vec.len(graph.blocks):
+    true
+  else:
+    let block: flow.Block = vec.get(graph.blocks, index)
+    let valid: Bool = match identity.resolve_node(graph.owner, block.node, total):
+      Invalid:
+        false
+      Found(position):
+        position >= graph.owner.first
+    valid && valid_blocks(graph, total, index + 1)
+
+fn resolved(graph: flow.Graph, block: flow.BlockId) -> Bool effects[partial]:
+  match flow.resolve_block(graph, block):
+    Invalid:
+      false
+    Found(position):
+      position == block.ordinal
+
+fn valid_edges(graph: flow.Graph, index: I64) -> Bool effects[partial]:
+  if index >= vec.len(graph.edges):
+    true
+  else:
+    let edge: flow.Edge = vec.get(graph.edges, index)
+    let from: flow.Block = vec.get(graph.blocks, edge.from.ordinal)
+    let recurrent: Bool = operation(from.operation) == 18
+    let recur_edge: Bool = edge_kind(edge.kind) == 3
+    let target: Bool = if recur_edge:
+      edge.to.ordinal == 0
+    else:
+      true
+    let same_recur: Bool = if recurrent:
+      recur_edge
+    else:
+      !recur_edge
+    (((resolved(graph, edge.from) && resolved(graph, edge.to)) && same_recur) && target) && valid_edges(graph, index + 1)
+
+fn same_blocks(first: flow.Graph, second: flow.Graph, index: I64) -> Bool effects[partial]:
+  if index >= vec.len(first.blocks):
+    vec.len(first.blocks) == vec.len(second.blocks)
+  else:
+    if index >= vec.len(second.blocks):
+      false
+    else:
+      let a: flow.Block = vec.get(first.blocks, index)
+      let b: flow.Block = vec.get(second.blocks, index)
+      (((operation(a.operation) == operation(b.operation)) && (a.node.ordinal == b.node.ordinal)) && (a.mode == b.mode)) && same_blocks(first, second, index + 1)
+
+fn same_edges(first: flow.Graph, second: flow.Graph, index: I64) -> Bool effects[partial]:
+  if index >= vec.len(first.edges):
+    vec.len(first.edges) == vec.len(second.edges)
+  else:
+    if index >= vec.len(second.edges):
+      false
+    else:
+      let a: flow.Edge = vec.get(first.edges, index)
+      let b: flow.Edge = vec.get(second.edges, index)
+      (((edge_kind(a.kind) == edge_kind(b.kind)) && (a.from.ordinal == b.from.ordinal)) && (a.to.ordinal == b.to.ordinal)) && same_edges(first, second, index + 1)
+
+fn row(kind: Bytes, a: I64, b: I64, c: I64, d: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, kind)
+  text.append_i64(a, @output)
+  text.append_text(@output, " ")
+  text.append_i64(b, @output)
+  text.append_text(@output, " ")
+  text.append_i64(c, @output)
+  text.append_text(@output, " ")
+  text.append_i64(d, @output)
+  text.append_text(@output, "\n")
+
+fn dump_blocks(graph: flow.Graph, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= vec.len(graph.blocks):
+    void
+  else:
+    let block: flow.Block = vec.get(graph.blocks, index)
+    row("block ", index, operation(block.operation), block.node.ordinal, block.mode, @output)
+    recur(graph, index + 1, @output)
+
+fn dump_edges(graph: flow.Graph, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= vec.len(graph.edges):
+    void
+  else:
+    let edge: flow.Edge = vec.get(graph.edges, index)
+    row("edge ", index, edge_kind(edge.kind), edge.from.ordinal, edge.to.ordinal, @output)
+    recur(graph, index + 1, @output)
+
+fn small_budgets(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, owner: identity.View, cursor: I64, bound: I64) -> Bool effects[alloc, partial]:
+  if (cursor >= bound) || (bound > 64):
+    true
+  else:
+    let graph: flow.Graph = flow.derive(source, tokens, checked, owner, cursor)
+    bounded(graph) && small_budgets(source, tokens, checked, owner, cursor + 1, bound)
+
+fn missing_check(source: Bytes, tokens: Vec[syntax.Token], owner: identity.View) -> Bool effects[alloc, partial]:
+  let empty: typing.View = typing.empty_view()
+  let issues: Vec[typing.Issue] = vec.new()
+  let plan: memory.Plan = memory.empty_plan()
+  let checked: typing.Checked = typing.Checked(status: 0, view: empty, issues: issues, plan: plan)
+  let graph: flow.Graph = flow.derive(source, tokens, checked, owner, 1000000)
+  let rejected_view: typing.View = typing.empty_view()
+  let rejected_issues: Vec[typing.Issue] = vec.new()
+  let rejected_plan: memory.Plan = memory.empty_plan()
+  let rejected_check: typing.Checked = typing.Checked(status: 1, view: rejected_view, issues: rejected_issues, plan: rejected_plan)
+  let rejected: flow.Graph = flow.derive(source, tokens, rejected_check, owner, 1000000)
+  (status(graph) == 2) && (status(rejected) == 2)
+
+fn test_function(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, owner: identity.View, dump: Bool, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let graph: flow.Graph = flow.derive(source, tokens, checked, owner, 1000000)
+  let block_count: I64 = vec.len(graph.blocks)
+  let edge_count: I64 = vec.len(graph.edges)
+  let extent: I64 = if block_count > edge_count:
+    block_count
+  else:
+    edge_count
+  let budget: I64 = if graph.steps > extent:
+    graph.steps
+  else:
+    extent
+  let exact: flow.Graph = flow.derive(source, tokens, checked, owner, budget)
+  let limited: flow.Graph = flow.derive(source, tokens, checked, owner, budget - 1)
+  let fake_owner: identity.DeclarationId = identity.DeclarationId(file: owner.declaration.file, slot: owner.declaration.slot + 1)
+  let stale: flow.BlockId = flow.BlockId(declaration: fake_owner, ordinal: 0)
+  let cannot_resolve: Bool = !resolved(graph, stale)
+  let old_revision: identity.Revision = identity.Revision(epoch: 1, serial: 2)
+  let old_file: identity.FileId = identity.FileId(revision: old_revision, slot: 0)
+  let old_owner: identity.DeclarationId = identity.DeclarationId(file: old_file, slot: owner.declaration.slot)
+  let old_block: flow.BlockId = flow.BlockId(declaration: old_owner, ordinal: 0)
+  let different_revision: Bool = !resolved(graph, old_block)
+  let cannot_resolve_partial: Bool = !resolved(limited, flow.BlockId(declaration: owner.declaration, ordinal: 0))
+  let zero: flow.Graph = flow.derive(source, tokens, checked, owner, 0)
+  let negative: flow.Graph = flow.derive(source, tokens, checked, owner, -9223372036854775807 - 1)
+  let excessive: flow.Graph = flow.derive(source, tokens, checked, owner, 1000001)
+  let short_owner: identity.View = identity.View(declaration: owner.declaration, first: owner.first, count: owner.count - 1)
+  let wrong_extent: flow.Graph = flow.derive(source, tokens, checked, short_owner, 1000000)
+  let bad_low: flow.BlockId = flow.BlockId(declaration: owner.declaration, ordinal: -1)
+  let bad_high: flow.BlockId = flow.BlockId(declaration: owner.declaration, ordinal: block_count)
+  let budgets: Bool = (((status(zero) == 3) && (status(negative) == 3)) && (status(excessive) == 3)) && (status(wrong_extent) == 2)
+  let bounds: Bool = (!resolved(graph, bad_low)) && (!resolved(graph, bad_high))
+  if dump:
+    row("function ", owner.first, block_count, edge_count, graph.steps, @output)
+    dump_blocks(graph, 0, @output)
+    dump_edges(graph, 0, @output)
+  else:
+    void
+  let invalid: Bool = missing_check(source, tokens, owner) && small_budgets(source, tokens, checked, owner, 1, budget)
+  let completed: Bool = (complete(graph) && complete(exact)) && bounded(limited)
+  let owners: Bool = ((cannot_resolve && cannot_resolve_partial) && different_revision) && (valid_blocks(graph, vec.len(tokens), 0) && valid_edges(graph, 0))
+  let content: Bool = same_blocks(graph, exact, 0) && same_edges(graph, exact, 0)
+  (((budgets && bounds) && (completed && owners)) && content) && invalid
+
+fn test_functions(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, declarations: Vec[ir.Declaration], index: I64, dump: Bool, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if index >= vec.len(declarations):
+    true
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let valid: Bool = if syntax.ast_item_is_function(source, tokens, declaration.form):
+      let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+      let file: identity.FileId = identity.FileId(revision: revision, slot: 0)
+      let id: identity.DeclarationId = identity.DeclarationId(file: file, slot: index)
+      let owner: identity.View = identity.View(declaration: id, first: declaration.form, count: declaration.next - declaration.form)
+      test_function(source, tokens, checked, owner, dump, @output)
+    else:
+      true
+    valid && test_functions(source, tokens, checked, declarations, index + 1, dump, @output)
+
+fn rejected_result(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, declarations: Vec[ir.Declaration], index: I64) -> Bool effects[alloc, partial]:
+  if index >= vec.len(declarations):
+    false
+  else:
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    if syntax.ast_item_is_function(source, tokens, declaration.form):
+      let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+      let file: identity.FileId = identity.FileId(revision: revision, slot: 0)
+      let id: identity.DeclarationId = identity.DeclarationId(file: file, slot: index)
+      let owner: identity.View = identity.View(declaration: id, first: declaration.form, count: declaration.next - declaration.form)
+      let graph: flow.Graph = flow.derive(source, tokens, checked, owner, 1000000)
+      (status(graph) == 2) && (vec.len(checked.view.facts) == vec.len(tokens))
+    else:
+      recur(source, tokens, checked, declarations, index + 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let bytes: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(vec.get(args, 1), @bytes)
+  let source: Bytes = bytes.freeze(^bytes)
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let checked: typing.Checked = check.check_source_deferred(source, @tokens)
+  let declarations: Vec[ir.Declaration] = syntax.index_declarations(source, tokens)
+  let output: Vec[U8] = vec.new()
+  let accepted: Bool = (read && parsed.valid) && (checked.status == 0)
+  if accepted:
+    if test_functions(source, tokens, checked, declarations, 0, vec.len(args) > 2, @output):
+      io.print_bytes(bytes.freeze(^output))
+      io.println("ok bounded flow")
+      0
+    else:
+      io.print_bytes(bytes.freeze(^output))
+      io.println("failed bounded flow")
+      1
+  else:
+    if ((read && parsed.valid) && (checked.status > 0)) && rejected_result(source, tokens, checked, declarations, 0):
+      io.println("ok rejected flow")
+      0
+    else:
+      io.println("failed rejected flow")
+      1

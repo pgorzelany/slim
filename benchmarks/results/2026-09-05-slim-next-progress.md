@@ -1417,3 +1417,83 @@ ownership foundation, typed persistent semantic identities, retained queries wit
 complete dependencies, transactional publication, cached analysis/C/backend work,
 and full M1 differential/locality/release gates remain required. Retaining the
 layout completion vector is not claimed to complete those obligations.
+
+## M1 bounded function flow — 2026-09-06
+
+RFC-0129 adds an optional, canonical-derived per-function flow view in production
+SLIM. Blocks carry revision-owned declaration/node identities; edges retain source
+evaluation order, branch alternatives/joins, binding and payload scope boundaries,
+argument modes, and terminal recurrence. Recur stages arguments before one parameter
+transition and has no ordinary fallthrough. Calls preserve an explicit unknown
+outcome edge; the view neither certifies hazards nor discharges effects. Complete
+means exact structural normal topology, not feasible paths or proved termination.
+The normal checker remains the sole producer of semantic/ownership facts. Default
+checking does not construct unused graphs.
+
+Construction uses an explicit task stack with independent checked caps on tasks
+processed, pending tasks, blocks and edges. The supported budget is 1..1,000,000.
+Partial graphs report Bounded and cannot resolve block handles as complete. Invalid
+budgets, extents and checked inputs have distinct statuses. Temporary task indices
+are local; public block/node identities retain their declaration and revision.
+Recur marks iteration exit and parameter transition: future ownership migration
+must carry the checked transition, not reset availability at its back-edge.
+
+Validation and observations:
+
+- All 93 accepted conformance/native files produce deterministic valid views.
+  Independent expected paths cover eager Boolean arguments, lexical scopes,
+  branches and recurrence. Stale revisions/declarations, negative/out-of-range
+  blocks, shortened extents, missing facts, and three actual rejected checker
+  results are rejected. Exact required budgets complete; one below is bounded;
+  all smaller budgets are tested for small graphs.
+- The permanent ordinary native test covers binding chains from 125 through 4,000.
+  [Geometric observed work](2026-09-06-m1-flow-work.tsv) is exactly 3N+4 blocks,
+  3N+2 edges and 2N+1 processed tasks. A separate measurement-only native observer
+  counts actual derive/walk entries and loop headers. Successful observations
+  satisfy headers = reported steps + walk entries and repeat identically. Its
+  checked counter cap is 1,000,000,000; it is not installed in the compiler/runtime.
+- The standard corpus passes ordinary versus ASan/UBSan output equality and
+  repeated counter equality. The [512-ordinal fault campaign](2026-09-06-m1-flow-faults.tsv)
+  observes 71 failures with status 71 and empty stdout, 34 after task walking
+  begins, and 441 successful later ordinals. Ordinary/sanitized status, stdout
+  and stderr agree. The older 128-ordinal source-index campaign still observes
+  109 failures and remains intact.
+- The 4,000-binding ASan/UBSan O1 probe exceeds the host's default 8,176 KiB stack
+  in the preceding recursive `check.find_unknown_expr`, before flow construction.
+  A separately built fa5c0c7 sanitized compiler reproduces that failure. The
+  dated 4,000-binding observer row therefore records a diagnostic per-process
+  stack of 65,520 KiB; smaller rows use the default. The ordinary 4,000-binding
+  test passes. This is a preexisting checker limit, not a claim that the entire
+  checking path is iterative. No production limit or existing gate was relaxed.
+- All 193 rejected fixtures retain exact status/stdout/stderr. All 20 native
+  applications retain byte-identical generated C and complete analysis. Bootstrap
+  reaches **3,687,073 C bytes**, SHA-256
+  `86eadc2e41200ad66cd64f5497bb81c706e7ecaa248b6d4706077aa4b58e8a46`,
+  73,626 bytes above fa5c0c7. All 10 unit and 65 integration tests pass, along with
+  332 conformance fixtures and 2,000 deterministic malformed-input mutations.
+  Governance, formatting, Clippy, required performance/reduction/parallelism/
+  comparison/agent gates, resources, parallel-runtime, incremental and work gates
+  pass. The existing 44-counter ordinary work campaign remains unchanged.
+
+[Paired uninstrumented checking timings](2026-09-06-m1-flow-default-check.tsv)
+compare fa5c0c7 with this seed after two warmup pairs and eleven alternating pairs
+per size. At 1,000 bindings, median times are 7.137 ms baseline and 6.941 ms
+candidate; at 4,000 they are 18.162 ms and 18.281 ms. These same-host observations
+measure ordinary checking, which does not build a flow graph, and do not establish
+a portable speed improvement.
+
+On this host, Block, Edge, Task and Graph occupy 56, 88, 32 and 152 bytes. Occupied
+block/edge payload is 432,400 bytes at 1,000 bindings and 1,728,400 at 4,000. Those
+figures exclude capacity slack, task storage, source/facts and allocator overhead;
+they are not peak RSS. Physical scratch reclamation remains governed by existing
+caller regions. There is no generated-program runtime cost. RFC-0129 retains
+Analysis +2 and other dimensions zero, score 15. Detailed logs and measurement
+recipes are under `build/slim-next-m1/flow/`.
+
+M1 remains **in progress**. This checkpoint implements the bounded structural view;
+ownership orchestration over it, typed persistent semantic identities, retained
+queries with complete dependencies, transactional publication, cached analysis/C/
+backend work, and full differential/locality/release gates remain required. The
+minimum-I64 literal C emission issue and recursive-checker stack limitation remain
+recorded. Neither the optional graph nor its measurements constitute incremental
+semantic reuse.

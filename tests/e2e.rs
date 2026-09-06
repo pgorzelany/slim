@@ -4134,3 +4134,192 @@ fn checked_layout_order_builds_every_aggregate_permutation_and_forward_module() 
     compile_run(&manifest);
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn production_function_flow_is_bounded_and_preserves_normal_paths() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("function-flow");
+    for entry in fs::read_dir(root.join("selfhost")).unwrap() {
+        let path = entry.unwrap().path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "slim")
+        {
+            fs::copy(&path, directory.join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    let source_manifest = fs::read_to_string(root.join("selfhost/slim.project")).unwrap();
+    let mut manifest = source_manifest
+        .lines()
+        .filter(|line| !line.contains("(module driver "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("(entry driver)", "(entry zzprobe)");
+    assert!(manifest.ends_with(')'));
+    manifest.pop();
+    manifest.push_str(
+        "\n  (module zzprobe \"zzprobe.slim\" (imports check flow identity ir memory syntax text typing) (exports)))\n",
+    );
+    fs::write(directory.join("slim.project"), manifest).unwrap();
+    fs::write(
+        directory.join("zzprobe.slim"),
+        include_str!("fixtures/function_flow.slim"),
+    )
+    .unwrap();
+    let generated = Command::new(root.join("build/toolchain/slimc"))
+        .arg(directory.join("slim.project"))
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stdout)
+    );
+    let c = directory.join("probe.c");
+    fs::write(&c, generated.stdout).unwrap();
+    let executable = directory.join("probe");
+    let compiled = Command::new(native_compiler())
+        .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(&c)
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let mut fixtures: Vec<PathBuf> = fs::read_dir(root.join("conformance/pass"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "slim")
+        })
+        .collect();
+    fixtures.extend(
+        fs::read_dir(root.join("benchmarks/challenges"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path().join("program.slim"))
+            .filter(|path| path.is_file()),
+    );
+    fixtures.sort();
+    assert!(fixtures.len() >= 93);
+    for fixture in fixtures {
+        let output = Command::new(&executable).arg(&fixture).output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}: {:?}",
+            fixture.display(),
+            output
+        );
+        assert_eq!(output.stdout, b"ok bounded flow\n", "{}", fixture.display());
+        assert!(output.stderr.is_empty());
+    }
+    for name in [
+        "use_after_move.slim",
+        "inline_self_cycle.slim",
+        "unknown_record_type.slim",
+    ] {
+        let result = Command::new(&executable)
+            .arg(root.join("conformance/fail").join(name))
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "{name}: {result:?}");
+        assert_eq!(result.stdout, b"ok rejected flow\n");
+        assert!(result.stderr.is_empty());
+    }
+    for size in [125, 250, 500, 1_000, 2_000, 4_000] {
+        let mut source = String::from("module deep_flow\n\nfn main(args: Vec[Bytes]) -> I64:\n");
+        for index in 0..size {
+            source.push_str(&format!("  let value_{index}: I64 = {index}\n"));
+        }
+        source.push_str("  0\n");
+        let input = write_source(&directory, &source);
+        let output = Command::new(&executable)
+            .arg(&input)
+            .arg("dump")
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "deep {size}: {output:?}");
+        let report = String::from_utf8(output.stdout).unwrap();
+        assert!(report.ends_with("ok bounded flow\n"));
+        let counts: Vec<usize> = report
+            .lines()
+            .next()
+            .unwrap()
+            .split_whitespace()
+            .skip(1)
+            .map(|value| value.parse().unwrap())
+            .collect();
+        assert_eq!(counts[1], 3 * size + 4);
+        assert_eq!(counts[2], 3 * size + 2);
+        assert_eq!(counts[3], 2 * size + 1);
+    }
+    // These paths are specified independently from the production builder.
+    // Edge kind 4 is explicitly unresolved abrupt-call behavior, not normal flow.
+    let normal_paths = |source: &str, function_index: usize| {
+        let input = write_source(&directory, source);
+        let output = Command::new(&executable)
+            .args([input.as_os_str(), std::ffi::OsStr::new("dump")])
+            .output()
+            .unwrap();
+        assert!(output.status.success(), "{output:?}");
+        let text = String::from_utf8(output.stdout).unwrap();
+        let section = text.split("function ").skip(1).nth(function_index).unwrap();
+        let mut operations = Vec::new();
+        let mut edges = Vec::new();
+        for line in section.lines().skip(1) {
+            if line.starts_with("block ") || line.starts_with("edge ") {
+                let fields: Vec<usize> = line
+                    .split_whitespace()
+                    .skip(1)
+                    .map(|s| s.parse().unwrap())
+                    .collect();
+                if line.starts_with("block ") {
+                    assert_eq!(fields[0], operations.len());
+                    operations.push(fields[1]);
+                } else if fields[1] != 4 {
+                    edges.push((fields[2], fields[3], fields[1]));
+                }
+            }
+        }
+        let mut pending = vec![(0usize, Vec::new())];
+        let mut paths = Vec::new();
+        while let Some((block, mut path)) = pending.pop() {
+            assert!(path.len() < operations.len() + 1);
+            path.push(operations[block]);
+            if block == 1 || operations[block] == 18 {
+                paths.push(path);
+            } else {
+                for &(from, to, _) in &edges {
+                    if from == block {
+                        pending.push((to, path.clone()));
+                    }
+                }
+            }
+        }
+        paths.sort();
+        paths
+    };
+    let eager = "module flow_test\n\nfn first() -> Bool effects[io]:\n  io.println(\"first\")\n  true\n\nfn second() -> Bool effects[io]:\n  io.println(\"second\")\n  false\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let value: Bool = first() && second()\n  if value:\n    0\n  else:\n    1\n";
+    let paths = normal_paths(eager, 2);
+    let expected = vec![0, 9, 10, 8, 9, 10, 8, 9, 10, 4, 3, 14, 15, 3, 16, 17, 6, 1];
+    assert_eq!(paths, vec![expected.clone(), expected]);
+    let recursive = "module flow_test\n\nfn sum(n: I64, total: I64) -> I64 effects[partial]:\n  if n > 0:\n    recur(n - 1, total + n)\n  else:\n    total\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n";
+    let paths = normal_paths(recursive, 0);
+    assert_eq!(paths.len(), 2);
+    assert_eq!(
+        paths.iter().filter(|path| path.last() == Some(&18)).count(),
+        1
+    );
+    let recur_path = paths.iter().find(|path| path.last() == Some(&18)).unwrap();
+    assert_eq!(&recur_path[recur_path.len() - 2..], &[8, 18]);
+    assert_eq!(recur_path.iter().filter(|op| **op == 18).count(), 1);
+    assert_eq!(recur_path.iter().filter(|op| **op == 7).count(), 0);
+    fs::remove_dir_all(directory).unwrap();
+}

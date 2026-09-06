@@ -8,6 +8,7 @@
   (module edit "edit.slim" (imports format syntax text) (exports emit_candidate))
   (module effects "effects.slim" (imports syntax) (exports builtin_requires call_requires list_has params_have))
   (module equivalence "equivalence.slim" (imports syntax text) (exports emit_comparison))
+  (module flow "flow.slim" (imports identity syntax typing) (exports Block BlockId Edge EdgeKind Graph Operation Status derive resolve_block))
   (module format "format.slim" (imports syntax text) (exports emit_module emit_type))
   (module identity "identity.slim" (imports) (exports DeclarationId FileId Index NextRevision NodeId Revision Span View reset resolve_node resolve_span same_declaration same_file same_revision successor valid_view))
   (module ir "ir.slim" (imports) (exports Declaration DeclarationKind))

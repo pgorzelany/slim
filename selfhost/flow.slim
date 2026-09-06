@@ -1,0 +1,305 @@
+module flow
+
+enum Status:
+  Complete
+  Bounded
+  InvalidSource
+  InvalidBudget
+
+enum Operation:
+  Entry
+  Return
+  Abrupt
+  Eval
+  Bind
+  Statement
+  ScopeExit
+  Assign
+  Argument
+  Call
+  CallExit
+  Make
+  Project
+  Case
+  Branch
+  ArmEnter
+  ArmExit
+  Join
+  Recur
+  ForkEnter
+  ForkJoin
+
+enum EdgeKind:
+  Next
+  Alternative
+  Join
+  Recur
+  PotentialAbrupt
+
+struct BlockId:
+  declaration: identity.DeclarationId
+  ordinal: I64
+
+struct Block:
+  operation: Operation
+  node: identity.NodeId
+  mode: I64
+
+struct Edge:
+  from: BlockId
+  to: BlockId
+  kind: EdgeKind
+
+struct Graph:
+  owner: identity.View
+  budget: I64
+  steps: I64
+  status: Status
+  blocks: Vec[Block]
+  edges: Vec[Edge]
+
+struct Task:
+  kind: I64
+  node: I64
+  from: I64
+  to: I64
+
+struct Report:
+  status: Status
+  steps: I64
+
+fn resolve_block(graph: Graph, block: BlockId) -> identity.Index effects[partial]:
+  match graph.status:
+    Complete:
+      if (identity.same_declaration(graph.owner.declaration, block.declaration) && (block.ordinal >= 0)) && (block.ordinal < vec.len(graph.blocks)):
+        identity.Index::Found(block.ordinal)
+      else:
+        identity.Index::Invalid()
+    Bounded:
+      identity.Index::Invalid()
+    InvalidSource:
+      identity.Index::Invalid()
+    InvalidBudget:
+      identity.Index::Invalid()
+
+fn block(owner: identity.View, node: I64, operation: Operation, mode: I64, budget: I64, blocks: @Vec[Block]) -> I64 effects[alloc, partial]:
+  if vec.len(blocks) >= budget:
+    -1
+  else:
+    if (node < owner.first) || ((node - owner.first) >= owner.count):
+      -2
+    else:
+      let ordinal: I64 = vec.len(blocks)
+      let source_node: identity.NodeId = identity.NodeId(declaration: owner.declaration, ordinal: node - owner.first)
+      vec.push(@blocks, Block(operation: operation, node: source_node, mode: mode))
+      ordinal
+
+fn edge(owner: identity.View, from: I64, to: I64, kind: EdgeKind, budget: I64, edges: @Vec[Edge]) -> Bool effects[alloc]:
+  if ((from < 0) || (to < 0)) || (vec.len(edges) >= budget):
+    false
+  else:
+    let first: BlockId = BlockId(declaration: owner.declaration, ordinal: from)
+    let last: BlockId = BlockId(declaration: owner.declaration, ordinal: to)
+    vec.push(@edges, Edge(from: first, to: last, kind: kind))
+    true
+
+fn push(kind: I64, node: I64, from: I64, to: I64, depth: I64, budget: I64, tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  if depth < 0:
+    depth
+  else:
+    if ((depth >= budget) || (from < 0)) || (to < 0):
+      -1
+    else:
+      let task: Task = Task(kind: kind, node: node, from: from, to: to)
+      if depth < vec.len(tasks):
+        vec.set(@tasks, depth, task)
+      else:
+        vec.push(@tasks, task)
+      depth + 1
+
+fn value_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  if syntax.ast_list_done(tokens, task.node):
+    if edge(owner, task.from, task.to, EdgeKind::Next(), budget, @edges):
+      depth
+    else:
+      -1
+  else:
+    let value: I64 = if task.kind == 2:
+      syntax.ast_member_value(task.node)
+    else:
+      task.node
+    let argument: I64 = block(owner, value, Operation::Argument(), syntax.ast_argument_mode(tokens, value), budget, @blocks)
+    let remaining: I64 = push(task.kind, syntax.ast_next(tokens, task.node), argument, task.to, depth, budget, @tasks)
+    push(0, value, task.from, argument, remaining, budget, @tasks)
+
+fn arm_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  if syntax.ast_list_done(tokens, task.node):
+    depth
+  else:
+    let enter: I64 = block(owner, task.node, Operation::ArmEnter(), 0, budget, @blocks)
+    let leave: I64 = block(owner, task.node, Operation::ArmExit(), 0, budget, @blocks)
+    let entered: Bool = edge(owner, task.from, enter, EdgeKind::Alternative(), budget, @edges)
+    let joined: Bool = edge(owner, leave, task.to, EdgeKind::Join(), budget, @edges)
+    if entered && joined:
+      let remaining: I64 = push(3, syntax.ast_next(tokens, task.node), task.from, task.to, depth, budget, @tasks)
+      push(0, syntax.ast_arm_body(tokens, task.node), enter, leave, remaining, budget, @tasks)
+    else:
+      -1
+
+fn binding_task(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let name: I64 = syntax.ast_let_name(task.node)
+  let kind: Operation = if syntax.ast_expression_is_statement(tokens, task.node):
+    Operation::Statement()
+  else:
+    Operation::Bind()
+  let fact: typing.Fact = vec.get(facts, name)
+  let bind: I64 = block(owner, name, kind, typing.fact_borrow_mode(fact), budget, @blocks)
+  let leave: I64 = block(owner, task.node, Operation::ScopeExit(), 0, budget, @blocks)
+  if edge(owner, leave, task.to, EdgeKind::Next(), budget, @edges):
+    let body: I64 = push(0, syntax.ast_let_body(tokens, task.node), bind, leave, depth, budget, @tasks)
+    push(0, syntax.ast_let_value(tokens, task.node), task.from, bind, body, budget, @tasks)
+  else:
+    -1
+
+fn branch_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let branch: I64 = block(owner, task.node, Operation::Branch(), 0, budget, @blocks)
+  let join: I64 = block(owner, task.node, Operation::Join(), 0, budget, @blocks)
+  if edge(owner, join, task.to, EdgeKind::Next(), budget, @edges):
+    let arms: I64 = push(3, syntax.ast_match_arms(tokens, task.node), branch, join, depth, budget, @tasks)
+    push(0, syntax.ast_match_value(task.node), task.from, branch, arms, budget, @tasks)
+  else:
+    -1
+
+fn call_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let call: I64 = block(owner, task.node, Operation::Call(), 0, budget, @blocks)
+  let leave: I64 = block(owner, task.node, Operation::CallExit(), 0, budget, @blocks)
+  let called: Bool = edge(owner, call, leave, EdgeKind::Next(), budget, @edges)
+  let returned: Bool = edge(owner, leave, task.to, EdgeKind::Next(), budget, @edges)
+  let abrupt: Bool = edge(owner, call, 2, EdgeKind::PotentialAbrupt(), budget, @edges)
+  if (called && returned) && abrupt:
+    push(1, syntax.ast_call_arguments(task.node), task.from, call, depth, budget, @tasks)
+  else:
+    -1
+
+fn unary_task(owner: identity.View, task: Task, value: I64, operation: Operation, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let result: I64 = block(owner, task.node, operation, 0, budget, @blocks)
+  if edge(owner, result, task.to, EdgeKind::Next(), budget, @edges):
+    push(0, value, task.from, result, depth, budget, @tasks)
+  else:
+    -1
+
+fn aggregate_task(owner: identity.View, task: Task, values: I64, kind: I64, operation: Operation, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let result: I64 = block(owner, task.node, operation, 0, budget, @blocks)
+  if edge(owner, result, task.to, EdgeKind::Next(), budget, @edges):
+    push(kind, values, task.from, result, depth, budget, @tasks)
+  else:
+    -1
+
+fn expression_task(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let node: I64 = task.node
+  let kind: I64 = syntax.ast_node_kind(tokens, node)
+  if !(kind == 0):
+    if (kind == 2) || (kind == 3):
+      let value: I64 = block(owner, node, Operation::Eval(), syntax.ast_argument_mode(tokens, node), budget, @blocks)
+      let before: Bool = edge(owner, task.from, value, EdgeKind::Next(), budget, @edges)
+      let after: Bool = edge(owner, value, task.to, EdgeKind::Next(), budget, @edges)
+      if before && after:
+        depth
+      else:
+        -1
+    else:
+      -2
+  else:
+    if syntax.ast_expression_is_let(source, tokens, node):
+      binding_task(source, tokens, facts, owner, task, depth, budget, @blocks, @edges, @tasks)
+    else:
+      if syntax.ast_expression_is_set(source, tokens, node):
+        let assigned: I64 = block(owner, node, Operation::Assign(), 0, budget, @blocks)
+        let body: I64 = push(0, syntax.ast_set_body(tokens, node), assigned, task.to, depth, budget, @tasks)
+        push(0, syntax.ast_set_value(node), task.from, assigned, body, budget, @tasks)
+      else:
+        if syntax.ast_expression_is_match(source, tokens, node):
+          branch_task(tokens, owner, task, depth, budget, @blocks, @edges, @tasks)
+        else:
+          if syntax.ast_expression_is_call(source, tokens, node):
+            call_task(tokens, owner, task, depth, budget, @blocks, @edges, @tasks)
+          else:
+            if syntax.ast_expression_is_get(source, tokens, node):
+              unary_task(owner, task, syntax.ast_get_value(node), Operation::Project(), depth, budget, @blocks, @edges, @tasks)
+            else:
+              if syntax.ast_expression_is_make(source, tokens, node):
+                aggregate_task(owner, task, syntax.ast_make_fields(node), 2, Operation::Make(), depth, budget, @blocks, @edges, @tasks)
+              else:
+                if syntax.ast_expression_is_case(source, tokens, node):
+                  aggregate_task(owner, task, syntax.ast_case_payload(tokens, node), 1, Operation::Case(), depth, budget, @blocks, @edges, @tasks)
+                else:
+                  if syntax.ast_expression_is_recur(source, tokens, node):
+                    let transfer: I64 = block(owner, node, Operation::Recur(), 0, budget, @blocks)
+                    if edge(owner, transfer, 0, EdgeKind::Recur(), budget, @edges):
+                      push(1, syntax.ast_recur_arguments(node), task.from, transfer, depth, budget, @tasks)
+                    else:
+                      -1
+                  else:
+                    if syntax.ast_expression_is_fork(source, tokens, node):
+                      let enter: I64 = block(owner, node, Operation::ForkEnter(), 0, budget, @blocks)
+                      let join: I64 = block(owner, node, Operation::ForkJoin(), 0, budget, @blocks)
+                      let entered: Bool = edge(owner, task.from, enter, EdgeKind::Next(), budget, @edges)
+                      let joined: Bool = edge(owner, join, task.to, EdgeKind::Next(), budget, @edges)
+                      if entered && joined:
+                        push(0, syntax.ast_fork_body(node), enter, join, depth, budget, @tasks)
+                      else:
+                        -1
+                    else:
+                      -2
+
+fn walk(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], owner: identity.View, depth: I64, steps: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> Report effects[alloc, partial]:
+  if depth == 0:
+    Report(status: Status::Complete(), steps: steps)
+  else:
+    if (depth < 0) || (steps >= budget):
+      Report(status: Status::Bounded(), steps: steps)
+    else:
+      let remaining: I64 = depth - 1
+      let task: Task = vec.get(tasks, remaining)
+      if (task.node < owner.first) || ((task.node - owner.first) >= owner.count):
+        Report(status: Status::InvalidSource(), steps: steps)
+      else:
+        let next: I64 = if task.kind == 0:
+          expression_task(source, tokens, facts, owner, task, remaining, budget, @blocks, @edges, @tasks)
+        else:
+          if task.kind == 3:
+            arm_task(tokens, owner, task, remaining, budget, @blocks, @edges, @tasks)
+          else:
+            value_task(tokens, owner, task, remaining, budget, @blocks, @edges, @tasks)
+        if next == -2:
+          Report(status: Status::InvalidSource(), steps: steps + 1)
+        else:
+          recur(source, tokens, facts, owner, next, steps + 1, budget, @blocks, @edges, @tasks)
+
+fn derive(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, owner: identity.View, budget: I64) -> Graph effects[alloc, partial]:
+  let blocks: Vec[Block] = vec.new()
+  let edges: Vec[Edge] = vec.new()
+  let tasks: Vec[Task] = vec.new()
+  let total: I64 = vec.len(tokens)
+  let budget_valid: Bool = (budget >= 1) && (budget <= 1000000)
+  let view_valid: Bool = identity.valid_view(owner, total) && (owner.count > 0)
+  let source_valid: Bool = if (view_valid && (checked.status == 0)) && (vec.len(checked.view.facts) == total):
+    syntax.ast_item_is_function(source, tokens, owner.first) && (syntax.ast_next(tokens, owner.first) == (owner.first + owner.count))
+  else:
+    false
+  let report: Report = if !budget_valid:
+    Report(status: Status::InvalidBudget(), steps: 0)
+  else:
+    if !source_valid:
+      Report(status: Status::InvalidSource(), steps: 0)
+    else:
+      let entry: I64 = block(owner, owner.first, Operation::Entry(), 0, budget, @blocks)
+      let exit: I64 = block(owner, owner.first, Operation::Return(), 0, budget, @blocks)
+      let abrupt: I64 = block(owner, owner.first, Operation::Abrupt(), 0, budget, @blocks)
+      if abrupt < 0:
+        Report(status: Status::Bounded(), steps: 0)
+      else:
+        let body: I64 = syntax.ast_function_body(tokens, owner.first)
+        let depth: I64 = push(0, body, entry, exit, 0, budget, @tasks)
+        walk(source, tokens, checked.view.facts, owner, depth, 0, budget, @blocks, @edges, @tasks)
+  Graph(owner: owner, budget: budget, steps: report.steps, status: report.status, blocks: blocks, edges: edges)

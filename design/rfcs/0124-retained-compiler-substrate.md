@@ -342,8 +342,9 @@ the independently callable function checker with isolated scratch state and
 materialized facts; it does not retain semantic results or reclaim backing
 storage per function. RFC-0128 retains the existing layout checker's completion
 order for dependency-ordered C definitions, removing the recorded forward-type
-emission blocker. Typed semantic
-identities, derived control flow, retained checker/analysis/emission queries,
+emission blocker. RFC-0129 supplies the optional bounded structural function-flow
+view and native work/fault observations. Typed persistent semantic identities,
+ownership orchestration over that view, retained checker/analysis/emission queries,
 transactional publication, and the full M1 validation remain pending. The SLIM
 Next progress report records each checkpoint; M0 remains the historical comparison
 baseline, not a claim that the current seed is unchanged.

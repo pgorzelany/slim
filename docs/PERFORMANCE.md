@@ -155,6 +155,17 @@ dependencies are completed once by the existing checker. A 256-ordinal campaign
 must cross failures after layout traversal starts, failures after aggregate
 emission starts, and successful ordinals beyond all fixture allocations; failures
 must preserve exact attempt counts and produce no partial C output.
+RFC-0129 bounds optional flow construction independently by task steps, blocks,
+edges and pending tasks, with a caller budget in 1..1,000,000. The retained
+geometric binding-chain fixture has exactly 3N+4 blocks, 3N+2 edges and 2N+1
+processed tasks. Native probe observation separately counts derive/walk entries,
+walk headers and returned task steps; successful runs require headers = steps +
+walk entries, repeatable counters, and ordinary/sanitized output equality.
+The measurement-only observer saturates at 1,000,000,000 and never enters the
+installed compiler/runtime. Its 512 allocation-fault ordinals require failures
+after task walking begins, no successful partial graph output, and later success.
+This does not make the preceding recursive checker iterative. The dated flow
+report records its pre-existing stack limit under sanitizer instrumentation.
 The two-module edit/cache campaign distinguishes the three parses of a clean
 build from zero program parses on a hit and four parses for an unchanged
 snapshot comparison. All 20 native challenges are emitted by both compilers

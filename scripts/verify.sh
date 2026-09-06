@@ -90,6 +90,73 @@ clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
   "$verify_dir/layouts.c" runtime/slim_rt.c -o "$verify_dir/layouts-sanitized"
 test "$("$verify_dir/layouts-sanitized")" = "42"
 
+mkdir "$verify_dir/flow"
+cp selfhost/*.slim "$verify_dir/flow/"
+cp tests/fixtures/function_flow.slim "$verify_dir/flow/zzprobe.slim"
+sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;$s/)$//' \
+  selfhost/slim.project > "$verify_dir/flow/slim.project"
+cat >> "$verify_dir/flow/slim.project" <<'EOF'
+  (module zzprobe "zzprobe.slim" (imports check flow identity ir memory syntax text typing) (exports)))
+EOF
+"$verify_dir/slimc-seed-sanitized" "$verify_dir/flow/slim.project" > "$verify_dir/flow.c"
+clang -std=c11 -O1 -Wall -Wextra -Werror -I runtime \
+  "$verify_dir/flow.c" runtime/slim_rt.c -o "$verify_dir/flow-ordinary"
+awk -f scripts/instrument-flow-probe.awk "$verify_dir/flow.c" > "$verify_dir/flow-observed.c"
+clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Wall -Wextra -Werror -I runtime -include benchmarks/instrumentation/flow_probe.h \
+  "$verify_dir/flow-observed.c" runtime/slim_rt.c benchmarks/instrumentation/flow_probe.c \
+  -o "$verify_dir/flow-sanitized"
+for flow_fixture in conformance/pass/*.slim benchmarks/challenges/*/program.slim; do
+  "$verify_dir/flow-ordinary" "$flow_fixture" > "$verify_dir/flow.out"
+  test "$(cat "$verify_dir/flow.out")" = "ok bounded flow"
+  rm -f "$verify_dir/flow-work.tsv" "$verify_dir/flow-repeat.tsv"
+  SLIM_FLOW_REPORT="$verify_dir/flow-work.tsv" "$verify_dir/flow-sanitized" "$flow_fixture" > "$verify_dir/flow-observed.out"
+  cmp "$verify_dir/flow.out" "$verify_dir/flow-observed.out"
+  SLIM_FLOW_REPORT="$verify_dir/flow-repeat.tsv" "$verify_dir/flow-sanitized" "$flow_fixture" > "$verify_dir/flow-repeat.out"
+  cmp "$verify_dir/flow.out" "$verify_dir/flow-repeat.out"
+  cmp "$verify_dir/flow-work.tsv" "$verify_dir/flow-repeat.tsv"
+  awk -F '\t' 'NR == 1 { if ($0 != "slim-flow\t1\texact\t1000000000") exit 1 }
+    NR == 2 { if (NF != 8 || $3 != $4 + $2 || $1 != $5 + $6 + $7 || $8 != 0) exit 1 }
+    END { if (NR != 2) exit 1 }' "$verify_dir/flow-work.tsv"
+done
+flow_fault_at=1
+flow_failed=0
+flow_failed_in_walk=0
+flow_succeeded=0
+while test "$flow_fault_at" -le 512; do
+  flow_ordinary_status=0
+  SLIM_ALLOC_FAIL_AT="$flow_fault_at" "$verify_dir/flow-ordinary" examples/hello.slim \
+    > "$verify_dir/flow-fault.out" 2> "$verify_dir/flow-fault.err" || flow_ordinary_status=$?
+  rm -f "$verify_dir/flow-fault.tsv"
+  flow_observed_status=0
+  SLIM_FLOW_REPORT="$verify_dir/flow-fault.tsv" SLIM_ALLOC_FAIL_AT="$flow_fault_at" \
+    "$verify_dir/flow-sanitized" examples/hello.slim > "$verify_dir/flow-observed.out" \
+    2> "$verify_dir/flow-observed.err" || flow_observed_status=$?
+  test "$flow_ordinary_status" -eq "$flow_observed_status"
+  cmp "$verify_dir/flow-fault.out" "$verify_dir/flow-observed.out"
+  cmp "$verify_dir/flow-fault.err" "$verify_dir/flow-observed.err"
+  test "$(head -n 1 "$verify_dir/flow-fault.tsv")" = "$(printf 'slim-flow\t1\texact\t1000000000')"
+  awk -F '\t' 'NR == 2 { if (NF != 8) exit 1; for (i = 1; i <= 8; i++) if ($i !~ /^[0-9]+$/ || $i > 1000000000) exit 1 } END { if (NR != 2) exit 1 }' "$verify_dir/flow-fault.tsv"
+  if test "$flow_observed_status" -eq 71; then
+    test ! -s "$verify_dir/flow-fault.out"
+    flow_failed=$((flow_failed + 1))
+    if awk -F '\t' 'NR == 2 { exit !($3 > 0) }' "$verify_dir/flow-fault.tsv"; then
+      flow_failed_in_walk=$((flow_failed_in_walk + 1))
+    fi
+  else
+    test "$flow_observed_status" -eq 0
+    test "$(cat "$verify_dir/flow-fault.out")" = "ok bounded flow"
+    flow_succeeded=$((flow_succeeded + 1))
+  fi
+  printf 'flow-fault\t%s\t%s\t' "$flow_fault_at" "$flow_observed_status"
+  tail -n 1 "$verify_dir/flow-fault.tsv"
+  flow_fault_at=$((flow_fault_at + 1))
+done
+test "$flow_failed" -gt 0
+test "$flow_failed_in_walk" -gt 0
+test "$flow_succeeded" -gt 0
+echo "verification: flow faults $flow_failed, failures after task walking $flow_failed_in_walk, successes $flow_succeeded"
+
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1
