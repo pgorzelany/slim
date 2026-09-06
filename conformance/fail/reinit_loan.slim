@@ -1,0 +1,13 @@
+module reinit_loan
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+struct Owner:
+  items: Vec[I64]
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var owner: Owner = Owner(items: vec.new())
+  let alias: Vec[I64] = owner.items
+  owner = Owner(items: vec.new())
+  vec.len(alias)

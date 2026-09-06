@@ -50,6 +50,7 @@ matching, and copying a `Bytes` view do not dynamically allocate by themselves.
 | `vec.new()` / `arena.new()` | Creates an empty region-associated owner; no element buffer is required yet. |
 | `vec.push`, `arena.add`, output growth | Allocates or reallocates only when current capacity is insufficient. |
 | `bytes.freeze(^vector)` | Consumes the vector and exposes the same buffer as `Bytes`; it does not copy or allocate another buffer. |
+| Whole-name reassignment | A checked assignment to a mutable owner installs the replacement before restoring availability. Every branch arm must leave the owner available before a later read. |
 | String literals and process arguments | Produce views over process-region storage. |
 | File and bounded network operations | May grow an explicit `@Vec[U8]` and may use operation-local scratch storage. |
 

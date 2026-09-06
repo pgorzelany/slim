@@ -1,0 +1,14 @@
+module reinit_borrowed
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+struct Owner:
+  items: Vec[I64]
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  consume(^values)
+  let owner: Owner = Owner(items: vec.new())
+  values = owner.items
+  vec.len(values)

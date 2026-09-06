@@ -1369,10 +1369,19 @@ fn emit_variant_match(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typin
   text.append_text(@output, "default: slim_rt_trap(\"invalid variant tag\");\n}\n")
 
 fn emit_atom_assignment(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64, destination: I64, result: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  emit_destination(source, tokens, destination, result, @output)
-  text.append_text(@output, " = ")
-  emit_value(source, tokens, params, value, @output)
-  text.append_text(@output, ";\n")
+  let same: Bool = if (!result) && (destination >= 0):
+    let origin: I64 = typing.linked_binding_declaration(tokens, value)
+    let target: I64 = typing.linked_binding_declaration(tokens, destination)
+    (origin >= 0) && (origin == target)
+  else:
+    false
+  if same:
+    text.append_text(@output, "(void)0;\n")
+  else:
+    emit_destination(source, tokens, destination, result, @output)
+    text.append_text(@output, " = ")
+    emit_value(source, tokens, params, value, @output)
+    text.append_text(@output, ";\n")
 
 fn has_executable_sites(sites: Vec[parallel.Site], index: I64) -> Bool effects[partial]:
   let count: I64 = vec.len(sites)

@@ -3219,6 +3219,197 @@ fn branch_ownership_matches_all_paths_in_bounded_action_domain() {
 }
 
 #[test]
+fn reinitialization_matches_all_paths_in_bounded_action_domain() {
+    // Independent path oracle for 15,552 programs. Each position contains
+    // no-op, read, move, reset, move-then-reset, or reset-then-move. Enumerate
+    // each complete path in both nested-tree orientations; no checker state
+    // machinery is reused. Preserve the original 486-program domain above.
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    if !compiler.is_file() {
+        assert!(Command::new(slim_bootstrap()).status().unwrap().success());
+    }
+    let directory = temporary_directory("reinitialization-domain");
+    for orientation in 0..2 {
+        for pattern in 0..7_776usize {
+            let mut digits = pattern;
+            let mut actions = [0; 5];
+            for action in &mut actions {
+                *action = digits % 6;
+                digits /= 6;
+            }
+            let sequence = |action| match action {
+                0 => &[][..],
+                1 => &[1][..],
+                2 => &[2][..],
+                3 => &[3][..],
+                4 => &[2, 3][..],
+                _ => &[3, 2][..],
+            };
+            let accepted = (1..4).all(|leaf| {
+                let mut available = true;
+                [0, leaf, 4].into_iter().all(|position| {
+                    sequence(actions[position])
+                        .iter()
+                        .all(|action| match action {
+                            1 => available,
+                            2 => {
+                                let valid = available;
+                                available = false;
+                                valid
+                            }
+                            _ => {
+                                available = true;
+                                true
+                            }
+                        })
+                })
+            });
+            let action = |position: usize, spaces: usize| {
+                let prefix = " ".repeat(spaces);
+                let mut text = String::new();
+                for action in sequence(actions[position]) {
+                    match action {
+                        1 => text.push_str(&format!(
+                            "{prefix}let read_{position}: I64 = vec.len(values)\n"
+                        )),
+                        2 if (pattern + position).is_multiple_of(2) => {
+                            text.push_str(&format!("{prefix}consume(^values)\n"))
+                        }
+                        2 => text.push_str(&format!(
+                            "{prefix}let moved_{position}: Vec[I64] = values\n"
+                        )),
+                        _ => text.push_str(&format!("{prefix}values = vec.new()\n")),
+                    }
+                }
+                text
+            };
+            let leaf = |position: usize, spaces: usize| {
+                format!("{}{}void\n", action(position, spaces), " ".repeat(spaces))
+            };
+            let mut source = String::from(
+                "module branch_domain\n\nfn consume(value: ^Vec[I64]) -> Void:\n  void\n\nfn exercise(flag: Bool, other: Bool) -> Void effects[alloc, partial]:\n  var values: Vec[I64] = vec.new()\n",
+            );
+            source.push_str(&action(0, 2));
+            source.push_str("  if flag:\n");
+            if orientation == 0 {
+                source.push_str("    if other:\n");
+                source.push_str(&leaf(1, 6));
+                source.push_str("    else:\n");
+                source.push_str(&leaf(2, 6));
+                source.push_str("  else:\n");
+                source.push_str(&leaf(3, 4));
+            } else {
+                source.push_str(&leaf(1, 4));
+                source.push_str("  else:\n    if other:\n");
+                source.push_str(&leaf(2, 6));
+                source.push_str("    else:\n");
+                source.push_str(&leaf(3, 6));
+            }
+            source.push_str(&action(4, 2));
+            source.push_str("  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            let path = write_source(&directory, &source);
+            let output = Command::new(&compiler)
+                .arg("check")
+                .arg(path)
+                .output()
+                .unwrap();
+            assert_eq!(
+                output.status.success(),
+                accepted,
+                "orientation={orientation}, pattern={pattern}, actions={actions:?}\n{source}\n{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            if !accepted {
+                assert!(String::from_utf8_lossy(&output.stdout).contains("E0315@"));
+            }
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn reinitialization_preserves_untouched_arms_across_deep_scopes() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("reinitialization-deep-scopes");
+    fn resets(source: &mut String, indent: usize, owners: usize) {
+        let pad = " ".repeat(indent);
+        for owner in 0..owners {
+            source.push_str(&format!("{pad}owner_{owner} = vec.new()\n"));
+        }
+        source.push_str(&format!("{pad}void\n"));
+    }
+    fn branch(source: &mut String, depth: usize, indent: usize, owners: usize, complete: bool) {
+        if depth == 0 {
+            resets(source, indent, owners);
+            return;
+        }
+        let pad = " ".repeat(indent);
+        source.push_str(&format!("{pad}if flag:\n"));
+        if depth.is_multiple_of(2) {
+            branch(source, depth - 1, indent + 2, owners, complete);
+        } else if complete {
+            resets(source, indent + 2, owners);
+        } else {
+            source.push_str(&format!("{pad}  void\n"));
+        }
+        source.push_str(&format!("{pad}else:\n"));
+        if !depth.is_multiple_of(2) {
+            branch(source, depth - 1, indent + 2, owners, complete);
+        } else if complete {
+            resets(source, indent + 2, owners);
+        } else {
+            source.push_str(&format!("{pad}  void\n"));
+        }
+    }
+    // A complete tree resets each owner at every leaf. The incomplete tree
+    // resets only the deepest leaf: all other leaves retain the moved entry.
+    // Check every owner independently, across skipped and explicitly joined scopes.
+    for depth in [1, 8, 64, 128] {
+        for owners in [1, 17] {
+            for complete in [false, true] {
+                let mut source = String::from(
+                    "module deep_reset\n\nfn consume(values: ^Vec[I64]) -> Void:\n  void\n\nfn exercise(flag: Bool) -> Void effects[alloc]:\n",
+                );
+                for owner in 0..owners {
+                    source.push_str(&format!(
+                        "  var owner_{owner}: Vec[I64] = vec.new()\n  consume(^owner_{owner})\n"
+                    ));
+                }
+                branch(&mut source, depth, 2, owners, complete);
+                for owner in 0..owners {
+                    source.push_str(&format!(
+                        "  let count_{owner}: I64 = vec.len(owner_{owner})\n"
+                    ));
+                }
+                source.push_str("  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+                let path = write_source(&directory, &source);
+                let output = Command::new(&compiler)
+                    .arg("check")
+                    .arg(path)
+                    .output()
+                    .unwrap();
+                assert_eq!(
+                    output.status.success(),
+                    complete,
+                    "depth={depth}, owners={owners}, complete={complete}: {}{}",
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr)
+                );
+                if !complete {
+                    let diagnostics = String::from_utf8(output.stdout).unwrap();
+                    assert_eq!(diagnostics.lines().count(), owners, "{diagnostics}");
+                    assert!(diagnostics.lines().all(|line| line.starts_with("E0315@")));
+                }
+            }
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn termination_graph_matches_all_three_function_graphs_and_deep_chains() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let compiler = root.join("build/toolchain/slimc");

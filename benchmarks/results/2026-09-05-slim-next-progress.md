@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive assignment lowering, termination effects, and formatter round trips validated. Definite reinitialization, actual-work instrumentation, and successor process decisions remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation, the remaining claim audit, successor process decisions, and the milestone release gate remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -710,3 +710,104 @@ not evidence of an accepted unsafe execution. Its repair needs branch-sensitive
 initialization evidence and must retain all prior move/loan gates. Real
 checker/generator/cache work counters, the remaining claim audit, and successor
 process decisions also remain. M0 and M1-M7 are not declared complete here.
+
+## Definite reinitialization checkpoint (2026-09-06)
+
+RFC-0120 replaces the irreversible move-component interpretation with a lazy
+per-owner availability stack. A valid whole-name assignment restores the
+destination only after its right-hand side has checked and transferred. Every
+branch arm starts from the entry state, and every arm must leave the owner
+available before a following read. Missing arms retain the entry state; a
+one-case enum introduces no extra alternative. General partial initialization
+of moved aggregates remains unsupported.
+
+The production SLIM checker owns these facts. Its `ownership` module records
+canonical branch/arm scopes, and union by rank with path compression identifies
+the nearest still-open ancestor of a previously visited scope. Only owners with
+a move acquire frames. Accesses close the owner's completed frames, preserve
+untouched alternatives, and enter the current scope. Each frame closes once;
+no branch copies the binding table or replays an entire descendant event list.
+This is an O(N alpha(N)) availability algorithm, not a second checker or parser.
+
+The original [false-rejection witness](../reproducers/ownership_reinitialization.slim)
+now checks and runs through the production compiler. Thirteen added conformance
+rows comprise eight exact rejections and five native positive cases, including
+that original witness. They cover nested and incomplete branches, enum matches,
+mutable owned parameters and payloads, vectors/structs/enums/arenas, a second
+move, conditional owning results, unavailable right-hand sides, borrowed values,
+immutable destinations, wrong types, and outstanding loans.
+
+The original 486-program move-only oracle remains unchanged. The new independent
+path oracle checks all 15,552 programs in a fixed domain: no-op, read, move,
+reset, move-then-reset, or reset-then-move at five positions, in both nested-tree
+orientations. It enumerates each complete path rather than reproduce compiler
+state machinery. A separate 16-program stress domain uses depths 1, 8, 64, and
+128, one or 17 owners, and complete or incomplete reset trees. Incomplete trees
+must retain an E0315 for every owner. These experiments are exact for their
+enumerated domains and are not a proof of all ownership programs.
+
+The conditional-result execution fixture exposed C `value = value`, rejected
+by the strict native build. Lowering now emits a no-op only when both atomic
+endpoints resolve to the same checked binding declaration; result slots,
+temporaries, and other bindings retain ordinary assignment. No computation,
+effect, trap, or allocation is skipped. Checked move and initialization rules
+still apply before generation. Governance's structural checks now require the
+new availability operations in place of the removed irreversible helpers.
+The new scaling series use the existing 1.25 branch-move ceiling; no budget is
+relaxed, and the original series remain permanent.
+
+All five native positive cases pass ASan/UBSan. Allocation-fault ordinals 1
+through 64 reach respectively 1, 13, 4, 2, and 4 failures in the original witness,
+`reinit_branches`, `reinit_enum`, `reinit_transfer`, and `reinit_results`.
+Reached ordinals exit 71 with empty output and the exact allocation diagnostic;
+later ordinals succeed. The final sanitized compiler checks its own source.
+Checking `reinit_branches` under fault ordinals 1 through 128 reaches ordinals
+1 through 107 with the same clean failure behavior; 108 through 128 succeed.
+These are bounded campaigns on the named operations.
+
+All 20 complete native analysis reports and generated C outputs remain
+byte-identical to checkpoint 87b2adf. No analysis/resource row, complete blocker
+set, or parallel site count changes.
+
+The paired ownership measurements use one warmup and seven alternating AB/BA
+pairs on this host. At 1,000 owners, branched transfer medians are 22.768 ms
+baseline and 22.979 ms candidate (ratio 1.009); straight transfer medians are
+12.848 and 12.989 ms (ratio 1.011). Binary identities and all samples are in
+[the ownership TSV](2026-09-06-reinitialization-ownership-pair.tsv).
+These small differences lie within the observed variation and establish no
+speedup. Compiler cost and source/edit proxies remain independent of unmeasured
+agent effectiveness.
+
+The final call-heavy frontend comparison uses the same warmup and pairing
+protocol against 87b2adf. Its binary identities and samples are in
+[the frontend TSV](2026-09-06-reinitialization-frontend-pair.tsv).
+
+| Call-heavy declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 12.336 ms | 12.543 ms | 1.017 |
+| 4,000 | 22.489 ms | 22.153 ms | 0.985 |
+| 8,000 | 43.957 ms | 43.997 ms | 1.001 |
+| 16,000 | 88.629 ms | 88.278 ms | 0.996 |
+
+Wide and nested reinitialization check exponents are 0.776 and 0.645, below the
+unchanged 1.25 ceiling. The existing owned-transfer normalized ratio is 1.067
+under its 1.30 limit. Sublinear measured exponents include process overhead and
+do not imply a sublinear algorithm. No incremental compiler reuse is inferred.
+
+The portable fixed point is 3,020,129 C bytes, SHA-256
+`71c1ecfd9a2abbff28e13ce1f0e87e37c382284a3072c2493a7ecfb579cf6e4f`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 58 integration tests,
+325 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. The full suite uses authorized localhost
+socket access. Native SLIM/C and SLIM/Rust geometric means over 20 challenges
+are 1.106 and 1.014. Generated parallel/serial ratios are 0.660 for
+`state_machine` and 0.589 for `signal_network`, within their existing budgets.
+Logs and sanitizer artifacts are in ignored `build/slim-next-reinitialization/`;
+the pre-final logs retain the earlier missing-budget-mapping failure and the
+frontend measurement preceding the lowering correction. The final measurements
+ran after the tests and sanitizer campaigns completed, without that contention.
+
+M0 still needs actual checker/generator/cache work counters, the remaining
+claim audit and process decisions, and the full release gate. No M1-M7
+completion is claimed.

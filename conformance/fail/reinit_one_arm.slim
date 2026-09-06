@@ -1,0 +1,14 @@
+module reinit_one_arm
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  consume(^values)
+  if true:
+    values = vec.new()
+    void
+  else:
+    void
+  vec.len(values)

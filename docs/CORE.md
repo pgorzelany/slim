@@ -2,7 +2,7 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 
-Known implementation gaps, including definite ownership reinitialization,
+Known implementation gaps and the evidence for completed repairs
 are tracked in the [SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 The intended safety contract below is not yet completely enforced.
 
@@ -177,6 +177,11 @@ or ABI effect.
   borrows a named owner exclusively for the call. `^name` transfers one whole
   named affine owner and invalidates that name; `^expression` is otherwise
   accepted only when the expression freshly produces the transferred owner.
+- A checked whole-name assignment to a mutable owner restores availability
+  after its replacement value has transferred. A moved destination remains
+  unavailable while the right-hand side is checked. After a branch, every arm
+  must leave the owner available; an untouched arm retains its entry state.
+  This does not permit partial initialization of an unavailable aggregate.
 - Argument borrows remain active through later argument evaluation until the
   call ends. Nested shared reads are allowed; overlapping mutation or moves
   are rejected. Compute a scalar query before reserving its owner exclusively.

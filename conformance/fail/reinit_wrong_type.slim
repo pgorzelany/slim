@@ -1,0 +1,10 @@
+module reinit_wrong_type
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  consume(^values)
+  values = 1
+  vec.len(values)

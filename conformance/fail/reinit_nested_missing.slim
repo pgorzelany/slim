@@ -1,0 +1,18 @@
+module reinit_nested_missing
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  consume(^values)
+  if true:
+    if false:
+      values = vec.new()
+      void
+    else:
+      void
+  else:
+    values = vec.new()
+    void
+  vec.len(values)

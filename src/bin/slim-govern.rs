@@ -3450,8 +3450,8 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         "(fn issues_block_inference",
         "(fn linked_binding_index",
         "(fn mark_named_move",
-        "(fn move_scope_root",
-        "(fn join_move_arms",
+        "(fn advance_binding",
+        "(fn reinitialize_binding",
         "(fn check_exclusive_argument",
         "(fn check_argument_overlap",
         "(fn check_owned_argument",
@@ -3472,6 +3472,29 @@ fn check_selfhost_architecture(root: &Path, errors: &mut Vec<String>) {
         if !contains_slim_pattern(&typing, required) {
             errors.push(format!(
                 "self-host typed ownership diagnostics are missing `{required}`"
+            ));
+        }
+    }
+    let ownership_path = directory.join("ownership.slim");
+    let ownership = match fs::read_to_string(&ownership_path) {
+        Ok(source) => source,
+        Err(error) => {
+            errors.push(format!("{}: {error}", ownership_path.display()));
+            String::new()
+        }
+    };
+    for required in [
+        "(fn root",
+        "(fn begin",
+        "(fn end",
+        "(fn close_frame",
+        "(fn unwind",
+        "(fn advance",
+        "(fn set_moved",
+    ] {
+        if !contains_slim_pattern(&ownership, required) {
+            errors.push(format!(
+                "self-host definite ownership tracker is missing `{required}`"
             ));
         }
     }

@@ -1,0 +1,29 @@
+module reinit_transfer
+
+struct Owner:
+  items: Vec[I64]
+
+enum Choice:
+  Some(Vec[I64])
+
+fn consume(owner: ^Owner, choice: ^Choice, arena: ^Arena[I64]) -> Void:
+  void
+
+fn take(var values: ^Vec[I64]) -> Vec[I64] effects[alloc]:
+  let old: Vec[I64] = values
+  values = vec.new()
+  vec.push(@values, vec.len(old))
+  values
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var owner: Owner = Owner(items: vec.new())
+  var choice: Choice = Choice::Some(vec.new())
+  var arena: Arena[I64] = arena.new()
+  consume(^owner, ^choice, ^arena)
+  owner = Owner(items: vec.new())
+  choice = Choice::Some(vec.new())
+  arena = arena.new()
+  let fresh: Vec[I64] = mem.replace(@owner.items, vec.new())
+  let output: Vec[I64] = take(^fresh)
+  consume(^owner, ^choice, ^arena)
+  vec.get(output, 0)

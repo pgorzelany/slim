@@ -1,0 +1,27 @@
+module reinit_branches
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn exercise(flag: Bool, other: Bool) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  vec.push(@values, 90)
+  consume(^values)
+  if flag:
+    if other:
+      values = vec.new()
+      vec.push(@values, 11)
+    else:
+      values = vec.new()
+      vec.push(@values, 12)
+  else:
+    values = vec.new()
+    vec.push(@values, 13)
+  let first: I64 = vec.get(values, 0)
+  consume(^values)
+  values = vec.new()
+  vec.push(@values, first)
+  vec.get(values, 0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  (((exercise(true, true) + exercise(true, false)) + exercise(false, true)) + exercise(false, false)) - 49

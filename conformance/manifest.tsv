@@ -273,3 +273,16 @@ replacement-result-alias	run	conformance/pass/replacement_result_alias.slim	pari
 replacement-scope	run	conformance/pass/replacement_scope.slim	parity	exit=0;stdout=;stderr=	ownership:field-replacement
 replacement-nested-calls	run	conformance/pass/replacement_nested_calls.slim	parity	exit=0;stdout=;stderr=	ownership:field-replacement
 replacement-types	run	conformance/pass/replacement_types.slim	parity	exit=0;stdout=;stderr=	ownership:field-replacement
+reinit-borrowed	check-fail	conformance/fail/reinit_borrowed.slim	parity	E0347@268:274,E0315@285:291	ownership:definite-reinitialization
+reinit-immutable	check-fail	conformance/fail/reinit_immutable.slim	parity	E0359@177:183	ownership:definite-reinitialization
+reinit-loan	check-fail	conformance/fail/reinit_loan.slim	parity	E0349@232:237	ownership:definite-reinitialization
+reinit-moved-field	check-fail	conformance/fail/reinit_moved_field.slim	parity	E0315@297:302	ownership:definite-reinitialization
+reinit-nested-missing	check-fail	conformance/fail/reinit_nested_missing.slim	parity	E0315@312:318	ownership:definite-reinitialization
+reinit-one-arm	check-fail	conformance/fail/reinit_one_arm.slim	parity	E0315@243:249	ownership:definite-reinitialization
+reinit-rhs-moved	check-fail	conformance/fail/reinit_rhs_moved.slim	parity	E0315@186:192,E0315@203:209	ownership:definite-reinitialization
+reinit-wrong-type	check-fail	conformance/fail/reinit_wrong_type.slim	parity	E0344@187:188	ownership:definite-reinitialization
+reinit-branches	run	conformance/pass/reinit_branches.slim	parity	exit=0;stdout=;stderr=	ownership:definite-reinitialization
+reinit-enum	run	conformance/pass/reinit_enum.slim	parity	exit=0;stdout=;stderr=	ownership:definite-reinitialization
+reinit-transfer	run	conformance/pass/reinit_transfer.slim	parity	exit=0;stdout=;stderr=	ownership:definite-reinitialization
+reinit-original-witness	run	benchmarks/reproducers/ownership_reinitialization.slim	parity	exit=0;stdout=;stderr=	ownership:definite-reinitialization
+reinit-results	run	conformance/pass/reinit_results.slim	parity	exit=0;stdout=;stderr=	ownership:definite-reinitialization

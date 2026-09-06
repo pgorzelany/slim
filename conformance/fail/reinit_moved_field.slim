@@ -1,0 +1,16 @@
+module reinit_moved_field
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+struct Owner:
+  items: Vec[I64]
+
+fn discard(owner: ^Owner) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  var owner: Owner = Owner(items: vec.new())
+  discard(^owner)
+  let old: Vec[I64] = mem.replace(@owner.items, vec.new())
+  vec.len(old)

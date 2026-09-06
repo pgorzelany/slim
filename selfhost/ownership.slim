@@ -1,0 +1,134 @@
+module ownership
+
+struct Scope:
+  parent: I64
+  rank: I64
+  ancestor: I64
+  depth: I64
+  alternatives: I64
+  arms: I64
+
+struct Frame:
+  scope: I64
+  parent: I64
+  entry: Bool
+  moved: Bool
+  visited: I64
+
+fn current(scopes: Vec[Scope]) -> I64 effects[partial]:
+  let cursor: Scope = vec.get(scopes, 0)
+  cursor.parent
+
+fn relink(scopes: @Vec[Scope], index: I64, parent: I64, rank: I64, ancestor: I64) -> Void effects[partial]:
+  let scope: Scope = vec.get(scopes, index)
+  vec.set(@scopes, index, Scope(parent: parent, rank: rank, ancestor: ancestor, depth: scope.depth, alternatives: scope.alternatives, arms: scope.arms))
+
+fn root(scopes: @Vec[Scope], index: I64) -> I64 effects[partial]:
+  let scope: Scope = vec.get(scopes, index)
+  if scope.parent == index:
+    index
+  else:
+    let found: I64 = root(@scopes, scope.parent)
+    relink(@scopes, index, found, scope.rank, scope.ancestor)
+    found
+
+fn begin(scopes: @Vec[Scope], arms: I64) -> I64 effects[alloc, partial]:
+  let enclosing: Scope = vec.get(scopes, current(scopes))
+  let index: I64 = vec.len(scopes)
+  let alternative: I64 = if arms > 1:
+    1
+  else:
+    0
+  vec.push(@scopes, Scope(parent: index, rank: 0, ancestor: index, depth: enclosing.depth + 1, alternatives: enclosing.alternatives + alternative, arms: arms))
+  relink(@scopes, 0, index, 0, index)
+  index
+
+fn end(scopes: @Vec[Scope], scope: I64, enclosing: I64) -> Void effects[partial]:
+  let child: I64 = root(@scopes, scope)
+  let parent: I64 = root(@scopes, enclosing)
+  let child_scope: Scope = vec.get(scopes, child)
+  let parent_scope: Scope = vec.get(scopes, parent)
+  if child_scope.rank > parent_scope.rank:
+    relink(@scopes, parent, child, parent_scope.rank, enclosing)
+    relink(@scopes, child, child, child_scope.rank, enclosing)
+  else:
+    let rank: I64 = if child_scope.rank == parent_scope.rank:
+      parent_scope.rank + 1
+    else:
+      parent_scope.rank
+    relink(@scopes, child, parent, child_scope.rank, enclosing)
+    relink(@scopes, parent, parent, rank, enclosing)
+  relink(@scopes, 0, enclosing, 0, enclosing)
+
+fn append_frame(scopes: Vec[Scope], frames: @Vec[Frame], scope: I64, parent: I64, entry: Bool) -> I64 effects[alloc, partial]:
+  let control: Scope = vec.get(scopes, scope)
+  let moved: Bool = if control.arms > 0:
+    false
+  else:
+    entry
+  let index: I64 = vec.len(frames)
+  vec.push(@frames, Frame(scope: scope, parent: parent, entry: entry, moved: moved, visited: 0))
+  index
+
+fn close_frame(scopes: Vec[Scope], frames: @Vec[Frame], index: I64) -> I64 effects[partial]:
+  let frame: Frame = vec.get(frames, index)
+  let control: Scope = vec.get(scopes, frame.scope)
+  let parent: Frame = vec.get(frames, frame.parent)
+  let enclosing: Scope = vec.get(scopes, parent.scope)
+  let current_alternative: I64 = if control.arms > 1:
+    1
+  else:
+    0
+  let skipped: Bool = (control.alternatives - enclosing.alternatives) > current_alternative
+  let missing: Bool = frame.visited < control.arms
+  let moved: Bool = frame.moved || ((skipped || missing) && frame.entry)
+  let joined: Bool = if enclosing.arms > 0:
+    parent.moved || moved
+  else:
+    moved
+  vec.set(@frames, frame.parent, Frame(scope: parent.scope, parent: parent.parent, entry: parent.entry, moved: joined, visited: parent.visited + 1))
+  frame.parent
+
+fn unwind(scopes: Vec[Scope], frames: @Vec[Frame], index: I64, ancestor: I64) -> I64 effects[alloc, partial]:
+  let frame: Frame = vec.get(frames, index)
+  if frame.scope == ancestor:
+    index
+  else:
+    let parent: Frame = vec.get(frames, frame.parent)
+    let enclosing: Scope = vec.get(scopes, parent.scope)
+    let common: Scope = vec.get(scopes, ancestor)
+    if enclosing.depth < common.depth:
+      let middle: I64 = append_frame(scopes, @frames, ancestor, frame.parent, frame.entry)
+      vec.set(@frames, index, Frame(scope: frame.scope, parent: middle, entry: frame.entry, moved: frame.moved, visited: frame.visited))
+    else:
+      void
+    let next: I64 = close_frame(scopes, @frames, index)
+    recur(scopes, @frames, next, ancestor)
+
+fn advance(scopes: @Vec[Scope], frames: @Vec[Frame], previous: I64) -> I64 effects[alloc, partial]:
+  let initial: I64 = if previous < 0:
+    append_frame(scopes, @frames, 1, -1, false)
+  else:
+    previous
+  let frame: Frame = vec.get(frames, initial)
+  let here: I64 = current(scopes)
+  if frame.scope == here:
+    initial
+  else:
+    let representative: I64 = root(@scopes, frame.scope)
+    let component: Scope = vec.get(scopes, representative)
+    let joined: I64 = unwind(scopes, @frames, initial, component.ancestor)
+    let parent: Frame = vec.get(frames, joined)
+    if parent.scope == here:
+      joined
+    else:
+      let control: Scope = vec.get(scopes, parent.scope)
+      let entry: Bool = if control.arms > 0:
+        parent.entry
+      else:
+        parent.moved
+      append_frame(scopes, @frames, here, joined, entry)
+
+fn set_moved(frames: @Vec[Frame], index: I64, moved: Bool) -> Void effects[partial]:
+  let frame: Frame = vec.get(frames, index)
+  vec.set(@frames, index, Frame(scope: frame.scope, parent: frame.parent, entry: frame.entry, moved: moved, visited: frame.visited))

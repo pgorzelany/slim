@@ -1,0 +1,27 @@
+module reinit_results
+
+enum Owned:
+  Some(Vec[I64])
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn payload(value: ^Owned) -> I64 effects[alloc]:
+  match value:
+    Some(var items):
+      consume(^items)
+      items = vec.new()
+      vec.push(@items, 7)
+      vec.get(items, 0)
+
+fn conditional(flag: Bool) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  vec.push(@values, 23)
+  values = if flag:
+    values
+  else:
+    vec.new()
+  vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  ((payload(^Owned::Some(vec.new())) + conditional(true)) + conditional(false)) - 8

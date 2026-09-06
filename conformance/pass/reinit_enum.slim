@@ -1,0 +1,35 @@
+module reinit_enum
+
+enum One:
+  Only
+
+enum Choice:
+  Left
+  Middle
+  Right
+
+fn consume(values: ^Vec[I64]) -> Void:
+  void
+
+fn exercise(one: One, choice: Choice) -> I64 effects[alloc]:
+  var values: Vec[I64] = vec.new()
+  consume(^values)
+  match one:
+    Only:
+      values = vec.new()
+      void
+  consume(^values)
+  match choice:
+    Left:
+      values = vec.new()
+      vec.push(@values, 3)
+    Middle:
+      values = vec.new()
+      vec.push(@values, 4)
+    Right:
+      values = vec.new()
+      vec.push(@values, 5)
+  vec.get(values, 0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  ((exercise(One::Only(), Choice::Left()) + exercise(One::Only(), Choice::Middle())) + exercise(One::Only(), Choice::Right())) - 12

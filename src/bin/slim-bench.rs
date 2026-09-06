@@ -462,6 +462,8 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
         ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
         ("generated-local-loans", &[125, 250, 500, 1_000][..]),
         ("generated-field-replacement", &[125, 250, 500, 1_000][..]),
+        ("generated-reinitialization", &[125, 250, 500, 1_000][..]),
+        ("generated-nested-reinitialization", &[16, 32, 64, 128][..]),
         (
             "generated-enum-match-ownership",
             &[125, 250, 500, 1_000][..],
@@ -522,6 +524,52 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
                     }
                 }
                 source.push_str("\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            } else if workload == "generated-reinitialization"
+                || workload == "generated-nested-reinitialization"
+            {
+                source.push_str("fn consume(values: ^Vec[I64]) -> Void:\n  void\n\nfn exercise(flag: Bool) -> Void effects[alloc]:\n");
+                for index in 0..size {
+                    source.push_str(&format!(
+                        "  var owner_{index}: Vec[I64] = vec.new()\n  consume(^owner_{index})\n"
+                    ));
+                }
+                if workload == "generated-reinitialization" {
+                    source.push_str("  if flag:\n");
+                    for arm in 0..2 {
+                        if arm == 1 {
+                            source.push_str("  else:\n");
+                        }
+                        for index in 0..size {
+                            source.push_str(&format!("    owner_{index} = vec.new()\n"));
+                        }
+                        source.push_str("    void\n");
+                    }
+                } else {
+                    // Nested alternatives do not reset every path; an unconditional
+                    // reset after the join supplies the required positive evidence.
+                    for depth in 0..size {
+                        source.push_str(&format!("{}if flag:\n", " ".repeat(2 + depth * 2)));
+                    }
+                    let deepest = " ".repeat(2 + size * 2);
+                    for index in 0..size {
+                        source.push_str(&format!("{deepest}owner_{index} = vec.new()\n"));
+                    }
+                    source.push_str(&format!("{deepest}void\n"));
+                    for depth in (0..size).rev() {
+                        source.push_str(&format!(
+                            "{}else:\n{}void\n",
+                            " ".repeat(2 + depth * 2),
+                            " ".repeat(4 + depth * 2)
+                        ));
+                    }
+                    for index in 0..size {
+                        source.push_str(&format!("  owner_{index} = vec.new()\n"));
+                    }
+                }
+                for index in 0..size {
+                    source.push_str(&format!("  consume(^owner_{index})\n"));
+                }
+                source.push_str("  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
             } else if workload == "generated-field-replacement" {
                 source.push_str("struct Owner:\n  values: Vec[I64]\n\nfn exercise(owner: @Owner) -> I64 effects[alloc]:\n");
                 for index in 0..size {
@@ -596,7 +644,10 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
         let exponent = (last_time.as_secs_f64() / first_time.as_secs_f64()).ln()
             / (last_size as f64 / first_size as f64).ln();
         // New variants independently obey existing budgets; retain originals.
-        let budget_workload = if workload == "generated-conditional-result-moves" {
+        let budget_workload = if workload == "generated-conditional-result-moves"
+            || workload == "generated-reinitialization"
+            || workload == "generated-nested-reinitialization"
+        {
             "generated-branch-moves"
         } else if workload == "generated-nested-loans"
             || workload == "generated-local-loans"

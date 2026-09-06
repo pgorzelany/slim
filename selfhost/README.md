@@ -1,6 +1,6 @@
 # Self-host bootstrap
 
-`slim.project` is the self-hosting input. Its twenty-two explicit modules cover
+`slim.project` is the self-hosting input. Its explicit modules cover
 syntax/token utilities, byte-text emission, typing, checking, typed memory planning,
 bounded semantic analysis, direct reduction, project handling, C generation,
 coordination, and the minimal executable driver. The checked-in portable C11
@@ -33,6 +33,11 @@ ownership, and now carries the binding's shared, exclusive, or owned mode in
 the same bounded integer. Code generation and borrowed-return checking query
 that mode directly
 instead of rescanning parameter names.
+The `ownership` module retains the same checker's definite-availability facts.
+It joins lazy per-owner state stacks through canonical branch scopes, using
+union by rank and path compression to locate completed scopes. Whole-name
+reinitialization restores availability only after a valid assignment; untouched
+branch arms retain their entry state. No binding table is copied at a branch.
 User-call allocation failure boundaries now come from the retained memory plan
 through a sparse binary site query rather than a backend effect-list read.
 RFC-0058 freezes Core 1D after its final audit and complete release gate: ordinary

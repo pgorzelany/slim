@@ -38,75 +38,6 @@ struct Binding:
   access_call: I64
   access_mode: I64
 
-struct MoveScope:
-  parent: I64
-  rank: I64
-  active: Bool
-  next_arm: I64
-
-# Move events name a branch component. Alternative arms stay inactive until
-# their common join; completed nested arms merge into their enclosing component.
-# Union by rank and path compression bound aggregate work by inverse Ackermann.
-fn current_move_scope(scopes: Vec[MoveScope]) -> I64 effects[partial]:
-  let cursor: MoveScope = vec.get(scopes, 0)
-  cursor.parent
-
-fn move_scope_root(scopes: @Vec[MoveScope], index: I64) -> I64 effects[alloc, partial]:
-  let scope: MoveScope = vec.get(scopes, index)
-  if scope.parent == index:
-    index
-  else:
-    let root: I64 = move_scope_root(@scopes, scope.parent)
-    vec.set(@scopes, index, MoveScope(parent: root, rank: scope.rank, active: scope.active, next_arm: scope.next_arm))
-    root
-
-fn move_is_active(scopes: @Vec[MoveScope], index: I64) -> Bool effects[alloc, partial]:
-  if index < 0:
-    false
-  else:
-    let root: I64 = move_scope_root(@scopes, index)
-    let scope: MoveScope = vec.get(scopes, root)
-    scope.active
-
-fn begin_move_arm(scopes: @Vec[MoveScope], previous: I64) -> I64 effects[alloc, partial]:
-  let index: I64 = vec.len(scopes)
-  vec.push(@scopes, MoveScope(parent: index, rank: 0, active: true, next_arm: previous))
-  vec.set(@scopes, 0, MoveScope(parent: index, rank: 0, active: true, next_arm: -1))
-  index
-
-fn end_move_arm(scopes: @Vec[MoveScope], arm: I64, enclosing: I64) -> Void effects[alloc, partial]:
-  let root: I64 = move_scope_root(@scopes, arm)
-  let scope: MoveScope = vec.get(scopes, root)
-  vec.set(@scopes, root, MoveScope(parent: root, rank: scope.rank, active: false, next_arm: scope.next_arm))
-  vec.set(@scopes, 0, MoveScope(parent: enclosing, rank: 0, active: true, next_arm: -1))
-
-fn join_move_arm(scopes: @Vec[MoveScope], arm: I64, enclosing: I64) -> Void effects[alloc, partial]:
-  let child: I64 = move_scope_root(@scopes, arm)
-  let parent: I64 = move_scope_root(@scopes, enclosing)
-  if child == parent:
-    void
-  else:
-    let child_scope: MoveScope = vec.get(scopes, child)
-    let parent_scope: MoveScope = vec.get(scopes, parent)
-    if child_scope.rank > parent_scope.rank:
-      vec.set(@scopes, parent, MoveScope(parent: child, rank: parent_scope.rank, active: parent_scope.active, next_arm: parent_scope.next_arm))
-      vec.set(@scopes, child, MoveScope(parent: child, rank: child_scope.rank, active: parent_scope.active, next_arm: child_scope.next_arm))
-    else:
-      let rank: I64 = if child_scope.rank == parent_scope.rank:
-        parent_scope.rank + 1
-      else:
-        parent_scope.rank
-      vec.set(@scopes, child, MoveScope(parent: parent, rank: child_scope.rank, active: parent_scope.active, next_arm: child_scope.next_arm))
-      vec.set(@scopes, parent, MoveScope(parent: parent, rank: rank, active: parent_scope.active, next_arm: parent_scope.next_arm))
-
-fn join_move_arms(scopes: @Vec[MoveScope], arm: I64, enclosing: I64) -> Void effects[alloc, partial]:
-  if arm < 0:
-    void
-  else:
-    let scope: MoveScope = vec.get(scopes, arm)
-    join_move_arm(@scopes, arm, enclosing)
-    recur(@scopes, scope.next_arm, enclosing)
-
 struct ScopeNode:
   value: I64
   first_edge: I64
@@ -663,16 +594,34 @@ fn find_binding_mutable(tokens: Vec[syntax.Token], bindings: Vec[Binding], name:
   else:
     false
 
-fn find_binding_moved(tokens: Vec[syntax.Token], bindings: Vec[Binding], name: I64, scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
-  let binding_index: I64 = linked_binding_index(tokens, name)
-  let found: Bool = binding_index >= 0
-  if found:
-    let binding: Binding = vec.get(bindings, binding_index)
-    move_is_active(@scopes, binding.move_scope)
+fn advance_binding(bindings: @Vec[Binding], index: I64, scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> I64 effects[alloc, partial]:
+  let binding: Binding = vec.get(bindings, index)
+  let frame: I64 = ownership.advance(@scopes, @frames, binding.move_scope)
+  vec.set(@bindings, index, Binding(name: binding.name, type: binding.type, mode: binding.mode, mutable: binding.mutable, move_scope: frame, owner: binding.owner, parent: binding.parent, access_call: binding.access_call, access_mode: binding.access_mode))
+  frame
+
+fn find_binding_moved(tokens: Vec[syntax.Token], bindings: @Vec[Binding], name: I64, scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
+  let index: I64 = linked_binding_index(tokens, name)
+  if index >= 0:
+    let binding: Binding = vec.get(bindings, index)
+    if binding.move_scope < 0:
+      false
+    else:
+      let frame: I64 = advance_binding(@bindings, index, @scopes, @frames)
+      let state: ownership.Frame = vec.get(frames, frame)
+      state.moved
   else:
     false
 
-fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn reinitialize_binding(bindings: @Vec[Binding], index: I64, scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Void effects[alloc, partial]:
+  let binding: Binding = vec.get(bindings, index)
+  if binding.move_scope < 0:
+    void
+  else:
+    let frame: I64 = advance_binding(@bindings, index, @scopes, @frames)
+    ownership.set_moved(@frames, frame, false)
+
+fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, argument)
   let named: Bool = kind == 2
   if named:
@@ -680,7 +629,7 @@ fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Bind
     let found: Bool = binding_index >= 0
     if found:
       let binding: Binding = vec.get(bindings, binding_index)
-      let moved: Bool = move_is_active(@scopes, binding.move_scope)
+      let moved: Bool = find_binding_moved(tokens, @bindings, argument, @scopes, @frames)
       if moved:
         true
       else:
@@ -694,8 +643,8 @@ fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Bind
             append_ownership_issue("E0347", argument, @issues)
             true
           else:
-            let updated: Binding = Binding(name: binding.name, type: binding.type, mode: binding.mode, mutable: binding.mutable, move_scope: current_move_scope(scopes), owner: binding.owner, parent: binding.parent, access_call: binding.access_call, access_mode: binding.access_mode)
-            vec.set(@bindings, binding_index, updated)
+            let frame: I64 = advance_binding(@bindings, binding_index, @scopes, @frames)
+            ownership.set_moved(@frames, frame, true)
             true
     else:
       true
@@ -705,20 +654,20 @@ fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Bind
 # Only result edges carry the transferred value: let/set continuations and
 # exclusive alternatives. Initializers and statement prefixes have already
 # been checked at their own destinations and must not be transferred again.
-fn mark_result_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn mark_result_arms(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   if syntax.ast_node_kind(tokens, cursor) == 1:
     true
   else:
     let body: I64 = syntax.ast_arm_body(tokens, cursor)
-    let moved: Bool = mark_result_move(source, tokens, body, @bindings, @issues, @scopes)
+    let moved: Bool = mark_result_move(source, tokens, body, @bindings, @issues, @scopes, @frames)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, @bindings, @issues, @scopes)
+    recur(source, tokens, next, @bindings, @issues, @scopes, @frames)
 
-fn mark_result_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn mark_result_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let result: I64 = ownership_result_expr(source, tokens, value)
   let kind: I64 = syntax.ast_node_kind(tokens, result)
   if kind == 2:
-    mark_named_move(tokens, result, @bindings, @issues, @scopes)
+    mark_named_move(tokens, result, @bindings, @issues, @scopes, @frames)
   else:
     let branch: Bool = if kind == 0:
       syntax.ast_expression_is_match(source, tokens, result)
@@ -726,7 +675,7 @@ fn mark_result_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, bindin
       false
     if branch:
       let arms: I64 = syntax.ast_match_arms(tokens, result)
-      mark_result_arms(source, tokens, arms, @bindings, @issues, @scopes)
+      mark_result_arms(source, tokens, arms, @bindings, @issues, @scopes, @frames)
     else:
       true
 
@@ -851,12 +800,12 @@ fn named_loan_conflict(tokens: Vec[syntax.Token], bindings: Vec[Binding], index:
     false
   global_conflict || known_conflict
 
-fn infer_collection_operand(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, call: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_collection_operand(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, call: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let owner: I64 = value_borrow_owner(source, tokens, argument, bindings)
   let allowed: Bool = check_argument_overlap(tokens, argument, owner, call, false, false, @bindings, @issues, false)
   if allowed:
     let issue_count: I64 = vec.len(issues)
-    let actual: TypeRef = infer_expr(source, @tokens, argument, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let actual: TypeRef = infer_expr(source, @tokens, argument, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     if type_valid(actual) && (vec.len(issues) == issue_count):
       let resolved_owner: I64 = value_borrow_owner(source, tokens, argument, bindings)
       let registered: Bool = check_argument_overlap(tokens, argument, resolved_owner, call, false, false, @bindings, @issues, true)
@@ -993,7 +942,7 @@ fn value_borrow_owner(source: Bytes, tokens: Vec[syntax.Token], value: I64, bind
           else:
             -1
 
-fn check_storage_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, type: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_storage_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, type: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let storage: I64 = memory.type_storage_kind(source, tokens, type)
   let affine: Bool = storage == 2
   if affine:
@@ -1003,7 +952,7 @@ fn check_storage_move(source: Bytes, tokens: Vec[syntax.Token], value: I64, type
       append_ownership_issue("E0347", value, @issues)
       false
     else:
-      mark_result_move(source, tokens, value, @bindings, @issues, @scopes)
+      mark_result_move(source, tokens, value, @bindings, @issues, @scopes, @frames)
   else:
     true
 
@@ -1184,7 +1133,7 @@ fn find_named_form(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name)
 
-fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, bindings: Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let string_value: Bool = kind == 3
   if string_value:
@@ -1216,7 +1165,7 @@ fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, 
               record_issue("E0349", expr, @issues)
             else:
               void
-            let moved: Bool = find_binding_moved(tokens, bindings, expr, @scopes)
+            let moved: Bool = find_binding_moved(tokens, @bindings, expr, @scopes, @frames)
             if moved:
               append_ownership_issue("E0315", expr, @issues)
               source_type(source, tokens, type)
@@ -1226,16 +1175,16 @@ fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, 
             record_issue("E0314", expr, @issues)
             invalid_type(expr)
 
-fn check_scalar_argument(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
-  let actual: TypeRef = infer_expr(source, @tokens, argument, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+fn check_scalar_argument(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
+  let actual: TypeRef = infer_expr(source, @tokens, argument, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   expect_kind(actual, kind, argument, @issues)
 
-fn infer_two_scalar_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_two_scalar_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arity: Bool = expect_arity(tokens, arguments, 2, syntax.ast_call_callee(expr), @issues)
   if arity:
     let second: I64 = syntax.ast_next(tokens, arguments)
-    let first_ok: Bool = check_scalar_argument(source, @tokens, arguments, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let second_ok: Bool = check_scalar_argument(source, @tokens, second, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let first_ok: Bool = check_scalar_argument(source, @tokens, arguments, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let second_ok: Bool = check_scalar_argument(source, @tokens, second, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     let both: Bool = first_ok && second_ok
     if both:
       scalar_type(result_kind, expr)
@@ -1244,10 +1193,10 @@ fn infer_two_scalar_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64
   else:
     invalid_type(expr)
 
-fn infer_one_scalar_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_one_scalar_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, arguments: I64, argument_kind: I64, result_kind: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arity: Bool = expect_arity(tokens, arguments, 1, syntax.ast_call_callee(expr), @issues)
   if arity:
-    let valid: Bool = check_scalar_argument(source, @tokens, arguments, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let valid: Bool = check_scalar_argument(source, @tokens, arguments, argument_kind, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     if valid:
       scalar_type(result_kind, expr)
     else:
@@ -1273,7 +1222,7 @@ fn infer_collection_new(source: Bytes, tokens: Vec[syntax.Token], expr: I64, arg
     record_issue("E0344", expr, @issues)
     invalid_type(expr)
 
-fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
   if new_call:
     infer_collection_new(source, tokens, expr, arguments, expected, 0, @issues)
@@ -1294,7 +1243,7 @@ fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, ca
           3
     let arity: Bool = expect_arity(tokens, arguments, arity_expected, callee, @issues)
     if arity:
-      let vector: TypeRef = infer_collection_operand(source, @tokens, arguments, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      let vector: TypeRef = infer_collection_operand(source, @tokens, arguments, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       let vector_ok: Bool = result_is_composite(source, tokens, vector, 0)
       if vector_ok:
         let element_type: I64 = vector.form + 2
@@ -1303,16 +1252,16 @@ fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, ca
         else:
           let second: I64 = syntax.ast_next(tokens, arguments)
           if get_call:
-            let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+            let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
             if index_ok:
               source_type(source, tokens, element_type)
             else:
               invalid_type(expr)
           else:
             if push_call:
-              let value: TypeRef = infer_expr(source, @tokens, second, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+              let value: TypeRef = infer_expr(source, @tokens, second, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
               let value_valid: Bool = type_valid(value)
-              let move_valid: Bool = check_storage_move(source, tokens, second, element_type, @bindings, @issues, @scopes)
+              let move_valid: Bool = check_storage_move(source, tokens, second, element_type, @bindings, @issues, @scopes, @frames)
               let valid: Bool = value_valid && move_valid
               if valid:
                 scalar_type(0, expr)
@@ -1320,10 +1269,10 @@ fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, ca
                 invalid_type(expr)
             else:
               let third: I64 = syntax.ast_next(tokens, second)
-              let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-              let value: TypeRef = infer_expr(source, @tokens, third, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+              let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+              let value: TypeRef = infer_expr(source, @tokens, third, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
               let value_ok: Bool = type_valid(value)
-              let move_valid: Bool = check_storage_move(source, tokens, third, element_type, @bindings, @issues, @scopes)
+              let move_valid: Bool = check_storage_move(source, tokens, third, element_type, @bindings, @issues, @scopes, @frames)
               let valid: Bool = index_ok && (value_ok && move_valid)
               if valid:
                 scalar_type(0, expr)
@@ -1335,23 +1284,23 @@ fn infer_vector_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, ca
     else:
       invalid_type(expr)
 
-fn infer_arena_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_arena_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
   if new_call:
     infer_collection_new(source, tokens, expr, arguments, expected, 1, @issues)
   else:
     let arity: Bool = expect_arity(tokens, arguments, 2, callee, @issues)
     if arity:
-      let arena: TypeRef = infer_collection_operand(source, @tokens, arguments, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      let arena: TypeRef = infer_collection_operand(source, @tokens, arguments, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       let arena_ok: Bool = result_is_composite(source, tokens, arena, 1)
       if arena_ok:
         let element_type: I64 = arena.form + 2
         let second: I64 = syntax.ast_next(tokens, arguments)
         let add_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
         if add_call:
-          let value: TypeRef = infer_expr(source, @tokens, second, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+          let value: TypeRef = infer_expr(source, @tokens, second, element_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
           let value_valid: Bool = type_valid(value)
-          let move_valid: Bool = check_storage_move(source, tokens, second, element_type, @bindings, @issues, @scopes)
+          let move_valid: Bool = check_storage_move(source, tokens, second, element_type, @bindings, @issues, @scopes, @frames)
           let contextual: Bool = expected >= 0
           let expected_type: TypeRef = if contextual:
             source_type(source, tokens, expected)
@@ -1372,7 +1321,7 @@ fn infer_arena_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, cal
             record_issue("E0344", expr, @issues)
             invalid_type(expr)
         else:
-          let identity: TypeRef = infer_expr(source, @tokens, second, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+          let identity: TypeRef = infer_expr(source, @tokens, second, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
           let id_ok: Bool = result_is_composite(source, tokens, identity, 2)
           let same_inner: Bool = if id_ok:
             type_forms_equal(source, tokens, element_type, identity.form + 2)
@@ -1389,10 +1338,10 @@ fn infer_arena_builtin(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, cal
     else:
       invalid_type(expr)
 
-fn infer_bytes_freeze(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_bytes_freeze(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arity: Bool = expect_arity(tokens, arguments, 1, callee, @issues)
   if arity:
-    let vector: TypeRef = infer_expr(source, @tokens, arguments, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let vector: TypeRef = infer_expr(source, @tokens, arguments, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     let vector_ok: Bool = result_is_composite(source, tokens, vector, 0)
     let inner: I64 = if vector_ok:
       vector.form + 2
@@ -1405,7 +1354,7 @@ fn infer_bytes_freeze(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, call
     let byte_vector: Bool = inner_kind == 2
     let valid: Bool = vector_ok && byte_vector
     if valid:
-      let moved: Bool = check_owned_value(source, tokens, arguments, false, @bindings, @issues, @scopes)
+      let moved: Bool = check_owned_value(source, tokens, arguments, false, @bindings, @issues, @scopes, @frames)
       if moved:
         scalar_type(4, expr)
       else:
@@ -1416,12 +1365,12 @@ fn infer_bytes_freeze(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, call
   else:
     invalid_type(expr)
 
-fn infer_read_file(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_read_file(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arity: Bool = expect_arity(tokens, arguments, 2, callee, @issues)
   if arity:
     let second: I64 = syntax.ast_next(tokens, arguments)
-    let path_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let output: TypeRef = infer_collection_operand(source, @tokens, second, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let path_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let output: TypeRef = infer_collection_operand(source, @tokens, second, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     let vector_ok: Bool = result_is_composite(source, tokens, output, 0)
     let inner: I64 = if vector_ok:
       output.form + 2
@@ -1442,7 +1391,7 @@ fn infer_read_file(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee:
   else:
     invalid_type(expr)
 
-fn infer_tcp_exchange(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_tcp_exchange(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arity: Bool = expect_arity(tokens, arguments, 6, callee, @issues)
   if arity:
     let second: I64 = syntax.ast_next(tokens, arguments)
@@ -1450,12 +1399,12 @@ fn infer_tcp_exchange(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, call
     let fourth: I64 = syntax.ast_next(tokens, third)
     let fifth: I64 = syntax.ast_next(tokens, fourth)
     let sixth: I64 = syntax.ast_next(tokens, fifth)
-    let address_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let port_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let request_ok: Bool = check_scalar_argument(source, @tokens, third, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let limit_ok: Bool = check_scalar_argument(source, @tokens, fourth, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let timeout_ok: Bool = check_scalar_argument(source, @tokens, fifth, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-    let output: TypeRef = infer_collection_operand(source, @tokens, sixth, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let address_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let port_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let request_ok: Bool = check_scalar_argument(source, @tokens, third, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let limit_ok: Bool = check_scalar_argument(source, @tokens, fourth, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let timeout_ok: Bool = check_scalar_argument(source, @tokens, fifth, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+    let output: TypeRef = infer_collection_operand(source, @tokens, sixth, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     let vector_ok: Bool = result_is_composite(source, tokens, output, 0)
     let inner: I64 = if vector_ok:
       output.form + 2
@@ -1484,10 +1433,10 @@ fn infer_zero_scalar_builtin(tokens: Vec[syntax.Token], expr: I64, arguments: I6
   else:
     invalid_type(expr)
 
-fn infer_builtin_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_builtin_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
   if tcp:
-    infer_tcp_exchange(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_tcp_exchange(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   else:
     let clock: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.monotonic_ms")
     if clock:
@@ -1495,39 +1444,39 @@ fn infer_builtin_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, call
     else:
       let math: Bool = builtin_group_math(source, tokens, callee)
       if math:
-        infer_two_scalar_builtin(source, @tokens, expr, arguments, 3, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+        infer_two_scalar_builtin(source, @tokens, expr, arguments, 3, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       else:
         let compare: Bool = builtin_group_compare(source, tokens, callee)
         if compare:
-          infer_two_scalar_builtin(source, @tokens, expr, arguments, 3, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+          infer_two_scalar_builtin(source, @tokens, expr, arguments, 3, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
         else:
           let bool_not: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
           if bool_not:
-            infer_one_scalar_builtin(source, @tokens, expr, arguments, 1, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+            infer_one_scalar_builtin(source, @tokens, expr, arguments, 1, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
           else:
             let bool_binary: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.and") || syntax.ast_node_text_is(source, tokens, callee, "bool.or")
             if bool_binary:
-              infer_two_scalar_builtin(source, @tokens, expr, arguments, 1, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+              infer_two_scalar_builtin(source, @tokens, expr, arguments, 1, 1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
             else:
               let u8_to_i64: Bool = syntax.ast_node_text_is(source, tokens, callee, "u8.to_i64")
               if u8_to_i64:
-                infer_one_scalar_builtin(source, @tokens, expr, arguments, 2, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                infer_one_scalar_builtin(source, @tokens, expr, arguments, 2, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
               else:
                 let i64_to_u8: Bool = syntax.ast_node_text_is(source, tokens, callee, "i64.to_u8")
                 if i64_to_u8:
-                  infer_one_scalar_builtin(source, @tokens, expr, arguments, 3, 2, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                  infer_one_scalar_builtin(source, @tokens, expr, arguments, 3, 2, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                 else:
                   let bytes_len: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.len")
                   if bytes_len:
-                    infer_one_scalar_builtin(source, @tokens, expr, arguments, 4, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                    infer_one_scalar_builtin(source, @tokens, expr, arguments, 4, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                   else:
                     let bytes_get: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.get")
                     if bytes_get:
                       let arity: Bool = expect_arity(tokens, arguments, 2, callee, @issues)
                       if arity:
                         let second: I64 = syntax.ast_next(tokens, arguments)
-                        let bytes_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-                        let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                        let bytes_ok: Bool = check_scalar_argument(source, @tokens, arguments, 4, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+                        let index_ok: Bool = check_scalar_argument(source, @tokens, second, 3, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                         let valid: Bool = bytes_ok && index_ok
                         if valid:
                           scalar_type(2, expr)
@@ -1538,27 +1487,27 @@ fn infer_builtin_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, call
                     else:
                       let freeze: Bool = syntax.ast_node_text_is(source, tokens, callee, "bytes.freeze")
                       if freeze:
-                        infer_bytes_freeze(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                        infer_bytes_freeze(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                       else:
                         let print_i64: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_i64")
                         if print_i64:
-                          infer_one_scalar_builtin(source, @tokens, expr, arguments, 3, 0, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                          infer_one_scalar_builtin(source, @tokens, expr, arguments, 3, 0, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                         else:
                           let print_bytes: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.print_bytes")
                           let println: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.println")
                           let bytes_output: Bool = print_bytes || println
                           if bytes_output:
-                            infer_one_scalar_builtin(source, @tokens, expr, arguments, 4, 0, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                            infer_one_scalar_builtin(source, @tokens, expr, arguments, 4, 0, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                           else:
                             let read_file: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
                             if read_file:
-                              infer_read_file(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                              infer_read_file(source, @tokens, expr, callee, arguments, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                             else:
                               let vector_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new") || (syntax.ast_node_text_is(source, tokens, callee, "vec.len") || (syntax.ast_node_text_is(source, tokens, callee, "vec.get") || (syntax.ast_node_text_is(source, tokens, callee, "vec.push") || syntax.ast_node_text_is(source, tokens, callee, "vec.set"))))
                               if vector_call:
-                                infer_vector_builtin(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                                infer_vector_builtin(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                               else:
-                                infer_arena_builtin(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                                infer_arena_builtin(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
 
 fn check_recursive_argument_identity(source: Bytes, tokens: Vec[syntax.Token], argument: I64, parameter: I64, recursive: Bool, issues: @Vec[Issue]) -> Bool effects[alloc, partial]:
   let borrowed: Bool = parameter_is_exclusive(source, tokens, parameter)
@@ -1578,15 +1527,15 @@ fn check_recursive_argument_identity(source: Bytes, tokens: Vec[syntax.Token], a
   else:
     true
 
-fn check_owned_argument(source: Bytes, tokens: Vec[syntax.Token], argument: I64, parameter: I64, recursive: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_owned_argument(source: Bytes, tokens: Vec[syntax.Token], argument: I64, parameter: I64, recursive: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let mode: I64 = syntax.ast_node_mode(tokens, parameter)
   let transfer: Bool = mode == 2
   if transfer:
-    check_owned_value(source, tokens, argument, recursive, @bindings, @issues, @scopes)
+    check_owned_value(source, tokens, argument, recursive, @bindings, @issues, @scopes, @frames)
   else:
     true
 
-fn check_owned_value(source: Bytes, tokens: Vec[syntax.Token], argument: I64, recursive: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_owned_value(source: Bytes, tokens: Vec[syntax.Token], argument: I64, recursive: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let source_mode: I64 = value_borrow_mode(source, tokens, argument, bindings)
   let borrowed: Bool = source_mode > 0
   let kind: I64 = syntax.ast_node_kind(tokens, argument)
@@ -1603,7 +1552,7 @@ fn check_owned_value(source: Bytes, tokens: Vec[syntax.Token], argument: I64, re
     if recursive:
       true
     else:
-      mark_named_move(tokens, argument, @bindings, @issues, @scopes)
+      mark_named_move(tokens, argument, @bindings, @issues, @scopes, @frames)
   else:
     append_ownership_issue("E0347", argument, @issues)
     false
@@ -1618,7 +1567,7 @@ fn check_argument_mode(tokens: Vec[syntax.Token], argument: I64, parameter: I64,
     append_ownership_issue("E0360", argument, @issues)
     false
 
-fn check_call_arguments(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, parameter: I64, parent: I64, params: I64, return_type: I64, callee: I64, call: I64, recursive: Bool, unknown_owner: Bool, restricted: Bool, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_call_arguments(source: Bytes, tokens: @Vec[syntax.Token], argument: I64, parameter: I64, parent: I64, params: I64, return_type: I64, callee: I64, call: I64, recursive: Bool, unknown_owner: Bool, restricted: Bool, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let argument_kind: I64 = syntax.ast_node_kind(tokens, argument)
   let parameter_kind: I64 = syntax.ast_node_kind(tokens, parameter)
   let arguments_done: Bool = argument_kind == 1
@@ -1646,12 +1595,12 @@ fn check_call_arguments(source: Bytes, tokens: @Vec[syntax.Token], argument: I64
     let identity: Bool = check_recursive_argument_identity(source, tokens, argument, parameter, recursive, @issues)
     let issue_count: I64 = vec.len(issues)
     let actual: TypeRef = if no_overlap:
-      infer_expr(source, @tokens, argument, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      infer_expr(source, @tokens, argument, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     else:
       invalid_type(argument)
     let actual_valid: Bool = type_valid(actual)
     let move_valid: Bool = if actual_valid:
-      check_owned_argument(source, tokens, argument, parameter, recursive, @bindings, @issues, @scopes)
+      check_owned_argument(source, tokens, argument, parameter, recursive, @bindings, @issues, @scopes, @frames)
     else:
       true
     let storage: I64 = memory.type_storage_kind(source, tokens, expected)
@@ -1668,15 +1617,15 @@ fn check_call_arguments(source: Bytes, tokens: @Vec[syntax.Token], argument: I64
     let actual_mode: I64 = syntax.ast_argument_mode(tokens, argument)
     let next_unknown_owner: Bool = unknown_owner || (mode_matches && (owner_index == -2))
     let next_restricted: Bool = restricted || (mode_matches && (actual_mode > 0))
-    let remaining: Bool = recur(source, @tokens, next_argument, next_parameter, parent, params, return_type, callee, call, recursive, next_unknown_owner, next_restricted, @bindings, @facts, @issues, @scopes)
+    let remaining: Bool = recur(source, @tokens, next_argument, next_parameter, parent, params, return_type, callee, call, recursive, next_unknown_owner, next_restricted, @bindings, @facts, @issues, @scopes, @frames)
     valid && remaining
 
-fn infer_user_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, item: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_user_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, callee: I64, arguments: I64, item: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let function: Bool = item_has_kind(source, tokens, item, 0)
   if function:
     let parameters: I64 = syntax.ast_function_parameters(item)
     let first_parameter: I64 = syntax.ast_parameters_first(parameters)
-    let valid: Bool = check_call_arguments(source, @tokens, arguments, first_parameter, parent, params, return_type, callee, expr, false, false, false, @bindings, @facts, @issues, @scopes)
+    let valid: Bool = check_call_arguments(source, @tokens, arguments, first_parameter, parent, params, return_type, callee, expr, false, false, false, @bindings, @facts, @issues, @scopes, @frames)
     if valid:
       let result_type: I64 = syntax.ast_function_return_type(tokens, item)
       source_type(source, tokens, result_type)
@@ -1696,7 +1645,7 @@ fn replacement_root(source: Bytes, tokens: Vec[syntax.Token], place: I64) -> I64
     else:
       -1
 
-fn infer_replace(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_replace(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let place: I64 = syntax.ast_call_arguments(expr)
   let arity: Bool = expect_arity(tokens, place, 2, syntax.ast_call_callee(expr), @issues)
   if arity:
@@ -1717,7 +1666,7 @@ fn infer_replace(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I
       else:
         append_ownership_issue("E0360", value, @issues)
       let before: I64 = vec.len(issues)
-      let actual: TypeRef = infer_expr(source, @tokens, place, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      let actual: TypeRef = infer_expr(source, @tokens, place, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       let affine: Bool = type_valid(actual) && (memory.type_storage_kind(source, tokens, actual.form) == 2)
       let mode: I64 = named_binding_mode(tokens, root, bindings)
       let owner: I64 = value_borrow_owner(source, tokens, root, bindings)
@@ -1735,8 +1684,8 @@ fn infer_replace(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I
       if valid_place:
         let loan: Bool = check_loan_overlap(tokens, place, 1, owner, expr, false, false, @bindings, @issues, true)
         if loan:
-          let replacement: TypeRef = infer_expr(source, @tokens, value, actual.form, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-          let transferred: Bool = check_storage_move(source, tokens, value, actual.form, @bindings, @issues, @scopes)
+          let replacement: TypeRef = infer_expr(source, @tokens, value, actual.form, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+          let transferred: Bool = check_storage_move(source, tokens, value, actual.form, @bindings, @issues, @scopes, @frames)
           if type_valid(replacement) && transferred:
             actual
           else:
@@ -1748,29 +1697,29 @@ fn infer_replace(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I
   else:
     invalid_type(expr)
 
-fn infer_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   if syntax.ast_node_text_is(source, tokens, callee, "mem.replace"):
-    infer_replace(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_replace(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   else:
-    infer_ordinary_call(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_ordinary_call(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
 
-fn infer_ordinary_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_ordinary_call(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   let arguments: I64 = syntax.ast_call_arguments(expr)
   let builtin: Bool = builtin_known(source, tokens, callee)
   if builtin:
     let modes_valid: Bool = check_builtin_argument_modes(source, tokens, callee, arguments, 0, bindings, @issues)
-    let inferred: TypeRef = infer_builtin_call(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let inferred: TypeRef = infer_builtin_call(source, @tokens, expr, callee, arguments, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     if modes_valid:
       inferred
     else:
       invalid_type(expr)
   else:
     let item: I64 = linked_item(tokens, callee)
-    infer_user_call(source, @tokens, expr, callee, arguments, item, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_user_call(source, @tokens, expr, callee, arguments, item, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
 
-fn check_make_fields(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, definition: I64, parent: I64, params: I64, return_type: I64, record_name: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_make_fields(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, definition: I64, parent: I64, params: I64, return_type: I64, record_name: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let cursor_kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let definition_kind: I64 = syntax.ast_node_kind(tokens, definition)
   let cursor_done: Bool = cursor_kind == 1
@@ -1795,26 +1744,26 @@ fn check_make_fields(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, def
       syntax.ast_node_set_link(@tokens, cursor, definition)
       let field_type: I64 = syntax.ast_member_value(definition)
       let value: I64 = syntax.ast_member_value(cursor)
-      let actual: TypeRef = infer_expr(source, @tokens, value, field_type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      let actual: TypeRef = infer_expr(source, @tokens, value, field_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       let actual_valid: Bool = type_valid(actual)
-      let move_valid: Bool = check_storage_move(source, tokens, value, field_type, @bindings, @issues, @scopes)
+      let move_valid: Bool = check_storage_move(source, tokens, value, field_type, @bindings, @issues, @scopes, @frames)
       let valid: Bool = actual_valid && move_valid
       let next_cursor: I64 = syntax.ast_next(tokens, cursor)
       let next_definition: I64 = syntax.ast_next(tokens, definition)
-      let remaining: Bool = recur(source, @tokens, next_cursor, next_definition, parent, params, return_type, record_name, @bindings, @facts, @issues, @scopes)
+      let remaining: Bool = recur(source, @tokens, next_cursor, next_definition, parent, params, return_type, record_name, @bindings, @facts, @issues, @scopes, @frames)
       valid && remaining
     else:
       record_issue("E0352", name, @issues)
       false
 
-fn infer_make(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_make(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let record_name: I64 = syntax.ast_make_type(expr)
   let item: I64 = linked_item(tokens, record_name)
   let record: Bool = item_has_kind(source, tokens, item, 1)
   if record:
     let definitions: I64 = syntax.ast_data_members_first(item)
     let provided: I64 = syntax.ast_make_fields(expr)
-    let valid: Bool = check_make_fields(source, @tokens, provided, definitions, parent, params, return_type, record_name, @bindings, @facts, @issues, @scopes)
+    let valid: Bool = check_make_fields(source, @tokens, provided, definitions, parent, params, return_type, record_name, @bindings, @facts, @issues, @scopes, @frames)
     if valid:
       source_type(source, tokens, record_name)
     else:
@@ -1823,10 +1772,10 @@ fn infer_make(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64,
     record_issue("E0352", record_name, @issues)
     invalid_type(expr)
 
-fn infer_get(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_get(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let value: I64 = syntax.ast_get_value(expr)
   let field: I64 = syntax.ast_get_field(tokens, expr)
-  let owner: TypeRef = infer_expr(source, @tokens, value, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+  let owner: TypeRef = infer_expr(source, @tokens, value, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   let source_type: Bool = owner.kind == -1
   if source_type:
     let item: I64 = linked_item(tokens, owner.form)
@@ -1846,7 +1795,7 @@ fn infer_get(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, 
     record_issue("E0344", value, @issues)
     invalid_type(expr)
 
-fn check_payload(source: Bytes, tokens: @Vec[syntax.Token], value: I64, type: I64, parent: I64, params: I64, return_type: I64, case_name: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Bool effects[alloc, partial]:
+fn check_payload(source: Bytes, tokens: @Vec[syntax.Token], value: I64, type: I64, parent: I64, params: I64, return_type: I64, case_name: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Bool effects[alloc, partial]:
   let value_kind: I64 = syntax.ast_node_kind(tokens, value)
   let type_kind: I64 = syntax.ast_node_kind(tokens, type)
   let values_done: Bool = value_kind == 1
@@ -1860,16 +1809,16 @@ fn check_payload(source: Bytes, tokens: @Vec[syntax.Token], value: I64, type: I6
       record_issue("E0351", case_name, @issues)
       false
   else:
-    let actual: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    let actual: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     let actual_valid: Bool = type_valid(actual)
-    let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes)
+    let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes, @frames)
     let valid: Bool = actual_valid && move_valid
     let next_value: I64 = syntax.ast_next(tokens, value)
     let next_type: I64 = syntax.ast_next(tokens, type)
-    let remaining: Bool = recur(source, @tokens, next_value, next_type, parent, params, return_type, case_name, @bindings, @facts, @issues, @scopes)
+    let remaining: Bool = recur(source, @tokens, next_value, next_type, parent, params, return_type, case_name, @bindings, @facts, @issues, @scopes, @frames)
     valid && remaining
 
-fn infer_case(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_case(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let variant_name: I64 = syntax.ast_case_type(expr)
   let case_name: I64 = syntax.ast_case_name(tokens, expr)
   let item: I64 = linked_item(tokens, variant_name)
@@ -1881,7 +1830,7 @@ fn infer_case(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64,
       syntax.ast_node_set_link(@tokens, expr, case_form)
       let payload: I64 = syntax.ast_case_payload(tokens, expr)
       let payload_type: I64 = syntax.ast_member_value(case_form)
-      let valid: Bool = check_payload(source, @tokens, payload, payload_type, parent, params, return_type, case_name, @bindings, @facts, @issues, @scopes)
+      let valid: Bool = check_payload(source, @tokens, payload, payload_type, parent, params, return_type, case_name, @bindings, @facts, @issues, @scopes, @frames)
       if valid:
         source_type(source, tokens, variant_name)
       else:
@@ -1961,7 +1910,7 @@ fn ordered_arm_parent(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, ca
 fn ordered_arm_body(tokens: Vec[syntax.Token], cursor: I64, case_cursor: I64, boolean_match: Bool) -> I64 effects[partial]:
   syntax.ast_arm_body(tokens, cursor)
 
-fn infer_match_arms_ordered(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, variant_item: I64, case_cursor: I64, match_expr: I64, source_mode: I64, source_owner: I64, expected: I64, parent: I64, params: I64, return_type: I64, has_first: Bool, first: TypeRef, seen_true: Bool, seen_false: Bool, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope], previous_arm: I64) -> TypeRef effects[alloc, partial]:
+fn infer_match_arms_ordered(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, variant_item: I64, case_cursor: I64, match_expr: I64, source_mode: I64, source_owner: I64, expected: I64, parent: I64, params: I64, return_type: I64, has_first: Bool, first: TypeRef, seen_true: Bool, seen_false: Bool, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arm_kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let arms_done: Bool = arm_kind == 1
   let boolean_match: Bool = variant_item < 0
@@ -1971,8 +1920,6 @@ fn infer_match_arms_ordered(source: Bytes, tokens: @Vec[syntax.Token], cursor: I
     syntax.ast_node_kind(tokens, case_cursor)
   let cases_done: Bool = case_kind == 1
   if arms_done:
-    let enclosing_scope: I64 = current_move_scope(scopes)
-    join_move_arms(@scopes, previous_arm, enclosing_scope)
     let bool_complete: Bool = seen_true && seen_false
     let exact: Bool = if boolean_match:
       bool_complete
@@ -2018,10 +1965,10 @@ fn infer_match_arms_ordered(source: Bytes, tokens: @Vec[syntax.Token], cursor: I
       let arm_parent: I64 = ordered_arm_parent(source, @tokens, cursor, case_cursor, pattern, boolean_match, source_mode, source_owner, parent, @bindings, @issues)
       let parent_valid: Bool = arm_parent >= -1
       let body: I64 = ordered_arm_body(tokens, cursor, case_cursor, boolean_match)
-      let enclosing_scope: I64 = current_move_scope(scopes)
-      let arm_scope: I64 = begin_move_arm(@scopes, previous_arm)
-      let actual: TypeRef = infer_expr(source, @tokens, body, expected, arm_parent, params, return_type, @bindings, @facts, @issues, @scopes)
-      end_move_arm(@scopes, arm_scope, enclosing_scope)
+      let enclosing_scope: I64 = ownership.current(scopes)
+      let arm_scope: I64 = ownership.begin(@scopes, 0)
+      let actual: TypeRef = infer_expr(source, @tokens, body, expected, arm_parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+      ownership.end(@scopes, arm_scope, enclosing_scope)
       let actual_valid: Bool = type_valid(actual)
       let compare_first: Bool = has_first && (expected < 0)
       let same_type: Bool = if compare_first:
@@ -2043,16 +1990,22 @@ fn infer_match_arms_ordered(source: Bytes, tokens: @Vec[syntax.Token], cursor: I
         syntax.ast_next(tokens, case_cursor)
       let next_seen_true: Bool = seen_true || true_pattern
       let next_seen_false: Bool = seen_false || false_pattern
-      let remaining: TypeRef = recur(source, @tokens, next_arm, variant_item, next_case, match_expr, source_mode, source_owner, expected, parent, params, return_type, true, next_first, next_seen_true, next_seen_false, @bindings, @facts, @issues, @scopes, arm_scope)
+      let remaining: TypeRef = recur(source, @tokens, next_arm, variant_item, next_case, match_expr, source_mode, source_owner, expected, parent, params, return_type, true, next_first, next_seen_true, next_seen_false, @bindings, @facts, @issues, @scopes, @frames)
       let valid: Bool = pattern_valid && (parent_valid && (actual_valid && same_type))
       if valid:
         remaining
       else:
         invalid_type(body)
 
-fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn count_move_arms(tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    count
+  else:
+    recur(tokens, syntax.ast_next(tokens, cursor), count + 1)
+
+fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let value: I64 = syntax.ast_match_value(expr)
-  let scrutinee: TypeRef = infer_expr(source, @tokens, value, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+  let scrutinee: TypeRef = infer_expr(source, @tokens, value, -1, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   let source_mode: I64 = value_borrow_mode(source, tokens, value, bindings)
   let source_owner: I64 = if source_mode > 0:
     value_borrow_owner(source, tokens, value, bindings)
@@ -2085,7 +2038,7 @@ fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, exp
     else:
       memory.type_storage_kind(source, tokens, scrutinee.form) == 2
     let move_valid: Bool = if affine && (source_mode == 0):
-      mark_result_move(source, tokens, value, @bindings, @issues, @scopes)
+      mark_result_move(source, tokens, value, @bindings, @issues, @scopes, @frames)
     else:
       true
     let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
@@ -2094,7 +2047,11 @@ fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, exp
     else:
       syntax.ast_data_members_first(variant_item)
     let initial: TypeRef = invalid_type(expr)
-    let result: TypeRef = infer_match_arms_ordered(source, @tokens, first_arm, variant_item, first_case, expr, source_mode, source_owner, expected, parent, params, return_type, false, initial, false, false, @bindings, @facts, @issues, @scopes, -1)
+    let enclosing_scope: I64 = ownership.current(scopes)
+    let arm_count: I64 = count_move_arms(tokens, first_arm, 0)
+    let branch_scope: I64 = ownership.begin(@scopes, arm_count)
+    let result: TypeRef = infer_match_arms_ordered(source, @tokens, first_arm, variant_item, first_case, expr, source_mode, source_owner, expected, parent, params, return_type, false, initial, false, false, @bindings, @facts, @issues, @scopes, @frames)
+    ownership.end(@scopes, branch_scope, enclosing_scope)
     if move_valid:
       result
     else:
@@ -2103,24 +2060,24 @@ fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, exp
     record_issue("E0344", value, @issues)
     invalid_type(expr)
 
-fn infer_fork(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_fork(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let inner: I64 = syntax.ast_fork_body(expr)
   let arity: Bool = expect_arity(tokens, inner, 1, syntax.ast_expression_marker(expr), @issues)
   if arity:
-    infer_expr(source, @tokens, inner, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_expr(source, @tokens, inner, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   else:
     invalid_type(expr)
 
-fn infer_recur(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_recur(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let arguments: I64 = syntax.ast_recur_arguments(expr)
   let first_parameter: I64 = syntax.ast_parameters_first(params)
-  let valid: Bool = check_call_arguments(source, @tokens, arguments, first_parameter, parent, params, return_type, syntax.ast_expression_marker(expr), expr, true, false, false, @bindings, @facts, @issues, @scopes)
+  let valid: Bool = check_call_arguments(source, @tokens, arguments, first_parameter, parent, params, return_type, syntax.ast_expression_marker(expr), expr, true, false, false, @bindings, @facts, @issues, @scopes, @frames)
   if valid:
     source_type(source, tokens, return_type)
   else:
     invalid_type(expr)
 
-fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let name: I64 = syntax.ast_let_name(expr)
   let type: I64 = syntax.ast_let_type(expr)
   let value: I64 = syntax.ast_let_value(tokens, expr)
@@ -2130,7 +2087,7 @@ fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
     -1
   else:
     type
-  let value_type: TypeRef = infer_expr(source, @tokens, value, value_expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+  let value_type: TypeRef = infer_expr(source, @tokens, value, value_expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   let stored_void: Bool = (!statement) && type_contains_void(source, tokens, type)
   let value_void: Bool = type_valid(value_type) && (value_type.kind == 0)
   let discarded: Bool = statement && (!value_void)
@@ -2156,7 +2113,7 @@ fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
   else:
     -1
   let move_valid: Bool = if affine && (!borrowed):
-    mark_result_move(source, tokens, value, @bindings, @issues, @scopes)
+    mark_result_move(source, tokens, value, @bindings, @issues, @scopes, @frames)
   else:
     true
   let loan_valid: Bool = if borrowed && type_valid(value_type):
@@ -2164,7 +2121,7 @@ fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
   else:
     true
   let next_parent: I64 = add_binding(@tokens, name, type, mode, owner, mutable, parent, @bindings)
-  let body_type: TypeRef = infer_expr(source, @tokens, body, expected, next_parent, params, return_type, @bindings, @facts, @issues, @scopes)
+  let body_type: TypeRef = infer_expr(source, @tokens, body, expected, next_parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   let value_valid: Bool = type_valid(value_type)
   let body_valid: Bool = type_valid(body_type)
   let placement_valid: Bool = !(stored_void || discarded)
@@ -2174,7 +2131,7 @@ fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
   else:
     invalid_type(expr)
 
-fn infer_set(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_set(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let name: I64 = syntax.ast_set_name(expr)
   let type: I64 = find_binding_type(source, tokens, bindings, parent, name)
   let found: Bool = type >= 0
@@ -2195,9 +2152,14 @@ fn infer_set(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
       else:
         let value: I64 = syntax.ast_set_value(expr)
         let body: I64 = syntax.ast_set_body(tokens, expr)
-        let value_type: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-        let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes)
-        let body_type: TypeRef = infer_expr(source, @tokens, body, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+        let before: I64 = vec.len(issues)
+        let value_type: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+        let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes, @frames)
+        if affine && ((binding_index >= 0) && (move_valid && (type_valid(value_type) && (before == vec.len(issues))))):
+          reinitialize_binding(@bindings, binding_index, @scopes, @frames)
+        else:
+          void
+        let body_type: TypeRef = infer_expr(source, @tokens, body, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
         let valid: Bool = move_valid && (type_valid(value_type) && type_valid(body_type))
         if valid:
           body_type
@@ -2210,42 +2172,42 @@ fn infer_set(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
     record_issue("E0314", name, @issues)
     invalid_type(expr)
 
-fn infer_form(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_form(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let let_form: Bool = syntax.ast_expression_is_let(source, tokens, expr)
   if let_form:
-    infer_let(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+    infer_let(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
   else:
     let set_form: Bool = syntax.ast_expression_is_set(source, tokens, expr)
     if set_form:
-      infer_set(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      infer_set(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     else:
       let call_form: Bool = syntax.ast_expression_is_call(source, tokens, expr)
       if call_form:
-        infer_call(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+        infer_call(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       else:
         let make_form: Bool = syntax.ast_expression_is_make(source, tokens, expr)
         if make_form:
-          infer_make(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+          infer_make(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
         else:
           let get_form: Bool = syntax.ast_expression_is_get(source, tokens, expr)
           if get_form:
-            infer_get(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+            infer_get(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
           else:
             let case_form: Bool = syntax.ast_expression_is_case(source, tokens, expr)
             if case_form:
-              infer_case(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+              infer_case(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
             else:
               let match_form: Bool = syntax.ast_expression_is_match(source, tokens, expr)
               if match_form:
-                infer_match_ordered(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                infer_match_ordered(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
               else:
                 let fork_form: Bool = syntax.ast_expression_is_fork(source, tokens, expr)
                 if fork_form:
-                  infer_fork(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                  infer_fork(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
                 else:
-                  infer_recur(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+                  infer_recur(source, @tokens, expr, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
 
-fn infer_expr(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> TypeRef effects[alloc, partial]:
+fn infer_expr(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64, parent: I64, params: I64, return_type: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let failed: Bool = issues_block_inference(issues)
   if failed:
     invalid_type(expr)
@@ -2253,9 +2215,9 @@ fn infer_expr(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I6
     let kind: I64 = syntax.ast_node_kind(tokens, expr)
     let form: Bool = kind == 0
     let actual: TypeRef = if form:
-      infer_form(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      infer_form(source, @tokens, expr, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
     else:
-      infer_atom(source, tokens, expr, parent, bindings, @issues, @scopes)
+      infer_atom(source, tokens, expr, parent, @bindings, @issues, @scopes, @frames)
     finish_type(source, tokens, expr, expected, actual, @facts, @issues)
 
 fn type_form_wellformed(source: Bytes, tokens: Vec[syntax.Token], type: I64) -> Bool effects[partial]:
@@ -2559,7 +2521,7 @@ fn append_borrowed_return_issue(source: Bytes, tokens: Vec[syntax.Token], return
   else:
     void
 
-fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[MoveScope]) -> Void effects[alloc, partial]:
+fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
   let done: Bool = index >= count
   let failed: Bool = issues_block_inference(issues)
@@ -2576,7 +2538,7 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[
       let return_type: I64 = syntax.ast_function_return_type(tokens, item)
       let effects: I64 = syntax.ast_function_effects(tokens, item)
       let body: I64 = syntax.ast_function_body(tokens, item)
-      let typed: TypeRef = infer_expr(source, @tokens, body, return_type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+      let typed: TypeRef = infer_expr(source, @tokens, body, return_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
       let valid: Bool = type_valid(typed)
       if valid:
         append_borrowed_return_issue(source, tokens, return_type, body, bindings, @issues)
@@ -2586,7 +2548,7 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[
     else:
       void
     let next: I64 = index + 1
-    recur(source, @tokens, declarations, next, @bindings, @facts, @issues, @scopes)
+    recur(source, @tokens, declarations, next, @bindings, @facts, @issues, @scopes, @frames)
 
 fn retain_binding_facts(source: Bytes, tokens: Vec[syntax.Token], bindings: Vec[Binding], index: I64, facts: @Vec[Fact]) -> Void effects[partial]:
   if index >= vec.len(bindings):
@@ -2601,9 +2563,11 @@ fn retain_binding_facts(source: Bytes, tokens: Vec[syntax.Token], bindings: Vec[
 fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
   syntax.link_declaration_names(source, @tokens)
   link_declaration_locals(source, @tokens, declarations, 0)
-  let scopes: Vec[MoveScope] = vec.new()
-  vec.push(@scopes, MoveScope(parent: 1, rank: 0, active: true, next_arm: -1))
-  vec.push(@scopes, MoveScope(parent: 1, rank: 0, active: true, next_arm: -1))
+  let scopes: Vec[ownership.Scope] = vec.new()
+  let initial_scope: ownership.Scope = ownership.Scope(parent: 1, rank: 0, ancestor: 1, depth: 0, alternatives: 0, arms: 0)
+  vec.push(@scopes, initial_scope)
+  vec.push(@scopes, initial_scope)
+  let frames: Vec[ownership.Frame] = vec.new()
   let bindings: Vec[Binding] = vec.new()
   let loan_slot: Binding = Binding(name: -1, type: -1, mode: 0, mutable: false, move_scope: -1, owner: -1, parent: -1, access_call: -1, access_mode: 0)
   vec.push(@bindings, loan_slot)
@@ -2617,6 +2581,6 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     void
   else:
     check_declaration_types(source, tokens, declarations, 0, @issues)
-  check_functions(source, @tokens, declarations, 0, @bindings, @facts, @issues, @scopes)
+  check_functions(source, @tokens, declarations, 0, @bindings, @facts, @issues, @scopes, @frames)
   retain_binding_facts(source, tokens, bindings, 2, @facts)
   View(facts: facts, issues: issues)
