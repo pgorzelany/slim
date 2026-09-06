@@ -40,7 +40,7 @@ summary rather than a second copy of those records.
 
 | Milestone | Result |
 | --- | --- |
-| Core 0.1 | Executable conformance, differential checking, stable declaration identities, and genuine incremental reuse. |
+| Core 0.1 | Executable conformance, differential checking, and stable declaration identities. Historical Rust incremental reuse is not implemented in the current production compiler. |
 | Core 0.2 | Deterministic projects, canonical interfaces, validated persistent caches, and bounded module scheduling. |
 | Core 0.3 | Full self-hosted compiler parity and a modular SLIM compiler project. |
 | Toolchain cutover | The generated portable C11 seed replaced the Rust semantic compiler as the bootstrap trust artifact. |

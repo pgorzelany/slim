@@ -37,13 +37,16 @@ publicly visible component types.
 ## Derived interfaces and caches
 
 `./slimc interfaces PROJECT -o DIRECTORY` emits deterministic checked
-interfaces. Incremental caches and interfaces are derived artifacts; corrupt or
+interfaces. Whole-project caches and interfaces are derived artifacts; corrupt or
 stale data is rejected or recomputed. Neither is accepted source.
 
 ## Exact rules and common errors
 
-Checking is deterministic across relocation and worker counts. Incremental work
-is local to a changed declaration and its dependents. All conformance rows run
+Checking is deterministic across relocation and worker counts. The current session
+command estimates dependency invalidation; it does not retain checked declarations
+across edits. An artifact-cache miss checks and emits the whole project.
+See [incremental status](../../INCREMENTAL.md) for measured execution counts.
+All conformance rows run
 through the production SLIM compiler. Unknown imports, undeclared direct
 dependencies, private references, invalid exports, and paths outside the
 project are rejected.

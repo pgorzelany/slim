@@ -249,9 +249,11 @@ those subsets the natural way to write most programs.
 
 SLIM 0.9 has affine ownership, shared affine parameters by default, explicit
 `@` exclusive mutation and `^` call-boundary ownership transfer, explicit mutable bindings,
-algebraic data types, explicit effects, deterministic projects, incremental
-checking, machine-readable diagnostics, a retained typed compiler view,
+algebraic data types, explicit effects, deterministic projects, whole-project
+artifact caching, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic parallel execution.
+Retained incremental checking across edits is pending; the current session
+command reports invalidation estimates. See [the implementation status](docs/INCREMENTAL.md).
 Core 1I adds one effect-gated monotonic clock and one bounded whole TCP
 exchange, then closes without source handles. Core 1J adds one structured form
 for demonstrated effectful overlap. Core 1K adds exact finite byte

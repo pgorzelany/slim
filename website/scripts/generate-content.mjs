@@ -50,6 +50,8 @@ const developmentSources = [
   ["subsystems", "conformance", "conformance/README.md"],
   ["subsystems", "self-hosted-compiler", "selfhost/README.md"],
   ["subsystems", "website", "website/README.md"],
+  ["subsystems", "experimental-library", "library/README.md"],
+  ["subsystems", "experimental-library-reference", "library/REFERENCE.md"],
 ].map(([group, slug, sourcePath], order) => ({
   group,
   slug,
@@ -423,7 +425,7 @@ async function collectMarkdown(directory, relative = "") {
   const entries = await readdir(directory, { withFileTypes: true });
   const paths = [];
   for (const entry of entries) {
-    if (entry.isDirectory() && [".git", ".next", "node_modules", "out", "target"].includes(entry.name)) {
+    if (entry.isDirectory() && [".git", ".next", "node_modules", "out", "target", "build"].includes(entry.name)) {
       continue;
     }
     const nextRelative = relative ? `${relative}/${entry.name}` : entry.name;

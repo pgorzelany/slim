@@ -12,7 +12,7 @@ complete any milestone. Production semantics remain in SLIM and the portable C s
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Lexical binding lowering is repaired. The remaining claim audit, successor process decisions, and milestone release gate remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Lexical binding lowering is repaired. The claim audit and M0/M1 decision boundary are recorded. The complete release gate remains pending. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -951,3 +951,62 @@ ratios are 0.642 (`state_machine`) and 0.567 (`signal_network`). The seed SHA-25
 Logs, failed attempts, and sanitizer artifacts are in ignored
 `build/slim-next-shadow/`. M0 still requires the final claim audit, successor
 process decisions, and full release gate. M1-M7 remain pending.
+
+## M0 exit audit and successor boundary (2026-09-06)
+
+RFC-0123 records the M0 acceptance ledger and the boundary before M1. No change
+to AGENTS.md, FEATURE_POLICY, source syntax, production authority, ABI, or any
+performance limit is needed for the next compiler-substrate experiment. M1 typed
+identities, derived views, and retained queries still need their own accepted
+architecture specifications. The M2 policy and compatibility conflicts listed
+in RFC-0112 remain unresolved until their dependent experiments. M0 approval
+cannot serve as approval for those changes.
+
+### Review-observation ledger
+
+| RFC-0112 observation | Permanent production evidence | Result/domain |
+| --- | --- | --- |
+| Local affine assignment leaves its source available | `local-move`, `assignment-move`, `aggregate-move`, `collection-move`, conditional and field-transfer conformance rows | Exact E0315/E0347/E0349 rejections; owning destinations transfer rather than retain usable aliases |
+| Recurrence and direct/mutual recursion lack `partial` enforcement | `termination-unconditional`, `termination-direct`, `termination-mutual`, and the guard/controller/step/prefix boundary rows | Exact E0343 rejections; positive structural descent and declared-partial cases execute |
+| Snapshot estimates presented as actual work | RFC-0121 `work` campaign, including unchanged snapshots, cache hits/misses, edits and recovery | 32 real counters, fixed cap 1,000,000,000; estimates stay distinct; missing observations unknown |
+| Quadratic duplicate-declaration scan | Permanent common-prefix geometric check series and native name-lookup observations | Existing 1.25 exponent budget retained; observed lookup work bounded by the stated source-size formulas |
+| Valid moves in exclusive arms rejected | `branch-moves`, branch-join negatives, 486-path move oracle, 15,552-program reset oracle | Exact results for the enumerated domains; incomplete joins stay unavailable |
+| Infinite by-value storage accepted | Four `inline-*-cycle` rejections and `recursive-collection-layout` execution | Exact E0354 rejection of impossible inline cycles; indirection remains supported |
+| A 35-byte truncated cache traps | Production `project-cache-corruption`, every incomplete key prefix, framing/checksum/schema corruption, RFC-0121 clean-output comparisons | Exact miss/rebuild behavior for the enumerated corruptions, including length 35 |
+
+All eight subsequently preserved witnesses in `benchmarks/reproducers/` occur
+in `conformance/manifest.tsv`: nested-call and lexical loans, both enum-match
+ownership cases, owned field aliasing, definite reinitialization, formatter
+leading grouping, and shadowed initialization. Their expected diagnostics or
+native output are permanent production checks. Follow-up positive/negative
+cross-products and sanitizer/fault bounds are recorded in the preceding
+checkpoint sections; there is no known unclosed reproducer in this ledger.
+
+### Current-claim audit
+
+The design overview and project handbook still described implemented incremental
+checking; they now describe artifact caching and snapshot estimates, with links
+to observed work. README distinguishes the two measurements and names the full
+release gate. The historical Core 0.1 roadmap result now identifies Rust reuse
+as historical, outside the current production compiler. INCREMENTAL, PROJECTS,
+PERFORMANCE, QUALITY, status, and compatibility summaries retain the distinction
+between current behavior, goals, bounded evidence, and unmeasured agent outcomes.
+No historical measurement or RFC is silently relabelled for the current compiler.
+
+The website audit exposed two existing unclassified library documents and stale
+archive counts frozen at 109 RFCs. Both experimental-library documents are now
+published; RFC status and search counts are checked against canonical source
+files, while exact legacy disposition checks remain. Build output is excluded
+from source discovery, consistently with the existing ignored generated-output
+roots. Publication still accounts for every actual Markdown source exactly once.
+RFC-0111 remains proposed: the experimental library is a repository corpus,
+not newly added to the 0.9 release manifest.
+
+### Final gate status
+
+The complete `scripts/verify-0.9.sh` gate remains pending on the closure revision.
+Its package step requires committed, clean included sources. M0 is not marked
+complete until repository verification, two-archive reproducibility, clean
+installation/bootstrap/execution, ABI mismatch rejection, and website checks
+all pass. Bounded campaigns establish their named domains; universal safety and
+agent effectiveness remain unknown, and M1-M7 implementation remains pending.

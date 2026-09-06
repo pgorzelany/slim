@@ -139,7 +139,10 @@ test("Development exposes all collections and separate word statistics", async (
   assert.match(development, /Evidence archive/);
 
   const evidence = await render("/development/evidence");
-  assert.match(evidence, /27 reports|Find a measurement/);
+  assert.match(evidence, /Find a measurement/);
+  for (const report of generated.development.evidence) {
+    assert.ok(evidence.includes(report.route), `missing evidence route ${report.route}`);
+  }
   assert.match(evidence, /historical/);
   assert.match(evidence, /2026-07-27/);
 });
@@ -150,7 +153,7 @@ test("RFC index filters records and detail pages expose disposition and ratings"
   assert.match(index, /All statuses/);
   assert.match(index, /All kinds/);
   assert.match(index, /RFC-0110/);
-  assert.match(index, /100 accepted/);
+  assert.ok(index.includes(`${generated.rfcCounts.accepted} accepted`));
   assert.match(index, /9 rejected/);
 
   const detail = await render("/rfcs/0108-documentation-and-rfc-process");

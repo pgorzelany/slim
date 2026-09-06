@@ -1,6 +1,6 @@
 # SLIM — Small Language for Intelligent Machines
 
-SLIM stands for **Small Language for Intelligent Machines**. It is an
+SLIM stands for **Small Language for Intelligent Machines**. It is a
 compact systems language designed for AI-generated programs: small
 canonical syntax, strong static typing, explicit effects, affine ownership,
 default shared borrows, explicit `@` mutation and `^` call-boundary transfer, deterministic
@@ -33,9 +33,11 @@ The accepted canonical Core and compiler commands are documented in
 recorded in [DESIGN.md](DESIGN.md). Sequenced implementation milestones and
 their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 
-The [experimental source library](library/README.md) contains reusable modules,
+In a repository checkout, the [experimental source library](library/README.md)
+contains reusable modules,
 substantial application workloads, canonical API/reference tools, and a seeded
-typed source generator. Its deterministic corpus gate is:
+typed source generator. It is outside the 0.9 source-release manifest while RFC-0111 remains proposed.
+Its deterministic corpus gate is:
 
     ./scripts/check-library-corpus.sh
 
@@ -54,17 +56,22 @@ This runs formatting, Clippy, unit and integration tests, feature-governance
 checks, the self-host fixed-point proof, frontend and direct-reduction scaling
 checks, and sanitized compiler and native execution tests. It also runs every
 conformance fixture through the production SLIM compiler, checks reduction
-idempotence and behavior preservation, and checks incremental work bounds.
+idempotence and behavior preservation, and checks both snapshot invalidation
+estimates and observed compiler work. Retained incremental checking is pending;
+see [the measured status](docs/INCREMENTAL.md).
+
+The full release and website gate is `./scripts/verify-0.9.sh`.
 
 For the bootstrap proof alone:
 
     ./bootstrap.sh
 
-For the executable Core oracle and incremental measurements:
+For the executable Core oracle and compiler measurements:
 
     cargo run --bin slim-conform -- differential
     cargo run --release --bin slim-bench -- performance
     cargo run --release --bin slim-bench -- incremental
+    cargo run --release --bin slim-bench -- work
     cargo run --release --bin slim-bench -- project
     cargo run --release --bin slim-bench -- applications
     cargo run --release --bin slim-bench -- compare

@@ -33,7 +33,7 @@ async function collectFiles(directory, relative = "") {
   for (const entry of entries) {
     if (
       entry.isDirectory()
-      && [".git", ".next", "node_modules", "out", "target"].includes(entry.name)
+      && [".git", ".next", "node_modules", "out", "target", "build"].includes(entry.name)
     ) {
       continue;
     }
@@ -219,14 +219,18 @@ test("surface JSON exactly projects accepted RFC ownership", async () => {
 });
 
 test("RFC migration preserves legacy history and validates the new process", async () => {
-  assert.equal(generated.rfcs.length, 109);
-  assert.deepEqual(generated.rfcCounts, {
-    proposed: 0,
-    accepted: 100,
-    rejected: 9,
-    withdrawn: 0,
-    superseded: 0,
-  });
+  const sourceFiles = (await readdir(path.join(repositoryRoot, "design/rfcs")))
+    .filter((name) => name.endsWith(".md")).sort();
+  assert.deepEqual(generated.rfcs.map((rfc) => path.basename(rfc.path)).sort(), sourceFiles);
+  const sourceCounts = { proposed: 0, accepted: 0, rejected: 0, withdrawn: 0, superseded: 0 };
+  for (const name of sourceFiles) {
+    const source = await readFile(path.join(repositoryRoot, "design/rfcs", name), "utf8");
+    const status = source.match(/^Status:\s*(.+)$/m)?.[1].trim();
+    assert.ok(Object.hasOwn(sourceCounts, status), `${name}: invalid status`);
+    sourceCounts[status] += 1;
+    assert.equal(generated.rfcs.find((rfc) => path.basename(rfc.path) === name)?.status, status);
+  }
+  assert.deepEqual(generated.rfcCounts, sourceCounts);
   const legacy = generated.rfcs.filter((rfc) => rfc.process === "legacy");
   assert.equal(legacy.filter((rfc) => rfc.status === "accepted").length, 98);
   assert.equal(legacy.filter((rfc) => rfc.status === "rejected").length, 8);
@@ -279,7 +283,7 @@ test("algorithm gallery is generated from all comparative sources", async () => 
   assert.deepEqual(websiteSlimSources, []);
 });
 
-test("search keeps current, development, RFC, and evidence scopes distinct", () => {
+test("search keeps current, development, RFC, and evidence scopes distinct", async () => {
   const counts = Object.fromEntries(
     ["current", "development", "rfc", "evidence"].map((scope) => [
       scope,
@@ -288,9 +292,9 @@ test("search keeps current, development, RFC, and evidence scopes distinct", () 
   );
   assert.deepEqual(counts, {
     current: 38,
-    development: 19,
-    rfc: 109,
-    evidence: 27,
+    development: 21,
+    rfc: (await readdir(path.join(repositoryRoot, "design/rfcs"))).filter((name) => name.endsWith(".md")).length,
+    evidence: (await readdir(path.join(repositoryRoot, "benchmarks/results"))).filter((name) => name.endsWith(".md")).length,
   });
   assert.equal(new Set(search.map((entry) => `${entry.scope}:${entry.route}`)).size, search.length);
   for (const entry of search) {
