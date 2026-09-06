@@ -1,0 +1,8 @@
+module formatter_leading_group
+
+fn exercise(value: Vec[Bytes]) -> I64:
+  let alias: Vec[Bytes] = value
+  vec.len(alias) + vec.len(value) - 2
+
+fn main(args: Vec[Bytes]) -> I64:
+  exercise(args)

@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call-argument loans, and termination-effect enforcement validated. Field transfers, longer-lived aliases, and actual-work instrumentation remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local borrow loans, and termination-effect enforcement validated. Field transfers, borrowed enum payloads, reinitialization, formatter round trips, and actual-work instrumentation remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -358,3 +358,82 @@ M0 remains in progress. Projected ownership, longer-lived alias tracking,
 actual checker/generator/cache work counters, and the needed successor policy
 decisions remain before milestone closure. M1-M7 and controlled agent outcomes
 are still pending.
+
+## Local borrow loan checkpoint (2026-09-06)
+
+RFC-0116 extends existing indexed loan records to the lexical lifetime of a
+local initialized from borrowed affine storage. It also checks affine assignment
+as a restricted access to its target. Shared reads, independent known owners,
+scalar copies, and mutation or transfer after scope exit remain accepted.
+Unknown origins remain conservative; shadowing an alias does not end its scope.
+
+The retained production compiler from `d6eeede` accepts
+[the local-borrow reproducer](../reproducers/local_borrow_loan.slim). Growing its
+exclusive vector parameter reallocates storage while the local alias still
+refers to the old buffer. ASan reports an eight-byte heap-use-after-free. The
+new production checker rejects the exact witness at `E0349@282:287`, before C
+generation. Seven additional formerly accepted rejection fixtures cover builtin
+growth, nested aliases, shadowing, affine replacement, moving an outer collection
+while an element is borrowed, and unknown-origin mutation and transfer.
+
+Eight positive native fixtures cover shared nesting, independent owners,
+scalar copies, sibling scopes, scope exit, unknown shared origins, initializer
+mutation before a local loan starts, and collection transfer after scope exit.
+All eight are formatter-stable, emit C byte-identical to the retained compiler,
+and execute with exit zero under ASan/UBSan. This is exact fixture evidence,
+not a complete ownership-safety result. Entire native challenge analysis reports
+are also byte-identical to `d6eeede`; no blocker/resource baseline is weakened.
+
+The sanitized compiler checks its own source successfully. Allocation-fault
+injection into `local_loan_initializer.slim` covers ordinals 1 through 128:
+ordinals 1 through 62 are reached and fail cleanly with exit 71, no generated
+output, and the allocation-failure diagnostic; 63 through 128 are not reached
+and the check succeeds. No ASan/UBSan diagnostic appears. These are the exact
+allocation points of this fixture, not all checker paths. Raw evidence is in
+ignored `build/slim-next-local-loans/`.
+
+The permanent nested-local and disjoint-scope series measure 125, 250, 500,
+and 1,000 aliases/scopes. Their check exponents are 0.342 and 0.692, below the
+unchanged 1.25 ownership ceiling. These small fixtures include process startup;
+the values do not establish sublinear checking. Existing scaling gates pass,
+including the 1.30 owned-transfer normalized-cost ceiling (measured 0.945).
+
+The same-host frontend comparison uses one warmup and seven alternating AB/BA
+pairs per size against the retained `d6eeede` compiler. Binary identities and
+every sample are in [the dated TSV](2026-09-06-local-loan-frontend-pair.tsv).
+
+| Common-prefix declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 5.747 ms | 5.888 ms | 1.025 |
+| 4,000 | 8.955 ms | 9.304 ms | 1.039 |
+| 8,000 | 16.087 ms | 16.166 ms | 1.005 |
+| 16,000 | 30.050 ms | 29.841 ms | 0.993 |
+
+These measurements describe the named declaration fixture, not incremental
+reuse, general compiler throughput, or agent effectiveness.
+
+The portable fixed point is 2,952,691 C bytes, SHA-256
+`22f421bfbc7209c7826155ed43d824af393c723d37dbe4f093e70a2492da556c`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 52 integration tests,
+248 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. Native SLIM/C and SLIM/Rust geometric means
+across 20 challenges are 1.071 and 1.012. Generated parallel/serial ratios are
+0.727 for `state_machine` and 0.693 for `signal_network`, within existing gates.
+
+This checkpoint adds no syntax, runtime operation, dependency, or allocation.
+Owned projections, borrowed enum payload scopes, definite reinitialization,
+the formatter defect below, actual-work counters, and successor process decisions
+remain before M0 closure. M1-M7 and controlled agent outcomes remain pending.
+
+### Additional formatter defect discovered during validation
+
+The retained `d6eeede` compiler accepts
+[this source](../reproducers/formatter_leading_group.slim), but its formatted
+output fails parsing with `E0102@144:146`. A local initializer ending in a bare
+name precedes an expression that the formatter wraps in leading parentheses.
+The parser treats the next line as continuation of the initializer. Direct
+arithmetic without that preceding local does not reproduce the failure.
+The same failure occurs in the current candidate. This remains an explicit M0
+round-trip repair; the local-borrow fixtures use ordinary intermediate scalar
+bindings to remain canonical. No formatter support is claimed by this checkpoint.

@@ -159,6 +159,12 @@ or ABI effect.
 - Argument borrows remain active through later argument evaluation until the
   call ends. Nested shared reads are allowed; overlapping mutation or moves
   are rejected. Compute a scalar query before reserving its owner exclusively.
+- A local initialized from borrowed affine storage keeps a shared loan until
+  its lexical scope ends. Shared reads and independent known owners remain
+  usable; mutation, replacement, or transfer of its origin is rejected.
+  Copying a scalar does not retain a storage loan. Unknown origins are
+  conservative. This repair does not cover the remaining owned-projection
+  and borrowed-enum-payload gaps recorded in the SLIM Next progress report.
 - `^` is the call-boundary marker, not a marker on every affine move. Existing
   moves into local bindings, aggregate payloads, and owning collection slots
   remain unmarked because the owning destination is explicit. Field

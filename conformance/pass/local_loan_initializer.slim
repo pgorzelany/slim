@@ -1,0 +1,14 @@
+module local_loans
+
+fn exercise(value: @Vec[I64]) -> I64 effects[alloc]:
+  let alias: Vec[I64] = if true:
+    vec.push(@value, 9)
+    value
+  else:
+    value
+  vec.len(alias) - 2
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Vec[I64] = vec.new()
+  vec.push(@value, 7)
+  exercise(@value)

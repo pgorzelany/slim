@@ -1,0 +1,11 @@
+module local_loans
+
+fn consume(value: ^Vec[Vec[I64]]) -> I64:
+  vec.len(value)
+
+fn exercise(value: ^Vec[Vec[I64]]) -> I64:
+  let alias: Vec[I64] = vec.get(value, 0)
+  consume(^value) + vec.len(alias)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

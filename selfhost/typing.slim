@@ -762,7 +762,7 @@ fn check_exclusive_argument(tokens: Vec[syntax.Token], argument: I64, bindings: 
 
 # The first two binding slots hold conservative unknown-owner and restricted
 # loan summaries. Normal bindings start at two. Canonical form intervals make
-# completed calls inactive without copying, rescanning, or explicit pop passes.
+# completed calls and local scopes inactive without copying or explicit pops.
 fn loan_active(tokens: Vec[syntax.Token], loan: I64, node: I64) -> Bool effects[partial]:
   if (loan >= 0) && (loan <= node):
     node < syntax.ast_next(tokens, loan)
@@ -2052,12 +2052,16 @@ fn infer_let(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
     mark_result_move(source, tokens, value, @bindings, @issues, @scopes)
   else:
     true
+  let loan_valid: Bool = if borrowed && type_valid(value_type):
+    check_argument_overlap(tokens, value, owner, expr, false, false, @bindings, @issues, true)
+  else:
+    true
   let next_parent: I64 = add_binding(@tokens, name, type, mode, owner, mutable, parent, @bindings)
   let body_type: TypeRef = infer_expr(source, @tokens, body, expected, next_parent, params, return_type, @bindings, @facts, @issues, @scopes)
   let value_valid: Bool = type_valid(value_type)
   let body_valid: Bool = type_valid(body_type)
   let placement_valid: Bool = !(stored_void || discarded)
-  let valid: Bool = placement_valid && (move_valid && (value_valid && body_valid))
+  let valid: Bool = placement_valid && (move_valid && (loan_valid && (value_valid && body_valid)))
   if valid:
     body_type
   else:
@@ -2072,16 +2076,26 @@ fn infer_set(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, expected: I64
     let declared_mutable: Bool = find_binding_mutable(tokens, bindings, name)
     let mutable: Bool = (!familiar) || declared_mutable
     if mutable:
-      let value: I64 = syntax.ast_set_value(expr)
-      let body: I64 = syntax.ast_set_body(tokens, expr)
-      let value_type: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-      let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes)
-      let body_type: TypeRef = infer_expr(source, @tokens, body, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
-      let valid: Bool = move_valid && (type_valid(value_type) && type_valid(body_type))
-      if valid:
-        body_type
+      let affine: Bool = memory.type_storage_kind(source, tokens, type) == 2
+      let binding_index: I64 = linked_binding_index(tokens, name)
+      let loan: Bool = if affine && (binding_index >= 0):
+        named_loan_conflict(tokens, bindings, binding_index, name, true)
       else:
+        false
+      if loan:
+        record_issue("E0349", name, @issues)
         invalid_type(expr)
+      else:
+        let value: I64 = syntax.ast_set_value(expr)
+        let body: I64 = syntax.ast_set_body(tokens, expr)
+        let value_type: TypeRef = infer_expr(source, @tokens, value, type, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+        let move_valid: Bool = check_storage_move(source, tokens, value, type, @bindings, @issues, @scopes)
+        let body_type: TypeRef = infer_expr(source, @tokens, body, expected, parent, params, return_type, @bindings, @facts, @issues, @scopes)
+        let valid: Bool = move_valid && (type_valid(value_type) && type_valid(body_type))
+        if valid:
+          body_type
+        else:
+          invalid_type(expr)
     else:
       record_issue("E0359", name, @issues)
       invalid_type(expr)

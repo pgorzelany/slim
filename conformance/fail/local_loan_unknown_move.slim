@@ -1,0 +1,15 @@
+module local_loans
+
+fn consume(value: ^Vec[I64]) -> I64:
+  vec.len(value)
+
+fn exercise(shared: Vec[I64], flag: Bool) -> I64 effects[alloc]:
+  let owner: Vec[I64] = vec.new()
+  let alias: Vec[I64] = if flag:
+    owner
+  else:
+    shared
+  consume(^owner) + vec.len(alias)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

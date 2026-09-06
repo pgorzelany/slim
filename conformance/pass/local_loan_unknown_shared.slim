@@ -1,0 +1,17 @@
+module local_loans
+
+fn observe(left: Vec[I64], right: Vec[I64], flag: Bool) -> I64:
+  let alias: Vec[I64] = if flag:
+    left
+  else:
+    right
+  let nested: Vec[I64] = alias
+  vec.len(nested)
+
+fn exercise(value: @Vec[I64]) -> I64:
+  observe(value, value, true) - 1
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Vec[I64] = vec.new()
+  vec.push(@value, 7)
+  exercise(@value)

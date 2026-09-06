@@ -448,6 +448,11 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             &[125, 250, 500, 1_000][..],
         ),
         ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
+        ("generated-local-loans", &[125, 250, 500, 1_000][..]),
+        (
+            "generated-disjoint-local-loans",
+            &[125, 250, 500, 1_000][..],
+        ),
         ("generated-call-chain", &[125, 250, 500, 1_000][..]),
         ("generated-shared-call-dag", &[125, 250, 500, 1_000][..]),
         (
@@ -484,6 +489,26 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
                     source.push_str(&format!("fn value_{index:08}() -> I64:\n  0\n\n"));
                 }
                 source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            } else if workload == "generated-local-loans" {
+                source.push_str("fn observe(value: Vec[I64]) -> I64:\n");
+                for index in 0..size {
+                    let origin = if index == 0 {
+                        String::from("value")
+                    } else {
+                        format!("alias_{}", index - 1)
+                    };
+                    source.push_str(&format!("  let alias_{index}: Vec[I64] = {origin}\n"));
+                }
+                source.push_str(&format!(
+                    "  vec.len(alias_{})\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n",
+                    size - 1
+                ));
+            } else if workload == "generated-disjoint-local-loans" {
+                source.push_str("fn observe(value: @Vec[I64]) -> I64 effects[alloc]:\n");
+                for index in 0..size {
+                    source.push_str(&format!("  let length_{index}: I64 = if true:\n    let alias: Vec[I64] = value\n    vec.len(alias)\n  else:\n    0\n  vec.push(@value, length_{index})\n"));
+                }
+                source.push_str("  vec.len(value)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
             } else if workload == "generated-nested-loans" {
                 source.push_str("fn observe(value: Vec[I64], ignored: I64) -> I64:\n  vec.len(value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n");
                 for index in 0..size {
@@ -532,7 +557,10 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
         // New variants independently obey existing budgets; retain originals.
         let budget_workload = if workload == "generated-conditional-result-moves" {
             "generated-branch-moves"
-        } else if workload == "generated-nested-loans" {
+        } else if workload == "generated-nested-loans"
+            || workload == "generated-local-loans"
+            || workload == "generated-disjoint-local-loans"
+        {
             "generated-owned-transfers"
         } else if workload == "generated-call-chain"
             || workload == "generated-shared-call-dag"

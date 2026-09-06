@@ -1,0 +1,20 @@
+module local_loans
+
+fn consume(value: ^Vec[Vec[I64]]) -> I64:
+  vec.len(value)
+
+fn exercise(value: ^Vec[Vec[I64]]) -> I64:
+  let length: I64 = if true:
+    let alias: Vec[I64] = vec.get(value, 0)
+    vec.len(alias)
+  else:
+    0
+  let total: I64 = consume(^value) + length
+  total - 2
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let inner: Vec[I64] = vec.new()
+  vec.push(@inner, 7)
+  let outer: Vec[Vec[I64]] = vec.new()
+  vec.push(@outer, inner)
+  exercise(^outer)
