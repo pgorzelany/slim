@@ -2916,3 +2916,92 @@ fn checks_builds_and_emits_interfaces_for_explicit_project() {
     fs::remove_dir_all(relocated).unwrap();
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn branch_ownership_matches_all_paths_in_bounded_action_domain() {
+    // Independent path oracle for 486 programs: no-op, read, and move in five
+    // positions, both nested-tree orientations, and alternating local/call
+    // transfers. The production checker is the only compiler used here.
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let compiler = root.join("build/toolchain/slimc");
+    if !compiler.is_file() {
+        assert!(Command::new(slim_bootstrap()).status().unwrap().success());
+    }
+    let directory = temporary_directory("branch-ownership-domain");
+    for orientation in 0..2 {
+        for pattern in 0..243usize {
+            let mut digits = pattern;
+            let mut actions = [0; 5];
+            for action in &mut actions {
+                *action = digits % 3;
+                digits /= 3;
+            }
+            let accepted = (1..4).all(|leaf| {
+                let mut moved = false;
+                [0, leaf, 4]
+                    .into_iter()
+                    .all(|position| match actions[position] {
+                        0 => true,
+                        1 => !moved,
+                        _ => {
+                            let valid = !moved;
+                            moved = true;
+                            valid
+                        }
+                    })
+            });
+            let action = |position: usize, spaces: usize| {
+                let prefix = " ".repeat(spaces);
+                match actions[position] {
+                    0 => format!("{prefix}void\n"),
+                    1 => format!("{prefix}let read_{position}: I64 = vec.len(values)\n"),
+                    _ if (pattern + position).is_multiple_of(2) => {
+                        format!("{prefix}consume(^values)\n")
+                    }
+                    _ => format!("{prefix}let moved_{position}: Vec[I64] = values\n"),
+                }
+            };
+            let leaf = |position: usize, spaces: usize| {
+                format!("{}{}void\n", action(position, spaces), " ".repeat(spaces))
+            };
+            let mut source = String::from(
+                "module branch_domain\n\nfn consume(value: ^Vec[I64]) -> Void:\n  void\n\nfn exercise(flag: Bool, other: Bool) -> Void effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n",
+            );
+            source.push_str(&action(0, 2));
+            source.push_str("  if flag:\n");
+            if orientation == 0 {
+                source.push_str("    if other:\n");
+                source.push_str(&leaf(1, 6));
+                source.push_str("    else:\n");
+                source.push_str(&leaf(2, 6));
+                source.push_str("  else:\n");
+                source.push_str(&leaf(3, 4));
+            } else {
+                source.push_str(&leaf(1, 4));
+                source.push_str("  else:\n    if other:\n");
+                source.push_str(&leaf(2, 6));
+                source.push_str("    else:\n");
+                source.push_str(&leaf(3, 6));
+            }
+            source.push_str(&action(4, 2));
+            source.push_str("  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            let path = write_source(&directory, &source);
+            let output = Command::new(&compiler)
+                .arg("check")
+                .arg(path)
+                .output()
+                .unwrap();
+            assert_eq!(
+                output.status.success(),
+                accepted,
+                "orientation={orientation}, pattern={pattern}, actions={actions:?}\n{source}\n{}{}",
+                String::from_utf8_lossy(&output.stdout),
+                String::from_utf8_lossy(&output.stderr)
+            );
+            if !accepted {
+                assert!(String::from_utf8_lossy(&output.stdout).contains("E0315@"));
+            }
+        }
+    }
+    fs::remove_dir_all(directory).unwrap();
+}

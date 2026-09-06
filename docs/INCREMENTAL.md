@@ -1,69 +1,49 @@
-# Incremental compilation
+# Incremental compilation status
 
-Core 0.1 exposes a reusable in-memory compilation session in
-`slim::incremental::IncrementalSession`. It does not add language syntax.
+The production SLIM compiler does **not yet implement retained, incremental
+parsing, type checking, or C generation**. RFC-0112 M1 makes those an explicit
+implementation goal. The former Rust `IncrementalSession` API is not part of
+the production compiler.
 
-## Reuse boundary
+## What the current session command measures
 
-A declaration identity is the tuple `(module, kind, declared name)`. The
-session keeps two stable 64-bit fingerprints:
+`selfhost/session.slim` loads the initial and updated projects and builds
+source snapshots. `selfhost/query.slim` compares declarations, identifies
+changed bodies and interfaces, and propagates dependency invalidation. The
+identity is `(module, declaration kind, declared name)`.
 
-- syntax: the declaration's normalized token structure, excluding whitespace,
-  comments, and source offsets;
-- interface: the callable signature, effects, parameter modes, or complete
-  struct/enum layout.
+The four integers printed by the internal `session` command retain historical
+field names `parsed lowered checked generated`. They are **invalidation
+estimates**, not counters of operations performed. In `query.measure_update`,
+`parsed` counts classified changes, `lowered` copies that count, `checked`
+counts invalidation flags, and `generated` copies the invalidated count.
+No retained typed bodies or generated fragments are reused by this command.
+A zero estimate on an unchanged project does not mean zero frontend work.
 
-The FNV-1a encoding is defined in the compiler and never uses Rust's
-process-randomized hash state. Dependency edges cover user-function calls and
-named-type use in signatures, data layouts, and expressions. Ordered maps and
-sets make graph output reproducible.
+The recovery variant performs clean checks of its initial, rejected, and
+recovered inputs and compares snapshots after recovery. It does not establish
+transactional retention of a previous checked compilation.
 
-## Update algorithm
+## Historical measurements
 
-The session lexically indexes top-level declarations, then parses and lowers
-only new declarations or declarations whose raw layout changed. Cached ASTs
-are span-shifted when an earlier edit merely moves an unchanged declaration.
+`cargo run --release --bin slim-bench -- incremental` exercises this dependency
+invalidation model. It remains useful as a regression test for the selected
+change set and its scaling, but cannot establish incremental compiler latency
+or avoided parse/check/code-generation work.
 
-A body edit selects that declaration. An interface edit additionally selects
-the reverse transitive dependency closure. Selected function bodies are
-checked against a rebuilt declaration lookup; unselected checked bodies are
-retained. C definitions are generated only for selected declarations and the
-complete translation unit is deterministically reassembled from cached and
-fresh fragments.
+The [2026-07-21 measurements](../benchmarks/results/2026-07-21-incremental.tsv)
+are retained as historical evidence. Their operation-labelled columns must
+not be cited as demonstrated reuse by today's production SLIM compiler.
 
-An unsuccessful structural, lowering, or semantic update does not replace the
-last good cache. Structurally malformed input uses the clean compiler's
-recovery path and is reported as `fallback_clean` rather than being counted as
-incremental work.
+## Acceptance boundary for SLIM Next
 
-## Core 0.4 memory-plan invalidation
+M1 must retain checked results attached to stable canonical SLIM identities,
+invalidate their actual dependencies, and compare every successful update with
+a clean compilation. It must instrument work where parsing, checking, and
+emission actually occur. Tests must include body, signature, layout, effect,
+borrow-mode, deletion, insertion, relocation, and failed-then-recovered edits.
 
-Memory plans are declaration-local derived queries. They are not persisted as
-a second cache artifact: a function body fingerprint owns its value liveness,
-allocation sites, and destruction boundary, while the existing interface
-fingerprint already owns return storage, parameter modes, named layouts, and
-the `alloc` effect. A private body edit therefore rebuilds that function's plan
-with the existing one-declaration work item. A storage-bearing return type,
-shared/`@`/`^` parameter mode, data layout, or effect edit follows the existing reverse
-interface dependency closure. Failed checking never publishes a plan, so the
-transactional last-good rule also prevents stale destruction plans.
-
-## Evidence and current cost
-
-Run the falsifiable work-count benchmark with:
-
-    cargo run --release --bin slim-bench -- incremental
-
-The committed result is
-[2026-07-21-incremental.tsv](../benchmarks/results/2026-07-21-incremental.tsv).
-For 8,001 declarations, a private body edit parses, lowers, checks, and
-generates one declaration; a leaf interface edit checks two; a central edit
-checks 4,001; and a no-change update performs zero declaration parse, lower,
-check, or generation operations.
-
-Wall time is not yet constant: lexical indexing, lookup reconstruction, AST
-assembly, graph reconstruction, and output concatenation still scan the
-program. The same 8,001-declaration body edit measured 66 ms on the recorded
-machine. Sub-file edit ranges, persistent metadata, and output ropes are
-therefore future compiler work; Core 0.1 does not claim millisecond updates on
-very large programs yet.
+Source indexing, metadata updates, output assembly, external C compilation,
+and queueing must remain visible as separate costs. A fast invalidation model
+is useful infrastructure; only a measured working compiler can establish a
+fast compilation cycle. See [the SLIM Next implementation report](../benchmarks/results/2026-09-05-slim-next-progress.md).

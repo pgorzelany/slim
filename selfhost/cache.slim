@@ -184,7 +184,9 @@ fn probe(cache: Bytes, key: Bytes) -> Probe effects[partial]:
     let exact_length: Bool = length == expected_length
     let expected_key_length: I64 = bytes.len(key)
     let same_key_length: Bool = key_length == expected_key_length
-    let key_equal: Bool = if same_key_length:
+    let frame_valid: Bool = header_valid && (lengths_valid && exact_length)
+    let compare_key: Bool = frame_valid && same_key_length
+    let key_equal: Bool = if compare_key:
       project.cross_span_chars_equal(cache, 27, key, 0, 0, key_length)
     else:
       false

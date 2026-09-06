@@ -1,0 +1,15 @@
+module ownership
+
+fn consume(value: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  if vec.len(args) > 0:
+    if vec.len(args) > 1:
+      consume(^values)
+    else:
+      void
+    vec.len(values)
+  else:
+    0

@@ -1,0 +1,18 @@
+module unknown_loan
+
+fn grow(value: @Vec[I64]) -> I64 effects[alloc]:
+  vec.push(@value, 1)
+  0
+
+fn observe(value: Vec[I64], ignored: I64) -> I64:
+  vec.len(value)
+
+fn test(left: Vec[I64], right: Vec[I64], output: @Vec[I64], flag: Bool) -> I64 effects[alloc]:
+  let selected: Vec[I64] = if flag:
+    left
+  else:
+    right
+  observe(selected, grow(@output))
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

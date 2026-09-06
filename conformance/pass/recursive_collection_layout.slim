@@ -1,0 +1,10 @@
+module recursive_collection_layout
+
+struct Tree:
+  children: Vec[Tree]
+  value: I64
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let children: Vec[Tree] = vec.new()
+  let root: Tree = Tree(children: children, value: 42)
+  root.value - 42

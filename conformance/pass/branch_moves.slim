@@ -1,0 +1,20 @@
+module branch_moves
+
+fn consume(value: ^Vec[I64]) -> Void:
+  void
+
+fn exercise(flag: Bool, nested: Bool) -> I64 effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  if flag:
+    if nested:
+      consume(^values)
+    else:
+      consume(^values)
+  else:
+    consume(^values)
+  let fresh: Vec[I64] = vec.new()
+  let moved: Vec[I64] = fresh
+  vec.len(moved)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  exercise(true, true) + exercise(true, false) + exercise(false, true) + exercise(false, false)

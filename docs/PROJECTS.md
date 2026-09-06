@@ -131,34 +131,29 @@ there is no permissive reader for unknown fields.
 
 ## Incremental cache
 
-The in-memory project session retains per-declaration parsed, lowered, checked,
-interface, dependency, and generated results. Its invalidation unit remains the
-Core 0.1 declaration identity `(module, kind, name)`.
+The internal session command computes declaration invalidation estimates. It
+does not retain and reuse parsed declarations, checked bodies, or generated
+fragments. See [incremental compilation status](INCREMENTAL.md) for the current
+measurement boundary and the SLIM Next implementation requirements.
 
-The optional persistent cache stores enough validated evidence to skip a
-module entirely across compiler processes: compiler/schema version, module
-identity, normalized source fingerprint, direct dependency interface
-fingerprints, canonical interface bytes, and generated C fragment. It never
-stores an absolute path or trusts modification time.
+The internal `cache PROJECT CACHE_FILE` command in `selfhost/cache.slim`
+provides a whole-project generated-C artifact probe. Its key contains the
+exact manifest bytes and length-prefixed source bytes for every module. It is
+not a normalized source fingerprint or a per-module interface cache.
 
-Persistent entries use a length-prefixed binary format with the magic
-`SLIMCACHE\0`, a big-endian schema number, bounded UTF-8 fields, bounded byte
-fields, a bounded declaration count, sorted dependency pairs, and a trailing
-stable checksum over all prior bytes. Source evidence combines the normalized
-token fingerprint with module identity, entry role, and exports; dependency
-interface fingerprints independently cover imports. Generated output is a
-self-contained module C fragment assembled in topological order. The file name
-is the hexadecimal stable fingerprint of the module identity. Readers reject
-truncation, excess bytes, invalid UTF-8, malformed or noncanonical interfaces,
-duplicate or unsorted dependencies, length overflow, version mismatch,
-identity mismatch, and checksum mismatch. A rejected entry is ignored and
-rebuilt from source; it can never make an invalid program pass. Cache writes
-use a temporary file and atomic rename after successful checking.
+The binary frame contains the ten-byte magic `SLIMCACHE\0`, one schema byte
+(currently 3), two eight-byte big-endian lengths, the key, the C artifact, and
+an eight-byte weighted checksum. Key and artifact lengths are each bounded by
+64 MiB. The reader validates the complete frame before comparing key bytes;
+truncated, oversized, mismatched, and checksum-invalid frames rebuild.
 
-The default cache directory is `.slim-cache/v3` beside the manifest. Cache
-contents affect work performed, never diagnostics, interfaces, generated C, or
-native behavior. A fresh in-memory session with an empty cache is the clean
-oracle used by tests.
+A hit returns the stored complete C artifact. A miss performs a normal project
+check and emits a newly framed artifact for the caller to store. The command
+does not itself maintain a default cache directory, write atomically, or
+reconstruct a project from individual module fragments. The checksum detects
+accidental corruption; it is not an authenticity or semantic proof. The frame
+also lacks a compiler-build identity, so callers must invalidate it across
+compiler changes. A versioned, compiler-identified cache is M1 work.
 
 ## Deterministic parallel checking
 
@@ -184,20 +179,16 @@ infrastructure and opt-in experimentation; it is not presented as a speedup.
 
 ## Measured implementation boundary
 
-`ProjectSession` genuinely retains declaration-level lowered and checked ASTs,
-dependency edges, fingerprints, and C fragments. A no-change update performs
-zero declaration parse/lower/check/generation work. A private body edit does
-one of each. A public layout edit checks the deterministic reverse module
-closure. Failed edits leave the last good state untouched, and every successful
-incremental output is compared with a clean compilation.
+The production compiler is the SLIM implementation and portable C seed.
+Historical `ProjectSession` descriptions referred to a retained compilation
+API that is absent from this production path. Current session counts describe
+selected invalidations; they do not demonstrate cached checking or emission.
+The [historical project measurements](../benchmarks/results/2026-07-21-project.tsv)
+remain available, but must not establish a present-day reuse claim.
 
-The remaining latency is not constant: every update still reads all module
-files, lexically indexes them, rebuilds global lookup/graph structures, and
-assembles the translation unit. Persistent reuse is currently an all-valid
-fast path; one missing or rejected entry causes a safe clean rebuild rather
-than partial cross-process reconstruction. The committed project benchmark
-records these costs explicitly in
-`benchmarks/results/2026-07-21-project.tsv`.
+Whole-project artifact hits and dependency-invalidation estimates are separate
+mechanisms. True declaration-local incremental compilation, transactional
+last-good state, and actual operation counters are pending RFC-0112 M1.
 
 ## Stable project diagnostics
 

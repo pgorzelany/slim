@@ -62,3 +62,5 @@ native-runtime-ratio	image_convolution	1.50	slim-over-c	RFC-0085
 native-runtime-ratio	edit_distance	1.35	slim-over-c	RFC-0087
 native-runtime-geomean	expanded-all	1.40	slim-over-c	RFC-0087
 native-runtime-geomean	expanded-serial	1.50	slim-over-c	RFC-0087
+check-exponent	generated-common-prefix-declarations	1.25	exponent	RFC-0113
+check-exponent	generated-branch-moves	1.25	exponent	RFC-0113

@@ -44,11 +44,27 @@ versioned limits are in `performance-budgets.tsv`; relaxing a limit requires
 the RFC-0030 decision process. The standard verification script runs the quick
 performance and matched-challenge gates on every release.
 
-The incremental command generates wide and deep module graphs at geometric
-sizes and measures no-change, private-body, and public-interface sessions. It
-asserts exact parse/lower/check/generation work and enforces independent
-scaling budgets, so a full recompilation cannot masquerade as incremental
-work. Committed measurements live in `benchmarks/results/`.
+The incremental command generates wide and deep module graphs and measures
+snapshot comparison and invalidation selection. Its historical parse/lower/
+check/generation labels are estimates, not instrumented compiler operations.
+It does not establish retained incremental compilation; see
+[the current implementation boundary](../docs/INCREMENTAL.md).
+
+`frontend-pair BASELINE CANDIDATE` runs the permanent common-prefix declaration
+fixture through two supplied native compiler binaries. It records one warmup
+per compiler and size, seven alternating AB/BA sample pairs, binary sizes and
+FNV-1a identity aids, and verifies the binaries did not change during the run.
+These are same-host process check latencies, including startup. Compiler 0 is
+the baseline and compiler 1 is the candidate. The output is a dated TSV artifact;
+medians and scaling can be calculated from its raw samples. This measures
+native frontend performance, not agent task success or the C backend.
+
+The quick performance gate also retains geometric ownership-repair fixtures:
+common-prefix declaration lookup, branch moves, conditional-result moves, and
+nested shared call loans followed by mutation after call completion. The loan
+series uses 125, 250, 500, and 1,000 live owners and independently obeys the
+existing owned-transfer exponent ceiling of 1.25. Original transfer and
+normalized-cost gates remain in place.
 
 The `project` command generates geometric wide and deep import graphs and
 measures deterministic C emission at one, two, and four requested workers.

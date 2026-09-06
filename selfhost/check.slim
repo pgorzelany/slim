@@ -180,10 +180,13 @@ fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Boo
       typing.Checked(status: syntax_status, view: view, issues: syntax_issues, plan: plan)
     else:
       let view: typing.View = typing.analyze(input, @tokens, declarations)
-      let plan: memory.Plan = memory.analyze(input, tokens, declarations)
       let issues: Vec[typing.Issue] = view.issues
       let issue_count: I64 = vec.len(issues)
       let typed_error: Bool = issue_count > 0
+      let plan: memory.Plan = if typed_error:
+        memory.empty_plan()
+      else:
+        memory.analyze(input, tokens, declarations)
       let checked: I64 = if typed_error:
         if render_typed:
           report_issues(tokens, issues, 0, 0)

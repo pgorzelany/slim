@@ -2,6 +2,10 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 
+Known implementation gaps, including field-transfer and termination checking,
+are tracked in the [SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
+The intended safety contract below is not yet completely enforced.
+
 SLIM source is the only compilable program representation. Leading whitespace
 defines blocks, and `slimc fmt` emits the unique canonical layout. SLIM 0.9 is
 an atomic syntax replacement: the compiler does not accept the removed
@@ -135,6 +139,9 @@ or ABI effect.
 - `Bool`, `U8`, `I64`, typed IDs, immutable `Bytes` views, and aggregates
   containing only copyable members are copyable. Vectors, arenas, and
   aggregates containing either are affine and move.
+- By-value struct fields and enum payloads must have finite layouts. Inline
+  cycles are rejected with E0354; collection and typed-ID constructors break
+  inline layout recursion.
 - Indexing is checked. Checked arithmetic overflow, division by zero, and
   remainder by zero are defined traps.
 - Pure functions omit the effects clause. Allocation, I/O, and unproven
@@ -145,11 +152,18 @@ or ABI effect.
   borrows a named owner exclusively for the call. `^name` transfers one whole
   named affine owner and invalidates that name; `^expression` is otherwise
   accepted only when the expression freshly produces the transferred owner.
+- Argument borrows remain active through later argument evaluation until the
+  call ends. Nested shared reads are allowed; overlapping mutation or moves
+  are rejected. Compute a scalar query before reserving its owner exclusively.
 - `^` is the call-boundary marker, not a marker on every affine move. Existing
   moves into local bindings, aggregate payloads, and owning collection slots
   remain unmarked because the owning destination is explicit. Field
   projections and branch-selected existing owners are not valid `^` sources
   without partial- or conditional-move tracking.
+- An owning destination receiving a conditional result invalidates every
+  potentially selected named owner. Statement prefixes keep their ordinary
+  behavior; only the returned value transfers. Borrow origins remain visible
+  through local statements and structured parallel bodies.
 - A tail-position `recur` transfers control to the current function entry
   without growing the stack.
 - Resource failure remains an explicit typed result.

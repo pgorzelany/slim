@@ -1,0 +1,12 @@
+module field_read
+
+struct Box:
+  values: Vec[I64]
+  count: I64
+
+fn inspect(value: @Box, count: I64) -> I64:
+  count
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let box: Box = Box(values: vec.new(), count: 21)
+  inspect(@box, box.count)

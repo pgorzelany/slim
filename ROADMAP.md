@@ -4,6 +4,14 @@ Status: SLIM 0.9 — experimental, pre-1.0
 Current milestone: Pre-1.0 evidence-driven development
 Last updated: 2026-07-27
 
+The accepted next research sequence is in [RFC-0112: Agent development and an
+OS foundation](design/rfcs/0112-agent-development-and-os-foundation.md#test-and-acceptance-plan).
+It starts with current-contract repairs and actual incremental-work evidence,
+then develops an expressive safe core, agent/debugger tools, deterministic
+simulation, and a freestanding OS substrate. Implementation is authorized and in progress; completed successor features
+will be recorded separately from the historical milestone record below; its review findings
+also identify current claims that need correction during the first milestone.
+
 ## Direction
 
 SLIM grows by strengthening guarantees and implementation capability before

@@ -1,0 +1,22 @@
+module parallel_owned_result
+
+fn sample_clock() -> I64 effects[io]:
+  io.monotonic_ms()
+
+fn produce() -> Vec[I64] effects[alloc, io]:
+  parallel:
+    let first: I64 = sample_clock()
+    let second: I64 = sample_clock()
+    let value: Vec[I64] = vec.new()
+    vec.push(@value, 42)
+    value
+
+fn length(value: Vec[I64]) -> I64 effects[io]:
+  parallel:
+    let first: I64 = sample_clock()
+    let second: I64 = sample_clock()
+    vec.len(value)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let value: Vec[I64] = produce()
+  vec.get(value, 0) + length(value) - 43

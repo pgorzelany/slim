@@ -1,0 +1,13 @@
+module parallel_borrow
+
+fn sample_clock() -> I64 effects[io]:
+  io.monotonic_ms()
+
+fn leak(value: Vec[I64]) -> Vec[I64] effects[io]:
+  parallel:
+    let first: I64 = sample_clock()
+    let second: I64 = sample_clock()
+    value
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

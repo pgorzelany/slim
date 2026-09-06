@@ -1,0 +1,30 @@
+module argument_loans
+
+struct Box:
+  value: Vec[I64]
+
+fn grow(value: @Vec[I64]) -> I64 effects[alloc]:
+  vec.push(@value, 9)
+  0
+
+fn take(value: ^Vec[I64]) -> I64 effects[alloc]:
+  vec.push(@value, 9)
+  0
+
+fn take_box(value: ^Box) -> I64:
+  0
+
+fn observe(value: Vec[I64], ignored: I64) -> I64:
+  vec.get(value, 0)
+
+fn after(ignored: I64, value: Vec[I64]) -> I64:
+  vec.get(value, 0)
+
+fn scalar(first: I64, second: I64) -> I64:
+  first + second
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let value: Vec[I64] = vec.new()
+  vec.push(@value, 1)
+  vec.push(@value, vec.len(value))
+  0

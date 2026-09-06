@@ -839,6 +839,9 @@ fn run_selfhost_cache_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), 
     }
 
     let mut truncations = vec![0, 1, 9, 10, 11, 18, 19, 26, 27, entry.len() / 2];
+    // Cross every key-prefix length, including the minimum probe frame (35).
+    // A matching declared key length must never authorize reading absent bytes.
+    truncations.extend(27..artifact_start);
     truncations.extend([
         entry.len().saturating_sub(9),
         entry.len().saturating_sub(8),

@@ -1,0 +1,22 @@
+module conditional_result_moves
+
+fn exercise(flag: Bool, nested: Bool) -> I64 effects[alloc, partial]:
+  let left: Vec[I64] = vec.new()
+  let right: Vec[I64] = vec.new()
+  let third: Vec[I64] = vec.new()
+  let untouched: Vec[I64] = vec.new()
+  vec.push(@untouched, 7)
+  let selected: Vec[I64] = if flag:
+    let prefix: I64 = vec.len(untouched)
+    if nested:
+      left
+    else:
+      right
+  else:
+    let alias: Vec[I64] = third
+    alias
+  vec.push(@selected, 42)
+  vec.get(selected, 0) + vec.get(untouched, 0) - 49
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  exercise(true, true) + exercise(true, false) + exercise(false, true) + exercise(false, false)

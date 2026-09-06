@@ -18,6 +18,7 @@ fn main() {
         .unwrap_or_else(|| "performance".to_owned());
     match command.as_str() {
         "performance" => run_performance(),
+        "frontend-pair" => run_frontend_pair(),
         "reduction" => run_reduction(),
         "incremental" => run_incremental(),
         "project" => run_project(),
@@ -30,7 +31,7 @@ fn main() {
         "agent" => run_agent(),
         _ => {
             eprintln!(
-                "usage: slim-bench <performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
+                "usage: slim-bench <frontend-pair BASELINE CANDIDATE | performance [--quick] | reduction [--quick] | incremental [--quick] | project [--quick] | applications [--quick] | compare [--quick] | parallelism | resources | host | parallel-runtime [--quick] | agent>"
             );
             std::process::exit(64);
         }
@@ -142,6 +143,7 @@ fn run_performance() {
     }
 
     benchmark_separator_dense_frontend(&compiler, &directory.path, sizes, samples);
+    benchmark_ownership_repairs(&compiler, &directory.path, samples);
 
     let nested_sizes: &[usize] = if quick {
         &[125, 250, 500, 1_000]
@@ -350,6 +352,168 @@ fn run_performance() {
             "performance gate: owned-transfer normalized check ratio {normalized_ratio:.3} exceeds {ratio_limit:.3}"
         );
         std::process::exit(1);
+    }
+}
+
+fn generated_common_prefix_program(size: usize) -> String {
+    let mut source = String::from("module ownership_scaling\n\n");
+    for index in 0..size {
+        source.push_str(&format!(
+            "fn shared_declaration_prefix_{index:08}() -> I64:\n  0\n\n"
+        ));
+    }
+    source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+    source
+}
+
+fn run_frontend_pair() {
+    let arguments: Vec<_> = std::env::args_os().skip(2).collect();
+    if arguments.len() != 2 {
+        eprintln!("usage: slim-bench frontend-pair BASELINE CANDIDATE");
+        std::process::exit(64);
+    }
+    let paths = [PathBuf::from(&arguments[0]), PathBuf::from(&arguments[1])];
+    let identities: Vec<_> = paths
+        .iter()
+        .map(|path| fs::read(path).expect("read compiler identity"))
+        .collect();
+    println!(
+        "# schema=1; same-host process latency; one warmup per compiler/size; seven AB/BA pairs"
+    );
+    println!(
+        "# host={}-{}; command=check; workload=generated-common-prefix-declarations",
+        std::env::consts::OS,
+        std::env::consts::ARCH
+    );
+    for (index, bytes) in identities.iter().enumerate() {
+        // Identity aid only: never used to authenticate cached programs.
+        let fingerprint = bytes.iter().fold(0xcbf29ce484222325u64, |hash, byte| {
+            (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3)
+        });
+        println!(
+            "# compiler_{index}={} bytes={} fnv1a64={fingerprint:016x}",
+            paths[index].display(),
+            bytes.len()
+        );
+    }
+    let directory = TemporaryDirectory::new("frontend-pair");
+    println!("declarations\tsource_bytes\tpair\torder\tcompiler\tcheck_ns");
+    for size in [2_000, 4_000, 8_000, 16_000] {
+        let source = generated_common_prefix_program(size);
+        let path = directory.path.join(format!("declarations-{size}.slim"));
+        fs::write(&path, &source).expect("write paired frontend fixture");
+        for compiler in &paths {
+            require_clean_output(
+                compiler_output(compiler, "check", &path),
+                "paired frontend warmup",
+            );
+        }
+        for pair in 0..7 {
+            for position in 0..2 {
+                let index = (pair + position) % 2;
+                let (elapsed, output) = timed_output(
+                    Command::new(&paths[index]).arg("check").arg(&path),
+                    "paired frontend check",
+                );
+                require_clean_output(output, "paired frontend check");
+                println!(
+                    "{size}\t{}\t{pair}\t{position}\t{index}\t{}",
+                    source.len(),
+                    elapsed.as_nanos()
+                );
+            }
+        }
+    }
+    for (path, before) in paths.iter().zip(identities) {
+        assert_eq!(
+            fs::read(path).expect("recheck compiler identity"),
+            before,
+            "compiler changed during paired measurement"
+        );
+    }
+}
+
+// Adversarial fixtures retained after RFC-0112 M0: the earlier small series
+// hid quadratic declaration scans behind process startup. Branch transfers
+// exercise many live bindings without allowing full-table copies per arm.
+fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize) {
+    for (workload, sizes) in [
+        (
+            "generated-common-prefix-declarations",
+            &[2_000, 4_000, 8_000, 16_000][..],
+        ),
+        ("generated-branch-moves", &[125, 250, 500, 1_000][..]),
+        (
+            "generated-conditional-result-moves",
+            &[125, 250, 500, 1_000][..],
+        ),
+        ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
+    ] {
+        println!("{workload}\tsource_bytes\tcheck_us");
+        let mut endpoints = Vec::new();
+        for &size in sizes {
+            let mut source = String::from("module ownership_scaling\n\n");
+            if workload == "generated-common-prefix-declarations" {
+                source = generated_common_prefix_program(size);
+            } else if workload == "generated-nested-loans" {
+                source.push_str("fn observe(value: Vec[I64], ignored: I64) -> I64:\n  vec.len(value)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n");
+                for index in 0..size {
+                    source.push_str(&format!("  let owner_{index}: Vec[I64] = vec.new()\n"));
+                }
+                for index in 0..size {
+                    source.push_str(&format!("  let result_{index}: I64 = observe(owner_{index}, observe(owner_{index}, vec.len(owner_{index})))\n  vec.push(@owner_{index}, result_{index})\n"));
+                }
+                source.push_str("  0\n");
+            } else {
+                source.push_str("fn consume(value: ^Vec[I64]) -> Void:\n  void\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n");
+                for index in 0..size {
+                    source.push_str(&format!("  let owner_{index}: Vec[I64] = vec.new()\n"));
+                }
+                for index in 0..size {
+                    if workload == "generated-conditional-result-moves" {
+                        source.push_str(&format!("  let selected_{index}: Vec[I64] = if vec.len(args) > 0:\n    let prefix: I64 = vec.len(args)\n    owner_{index}\n  else:\n    owner_{index}\n  consume(^selected_{index})\n"));
+                    } else {
+                        source.push_str(&format!("  if vec.len(args) > 0:\n    consume(^owner_{index})\n  else:\n    consume(^owner_{index})\n"));
+                    }
+                }
+                source.push_str("  0\n");
+            }
+            let path = directory.join(format!("{workload}-{size}.slim"));
+            fs::write(&path, &source).expect("write ownership-repair fixture");
+            require_clean_output(
+                compiler_output(compiler, "check", &path),
+                "ownership-repair warmup",
+            );
+            let mut times = Vec::new();
+            for _ in 0..samples {
+                let (elapsed, output) =
+                    timed_output(Command::new(compiler).arg("check").arg(&path), workload);
+                require_clean_output(output, workload);
+                times.push(elapsed);
+            }
+            times.sort();
+            let elapsed = times[times.len() / 2];
+            println!("{size}\t{}\t{}", source.len(), elapsed.as_micros());
+            endpoints.push((size, elapsed));
+        }
+        let (first_size, first_time) = endpoints[0];
+        let (last_size, last_time) = endpoints[endpoints.len() - 1];
+        let exponent = (last_time.as_secs_f64() / first_time.as_secs_f64()).ln()
+            / (last_size as f64 / first_size as f64).ln();
+        // New variants independently obey existing budgets; retain originals.
+        let budget_workload = if workload == "generated-conditional-result-moves" {
+            "generated-branch-moves"
+        } else if workload == "generated-nested-loans" {
+            "generated-owned-transfers"
+        } else {
+            workload
+        };
+        let limit = performance_budget("check-exponent", budget_workload);
+        println!("{workload}-exponent\t{exponent:.3}");
+        assert!(
+            exponent <= limit,
+            "performance gate: {workload} exponent {exponent:.3} exceeds {limit:.3}"
+        );
     }
 }
 

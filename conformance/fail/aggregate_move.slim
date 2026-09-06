@@ -1,0 +1,12 @@
+module ownership
+
+struct Box:
+  value: Vec[I64]
+
+fn consume(value: ^Vec[I64]) -> Void:
+  void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  let box: Box = Box(value: values)
+  vec.len(values)

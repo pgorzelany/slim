@@ -20,7 +20,9 @@ fn checksum(counts: @Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
   if index == 256:
     total
   else:
-    recur(@counts, index + 1, total + (vec.get(counts, index) * (index + 1)))
+    let next_index: I64 = index + 1
+    let next_total: I64 = total + (vec.get(counts, index) * (index + 1))
+    recur(@counts, next_index, next_total)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   if vec.len(args) >= 2:

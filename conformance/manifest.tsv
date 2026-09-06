@@ -142,3 +142,42 @@ remainder-zero	trap	conformance/runtime/remainder_zero.slim	parity	exit=70;stdou
 u8-conversion-bounds	trap	conformance/runtime/u8_conversion_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: I64 value does not fit U8\n	runtime:u8-conversion-trap
 bytes-bounds	trap	conformance/runtime/bytes_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: byte index out of bounds\n	runtime:byte-bounds-trap
 vector-set-bounds	trap	conformance/runtime/vector_set_bounds.slim	parity	exit=70;stdout=;stderr=SLIM runtime trap: vector index out of bounds\n	runtime:vector-set-bounds-trap
+local-move	check-fail	conformance/fail/local_move.slim	parity	E0315@198:204	ownership:move
+aggregate-move	check-fail	conformance/fail/aggregate_move.slim	parity	E0315@234:240	ownership:move
+collection-move	check-fail	conformance/fail/collection_move.slim	parity	E0315@233:239	ownership:move
+assignment-move	check-fail	conformance/fail/assignment_move.slim	parity	E0315@220:226	ownership:move
+branch-move-join	check-fail	conformance/fail/branch_move_join.slim	parity	E0315@229:235	ownership:move
+branch-move-prefix	check-fail	conformance/fail/branch_move_prefix.slim	parity	E0315@212:218	ownership:move
+branch-move-same-arm	check-fail	conformance/fail/branch_move_same_arm.slim	parity	E0315@215:221	ownership:move
+nested-move-join	check-fail	conformance/fail/nested_move_join.slim	parity	E0315@263:269	ownership:move
+branch-moves	run	conformance/pass/branch_moves.slim	parity	exit=0;stdout=;stderr=	ownership:move
+inline-self-cycle	check-fail	conformance/fail/inline_self_cycle.slim	parity	E0354@36:40	type:finite-layout
+inline-mutual-cycle	check-fail	conformance/fail/inline_mutual_cycle.slim	parity	E0354@66:70	type:finite-layout
+inline-enum-cycle	check-fail	conformance/fail/inline_enum_cycle.slim	parity	E0354@39:43	type:finite-layout
+inline-mixed-cycle	check-fail	conformance/fail/inline_mixed_cycle.slim	parity	E0354@66:70	type:finite-layout
+recursive-collection-layout	run	conformance/pass/recursive_collection_layout.slim	parity	exit=0;stdout=;stderr=	type:finite-layout
+conditional-move	check-fail	conformance/fail/conditional_move.slim	parity	E0315@231:235,E0315@247:252	ownership:move
+conditional-same-owner-move	check-fail	conformance/fail/conditional_same_owner_move.slim	parity	E0315@210:215	ownership:move
+conditional-assignment-move	check-fail	conformance/fail/conditional_assignment_move.slim	parity	E0315@237:242	ownership:move
+conditional-prefix-move	check-fail	conformance/fail/conditional_prefix_move.slim	parity	E0315@245:250	ownership:move
+conditional-prefix-borrow-escape	check-fail	conformance/fail/conditional_prefix_borrow_escape.slim	parity	E0347@91:93	ownership:exclusive-no-escape
+conditional-result-moves	run	conformance/pass/conditional_result_moves.slim	parity	exit=0;stdout=;stderr=	ownership:move
+parallel-borrow-escape	check-fail	conformance/fail/parallel_borrow_escape.slim	parity	E0347@222:227	ownership:exclusive-no-escape
+parallel-owned-result	run	conformance/pass/parallel_owned_result.slim	parity	exit=0;stdout=;stderr=	ownership:move
+nested-call-move	check-fail	conformance/fail/nested_call_move.slim	parity	E0349@582:587	ownership:no-alias
+nested-call-mutation	check-fail	conformance/fail/nested_call_mutation.slim	parity	E0349@582:587	ownership:no-alias
+nested-call-shared-then-mutation	check-fail	conformance/fail/nested_call_shared_then_mutation.slim	parity	E0349@605:610	ownership:no-alias
+nested-call-aggregate-move	check-fail	conformance/fail/nested_call_aggregate_move.slim	parity	E0349@597:602	ownership:no-alias
+nested-builtin-mutation	check-fail	conformance/fail/nested_builtin_mutation.slim	parity	E0349@582:587	ownership:no-alias
+nested-builtin-exclusive-read	check-fail	conformance/fail/nested_builtin_exclusive_read.slim	parity	E0349@586:591	ownership:no-alias
+loan-shared-nesting	run	conformance/pass/loan_shared_nesting.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-mutation-before-borrow	run	conformance/pass/loan_mutation_before_borrow.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-scalar-before-mutation	run	conformance/pass/loan_scalar_before_mutation.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-independent-owner	run	conformance/pass/loan_independent_owner.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-ends-at-call	run	conformance/pass/loan_ends_at_call.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+nested-call-loan-uaf	check-fail	benchmarks/reproducers/nested_call_loan.slim	parity	E0349@463:468	ownership:no-alias
+loan-unknown-nested-mutation	check-fail	conformance/fail/loan_unknown_nested_mutation.slim	parity	E0349@349:355	ownership:no-alias
+loan-unknown-nested-shared	run	conformance/pass/loan_unknown_nested_shared.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-nested-freeze	check-fail	conformance/fail/loan_nested_freeze.slim	parity	E0349@210:215	ownership:no-alias
+loan-scalar-field-before-mutation	run	conformance/pass/loan_scalar_field_before_mutation.slim	parity	exit=0;stdout=;stderr=	ownership:no-alias
+loan-scalar-field-during-exclusive	check-fail	conformance/fail/loan_scalar_field_during_exclusive.slim	parity	E0349@236:242	ownership:no-alias

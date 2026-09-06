@@ -1,0 +1,11 @@
+module borrowed_result
+
+fn leak(value: Vec[I64], flag: Bool) -> Vec[I64] effects[alloc]:
+  if flag:
+    let alias: Vec[I64] = value
+    alias
+  else:
+    vec.new()
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

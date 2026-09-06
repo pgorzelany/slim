@@ -1,0 +1,10 @@
+module conditional
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let left: Vec[I64] = vec.new()
+  let right: Vec[I64] = vec.new()
+  let selected: Vec[I64] = if vec.len(args) > 0:
+    left
+  else:
+    right
+  vec.len(left) + vec.len(right)

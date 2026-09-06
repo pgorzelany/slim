@@ -52,7 +52,9 @@ fn checksum(current: @Vec[I64], index: I64, count: I64, total: I64) -> I64 effec
   if index == count:
     total
   else:
-    recur(@current, index + 1, count, total + vec.get(current, index))
+    let next_index: I64 = index + 1
+    let next_total: I64 = total + vec.get(current, index)
+    recur(@current, next_index, count, next_total)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let size: I64 = 256

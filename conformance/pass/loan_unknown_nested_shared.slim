@@ -1,0 +1,16 @@
+module unknown_shared
+
+fn observe(value: Vec[I64], ignored: I64) -> I64:
+  vec.len(value)
+
+fn test(left: Vec[I64], right: Vec[I64], flag: Bool) -> I64:
+  let selected: Vec[I64] = if flag:
+    left
+  else:
+    right
+  observe(selected, observe(left, vec.len(right)))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let left: Vec[I64] = vec.new()
+  let right: Vec[I64] = vec.new()
+  test(left, right, true) + test(left, right, false)

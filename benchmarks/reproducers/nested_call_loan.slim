@@ -1,0 +1,20 @@
+module nested_call_loan
+
+fn grow(value: ^Vec[I64]) -> I64 effects[alloc]:
+  vec.push(@value, 2)
+  vec.push(@value, 3)
+  vec.push(@value, 4)
+  vec.push(@value, 5)
+  vec.push(@value, 6)
+  vec.push(@value, 7)
+  vec.push(@value, 8)
+  vec.push(@value, 9)
+  0
+
+fn observe(value: Vec[I64], ignored: I64) -> I64:
+  vec.get(value, 0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let value: Vec[I64] = vec.new()
+  vec.push(@value, 1)
+  observe(value, grow(^value))

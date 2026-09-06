@@ -1,0 +1,15 @@
+module scalar_field
+
+struct Box:
+  values: Vec[I64]
+  count: I64
+
+fn inspect(value: @Box) -> I64:
+  value.count
+
+fn scalar(first: I64, second: I64) -> I64:
+  first + second
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let box: Box = Box(values: vec.new(), count: 21)
+  scalar(box.count, inspect(@box)) - 42

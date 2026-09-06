@@ -1,0 +1,8 @@
+module nested_freeze
+
+fn observe(value: Vec[U8], count: I64) -> I64:
+  vec.len(value)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Vec[U8] = vec.new()
+  observe(value, bytes.len(bytes.freeze(^value)))

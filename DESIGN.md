@@ -4,6 +4,10 @@ Status: SLIM 0.9 — experimental, pre-1.0
 Name: **SLIM — Small Language for Intelligent Machines**
 Last updated: 2026-07-26
 
+Accepted research direction (2026-09-05): [RFC-0112: Agent development and an OS
+foundation](design/rfcs/0112-agent-development-and-os-foundation.md) specifies a
+breaking successor and staged roadmap. It is not the implemented 0.9 contract.
+
 ## Vision
 
 SLIM, the Small Language for Intelligent Machines, is a programming language

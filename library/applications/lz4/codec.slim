@@ -132,7 +132,8 @@ fn copy_match(offset: I64, remaining: I64, maximum: I64, position: I64, output: 
       lz4_model.Result(valid: false, code: 6, position: position)
     else:
       let source_index: I64 = vec.len(output) - offset
-      vec.push(@output, vec.get(output, source_index))
+      let byte: U8 = vec.get(output, source_index)
+      vec.push(@output, byte)
       recur(offset, remaining - 1, maximum, position, @output)
 
 fn decompress_from(input: Bytes, index: I64, maximum: I64, output: @Vec[U8]) -> lz4_model.Result effects[alloc, partial]:

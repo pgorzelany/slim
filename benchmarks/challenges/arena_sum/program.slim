@@ -13,7 +13,9 @@ fn sum(arena: @Arena[I64], ids: @Vec[Id[I64]], index: I64, total: I64) -> I64 ef
     total
   else:
     let identity: Id[I64] = vec.get(ids, index)
-    recur(@arena, @ids, index + 1, total + arena.get(arena, identity))
+    let next_index: I64 = index + 1
+    let next_total: I64 = total + arena.get(arena, identity)
+    recur(@arena, @ids, next_index, next_total)
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let arena: Arena[I64] = arena.new()
