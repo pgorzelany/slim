@@ -12,6 +12,15 @@ source snapshots. `selfhost/query.slim` compares declarations, identifies
 changed bodies and interfaces, and propagates dependency invalidation. The
 identity is `(module, declaration kind, declared name)`.
 
+[RFC-0125](../design/rfcs/0125-source-identity-resolution.md) and
+[RFC-0126](../design/rfcs/0126-exact-revision-maps.md) add typed revision/file/node
+handles, checked spans, and exact-content maps to new source positions. Aligned
+keys compare directly; reordered lookup builds one lazy index and retains it in
+that source state. Current source links reject duplicate names. This source-index
+foundation is implemented; retaining checked declarations and emitted C remains
+M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
+are recorded separately from the historical estimates.
+
 The four integers printed by the internal `session` command retain historical
 field names `parsed lowered checked generated`. They are **invalidation
 estimates**, not counters of operations performed. In `query.measure_update`,

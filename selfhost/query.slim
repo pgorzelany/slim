@@ -1,6 +1,7 @@
 module query
 
 struct Snapshot:
+  unique: Bool
   module: Bytes
   kind: I64
   name: Bytes
@@ -8,6 +9,31 @@ struct Snapshot:
   view: identity.View
   body: identity.Span
   interface: identity.Span
+
+struct NameIndex:
+  valid: Bool
+  nodes: Vec[syntax.NameNode]
+  edges: Vec[syntax.NameEdge]
+
+struct Mapping:
+  before: identity.View
+  after: identity.View
+  before_total: I64
+  after_total: I64
+  before_body: identity.Span
+  after_body: identity.Span
+
+enum MapResult:
+  Missing
+  Mapped(Mapping)
+
+enum NodeResult:
+  Missing
+  Mapped(identity.NodeId)
+
+enum SpanResult:
+  Missing
+  Mapped(identity.Span)
 
 struct Work:
   parsed: I64
@@ -21,6 +47,8 @@ struct Dependency:
 
 struct State:
   valid: Bool
+  total: I64
+  names: NameIndex
   snapshots: Vec[Snapshot]
   dependencies: Vec[Dependency]
 
@@ -90,6 +118,7 @@ fn append_module_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.T
     let name_start: I64 = syntax.ast_node_start(module_tokens, name_token)
     let name_end: I64 = syntax.ast_node_end(module_tokens, name_token)
     let name: Bytes = copy_span(source, name_start, name_end)
+    let unique: Bool = syntax.ast_node_link(module_tokens, name_token) == cursor
     let declaration_kind: I64 = declaration_kind(source, module_tokens, cursor)
     let start: I64 = syntax.ast_node_start(module_tokens, cursor)
     let interface_end: I64 = declaration_interface_end(source, module_tokens, cursor)
@@ -101,7 +130,7 @@ fn append_module_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.T
     let view: identity.View = identity.View(declaration: declaration, first: cursor, count: count)
     let body: identity.Span = identity.Span(file: file, start: start, end: end)
     let interface: identity.Span = identity.Span(file: file, start: start, end: interface_end)
-    let snapshot: Snapshot = Snapshot(module: module_name, kind: declaration_kind, name: name, source: source, view: view, body: body, interface: interface)
+    let snapshot: Snapshot = Snapshot(unique: unique, module: module_name, kind: declaration_kind, name: name, source: source, view: view, body: body, interface: interface)
     vec.push(@output, snapshot)
     let next_slot: I64 = slot + 1
     recur(manifest_source, manifest_tokens, module_tokens, module, next, module_name, file, next_slot, @output)
@@ -156,20 +185,6 @@ fn snapshot_body_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]
     project.cross_span_chars_equal(left_bytes, left_start, right_bytes, right_start, 0, left_length)
   else:
     false
-
-fn find_snapshot(snapshots: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
-  let length: I64 = vec.len(snapshots)
-  let done: Bool = index >= length
-  if done:
-    -1
-  else:
-    let snapshot: Snapshot = vec.get(snapshots, index)
-    let same: Bool = snapshot_identity_equal(snapshot, candidate)
-    if same:
-      index
-    else:
-      let next: I64 = index + 1
-      recur(snapshots, candidate, next)
 
 fn bytes_ranges_equal(left: Bytes, left_start: I64, right: Bytes, right_start: I64, index: I64, length: I64) -> Bool effects[partial]:
   let done: Bool = index >= length
@@ -312,12 +327,13 @@ fn build_dependencies(tokens: Vec[syntax.Token], snapshots: Vec[Snapshot]) -> Ve
 fn build_state(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[project.LoadedModule], revision: identity.Revision) -> State effects[alloc, partial]:
   let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded, revision)
   let total: I64 = vec.len(module_tokens)
+  let names: NameIndex = empty_index()
   let valid: Bool = snapshots_valid(snapshots, total, 0)
   let dependencies: Vec[Dependency] = if valid:
     build_dependencies(module_tokens, snapshots)
   else:
     vec.new()
-  State(valid: valid, snapshots: snapshots, dependencies: dependencies)
+  State(valid: valid, total: total, names: names, snapshots: snapshots, dependencies: dependencies)
 
 fn snapshot_interface_equal(left: Snapshot, right: Snapshot) -> Bool effects[partial]:
   let left_end: I64 = left.interface.end
@@ -344,31 +360,20 @@ fn fill_flags(length: I64, index: I64, flags: @Vec[Bool]) -> Void effects[alloc,
     let next: I64 = index + 1
     recur(length, next, @flags)
 
-fn find_aligned_snapshot(previous: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[partial]:
-  let length: I64 = vec.len(previous)
-  let available: Bool = index < length
-  let same: Bool = if available:
-    let old: Snapshot = vec.get(previous, index)
-    snapshot_identity_equal(old, candidate)
-  else:
-    false
-  if same:
-    index
-  else:
-    find_snapshot(previous, candidate, 0)
-
-fn classify_changes(previous: Vec[Snapshot], current: Vec[Snapshot], index: I64, count: I64, invalidated: @Vec[Bool], queue: @Vec[I64]) -> I64 effects[alloc, partial]:
+fn classify_changes(previous_state: State, current_state: State, names: @NameIndex, index: I64, count: I64, invalidated: @Vec[Bool], queue: @Vec[I64]) -> I64 effects[alloc, partial]:
+  let previous: Vec[Snapshot] = previous_state.snapshots
+  let current: Vec[Snapshot] = current_state.snapshots
   let length: I64 = vec.len(current)
   let done: Bool = index >= length
   if done:
     count
   else:
     let candidate: Snapshot = vec.get(current, index)
-    let prior: I64 = find_aligned_snapshot(previous, candidate, index)
+    let prior: I64 = find_prior(@names, previous, candidate, index)
     let found: Bool = prior >= 0
     let body_changed: Bool = if found:
       let old: Snapshot = vec.get(previous, prior)
-      let same_body: Bool = snapshot_body_equal(old, candidate)
+      let same_body: Bool = mapping_unchanged(old, candidate, previous_state.total, current_state.total)
       !same_body
     else:
       true
@@ -393,7 +398,7 @@ fn classify_changes(previous: Vec[Snapshot], current: Vec[Snapshot], index: I64,
       0
     let total: I64 = count + increment
     let next: I64 = index + 1
-    recur(previous, current, next, total, @invalidated, @queue)
+    recur(previous_state, current_state, @names, next, total, @invalidated, @queue)
 
 fn mark_consumers(dependencies: Vec[Dependency], provider: I64, index: I64, invalidated: @Vec[Bool], queue: @Vec[I64]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(dependencies)
@@ -450,46 +455,198 @@ fn build_snapshot_state(manifest_source: Bytes, manifest_tokens: Vec[syntax.Toke
   let snapshots: Vec[Snapshot] = build_snapshots(manifest_source, manifest_tokens, module_tokens, loaded, revision)
   let dependencies: Vec[Dependency] = vec.new()
   let total: I64 = vec.len(module_tokens)
+  let names: NameIndex = empty_index()
   let valid: Bool = snapshots_valid(snapshots, total, 0)
-  State(valid: valid, snapshots: snapshots, dependencies: dependencies)
+  State(valid: valid, total: total, names: names, snapshots: snapshots, dependencies: dependencies)
 
-fn measure_update(previous: Vec[Snapshot], current: Vec[Snapshot], dependencies: Vec[Dependency]) -> Work effects[alloc, partial]:
+fn calculate_update(previous_state: State, current_state: State, names: @NameIndex) -> Work effects[alloc, partial]:
+  let current: Vec[Snapshot] = current_state.snapshots
+  let dependencies: Vec[Dependency] = current_state.dependencies
   let length: I64 = vec.len(current)
   let invalidated: Vec[Bool] = vec.new()
   fill_flags(length, 0, @invalidated)
   let queue: Vec[I64] = vec.new()
-  let parsed: I64 = classify_changes(previous, current, 0, 0, @invalidated, @queue)
+  let parsed: I64 = classify_changes(previous_state, current_state, @names, 0, 0, @invalidated, @queue)
   propagate_invalidations(dependencies, @queue, 0, @invalidated)
   let checked: I64 = count_flags(invalidated, 0, 0)
   Work(parsed: parsed, lowered: parsed, checked: checked, generated: checked)
+
+fn index_found(index: identity.Index) -> Bool:
+  match index:
+    Invalid:
+      false
+    Found(position):
+      position >= 0
+
+fn snapshot_valid(snapshot: Snapshot, total: I64) -> Bool effects[partial]:
+  let view: identity.View = snapshot.view
+  let root: identity.NodeId = identity.NodeId(declaration: view.declaration, ordinal: 0)
+  let node: identity.Index = identity.resolve_node(view, root, total)
+  let body: identity.Index = identity.resolve_span(view.declaration.file, snapshot.source, snapshot.body)
+  let interface: identity.Index = identity.resolve_span(view.declaration.file, snapshot.source, snapshot.interface)
+  snapshot.unique && index_found(node) && index_found(body) && index_found(interface) && snapshot.interface.start == snapshot.body.start && snapshot.interface.end <= snapshot.body.end
 
 fn snapshots_valid(snapshots: Vec[Snapshot], total: I64, index: I64) -> Bool effects[partial]:
   if index >= vec.len(snapshots):
     true
   else:
     let snapshot: Snapshot = vec.get(snapshots, index)
-    let view: identity.View = snapshot.view
-    let root: identity.NodeId = identity.NodeId(declaration: view.declaration, ordinal: 0)
-    let node: identity.Index = identity.resolve_node(view, root, total)
-    let body: identity.Index = identity.resolve_span(view.declaration.file, snapshot.source, snapshot.body)
-    let interface: identity.Index = identity.resolve_span(view.declaration.file, snapshot.source, snapshot.interface)
-    let node_valid: Bool = match node:
-      Invalid:
-        false
-      Found(position):
-        position >= 0
-    let body_valid: Bool = match body:
-      Invalid:
-        false
-      Found(position):
-        position >= 0
-    let interface_valid: Bool = match interface:
-      Invalid:
-        false
-      Found(position):
-        position == snapshot.interface.start && snapshot.interface.start == snapshot.body.start && snapshot.interface.end <= snapshot.body.end
-    if node_valid && body_valid && interface_valid:
+    if snapshot_valid(snapshot, total):
       let next: I64 = index + 1
       recur(snapshots, total, next)
     else:
       false
+
+fn insert_snapshot_key(snapshot: Snapshot, value: I64, nodes: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge]) -> I64 effects[alloc, partial]:
+  let module_length: I64 = bytes.len(snapshot.module)
+  let module_node: I64 = syntax.ensure_name_chars(snapshot.module, 0, module_length, 0, @nodes, @edges)
+  let separator: I64 = 256 + snapshot.kind
+  let name_node: I64 = syntax.name_child(@nodes, @edges, module_node, separator)
+  let name_length: I64 = bytes.len(snapshot.name)
+  syntax.insert_name_chars(snapshot.name, 0, name_length, value, name_node, @nodes, @edges)
+
+fn lookup_snapshot_key(index: NameIndex, snapshot: Snapshot) -> I64 effects[partial]:
+  if snapshot.kind >= 0 && snapshot.kind <= 2:
+    let module_length: I64 = bytes.len(snapshot.module)
+    let module_node: I64 = syntax.lookup_name_node_chars(snapshot.module, 0, module_length, 0, index.nodes, index.edges)
+    if module_node >= 0:
+      let node: syntax.NameNode = vec.get(index.nodes, module_node)
+      let separator: I64 = 256 + snapshot.kind
+      let name_node: I64 = syntax.find_name_edge(index.edges, node.first_edge, separator)
+      if name_node >= 0:
+        let name_length: I64 = bytes.len(snapshot.name)
+        syntax.lookup_name_chars(snapshot.name, 0, name_length, name_node, index.nodes, index.edges)
+      else:
+        -1
+    else:
+      -1
+  else:
+    -1
+
+fn empty_index() -> NameIndex effects[alloc]:
+  let nodes: Vec[syntax.NameNode] = vec.new()
+  let edges: Vec[syntax.NameEdge] = vec.new()
+  NameIndex(valid: false, nodes: nodes, edges: edges)
+
+fn index_snapshot_names(snapshots: Vec[Snapshot], cursor: I64, nodes: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge]) -> Bool effects[alloc, partial]:
+  if cursor >= vec.len(snapshots):
+    true
+  else:
+    let snapshot: Snapshot = vec.get(snapshots, cursor)
+    if snapshot.kind >= 0 && snapshot.kind <= 2:
+      let previous: I64 = insert_snapshot_key(snapshot, cursor, @nodes, @edges)
+      if previous >= 0:
+        false
+      else:
+        let next: I64 = cursor + 1
+        recur(snapshots, next, @nodes, @edges)
+    else:
+      false
+
+fn build_name_index(snapshots: Vec[Snapshot]) -> NameIndex effects[alloc, partial]:
+  let nodes: Vec[syntax.NameNode] = vec.new()
+  let edges: Vec[syntax.NameEdge] = vec.new()
+  let root: I64 = syntax.append_name_node(-1, @nodes)
+  let valid: Bool = index_snapshot_names(snapshots, 0, @nodes, @edges)
+  NameIndex(valid: valid, nodes: nodes, edges: edges)
+
+fn find_indexed_snapshot(index: NameIndex, snapshots: Vec[Snapshot], candidate: Snapshot) -> I64 effects[partial]:
+  if index.valid:
+    let found: I64 = lookup_snapshot_key(index, candidate)
+    if found >= 0 && found < vec.len(snapshots):
+      let snapshot: Snapshot = vec.get(snapshots, found)
+      if snapshot_identity_equal(snapshot, candidate):
+        found
+      else:
+        -1
+    else:
+      -1
+  else:
+    -1
+
+fn prepare_mapping(before: Snapshot, after: Snapshot, before_total: I64, after_total: I64) -> MapResult effects[partial]:
+  let before_revision: identity.Revision = before.view.declaration.file.revision
+  let after_revision: identity.Revision = after.view.declaration.file.revision
+  let newer: Bool = before_revision.epoch == after_revision.epoch && after_revision.serial > before_revision.serial
+  if newer && snapshot_valid(before, before_total) && snapshot_valid(after, after_total):
+    let same: Bool = snapshot_identity_equal(before, after) && snapshot_body_equal(before, after) && before.view.count == after.view.count
+    if same:
+      let mapping: Mapping = Mapping(before: before.view, after: after.view, before_total: before_total, after_total: after_total, before_body: before.body, after_body: after.body)
+      MapResult::Mapped(mapping)
+    else:
+      MapResult::Missing()
+  else:
+    MapResult::Missing()
+
+fn map_node(mapping: Mapping, node: identity.NodeId) -> NodeResult effects[partial]:
+  let prior: identity.Index = identity.resolve_node(mapping.before, node, mapping.before_total)
+  let current: identity.NodeId = identity.NodeId(declaration: mapping.after.declaration, ordinal: node.ordinal)
+  let resolved: identity.Index = identity.resolve_node(mapping.after, current, mapping.after_total)
+  if index_found(prior) && index_found(resolved):
+    NodeResult::Mapped(current)
+  else:
+    NodeResult::Missing()
+
+fn map_span(mapping: Mapping, span: identity.Span) -> SpanResult effects[partial]:
+  let before: identity.Span = mapping.before_body
+  let after: identity.Span = mapping.after_body
+  let owner: Bool = identity.same_file(before.file, span.file) && identity.same_file(before.file, mapping.before.declaration.file) && identity.same_file(after.file, mapping.after.declaration.file)
+  let bounds: Bool = before.start >= 0 && before.end >= before.start && after.start >= 0 && after.end >= after.start
+  let contained: Bool = span.start >= before.start && span.end >= span.start && span.end <= before.end
+  if owner && bounds && contained:
+    let before_length: I64 = before.end - before.start
+    let after_length: I64 = after.end - after.start
+    if before_length == after_length:
+      let start_delta: I64 = span.start - before.start
+      let end_delta: I64 = span.end - before.start
+      let start: I64 = after.start + start_delta
+      let end: I64 = after.start + end_delta
+      let translated: identity.Span = identity.Span(file: after.file, start: start, end: end)
+      SpanResult::Mapped(translated)
+    else:
+      SpanResult::Missing()
+  else:
+    SpanResult::Missing()
+
+fn mapping_unchanged(before: Snapshot, after: Snapshot, before_total: I64, after_total: I64) -> Bool effects[partial]:
+  let prepared: MapResult = prepare_mapping(before, after, before_total, after_total)
+  match prepared:
+    Missing:
+      false
+    Mapped(mapping):
+      let root: identity.NodeId = identity.NodeId(declaration: before.view.declaration, ordinal: 0)
+      let node: NodeResult = map_node(mapping, root)
+      let span: SpanResult = map_span(mapping, before.body)
+      let same_node: Bool = match node:
+        Missing:
+          false
+        Mapped(mapped):
+          identity.same_declaration(mapped.declaration, after.view.declaration) && mapped.ordinal == 0
+      let same_span: Bool = match span:
+        Missing:
+          false
+        Mapped(mapped):
+          identity.same_file(mapped.file, after.body.file) && mapped.start == after.body.start && mapped.end == after.body.end
+      same_node && same_span
+
+fn find_prior(names: @NameIndex, snapshots: Vec[Snapshot], candidate: Snapshot, index: I64) -> I64 effects[alloc, partial]:
+  let aligned: Bool = if index < vec.len(snapshots):
+    let old: Snapshot = vec.get(snapshots, index)
+    snapshot_identity_equal(old, candidate)
+  else:
+    false
+  if aligned:
+    index
+  else:
+    if names.valid:
+      void
+    else:
+      let previous: NameIndex = mem.replace(@names, build_name_index(snapshots))
+      void
+    find_indexed_snapshot(names, snapshots, candidate)
+
+fn measure_update(previous_state: @State, current_state: State) -> Work effects[alloc, partial]:
+  let names: NameIndex = mem.replace(@previous_state.names, empty_index())
+  let work: Work = calculate_update(previous_state, current_state, @names)
+  let discarded: NameIndex = mem.replace(@previous_state.names, names)
+  work

@@ -28,13 +28,13 @@ struct Hook {
 const HOOKS: &[Hook] = &[
     Hook {
         metric: "name_insert_steps",
-        function: "syntax.insert_name_chars",
+        function: "syntax.ensure_name_chars",
         point: Point::Header,
         amount: "1",
     },
     Hook {
         metric: "name_lookup_steps",
-        function: "syntax.lookup_name_chars",
+        function: "syntax.lookup_name_node_chars",
         point: Point::Header,
         amount: "1",
     },
@@ -198,6 +198,42 @@ const HOOKS: &[Hook] = &[
         metric: "snapshot_build_calls",
         function: "query.build_snapshots",
         point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "source_key_insertions",
+        function: "query.insert_snapshot_key",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "source_key_lookups",
+        function: "query.lookup_snapshot_key",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "revision_map_attempts",
+        function: "query.prepare_mapping",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "revision_node_translations",
+        function: "query.map_node",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "revision_span_translations",
+        function: "query.map_span",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "source_span_compare_steps",
+        function: "project.cross_span_chars_equal",
+        point: Point::Header,
         amount: "1",
     },
     Hook {
@@ -744,6 +780,7 @@ pub(super) fn run() {
         assert_eq!(result.exact("ownership_frame_close_calls"), 3 * size as u64);
         assert!(result.exact("ownership_find_calls") <= 16 * size as u64 + 32);
     }
+    revision_mapping_campaign(&mut runner);
     project_campaign(&mut runner);
     let root = repository_root();
     let mut challenges: Vec<_> = fs::read_dir(root.join("benchmarks/challenges"))
@@ -1179,4 +1216,107 @@ mod tests {
             );
         }
     }
+}
+
+fn revision_mapping_campaign(runner: &mut Runner) {
+    let directory = runner.directory.join("revision-mapping");
+    fs::create_dir(&directory).unwrap();
+    for size in [125, 250, 500, 1_000] {
+        let declarations: Vec<_> = (0..size)
+            .map(|index| format!("fn value_{index}() -> I64:\n  {index}\n\n"))
+            .collect();
+        let mut initial = String::from("module app\n\n");
+        initial.extend(declarations.iter().map(String::as_str));
+        initial.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        let mut reordered = String::from("# shifted origin\nmodule app\n\n");
+        reordered.extend(declarations.iter().rev().map(String::as_str));
+        reordered.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        fs::write(directory.join("initial.slim"), &initial).unwrap();
+        fs::write(directory.join("reordered.slim"), &reordered).unwrap();
+        for name in ["initial", "reordered"] {
+            fs::write(
+                directory.join(format!("{name}.project")),
+                format!(
+                    "(project 1 (entry app) (module app \"{name}.slim\" (imports) (exports)))\n"
+                ),
+            )
+            .unwrap();
+        }
+        for name in ["initial", "reordered"] {
+            let result = runner.observe(
+                &format!("revision-map-{name}-{size}"),
+                &args(&[
+                    Path::new("session"),
+                    &directory.join("initial.project"),
+                    &directory.join(format!("{name}.project")),
+                ]),
+                None,
+            );
+            assert!(result.output.status.success());
+            assert_eq!(result.output.stdout, b"0 0 0 0\n");
+            assert_eq!(result.exact("program_parse_calls"), 2);
+            assert_eq!(result.exact("checker_calls"), 0);
+            assert_eq!(result.exact("c_generation_calls"), 0);
+            let is_reordered = name == "reordered";
+            assert_eq!(
+                result.exact("source_key_insertions"),
+                if is_reordered { size + 1 } else { 0 }
+            );
+            assert_eq!(
+                result.exact("source_key_lookups"),
+                if is_reordered { size - size % 2 } else { 0 }
+            );
+            for metric in [
+                "revision_map_attempts",
+                "revision_node_translations",
+                "revision_span_translations",
+            ] {
+                assert_eq!(result.exact(metric), size + 1);
+            }
+            let source_bytes = (initial.len() + reordered.len()) as u64;
+            for metric in [
+                "name_insert_steps",
+                "name_lookup_steps",
+                "source_span_compare_steps",
+            ] {
+                assert!(
+                    result.exact(metric) <= 4 * source_bytes,
+                    "{metric} exceeded linear source budget"
+                );
+            }
+            assert!(result.exact("name_edge_steps") <= 64 * source_bytes);
+        }
+    }
+    fs::write(directory.join("initial.slim"), "module app\n\nfn first() -> I64:\n  1\n\nfn second() -> I64:\n  2\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n").unwrap();
+    fs::write(directory.join("reordered.slim"), "module app\n\nfn second() -> I64:\n  2\n\nfn first() -> I64:\n  1\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n").unwrap();
+    let mut failed_inside_index = false;
+    let mut passed_beyond_allocations = false;
+    for ordinal in 1..=128 {
+        let result = runner.observe(
+            &format!("revision-map-fault-{ordinal}"),
+            &args(&[
+                Path::new("session"),
+                &directory.join("initial.project"),
+                &directory.join("reordered.project"),
+            ]),
+            Some(ordinal),
+        );
+        if result.output.status.code() == Some(71) {
+            assert!(result.output.stdout.is_empty());
+            failed_inside_index |= result.exact("source_key_insertions") > 0;
+        } else {
+            assert!(result.output.status.success());
+            assert_eq!(result.output.stdout, b"0 0 0 0\n");
+            assert_eq!(result.exact("source_key_insertions"), 3);
+            passed_beyond_allocations = true;
+        }
+    }
+    assert!(
+        failed_inside_index,
+        "fault campaign did not reach lazy index construction"
+    );
+    assert!(
+        passed_beyond_allocations,
+        "fault campaign did not cross all allocations of its fixture"
+    );
 }

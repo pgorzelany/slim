@@ -26,7 +26,10 @@ fn result(index: identity.Index) -> I64:
     Invalid:
       -1
     Found(position):
-      position
+      if position < 0:
+        -2
+      else:
+        position
 
 fn nodes(declaration: identity.DeclarationId, row: I64) -> Void effects[io, partial]:
   if row >= 2401:

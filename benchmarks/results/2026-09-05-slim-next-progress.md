@@ -1162,3 +1162,92 @@ complete dependency observation, transactional retained publication, cached
 analysis/C/backend work, and their differential/locality evidence remain required.
 RFC-0125 is complete as a child boundary; RFC-0124 remains implementation pending.
 Ignored detailed logs are under `build/slim-next-m1/source-identity/`.
+
+## M1 exact revision maps — 2026-09-06
+
+RFC-0126 adds explicit exact-content maps and removes the quadratic fallback
+search from declaration matching. A map requires complete key/body equality,
+validated views/spans, equal node counts, one session epoch, and an increasing
+revision. Translation produces new typed owners while preserving local ordinals
+and contained byte intervals. The old handle remains invalid in the new view.
+These are compiler-owned source maps, not imported certificates or semantic facts.
+
+Full keys traverse module bytes, one of three non-byte kind separators, and name
+bytes in the existing name trie. The compiler compares complete keys on lookup.
+Shared insertion/lookup traversal retains the normal linker's first-declaration
+behavior; baseline and candidate compilers emit byte-identical C for the current
+compiler source. The current canonical name links also detect duplicate declaration
+names before optional index construction, retaining Q0001/status 65 for invalid
+source indexes.
+
+Aligned declarations use direct full equality. A mismatch builds one prior-state
+index, which remains in that state for later lookups and calls. No key-encoding
+buffer is allocated. An early prototype that allocated keys and built both indexes
+showed a 14.5% unchanged-session slowdown at 1,000 declarations; it was replaced
+before this checkpoint. The final implementation preserves explicit mapping checks
+and their measured cost instead of claiming zero source work.
+
+Validation and observations:
+
+- The production mapping module is exercised on every node ordinal and every byte
+  interval around three small declarations, with insertion, reordering, shifted
+  origins, retained comments, LF and CRLF. It compares mapped intervals with the
+  new source bytes. Wrong owners, stale prior revisions, epoch reset, backwards
+  or equal revisions, changed bodies, changed keys, truncated views, and
+  deletion/reinsertion history reject mapping. Repeated update calls exercise
+  retention of the prior-state index. Adversarial compound keys and duplicate
+  keys have separate regressions. This is a named finite test domain, not a
+  universal semantic safety claim.
+- The RFC-0125 7,350-result boundary oracle remains permanent; its decoder now
+  distinguishes an invalid enum case from an erroneously successful negative
+  position. Duplicate source declarations are also tested through the real session
+  command, rather than only through direct index construction.
+- Actual observation adds six counters for key insertion/lookup, map construction,
+  node/span translation, and source-span comparison. The two existing trie-step
+  counters follow their shared traversal helpers; normal linker work is still
+  counted. The fixed cap remains 1,000,000,000 with exact/bounded/unknown meanings.
+- Eight geometric campaigns at 125, 250, 500, and 1,000 functions preserve ordinary
+  and instrumented output and repeated counter equality. Unchanged aligned input
+  builds no fallback index. Reordering inserts exactly N+1 keys once; lookup count
+  reflects the directly aligned middle declaration/main. Every matched declaration
+  attempts one map and translates one root/span. Character/byte work remains under
+  permanent linear source-byte budgets. The complete work campaign passes;
+  [304 mapping-work rows](2026-09-06-m1-revision-map-work.tsv) are retained.
+- Bootstrap reproduces **3,609,454 C bytes**, SHA-256
+  `56989ebfd4cfcce36a0bf8e842339d12c1db269d3c4cf8cc4355a00e794ad41c`:
+  43,249 bytes (1.21%) above checkpoint 35a8afd. On this host, a snapshot is 192
+  bytes (previously 184), a transient mapping 192, an optional name-index record
+  88, and a source-state record 184. Trie nodes/edges allocate only when needed;
+  these record sizes are not peak-memory measurements or portable ABI promises.
+- All 10 unit and 62 integration tests pass, plus the expanded LF/CRLF and duplicate
+  source tests. Conformance remains 331 fixtures and 2,000 malformed-input mutations.
+  Bootstrap, governance, formatting, Clippy, required performance/reduction/
+  parallelism/comparison/agent gates, and resource/parallel-runtime/incremental/work
+  gates pass. ASan/UBSan execute the production mapping fixture; the 128-ordinal
+  source-index campaign still observes 109 failures with exit 71 and no estimate,
+  plus 19 unchanged successes beyond the allocations made. The full actual-work
+  campaign also passes under ASan/UBSan. Its additional reordered-input campaign
+  crosses all allocations in 128 ordinals: 76 failures and 52 successes. Five
+  failures occur after lazy key insertion has begun (ordinals 72–76), with exit 71
+  and no estimate. The gate asserts both index-stage failure coverage and success
+  beyond the fixture's allocations. [Per-ordinal observations](2026-09-06-m1-revision-map-faults.tsv)
+  are retained. No gate is relaxed.
+
+[Paired uninstrumented measurements](2026-09-06-m1-revision-maps.tsv) retain eleven
+alternating-order pairs after two warmups at each of six sizes. At 1,000 functions,
+unchanged sessions are 5.800 ms versus 5.794 ms; reordered sessions are 6.063 ms
+versus 8.213 ms. At 4,000 functions, unchanged sessions are 11.826 ms versus
+11.373 ms (1.040 ratio), while reordered sessions are 13.315 ms versus 49.433 ms
+(0.269 ratio). The new exact mapping work has an aligned-path cost; it is not
+represented as free or as a cross-machine latency guarantee. RFC-0126 records
+Compile -1 and Analysis +2, weighted score 5, for these separate costs/benefits.
+
+M1 remains **in progress**. The session still parses both versions and reports
+historical invalidation estimates. Its syntactic dependency discovery is not the
+complete semantic dependency engine. Retained checked results, typed semantic
+identities, the derived control-flow/ownership foundation, transactional candidate
+publication, cached analysis/emission/backend work, corrupt-cache recovery across
+the complete configuration identity, and full M1 differential/reuse/release gates
+remain required. The previously recorded C type-definition ordering and minimum
+I64 literal emission issues remain open for the emission stage. Detailed logs are
+under `build/slim-next-m1/revision-mapping/`.

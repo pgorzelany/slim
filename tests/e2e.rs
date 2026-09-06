@@ -3873,6 +3873,10 @@ fn production_session_rejects_partial_indexes_and_preserves_source_comparisons()
             .unwrap()
             .contains("Q0001: invalid source identity")
     );
+    fs::write(updated.join("app.slim"), "module app\n\nfn value() -> I64:\n  1\n\nfn value() -> I64:\n  2\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n").unwrap();
+    let duplicate = invoke(&first, &second);
+    assert_eq!(duplicate.status.code(), Some(65));
+    assert_eq!(duplicate.stdout, b"Q0001: invalid source identity\n");
     fs::remove_file(updated.join("app.slim")).unwrap();
     assert_eq!(invoke(&first, &second).status.code(), Some(65));
     fs::remove_file(&second).unwrap();
@@ -3880,5 +3884,69 @@ fn production_session_rejects_partial_indexes_and_preserves_source_comparisons()
     fs::write(&second, fs::read(&first).unwrap()).unwrap();
     fs::write(updated.join("app.slim"), source).unwrap();
     assert_eq!(invoke(&first, &second).stdout, b"0 0 0 0\n");
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn production_revision_maps_preserve_nodes_spans_and_reject_stale_history() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("revision-maps");
+    for entry in fs::read_dir(root.join("selfhost")).unwrap() {
+        let path = entry.unwrap().path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "slim")
+        {
+            fs::copy(&path, directory.join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    let source_manifest = fs::read_to_string(root.join("selfhost/slim.project")).unwrap();
+    let mut manifest = source_manifest
+        .lines()
+        .filter(|line| !line.contains("(module driver "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("(entry driver)", "(entry zzprobe)");
+    assert!(manifest.ends_with(')'));
+    manifest.pop();
+    manifest.push_str("\n  (module zzprobe \"zzprobe.slim\" (imports identity project query syntax) (exports)))\n");
+    fs::write(directory.join("slim.project"), manifest).unwrap();
+    for fixture in [
+        include_str!("fixtures/revision_mapping.slim").to_owned(),
+        include_str!("fixtures/revision_mapping.slim").replace("\\n", "\\r\\n"),
+    ] {
+        fs::write(directory.join("zzprobe.slim"), fixture).unwrap();
+        let generated = Command::new(root.join("build/toolchain/slimc"))
+            .arg(directory.join("slim.project"))
+            .output()
+            .unwrap();
+        assert!(
+            generated.status.success(),
+            "{}",
+            String::from_utf8_lossy(&generated.stdout)
+        );
+        let c = directory.join("probe.c");
+        fs::write(&c, generated.stdout).unwrap();
+        let executable = directory.join("probe");
+        let compiled = Command::new(native_compiler())
+            .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+            .arg("-I")
+            .arg(root.join("runtime"))
+            .arg(&c)
+            .arg(root.join("runtime/slim_rt.c"))
+            .arg("-o")
+            .arg(&executable)
+            .output()
+            .unwrap();
+        assert!(
+            compiled.status.success(),
+            "{}",
+            String::from_utf8_lossy(&compiled.stderr)
+        );
+        let output = Command::new(&executable).output().unwrap();
+        assert!(output.status.success(), "{:?}", output);
+        assert_eq!(output.stdout, b"ok exact revision maps\n");
+        assert!(output.stderr.is_empty());
+    }
     fs::remove_dir_all(directory).unwrap();
 }

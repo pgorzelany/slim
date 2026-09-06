@@ -54,6 +54,20 @@ clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
 "$verify_dir/identity-sanitized" > "$verify_dir/identity-sanitized.out"
 cmp "$verify_dir/identity.out" "$verify_dir/identity-sanitized.out"
 
+mkdir "$verify_dir/maps"
+cp selfhost/*.slim "$verify_dir/maps/"
+cp tests/fixtures/revision_mapping.slim "$verify_dir/maps/zzprobe.slim"
+sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;$s/)$//' \
+  selfhost/slim.project > "$verify_dir/maps/slim.project"
+cat >> "$verify_dir/maps/slim.project" <<'EOF'
+  (module zzprobe "zzprobe.slim" (imports identity project query syntax) (exports)))
+EOF
+"$verify_dir/slimc-seed-sanitized" "$verify_dir/maps/slim.project" > "$verify_dir/maps.c"
+clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Wall -Wextra -Werror -I runtime \
+  "$verify_dir/maps.c" runtime/slim_rt.c -o "$verify_dir/maps-sanitized"
+test "$("$verify_dir/maps-sanitized")" = "ok exact revision maps"
+
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1

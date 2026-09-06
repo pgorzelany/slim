@@ -1,0 +1,193 @@
+module zzprobe
+
+fn state(source: Bytes, serial: I64) -> query.State effects[alloc, partial]:
+  let manifest: Bytes = "(project 1 (entry app) (module app \"app.slim\" (imports) (exports)))"
+  let manifest_tokens: Vec[syntax.Token] = vec.new()
+  syntax.lex_data(manifest, 0, @manifest_tokens)
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  syntax.link_declaration_names_from(source, @tokens, 0)
+  let loaded: Vec[project.LoadedModule] = vec.new()
+  let module: project.LoadedModule = project.LoadedModule(manifest: 7, name: 9, path: 10, source: source, root: 0)
+  vec.push(@loaded, module)
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: serial)
+  query.build_snapshot_state(manifest, manifest_tokens, tokens, loaded, revision)
+
+fn node_missing(result: query.NodeResult) -> Bool:
+  match result:
+    Missing:
+      true
+    Mapped(node):
+      (node.ordinal >= 0) && false
+
+fn span_missing(result: query.SpanResult) -> Bool:
+  match result:
+    Missing:
+      true
+    Mapped(span):
+      (span.start >= 0) && false
+
+fn map_missing(result: query.MapResult) -> Bool:
+  match result:
+    Missing:
+      true
+    Mapped(mapping):
+      (mapping.before_total >= 0) && false
+
+fn nodes(mapping: query.Mapping, before: query.Snapshot, after: query.Snapshot, ordinal: I64) -> Bool effects[partial]:
+  if ordinal > before.view.count:
+    true
+  else:
+    let old: identity.NodeId = identity.NodeId(declaration: before.view.declaration, ordinal: ordinal)
+    let translated: query.NodeResult = query.map_node(mapping, old)
+    let valid: Bool = match translated:
+      Missing:
+        (ordinal < 0) || (ordinal == before.view.count)
+      Mapped(node):
+        let resolution: identity.Index = identity.resolve_node(after.view, node, mapping.after_total)
+        let fresh: Bool = match resolution:
+          Invalid:
+            false
+          Found(position):
+            (position == (after.view.first + ordinal)) && (node.ordinal == ordinal)
+        let stale: identity.Index = identity.resolve_node(after.view, old, mapping.after_total)
+        let rejected: Bool = match stale:
+          Invalid:
+            true
+          Found(position):
+            (position >= 0) && false
+        (fresh && rejected) && identity.same_declaration(node.declaration, after.view.declaration)
+    if valid:
+      let next: I64 = ordinal + 1
+      recur(mapping, before, after, next)
+    else:
+      false
+
+fn equal_bytes(before: Bytes, after: Bytes, start: I64, translated_start: I64, offset: I64, length: I64) -> Bool effects[partial]:
+  if offset >= length:
+    true
+  else:
+    let left: U8 = bytes.get(before, start + offset)
+    let right: U8 = bytes.get(after, translated_start + offset)
+    if u8.to_i64(left) == u8.to_i64(right):
+      let next: I64 = offset + 1
+      recur(before, after, start, translated_start, next, length)
+    else:
+      false
+
+fn spans(mapping: query.Mapping, before: query.Snapshot, after: query.Snapshot, start: I64, end: I64) -> Bool effects[partial]:
+  let length: I64 = before.body.end - before.body.start
+  if start > (length + 1):
+    true
+  else:
+    if end > (length + 1):
+      let next: I64 = start + 1
+      recur(mapping, before, after, next, -1)
+    else:
+      let old: identity.Span = identity.Span(file: before.body.file, start: before.body.start + start, end: before.body.start + end)
+      let translated: query.SpanResult = query.map_span(mapping, old)
+      let inside: Bool = ((start >= 0) && (end >= start)) && (end <= length)
+      let valid: Bool = match translated:
+        Missing:
+          !inside
+        Mapped(span):
+          let interval: Bool = (span.start == (after.body.start + start)) && (span.end == (after.body.start + end))
+          if (inside && interval) && identity.same_file(span.file, after.body.file):
+            equal_bytes(before.source, after.source, old.start, span.start, 0, end - start)
+          else:
+            false
+      if valid:
+        let next: I64 = end + 1
+        recur(mapping, before, after, start, next)
+      else:
+        false
+
+fn declarations(before: query.State, after: query.State, names: query.NameIndex, index: I64) -> Bool effects[alloc, partial]:
+  if index >= vec.len(before.snapshots):
+    true
+  else:
+    let old: query.Snapshot = vec.get(before.snapshots, index)
+    let found: I64 = query.find_indexed_snapshot(names, after.snapshots, old)
+    if found >= 0:
+      let current: query.Snapshot = vec.get(after.snapshots, found)
+      let prepared: query.MapResult = query.prepare_mapping(old, current, before.total, after.total)
+      let valid: Bool = match prepared:
+        Missing:
+          false
+        Mapped(mapping):
+          let wrong: identity.NodeId = identity.NodeId(declaration: current.view.declaration, ordinal: 0)
+          let stale: query.NodeResult = query.map_node(mapping, wrong)
+          let wrong_span: query.SpanResult = query.map_span(mapping, current.body)
+          ((nodes(mapping, old, current, -1) && spans(mapping, old, current, -1, -1)) && node_missing(stale)) && span_missing(wrong_span)
+      if valid:
+        let next: I64 = index + 1
+        recur(before, after, names, next)
+      else:
+        false
+    else:
+      false
+
+fn keyed(snapshot: query.Snapshot, module: Bytes, kind: I64, name: Bytes) -> query.Snapshot:
+  query.Snapshot(unique: snapshot.unique, module: module, kind: kind, name: name, source: snapshot.source, view: snapshot.view, body: snapshot.body, interface: snapshot.interface)
+
+fn reowned(snapshot: query.Snapshot, epoch: I64, serial: I64) -> query.Snapshot:
+  let revision: identity.Revision = identity.Revision(epoch: epoch, serial: serial)
+  let file: identity.FileId = identity.FileId(revision: revision, slot: snapshot.view.declaration.file.slot)
+  let declaration: identity.DeclarationId = identity.DeclarationId(file: file, slot: snapshot.view.declaration.slot)
+  let view: identity.View = identity.View(declaration: declaration, first: snapshot.view.first, count: snapshot.view.count)
+  let body: identity.Span = identity.Span(file: file, start: snapshot.body.start, end: snapshot.body.end)
+  let interface: identity.Span = identity.Span(file: file, start: snapshot.interface.start, end: snapshot.interface.end)
+  query.Snapshot(unique: snapshot.unique, module: snapshot.module, kind: snapshot.kind, name: snapshot.name, source: snapshot.source, view: view, body: body, interface: interface)
+
+fn keys(snapshot: query.Snapshot) -> Bool effects[alloc, partial]:
+  let first: query.Snapshot = keyed(snapshot, "a", 0, "bF:target")
+  let second: query.Snapshot = keyed(snapshot, "aF:b", 0, "target")
+  let third: query.Snapshot = keyed(snapshot, "a", 1, "bF:target")
+  let snapshots: Vec[query.Snapshot] = vec.new()
+  vec.push(@snapshots, first)
+  vec.push(@snapshots, second)
+  vec.push(@snapshots, third)
+  let index: query.NameIndex = query.build_name_index(snapshots)
+  let one: I64 = query.find_indexed_snapshot(index, snapshots, first)
+  let two: I64 = query.find_indexed_snapshot(index, snapshots, second)
+  let three: I64 = query.find_indexed_snapshot(index, snapshots, third)
+  let valid: Bool = ((index.valid && (one == 0)) && (two == 1)) && (three == 2)
+  vec.push(@snapshots, first)
+  let duplicate: query.NameIndex = query.build_name_index(snapshots)
+  valid && (!duplicate.valid)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let before_source: Bytes = "module app\n\nfn first() -> I64:\n  # retained comment\n  11\n\nfn second() -> I64:\n  22\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+  let after_source: Bytes = "# shifted origin\nmodule app\n\nfn inserted() -> I64:\n  33\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n\nfn second() -> I64:\n  22\n\nfn first() -> I64:\n  # retained comment\n  11\n"
+  let changed_source: Bytes = "module app\n\nfn first() -> I64:\n  # retained comment\n  12\n\nfn second() -> I64:\n  22\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+  let deleted_source: Bytes = "module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+  let before: query.State = state(before_source, 1)
+  let after: query.State = state(after_source, 2)
+  let changed: query.State = state(changed_source, 2)
+  let deleted: query.State = state(deleted_source, 2)
+  let reinserted: query.State = state(before_source, 3)
+  let old: query.Snapshot = vec.get(before.snapshots, 0)
+  let new: query.Snapshot = vec.get(after.snapshots, 3)
+  let change: query.Snapshot = vec.get(changed.snapshots, 0)
+  let restored: query.Snapshot = vec.get(reinserted.snapshots, 0)
+  let changed_map: query.MapResult = query.prepare_mapping(old, change, before.total, changed.total)
+  let same_revision: query.MapResult = query.prepare_mapping(old, old, before.total, before.total)
+  let backwards: query.MapResult = query.prepare_mapping(new, old, after.total, before.total)
+  let deleted_names: query.NameIndex = query.build_name_index(deleted.snapshots)
+  let after_names: query.NameIndex = query.build_name_index(after.snapshots)
+  let missing: I64 = query.find_indexed_snapshot(deleted_names, deleted.snapshots, restored)
+  let later: query.MapResult = query.prepare_mapping(new, restored, after.total, reinserted.total)
+  let rejects_old: Bool = match later:
+    Missing:
+      false
+    Mapped(mapping):
+      let ancient: identity.NodeId = identity.NodeId(declaration: old.view.declaration, ordinal: 0)
+      let result: query.NodeResult = query.map_node(mapping, ancient)
+      node_missing(result)
+  let valid: Bool = (((((((((before.valid && after.valid) && changed.valid) && deleted.valid) && reinserted.valid) && declarations(before, after, after_names, 0)) && map_missing(changed_map)) && map_missing(same_revision)) && map_missing(backwards)) && (missing < 0)) && rejects_old
+  if valid:
+    io.println("ok exact revision maps")
+    0
+  else:
+    io.println("failed exact revision maps")
+    1

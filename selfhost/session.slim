@@ -3,7 +3,8 @@ module session
 fn invalid_state() -> query.State effects[alloc]:
   let snapshots: Vec[query.Snapshot] = vec.new()
   let dependencies: Vec[query.Dependency] = vec.new()
-  query.State(valid: false, snapshots: snapshots, dependencies: dependencies)
+  let names: query.NameIndex = query.empty_index()
+  query.State(valid: false, total: 0, names: names, snapshots: snapshots, dependencies: dependencies)
 
 fn state_for_path(path: Bytes, with_dependencies: Bool, revision: identity.Revision) -> query.State effects[alloc, io, partial]:
   let manifest_bytes: Vec[U8] = vec.new()
@@ -32,12 +33,9 @@ fn state_for_path(path: Bytes, with_dependencies: Bool, revision: identity.Revis
   else:
     invalid_state()
 
-fn report_update(previous_state: query.State, current_state: query.State) -> I64 effects[alloc, io, partial]:
+fn report_update(previous_state: @query.State, current_state: query.State) -> I64 effects[alloc, io, partial]:
   if previous_state.valid && current_state.valid:
-    let previous: Vec[query.Snapshot] = previous_state.snapshots
-    let current: Vec[query.Snapshot] = current_state.snapshots
-    let dependencies: Vec[query.Dependency] = current_state.dependencies
-    let work: query.Work = query.measure_update(previous, current, dependencies)
+    let work: query.Work = query.measure_update(@previous_state, current_state)
     print_work(work)
   else:
     io.println("Q0001: invalid source identity")
@@ -63,7 +61,7 @@ fn run(initial_path: Bytes, updated_path: Bytes) -> I64 effects[alloc, io, parti
   let updated_revision: identity.Revision = identity.Revision(epoch: 1, serial: 2)
   let previous_state: query.State = state_for_path(initial_path, false, initial_revision)
   let current_state: query.State = state_for_path(updated_path, true, updated_revision)
-  report_update(previous_state, current_state)
+  report_update(@previous_state, current_state)
 
 fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes) -> I64 effects[alloc, io, partial]:
   let initial_errors: I64 = project.check_project_path(initial_path)
@@ -83,7 +81,7 @@ fn run_recovery(initial_path: Bytes, invalid_path: Bytes, recovered_path: Bytes)
       else:
         let recovered_revision: identity.Revision = identity.Revision(epoch: 1, serial: 3)
         let current_state: query.State = state_for_path(recovered_path, true, recovered_revision)
-        report_update(previous_state, current_state)
+        report_update(@previous_state, current_state)
     else:
       65
 

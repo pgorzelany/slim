@@ -2754,27 +2754,33 @@ fn name_child(nodes: @Vec[NameNode], edges: @Vec[NameEdge], parent: I64, code: I
     vec.set(@nodes, parent, updated)
     child
 
-fn insert_name_chars(source: Bytes, index: I64, end: I64, value: I64, node: I64, nodes: @Vec[NameNode], edges: @Vec[NameEdge]) -> Void effects[alloc, partial]:
+fn ensure_name_chars(source: Bytes, index: I64, end: I64, node: I64, nodes: @Vec[NameNode], edges: @Vec[NameEdge]) -> I64 effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
-    let current: NameNode = vec.get(nodes, node)
-    let first_value: I64 = if current.value >= 0:
-      current.value
-    else:
-      value
-    let updated: NameNode = NameNode(value: first_value, first_edge: current.first_edge)
-    vec.set(@nodes, node, updated)
+    node
   else:
     let byte: U8 = bytes.get(source, index)
     let code: I64 = u8.to_i64(byte)
     let child: I64 = name_child(@nodes, @edges, node, code)
     let next: I64 = index + 1
-    recur(source, next, end, value, child, @nodes, @edges)
+    recur(source, next, end, child, @nodes, @edges)
+
+fn insert_name_chars(source: Bytes, index: I64, end: I64, value: I64, node: I64, nodes: @Vec[NameNode], edges: @Vec[NameEdge]) -> I64 effects[alloc, partial]:
+  let leaf: I64 = ensure_name_chars(source, index, end, node, @nodes, @edges)
+  let current: NameNode = vec.get(nodes, leaf)
+  let first_value: I64 = if current.value >= 0:
+    current.value
+  else:
+    value
+  let updated: NameNode = NameNode(value: first_value, first_edge: current.first_edge)
+  vec.set(@nodes, leaf, updated)
+  current.value
 
 fn insert_name_token(source: Bytes, tokens: Vec[Token], token: I64, value: I64, nodes: @Vec[NameNode], edges: @Vec[NameEdge]) -> Void effects[alloc, partial]:
   let start: I64 = token_start(tokens, token)
   let end: I64 = token_end(tokens, token)
-  insert_name_chars(source, start, end, value, 0, @nodes, @edges)
+  let previous: I64 = insert_name_chars(source, start, end, value, 0, @nodes, @edges)
+  void
 
 fn index_names_from(source: Bytes, tokens: Vec[Token], cursor: I64, nodes: @Vec[NameNode], edges: @Vec[NameEdge]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(tokens)
@@ -2792,11 +2798,10 @@ fn index_names_from(source: Bytes, tokens: Vec[Token], cursor: I64, nodes: @Vec[
       let next: I64 = skip_form(tokens, cursor)
       recur(source, tokens, next, @nodes, @edges)
 
-fn lookup_name_chars(source: Bytes, index: I64, end: I64, node: I64, nodes: Vec[NameNode], edges: Vec[NameEdge]) -> I64 effects[partial]:
+fn lookup_name_node_chars(source: Bytes, index: I64, end: I64, node: I64, nodes: Vec[NameNode], edges: Vec[NameEdge]) -> I64 effects[partial]:
   let done: Bool = index >= end
   if done:
-    let current: NameNode = vec.get(nodes, node)
-    current.value
+    node
   else:
     let byte: U8 = bytes.get(source, index)
     let code: I64 = u8.to_i64(byte)
@@ -2808,6 +2813,14 @@ fn lookup_name_chars(source: Bytes, index: I64, end: I64, node: I64, nodes: Vec[
     else:
       let next: I64 = index + 1
       recur(source, next, end, child, nodes, edges)
+
+fn lookup_name_chars(source: Bytes, index: I64, end: I64, node: I64, nodes: Vec[NameNode], edges: Vec[NameEdge]) -> I64 effects[partial]:
+  let leaf: I64 = lookup_name_node_chars(source, index, end, node, nodes, edges)
+  if leaf >= 0:
+    let current: NameNode = vec.get(nodes, leaf)
+    current.value
+  else:
+    -1
 
 fn lookup_name_token(source: Bytes, tokens: Vec[Token], token: I64, nodes: Vec[NameNode], edges: Vec[NameEdge]) -> I64 effects[partial]:
   let start: I64 = token_start(tokens, token)

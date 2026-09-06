@@ -336,8 +336,12 @@ implementation, or authorization to relax performance or compatibility policy.
 
 ## Implementation
 
-Pending. The initial code audit and staged obligations are recorded in the SLIM
-Next progress report. The M0 compiler remains the current production baseline.
+In progress. RFC-0125's checked source identities and RFC-0126's exact revision
+maps and lazy declaration index are implemented in production. Typed semantic
+identities, derived control flow, retained checker/analysis/emission queries,
+transactional publication, and the full M1 validation remain pending. The SLIM
+Next progress report records each checkpoint; M0 remains the historical comparison
+baseline, not a claim that the current seed is unchanged.
 
 ## Removal and supersession
 
