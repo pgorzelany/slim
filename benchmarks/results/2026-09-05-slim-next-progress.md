@@ -1,6 +1,6 @@
 # SLIM Next implementation and evaluation
 
-Status: in progress
+Status: M0 complete; M1-M7 pending
 Decision: RFC-0112 accepted by the maintainer on 2026-09-05
 Baseline source: 97412bf
 
@@ -12,7 +12,7 @@ complete any milestone. Production semantics remain in SLIM and the portable C s
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, definite reinitialization and branch joins, finite layouts, lexical borrow loans, enum consumption, checked field replacement, retained ownership reports, exclusive/identity assignment lowering, termination effects, and formatter round trips validated. Actual-work instrumentation is validated. Lexical binding lowering is repaired. The claim audit and M0/M1 decision boundary are recorded. The complete release gate remains pending. |
+| M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -1002,7 +1002,7 @@ roots. Publication still accounts for every actual Markdown source exactly once.
 RFC-0111 remains proposed: the experimental library is a repository corpus,
 not newly added to the 0.9 release manifest.
 
-### Final gate status
+### Gate status before the closure run
 
 The complete `scripts/verify-0.9.sh` gate remains pending on the closure revision.
 Its package step requires committed, clean included sources. M0 is not marked
@@ -1010,3 +1010,43 @@ complete until repository verification, two-archive reproducibility, clean
 installation/bootstrap/execution, ABI mismatch rejection, and website checks
 all pass. Bounded campaigns establish their named domains; universal safety and
 agent effectiveness remain unknown, and M1-M7 implementation remains pending.
+
+## M0 completed (2026-09-06)
+
+The full `./scripts/verify-0.9.sh` command passed on committed, clean revision
+44062be, with compiler repair checkpoint ea59312 and portable seed SHA-256
+`a7e4b2f8de6696c27880ebaf170392c7f491b73bdd9157846bf5a9ddc05ae9e4`.
+It reported `SLIM 0.9 verification: repository, release, and website gates passed`.
+The two source archives were byte-identical with SHA-256
+`580e557ab454f4c88bec983b00457acc6c20481cda3caf8ecac860ff879e6dee`.
+This archive identity belongs to 44062be, before this closing documentation
+record, and is not relabelled as the digest of subsequent source archives.
+
+The complete gate includes bootstrap fixed point, formatting, Clippy, governance,
+10 unit and 59 integration tests, 331 production conformance fixtures and 2,000
+malformed-input mutations, ten library projects plus twelve valid generated
+programs and twelve rejected mutants, every existing compiler/runtime/tooling
+benchmark gate, the new actual-work campaign, sanitized compiler and generated
+application execution, and allocation-failure checks. It then passed repeated
+archive generation, safe extraction, clean bootstrap/build/run, runtime ABI
+mismatch rejection, and all 18 website tests. The earlier focused ASan/UBSan,
+worker-tier, bounded fault, ownership-path, and alpha-renaming campaigns remain
+recorded above; the release gate does not substitute for those named domains.
+
+The complete release log is retained locally in ignored
+`build/slim-next-closure/verify-0.9.log`. Its SHA-256 is
+`bc6a93082ed6374b97467965fe5c5ca8d4772289629bd4564c8be9a1373e2eca`.
+Website preparation initially found unclassified library documents and stale
+archive assertions; those failures were repaired before the complete gate.
+The default sandbox blocked the website build worker's local port, so the final
+suite ran with authorized localhost access. No acceptance check, performance
+budget, diagnostic, native analysis baseline, or language hard gate was removed
+to obtain a pass.
+
+All RFC-0112 M0 exit obligations are satisfied for the recorded repair and
+validation domains. No listed review reproducer remains open. M1-M7 are pending;
+there is no retained incremental checking, successor syntax/lifetime system,
+agent productivity result, or OS implementation implied by M0 completion.
+The observed 16.4% seed-size increase and 1.029 compiler-source emission ratio
+from RFC-0122 remain explicit costs. Future counterexamples require new repairs;
+passing this bounded evidence is not a universal safety proof.

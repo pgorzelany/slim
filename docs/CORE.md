@@ -2,9 +2,9 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 
-Known implementation gaps and the evidence for completed repairs
-are tracked in the [SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
-The intended safety contract below is not yet completely enforced.
+Current-contract repairs and their validation domains are recorded in the
+[SLIM Next repair report](../benchmarks/results/2026-09-05-slim-next-progress.md).
+Passing bounded tests is not proof of safety for every accepted program.
 
 SLIM source is the only compilable program representation. Leading whitespace
 defines blocks, and `slimc fmt` emits the unique canonical layout. SLIM 0.9 is

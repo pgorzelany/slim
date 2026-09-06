@@ -11,6 +11,7 @@ cargo build --release --bins
 target/release/slim-bench performance
 target/release/slim-bench compare
 target/release/slim-bench incremental
+target/release/slim-bench work
 target/release/slim-bench project
 target/release/slim-bench reduction
 target/release/slim-bench parallelism
@@ -20,7 +21,7 @@ target/release/slim-bench agent
 
 SLIM compilation time includes the frontend, deterministic C emission, and an
 optimized Clang invocation. Frontend-only scaling is reported separately. C is
-the unchecked native performance ceiling; Rust retains memory and bounds
+an unchecked native comparison baseline; Rust retains memory and bounds
 safety. SLIM retains bounds and checked-arithmetic traps. Results therefore show
 both current code quality and the cost still awaiting proof-based check removal.
 
@@ -85,7 +86,7 @@ every native challenge, requires deterministic balanced reports, and compares
 schema-versioned safety and opportunity metrics with
 `parallelism-baseline.tsv`. Schema 5 retains primary reasons, complete
 per-function blocker incidence, and
-candidate/selected/reported/executable/executed schedule counts across fourteen
+candidate/selected/reported/executable/executed schedule counts across twenty
 applications. The `state_machine` and `signal_network` rows are permanent
 positive cases: each has two independent two-million-step total recurrences and
 must retain exactly one site through all five stages.
