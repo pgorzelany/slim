@@ -1,0 +1,422 @@
+module zzprobe
+
+fn equal_from(left: Bytes, right: Bytes, at: I64) -> Bool effects[partial]:
+  if at >= bytes.len(left):
+    true
+  else:
+    if u8.to_i64(bytes.get(left, at)) == u8.to_i64(bytes.get(right, at)):
+      recur(left, right, at + 1)
+    else:
+      false
+
+fn equal(left: Bytes, right: Bytes) -> Bool effects[partial]:
+  if bytes.len(left) == bytes.len(right):
+    equal_from(left, right, 0)
+  else:
+    false
+
+fn same_facts(left: Vec[typing.Fact], right: Vec[typing.Fact], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: typing.Fact = vec.get(left, at)
+      let b: typing.Fact = vec.get(right, at)
+      if (a.tag == b.tag) && (a.form == b.form):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_tokens(left: Vec[syntax.Token], right: Vec[syntax.Token], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: syntax.Token = vec.get(left, at)
+      let b: syntax.Token = vec.get(right, at)
+      if (((a.kind == b.kind) && (a.tag == b.tag)) && ((a.start == b.start) && (a.end == b.end))) && ((a.link == b.link) && (a.next == b.next)):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_issues(left: Vec[typing.Issue], right: Vec[typing.Issue], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: typing.Issue = vec.get(left, at)
+      let b: typing.Issue = vec.get(right, at)
+      let blocking: Bool = if a.blocks_inference:
+        b.blocks_inference
+      else:
+        !b.blocks_inference
+      if equal(a.code, b.code) && (((a.start == b.start) && (a.end == b.end)) && blocking):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_bool(left: Bool, right: Bool) -> Bool:
+  if left:
+    right
+  else:
+    !right
+
+fn same_numbers(left: Vec[I64], right: Vec[I64], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: I64 = vec.get(left, at)
+      let b: I64 = vec.get(right, at)
+      if a == b:
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_origins(left: Vec[project.Origin], right: Vec[project.Origin], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: project.Origin = vec.get(left, at)
+      let b: project.Origin = vec.get(right, at)
+      if (a.module == b.module) && ((a.start == b.start) && (a.end == b.end)):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_values(left: Vec[memory.ValuePlan], right: Vec[memory.ValuePlan], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: memory.ValuePlan = vec.get(left, at)
+      let b: memory.ValuePlan = vec.get(right, at)
+      if ((a.name == b.name) && (a.type_index == b.type_index)) && (((a.storage == b.storage) && same_bool(a.borrowed, b.borrowed)) && (((a.declared == b.declared) && (a.last_use == b.last_use)) && (a.escape == b.escape))):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_allocations(left: Vec[memory.AllocationPlan], right: Vec[memory.AllocationPlan], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: memory.AllocationPlan = vec.get(left, at)
+      let b: memory.AllocationPlan = vec.get(right, at)
+      if (a.site == b.site) && (a.region == b.region):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_destructions(left: Vec[memory.DestructionPlan], right: Vec[memory.DestructionPlan], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: memory.DestructionPlan = vec.get(left, at)
+      let b: memory.DestructionPlan = vec.get(right, at)
+      if ((a.region == b.region) && (a.end == b.end)) && same_bool(a.reverse, b.reverse):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_plans(left: Vec[memory.FunctionPlan], right: Vec[memory.FunctionPlan], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: memory.FunctionPlan = vec.get(left, at)
+      let b: memory.FunctionPlan = vec.get(right, at)
+      if ((a.function == b.function) && (a.return_storage == b.return_storage)) && ((same_bool(a.local_region, b.local_region) && same_bool(a.recursive, b.recursive)) && ((same_bool(a.liveness_precise, b.liveness_precise) && (a.escaping_values == b.escaping_values)) && (same_values(a.values, b.values, 0) && (same_allocations(a.allocations, b.allocations, 0) && same_destructions(a.destructions, b.destructions, 0))))):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn compare(path: Bytes, snapshot: session.Snapshot) -> I64 effects[alloc, io, partial]:
+  let clean: project.PreparedProject = project.prepare_project_path(path)
+  let kept: project.PreparedProject = snapshot.prepared
+  let source: Bool = equal(kept.source, clean.source) && equal(kept.manifest_source, clean.manifest_source)
+  let syntax: Bool = same_tokens(kept.tokens, clean.tokens, 0) && (same_tokens(kept.manifest_tokens, clean.manifest_tokens, 0) && same_origins(kept.origins, clean.origins, 0))
+  let facts: Bool = same_facts(kept.facts, clean.facts, 0) && (same_numbers(kept.layouts, clean.layouts, 0) && same_issues(kept.issues, clean.issues, 0))
+  let plans: Bool = same_plans(kept.plan.functions, clean.plan.functions, 0)
+  let stored: session.Artifact = session.artifact(snapshot)
+  if (kept.status == clean.status) && (source && (syntax && (facts && plans))):
+    if equal(stored.code, project.generate_prepared_project(clean)):
+      0
+    else:
+      12
+  else:
+    11
+
+fn config(mode: Bytes) -> session.Config effects[partial]:
+  let compiler: Bytes = if equal(mode, "compiler"):
+    "compiler-2"
+  else:
+    "compiler-1"
+  let runtime: Bytes = if equal(mode, "runtime"):
+    "runtime-2"
+  else:
+    "runtime-1"
+  let target: Bytes = if equal(mode, "target"):
+    "target-2"
+  else:
+    "target-1"
+  let options: Bytes = if equal(mode, "options"):
+    "options-2"
+  else:
+    "options-1"
+  session.Config(compiler: compiler, runtime: runtime, target: target, options: options)
+
+fn print_report(report: session.Report) -> Void effects[io]:
+  io.print_i64(report.attempted.epoch)
+  io.print_bytes(" ")
+  io.print_i64(report.attempted.serial)
+  io.print_bytes(" ")
+  io.print_i64(report.published.epoch)
+  io.print_bytes(" ")
+  io.print_i64(report.published.serial)
+  io.print_bytes(" ")
+  io.print_i64(report.status)
+  io.print_bytes(" ")
+  io.print_i64(report.work.executed)
+  io.print_bytes(" ")
+  io.print_i64(report.work.reused)
+  io.print_bytes(" ")
+  io.print_i64(report.work.imported)
+  io.print_bytes(" ")
+  io.print_i64(report.generated)
+  io.print_bytes(" ")
+  let snapshot_reused: I64 = if report.snapshot_reused:
+    1
+  else:
+    0
+  io.print_i64(snapshot_reused)
+  io.print_bytes(" ")
+  let code_reused: I64 = if report.code_reused:
+    1
+  else:
+    0
+  io.print_i64(code_reused)
+  io.print_bytes(" ")
+  io.println(report.reason)
+
+fn damage(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if equal(mode, "corrupt") || equal(mode, "missing-code"):
+    let artifacts: Vec[session.Artifact] = vec.new()
+    if equal(mode, "corrupt"):
+      vec.push(@artifacts, session.Artifact(code: "damaged", checksum: 0))
+    else:
+      void
+    let previous: Vec[session.Artifact] = mem.replace(@state.good.artifacts, artifacts)
+    void
+  else:
+    if equal(mode, "metadata"):
+      let previous: Vec[retained.Saved] = mem.replace(@state.good.typing.nodes, vec.new())
+      void
+    else:
+      if equal(mode, "metadata-declarations"):
+        let previous: Vec[retained.Declaration] = mem.replace(@state.good.typing.index.declarations, vec.new())
+        void
+      else:
+        if equal(mode, "metadata-edges"):
+          let previous: Vec[syntax.NameEdge] = mem.replace(@state.good.typing.index.edges, vec.new())
+          void
+        else:
+          if equal(mode, "metadata-manifest"):
+            let previous: Vec[syntax.Token] = mem.replace(@state.good.prepared.manifest_tokens, vec.new())
+            void
+          else:
+            void
+
+fn module_size(modules: Vec[project.ModuleInput], at: I64, total: I64) -> I64 effects[partial]:
+  if at >= vec.len(modules):
+    total
+  else:
+    let input: project.ModuleInput = vec.get(modules, at)
+    recur(modules, at + 1, total + bytes.len(input.source))
+
+fn limits_for(before: Bytes, mode: Bytes, input: project.ProjectInput) -> session.Limits effects[alloc, io, partial]:
+  let attempts: I64 = if equal(mode, "attempt-limit"):
+    1
+  else:
+    if equal(mode, "bad-limits"):
+      65
+    else:
+      64
+  let input_bytes: I64 = if equal(mode, "input-limit"):
+    module_size(input.modules, 0, bytes.len(input.manifest_source))
+  else:
+    67108864
+  let canonical_nodes: I64 = if equal(mode, "node-limit"):
+    let clean: project.PreparedProject = project.prepare_project_path(before)
+    vec.len(clean.tokens) + 1
+  else:
+    1000000
+  let code_bytes: I64 = if equal(mode, "code-limit"):
+    let clean: project.PreparedProject = project.prepare_project_path(before)
+    bytes.len(project.generate_prepared_project(clean)) + 1
+  else:
+    67108864
+  session.Limits(attempts: attempts, input_bytes: input_bytes, canonical_nodes: canonical_nodes, code_bytes: code_bytes)
+
+fn exhaust_revision(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if equal(mode, "revision-limit"):
+    let old: session.Usage = session.usage(state)
+    let ledger: Vec[session.Usage] = vec.new()
+    let revision: identity.Revision = identity.Revision(epoch: old.counter.epoch, serial: 9223372036854775807)
+    vec.push(@ledger, session.Usage(counter: revision, attempts: old.attempts, input_used: old.input_used, nodes_used: old.nodes_used, code_used: old.code_used))
+    let previous: Vec[session.Usage] = mem.replace(@state.usage, ledger)
+    void
+  else:
+    void
+
+fn expected_failure(mode: Bytes) -> Bytes effects[partial]:
+  if equal(mode, "attempt-limit") || equal(mode, "full-epoch"):
+    "S0003"
+  else:
+    if equal(mode, "input-limit"):
+      "S0004"
+    else:
+      if equal(mode, "node-limit"):
+        "S0005"
+      else:
+        if equal(mode, "code-limit"):
+          "S0006"
+        else:
+          if equal(mode, "revision-limit"):
+            "S0007"
+          else:
+            if equal(mode, "bad-config"):
+              "S0009"
+            else:
+              ""
+
+fn exhaust_attempts(state: @session.State, path: Bytes, remaining: I64) -> Void effects[alloc, io, partial]:
+  if remaining <= 0:
+    void
+  else:
+    let input: project.ProjectInput = project.capture_project_input(path)
+    let report: session.Report = session.update(@state, ^input, config(""))
+    if report.status == 0:
+      recur(@state, path, remaining - 1)
+    else:
+      void
+
+fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effects[alloc, io, partial]:
+  let initial_input: project.ProjectInput = project.capture_project_input(before)
+  let limits: session.Limits = limits_for(before, mode, initial_input)
+  let state: session.State = session.start(epoch, limits)
+  let initial: session.Report = session.update(@state, ^initial_input, config(""))
+  if initial.status > 0:
+    if equal(mode, "bad-limits") && ((initial.status == 65) && equal(initial.reason, "S0002")):
+      print_report(initial)
+      0
+    else:
+      20
+  else:
+    let reference: Bytes = if equal(mode, "captured"):
+      after
+    else:
+      before
+    let first_same: I64 = compare(reference, state.good)
+    if first_same > 0:
+      first_same
+    else:
+      damage(@state, mode)
+      exhaust_revision(@state, mode)
+      if equal(mode, "full-epoch"):
+        exhaust_attempts(@state, before, 63)
+      else:
+        void
+      let changed_input: project.ProjectInput = project.capture_project_input(after)
+      let next_config: session.Config = if equal(mode, "bad-config"):
+        session.Config(compiler: "", runtime: "1", target: "1", options: "1")
+      else:
+        config(mode)
+      let changed: session.Report = session.update(@state, ^changed_input, next_config)
+      let expected: Bytes = expected_failure(mode)
+      if bytes.len(expected) > 0:
+        let unchanged: I64 = compare(before, state.good)
+        if (changed.status == 65) && (equal(changed.reason, expected) && ((unchanged == 0) && identity.same_revision(initial.published, changed.published))):
+          if equal(mode, "node-limit") || equal(mode, "code-limit"):
+            let recovered_input: project.ProjectInput = project.capture_project_input(before)
+            let recovered: session.Report = session.update(@state, ^recovered_input, config(""))
+            if (recovered.status == 0) && (recovered.snapshot_reused && identity.same_revision(initial.published, recovered.published)):
+              print_report(initial)
+              print_report(changed)
+              print_report(recovered)
+              0
+            else:
+              26
+          else:
+            print_report(initial)
+            print_report(changed)
+            0
+        else:
+          24
+      else:
+        if equal(mode, "recover"):
+          if changed.status == 0:
+            21
+          else:
+            if !identity.same_revision(initial.published, changed.published):
+              22
+            else:
+              let previous_same: I64 = compare(before, state.good)
+              let recovered_input: project.ProjectInput = project.capture_project_input(before)
+              let recovered: session.Report = session.update(@state, ^recovered_input, config(""))
+              if (previous_same == 0) && ((recovered.status == 0) && (recovered.snapshot_reused && identity.same_revision(initial.published, recovered.published))):
+                print_report(initial)
+                print_report(changed)
+                print_report(recovered)
+                0
+              else:
+                23
+        else:
+          if equal(mode, "check"):
+            changed.status
+          else:
+            if changed.status > 0:
+              changed.status
+            else:
+              let second_same: I64 = compare(after, state.good)
+              if second_same == 0:
+                print_report(initial)
+                print_report(changed)
+                0
+              else:
+                second_same
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 4:
+    let mode: Bytes = vec.get(args, 3)
+    let first: I64 = run_epoch(vec.get(args, 1), vec.get(args, 2), mode, 1)
+    if (first == 0) && equal(mode, "epochs"):
+      match identity.reset(identity.Revision(epoch: 1, serial: 3)):
+        None:
+          25
+        Some(next):
+          run_epoch(vec.get(args, 1), vec.get(args, 2), mode, next.epoch)
+    else:
+      first
+  else:
+    64

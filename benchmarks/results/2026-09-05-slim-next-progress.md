@@ -1763,3 +1763,121 @@ work, flow-based ownership orchestration, typed place facts and complete M1
 locality/differential/release closure remain required. The known minimum-I64 literal
 emission bug and recursive-checker sanitizer stack limitation remain open. This
 checkpoint does not replace any of those requirements.
+
+
+## M1 transactional project snapshots — 2026-09-07
+
+RFC-0133 adds the internal owner of retained project history. Captured ProjectInput
+contains original manifest bytes, checked manifest metadata and ordered module
+buffers with read outcomes. Preparation consumes those exact buffers through the
+same module validation and checking operations as ordinary preparation. It never
+reopens paths after choosing an input key. Ordinary preparation preserves its
+interleaved read/parse order and existing diagnostics. Capturing all module reads
+first is limited to the new session path; read failures are subsequently reported
+in source-module order.
+
+Session State owns attempted revisions, cumulative admission accounting and a
+last-good Snapshot. Configuration uses four separate bounded compiler/runtime/
+target/options fingerprints. Each admitted update receives a fresh attempted
+revision even on rejection; publication selects a complete checked candidate only
+after generation and payload admission succeed. An exact raw-input/configuration
+hit retains the previous published revision, all prepared fields and C. It does
+not reinterpret old typed nodes under a new revision. Changed raw input with
+identical checked canonical source can reuse whole C after current validation.
+Missing structural metadata forces cold preparation. Missing or checksum-damaged
+optional C regenerates from checked history without source rechecking.
+
+This is a compiler-owned in-process core, not a serialized semantic cache. The
+host must bind configuration fingerprints to the actual toolchain in the future
+public transport. The existing public estimate wrappers are unchanged. No backend
+was executed by this core and no avoided-backend claim is made. The internal
+optional C checksum is an integrity check within trusted compiler ownership, not
+authentication for imported executable content.
+
+Admission limits are 1..64 attempts, 1..67,108,864 input bytes, 1..1,000,000
+canonical nodes and 1..67,108,864 C bytes per epoch. Usage is cumulative; checked
+remaining capacity prevents arithmetic overflow and failed work cannot reset the
+budget. Strict preparation declines an over-budget canonical input before function
+checking, instead of taking the earlier optional-cache fallback. Node/C exhaustion
+preserves good history and still permits unchanged reuse if input/attempt capacity
+remains. Source reads precede admission and transient parser/checker/emitter
+allocation follows existing contracts: these are not RSS limits.
+
+The language remains unchanged. A one-element checked vector owns usage counters;
+an optional one-element vector owns generated C and its checksum. Scalar values
+are not passed to affine mem.replace. The session epoch probe returns an I64 and
+has no exclusive output parameters, so its existing generated function region is
+destroyed on return. Native observation checks that the child allocation list is
+empty and the parent's list is unchanged. A second epoch starts only after that
+return, using identity.reset. An API user retaining State outside such an owner
+has not established the future public service lifecycle contract.
+
+Validation and observations:
+
+- Complete clean-versus-session comparison covers source and manifest bytes,
+  tokens and original diagnostic origins, typing facts, layout order, issues,
+  every memory-plan field and generated C. All 94 accepted conformance/native
+  fixtures pass unchanged updates with zero program parses, function checks and
+  C generations. Input capture/framing, full-byte comparison and optional-C
+  integrity scans remain real work outside those query counts.
+- Permanent edit cases cover arguments and helper bodies, interfaces, declared
+  and actual effects, copyability/layout changes, exclusive/owned parameter
+  changes, missing moves, insertion/deletion/renaming/reordering, module namespace
+  changes, relocation, comments/CRLF and recurrence changing body-derived facts.
+  Rejected project inputs preserve normal status and exact diagnostic output,
+  including malformed source before a later read failure. Recovery retains the
+  same last-good revision and exact clean output.
+- Tests independently change all four configuration fields, remove several
+  metadata vectors, remove/damage C, cross input/node/C/attempt capacities, reject
+  invalid limits/configuration and exhausted revision IDs, issue exactly 64
+  successful attempts and decline the next, and destroy two complete epochs.
+  A native test replaces a file after capture but before preparation; the checked
+  snapshot still matches the captured bytes and the untouched reference project.
+- [Observed geometric work](2026-09-07-m1-session-work.tsv) repeats identically
+  through 4,000 helpers in two modules. Cold preparation parses three program
+  representations, checks N+1 functions and generates C once. Unchanged update
+  does none of these operations, reuses N+1 functions and imports zero nodes.
+  One helper-body edit still parses three representations, checks one function,
+  imports 15N+7 nodes and regenerates whole C. These remaining parses and whole-C
+  generation are explicit M1 locality work, not complete granular retention.
+- The final [sanitized matrix](2026-09-07-m1-session-matrix.tsv) and all
+  [2,048 allocation-fault ordinals](2026-09-07-m1-session-faults.tsv) pass. There
+  are 426 status-71 failures with empty stdout and 1,622 successes; ordinary and
+  ASan/UBSan status/stdout/stderr agree. Observed update returns are not claims of
+  successful publication. The earlier retained project campaign still passes
+  94 files and 2,048 ordinals (693 failures/1,355 successes); the retained source
+  campaign still passes 94 files and 512 ordinals (509 failures/three successes).
+- Relative to afc0482, all 193 rejected source fixtures retain exact status and
+  diagnostics. All 20 native applications preserve complete analysis, resource
+  rows and [byte-identical C](2026-09-07-m1-session-native.tsv).
+- The final bootstrap fixed point is **3,985,480 C bytes**, 112,268 above afc0482,
+  SHA-256 `aaf9a4305bc3516b8a6cbe367a7eb057584fdf2ae8ccb050e4e88304ef64e1d8`.
+  All 10 unit and 68 integration tests pass. Conformance passes 333 fixtures and
+  2,000 malformed mutations. Governance, formatting, Clippy, required performance/
+  reduction/parallelism/comparison/agent checks, resources, parallel-runtime,
+  incremental and the existing ordinary-work gates pass without a relaxed budget.
+
+[Paired O2 timings](2026-09-07-m1-session-latency.tsv) use two warmup pairs and
+11 alternating measured pairs after other CPU-intensive checks. At 4,000 helpers,
+ordinary project-check medians are 20.986 ms for afc0482 and 20.850 ms for this
+checkpoint. Two clean preparations with C generation take 65.847 ms versus
+43.816 ms for a cold session followed by unchanged reuse. A helper-body edit takes
+66.979 ms clean versus 90.513 ms with retained session preparation. These are
+whole-process totals, including startup, captured input, checking, C generation
+and integrity work; they are not isolated warm-query timings or portable budgets.
+Whole unchanged reuse improves this measured sequence, while changed preparation
+remains slower and requires the remaining granular M1 work. Compile remains zero
+in the RFC rating; Analysis +2 records the new verified session facts.
+
+On this host the fixed records occupy 104 bytes for ProjectInput, 656 for
+ProjectAttempt, 944 for State, 872 for Snapshot, 48 for Usage, 24 for Artifact and
+112 for Report; PreparedProject remains 320 bytes. These sizes exclude referenced
+buffers. The permanent 64-byte saved-row and eight-byte stored-link limits still
+pass. Recipes and detailed logs are in `build/slim-next-m1/transactional-session/`.
+
+M1 remains **in progress**. Public transactional transport and actual host identities,
+service lifecycle integration, typed place facts and flow-based ownership
+orchestration, retained declaration parsing/global analysis/C fragments/backend
+work, and complete M1 differential/locality/release closure remain required. The
+minimum-I64 literal emission bug and recursive-checker sanitizer stack limitation
+remain open. This checkpoint preserves the full goal and does not complete M1.

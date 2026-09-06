@@ -5019,3 +5019,21 @@ fn retained_project_preparation_preserves_validation_and_current_origins() {
     }
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn transactional_session_publishes_complete_snapshots_and_observes_reuse() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("sh")
+        .arg(root.join("scripts/verify-session.sh"))
+        .arg(root.join("build/toolchain/slimc"))
+        .arg("quick")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "session verification failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

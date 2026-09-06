@@ -1,5 +1,317 @@
 module session
 
+struct Config:
+  compiler: Bytes
+  runtime: Bytes
+  target: Bytes
+  options: Bytes
+
+struct Limits:
+  attempts: I64
+  input_bytes: I64
+  canonical_nodes: I64
+  code_bytes: I64
+
+struct Artifact:
+  code: Bytes
+  checksum: I64
+
+struct Snapshot:
+  valid: Bool
+  revision: identity.Revision
+  config: Config
+  input: project.ProjectInput
+  prepared: project.PreparedProject
+  typing: retained.Cache
+  functions: I64
+  layout_count: I64
+  canonical_nodes: I64
+  artifacts: Vec[Artifact]
+
+struct Usage:
+  counter: identity.Revision
+  attempts: I64
+  input_used: I64
+  nodes_used: I64
+  code_used: I64
+
+struct State:
+  limits: Limits
+  usage: Vec[Usage]
+  good: Snapshot
+
+struct Report:
+  attempted: identity.Revision
+  published: identity.Revision
+  status: I64
+  reason: Bytes
+  work: retained.Work
+  snapshot_reused: Bool
+  generated: I64
+  code_reused: Bool
+
+fn empty_config() -> Config:
+  Config(compiler: "", runtime: "", target: "", options: "")
+
+fn empty_snapshot() -> Snapshot effects[alloc]:
+  let input: project.ProjectInput = project.empty_project_input()
+  let prepared: project.PreparedProject = project.invalid_prepared_project(1)
+  let typing: retained.Cache = retained.empty_cache()
+  let artifacts: Vec[Artifact] = vec.new()
+  Snapshot(valid: false, revision: identity.Revision(epoch: 0, serial: 0), config: empty_config(), input: input, prepared: prepared, typing: typing, functions: 0, layout_count: 0, canonical_nodes: 0, artifacts: artifacts)
+
+fn start(epoch: I64, limits: Limits) -> State effects[alloc, partial]:
+  let good: Snapshot = empty_snapshot()
+  let usage: Vec[Usage] = vec.new()
+  vec.push(@usage, Usage(counter: identity.Revision(epoch: epoch, serial: 1), attempts: 0, input_used: 0, nodes_used: 0, code_used: 0))
+  State(limits: limits, usage: usage, good: good)
+
+fn usage(state: State) -> Usage effects[partial]:
+  vec.get(state.usage, 0)
+
+fn charge(state: @State, counter: identity.Revision, attempts: I64, input_used: I64, nodes_used: I64, code_used: I64) -> Void effects[alloc, partial]:
+  let next: Usage = Usage(counter: counter, attempts: attempts, input_used: input_used, nodes_used: nodes_used, code_used: code_used)
+  let ledger: Vec[Usage] = mem.replace(@state.usage, vec.new())
+  vec.set(@ledger, 0, next)
+  let previous: Vec[Usage] = mem.replace(@state.usage, ledger)
+  void
+
+fn artifact(snapshot: Snapshot) -> Artifact effects[partial]:
+  vec.get(snapshot.artifacts, 0)
+
+fn valid_limits(limits: Limits) -> Bool:
+  ((limits.attempts >= 1) && (limits.attempts <= 64)) && (((limits.input_bytes >= 1) && (limits.input_bytes <= 67108864)) && (((limits.canonical_nodes >= 1) && (limits.canonical_nodes <= 1000000)) && ((limits.code_bytes >= 1) && (limits.code_bytes <= 67108864))))
+
+fn valid_fingerprint(value: Bytes) -> Bool:
+  (bytes.len(value) > 0) && (bytes.len(value) <= 4096)
+
+fn valid_config(config: Config) -> Bool:
+  valid_fingerprint(config.compiler) && (valid_fingerprint(config.runtime) && (valid_fingerprint(config.target) && valid_fingerprint(config.options)))
+
+fn same_config(left: Config, right: Config) -> Bool effects[partial]:
+  retained.equal(left.compiler, right.compiler) && (retained.equal(left.runtime, right.runtime) && (retained.equal(left.target, right.target) && retained.equal(left.options, right.options)))
+
+fn same_modules(left: Vec[project.ModuleInput], right: Vec[project.ModuleInput], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    at == vec.len(right)
+  else:
+    if at >= vec.len(right):
+      false
+    else:
+      let before: project.ModuleInput = vec.get(left, at)
+      let after: project.ModuleInput = vec.get(right, at)
+      if (before.read && after.read) && retained.equal(before.source, after.source):
+        recur(left, right, at + 1)
+      else:
+        false
+
+fn same_input(left: project.ProjectInput, right: project.ProjectInput) -> Bool effects[partial]:
+  if (left.status == 0) && (right.status == 0):
+    retained.equal(left.manifest_source, right.manifest_source) && same_modules(left.modules, right.modules, 0)
+  else:
+    false
+
+fn module_bytes(modules: Vec[project.ModuleInput], at: I64, remaining: I64) -> I64 effects[partial]:
+  if at >= vec.len(modules):
+    remaining
+  else:
+    let module: project.ModuleInput = vec.get(modules, at)
+    let size: I64 = bytes.len(module.source)
+    if size <= remaining:
+      recur(modules, at + 1, remaining - size)
+    else:
+      -1
+
+fn remaining_input(input: project.ProjectInput, remaining: I64) -> I64 effects[partial]:
+  let manifest: I64 = bytes.len(input.manifest_source)
+  if manifest <= remaining:
+    module_bytes(input.modules, 0, remaining - manifest)
+  else:
+    -1
+
+fn count_functions(index: retained.Index, at: I64, count: I64) -> I64 effects[partial]:
+  if at >= vec.len(index.declarations):
+    count
+  else:
+    let declaration: retained.Declaration = vec.get(index.declarations, at)
+    let next: I64 = if declaration.kind == 0:
+      count + 1
+    else:
+      count
+    recur(index, at + 1, next)
+
+fn snapshot_ready(snapshot: Snapshot) -> Bool effects[partial]:
+  if snapshot.valid && (snapshot.typing.valid && (snapshot.prepared.status == 0)):
+    let count: I64 = snapshot.canonical_nodes
+    let source: Bool = retained.equal(snapshot.prepared.source, snapshot.typing.index.source)
+    let owner: Bool = identity.same_revision(snapshot.revision, snapshot.typing.index.revision)
+    let vectors: Bool = (vec.len(snapshot.prepared.tokens) == count) && ((vec.len(snapshot.prepared.facts) == count) && ((vec.len(snapshot.prepared.origins) == count) && ((vec.len(snapshot.typing.nodes) == count) && ((vec.len(snapshot.typing.index.owners) == count) && (vec.len(snapshot.typing.index.shapes) == count)))))
+    let plans: Bool = (vec.len(snapshot.prepared.plan.functions) == snapshot.functions) && (vec.len(snapshot.prepared.layouts) == snapshot.layout_count)
+    let metadata: Bool = (vec.len(snapshot.typing.index.declarations) > 0) && ((vec.len(snapshot.typing.index.names) > 0) && ((vec.len(snapshot.typing.index.edges) > 0) && ((vec.len(snapshot.prepared.manifest_tokens) > 0) && ((vec.len(snapshot.input.manifest_tokens) > 0) && (vec.len(snapshot.input.modules) > 0)))))
+    (count > 0) && (source && (owner && (vectors && (plans && metadata))))
+  else:
+    false
+
+fn code_valid(snapshot: Snapshot) -> Bool effects[partial]:
+  if vec.len(snapshot.artifacts) == 1:
+    let stored: Artifact = artifact(snapshot)
+    let length: I64 = bytes.len(stored.code)
+    if (length > 0) && (length <= 67108864):
+      cache.weighted_checksum(stored.code, 0, length, 0) == stored.checksum
+    else:
+      false
+  else:
+    false
+
+fn result(attempted: identity.Revision, published: identity.Revision, status: I64, reason: Bytes, work: retained.Work, snapshot_reused: Bool, generated: I64, code_reused: Bool) -> Report:
+  Report(attempted: attempted, published: published, status: status, reason: reason, work: work, snapshot_reused: snapshot_reused, generated: generated, code_reused: code_reused)
+
+fn failure(state: State, status: I64, reason: Bytes) -> Report effects[partial]:
+  let current: Usage = usage(state)
+  let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
+  result(current.counter, state.good.revision, status, reason, work, false, 0, false)
+
+fn reuse_snapshot(state: @State) -> Report effects[alloc, partial]:
+  let current: Usage = usage(state)
+  let work: retained.Work = retained.Work(executed: 0, reused: state.good.functions, imported: 0, capacity: false)
+  if code_valid(state.good):
+    result(current.counter, state.good.revision, 0, "", work, true, 0, true)
+  else:
+    let remaining: I64 = state.limits.code_bytes - current.code_used
+    if remaining <= 0:
+      result(current.counter, state.good.revision, 65, "S0006", work, true, 0, false)
+    else:
+      let code: Bytes = project.generate_prepared_project(state.good.prepared)
+      let length: I64 = bytes.len(code)
+      if (length > 0) && (length <= remaining):
+        let checksum: I64 = cache.weighted_checksum(code, 0, length, 0)
+        let report: Report = result(current.counter, state.good.revision, 0, "", work, true, 1, false)
+        let next_code_used: I64 = current.code_used + length
+        charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)
+        let repaired: Vec[Artifact] = vec.new()
+        vec.push(@repaired, Artifact(code: code, checksum: checksum))
+        let previous_artifacts: Vec[Artifact] = mem.replace(@state.good.artifacts, repaired)
+        report
+      else:
+        let next_code_used: I64 = state.limits.code_bytes
+        charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)
+        result(current.counter, state.good.revision, 65, "S0006", work, true, 1, false)
+
+fn prepare_update(state: @State, input: ^project.ProjectInput, config: Config, eligible: Bool) -> Report effects[alloc, io, partial]:
+  let current: Usage = usage(state)
+  let remaining: I64 = state.limits.canonical_nodes - current.nodes_used
+  if remaining <= 0:
+    failure(state, 65, "S0005")
+  else:
+    let empty: retained.Cache = retained.empty_cache()
+    let attempt: project.ProjectAttempt = if eligible:
+      project.prepare_project_input(input, true, true, state.good.typing, current.counter, remaining)
+    else:
+      project.prepare_project_input(input, true, true, empty, current.counter, remaining)
+    let count: I64 = attempt.canonical_nodes
+    let charged: I64 = if count > remaining:
+      state.limits.canonical_nodes
+    else:
+      current.nodes_used + count
+    charge(@state, current.counter, current.attempts, current.input_used, charged, current.code_used)
+    if attempt.work.capacity:
+      result(current.counter, state.good.revision, 65, "S0005", attempt.work, false, 0, false)
+    else:
+      if attempt.prepared.status > 0:
+        result(current.counter, state.good.revision, attempt.prepared.status, "S0001", attempt.work, false, 0, false)
+      else:
+        if !attempt.cache.valid:
+          result(current.counter, state.good.revision, 65, "S0008", attempt.work, false, 0, false)
+        else:
+          publish_update(@state, ^input, config, ^attempt, eligible)
+
+fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, attempt: ^project.ProjectAttempt, eligible: Bool) -> Report effects[alloc, partial]:
+  let current: Usage = usage(state)
+  let reuse: Bool = if eligible:
+    retained.equal(state.good.prepared.source, attempt.prepared.source) && code_valid(state.good)
+  else:
+    false
+  let remaining: I64 = state.limits.code_bytes - current.code_used
+  if (!reuse) && (remaining <= 0):
+    result(current.counter, state.good.revision, 65, "S0006", attempt.work, false, 0, false)
+  else:
+    let code: Bytes = if reuse:
+      let stored: Artifact = artifact(state.good)
+      stored.code
+    else:
+      project.generate_prepared_project(attempt.prepared)
+    let size: I64 = bytes.len(code)
+    let generated: I64 = if reuse:
+      0
+    else:
+      1
+    if (size <= 0) || ((!reuse) && (size > remaining)):
+      let next_code_used: I64 = state.limits.code_bytes
+      charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)
+      result(current.counter, state.good.revision, 65, "S0006", attempt.work, false, generated, false)
+    else:
+      let checksum: I64 = cache.weighted_checksum(code, 0, size, 0)
+      let functions: I64 = count_functions(attempt.cache.index, 0, 0)
+      let layouts: I64 = vec.len(attempt.prepared.layouts)
+      let report: Report = result(current.counter, current.counter, 0, "", attempt.work, false, generated, reuse)
+      let prepared: project.PreparedProject = mem.replace(@attempt.prepared, project.invalid_prepared_project(1))
+      let typing: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
+      let artifacts: Vec[Artifact] = vec.new()
+      vec.push(@artifacts, Artifact(code: code, checksum: checksum))
+      let snapshot: Snapshot = Snapshot(valid: true, revision: current.counter, config: config, input: input, prepared: prepared, typing: typing, functions: functions, layout_count: layouts, canonical_nodes: attempt.canonical_nodes, artifacts: artifacts)
+      if !reuse:
+        let next_code_used: I64 = current.code_used + size
+        charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)
+        void
+      else:
+        void
+      let previous_good: Snapshot = mem.replace(@state.good, snapshot)
+      report
+
+fn update(state: @State, input: ^project.ProjectInput, config: Config) -> Report effects[alloc, io, partial]:
+  let current: Usage = usage(state)
+  let limits: Bool = valid_limits(state.limits)
+  let counters: Bool = ((current.attempts >= 0) && (current.attempts <= state.limits.attempts)) && (((current.input_used >= 0) && (current.input_used <= state.limits.input_bytes)) && (((current.nodes_used >= 0) && (current.nodes_used <= state.limits.canonical_nodes)) && ((current.code_used >= 0) && (current.code_used <= state.limits.code_bytes))))
+  if !(limits && counters):
+    failure(state, 65, "S0002")
+  else:
+    if current.attempts >= state.limits.attempts:
+      failure(state, 65, "S0003")
+    else:
+      match identity.successor(current.counter):
+        None:
+          failure(state, 65, "S0007")
+        Some(revision):
+          let next_attempts: I64 = current.attempts + 1
+          charge(@state, revision, next_attempts, current.input_used, current.nodes_used, current.code_used)
+          if !valid_config(config):
+            failure(state, 65, "S0009")
+          else:
+            let remaining: I64 = state.limits.input_bytes - current.input_used
+            let after: I64 = remaining_input(input, remaining)
+            if after < 0:
+              let next_input_used: I64 = state.limits.input_bytes
+              charge(@state, revision, next_attempts, next_input_used, current.nodes_used, current.code_used)
+              failure(state, 65, "S0004")
+            else:
+              let next_input_used: I64 = state.limits.input_bytes - after
+              charge(@state, revision, next_attempts, next_input_used, current.nodes_used, current.code_used)
+              if input.status > 0:
+                failure(state, input.status, "S0001")
+              else:
+                let eligible: Bool = if snapshot_ready(state.good):
+                  same_config(state.good.config, config)
+                else:
+                  false
+                let unchanged: Bool = if eligible:
+                  same_input(state.good.input, input)
+                else:
+                  false
+                if unchanged:
+                  reuse_snapshot(@state)
+                else:
+                  prepare_update(@state, ^input, config, eligible)
+
 fn invalid_state() -> query.State effects[alloc]:
   let snapshots: Vec[query.Snapshot] = vec.new()
   let dependencies: Vec[query.Dependency] = vec.new()

@@ -137,7 +137,18 @@ struct PreparedProject:
   issues: Vec[typing.Issue]
   plan: memory.Plan
 
+struct ModuleInput:
+  read: Bool
+  source: Bytes
+
+struct ProjectInput:
+  status: I64
+  manifest_source: Bytes
+  manifest_tokens: Vec[syntax.Token]
+  modules: Vec[ModuleInput]
+
 struct ProjectAttempt:
+  canonical_nodes: I64
   prepared: PreparedProject
   cache: retained.Cache
   work: retained.Work
@@ -418,7 +429,7 @@ fn invalid_project_attempt(status: I64) -> ProjectAttempt effects[alloc]:
   let prepared: PreparedProject = invalid_prepared_project(status)
   let cache: retained.Cache = retained.empty_cache()
   let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-  ProjectAttempt(prepared: prepared, cache: cache, work: work)
+  ProjectAttempt(canonical_nodes: 0, prepared: prepared, cache: cache, work: work)
 
 fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let start_origin: Origin = vec.get(origins, issue.start)
@@ -445,10 +456,20 @@ fn report_project_issues(issues: Vec[typing.Issue], index: I64, origins: Vec[Ori
     let total: I64 = count + reported
     recur(issues, next, origins, manifest_source, manifest_tokens, loaded, total)
 
-fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
   let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, @tokens, @origins)
+  let count: I64 = vec.len(tokens)
+  if strict && ((token_limit < 1) || (count > token_limit)):
+    let prepared: PreparedProject = invalid_prepared_project(65)
+    let cache: retained.Cache = retained.empty_cache()
+    let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: true)
+    ProjectAttempt(canonical_nodes: count, prepared: prepared, cache: cache, work: work)
+  else:
+    check_loaded_project(manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, retain, previous, revision, token_limit)
+
+fn check_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], source: Bytes, tokens: ^Vec[syntax.Token], origins: ^Vec[Origin], loaded: Vec[LoadedModule], retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let attempt: check.Attempt = if retain:
     check.check_source_retained(source, @tokens, previous, revision, token_limit)
   else:
@@ -460,9 +481,37 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.T
   let issues: Vec[typing.Issue] = mem.replace(@attempt.checked.issues, vec.new())
   let plan: memory.Plan = mem.replace(@attempt.checked.plan, memory.empty_plan())
   let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
+  let canonical_nodes: I64 = vec.len(tokens)
   let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
   let cache: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
-  ProjectAttempt(prepared: prepared, cache: cache, work: attempt.work)
+  ProjectAttempt(canonical_nodes: canonical_nodes, prepared: prepared, cache: cache, work: attempt.work)
+
+fn parse_project_manifest(source: Bytes, tokens: @Vec[syntax.Token]) -> I64 effects[alloc, io, partial]:
+  syntax.lex_data(source, 0, @tokens)
+  let version: I64 = 2
+  let valid_version: Bool = syntax.ast_node_text_is(source, tokens, version, "1")
+  if valid_version:
+    let entry_form: I64 = 3
+    let modules: I64 = syntax.ast_next(tokens, entry_form)
+    let manifest_errors: I64 = report_manifest_rules(source, tokens, entry_form, modules)
+    if manifest_errors > 0:
+      manifest_errors
+    else:
+      let cycle: I64 = find_reciprocal_cycle(source, tokens, modules, modules)
+      if cycle >= 0:
+        report_project_diagnostic("E0413", "-", syntax.ast_node_start(tokens, cycle), syntax.ast_node_end(tokens, cycle))
+      else:
+        0
+  else:
+    report_project_diagnostic("E0402", "-", syntax.ast_node_start(tokens, version), syntax.ast_node_end(tokens, version))
+
+fn finish_project_preparation(source: Bytes, tokens: ^Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+  let entry: I64 = 5
+  let errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded)
+  if errors > 0:
+    invalid_project_attempt(errors)
+  else:
+    prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, retain, strict, previous, revision, token_limit)
 
 fn prepare_project_attempt(path: Bytes, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
@@ -470,47 +519,93 @@ fn prepare_project_attempt(path: Bytes, retain: Bool, previous: retained.Cache, 
   let source: Bytes = bytes.freeze(^source_bytes)
   let tokens: Vec[syntax.Token] = vec.new()
   if source_read:
-    syntax.lex_data(source, 0, @tokens)
-    let version: I64 = 2
-    let valid_version: Bool = syntax.ast_node_text_is(source, tokens, version, "1")
-    let version_start: I64 = syntax.ast_node_start(tokens, version)
-    let version_end: I64 = syntax.ast_node_end(tokens, version)
-    if valid_version:
-      let entry_form: I64 = 3
-      let entry: I64 = entry_form + 2
-      let modules: I64 = syntax.ast_next(tokens, entry_form)
-      let manifest_errors: I64 = report_manifest_rules(source, tokens, entry_form, modules)
-      let invalid_manifest: Bool = manifest_errors > 0
-      if invalid_manifest:
-        invalid_project_attempt(manifest_errors)
-      else:
-        let cycle: I64 = find_reciprocal_cycle(source, tokens, modules, modules)
-        let has_cycle: Bool = cycle >= 0
-        if has_cycle:
-          let start: I64 = syntax.ast_node_start(tokens, cycle)
-          let end: I64 = syntax.ast_node_end(tokens, cycle)
-          let reported: I64 = report_project_diagnostic("E0413", "-", start, end)
-          invalid_project_attempt(1)
-        else:
-          let module_tokens: Vec[syntax.Token] = vec.new()
-          let loaded: Vec[LoadedModule] = vec.new()
-          let loaded_modules: I64 = load_project_modules(path, source, tokens, modules, @module_tokens, @loaded)
-          let invalid_loading: Bool = loaded_modules > 0
-          if invalid_loading:
-            invalid_project_attempt(loaded_modules)
-          else:
-            let project_errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded)
-            let invalid_project: Bool = project_errors > 0
-            if invalid_project:
-              invalid_project_attempt(project_errors)
-            else:
-              prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, retain, previous, revision, token_limit)
+    let status: I64 = parse_project_manifest(source, @tokens)
+    if status > 0:
+      invalid_project_attempt(status)
     else:
-      let reported: I64 = report_project_diagnostic("E0402", "-", version_start, version_end)
-      invalid_project_attempt(1)
+      let modules: I64 = syntax.ast_next(tokens, 3)
+      let module_tokens: Vec[syntax.Token] = vec.new()
+      let loaded: Vec[LoadedModule] = vec.new()
+      let errors: I64 = load_project_modules(path, source, tokens, modules, @module_tokens, @loaded)
+      if errors > 0:
+        invalid_project_attempt(errors)
+      else:
+        finish_project_preparation(source, ^tokens, module_tokens, loaded, retain, false, previous, revision, token_limit)
   else:
     let reported: I64 = report_project_diagnostic("E0409", "-", 0, 0)
     invalid_project_attempt(1)
+
+fn empty_project_input() -> ProjectInput effects[alloc]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let modules: Vec[ModuleInput] = vec.new()
+  ProjectInput(status: 1, manifest_source: "", manifest_tokens: tokens, modules: modules)
+
+fn capture_module_inputs(path: Bytes, source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[ModuleInput]) -> Void effects[alloc, io, partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
+    void
+  else:
+    let module_path: Bytes = project_module_path(path, source, tokens, cursor + 3)
+    let bytes: Vec[U8] = vec.new()
+    let read: Bool = io.read_file(module_path, @bytes)
+    let content: Bytes = bytes.freeze(^bytes)
+    vec.push(@output, ModuleInput(read: read, source: content))
+    recur(path, source, tokens, syntax.ast_next(tokens, cursor), @output)
+
+fn capture_project_input(path: Bytes) -> ProjectInput effects[alloc, io, partial]:
+  let bytes: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(path, @bytes)
+  let source: Bytes = bytes.freeze(^bytes)
+  let tokens: Vec[syntax.Token] = vec.new()
+  let modules: Vec[ModuleInput] = vec.new()
+  let status: I64 = if read:
+    parse_project_manifest(source, @tokens)
+  else:
+    report_project_diagnostic("E0409", "-", 0, 0)
+  if status == 0:
+    capture_module_inputs(path, source, tokens, syntax.ast_next(tokens, 3), @modules)
+  else:
+    void
+  ProjectInput(status: status, manifest_source: source, manifest_tokens: tokens, modules: modules)
+
+fn copy_manifest_tokens(source: Vec[syntax.Token], at: I64, output: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  if at >= vec.len(source):
+    void
+  else:
+    vec.push(@output, vec.get(source, at))
+    recur(source, at + 1, @output)
+
+fn load_input_modules(input: ProjectInput, cursor: I64, at: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let end: Bool = syntax.ast_node_kind(input.manifest_tokens, cursor) == 1
+  if end:
+    if at == vec.len(input.modules):
+      0
+    else:
+      report_project_diagnostic("Q0002", "-", 0, 0)
+  else:
+    if at >= vec.len(input.modules):
+      report_project_diagnostic("Q0002", "-", 0, 0)
+    else:
+      let module: ModuleInput = vec.get(input.modules, at)
+      let result: I64 = load_module_input(input.manifest_source, input.manifest_tokens, cursor, module, @module_tokens, @loaded)
+      if result == 0:
+        recur(input, syntax.ast_next(input.manifest_tokens, cursor), at + 1, @module_tokens, @loaded)
+      else:
+        result
+
+fn prepare_project_input(input: ProjectInput, retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+  if input.status > 0:
+    invalid_project_attempt(input.status)
+  else:
+    let module_tokens: Vec[syntax.Token] = vec.new()
+    let loaded: Vec[LoadedModule] = vec.new()
+    let first: I64 = syntax.ast_next(input.manifest_tokens, 3)
+    let result: I64 = load_input_modules(input, first, 0, @module_tokens, @loaded)
+    if result > 0:
+      invalid_project_attempt(result)
+    else:
+      let tokens: Vec[syntax.Token] = vec.new()
+      copy_manifest_tokens(input.manifest_tokens, 0, @tokens)
+      finish_project_preparation(input.manifest_source, ^tokens, module_tokens, loaded, retain, strict, previous, revision, token_limit)
 
 fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
   let previous: retained.Cache = retained.empty_cache()
@@ -1053,42 +1148,43 @@ struct LoadedModule:
   source: Bytes
   root: I64
 
+fn load_module_input(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, input: ModuleInput, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let name: I64 = cursor + 2
+  let path: I64 = cursor + 3
+  if input.read:
+    let source: Bytes = input.source
+    let root: I64 = vec.len(module_tokens)
+    let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @module_tokens)
+    let end: I64 = vec.len(module_tokens)
+    let shaped: Bool = validate.module_shape_valid_from(source, module_tokens, root, end)
+    if parsed.valid && shaped:
+      syntax.link_declaration_names_from(source, @module_tokens, root)
+      vec.push(@loaded, LoadedModule(manifest: cursor, name: name, path: path, source: source, root: root))
+      0
+    else:
+      let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
+      if parsed.valid:
+        report_project_diagnostic("E0102", module_name, 0, bytes.len(source))
+      else:
+        report_project_diagnostic(parsed.code, module_name, parsed.start, parsed.end)
+  else:
+    let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
+    report_project_diagnostic("E0409", module_name, syntax.ast_node_start(manifest_tokens, path), syntax.ast_node_end(manifest_tokens, path))
+
 fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
-  let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
-  let done: Bool = kind == 1
-  if done:
+  if syntax.ast_node_kind(manifest_tokens, cursor) == 1:
     0
   else:
-    let name: I64 = cursor + 2
-    let path: I64 = cursor + 3
-    let module_path: Bytes = project_module_path(manifest_path, manifest_source, manifest_tokens, path)
-    let source_bytes: Vec[U8] = vec.new()
-    let source_read: Bool = io.read_file(module_path, @source_bytes)
-    if source_read:
-      let source: Bytes = bytes.freeze(^source_bytes)
-      let root: I64 = vec.len(module_tokens)
-      let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @module_tokens)
-      let end: I64 = vec.len(module_tokens)
-      let shaped: Bool = validate.module_shape_valid_from(source, module_tokens, root, end)
-      let valid: Bool = parsed.valid && shaped
-      if valid:
-        syntax.link_declaration_names_from(source, @module_tokens, root)
-        let module: LoadedModule = LoadedModule(manifest: cursor, name: name, path: path, source: source, root: root)
-        vec.push(@loaded, module)
-        let next: I64 = syntax.ast_next(manifest_tokens, cursor)
-        recur(manifest_path, manifest_source, manifest_tokens, next, @module_tokens, @loaded)
-      else:
-        let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-        if parsed.valid:
-          let source_end: I64 = bytes.len(source)
-          report_project_diagnostic("E0102", module_name, 0, source_end)
-        else:
-          report_project_diagnostic(parsed.code, module_name, parsed.start, parsed.end)
+    let module_path: Bytes = project_module_path(manifest_path, manifest_source, manifest_tokens, cursor + 3)
+    let bytes: Vec[U8] = vec.new()
+    let read: Bool = io.read_file(module_path, @bytes)
+    let source: Bytes = bytes.freeze(^bytes)
+    let input: ModuleInput = ModuleInput(read: read, source: source)
+    let result: I64 = load_module_input(manifest_source, manifest_tokens, cursor, input, @module_tokens, @loaded)
+    if result == 0:
+      recur(manifest_path, manifest_source, manifest_tokens, syntax.ast_next(manifest_tokens, cursor), @module_tokens, @loaded)
     else:
-      let start: I64 = syntax.ast_node_start(manifest_tokens, path)
-      let end: I64 = syntax.ast_node_end(manifest_tokens, path)
-      let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-      report_project_diagnostic("E0409", module_name, start, end)
+      result
 
 fn report_module_identities(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
