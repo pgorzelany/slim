@@ -1301,6 +1301,8 @@ fn emit_variant_bindings(source: Bytes, tokens: Vec[syntax.Token], value: I64, c
     emit_case_name(source, tokens, case_name, @output)
     text.append_text(@output, ".slim_")
     text.append_nonnegative_i64(field, @output)
+    text.append_text(@output, ";\n(void)")
+    emit_source_name(source, tokens, binding, @output)
     text.append_text(@output, ";\n")
     let next_binding: I64 = syntax.ast_next(tokens, binding)
     let next_type: I64 = syntax.ast_next(tokens, payload_type)

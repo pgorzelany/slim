@@ -1497,3 +1497,102 @@ backend work, and full differential/locality/release gates remain required. The
 minimum-I64 literal C emission issue and recursive-checker stack limitation remain
 recorded. Neither the optional graph nor its measurements constitute incremental
 semantic reuse.
+
+## M1 retained function typing — 2026-09-06
+
+RFC-0130 implements actual successful function-inference reuse in production SLIM.
+`retained.slim` stores revision-owned node/type/binding references, source bytes,
+pre-inference name resolution (including missing results), and canonical shape.
+An indexed full-key match and reverse interface dependency adjacency distinguish
+body changes from interface changes. Explicit complete-declaration or interface-
+prefix maps translate fact forms, source links and packed local links. Every
+imported reference is checked before any function result is installed.
+
+`check_source_retained` shares the ordinary validation, termination and memory
+path. Inference misses call `typing.check_function`; only complete successful
+checks can publish eligible history. Failed candidates, stale revisions and missing
+fact/name-index metadata cannot replace it. Source parsing, linking, global
+checks and C generation still run. The public `session` command remains estimate-
+only; this internal operation is not a second checker or a completed M1 service.
+
+Validation and observations:
+
+- All 94 accepted conformance/native files skip function inference on unchanged
+  updates and match fresh checking for every fact, token field, diagnostic and
+  generated C byte. A measurement-only native observer counts actual isolated
+  checker calls within each retained-check invocation; it has 64 report phases
+  and a 1,000,000,000 counter cap. Observations repeat identically.
+- Permanent edits cover body/interface/layout/effect/ownership-mode changes,
+  transitive aggregate copyability, insertion, deletion, renaming, reordering,
+  comments, duplicate rejection and module identity. A callee body edit that
+  introduces unproved recursion still reaches the ordinary termination rejection,
+  including when callers' typing is reused. No body-derived analysis is cached.
+- Stale revisions execute and cannot publish. An epoch change executes. Recovery
+  from rejected source reuses the unchanged good history. Missing fact vectors
+  or name-index roots force clean inference. The API takes a token limit in
+  1..1,000,000: the exact current token count permits reuse; one below, zero and
+  an out-of-range limit explicitly decline storage and perform ordinary checking.
+  The token limit is not a source-byte or peak-process-memory bound.
+- [Geometric native observations](2026-09-06-m1-retained-typing-work.tsv) cover
+  N=125 through 4,000 helper functions, plus main. Unchanged updates execute zero
+  function checks and reuse N+1 functions; one body edit executes exactly one and
+  reuses N. The family imports 21N+18 and 21N-3 canonical nodes respectively.
+  Each sanitizer observation repeats with exact clean fact/token/diagnostic/C
+  equality. The smaller geometric sizes are permanent integration regressions.
+- The ordinary/ASan/UBSan campaign passes all 94 accepted files, stale/recovery/
+  capacity/metadata boundaries, and [512 allocation-fault ordinals](2026-09-06-m1-retained-typing-faults.tsv).
+  It observes 509 status-71 failures with empty stdout and 3 successful later
+  ordinals. Status/stdout/stderr agree. Phase returns describe observed control,
+  not successful publication; this whole comparison probe includes checking and
+  C comparison outside the retained query itself.
+- All 193 rejected fixtures retain exact status/stdout/stderr. All 20 native
+  applications retain complete byte-identical analysis and unchanged resource
+  rows. [Every generated-C row](2026-09-06-m1-retained-typing-native.tsv) is recorded:
+  19 are byte-identical; `variants` grows from 5,614 to 5,666 bytes solely through
+  two unused-binding suppressions described below.
+- Bootstrap reaches **3,845,929 C bytes**, SHA-256
+  `5f232902750c04e1a58d76b399ad3030a551f7f947167de5271cf4c1f4c64c2a`,
+  158,856 bytes above 1b6b7e4. All 10 unit and 66 integration tests pass,
+  with 333 conformance fixtures and 2,000 deterministic malformed mutations.
+  Governance, formatting, Clippy, required performance/reduction/parallelism/
+  comparison/agent gates, resources, parallel-runtime, incremental and the
+  existing 44-counter ordinary work campaign pass. No gate is relaxed.
+
+The work also repairs an existing backend defect: unused enum payload bindings
+lacked the unused-variable suppression already emitted for ordinary bindings.
+`(void)binding;` now permits such checked source to compile under strict C flags.
+A permanent native conformance fixture covers it. Payload evaluation, layout and
+runtime behavior are unchanged. These intentional C text additions are separate
+from clean-versus-retained equivalence, which remains byte-exact.
+
+[Paired uninstrumented timings](2026-09-06-m1-retained-typing-latency.tsv) use two
+warmup pairs and eleven alternating pairs per size. At 1,000 helpers, ordinary
+checking has medians 6.881 ms baseline and
+6.991 ms candidate; at 4,000 the medians are
+17.540 and 17.219 ms.
+There is no portable default-check speedup claim. The separate two-revision
+operation deliberately compares two clean checks with construction of a retained
+snapshot plus one update, including process startup, I/O, parsing, linking and all
+checking. At 4,000 helpers, unchanged-input medians are
+31.293 versus 60.643 ms;
+one-body-edit medians are 30.842 versus
+59.423 ms. These are not isolated warm-query
+latencies. The additional snapshot construction and data-management cost outweighs
+the inference savings in this workload. This internal capability is not presented
+as a latency improvement or as the completed public incremental compiler.
+
+On this host, TypeId, BindingId, Link, Saved, Shape, Declaration, Index and Cache
+occupy 48, 40, 104, 264, 24, 112, 248 and 296 bytes. Saved payload alone occupies
+5,549,808 bytes for the 1,000-helper family and 22,181,808 for 4,000, before vector
+capacity slack, indices, copied body/interface bytes and allocator overhead. These
+are not peak RSS measurements. Original input bytes are retained; the default
+compiler does not allocate these optional snapshot payloads. Compile remains 0,
+Analysis +2, score 15: actual reuse is established, not faster overall feedback.
+Detailed logs and measurement recipes are under `build/slim-next-m1/retained-typing/`.
+
+M1 remains **in progress**. Reducing retained storage/copying overhead and integrating
+real queries into the public session remain necessary, alongside ownership
+orchestration over flow, typed place facts, full transactional service limits and
+reclamation, cached analysis/C/backend work, and final differential/locality/release
+closure. The minimum-I64 literal emission issue and recursive-checker sanitizer
+stack limit remain recorded. This checkpoint does not shrink those obligations.

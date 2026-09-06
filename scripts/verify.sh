@@ -157,6 +157,8 @@ test "$flow_failed_in_walk" -gt 0
 test "$flow_succeeded" -gt 0
 echo "verification: flow faults $flow_failed, failures after task walking $flow_failed_in_walk, successes $flow_succeeded"
 
+./scripts/verify-retained.sh "$verify_dir/slimc-seed-sanitized"
+
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1

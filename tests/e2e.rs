@@ -4323,3 +4323,261 @@ fn production_function_flow_is_bounded_and_preserves_normal_paths() {
     assert_eq!(recur_path.iter().filter(|op| **op == 7).count(), 0);
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn retained_typing_reuses_only_valid_current_semantics() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("retained-typing");
+    for entry in fs::read_dir(root.join("selfhost")).unwrap() {
+        let path = entry.unwrap().path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "slim")
+        {
+            fs::copy(&path, directory.join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    let mut manifest = fs::read_to_string(root.join("selfhost/slim.project"))
+        .unwrap()
+        .lines()
+        .filter(|line| !line.contains("(module driver "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("(entry driver)", "(entry zzprobe)");
+    assert!(manifest.ends_with(')'));
+    manifest.pop();
+    manifest.push_str("\n  (module zzprobe \"zzprobe.slim\" (imports check codegen identity retained syntax typing) (exports)))\n");
+    fs::write(directory.join("slim.project"), manifest).unwrap();
+    fs::write(
+        directory.join("zzprobe.slim"),
+        include_str!("fixtures/retained_typing.slim"),
+    )
+    .unwrap();
+    let generated = Command::new(root.join("build/toolchain/slimc"))
+        .arg(directory.join("slim.project"))
+        .output()
+        .unwrap();
+    assert!(generated.status.success(), "{generated:?}");
+    let c = directory.join("probe.c");
+    fs::write(&c, generated.stdout).unwrap();
+    let observed = Command::new("awk")
+        .arg("-f")
+        .arg(root.join("scripts/instrument-retained-probe.awk"))
+        .arg(&c)
+        .output()
+        .unwrap();
+    assert!(
+        observed.status.success(),
+        "observer status {:?}: {}",
+        observed.status,
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    fs::write(&c, observed.stdout).unwrap();
+    let executable = directory.join("probe");
+    let compiled = Command::new(native_compiler())
+        .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg("-include")
+        .arg(root.join("benchmarks/instrumentation/retained_probe.h"))
+        .arg(&c)
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg(root.join("benchmarks/instrumentation/retained_probe.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let run = |before: &Path, after: &Path| {
+        let report = directory.join("observed.tsv");
+        let _ = fs::remove_file(&report);
+        let output = Command::new(&executable)
+            .arg(before)
+            .arg(after)
+            .env("SLIM_RETAINED_REPORT", &report)
+            .output()
+            .unwrap();
+        assert!(
+            output.status.success(),
+            "{} -> {}: {output:?}",
+            before.display(),
+            after.display()
+        );
+        assert!(output.stderr.is_empty(), "{output:?}");
+        let text = String::from_utf8(output.stdout).unwrap();
+        let fields: Vec<i64> = text
+            .lines()
+            .last()
+            .unwrap()
+            .split_whitespace()
+            .map(|v| v.parse().unwrap())
+            .collect();
+        assert_eq!(fields.len(), 3, "{text}");
+        let observation = fs::read_to_string(&report).unwrap();
+        let lines: Vec<_> = observation.lines().collect();
+        assert_eq!(lines[0], "slim-retained\t1\texact\t1000000000");
+        assert_eq!(lines.len(), 3);
+        if fields[0] >= 0 {
+            assert_eq!(lines[2], format!("1\t{}", fields[0]));
+        }
+        fields
+    };
+    let mut fixtures: Vec<_> = fs::read_dir(root.join("conformance/pass"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "slim")
+        })
+        .collect();
+    fixtures.extend(
+        fs::read_dir(root.join("benchmarks/challenges"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path().join("program.slim"))
+            .filter(|path| path.is_file()),
+    );
+    fixtures.sort();
+    assert!(fixtures.len() >= 94);
+    for path in &fixtures {
+        let fields = run(path, path);
+        assert_eq!(fields[0], 0, "{}", path.display());
+        assert!(fields[1] > 0 && fields[2] > 0);
+    }
+    let base = "module changes\n\nstruct Leaf:\n  value: I64\n\nstruct Box:\n  leaf: Leaf\n\nfn helper(x: I64) -> I64:\n  x\n\nfn read(box: Box) -> I64:\n  box.leaf.value\n\nfn idle() -> I64:\n  42\n\nfn main(args: Vec[Bytes]) -> I64:\n  helper(read(Box(leaf: Leaf(value: 1))))\n";
+    let before = directory.join("before.slim");
+    let after = directory.join("after.slim");
+    fs::write(&before, base).unwrap();
+    let parts: Vec<_> = base.split("\n\n").collect();
+    let reordered = [0, 6, 4, 1, 5, 2, 3].map(|i| parts[i]).join("\n\n") + "\n";
+    for (source, expected) in [
+        (base.to_owned(), Some([0, 4])),
+        (
+            base.replace("  x\n", "  let copy: I64 = x\n  copy\n"),
+            Some([1, 3]),
+        ),
+        (
+            base.replace("fn helper", "fn added() -> I64:\n  3\n\nfn helper"),
+            Some([1, 4]),
+        ),
+        (
+            base.replace("fn idle() -> I64:\n  42\n\n", ""),
+            Some([0, 3]),
+        ),
+        (reordered, Some([0, 4])),
+        (
+            format!("# start\n{}", base.replace("  42", "  # comment\n  42")),
+            Some([1, 3]),
+        ),
+        (base.replace("helper", "renamed"), Some([2, 2])),
+        (
+            base.replace("module changes", "module different"),
+            Some([4, 0]),
+        ),
+        (
+            base.replace("helper(x: I64)", "helper(x: Bool)")
+                .replace("  x\n", "  if x:\n    1\n  else:\n    0\n"),
+            None,
+        ),
+        (
+            base.replace("value: I64", "value: Bool")
+                .replace("value: 1", "value: true"),
+            None,
+        ),
+        (
+            base.replace(
+                "helper(x: I64) -> I64:",
+                "helper(x: I64) -> I64 effects[io]:",
+            ),
+            None,
+        ),
+        (base.to_owned() + "\nfn helper() -> I64:\n  0\n", None),
+    ] {
+        fs::write(&after, source).unwrap();
+        let work = run(&before, &after);
+        if let Some(expected) = expected {
+            assert_eq!(&work[..2], &expected);
+        }
+    }
+    // The final candidate above is rejected; the same old good cache must survive it.
+    let report = directory.join("boundaries.tsv");
+    let recovery = Command::new(&executable)
+        .arg(&before)
+        .arg(&after)
+        .arg("boundaries")
+        .env("SLIM_RETAINED_REPORT", &report)
+        .output()
+        .unwrap();
+    assert!(recovery.status.success(), "{recovery:?}");
+    let observed = fs::read_to_string(report).unwrap();
+    let lines: Vec<_> = observed.lines().collect();
+    assert_eq!(lines.len(), 14);
+    assert_eq!(lines[3], "2\t4");
+    assert_eq!(lines[4], "3\t4");
+    assert_eq!(lines[5], "4\t0");
+    assert_eq!(lines[6], "5\t0");
+    assert_eq!(lines[7], "6\t4");
+    assert_eq!(lines[8], "7\t4");
+    assert_eq!(lines[9], "8\t4");
+    assert_eq!(lines[10], "9\t0");
+    assert_eq!(lines[11], "10\t4");
+    assert_eq!(lines[12], "11\t0");
+    assert_eq!(lines[13], "12\t4");
+    for size in [125, 250, 500, 1_000] {
+        let mut source = String::from("module geometric\n\n");
+        for i in 0..size {
+            source.push_str(&format!(
+                "fn f_{i}(value: I64) -> I64:\n  let result: I64 = value\n  result\n\n"
+            ));
+        }
+        source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+        fs::write(&before, &source).unwrap();
+        assert_eq!(run(&before, &before), vec![0, size + 1, 21 * size + 18]);
+        let changed = source.replace(
+            &format!(
+                "fn f_{}(value: I64) -> I64:\n  let result: I64 = value",
+                size / 2
+            ),
+            &format!(
+                "fn f_{}(value: I64) -> I64:\n  let result: I64 = 42",
+                size / 2
+            ),
+        );
+        fs::write(&after, changed).unwrap();
+        assert_eq!(run(&before, &after), vec![1, size, 21 * size - 3]);
+    }
+    let copyability = "module copyability\n\nstruct Leaf:\n  value: I64\n\nstruct Box:\n  leaf: Leaf\n\nfn inspect(box: Box) -> I64:\n  0\n\nfn idle() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let box: Box = Box(leaf: Leaf(value: 0))\n  inspect(box)\n";
+    fs::write(&before, copyability).unwrap();
+    fs::write(
+        &after,
+        copyability
+            .replace("value: I64", "value: Vec[I64]")
+            .replace("value: 0", "value: vec.new()"),
+    )
+    .unwrap();
+    assert_eq!(&run(&before, &after)[..2], &[2, 1]);
+    let ownership = "module mode_changes\n\nstruct Leaf:\n  values: Vec[I64]\n\nstruct Box:\n  leaf: Leaf\n\nfn take(value: ^Box) -> I64:\n  0\n\nfn relay(value: ^Box) -> I64:\n  take(^value)\n\nfn idle() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()\n  relay(^Box(leaf: Leaf(values: values)))\n";
+    fs::write(&before, ownership).unwrap();
+    fs::write(
+        &after,
+        ownership
+            .replace("take(value: ^Box)", "take(value: @Box)")
+            .replace("take(^value)", "take(@value)"),
+    )
+    .unwrap();
+    assert_eq!(&run(&before, &after)[..2], &[2, 2]);
+    fs::write(
+        &after,
+        ownership.replace("take(value: ^Box)", "take(value: Box)"),
+    )
+    .unwrap();
+    run(&before, &after);
+    // Body-derived termination evidence is rechecked even when callers' typing is reused.
+    fs::write(&before, base).unwrap();
+    fs::write(&after, base.replace("  x\n", "  helper(x)\n")).unwrap();
+    run(&before, &after);
+    fs::remove_dir_all(directory).unwrap();
+}

@@ -1,0 +1,195 @@
+module zzprobe
+
+fn equal_from(left: Bytes, right: Bytes, at: I64) -> Bool effects[partial]:
+  if at >= bytes.len(left):
+    true
+  else:
+    if u8.to_i64(bytes.get(left, at)) == u8.to_i64(bytes.get(right, at)):
+      recur(left, right, at + 1)
+    else:
+      false
+
+fn equal(left: Bytes, right: Bytes) -> Bool effects[partial]:
+  if bytes.len(left) == bytes.len(right):
+    equal_from(left, right, 0)
+  else:
+    false
+
+fn same_facts(left: Vec[typing.Fact], right: Vec[typing.Fact], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: typing.Fact = vec.get(left, at)
+      let b: typing.Fact = vec.get(right, at)
+      if (a.tag == b.tag) && (a.form == b.form):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_tokens(left: Vec[syntax.Token], right: Vec[syntax.Token], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: syntax.Token = vec.get(left, at)
+      let b: syntax.Token = vec.get(right, at)
+      if (((a.kind == b.kind) && (a.tag == b.tag)) && ((a.start == b.start) && (a.end == b.end))) && ((a.link == b.link) && (a.next == b.next)):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_issues(left: Vec[typing.Issue], right: Vec[typing.Issue], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if at < vec.len(right):
+      let a: typing.Issue = vec.get(left, at)
+      let b: typing.Issue = vec.get(right, at)
+      let blocking: Bool = if a.blocks_inference:
+        b.blocks_inference
+      else:
+        !b.blocks_inference
+      if equal(a.code, b.code) && (((a.start == b.start) && (a.end == b.end)) && blocking):
+        recur(left, right, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn compare(source: Bytes, tokens: Vec[syntax.Token], attempt: check.Attempt) -> I64 effects[alloc, io, partial]:
+  let fresh: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @fresh)
+  let clean: typing.Checked = check.check_source_deferred(source, @fresh)
+  if !(attempt.checked.status == clean.status):
+    11
+  else:
+    if !(same_tokens(tokens, fresh, 0) && (same_facts(attempt.checked.view.facts, clean.view.facts, 0) && same_issues(attempt.checked.issues, clean.issues, 0))):
+      12
+    else:
+      if clean.status == 0:
+        let left: Vec[U8] = vec.new()
+        let right: Vec[U8] = vec.new()
+        codegen.emit_program(source, tokens, attempt.checked.view.facts, attempt.checked.plan, attempt.checked.view.layouts, @left)
+        codegen.emit_program(source, fresh, clean.view.facts, clean.plan, clean.view.layouts, @right)
+        let left_bytes: Bytes = bytes.freeze(^left)
+        let right_bytes: Bytes = bytes.freeze(^right)
+        if equal(left_bytes, right_bytes):
+          0
+        else:
+          13
+      else:
+        if attempt.cache.valid:
+          14
+        else:
+          0
+
+fn boundary(source: Bytes, cache: retained.Cache, revision: identity.Revision, hit: Bool, publishable: Bool) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let attempt: check.Attempt = check.check_source_retained(source, @tokens, cache, revision, 1000000)
+  let compared: I64 = compare(source, tokens, attempt)
+  let counts: Bool = if hit:
+    (attempt.work.executed == 0) && (attempt.work.reused > 0)
+  else:
+    (attempt.work.executed > 0) && (attempt.work.reused == 0)
+  let valid: Bool = if publishable:
+    attempt.cache.valid
+  else:
+    !attempt.cache.valid
+  if (compared == 0) && (counts && valid):
+    0
+  else:
+    15
+
+fn capacity_boundary(source: Bytes, cache: retained.Cache, delta: I64, invalid: I64) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let limit: I64 = if invalid >= 0:
+    invalid
+  else:
+    vec.len(tokens) + delta
+  let exact: Bool = (invalid < 0) && (delta == 0)
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 4)
+  let attempt: check.Attempt = check.check_source_retained(source, @tokens, cache, revision, limit)
+  let compared: I64 = compare(source, tokens, attempt)
+  let expected: Bool = if exact:
+    attempt.cache.valid && ((!attempt.work.capacity) && (attempt.work.executed == 0))
+  else:
+    (!attempt.cache.valid) && (attempt.work.capacity && ((attempt.work.executed == -1) && (attempt.work.reused == 0)))
+  if (compared == 0) && expected:
+    0
+  else:
+    16
+
+fn missing_metadata(source: Bytes, cache: retained.Cache, names: Bool) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let first: check.Attempt = check.check_source_retained(source, @tokens, cache, identity.Revision(epoch: 1, serial: 5), 1000000)
+  if names:
+    let removed: Vec[syntax.NameNode] = mem.replace(@first.cache.index.names, vec.new())
+    void
+  else:
+    let removed: Vec[retained.Saved] = mem.replace(@first.cache.nodes, vec.new())
+    void
+  boundary(source, first.cache, identity.Revision(epoch: 1, serial: 6), false, true)
+
+fn check_boundaries(source: Bytes, cache: retained.Cache) -> I64 effects[alloc, io, partial]:
+  let stale: I64 = boundary(source, cache, identity.Revision(epoch: 1, serial: 1), false, false)
+  let reset: I64 = boundary(source, cache, identity.Revision(epoch: 2, serial: 1), false, true)
+  let recovery: I64 = boundary(source, cache, identity.Revision(epoch: 1, serial: 3), true, true)
+  let exact: I64 = capacity_boundary(source, cache, 0, -1)
+  let below: I64 = capacity_boundary(source, cache, -1, -1)
+  let zero: I64 = capacity_boundary(source, cache, 0, 0)
+  let above: I64 = capacity_boundary(source, cache, 0, 1000001)
+  let missing_nodes: I64 = missing_metadata(source, cache, false)
+  let missing_names: I64 = missing_metadata(source, cache, true)
+  ((((stale + reset) + recovery) + (exact + below)) + (zero + above)) + (missing_nodes + missing_names)
+
+fn run(previous: Bytes, source: Bytes, boundaries: Bool) -> I64 effects[alloc, io, partial]:
+  let before: Vec[syntax.Token] = vec.new()
+  let first_parse: syntax.ProgramParse = syntax.parse_program_result(previous, @before)
+  let empty: retained.Cache = retained.empty_cache()
+  let first_revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+  let initial: check.Attempt = check.check_source_retained(previous, @before, empty, first_revision, 1000000)
+  let first_equal: I64 = compare(previous, before, initial)
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 2)
+  let updated: check.Attempt = check.check_source_retained(source, @tokens, initial.cache, revision, 1000000)
+  let result: I64 = compare(source, tokens, updated)
+  if (first_equal == 0) && (result == 0):
+    io.print_i64(updated.work.executed)
+    io.print_bytes(" ")
+    io.print_i64(updated.work.reused)
+    io.print_bytes(" ")
+    io.print_i64(updated.work.imported)
+    io.println("")
+    if boundaries:
+      check_boundaries(previous, initial.cache)
+    else:
+      0
+  else:
+    if first_equal > 0:
+      first_equal
+    else:
+      result
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if (vec.len(args) == 3) || (vec.len(args) == 4):
+    let left: Vec[U8] = vec.new()
+    let right: Vec[U8] = vec.new()
+    let first: Bool = io.read_file(vec.get(args, 1), @left)
+    let second: Bool = io.read_file(vec.get(args, 2), @right)
+    if first && second:
+      let previous: Bytes = bytes.freeze(^left)
+      let source: Bytes = bytes.freeze(^right)
+      run(previous, source, vec.len(args) == 4)
+    else:
+      66
+  else:
+    64

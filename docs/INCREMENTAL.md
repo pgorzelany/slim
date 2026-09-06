@@ -1,9 +1,25 @@
 # Incremental compilation status
 
-The production SLIM compiler does **not yet implement retained, incremental
-parsing, type checking, or C generation**. RFC-0112 M1 makes those an explicit
-implementation goal. The former Rust `IncrementalSession` API is not part of
+The public compiler commands do **not yet provide retained incremental parsing,
+checking or C generation**. The production compiler now has an internal retained
+function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
+which reuses successful function inference through checked revision maps and
+complete interface dependency invalidation. Parsing, linking, declaration/layout checks, termination, memory,
+analysis and generation remain current-revision work. The public `session` command
+still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
+
+The retained entry point calls the same isolated SLIM function checker on misses.
+It retains nominal type and binding references, translates source nodes and packed
+local links explicitly, and validates all imported nodes before writing them.
+Unchanged bodies can survive insertion/reordering of other declarations; changed
+callee signatures and transitive data interfaces invalidate their consumers.
+Only full successful checks can produce eligible history. Rejected candidates and
+stale revisions cannot replace it. The caller selects a token limit in
+1..1,000,000; invalid limits or larger inputs execute ordinary checking and report
+a capacity miss. This does not bound source
+bytes or peak process memory. This internal typing layer does not complete M1's persistent service lifecycle,
+flow-based ownership orchestration, analysis retention or cached emission.
 
 ## What the current session command measures
 
@@ -17,8 +33,8 @@ identity is `(module, declaration kind, declared name)`.
 handles, checked spans, and exact-content maps to new source positions. Aligned
 keys compare directly; reordered lookup builds one lazy index and retains it in
 that source state. Current source links reject duplicate names. This source-index
-foundation is implemented; retaining checked declarations and emitted C remains
-M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
+foundation is implemented; integrating retained checking and emitted C into the
+public session remains M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
 are recorded separately from the historical estimates.
 
 [RFC-0127](../design/rfcs/0127-isolated-function-checking.md) makes the existing

@@ -1,5 +1,30 @@
 module check
 
+struct Attempt:
+  checked: typing.Checked
+  cache: retained.Cache
+  work: retained.Work
+
+fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: retained.Work, previous: identity.Revision) -> Attempt effects[alloc]:
+  let current: identity.Revision = candidate.index.revision
+  let newer: Bool = (current.epoch > previous.epoch) || ((current.epoch == previous.epoch) && (current.serial > previous.serial))
+  let eligible: Bool = (checked.status == 0) && (newer && identity.same_revision(current, current))
+  let index: retained.Index = mem.replace(@candidate.index, retained.empty_index())
+  let nodes: Vec[retained.Saved] = mem.replace(@candidate.nodes, vec.new())
+  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes)
+  Attempt(checked: checked, cache: cache, work: work)
+
+fn empty_checked() -> typing.Checked effects[alloc]:
+  let view: typing.View = typing.empty_view()
+  let issues: Vec[typing.Issue] = vec.new()
+  let plan: memory.Plan = memory.empty_plan()
+  typing.Checked(status: 1, view: view, issues: issues, plan: plan)
+
+fn uncached_attempt(checked: ^typing.Checked) -> Attempt effects[alloc]:
+  let cache: retained.Cache = retained.empty_cache()
+  let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
+  Attempt(checked: checked, cache: cache, work: work)
+
 struct Diagnostic:
   code: Bytes
   start: I64
@@ -162,7 +187,7 @@ fn append_boolean_match_items(source: Bytes, tokens: Vec[syntax.Token], declarat
     let total: I64 = count + reported
     recur(source, tokens, declarations, @issues, next, total)
 
-fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool) -> typing.Checked effects[alloc, io, partial]:
+fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> Attempt effects[alloc, io, partial]:
   let valid: Bool = validate.executable_shape_valid(input, tokens)
   if valid:
     let declarations: Vec[ir.Declaration] = syntax.index_declarations(input, tokens)
@@ -177,9 +202,19 @@ fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Boo
         0
       let view: typing.View = typing.empty_view()
       let plan: memory.Plan = memory.empty_plan()
-      typing.Checked(status: syntax_status, view: view, issues: syntax_issues, plan: plan)
+      let checked: typing.Checked = typing.Checked(status: syntax_status, view: view, issues: syntax_issues, plan: plan)
+      uncached_attempt(^checked)
     else:
-      let view: typing.View = typing.analyze(input, @tokens, declarations)
+      let analyzed: retained.Analyzed = if retain:
+        retained.analyze(input, @tokens, declarations, previous, revision, token_limit)
+      else:
+        let ordinary: typing.View = typing.analyze(input, @tokens, declarations)
+        let cache: retained.Cache = retained.empty_cache()
+        let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
+        retained.Analyzed(view: ordinary, cache: cache, work: work)
+      let view: typing.View = mem.replace(@analyzed.view, typing.empty_view())
+      let cache: retained.Cache = mem.replace(@analyzed.cache, retained.empty_cache())
+      let work: retained.Work = analyzed.work
       let issues: Vec[typing.Issue] = mem.replace(@view.issues, vec.new())
       let issue_count: I64 = vec.len(issues)
       let typed_error: Bool = issue_count > 0
@@ -212,14 +247,25 @@ fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Boo
         checked
       else:
         0
-      typing.Checked(status: status, view: view, issues: issues, plan: plan)
+      let checked: typing.Checked = typing.Checked(status: status, view: view, issues: issues, plan: plan)
+      finish_attempt(^checked, ^cache, work, previous.index.revision)
   else:
     let declarations: Vec[ir.Declaration] = vec.new()
     let status: I64 = check_path(input, tokens, declarations)
     let view: typing.View = typing.empty_view()
     let issues: Vec[typing.Issue] = vec.new()
     let plan: memory.Plan = memory.empty_plan()
-    typing.Checked(status: status, view: view, issues: issues, plan: plan)
+    let checked: typing.Checked = typing.Checked(status: status, view: view, issues: issues, plan: plan)
+    uncached_attempt(^checked)
+
+fn check_source_mode(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool) -> typing.Checked effects[alloc, io, partial]:
+  let previous: retained.Cache = retained.empty_cache()
+  let revision: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+  let attempt: Attempt = check_source_attempt(input, @tokens, render_typed, false, previous, revision, 0)
+  mem.replace(@attempt.checked, empty_checked())
+
+fn check_source_retained(input: Bytes, tokens: @Vec[syntax.Token], previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> Attempt effects[alloc, io, partial]:
+  check_source_attempt(input, @tokens, false, true, previous, revision, token_limit)
 
 fn check_source(input: Bytes, tokens: @Vec[syntax.Token]) -> typing.Checked effects[alloc, io, partial]:
   check_source_mode(input, @tokens, true)

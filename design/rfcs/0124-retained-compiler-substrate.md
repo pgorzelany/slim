@@ -343,11 +343,17 @@ materialized facts; it does not retain semantic results or reclaim backing
 storage per function. RFC-0128 retains the existing layout checker's completion
 order for dependency-ordered C definitions, removing the recorded forward-type
 emission blocker. RFC-0129 supplies the optional bounded structural function-flow
-view and native work/fault observations. Typed persistent semantic identities,
-ownership orchestration over that view, retained checker/analysis/emission queries,
-transactional publication, and the full M1 validation remain pending. The SLIM
+view and native work/fault observations. Ownership orchestration over that view,
+typed place facts, full query/session integration, retained analysis/emission,
+service transactions and the full M1 validation remain pending. The SLIM
 Next progress report records each checkpoint; M0 remains the historical comparison
 baseline, not a claim that the current seed is unchanged.
+
+RFC-0130 implements internal retained function typing with checked relocation and
+interface dependency invalidation. Global checks and analysis still execute; the
+public session is unchanged. Measured snapshot setup/copying overhead still exceeds
+the inference savings in the two-revision workload. Public query integration,
+service transactions and retained analysis/emission remain pending.
 
 ## Removal and supersession
 

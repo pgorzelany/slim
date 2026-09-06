@@ -293,3 +293,4 @@ shadowed-undefined	check-fail	conformance/fail/shadowed_undefined.slim	parity	E0
 shadowed-moved	check-fail	conformance/fail/shadowed_moved.slim	parity	E0315@194:199	backend:lexical-binding-identity,ownership:checked-initializer
 shadowed-type	check-fail	conformance/fail/shadowed_type.slim	parity	E0344@98:103	backend:lexical-binding-identity,ownership:checked-initializer
 inline-forward-layouts	run	conformance/pass/inline_forward_layouts.slim	parity	exit=0;stdout=42\n;stderr=	backend:checked-layout-order,backend:aggregate-links,type:acyclic-inline-layout
+unused-enum-payload	run	conformance/pass/unused_enum_payload.slim	parity	exit=0;stdout=;stderr=	backend:unused-enum-payload

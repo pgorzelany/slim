@@ -2575,7 +2575,7 @@ fn retain_binding_facts(source: Bytes, tokens: Vec[syntax.Token], bindings: Vec[
     vec.set(@facts, binding.name, Fact(tag: tag, form: type.form))
     recur(source, tokens, bindings, index + 1, @facts)
 
-fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
+fn prepare(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
   syntax.link_declaration_names(source, @tokens)
   link_declaration_locals(source, @tokens, declarations, 0)
   let facts: Vec[Fact] = vec.new()
@@ -2588,5 +2588,12 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     void
   else:
     check_declaration_types(source, tokens, declarations, 0, @issues)
+  View(facts: facts, issues: issues, layouts: layouts)
+
+fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
+  let view: View = prepare(source, @tokens, declarations)
+  let facts: Vec[Fact] = mem.replace(@view.facts, vec.new())
+  let issues: Vec[Issue] = mem.replace(@view.issues, vec.new())
+  let layouts: Vec[I64] = mem.replace(@view.layouts, vec.new())
   check_functions(source, @tokens, declarations, 0, @facts, @issues)
   View(facts: facts, issues: issues, layouts: layouts)

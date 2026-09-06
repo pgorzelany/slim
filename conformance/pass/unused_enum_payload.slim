@@ -1,0 +1,12 @@
+module unused_enum_payload
+
+enum Value:
+  Some(I64)
+
+fn ignore(value: Value) -> I64:
+  match value:
+    Some(unused):
+      0
+
+fn main(args: Vec[Bytes]) -> I64:
+  ignore(Value::Some(42))
