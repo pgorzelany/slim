@@ -137,6 +137,11 @@ struct PreparedProject:
   issues: Vec[typing.Issue]
   plan: memory.Plan
 
+struct ProjectAttempt:
+  prepared: PreparedProject
+  cache: retained.Cache
+  work: retained.Work
+
 fn append_origin(module: I64, start: I64, end: I64, origins: @Vec[Origin]) -> Void effects[alloc]:
   let origin: Origin = Origin(module: module, start: start, end: end)
   vec.push(@origins, origin)
@@ -409,6 +414,12 @@ fn invalid_prepared_project(status: I64) -> PreparedProject effects[alloc]:
   let plan: memory.Plan = memory.empty_plan()
   PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
 
+fn invalid_project_attempt(status: I64) -> ProjectAttempt effects[alloc]:
+  let prepared: PreparedProject = invalid_prepared_project(status)
+  let cache: retained.Cache = retained.empty_cache()
+  let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
+  ProjectAttempt(prepared: prepared, cache: cache, work: work)
+
 fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let start_origin: Origin = vec.get(origins, issue.start)
   let end_origin: Origin = vec.get(origins, issue.end)
@@ -434,20 +445,26 @@ fn report_project_issues(issues: Vec[typing.Issue], index: I64, origins: Vec[Ori
     let total: I64 = count + reported
     recur(issues, next, origins, manifest_source, manifest_tokens, loaded, total)
 
-fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> PreparedProject effects[alloc, io, partial]:
+fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
   let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, @tokens, @origins)
-  let checked: typing.Checked = check.check_source_deferred(source, @tokens)
-  let status: I64 = checked.status
-  let facts: Vec[typing.Fact] = mem.replace(@checked.view.facts, vec.new())
-  let layouts: Vec[I64] = mem.replace(@checked.view.layouts, vec.new())
-  let issues: Vec[typing.Issue] = mem.replace(@checked.issues, vec.new())
-  let plan: memory.Plan = mem.replace(@checked.plan, memory.empty_plan())
+  let attempt: check.Attempt = if retain:
+    check.check_source_retained(source, @tokens, previous, revision, token_limit)
+  else:
+    let checked: typing.Checked = check.check_source_deferred(source, @tokens)
+    check.uncached_attempt(^checked)
+  let status: I64 = attempt.checked.status
+  let facts: Vec[typing.Fact] = mem.replace(@attempt.checked.view.facts, vec.new())
+  let layouts: Vec[I64] = mem.replace(@attempt.checked.view.layouts, vec.new())
+  let issues: Vec[typing.Issue] = mem.replace(@attempt.checked.issues, vec.new())
+  let plan: memory.Plan = mem.replace(@attempt.checked.plan, memory.empty_plan())
   let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
-  PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
+  let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
+  let cache: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
+  ProjectAttempt(prepared: prepared, cache: cache, work: attempt.work)
 
-fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
+fn prepare_project_attempt(path: Bytes, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
   let source_read: Bool = io.read_file(path, @source_bytes)
   let source: Bytes = bytes.freeze(^source_bytes)
@@ -465,7 +482,7 @@ fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, parti
       let manifest_errors: I64 = report_manifest_rules(source, tokens, entry_form, modules)
       let invalid_manifest: Bool = manifest_errors > 0
       if invalid_manifest:
-        invalid_prepared_project(manifest_errors)
+        invalid_project_attempt(manifest_errors)
       else:
         let cycle: I64 = find_reciprocal_cycle(source, tokens, modules, modules)
         let has_cycle: Bool = cycle >= 0
@@ -473,27 +490,36 @@ fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, parti
           let start: I64 = syntax.ast_node_start(tokens, cycle)
           let end: I64 = syntax.ast_node_end(tokens, cycle)
           let reported: I64 = report_project_diagnostic("E0413", "-", start, end)
-          invalid_prepared_project(1)
+          invalid_project_attempt(1)
         else:
           let module_tokens: Vec[syntax.Token] = vec.new()
           let loaded: Vec[LoadedModule] = vec.new()
           let loaded_modules: I64 = load_project_modules(path, source, tokens, modules, @module_tokens, @loaded)
           let invalid_loading: Bool = loaded_modules > 0
           if invalid_loading:
-            invalid_prepared_project(loaded_modules)
+            invalid_project_attempt(loaded_modules)
           else:
             let project_errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded)
             let invalid_project: Bool = project_errors > 0
             if invalid_project:
-              invalid_prepared_project(project_errors)
+              invalid_project_attempt(project_errors)
             else:
-              prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded)
+              prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, retain, previous, revision, token_limit)
     else:
       let reported: I64 = report_project_diagnostic("E0402", "-", version_start, version_end)
-      invalid_prepared_project(1)
+      invalid_project_attempt(1)
   else:
     let reported: I64 = report_project_diagnostic("E0409", "-", 0, 0)
-    invalid_prepared_project(1)
+    invalid_project_attempt(1)
+
+fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
+  let previous: retained.Cache = retained.empty_cache()
+  let revision: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+  let attempt: ProjectAttempt = prepare_project_attempt(path, false, previous, revision, 0)
+  mem.replace(@attempt.prepared, invalid_prepared_project(0))
+
+fn prepare_project_retained(path: Bytes, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+  prepare_project_attempt(path, true, previous, revision, token_limit)
 
 fn check_project_path(path: Bytes) -> I64 effects[alloc, io, partial]:
   let prepared: PreparedProject = prepare_project_path(path)

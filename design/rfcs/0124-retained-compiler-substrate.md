@@ -360,6 +360,12 @@ query boundaries. It reduces measured setup/update overhead and permanently gate
 fixed payload sizes; the two-revision workload remains slower than two clean checks.
 It does not change the remaining parent milestones or service obligations.
 
+RFC-0132 connects retained inference to the shared project preparation path and
+fixes complete declaration source extents in retained/source-map keys. Current
+project visibility and source origins are validated before reuse. Public session
+transactions, retained parsing/analysis/emission and service lifecycle remain
+pending; this prerequisite does not complete them.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale

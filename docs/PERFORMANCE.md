@@ -210,3 +210,21 @@ typing. Missing counters are never treated as zero work. The separate native
 observer has 64 phases and checked saturation at 1,000,000,000 calls; phase returns
 do not certify successful publication. [Current fault observations](../benchmarks/results/2026-09-06-m1-compact-retained-faults.tsv)
 cover 512 allocation ordinals through the full differential probe.
+
+
+### Retained project preparation
+
+RFC-0132 connects the same retained checker to current project validation and
+source-mapped preparation. [Project work observations](../benchmarks/results/2026-09-07-m1-retained-project-work.tsv)
+count actual function-check calls within retained project attempts: zero on
+unchanged input and one on the maintained helper-body edit, through 4,000 helpers
+in two modules. Full prepared fields, memory plans and C match clean preparation.
+The permanent family imports 15N+22 or 15N+7 canonical nodes respectively.
+Module parsing, flattening/reparse, global checking and generation remain work.
+
+[Project timings](../benchmarks/results/2026-09-07-m1-retained-project-latency.tsv)
+separate ordinary before/after preparation from two-clean-versus-retained runs.
+The latter still favors clean preparation in this family and is not isolated
+warm-query latency. [Project fault observations](../benchmarks/results/2026-09-07-m1-retained-project-faults.tsv)
+cover 2,048 ordinals of the complete differential probe. Native phase returns
+remain distinct from publication. Public session commands still report estimates.

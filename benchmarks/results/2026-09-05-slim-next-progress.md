@@ -1670,3 +1670,96 @@ public transactional query/session integration and reclamation, cached analysis/
 backend work, or the full differential/locality/release closure. The recorded
 minimum-I64 literal emission bug and recursive-checker sanitizer stack limit
 remain open. The complete M1 goal and historical evidence are unchanged.
+
+
+## M1 retained project preparation and complete source keys — 2026-09-07
+
+RFC-0132 connects project preparation to actual retained inference. One shared
+loader/validator/flattener supplies both ordinary PreparedProject and retained
+ProjectAttempt. Current manifest version/order, module identity, entry, cycle,
+import/export visibility and source diagnostics are checked before retained typing
+can run. An attempt includes the full prepared result, eligible immutable typing
+history and independent inference-work counters. Failed preparation cannot replace
+the caller's previous good history. The public session command is still the
+historical estimate operation; this entry point is its production prerequisite.
+
+The project differential discovered and fixed a source-key defect in the earlier
+retained implementation. A synthetic closing canonical node can end at the callee
+anchor, before its arguments. The stored main body therefore ended at
+`data_helper` in a nested `data_helper(read(data_Box(value: 1)))` expression.
+Changing its argument to `false` could reuse old typing even though a clean check
+rejected it. Both retained typing and source snapshot maps now derive the complete
+declaration extent up to the next declaration or module-source end, excluding
+trailing separator whitespace. They do not derive an enclosing source extent from
+a synthetic closing node. Parser tokens and diagnostic spans are unchanged.
+
+Permanent regressions cover changed literals, strings, operators, nested calls
+and members, including rejected updated source. Declaration insertion, deletion
+and reordering keep the established inference-reuse counts; separator whitespace
+is not mistaken for changed function content. This newly tested domain strengthens
+the earlier evidence rather than retroactively claiming those mutations had been
+covered by RFC-0130's initial corpus.
+
+Validation and observations:
+
+- The production project probe passes all 94 accepted conformance/native sources
+  wrapped in manifests. It compares complete source/manifest bytes, every token
+  field, original-module origins, facts, layout order, issues, every memory-plan
+  field and byte-identical emitted C with clean preparation. Unchanged project
+  updates execute zero function checks.
+- Multi-module edits cover body, signature, aggregate layout, effect and ownership
+  modes; valid module/declaration insertion, deletion and renaming; declaration
+  reordering; forward aggregate layout; path relocation; comments and CRLF.
+  Removed imports/exports, module identity mismatch, wrong entry, cycles,
+  unsorted manifests, wrong versions, missing modules, malformed source,
+  duplicates and semantic rejection keep ordinary status and complete diagnostic
+  output. Reusing unchanged good history after each rejected update executes zero
+  checks and restores exact clean results. Stale and zero-capacity attempts
+  execute ordinary checking and cannot publish eligible history.
+- [Geometric native work](2026-09-07-m1-retained-project-work.tsv) uses two modules
+  and N helpers plus main, through N=4,000. Unchanged updates execute zero checks,
+  reuse N+1 functions and import 15N+22 nodes. A helper-body edit executes one
+  check, reuses N functions and imports 15N+7 nodes. Each observation repeats
+  identically under ASan/UBSan with full prepared-result/C comparison. The smaller
+  sizes and imported-node formulas are permanent integration gates.
+- The project sanitizer campaign passes all 94 wrapped files, stale/capacity and
+  rejected-then-recovered boundaries, plus [2,048 allocation-fault ordinals](2026-09-07-m1-retained-project-faults.tsv).
+  It observes 693 status-71 failures with empty stdout and 1,355 later successes;
+  ordinary/sanitized status, stdout and stderr agree. These phases count actual
+  checker calls within retained project preparation, including zero calls for
+  preparation failures. Phase returns do not certify publication. The earlier
+  source-level campaign still passes 94 files and all 512 fault ordinals, with
+  its 509 failures and three successes unchanged.
+- All 193 rejected single-file fixtures keep exact status/stdout/stderr relative
+  to 53cb428. All 20 native applications retain complete identical analysis,
+  unchanged resource rows and [byte-identical generated C](2026-09-07-m1-retained-project-native.tsv).
+- Bootstrap reaches **3,873,212 C bytes**, 12,080 above 53cb428, SHA-256
+  `252560991d434a503c9e1c60a016f5fdefec6cf7633d3672cc9d817159c766de`.
+  All 10 unit and 67 integration tests pass, including strengthened targeted
+  content/module tests. Conformance passes 333 fixtures and 2,000 deterministic
+  malformed mutations. Governance, formatting, Clippy, required performance/
+  reduction/parallelism/comparison/agent gates, resources, parallel-runtime,
+  incremental and the existing 44-counter ordinary work campaign pass. The
+  governed project preparation hook and every existing budget remain intact.
+
+[Paired uninstrumented timings](2026-09-07-m1-retained-project-latency.tsv) use O2,
+two warmup pairs and eleven alternating pairs after other CPU-intensive checks.
+At 4,000 helpers the default project-check medians are 20.940 ms baseline and
+20.705 ms candidate; no portable default speedup is claimed. Two clean project
+preparations versus retained construction plus update take 38.638/54.731 ms
+unchanged and 39.248/54.664 ms for a helper-body edit. These process totals include
+I/O, module parsing/validation, flattening/reparse and all checking, and exclude C
+emission. They are not isolated warm-query timings; retention remains slower for
+this workload. Analysis +2, other dimensions zero, score 15, records actual project
+inference reuse rather than an overall feedback improvement. Detailed logs and
+recipes are under `build/slim-next-m1/retained-project/`. On this host,
+PreparedProject occupies 320 bytes and ProjectAttempt 648 bytes before their
+referenced vector/source payloads. These fixed record sizes are not peak RSS or
+service storage limits; the existing 64-byte saved-row budget is unchanged.
+
+M1 remains **in progress**. Public transactional session integration, original
+input/parse retention, storage lifecycle and reclamation, cached analysis/C/backend
+work, flow-based ownership orchestration, typed place facts and complete M1
+locality/differential/release closure remain required. The known minimum-I64 literal
+emission bug and recursive-checker sanitizer stack limitation remain open. This
+checkpoint does not replace any of those requirements.

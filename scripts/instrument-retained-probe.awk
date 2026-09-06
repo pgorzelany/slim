@@ -1,5 +1,9 @@
 # Fixed native observation anchors; no C parsing or semantic relocation.
-/^static .*slim_fn_check_95check_95source_95retained\(.*\) \{$/ {
+BEGIN {
+    if (scope != "" && scope != "project") exit 1
+    root = scope == "project" ? "slim_fn_project_95prepare_95project_95retained" : "slim_fn_check_95check_95source_95retained"
+}
+$0 ~ "^static .*" root "\\(.*\\) \\{$" {
     phase = 1; begins++; print; print "slim_retained_probe_begin();"; next
 }
 /^static .*slim_fn_typing_95check_95function\(.*\) \{$/ {

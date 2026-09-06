@@ -158,7 +158,7 @@ fn index_declarations(source: Bytes, tokens: Vec[syntax.Token], declarations: Ve
       else:
         2
     let start_byte: I64 = syntax.ast_node_start(tokens, first)
-    let end_byte: I64 = syntax.ast_node_end(tokens, end - 1)
+    let end_byte: I64 = syntax.ast_declaration_end(source, tokens, first)
     let prefix_byte: I64 = if function:
       syntax.ast_node_start(tokens, prefix_end)
     else:

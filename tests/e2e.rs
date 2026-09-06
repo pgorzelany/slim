@@ -3849,6 +3849,15 @@ fn production_session_rejects_partial_indexes_and_preserves_source_comparisons()
     fs::write(initial.join("app.slim"), source).unwrap();
     fs::write(updated.join("app.slim"), source.replace("42", "43")).unwrap();
     assert_eq!(invoke(&first, &second).stdout, b"1 1 1 1\n");
+    let nested = "module app\n\nfn value(x: I64) -> I64:\n  x\n\nfn main(args: Vec[Bytes]) -> I64:\n  value(1)\n";
+    fs::write(initial.join("app.slim"), nested).unwrap();
+    fs::write(
+        updated.join("app.slim"),
+        nested.replace("value(1)", "value(false)"),
+    )
+    .unwrap();
+    assert_eq!(invoke(&first, &second).stdout, b"1 1 1 1\n");
+    fs::write(initial.join("app.slim"), source).unwrap();
     for broken in [
         "",
         "()",
@@ -4473,6 +4482,12 @@ fn retained_typing_reuses_only_valid_current_semantics() {
             Some([1, 3]),
         ),
         (base.replace("helper", "renamed"), Some([2, 2])),
+        // Synthetic closing nodes may end at a callee anchor, before its arguments.
+        (base.replace("value: 1", "value: 2"), Some([1, 3])),
+        (base.replace("value: 1", "value: false"), Some([1, 3])),
+        (base.replace("value: 1", "value: \"wrong\""), Some([1, 3])),
+        (base.replace("box.leaf.value", "box.leaf.other"), None),
+        (base.replace("helper(read(", "helper(idle("), None),
         (
             base.replace("module changes", "module different"),
             Some([4, 0]),
@@ -4559,6 +4574,19 @@ fn retained_typing_reuses_only_valid_current_semantics() {
         fs::write(&after, changed).unwrap();
         assert_eq!(run(&before, &after), vec![1, size, 21 * size - 3]);
     }
+    let arithmetic = base
+        .replace(
+            "fn main(args: Vec[Bytes]) -> I64:",
+            "fn main(args: Vec[Bytes]) -> I64 effects[partial]:",
+        )
+        .replace("value: 1", "value: 1 + 2");
+    fs::write(&before, &arithmetic).unwrap();
+    fs::write(&after, arithmetic.replace("1 + 2", "1 - 2")).unwrap();
+    assert_eq!(&run(&before, &after)[..2], &[1, 3]);
+    let strings = "module strings\n\nfn count(value: Bytes) -> I64:\n  bytes.len(value)\n\nfn main(args: Vec[Bytes]) -> I64:\n  count(\"one\")\n";
+    fs::write(&before, strings).unwrap();
+    fs::write(&after, strings.replace("one", "longer")).unwrap();
+    assert_eq!(&run(&before, &after)[..2], &[1, 1]);
     let copyability = "module copyability\n\nstruct Leaf:\n  value: I64\n\nstruct Box:\n  leaf: Leaf\n\nfn inspect(box: Box) -> I64:\n  0\n\nfn idle() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let box: Box = Box(leaf: Leaf(value: 0))\n  inspect(box)\n";
     fs::write(&before, copyability).unwrap();
     fs::write(
@@ -4589,5 +4617,405 @@ fn retained_typing_reuses_only_valid_current_semantics() {
     fs::write(&before, base).unwrap();
     fs::write(&after, base.replace("  x\n", "  helper(x)\n")).unwrap();
     run(&before, &after);
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
+fn retained_project_preparation_preserves_validation_and_current_origins() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("retained-project");
+    let compiler = root.join("build/toolchain/slimc");
+    let probe_project = directory.join("probe-project");
+    fs::create_dir(&probe_project).unwrap();
+    for entry in fs::read_dir(root.join("selfhost")).unwrap() {
+        let path = entry.unwrap().path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "slim")
+        {
+            fs::copy(&path, probe_project.join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    let mut manifest = fs::read_to_string(root.join("selfhost/slim.project"))
+        .unwrap()
+        .lines()
+        .filter(|line| !line.contains("(module driver "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("(entry driver)", "(entry zzprobe)");
+    assert!(manifest.ends_with(')'));
+    manifest.pop();
+    manifest.push_str("\n  (module zzprobe \"zzprobe.slim\" (imports identity memory project retained syntax typing) (exports)))\n");
+    fs::write(probe_project.join("slim.project"), manifest).unwrap();
+    fs::write(
+        probe_project.join("zzprobe.slim"),
+        include_str!("fixtures/retained_project.slim"),
+    )
+    .unwrap();
+    let generated = Command::new(&compiler)
+        .arg(probe_project.join("slim.project"))
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stderr)
+    );
+    let c = directory.join("probe.c");
+    fs::write(&c, generated.stdout).unwrap();
+    let observed = Command::new("awk")
+        .args(["-v", "scope=project", "-f"])
+        .arg(root.join("scripts/instrument-retained-probe.awk"))
+        .arg(&c)
+        .output()
+        .unwrap();
+    assert!(
+        observed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&observed.stderr)
+    );
+    fs::write(&c, observed.stdout).unwrap();
+    let executable = directory.join("probe");
+    let compiled = Command::new(native_compiler())
+        .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg("-include")
+        .arg(root.join("benchmarks/instrumentation/retained_probe.h"))
+        .arg(&c)
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg(root.join("benchmarks/instrumentation/retained_probe.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let report = directory.join("native.tsv");
+    let invoke = |before: &Path, after: &Path, mode: &str| {
+        let output = Command::new(&executable)
+            .arg(before)
+            .arg(after)
+            .arg(mode)
+            .env("SLIM_RETAINED_REPORT", &report)
+            .output()
+            .unwrap();
+        let observed = fs::read_to_string(&report).unwrap();
+        let mut lines = observed.lines();
+        assert_eq!(lines.next(), Some("slim-retained\t1\texact\t1000000000"));
+        let counts: Vec<i64> = lines
+            .enumerate()
+            .map(|(index, line)| {
+                let (phase, count) = line.split_once('\t').unwrap();
+                assert_eq!(phase.parse::<usize>().unwrap(), index);
+                count.parse().unwrap()
+            })
+            .collect();
+        (output, counts)
+    };
+    let work = |before: &Path, after: &Path| {
+        let (output, counts) = invoke(before, after, "work");
+        assert!(
+            output.status.success(),
+            "status {:?}, stdout {}, stderr {}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stderr.is_empty());
+        let work: Vec<i64> = String::from_utf8(output.stdout)
+            .unwrap()
+            .split_whitespace()
+            .map(|value| value.parse().unwrap())
+            .collect();
+        assert_eq!(work.len(), 3);
+        assert_eq!(counts.len(), 2);
+        assert_eq!(counts[1], work[0]);
+        work
+    };
+    let corpus = directory.join("corpus");
+    fs::create_dir(&corpus).unwrap();
+    let mut paths: Vec<_> = fs::read_dir(root.join("conformance/pass"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "slim")
+        })
+        .collect();
+    paths.extend(
+        fs::read_dir(root.join("benchmarks/challenges"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path().join("program.slim"))
+            .filter(|path| path.is_file()),
+    );
+    paths.sort();
+    for path in paths {
+        let source = fs::read_to_string(&path).unwrap();
+        let module = source
+            .lines()
+            .find_map(|line| line.strip_prefix("module "))
+            .unwrap();
+        fs::write(corpus.join("program.slim"), &source).unwrap();
+        let manifest = corpus.join("slim.project");
+        fs::write(&manifest, format!("(project 1 (entry {module}) (module {module} \"program.slim\" (imports) (exports)))\n")).unwrap();
+        let result = work(&manifest, &manifest);
+        assert_eq!(result[0], 0, "{}", path.display());
+        assert!(result[1] > 0);
+    }
+    let before = directory.join("initial");
+    let after = directory.join("relocated");
+    fs::create_dir(&before).unwrap();
+    fs::create_dir(&after).unwrap();
+    let manifest = "(project 1 (entry app) (module app \"app.slim\" (imports data) (exports)) (module data \"data.slim\" (imports) (exports Box helper)))\n";
+    let data = "module data\n\nstruct Box:\n  value: I64\n\nfn helper(x: I64) -> I64:\n  x\n\nfn idle() -> I64:\n  9\n";
+    let app = "module app\n\nfn read(box: data.Box) -> I64:\n  box.value\n\nfn main(args: Vec[Bytes]) -> I64:\n  data.helper(read(data.Box(value: 1)))\n";
+    let write = |folder: &Path, manifest: &str, data: &str, app: &str| {
+        fs::write(folder.join("slim.project"), manifest).unwrap();
+        fs::write(folder.join("data.slim"), data).unwrap();
+        fs::write(folder.join("app.slim"), app).unwrap();
+    };
+    write(&before, manifest, data, app);
+    let initial = before.join("slim.project");
+    let updated = after.join("slim.project");
+    write(&after, manifest, data, app);
+    for (mode, expected) in [("stale", "4 0 0\n"), ("capacity", "-1 0 0\n")] {
+        let (attempt, counts) = invoke(&initial, &updated, mode);
+        assert!(attempt.status.success());
+        assert_eq!(attempt.stdout, expected.as_bytes());
+        assert_eq!(counts, vec![4, 4]);
+    }
+    for (new_manifest, new_data, new_app, expected) in [
+        (
+            manifest.to_owned(),
+            data.to_owned(),
+            app.to_owned(),
+            Some([0, 4]),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("  x\n", "  42\n"),
+            app.to_owned(),
+            Some([1, 3]),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("fn idle() -> I64:\n  9\n", ""),
+            app.to_owned(),
+            Some([0, 3]),
+        ),
+        (
+            manifest.to_owned(),
+            format!("{data}\nfn added() -> I64:\n  2\n"),
+            app.to_owned(),
+            Some([1, 4]),
+        ),
+        (
+            manifest.replace("Box helper", "Box renamed"),
+            data.replace("helper", "renamed"),
+            app.replace("helper", "renamed"),
+            Some([2, 2]),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("\nfn idle() -> I64:\n  9\n", "")
+                .replace("struct Box:", "fn idle() -> I64:\n  9\n\nstruct Box:"),
+            app.to_owned(),
+            Some([0, 4]),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("\n", "\r\n"),
+            format!("# current origin\n{app}"),
+            Some([0, 4]),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("value: I64", "value: Bool"),
+            app.replace("  box.value", "  if box.value:\n    1\n  else:\n    0")
+                .replace("value: 1", "value: true"),
+            None,
+        ),
+    ] {
+        write(&after, &new_manifest, &new_data, &new_app);
+        let actual = work(&initial, &updated);
+        if let Some(expected) = expected {
+            assert_eq!(&actual[..2], &expected);
+        }
+        let (emitted, _) = invoke(&initial, &updated, "emit");
+        let clean = Command::new(&compiler).arg(&updated).output().unwrap();
+        assert!(emitted.status.success() && clean.status.success());
+        assert_eq!(emitted.stdout, clean.stdout);
+        assert_eq!(emitted.stderr, clean.stderr);
+    }
+    let owned_data = data.replace("value: I64", "value: Vec[I64]");
+    let shared_app = app
+        .replace("  box.value", "  vec.len(box.value)")
+        .replace(
+            "fn main(args: Vec[Bytes]) -> I64:",
+            "fn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let values: Vec[I64] = vec.new()",
+        )
+        .replace("value: 1", "value: values");
+    write(&before, manifest, &owned_data, &shared_app);
+    let owned_app = shared_app.replace("box: data.Box", "box: ^data.Box");
+    write(
+        &after,
+        manifest,
+        &owned_data,
+        &owned_app.replace("read(data.Box", "read(^data.Box"),
+    );
+    assert_eq!(&work(&initial, &updated)[..2], &[2, 2]);
+    write(&after, manifest, &owned_data, &owned_app);
+    let (rejected, _) = invoke(&initial, &updated, "check");
+    let clean = Command::new(&compiler)
+        .arg("check")
+        .arg(&updated)
+        .output()
+        .unwrap();
+    assert!(!clean.status.success());
+    assert_eq!(rejected.status.code(), clean.status.code());
+    assert_eq!(rejected.stdout, clean.stdout);
+    assert_eq!(rejected.stderr, clean.stderr);
+    let (recovered, counts) = invoke(&initial, &updated, "recover");
+    assert!(recovered.status.success());
+    assert_eq!(counts[2], 0);
+    write(&before, manifest, data, app);
+    let extended = manifest.replace(
+        "(exports Box helper)))",
+        "(exports Box helper)) (module extra \"extra.slim\" (imports) (exports)))",
+    );
+    let extra = "module extra\n\nfn extra() -> I64:\n  7\n";
+    write(&after, &extended, data, app);
+    fs::write(after.join("extra.slim"), extra).unwrap();
+    assert_eq!(&work(&initial, &updated)[..2], &[1, 4]);
+    write(&before, &extended, data, app);
+    fs::write(before.join("extra.slim"), extra).unwrap();
+    write(&after, manifest, data, app);
+    assert_eq!(&work(&initial, &updated)[..2], &[0, 4]);
+    write(&before, manifest, data, app);
+    write(
+        &after,
+        &manifest
+            .replace("(module data ", "(module lib ")
+            .replace("(imports data)", "(imports lib)"),
+        &data.replace("module data", "module lib"),
+        &app.replace("data.", "lib."),
+    );
+    assert_eq!(&work(&initial, &updated)[..2], &[4, 0]);
+    write(
+        &after,
+        manifest,
+        &data.replace("struct Box:", "struct Outer:\n  box: Box\n\nstruct Box:"),
+        app,
+    );
+    assert_eq!(&work(&initial, &updated)[..2], &[0, 4]);
+    for (new_manifest, new_data, new_app) in [
+        (manifest.replace("(module data \"data.slim\" (imports)", "(module data \"data.slim\" (imports app)"), data.to_owned(), app.to_owned()),
+        (manifest.replace("(project 1", "(project 2"), data.to_owned(), app.to_owned()),
+        (manifest.replace("data.slim", "missing.slim"), data.to_owned(), app.to_owned()),
+        (manifest.to_owned(), "".to_owned(), app.to_owned()),
+        ("(project 1 (entry app) (module data \"data.slim\" (imports) (exports Box helper)) (module app \"app.slim\" (imports data) (exports)))\n".to_owned(), data.to_owned(), app.to_owned()),
+        (
+            manifest.replace("(imports data)", "(imports)"),
+            data.to_owned(),
+            app.to_owned(),
+        ),
+        (
+            manifest.replace("Box helper", "Box"),
+            data.to_owned(),
+            app.to_owned(),
+        ),
+        (
+            manifest.replace("(entry app)", "(entry data)"),
+            data.to_owned(),
+            app.to_owned(),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("module data", "module other"),
+            app.to_owned(),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace(
+                "helper(x: I64) -> I64:",
+                "helper(x: I64) -> I64 effects[io]:",
+            ),
+            app.to_owned(),
+        ),
+        (
+            manifest.to_owned(),
+            data.replace("helper(x: I64)", "helper(x: Bool)")
+                .replace("  x\n", "  1\n"),
+            app.to_owned(),
+        ),
+        (
+            manifest.to_owned(),
+            data.to_owned(),
+            format!(
+                "# shifted diagnostic\n{}",
+                app.replace("value: 1", "value: false")
+            ),
+        ),
+        (
+            manifest.to_owned(),
+            format!("{data}\nfn helper() -> I64:\n  0\n"),
+            app.to_owned(),
+        ),
+        (
+            manifest.to_owned(),
+            data.to_owned(),
+            app.replace("  data.helper", "   data.helper"),
+        ),
+    ] {
+        write(&after, &new_manifest, &new_data, &new_app);
+        let (rejected, _) = invoke(&initial, &updated, "check");
+        let clean = Command::new(&compiler)
+            .arg("check")
+            .arg(&updated)
+            .output()
+            .unwrap();
+        assert!(
+            !clean.status.success(),
+            "case unexpectedly accepted: {new_manifest} {new_data} {new_app}"
+        );
+        assert_eq!(rejected.status.code(), clean.status.code());
+        assert_eq!(rejected.stdout, clean.stdout);
+        assert_eq!(rejected.stderr, clean.stderr);
+        let (recovered, counts) = invoke(&initial, &updated, "recover");
+        assert!(
+            recovered.status.success(),
+            "{}",
+            String::from_utf8_lossy(&recovered.stdout)
+        );
+        assert_eq!(counts.len(), 3);
+        assert_eq!(counts[2], 0);
+        assert!(
+            String::from_utf8(recovered.stdout)
+                .unwrap()
+                .lines()
+                .last()
+                .unwrap()
+                .starts_with("0 4 ")
+        );
+    }
+    for size in [125, 250, 500, 1_000] {
+        let data = format!(
+            "module data\n\n{}",
+            (0..size)
+                .map(|index| format!("fn f_{index}(x: I64) -> I64:\n  x\n\n"))
+                .collect::<String>()
+        );
+        let app = "module app\n\nfn main(args: Vec[Bytes]) -> I64:\n  data.f_0(1)\n";
+        let manifest = "(project 1 (entry app) (module app \"app.slim\" (imports data) (exports)) (module data \"data.slim\" (imports) (exports f_0)))\n";
+        write(&before, manifest, &data, app);
+        write(&after, manifest, &data, app);
+        assert_eq!(work(&initial, &updated), vec![0, size + 1, 15 * size + 22]);
+        write(&after, manifest, &data.replacen("  x\n", "  42\n", 1), app);
+        assert_eq!(work(&initial, &updated), vec![1, size, 15 * size + 7]);
+    }
     fs::remove_dir_all(directory).unwrap();
 }

@@ -24,6 +24,20 @@ a capacity miss. This does not bound source
 bytes or peak process memory. This internal typing layer does not complete M1's persistent service lifecycle,
 flow-based ownership orchestration, analysis retention or cached emission.
 
+[RFC-0132](../design/rfcs/0132-retained-project-preparation.md) connects retained
+typing to shared project preparation. The attempt returns the complete prepared
+project, eligible typing history and actual inference work. Both preparation modes
+run current manifest/module/import/export validation and retain current diagnostic
+origins. An unchanged flattened body cannot bypass a removed import or export.
+Module parsing, flattening, global checks and C generation still run. The public
+session protocol is unchanged and remains estimate-only.
+
+Retained typing and source snapshot maps now use complete declaration source keys,
+excluding trailing separator whitespace. A synthetic closing node is not a source
+extent: its position can end at a callee before nested arguments. Literal, string,
+operator and member changes are covered by permanent regressions, including
+rejected updates that previously could reuse incomplete source keys.
+
 ## What the current session command measures
 
 `selfhost/session.slim` loads the initial and updated projects and builds

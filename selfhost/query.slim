@@ -103,9 +103,7 @@ fn declaration_interface_end(source: Bytes, tokens: Vec[syntax.Token], item: I64
     let closing: I64 = after_effects - 1
     syntax.ast_node_end(tokens, closing)
   else:
-    let next: I64 = syntax.ast_next(tokens, item)
-    let closing: I64 = next - 1
-    syntax.ast_node_end(tokens, closing)
+    syntax.ast_declaration_end(source, tokens, item)
 
 fn append_module_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], module: project.LoadedModule, cursor: I64, module_name: Bytes, file: identity.FileId, slot: I64, output: @Vec[Snapshot]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
@@ -123,8 +121,7 @@ fn append_module_snapshots(manifest_source: Bytes, manifest_tokens: Vec[syntax.T
     let start: I64 = syntax.ast_node_start(module_tokens, cursor)
     let interface_end: I64 = declaration_interface_end(source, module_tokens, cursor)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
-    let closing: I64 = next - 1
-    let end: I64 = syntax.ast_node_end(module_tokens, closing)
+    let end: I64 = syntax.ast_declaration_end(source, module_tokens, cursor)
     let declaration: identity.DeclarationId = identity.DeclarationId(file: file, slot: slot)
     let count: I64 = next - cursor
     let view: identity.View = identity.View(declaration: declaration, first: cursor, count: count)

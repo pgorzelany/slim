@@ -2339,6 +2339,25 @@ fn ast_node_start(tokens: Vec[Token], node: I64) -> I64 effects[partial]:
 fn ast_node_end(tokens: Vec[Token], node: I64) -> I64 effects[partial]:
   token_end(tokens, node)
 
+fn trim_declaration_separator(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if end <= start:
+    end
+  else:
+    let last: I64 = end - 1
+    let code: I64 = u8.to_i64(bytes.get(source, last))
+    if ((code == 32) || (code == 9)) || ((code == 10) || (code == 13)):
+      recur(source, start, last)
+    else:
+      end
+
+fn ast_declaration_end(source: Bytes, tokens: Vec[Token], item: I64) -> I64 effects[partial]:
+  let next: I64 = ast_next(tokens, item)
+  let end: I64 = if ast_node_kind(tokens, next) == 1:
+    bytes.len(source)
+  else:
+    ast_node_start(tokens, next)
+  trim_declaration_separator(source, ast_node_start(tokens, item), end)
+
 fn ast_node_link(tokens: Vec[Token], node: I64) -> I64 effects[partial]:
   token_link(tokens, node)
 
