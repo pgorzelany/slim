@@ -1,0 +1,15 @@
+module enum_ownership
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn extract(value: ^Boxed) -> Vec[I64]:
+  match value:
+    Some(items):
+      items
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Boxed = Boxed::Some(vec.new())
+  let items: Vec[I64] = extract(^value)
+  vec.push(@items, 7)
+  vec.len(items) - 1

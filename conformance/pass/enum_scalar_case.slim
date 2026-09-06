@@ -1,0 +1,18 @@
+module enum_scalar_case
+
+enum Choice:
+  Items(Vec[I64])
+  Scalar(I64)
+
+fn exercise(value: @Choice) -> I64 effects[alloc]:
+  match value:
+    Items(items):
+      vec.len(items)
+    Scalar(var number):
+      value = Choice::Items(vec.new())
+      number = number - 7
+      number
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Choice = Choice::Scalar(7)
+  exercise(@value) + exercise(@value)

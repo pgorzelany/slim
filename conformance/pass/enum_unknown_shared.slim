@@ -1,0 +1,18 @@
+module enum_unknown_shared
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn exercise(left: Boxed, right: Boxed, flag: Bool) -> I64:
+  let selected: Boxed = if flag:
+    left
+  else:
+    right
+  match selected:
+    Some(items):
+      vec.len(items)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let left: Boxed = Boxed::Some(vec.new())
+  let right: Boxed = Boxed::Some(vec.new())
+  exercise(left, right, true) + exercise(left, right, false)

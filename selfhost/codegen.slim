@@ -813,7 +813,7 @@ fn emit_destination(source: Bytes, tokens: Vec[syntax.Token], destination: I64, 
       let index: I64 = 0 - destination
       emit_temp_name(index, @output)
     else:
-      emit_source_name(source, tokens, destination, @output)
+      emit_binding_value(source, tokens, 0, destination, @output)
 
 fn emit_recur_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, param: I64, argument: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, param)
@@ -1702,10 +1702,8 @@ fn emit_counted_set(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.
   let name: I64 = syntax.ast_set_name(expr)
   let value: I64 = syntax.ast_set_value(expr)
   let body: I64 = syntax.ast_set_body(tokens, expr)
-  emit_source_name(source, tokens, name, @output)
-  text.append_text(@output, " = ")
-  emit_value(source, tokens, params, value, @output)
-  text.append_text(@output, ";\n")
+  let type_index: I64 = fact_type_index(facts, value)
+  emit_counted_expr(source, tokens, facts, allocations, module_items, params, value, name, false, type_index, @output, range_facts)
   emit_counted_expr(source, tokens, facts, allocations, module_items, params, body, destination, result, destination_type, @output, range_facts)
 
 fn emit_counted_expr(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, expr: I64, destination: I64, result: Bool, destination_type: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:

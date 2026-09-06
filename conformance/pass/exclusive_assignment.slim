@@ -1,0 +1,25 @@
+module exclusive_assignment
+
+fn make() -> Vec[I64] effects[alloc]:
+  vec.new()
+
+fn exercise(value: @Vec[I64], flag: Bool) -> I64 effects[alloc]:
+  value = vec.new()
+  value = make()
+  value = if flag:
+    vec.new()
+  else:
+    make()
+  let other: Vec[I64] = vec.new()
+  vec.push(@other, 7)
+  value = other
+  vec.get(value, 0) - 7
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Vec[I64] = vec.new()
+  let first: I64 = exercise(@value, true)
+  let second: I64 = exercise(@value, false)
+  let length: I64 = vec.len(value)
+  let total: I64 = first + second
+  let observed: I64 = total + length
+  observed - 1

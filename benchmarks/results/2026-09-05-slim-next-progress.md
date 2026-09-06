@@ -12,7 +12,7 @@ milestone. Production semantics remain in SLIM and the portable C seed.
 
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
-| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local borrow loans, termination-effect enforcement, and the call-prefix formatter round trip validated. Field transfers, borrowed enum payloads, reinitialization, and actual-work instrumentation remain. |
+| M0: repair and establish truth | in progress | Cache framing, name lookup, named/conditional transfers, branch joins, finite layouts, call/local/enum-payload borrow loans, enum match consumption, exclusive assignment lowering, termination-effect enforcement, and the call-prefix formatter round trip validated. Field transfers, reinitialization, and actual-work instrumentation remain. |
 | M1: compiler substrate | pending | No actual incremental-reuse claim yet. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
@@ -509,3 +509,89 @@ M0 remains in progress: owned projections, borrowed enum payload scopes,
 definite reinitialization, actual checker/generator/cache work counters, and
 successor process decisions still need implementation evidence. M1-M7 and
 controlled agent outcomes remain pending.
+
+## Enum match ownership checkpoint (2026-09-06)
+
+RFC-0118 repairs enum match consumption and affine payload loans. An owning
+match consumes its named scrutinee owners before checking the arms; selected
+payloads receive ownership. Borrowed affine payloads retain shared access to
+their origin throughout the arm, including when the enum parameter is
+exclusive. Origin replacement, transfer, and exclusive access during the loan
+are rejected. Scalar copies and cases without affine payloads reserve no loan.
+The implementation reuses canonical move scopes and indexed loan records.
+
+Both durable native invalidation witnesses are now production rejections:
+[owned match](../reproducers/enum_owned_match.slim) reports E0315 at 533:538;
+[borrowed match](../reproducers/enum_borrowed_match.slim) reports E0347 and
+E0349 at 414:419. The retained `c976c5c` compiler accepts both, and its native
+ASan/UBSan runs report heap-use-after-free. This is exact evidence for the two
+witnesses, not a proof of general memory safety. The existing shared payload
+mutation fixture retains E0347 and additionally reports its overlapping loan
+with E0349 at the same span; no previous rejection is removed.
+
+Positive scope-exit tests exposed invalid C for assignment to exclusive
+parameters. Ordinary and counted lowering now write through the existing
+checked parameter place. Counted assignment recursively lowers its right-hand
+expression, preserving conditional and call evaluation and allocation-failure
+checks. The counted integration fixture verifies three specialized stages,
+then observes the updated vector from the caller, so successful compilation
+alone cannot satisfy the regression test.
+
+Twenty-four added conformance rows cover the two invalidation witnesses,
+consumption inside and after a match, branch joins, collection origins,
+mutation and transfer conflicts, nested and unknown origins, multiple payloads,
+owned transfer, scalar and empty cases, scope exit, and ordinary/counted
+exclusive assignment. All 12 new positive fixtures execute with exit zero under
+ASan/UBSan. Seven emit C byte-identical to the baseline; five containing
+exclusive assignment repair invalid baseline C. The final counted fixture was
+regenerated and sanitized after its caller-observation assertion was added.
+
+The sanitized compiler checks its own source successfully. Compiler allocation
+fault injection for `enum_scope_exit.slim` checks ordinals 1 through 128:
+1 through 85 are reached and produce exit 71, empty output, and the exact
+allocation-failure diagnostic; 86 through 128 are not reached and succeed.
+The final counted runtime fixture checks ordinals 1 through 64: 1 through 4
+fail cleanly with exit 71 and the exact diagnostic; 5 through 64 succeed.
+No ASan/UBSan diagnostic appears. These bounded experiments cover the named
+fixtures' allocation sequences, not every checker or generated-program path.
+
+The new permanent enum-match series grows 125, 250, 500, and 1,000 cases with
+both borrowed and owning matches. Its measured check exponent is 0.421 against
+the unchanged 1.25 ownership ceiling. Existing scaling gates remain, including
+the 1.30 owned-transfer normalized-cost ceiling (measured 0.948). Fixed process
+startup contributes to these fixture times; the exponent is not a claim of a
+sublinear checking algorithm.
+
+The paired frontend experiment retains one warmup and seven alternating AB/BA
+pairs per size on the call-heavy separator workload. The retained baseline is
+`c976c5c`; both binary identities still match
+[the raw TSV](2026-09-06-enum-ownership-frontend-pair.tsv) after bootstrap.
+
+| Call-heavy declarations | Baseline median | Candidate median | Candidate / baseline |
+| --- | ---: | ---: | ---: |
+| 2,000 | 12.384 ms | 12.174 ms | 0.983 |
+| 4,000 | 21.911 ms | 22.091 ms | 1.008 |
+| 8,000 | 43.861 ms | 43.982 ms | 1.003 |
+| 16,000 | 86.980 ms | 88.772 ms | 1.021 |
+
+These measurements establish no general speedup, incremental reuse, or agent
+effectiveness result. Complete analysis reports for all 20 native challenges
+are byte-identical to the retained baseline; all exact analysis/resource rows
+remain unchanged.
+
+The portable fixed point is 2,957,449 C bytes, SHA-256
+`27521e806c19bb4358f4a6a18b62eda856edd19fc5d5c92f4687ffe671247868`.
+Bootstrap, governance, formatting, Clippy, all 7 unit and 54 integration tests,
+280 conformance fixtures plus 2,000 malformed-input mutations, quick performance,
+quick reduction, parallelism, resources, quick native comparison, agent checks,
+and quick parallel runtime pass. Three localhost tests require socket access
+outside the restricted sandbox; the complete suite passes with that access.
+Native SLIM/C and SLIM/Rust geometric means across 20 challenges are 1.090 and
+1.052. Generated parallel/serial ratios are 0.872 for `state_machine` and 0.634
+for `signal_network`, within existing budgets. Logs and sanitizer artifacts are
+retained in ignored `build/slim-next-enum-ownership/`; `commit-*` files record
+the final verification. No gate or baseline is relaxed.
+
+M0 remains in progress: general owned projections, definite reinitialization,
+actual checker/generator/cache work counters, and successor process decisions
+still require evidence. M1-M7 and controlled agent outcomes remain pending.

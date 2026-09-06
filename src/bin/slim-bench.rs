@@ -462,6 +462,10 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
         ("generated-nested-loans", &[125, 250, 500, 1_000][..]),
         ("generated-local-loans", &[125, 250, 500, 1_000][..]),
         (
+            "generated-enum-match-ownership",
+            &[125, 250, 500, 1_000][..],
+        ),
+        (
             "generated-disjoint-local-loans",
             &[125, 250, 500, 1_000][..],
         ),
@@ -501,6 +505,22 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
                     source.push_str(&format!("fn value_{index:08}() -> I64:\n  0\n\n"));
                 }
                 source.push_str("fn main(args: Vec[Bytes]) -> I64:\n  0\n");
+            } else if workload == "generated-enum-match-ownership" {
+                source.push_str("enum Choice:\n");
+                for index in 0..size {
+                    source.push_str(&format!("  Case_{index:04}(Vec[I64])\n"));
+                }
+                for (function, mode) in [("observe", "@"), ("consume", "^")] {
+                    source.push_str(&format!(
+                        "\nfn {function}(value: {mode}Choice) -> I64:\n  match value:\n"
+                    ));
+                    for index in 0..size {
+                        source.push_str(&format!(
+                            "    Case_{index:04}(items):\n      vec.len(items)\n"
+                        ));
+                    }
+                }
+                source.push_str("\nfn main(args: Vec[Bytes]) -> I64:\n  0\n");
             } else if workload == "generated-local-loans" {
                 source.push_str("fn observe(value: Vec[I64]) -> I64:\n");
                 for index in 0..size {
@@ -571,6 +591,7 @@ fn benchmark_ownership_repairs(compiler: &Path, directory: &Path, samples: usize
             "generated-branch-moves"
         } else if workload == "generated-nested-loans"
             || workload == "generated-local-loans"
+            || workload == "generated-enum-match-ownership"
             || workload == "generated-disjoint-local-loans"
         {
             "generated-owned-transfers"

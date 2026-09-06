@@ -1,0 +1,19 @@
+module enum_ownership
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn consume(value: ^Vec[Boxed]) -> I64:
+  vec.len(value) - 1
+
+fn exercise(value: ^Vec[Boxed]) -> I64:
+  match vec.get(value, 0):
+    Some(items):
+      let length: I64 = vec.len(items)
+      void
+  consume(^value)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let values: Vec[Boxed] = vec.new()
+  vec.push(@values, Boxed::Some(vec.new()))
+  exercise(^values)

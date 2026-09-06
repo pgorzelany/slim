@@ -1,0 +1,25 @@
+module owned_match
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn grow(values: @Vec[I64], count: I64) -> Void effects[alloc, partial]:
+  if count <= 0:
+    void
+  else:
+    vec.push(@values, count)
+    recur(@values, count - 1)
+
+fn observe(value: Boxed) -> I64:
+  match value:
+    Some(items):
+      vec.get(items, 0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let items: Vec[I64] = vec.new()
+  vec.push(@items, 7)
+  let boxed: Boxed = Boxed::Some(items)
+  match boxed:
+    Some(extracted):
+      grow(@extracted, 64)
+  observe(boxed) - 7

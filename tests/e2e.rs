@@ -1426,6 +1426,46 @@ fn proven_parameter_constants_remove_only_supported_arithmetic_checks() {
 }
 
 #[test]
+fn exclusive_assignment_executes_through_counted_lowering() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let source = root.join("conformance/pass/exclusive_assignment_counted.slim");
+    let compiler = root.join("build/toolchain/slimc");
+    let directory = temporary_directory("counted-exclusive-assignment");
+    let analysis = Command::new(&compiler)
+        .arg("analyze")
+        .arg(&source)
+        .output()
+        .unwrap();
+    assert!(analysis.status.success(), "{analysis:?}");
+    let report = String::from_utf8(analysis.stdout).unwrap();
+    assert!(report.contains("(start 0) (bound 3) (step 1) (iterations 3)"));
+    assert!(report.contains("(counted-loop-count 1) (reported-facts 1)"));
+    let emitted = Command::new(&compiler).arg(&source).output().unwrap();
+    assert!(emitted.status.success(), "{emitted:?}");
+    let generated = String::from_utf8(emitted.stdout).unwrap();
+    assert_eq!(
+        generated
+            .matches("if (slim_v_index < INT64_C(3)) do {")
+            .count(),
+        3,
+        "the specialized path must run; ordinary recurrence is not this test"
+    );
+    let executable = directory.join("assignment");
+    let built = Command::new(slimc())
+        .arg("build")
+        .arg(&source)
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(built.status.success(), "{built:?}");
+    let output = Command::new(executable).output().unwrap();
+    assert_eq!(output.status.code(), Some(0), "{output:?}");
+    assert!(output.stdout.is_empty() && output.stderr.is_empty());
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn exact_counted_recurrences_expand_only_under_complete_proof() {
     let directory = temporary_directory("counted-recurrence-expansion");
 

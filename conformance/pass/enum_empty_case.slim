@@ -1,0 +1,17 @@
+module enum_empty_case
+
+enum Choice:
+  Empty
+  Items(Vec[I64])
+
+fn exercise(value: @Choice) -> I64 effects[alloc]:
+  match value:
+    Empty:
+      value = Choice::Items(vec.new())
+      0
+    Items(items):
+      vec.len(items)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  let value: Choice = Choice::Empty()
+  exercise(@value) + exercise(@value)

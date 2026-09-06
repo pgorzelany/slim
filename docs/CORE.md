@@ -117,6 +117,14 @@ match value:
     inner
 ```
 
+An owning match of an affine enum consumes its named scrutinee owners; its
+selected payload bindings receive ownership. A borrowed match gives affine
+payloads shared read access for the arm's lexical lifetime, including when
+the enum parameter is exclusive. The origin cannot be replaced, transferred,
+or accessed exclusively during that loan. Scalar payloads copy without a
+storage loan, and copyable enums may be matched repeatedly. General owned
+field projections remain a known implementation gap in the repair report.
+
 `parallel:` is the one explicit concurrency form. It has checked execution,
 join, effect, and serial-fallback behavior.
 
@@ -167,8 +175,9 @@ or ABI effect.
   its lexical scope ends. Shared reads and independent known owners remain
   usable; mutation, replacement, or transfer of its origin is rejected.
   Copying a scalar does not retain a storage loan. Unknown origins are
-  conservative. This repair does not cover the remaining owned-projection
-  and borrowed-enum-payload gaps recorded in the SLIM Next progress report.
+  conservative. Borrowed enum payloads retain their origin loan for the match
+  arm as described above. General owned projections remain a gap recorded in
+  the SLIM Next progress report.
 - `^` is the call-boundary marker, not a marker on every affine move. Existing
   moves into local bindings, aggregate payloads, and owning collection slots
   remain unmarked because the owning destination is explicit. Field

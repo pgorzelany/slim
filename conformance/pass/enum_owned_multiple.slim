@@ -1,0 +1,15 @@
+module enum_owned_multiple
+
+enum Pair:
+  Both(Vec[I64], Vec[I64])
+
+fn exercise(value: ^Pair) -> I64 effects[alloc]:
+  match value:
+    Both(first, second):
+      let output: Vec[Vec[I64]] = vec.new()
+      vec.push(@output, first)
+      vec.push(@output, second)
+      vec.len(output) - 2
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  exercise(^Pair::Both(vec.new(), vec.new()))

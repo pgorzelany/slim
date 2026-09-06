@@ -779,6 +779,9 @@ fn retain_loan(tokens: Vec[syntax.Token], index: I64, call: I64, mode: I64, bind
 
 fn check_argument_overlap(tokens: Vec[syntax.Token], argument: I64, owner_index: I64, call: I64, unknown_prior: Bool, restricted_prior: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], activate: Bool) -> Bool effects[alloc, partial]:
   let actual_mode: I64 = syntax.ast_argument_mode(tokens, argument)
+  check_loan_overlap(tokens, argument, actual_mode, owner_index, call, unknown_prior, restricted_prior, @bindings, @issues, activate)
+
+fn check_loan_overlap(tokens: Vec[syntax.Token], argument: I64, actual_mode: I64, owner_index: I64, call: I64, unknown_prior: Bool, restricted_prior: Bool, bindings: @Vec[Binding], issues: @Vec[Issue], activate: Bool) -> Bool effects[alloc, partial]:
   let current_restricted: Bool = actual_mode > 0
   let unknown_current: Bool = owner_index == -2
   let unknown: Binding = vec.get(bindings, 0)
@@ -1806,7 +1809,7 @@ fn infer_case(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, parent: I64,
     record_issue("E0352", variant_name, @issues)
     invalid_type(expr)
 
-fn bind_payload_names(source: Bytes, tokens: @Vec[syntax.Token], name: I64, type: I64, source_mode: I64, source_owner: I64, parent: I64, case_name: I64, bindings: @Vec[Binding], issues: @Vec[Issue]) -> I64 effects[alloc, partial]:
+fn bind_payload_names(source: Bytes, tokens: @Vec[syntax.Token], name: I64, type: I64, source_mode: I64, source_owner: I64, parent: I64, case_name: I64, arm: I64, bindings: @Vec[Binding], issues: @Vec[Issue]) -> I64 effects[alloc, partial]:
   let name_kind: I64 = syntax.ast_node_kind(tokens, name)
   let type_kind: I64 = syntax.ast_node_kind(tokens, type)
   let names_done: Bool = name_kind == 1
@@ -1823,18 +1826,26 @@ fn bind_payload_names(source: Bytes, tokens: @Vec[syntax.Token], name: I64, type
     let mutable: Bool = syntax.ast_pattern_name_is_mutable(tokens, name)
     let storage: I64 = memory.type_storage_kind(source, tokens, type)
     let affine: Bool = storage == 2
-    let mode: I64 = if affine:
-      source_mode
+    let borrowed: Bool = affine && (source_mode > 0)
+    let mode: I64 = if borrowed:
+      1
     else:
       0
     let owner: I64 = if mode > 0:
       source_owner
     else:
       -1
-    let next_parent: I64 = add_binding(@tokens, name, type, mode, owner, mutable, parent, @bindings)
-    let next_name: I64 = syntax.ast_next(tokens, name)
-    let next_type: I64 = syntax.ast_next(tokens, type)
-    recur(source, @tokens, next_name, next_type, source_mode, source_owner, next_parent, case_name, @bindings, @issues)
+    let loan_valid: Bool = if borrowed:
+      check_loan_overlap(tokens, name, 0, source_owner, arm, false, false, @bindings, @issues, true)
+    else:
+      true
+    if loan_valid:
+      let next_parent: I64 = add_binding(@tokens, name, type, mode, owner, mutable, parent, @bindings)
+      let next_name: I64 = syntax.ast_next(tokens, name)
+      let next_type: I64 = syntax.ast_next(tokens, type)
+      recur(source, @tokens, next_name, next_type, source_mode, source_owner, next_parent, case_name, arm, @bindings, @issues)
+    else:
+      -2
 
 fn case_name_matches(source: Bytes, tokens: Vec[syntax.Token], case_form: I64, pattern: I64) -> Bool effects[partial]:
   let declared: I64 = syntax.ast_member_name(case_form)
@@ -1858,7 +1869,7 @@ fn ordered_arm_parent(source: Bytes, tokens: @Vec[syntax.Token], cursor: I64, ca
         parent
       else:
         let names_form: I64 = syntax.ast_arm_bindings(tokens, cursor)
-        bind_payload_names(source, @tokens, syntax.ast_list_first(names_form), payload_type, source_mode, source_owner, parent, pattern, @bindings, @issues)
+        bind_payload_names(source, @tokens, syntax.ast_list_first(names_form), payload_type, source_mode, source_owner, parent, pattern, cursor, @bindings, @issues)
     else:
       record_issue("E0352", pattern, @issues)
       -2
@@ -1985,13 +1996,25 @@ fn infer_match_ordered(source: Bytes, tokens: @Vec[syntax.Token], expr: I64, exp
     item_has_kind(source, tokens, variant_item, 2)
   let variant: Bool = control_kind_valid && variant_shape
   if variant:
+    let affine: Bool = if boolean_match:
+      false
+    else:
+      memory.type_storage_kind(source, tokens, scrutinee.form) == 2
+    let move_valid: Bool = if affine && (source_mode == 0):
+      mark_result_move(source, tokens, value, @bindings, @issues, @scopes)
+    else:
+      true
     let first_arm: I64 = syntax.ast_match_arms(tokens, expr)
     let first_case: I64 = if boolean_match:
       -1
     else:
       syntax.ast_data_members_first(variant_item)
     let initial: TypeRef = invalid_type(expr)
-    infer_match_arms_ordered(source, @tokens, first_arm, variant_item, first_case, expr, source_mode, source_owner, expected, parent, params, return_type, false, initial, false, false, @bindings, @facts, @issues, @scopes, -1)
+    let result: TypeRef = infer_match_arms_ordered(source, @tokens, first_arm, variant_item, first_case, expr, source_mode, source_owner, expected, parent, params, return_type, false, initial, false, false, @bindings, @facts, @issues, @scopes, -1)
+    if move_valid:
+      result
+    else:
+      invalid_type(expr)
   else:
     record_issue("E0344", value, @issues)
     invalid_type(expr)

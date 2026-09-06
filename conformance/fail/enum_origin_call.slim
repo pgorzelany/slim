@@ -1,0 +1,17 @@
+module enum_ownership
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn reset(value: @Boxed) -> Void effects[alloc]:
+  value = Boxed::Some(vec.new())
+  void
+
+fn exercise(value: @Boxed) -> I64 effects[alloc]:
+  match value:
+    Some(items):
+      reset(@value)
+      vec.len(items)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

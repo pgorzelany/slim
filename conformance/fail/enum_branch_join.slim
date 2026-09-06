@@ -1,0 +1,19 @@
+module enum_ownership
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn exercise(value: ^Boxed, flag: Bool) -> I64:
+  if flag:
+    match value:
+      Some(items):
+        void
+  else:
+    void
+  observe(value)
+
+fn observe(value: Boxed) -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -1,0 +1,19 @@
+module enum_ownership
+
+enum Boxed:
+  Some(Vec[I64])
+
+fn exercise(flag: Bool) -> I64 effects[alloc]:
+  let value: Boxed = Boxed::Some(vec.new())
+  if flag:
+    match value:
+      Some(items):
+        vec.push(@items, 7)
+        vec.len(items) - 1
+  else:
+    match value:
+      Some(items):
+        vec.len(items)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc]:
+  exercise(true) + exercise(false)
