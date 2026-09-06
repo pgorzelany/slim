@@ -3950,3 +3950,96 @@ fn production_revision_maps_preserve_nodes_spans_and_reject_stale_history() {
     }
     fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn production_function_checks_are_independent_of_order_and_scratch_history() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("function-checking");
+    for entry in fs::read_dir(root.join("selfhost")).unwrap() {
+        let path = entry.unwrap().path();
+        if path
+            .extension()
+            .is_some_and(|extension| extension == "slim")
+        {
+            fs::copy(&path, directory.join(path.file_name().unwrap())).unwrap();
+        }
+    }
+    let source_manifest = fs::read_to_string(root.join("selfhost/slim.project")).unwrap();
+    let mut manifest = source_manifest
+        .lines()
+        .filter(|line| !line.contains("(module driver "))
+        .collect::<Vec<_>>()
+        .join("\n")
+        .replace("(entry driver)", "(entry zzprobe)");
+    assert!(manifest.ends_with(')'));
+    manifest.pop();
+    manifest.push_str(
+        "\n  (module zzprobe \"zzprobe.slim\" (imports check ir syntax typing) (exports)))\n",
+    );
+    fs::write(directory.join("slim.project"), manifest).unwrap();
+    fs::write(
+        directory.join("zzprobe.slim"),
+        include_str!("fixtures/function_checking.slim"),
+    )
+    .unwrap();
+    let generated = Command::new(root.join("build/toolchain/slimc"))
+        .arg(directory.join("slim.project"))
+        .output()
+        .unwrap();
+    assert!(
+        generated.status.success(),
+        "{}",
+        String::from_utf8_lossy(&generated.stdout)
+    );
+    let c = directory.join("probe.c");
+    fs::write(&c, generated.stdout).unwrap();
+    let executable = directory.join("probe");
+    let compiled = Command::new(native_compiler())
+        .args(["-std=c11", "-O1", "-Wall", "-Wextra", "-Werror"])
+        .arg("-I")
+        .arg(root.join("runtime"))
+        .arg(&c)
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        compiled.status.success(),
+        "{}",
+        String::from_utf8_lossy(&compiled.stderr)
+    );
+    let mut fixtures: Vec<PathBuf> = fs::read_dir(root.join("conformance/pass"))
+        .unwrap()
+        .map(|entry| entry.unwrap().path())
+        .filter(|path| {
+            path.extension()
+                .is_some_and(|extension| extension == "slim")
+        })
+        .collect();
+    fixtures.extend(
+        fs::read_dir(root.join("benchmarks/challenges"))
+            .unwrap()
+            .map(|entry| entry.unwrap().path().join("program.slim"))
+            .filter(|path| path.is_file()),
+    );
+    fixtures.sort();
+    assert!(fixtures.len() >= 92);
+    for fixture in fixtures {
+        let output = Command::new(&executable).arg(&fixture).output().unwrap();
+        assert!(
+            output.status.success(),
+            "{}: {:?}",
+            fixture.display(),
+            output
+        );
+        assert_eq!(
+            output.stdout,
+            b"ok isolated function checking\n",
+            "{}",
+            fixture.display()
+        );
+        assert!(output.stderr.is_empty());
+    }
+    fs::remove_dir_all(directory).unwrap();
+}

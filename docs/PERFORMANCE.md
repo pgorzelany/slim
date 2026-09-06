@@ -136,6 +136,18 @@ bytes plus one; name-edge headers at 64 times (input bytes plus one). For N owne
 reset in both arms, the tracker closes 3N frames and performs at most 16N+32
 union-find calls. These are permanent work gates for these named fixtures,
 not a claim that their formulas apply to every program.
+RFC-0127 additionally observes each function-body check and each binding-fact
+materialization loop header. The generated N-function family plus main checks
+exactly N+1 bodies and visits 2(N+1) materialization headers. Allocation attempts
+are counted at the runtime's existing attempt increment, including an injected
+failure but excluding calls declined after failure. Cumulative requested payload
+bytes count the size passed at that same point, before zero-size normalization;
+they exclude runtime headers/system allocator overhead and are not peak memory.
+Both counters use the existing fixed cap. The generated check/emission family
+allows at most 16N+128 attempts. The 128-ordinal ownership fixture must reach a
+function check before at least one failure and must also reach successful
+ordinals beyond its allocations. Failed attempts equal the injected ordinal and
+produce no partial standard output.
 The two-module edit/cache campaign distinguishes the three parses of a clean
 build from zero program parses on a hit and four parses for an unchanged
 snapshot comparison. All 20 native challenges are emitted by both compilers

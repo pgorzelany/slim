@@ -68,6 +68,22 @@ clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
   "$verify_dir/maps.c" runtime/slim_rt.c -o "$verify_dir/maps-sanitized"
 test "$("$verify_dir/maps-sanitized")" = "ok exact revision maps"
 
+mkdir "$verify_dir/functions"
+cp selfhost/*.slim "$verify_dir/functions/"
+cp tests/fixtures/function_checking.slim "$verify_dir/functions/zzprobe.slim"
+sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;$s/)$//' \
+  selfhost/slim.project > "$verify_dir/functions/slim.project"
+cat >> "$verify_dir/functions/slim.project" <<'EOF'
+  (module zzprobe "zzprobe.slim" (imports check ir syntax typing) (exports)))
+EOF
+"$verify_dir/slimc-seed-sanitized" "$verify_dir/functions/slim.project" > "$verify_dir/functions.c"
+clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
+  -Wall -Wextra -Werror -I runtime \
+  "$verify_dir/functions.c" runtime/slim_rt.c -o "$verify_dir/functions-sanitized"
+for function_fixture in conformance/pass/*.slim benchmarks/challenges/*/program.slim; do
+  test "$("$verify_dir/functions-sanitized" "$function_fixture")" = "ok isolated function checking"
+done
+
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1

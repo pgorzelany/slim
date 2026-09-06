@@ -1864,23 +1864,24 @@ static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95declaration_95type
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95ownership_95result_95expr(SlimBytes slim_v_source_n181402, SlimVec slim_v_tokens_n181406, int64_t slim_v_expr_n181413, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95result_95is_95borrowed(SlimBytes slim_v_source_n181560, SlimVec slim_v_tokens_n181564, int64_t slim_v_result_n181571, SlimVec slim_v_bindings_n181575, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95append_95borrowed_95return_95issue(SlimBytes slim_v_source_n181606, SlimVec slim_v_tokens_n181610, int64_t slim_v_return_95type_n181617, int64_t slim_v_body_n181621, SlimVec slim_v_bindings_n181625, SlimVec * slim_v_issues_n181632, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95functions(SlimBytes slim_v_source_n181728, SlimVec * slim_v_tokens_n181732, SlimVec slim_v_declarations_n181739, int64_t slim_v_index_n181746, SlimVec * slim_v_bindings_n181750, SlimVec * slim_v_facts_n181757, SlimVec * slim_v_issues_n181764, SlimVec * slim_v_scopes_n181771, SlimVec * slim_v_frames_n181778, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95retain_95binding_95facts(SlimBytes slim_v_source_n182041, SlimVec slim_v_tokens_n182045, SlimVec slim_v_bindings_n182052, int64_t slim_v_index_n182059, SlimVec * slim_v_facts_n182063, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95View slim_fn_typing_95analyze(SlimBytes slim_v_source_n182206, SlimVec * slim_v_tokens_n182210, SlimVec slim_v_declarations_n182217, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95atom_95at(SlimVec slim_v_tokens_n182554, int64_t slim_v_index_n182561, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95token_95valid(SlimBytes slim_v_source_n182593, SlimVec slim_v_tokens_n182597, int64_t slim_v_index_n182604, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95tokens_95valid(SlimBytes slim_v_source_n182766, SlimVec slim_v_tokens_n182770, int64_t slim_v_index_n182777, int64_t slim_v_length_n182781, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95form_95count_95at_95least(SlimVec slim_v_tokens_n182858, int64_t slim_v_cursor_n182865, int64_t slim_v_count_n182869, int64_t slim_v_minimum_n182873, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95expression_95minimum(SlimBytes slim_v_source_n182999, SlimVec slim_v_tokens_n183003, int64_t slim_v_expression_n183010, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95expression_95shape_95valid(SlimBytes slim_v_source_n183187, SlimVec slim_v_tokens_n183191, int64_t slim_v_index_n183198, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95function_95item_95valid(SlimBytes slim_v_source_n183331, SlimVec slim_v_tokens_n183335, int64_t slim_v_index_n183342, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95data_95item_95valid(SlimVec slim_v_tokens_n183605, int64_t slim_v_index_n183612, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95valid(SlimBytes slim_v_source_n183730, SlimVec slim_v_tokens_n183734, int64_t slim_v_index_n183741, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95list_95valid(SlimBytes slim_v_source_n183870, SlimVec slim_v_tokens_n183874, int64_t slim_v_cursor_n183881, int64_t slim_v_closing_n183885, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95main_95count(SlimBytes slim_v_source_n184007, SlimVec slim_v_tokens_n184011, int64_t slim_v_cursor_n184018, int64_t slim_v_closing_n184022, int64_t slim_v_count_n184026, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid_95from(SlimBytes slim_v_source_n184150, SlimVec slim_v_tokens_n184154, int64_t slim_v_root_n184161, int64_t slim_v_end_n184165, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid(SlimBytes slim_v_source_n184386, SlimVec slim_v_tokens_n184390, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95executable_95shape_95valid(SlimBytes slim_v_source_n184426, SlimVec slim_v_tokens_n184430, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95function(SlimBytes slim_v_source_n181728, SlimVec * slim_v_tokens_n181732, int64_t slim_v_item_n181739, SlimVec * slim_v_facts_n181743, SlimVec * slim_v_issues_n181750, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95functions(SlimBytes slim_v_source_n182054, SlimVec * slim_v_tokens_n182058, SlimVec slim_v_declarations_n182065, int64_t slim_v_index_n182072, SlimVec * slim_v_facts_n182076, SlimVec * slim_v_issues_n182083, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95retain_95binding_95facts(SlimBytes slim_v_source_n182233, SlimVec slim_v_tokens_n182237, SlimVec slim_v_bindings_n182244, int64_t slim_v_index_n182251, SlimVec * slim_v_facts_n182255, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95View slim_fn_typing_95analyze(SlimBytes slim_v_source_n182398, SlimVec * slim_v_tokens_n182402, SlimVec slim_v_declarations_n182409, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95atom_95at(SlimVec slim_v_tokens_n182571, int64_t slim_v_index_n182578, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95token_95valid(SlimBytes slim_v_source_n182610, SlimVec slim_v_tokens_n182614, int64_t slim_v_index_n182621, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95tokens_95valid(SlimBytes slim_v_source_n182783, SlimVec slim_v_tokens_n182787, int64_t slim_v_index_n182794, int64_t slim_v_length_n182798, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95form_95count_95at_95least(SlimVec slim_v_tokens_n182875, int64_t slim_v_cursor_n182882, int64_t slim_v_count_n182886, int64_t slim_v_minimum_n182890, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95expression_95minimum(SlimBytes slim_v_source_n183016, SlimVec slim_v_tokens_n183020, int64_t slim_v_expression_n183027, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95expression_95shape_95valid(SlimBytes slim_v_source_n183204, SlimVec slim_v_tokens_n183208, int64_t slim_v_index_n183215, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95function_95item_95valid(SlimBytes slim_v_source_n183348, SlimVec slim_v_tokens_n183352, int64_t slim_v_index_n183359, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95data_95item_95valid(SlimVec slim_v_tokens_n183622, int64_t slim_v_index_n183629, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95valid(SlimBytes slim_v_source_n183747, SlimVec slim_v_tokens_n183751, int64_t slim_v_index_n183758, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95list_95valid(SlimBytes slim_v_source_n183887, SlimVec slim_v_tokens_n183891, int64_t slim_v_cursor_n183898, int64_t slim_v_closing_n183902, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95main_95count(SlimBytes slim_v_source_n184024, SlimVec slim_v_tokens_n184028, int64_t slim_v_cursor_n184035, int64_t slim_v_closing_n184039, int64_t slim_v_count_n184043, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid_95from(SlimBytes slim_v_source_n184167, SlimVec slim_v_tokens_n184171, int64_t slim_v_root_n184178, int64_t slim_v_end_n184182, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid(SlimBytes slim_v_source_n184403, SlimVec slim_v_tokens_n184407, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95executable_95shape_95valid(SlimBytes slim_v_source_n184443, SlimVec slim_v_tokens_n184447, SlimRegion *slim_region);
 
 static SLIM_UNUSED_FUNCTION bool slim_fn_analysis_95tokens_95equal(SlimBytes slim_v_source_n46, SlimVec slim_v_tokens_n50, int64_t slim_v_left_n57, int64_t slim_v_right_n61, SlimRegion *slim_region) {
 (void)slim_v_source_n46;
@@ -83148,16 +83149,158 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95functions(SlimBytes slim_v_source_n181728, SlimVec * slim_v_tokens_n181732, SlimVec slim_v_declarations_n181739, int64_t slim_v_index_n181746, SlimVec * slim_v_bindings_n181750, SlimVec * slim_v_facts_n181757, SlimVec * slim_v_issues_n181764, SlimVec * slim_v_scopes_n181771, SlimVec * slim_v_frames_n181778, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95function(SlimBytes slim_v_source_n181728, SlimVec * slim_v_tokens_n181732, int64_t slim_v_item_n181739, SlimVec * slim_v_facts_n181743, SlimVec * slim_v_issues_n181750, SlimRegion *slim_region) {
 (void)slim_v_source_n181728;
 (void)slim_v_tokens_n181732;
-(void)slim_v_declarations_n181739;
-(void)slim_v_index_n181746;
-(void)slim_v_bindings_n181750;
-(void)slim_v_facts_n181757;
-(void)slim_v_issues_n181764;
-(void)slim_v_scopes_n181771;
-(void)slim_v_frames_n181778;
+(void)slim_v_item_n181739;
+(void)slim_v_facts_n181743;
+(void)slim_v_issues_n181750;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+SlimUnit slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+SlimVec slim_v_scopes_n181765 = {0};
+slim_v_scopes_n181765 = slim_vec_new(sizeof(Slim_type_ownership_95Scope), slim_allocation_region);
+(void)slim_v_scopes_n181765;
+{
+Slim_type_ownership_95Scope slim_v_initial_95scope_n181776 = {0};
+{
+int64_t slim_t_181781 = {0};
+slim_t_181781 = INT64_C(1);
+int64_t slim_t_181785 = {0};
+slim_t_181785 = INT64_C(0);
+int64_t slim_t_181789 = {0};
+slim_t_181789 = INT64_C(1);
+int64_t slim_t_181793 = {0};
+slim_t_181793 = INT64_C(0);
+int64_t slim_t_181797 = {0};
+slim_t_181797 = INT64_C(0);
+int64_t slim_t_181801 = {0};
+slim_t_181801 = INT64_C(0);
+slim_v_initial_95scope_n181776 = (Slim_type_ownership_95Scope){.slim_field_parent = slim_t_181781, .slim_field_rank = slim_t_181785, .slim_field_ancestor = slim_t_181789, .slim_field_depth = slim_t_181793, .slim_field_alternatives = slim_t_181797, .slim_field_arms = slim_t_181801};
+}
+(void)slim_v_initial_95scope_n181776;
+{
+SlimUnit slim_v__n181808 = {0};
+if (!slim_vec_push(&slim_v_scopes_n181765, &slim_v_initial_95scope_n181776)) goto slim_allocation_failed; slim_v__n181808 = (SlimUnit){0};
+(void)slim_v__n181808;
+{
+SlimUnit slim_v__n181818 = {0};
+if (!slim_vec_push(&slim_v_scopes_n181765, &slim_v_initial_95scope_n181776)) goto slim_allocation_failed; slim_v__n181818 = (SlimUnit){0};
+(void)slim_v__n181818;
+{
+SlimVec slim_v_frames_n181828 = {0};
+slim_v_frames_n181828 = slim_vec_new(sizeof(Slim_type_ownership_95Frame), slim_allocation_region);
+(void)slim_v_frames_n181828;
+{
+SlimVec slim_v_bindings_n181839 = {0};
+slim_v_bindings_n181839 = slim_vec_new(sizeof(Slim_type_typing_95Binding), slim_allocation_region);
+(void)slim_v_bindings_n181839;
+{
+Slim_type_typing_95Binding slim_v_loan_95slot_n181850 = {0};
+{
+int64_t slim_t_181855 = {0};
+slim_t_181855 = INT64_C(-1);
+int64_t slim_t_181859 = {0};
+slim_t_181859 = INT64_C(-1);
+int64_t slim_t_181863 = {0};
+slim_t_181863 = INT64_C(0);
+bool slim_t_181867 = {0};
+slim_t_181867 = false;
+int64_t slim_t_181871 = {0};
+slim_t_181871 = INT64_C(-1);
+int64_t slim_t_181875 = {0};
+slim_t_181875 = INT64_C(-1);
+int64_t slim_t_181879 = {0};
+slim_t_181879 = INT64_C(-1);
+int64_t slim_t_181883 = {0};
+slim_t_181883 = INT64_C(-1);
+int64_t slim_t_181887 = {0};
+slim_t_181887 = INT64_C(0);
+slim_v_loan_95slot_n181850 = (Slim_type_typing_95Binding){.slim_field_name = slim_t_181855, .slim_field_type = slim_t_181859, .slim_field_mode = slim_t_181863, .slim_field_mutable = slim_t_181867, .slim_field_move_95scope = slim_t_181871, .slim_field_owner = slim_t_181875, .slim_field_parent = slim_t_181879, .slim_field_access_95call = slim_t_181883, .slim_field_access_95mode = slim_t_181887};
+}
+(void)slim_v_loan_95slot_n181850;
+{
+SlimUnit slim_v__n181894 = {0};
+if (!slim_vec_push(&slim_v_bindings_n181839, &slim_v_loan_95slot_n181850)) goto slim_allocation_failed; slim_v__n181894 = (SlimUnit){0};
+(void)slim_v__n181894;
+{
+SlimUnit slim_v__n181904 = {0};
+if (!slim_vec_push(&slim_v_bindings_n181839, &slim_v_loan_95slot_n181850)) goto slim_allocation_failed; slim_v__n181904 = (SlimUnit){0};
+(void)slim_v__n181904;
+{
+int64_t slim_v_params_n181914 = {0};
+slim_v_params_n181914 = slim_fn_syntax_95ast_95function_95parameters(slim_v_item_n181739, slim_allocation_region);
+(void)slim_v_params_n181914;
+{
+int64_t slim_v_parent_n181923 = {0};
+int64_t slim_t_181930 = {0};
+slim_t_181930 = slim_fn_syntax_95ast_95parameters_95first(slim_v_params_n181914, slim_allocation_region);
+slim_v_parent_n181923 = slim_fn_typing_95bind_95parameters(slim_v_source_n181728, slim_v_tokens_n181732, slim_t_181930, INT64_C(-1), &slim_v_bindings_n181839, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_parent_n181923;
+{
+int64_t slim_v_return_95type_n181940 = {0};
+slim_v_return_95type_n181940 = slim_fn_syntax_95ast_95function_95return_95type((*slim_v_tokens_n181732), slim_v_item_n181739, slim_allocation_region);
+(void)slim_v_return_95type_n181940;
+{
+int64_t slim_v_effects_n181950 = {0};
+slim_v_effects_n181950 = slim_fn_syntax_95ast_95function_95effects((*slim_v_tokens_n181732), slim_v_item_n181739, slim_allocation_region);
+(void)slim_v_effects_n181950;
+{
+int64_t slim_v_body_n181960 = {0};
+slim_v_body_n181960 = slim_fn_syntax_95ast_95function_95body((*slim_v_tokens_n181732), slim_v_item_n181739, slim_allocation_region);
+(void)slim_v_body_n181960;
+{
+Slim_type_typing_95TypeRef slim_v_typed_n181970 = {0};
+slim_v_typed_n181970 = slim_fn_typing_95infer_95expr(slim_v_source_n181728, slim_v_tokens_n181732, slim_v_body_n181960, slim_v_return_95type_n181940, slim_v_parent_n181923, slim_v_params_n181914, slim_v_return_95type_n181940, &slim_v_bindings_n181839, slim_v_facts_n181743, slim_v_issues_n181750, &slim_v_scopes_n181765, &slim_v_frames_n181828, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_typed_n181970;
+{
+bool slim_v_valid_n181990 = {0};
+slim_v_valid_n181990 = slim_fn_typing_95type_95valid(slim_v_typed_n181970, slim_allocation_region);
+(void)slim_v_valid_n181990;
+{
+SlimUnit slim_v__n181999 = {0};
+if (slim_v_valid_n181990) {
+slim_v__n181999 = slim_fn_typing_95append_95borrowed_95return_95issue(slim_v_source_n181728, (*slim_v_tokens_n181732), slim_v_return_95type_n181940, slim_v_body_n181960, slim_v_bindings_n181839, slim_v_issues_n181750, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v__n181999 = (SlimUnit){0};
+}
+(void)slim_v__n181999;
+slim_result = slim_fn_typing_95retain_95binding_95facts(slim_v_source_n181728, (*slim_v_tokens_n181732), slim_v_bindings_n181839, INT64_C(2), slim_v_facts_n181743, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95check_95functions(SlimBytes slim_v_source_n182054, SlimVec * slim_v_tokens_n182058, SlimVec slim_v_declarations_n182065, int64_t slim_v_index_n182072, SlimVec * slim_v_facts_n182076, SlimVec * slim_v_issues_n182083, SlimRegion *slim_region) {
+(void)slim_v_source_n182054;
+(void)slim_v_tokens_n182058;
+(void)slim_v_declarations_n182065;
+(void)slim_v_index_n182072;
+(void)slim_v_facts_n182076;
+(void)slim_v_issues_n182083;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
@@ -83165,109 +83308,60 @@ SlimUnit slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 slim_recur: ;
 {
-int64_t slim_v_count_n181793 = {0};
-slim_v_count_n181793 = (slim_v_declarations_n181739).len;
-(void)slim_v_count_n181793;
+int64_t slim_v_count_n182098 = {0};
+slim_v_count_n182098 = (slim_v_declarations_n182065).len;
+(void)slim_v_count_n182098;
 {
-bool slim_v_done_n181802 = {0};
-slim_v_done_n181802 = slim_v_index_n181746 >= slim_v_count_n181793;
-(void)slim_v_done_n181802;
+bool slim_v_done_n182107 = {0};
+slim_v_done_n182107 = slim_v_index_n182072 >= slim_v_count_n182098;
+(void)slim_v_done_n182107;
 {
-bool slim_v_failed_n181812 = {0};
-slim_v_failed_n181812 = slim_fn_typing_95issues_95block_95inference((*slim_v_issues_n181764), slim_allocation_region);
-(void)slim_v_failed_n181812;
+bool slim_v_failed_n182117 = {0};
+slim_v_failed_n182117 = slim_fn_typing_95issues_95block_95inference((*slim_v_issues_n182083), slim_allocation_region);
+(void)slim_v_failed_n182117;
 {
-bool slim_v_stop_n181821 = {0};
-slim_v_stop_n181821 = slim_v_done_n181802 || slim_v_failed_n181812;
-(void)slim_v_stop_n181821;
-if (slim_v_stop_n181821) {
+bool slim_v_stop_n182126 = {0};
+slim_v_stop_n182126 = slim_v_done_n182107 || slim_v_failed_n182117;
+(void)slim_v_stop_n182126;
+if (slim_v_stop_n182126) {
 slim_result = (SlimUnit){0};
 }
 else {
 {
-Slim_type_ir_95Declaration slim_v_declaration_n181840 = {0};
-slim_v_declaration_n181840 = ((Slim_type_ir_95Declaration *)(slim_v_declarations_n181739).data)[slim_vec_check_index(&(slim_v_declarations_n181739), slim_v_index_n181746)];
-(void)slim_v_declaration_n181840;
+Slim_type_ir_95Declaration slim_v_declaration_n182145 = {0};
+slim_v_declaration_n182145 = ((Slim_type_ir_95Declaration *)(slim_v_declarations_n182065).data)[slim_vec_check_index(&(slim_v_declarations_n182065), slim_v_index_n182072)];
+(void)slim_v_declaration_n182145;
 {
-int64_t slim_v_item_n181850 = {0};
-slim_v_item_n181850 = slim_v_declaration_n181840.slim_field_form;
-(void)slim_v_item_n181850;
+int64_t slim_v_item_n182155 = {0};
+slim_v_item_n182155 = slim_v_declaration_n182145.slim_field_form;
+(void)slim_v_item_n182155;
 {
-bool slim_v_function_n181859 = {0};
-slim_v_function_n181859 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n181728, (*slim_v_tokens_n181732), slim_v_item_n181850, slim_allocation_region);
-(void)slim_v_function_n181859;
+bool slim_v_function_n182164 = {0};
+slim_v_function_n182164 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n182054, (*slim_v_tokens_n182058), slim_v_item_n182155, slim_allocation_region);
+(void)slim_v_function_n182164;
 {
-SlimUnit slim_v__n181870 = {0};
-if (slim_v_function_n181859) {
-{
-int64_t slim_v_params_n181879 = {0};
-slim_v_params_n181879 = slim_fn_syntax_95ast_95function_95parameters(slim_v_item_n181850, slim_allocation_region);
-(void)slim_v_params_n181879;
-{
-int64_t slim_v_parent_n181888 = {0};
-int64_t slim_t_181895 = {0};
-slim_t_181895 = slim_fn_syntax_95ast_95parameters_95first(slim_v_params_n181879, slim_allocation_region);
-slim_v_parent_n181888 = slim_fn_typing_95bind_95parameters(slim_v_source_n181728, slim_v_tokens_n181732, slim_t_181895, INT64_C(-1), slim_v_bindings_n181750, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_parent_n181888;
-{
-int64_t slim_v_return_95type_n181905 = {0};
-slim_v_return_95type_n181905 = slim_fn_syntax_95ast_95function_95return_95type((*slim_v_tokens_n181732), slim_v_item_n181850, slim_allocation_region);
-(void)slim_v_return_95type_n181905;
-{
-int64_t slim_v_effects_n181915 = {0};
-slim_v_effects_n181915 = slim_fn_syntax_95ast_95function_95effects((*slim_v_tokens_n181732), slim_v_item_n181850, slim_allocation_region);
-(void)slim_v_effects_n181915;
-{
-int64_t slim_v_body_n181925 = {0};
-slim_v_body_n181925 = slim_fn_syntax_95ast_95function_95body((*slim_v_tokens_n181732), slim_v_item_n181850, slim_allocation_region);
-(void)slim_v_body_n181925;
-{
-Slim_type_typing_95TypeRef slim_v_typed_n181935 = {0};
-slim_v_typed_n181935 = slim_fn_typing_95infer_95expr(slim_v_source_n181728, slim_v_tokens_n181732, slim_v_body_n181925, slim_v_return_95type_n181905, slim_v_parent_n181888, slim_v_params_n181879, slim_v_return_95type_n181905, slim_v_bindings_n181750, slim_v_facts_n181757, slim_v_issues_n181764, slim_v_scopes_n181771, slim_v_frames_n181778, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_typed_n181935;
-{
-bool slim_v_valid_n181955 = {0};
-slim_v_valid_n181955 = slim_fn_typing_95type_95valid(slim_v_typed_n181935, slim_allocation_region);
-(void)slim_v_valid_n181955;
-{
-SlimUnit slim_v__n181964 = {0};
-if (slim_v_valid_n181955) {
-slim_v__n181964 = slim_fn_typing_95append_95borrowed_95return_95issue(slim_v_source_n181728, (*slim_v_tokens_n181732), slim_v_return_95type_n181905, slim_v_body_n181925, (*slim_v_bindings_n181750), slim_v_issues_n181764, slim_allocation_region);
+SlimUnit slim_v__n182175 = {0};
+if (slim_v_function_n182164) {
+slim_v__n182175 = slim_fn_typing_95check_95function(slim_v_source_n182054, slim_v_tokens_n182058, slim_v_item_n182155, slim_v_facts_n182076, slim_v_issues_n182083, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v__n181964 = (SlimUnit){0};
+slim_v__n182175 = (SlimUnit){0};
 }
-(void)slim_v__n181964;
-slim_v__n181870 = (SlimUnit){0};
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-slim_v__n181870 = (SlimUnit){0};
-}
-(void)slim_v__n181870;
+(void)slim_v__n182175;
 {
-int64_t slim_v_next_n182004 = {0};
-slim_v_next_n182004 = slim_i64_add(slim_v_index_n181746, INT64_C(1));
-(void)slim_v_next_n182004;
-SlimBytes slim_t_182014 = {0};
-slim_t_182014 = slim_v_source_n181728;
-SlimVec slim_t_182016 = {0};
-slim_t_182016 = slim_v_declarations_n181739;
-int64_t slim_t_182017 = {0};
-slim_t_182017 = slim_v_next_n182004;
-slim_v_source_n181728 = slim_t_182014;
-slim_v_declarations_n181739 = slim_t_182016;
-slim_v_index_n181746 = slim_t_182017;
+int64_t slim_v_next_n182199 = {0};
+slim_v_next_n182199 = slim_i64_add(slim_v_index_n182072, INT64_C(1));
+(void)slim_v_next_n182199;
+SlimBytes slim_t_182209 = {0};
+slim_t_182209 = slim_v_source_n182054;
+SlimVec slim_t_182211 = {0};
+slim_t_182211 = slim_v_declarations_n182065;
+int64_t slim_t_182212 = {0};
+slim_t_182212 = slim_v_next_n182199;
+slim_v_source_n182054 = slim_t_182209;
+slim_v_declarations_n182065 = slim_t_182211;
+slim_v_index_n182072 = slim_t_182212;
 goto slim_recur;
 }
 }
@@ -83283,75 +83377,75 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95retain_95binding_95facts(SlimBytes slim_v_source_n182041, SlimVec slim_v_tokens_n182045, SlimVec slim_v_bindings_n182052, int64_t slim_v_index_n182059, SlimVec * slim_v_facts_n182063, SlimRegion *slim_region) {
-(void)slim_v_source_n182041;
-(void)slim_v_tokens_n182045;
-(void)slim_v_bindings_n182052;
-(void)slim_v_index_n182059;
-(void)slim_v_facts_n182063;
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95retain_95binding_95facts(SlimBytes slim_v_source_n182233, SlimVec slim_v_tokens_n182237, SlimVec slim_v_bindings_n182244, int64_t slim_v_index_n182251, SlimVec * slim_v_facts_n182255, SlimRegion *slim_region) {
+(void)slim_v_source_n182233;
+(void)slim_v_tokens_n182237;
+(void)slim_v_bindings_n182244;
+(void)slim_v_index_n182251;
+(void)slim_v_facts_n182255;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 SlimUnit slim_result = {0};
 slim_recur: ;
-bool slim_t_182077 = {0};
-int64_t slim_t_182081 = {0};
-slim_t_182081 = (slim_v_bindings_n182052).len;
-slim_t_182077 = slim_v_index_n182059 >= slim_t_182081;
-if (slim_t_182077) {
+bool slim_t_182269 = {0};
+int64_t slim_t_182273 = {0};
+slim_t_182273 = (slim_v_bindings_n182244).len;
+slim_t_182269 = slim_v_index_n182251 >= slim_t_182273;
+if (slim_t_182269) {
 slim_result = (SlimUnit){0};
 }
 else {
 {
-Slim_type_typing_95Binding slim_v_binding_n182095 = {0};
-slim_v_binding_n182095 = ((Slim_type_typing_95Binding *)(slim_v_bindings_n182052).data)[slim_vec_check_index(&(slim_v_bindings_n182052), slim_v_index_n182059)];
-(void)slim_v_binding_n182095;
+Slim_type_typing_95Binding slim_v_binding_n182287 = {0};
+slim_v_binding_n182287 = ((Slim_type_typing_95Binding *)(slim_v_bindings_n182244).data)[slim_vec_check_index(&(slim_v_bindings_n182244), slim_v_index_n182251)];
+(void)slim_v_binding_n182287;
 {
-Slim_type_typing_95TypeRef slim_v_type_n182105 = {0};
-int64_t slim_t_182112 = {0};
-slim_t_182112 = slim_v_binding_n182095.slim_field_type;
-slim_v_type_n182105 = slim_fn_typing_95source_95type(slim_v_source_n182041, slim_v_tokens_n182045, slim_t_182112, slim_allocation_region);
-(void)slim_v_type_n182105;
+Slim_type_typing_95TypeRef slim_v_type_n182297 = {0};
+int64_t slim_t_182304 = {0};
+slim_t_182304 = slim_v_binding_n182287.slim_field_type;
+slim_v_type_n182297 = slim_fn_typing_95source_95type(slim_v_source_n182233, slim_v_tokens_n182237, slim_t_182304, slim_allocation_region);
+(void)slim_v_type_n182297;
 {
-int64_t slim_v_tag_n182120 = {0};
-int64_t slim_t_182125 = {0};
-int64_t slim_t_182128 = {0};
-int64_t slim_t_182131 = {0};
-int64_t slim_t_182134 = {0};
-slim_t_182134 = slim_v_binding_n182095.slim_field_mode;
-slim_t_182131 = slim_i64_add(slim_t_182134, INT64_C(1));
-slim_t_182128 = slim_i64_mul(slim_t_182131, INT64_C(8));
-int64_t slim_t_182143 = {0};
-slim_t_182143 = slim_v_type_n182105.slim_field_kind;
-slim_t_182125 = slim_i64_add(slim_t_182128, slim_t_182143);
-slim_v_tag_n182120 = slim_i64_add(slim_t_182125, INT64_C(2));
-(void)slim_v_tag_n182120;
+int64_t slim_v_tag_n182312 = {0};
+int64_t slim_t_182317 = {0};
+int64_t slim_t_182320 = {0};
+int64_t slim_t_182323 = {0};
+int64_t slim_t_182326 = {0};
+slim_t_182326 = slim_v_binding_n182287.slim_field_mode;
+slim_t_182323 = slim_i64_add(slim_t_182326, INT64_C(1));
+slim_t_182320 = slim_i64_mul(slim_t_182323, INT64_C(8));
+int64_t slim_t_182335 = {0};
+slim_t_182335 = slim_v_type_n182297.slim_field_kind;
+slim_t_182317 = slim_i64_add(slim_t_182320, slim_t_182335);
+slim_v_tag_n182312 = slim_i64_add(slim_t_182317, INT64_C(2));
+(void)slim_v_tag_n182312;
 {
-SlimUnit slim_v__n182153 = {0};
-int64_t slim_t_182159 = {0};
-slim_t_182159 = slim_v_binding_n182095.slim_field_name;
-Slim_type_typing_95Fact slim_t_182164 = {0};
+SlimUnit slim_v__n182345 = {0};
+int64_t slim_t_182351 = {0};
+slim_t_182351 = slim_v_binding_n182287.slim_field_name;
+Slim_type_typing_95Fact slim_t_182356 = {0};
 {
-int64_t slim_t_182167 = {0};
-slim_t_182167 = slim_v_tag_n182120;
-int64_t slim_t_182171 = {0};
-slim_t_182171 = slim_v_type_n182105.slim_field_form;
-slim_t_182164 = (Slim_type_typing_95Fact){.slim_field_tag = slim_t_182167, .slim_field_form = slim_t_182171};
+int64_t slim_t_182359 = {0};
+slim_t_182359 = slim_v_tag_n182312;
+int64_t slim_t_182363 = {0};
+slim_t_182363 = slim_v_type_n182297.slim_field_form;
+slim_t_182356 = (Slim_type_typing_95Fact){.slim_field_tag = slim_t_182359, .slim_field_form = slim_t_182363};
 }
-((Slim_type_typing_95Fact *)((*slim_v_facts_n182063)).data)[slim_vec_check_index(&((*slim_v_facts_n182063)), slim_t_182159)] = slim_t_182164; slim_v__n182153 = (SlimUnit){0};
-(void)slim_v__n182153;
-SlimBytes slim_t_182183 = {0};
-slim_t_182183 = slim_v_source_n182041;
-SlimVec slim_t_182184 = {0};
-slim_t_182184 = slim_v_tokens_n182045;
-SlimVec slim_t_182185 = {0};
-slim_t_182185 = slim_v_bindings_n182052;
-int64_t slim_t_182186 = {0};
-slim_t_182186 = slim_i64_add(slim_v_index_n182059, INT64_C(1));
-slim_v_source_n182041 = slim_t_182183;
-slim_v_tokens_n182045 = slim_t_182184;
-slim_v_bindings_n182052 = slim_t_182185;
-slim_v_index_n182059 = slim_t_182186;
+((Slim_type_typing_95Fact *)((*slim_v_facts_n182255)).data)[slim_vec_check_index(&((*slim_v_facts_n182255)), slim_t_182351)] = slim_t_182356; slim_v__n182345 = (SlimUnit){0};
+(void)slim_v__n182345;
+SlimBytes slim_t_182375 = {0};
+slim_t_182375 = slim_v_source_n182233;
+SlimVec slim_t_182376 = {0};
+slim_t_182376 = slim_v_tokens_n182237;
+SlimVec slim_t_182377 = {0};
+slim_t_182377 = slim_v_bindings_n182244;
+int64_t slim_t_182378 = {0};
+slim_t_182378 = slim_i64_add(slim_v_index_n182251, INT64_C(1));
+slim_v_source_n182233 = slim_t_182375;
+slim_v_tokens_n182237 = slim_t_182376;
+slim_v_bindings_n182244 = slim_t_182377;
+slim_v_index_n182251 = slim_t_182378;
 goto slim_recur;
 }
 }
@@ -83361,154 +83455,70 @@ goto slim_recur;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95View slim_fn_typing_95analyze(SlimBytes slim_v_source_n182206, SlimVec * slim_v_tokens_n182210, SlimVec slim_v_declarations_n182217, SlimRegion *slim_region) {
-(void)slim_v_source_n182206;
-(void)slim_v_tokens_n182210;
-(void)slim_v_declarations_n182217;
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95View slim_fn_typing_95analyze(SlimBytes slim_v_source_n182398, SlimVec * slim_v_tokens_n182402, SlimVec slim_v_declarations_n182409, SlimRegion *slim_region) {
+(void)slim_v_source_n182398;
+(void)slim_v_tokens_n182402;
+(void)slim_v_declarations_n182409;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 Slim_type_typing_95View slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-SlimUnit slim_v__n182232 = {0};
-slim_v__n182232 = slim_fn_syntax_95link_95declaration_95names(slim_v_source_n182206, slim_v_tokens_n182210, slim_allocation_region);
+SlimUnit slim_v__n182424 = {0};
+slim_v__n182424 = slim_fn_syntax_95link_95declaration_95names(slim_v_source_n182398, slim_v_tokens_n182402, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n182232;
+(void)slim_v__n182424;
 {
-SlimUnit slim_v__n182242 = {0};
-slim_v__n182242 = slim_fn_typing_95link_95declaration_95locals(slim_v_source_n182206, slim_v_tokens_n182210, slim_v_declarations_n182217, INT64_C(0), slim_allocation_region);
+SlimUnit slim_v__n182434 = {0};
+slim_v__n182434 = slim_fn_typing_95link_95declaration_95locals(slim_v_source_n182398, slim_v_tokens_n182402, slim_v_declarations_n182409, INT64_C(0), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n182242;
+(void)slim_v__n182434;
 {
-SlimVec slim_v_scopes_n182254 = {0};
-slim_v_scopes_n182254 = slim_vec_new(sizeof(Slim_type_ownership_95Scope), slim_allocation_region);
-(void)slim_v_scopes_n182254;
+SlimVec slim_v_facts_n182446 = {0};
+slim_v_facts_n182446 = slim_vec_new(sizeof(Slim_type_typing_95Fact), slim_allocation_region);
+(void)slim_v_facts_n182446;
 {
-Slim_type_ownership_95Scope slim_v_initial_95scope_n182265 = {0};
-{
-int64_t slim_t_182270 = {0};
-slim_t_182270 = INT64_C(1);
-int64_t slim_t_182274 = {0};
-slim_t_182274 = INT64_C(0);
-int64_t slim_t_182278 = {0};
-slim_t_182278 = INT64_C(1);
-int64_t slim_t_182282 = {0};
-slim_t_182282 = INT64_C(0);
-int64_t slim_t_182286 = {0};
-slim_t_182286 = INT64_C(0);
-int64_t slim_t_182290 = {0};
-slim_t_182290 = INT64_C(0);
-slim_v_initial_95scope_n182265 = (Slim_type_ownership_95Scope){.slim_field_parent = slim_t_182270, .slim_field_rank = slim_t_182274, .slim_field_ancestor = slim_t_182278, .slim_field_depth = slim_t_182282, .slim_field_alternatives = slim_t_182286, .slim_field_arms = slim_t_182290};
-}
-(void)slim_v_initial_95scope_n182265;
-{
-SlimUnit slim_v__n182297 = {0};
-if (!slim_vec_push(&slim_v_scopes_n182254, &slim_v_initial_95scope_n182265)) goto slim_allocation_failed; slim_v__n182297 = (SlimUnit){0};
-(void)slim_v__n182297;
-{
-SlimUnit slim_v__n182307 = {0};
-if (!slim_vec_push(&slim_v_scopes_n182254, &slim_v_initial_95scope_n182265)) goto slim_allocation_failed; slim_v__n182307 = (SlimUnit){0};
-(void)slim_v__n182307;
-{
-SlimVec slim_v_frames_n182317 = {0};
-slim_v_frames_n182317 = slim_vec_new(sizeof(Slim_type_ownership_95Frame), slim_allocation_region);
-(void)slim_v_frames_n182317;
-{
-SlimVec slim_v_bindings_n182328 = {0};
-slim_v_bindings_n182328 = slim_vec_new(sizeof(Slim_type_typing_95Binding), slim_allocation_region);
-(void)slim_v_bindings_n182328;
-{
-Slim_type_typing_95Binding slim_v_loan_95slot_n182339 = {0};
-{
-int64_t slim_t_182344 = {0};
-slim_t_182344 = INT64_C(-1);
-int64_t slim_t_182348 = {0};
-slim_t_182348 = INT64_C(-1);
-int64_t slim_t_182352 = {0};
-slim_t_182352 = INT64_C(0);
-bool slim_t_182356 = {0};
-slim_t_182356 = false;
-int64_t slim_t_182360 = {0};
-slim_t_182360 = INT64_C(-1);
-int64_t slim_t_182364 = {0};
-slim_t_182364 = INT64_C(-1);
-int64_t slim_t_182368 = {0};
-slim_t_182368 = INT64_C(-1);
-int64_t slim_t_182372 = {0};
-slim_t_182372 = INT64_C(-1);
-int64_t slim_t_182376 = {0};
-slim_t_182376 = INT64_C(0);
-slim_v_loan_95slot_n182339 = (Slim_type_typing_95Binding){.slim_field_name = slim_t_182344, .slim_field_type = slim_t_182348, .slim_field_mode = slim_t_182352, .slim_field_mutable = slim_t_182356, .slim_field_move_95scope = slim_t_182360, .slim_field_owner = slim_t_182364, .slim_field_parent = slim_t_182368, .slim_field_access_95call = slim_t_182372, .slim_field_access_95mode = slim_t_182376};
-}
-(void)slim_v_loan_95slot_n182339;
-{
-SlimUnit slim_v__n182383 = {0};
-if (!slim_vec_push(&slim_v_bindings_n182328, &slim_v_loan_95slot_n182339)) goto slim_allocation_failed; slim_v__n182383 = (SlimUnit){0};
-(void)slim_v__n182383;
-{
-SlimUnit slim_v__n182393 = {0};
-if (!slim_vec_push(&slim_v_bindings_n182328, &slim_v_loan_95slot_n182339)) goto slim_allocation_failed; slim_v__n182393 = (SlimUnit){0};
-(void)slim_v__n182393;
-{
-SlimVec slim_v_facts_n182403 = {0};
-slim_v_facts_n182403 = slim_vec_new(sizeof(Slim_type_typing_95Fact), slim_allocation_region);
-(void)slim_v_facts_n182403;
-{
-SlimUnit slim_v__n182414 = {0};
-slim_v__n182414 = slim_fn_typing_95initialize_95facts((*slim_v_tokens_n182210), INT64_C(0), &slim_v_facts_n182403, slim_allocation_region);
+SlimUnit slim_v__n182457 = {0};
+slim_v__n182457 = slim_fn_typing_95initialize_95facts((*slim_v_tokens_n182402), INT64_C(0), &slim_v_facts_n182446, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n182414;
+(void)slim_v__n182457;
 {
-SlimVec slim_v_issues_n182425 = {0};
-slim_v_issues_n182425 = slim_vec_new(sizeof(Slim_type_typing_95Issue), slim_allocation_region);
-(void)slim_v_issues_n182425;
+SlimVec slim_v_issues_n182468 = {0};
+slim_v_issues_n182468 = slim_vec_new(sizeof(Slim_type_typing_95Issue), slim_allocation_region);
+(void)slim_v_issues_n182468;
 {
-SlimVec slim_v_layout_95marks_n182436 = {0};
-slim_v_layout_95marks_n182436 = slim_vec_new(sizeof(int64_t), slim_allocation_region);
-(void)slim_v_layout_95marks_n182436;
+SlimVec slim_v_layout_95marks_n182479 = {0};
+slim_v_layout_95marks_n182479 = slim_vec_new(sizeof(int64_t), slim_allocation_region);
+(void)slim_v_layout_95marks_n182479;
 {
-SlimUnit slim_v__n182447 = {0};
-slim_v__n182447 = slim_fn_typing_95check_95inline_95layouts(slim_v_source_n182206, (*slim_v_tokens_n182210), slim_v_declarations_n182217, INT64_C(0), &slim_v_layout_95marks_n182436, &slim_v_issues_n182425, slim_allocation_region);
+SlimUnit slim_v__n182490 = {0};
+slim_v__n182490 = slim_fn_typing_95check_95inline_95layouts(slim_v_source_n182398, (*slim_v_tokens_n182402), slim_v_declarations_n182409, INT64_C(0), &slim_v_layout_95marks_n182479, &slim_v_issues_n182468, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n182447;
+(void)slim_v__n182490;
 {
-SlimUnit slim_v__n182461 = {0};
-bool slim_t_182465 = {0};
-slim_t_182465 = slim_fn_typing_95issues_95block_95inference(slim_v_issues_n182425, slim_allocation_region);
-if (slim_t_182465) {
-slim_v__n182461 = (SlimUnit){0};
+SlimUnit slim_v__n182504 = {0};
+bool slim_t_182508 = {0};
+slim_t_182508 = slim_fn_typing_95issues_95block_95inference(slim_v_issues_n182468, slim_allocation_region);
+if (slim_t_182508) {
+slim_v__n182504 = (SlimUnit){0};
 }
 else {
-slim_v__n182461 = slim_fn_typing_95check_95declaration_95types(slim_v_source_n182206, (*slim_v_tokens_n182210), slim_v_declarations_n182217, INT64_C(0), &slim_v_issues_n182425, slim_allocation_region);
+slim_v__n182504 = slim_fn_typing_95check_95declaration_95types(slim_v_source_n182398, (*slim_v_tokens_n182402), slim_v_declarations_n182409, INT64_C(0), &slim_v_issues_n182468, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
-(void)slim_v__n182461;
+(void)slim_v__n182504;
 {
-SlimUnit slim_v__n182489 = {0};
-slim_v__n182489 = slim_fn_typing_95check_95functions(slim_v_source_n182206, slim_v_tokens_n182210, slim_v_declarations_n182217, INT64_C(0), &slim_v_bindings_n182328, &slim_v_facts_n182403, &slim_v_issues_n182425, &slim_v_scopes_n182254, &slim_v_frames_n182317, slim_allocation_region);
+SlimUnit slim_v__n182532 = {0};
+slim_v__n182532 = slim_fn_typing_95check_95functions(slim_v_source_n182398, slim_v_tokens_n182402, slim_v_declarations_n182409, INT64_C(0), &slim_v_facts_n182446, &slim_v_issues_n182468, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n182489;
+(void)slim_v__n182532;
 {
-SlimUnit slim_v__n182506 = {0};
-slim_v__n182506 = slim_fn_typing_95retain_95binding_95facts(slim_v_source_n182206, (*slim_v_tokens_n182210), slim_v_bindings_n182328, INT64_C(2), &slim_v_facts_n182403, slim_allocation_region);
-(void)slim_v__n182506;
-{
-SlimVec slim_t_182520 = {0};
-slim_t_182520 = slim_v_facts_n182403;
-SlimVec slim_t_182524 = {0};
-slim_t_182524 = slim_v_issues_n182425;
-slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_182520, .slim_field_issues = slim_t_182524};
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
+SlimVec slim_t_182547 = {0};
+slim_t_182547 = slim_v_facts_n182446;
+SlimVec slim_t_182551 = {0};
+slim_t_182551 = slim_v_issues_n182468;
+slim_result = (Slim_type_typing_95View){.slim_field_facts = slim_t_182547, .slim_field_issues = slim_t_182551};
 }
 }
 }
@@ -83523,77 +83533,77 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95atom_95at(SlimVec slim_v_tokens_n182554, int64_t slim_v_index_n182561, SlimRegion *slim_region) {
-(void)slim_v_tokens_n182554;
-(void)slim_v_index_n182561;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95atom_95at(SlimVec slim_v_tokens_n182571, int64_t slim_v_index_n182578, SlimRegion *slim_region) {
+(void)slim_v_tokens_n182571;
+(void)slim_v_index_n182578;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_kind_n182572 = {0};
-slim_v_kind_n182572 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182554, slim_v_index_n182561, slim_allocation_region);
-(void)slim_v_kind_n182572;
-slim_result = slim_v_kind_n182572 == INT64_C(2);
+int64_t slim_v_kind_n182589 = {0};
+slim_v_kind_n182589 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182571, slim_v_index_n182578, slim_allocation_region);
+(void)slim_v_kind_n182589;
+slim_result = slim_v_kind_n182589 == INT64_C(2);
 }
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95token_95valid(SlimBytes slim_v_source_n182593, SlimVec slim_v_tokens_n182597, int64_t slim_v_index_n182604, SlimRegion *slim_region) {
-(void)slim_v_source_n182593;
-(void)slim_v_tokens_n182597;
-(void)slim_v_index_n182604;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95token_95valid(SlimBytes slim_v_source_n182610, SlimVec slim_v_tokens_n182614, int64_t slim_v_index_n182621, SlimRegion *slim_region) {
+(void)slim_v_source_n182610;
+(void)slim_v_tokens_n182614;
+(void)slim_v_index_n182621;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_kind_n182615 = {0};
-slim_v_kind_n182615 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182597, slim_v_index_n182604, slim_allocation_region);
-(void)slim_v_kind_n182615;
+int64_t slim_v_kind_n182632 = {0};
+slim_v_kind_n182632 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182614, slim_v_index_n182621, slim_allocation_region);
+(void)slim_v_kind_n182632;
 {
-bool slim_v_string_95value_n182625 = {0};
-slim_v_string_95value_n182625 = slim_v_kind_n182615 == INT64_C(3);
-(void)slim_v_string_95value_n182625;
-if (slim_v_string_95value_n182625) {
+bool slim_v_string_95value_n182642 = {0};
+slim_v_string_95value_n182642 = slim_v_kind_n182632 == INT64_C(3);
+(void)slim_v_string_95value_n182642;
+if (slim_v_string_95value_n182642) {
 {
-int64_t slim_v_start_n182640 = {0};
-slim_v_start_n182640 = slim_fn_syntax_95ast_95node_95start(slim_v_tokens_n182597, slim_v_index_n182604, slim_allocation_region);
-(void)slim_v_start_n182640;
+int64_t slim_v_start_n182657 = {0};
+slim_v_start_n182657 = slim_fn_syntax_95ast_95node_95start(slim_v_tokens_n182614, slim_v_index_n182621, slim_allocation_region);
+(void)slim_v_start_n182657;
 {
-int64_t slim_v_end_n182650 = {0};
-slim_v_end_n182650 = slim_fn_syntax_95ast_95node_95end(slim_v_tokens_n182597, slim_v_index_n182604, slim_allocation_region);
-(void)slim_v_end_n182650;
+int64_t slim_v_end_n182667 = {0};
+slim_v_end_n182667 = slim_fn_syntax_95ast_95node_95end(slim_v_tokens_n182614, slim_v_index_n182621, slim_allocation_region);
+(void)slim_v_end_n182667;
 {
-int64_t slim_v_source_95length_n182660 = {0};
-slim_v_source_95length_n182660 = slim_bytes_len(slim_v_source_n182593);
-(void)slim_v_source_95length_n182660;
+int64_t slim_v_source_95length_n182677 = {0};
+slim_v_source_95length_n182677 = slim_bytes_len(slim_v_source_n182610);
+(void)slim_v_source_95length_n182677;
 {
-bool slim_v_nonempty_n182669 = {0};
-slim_v_nonempty_n182669 = slim_v_end_n182650 > slim_v_start_n182640;
-(void)slim_v_nonempty_n182669;
+bool slim_v_nonempty_n182686 = {0};
+slim_v_nonempty_n182686 = slim_v_end_n182667 > slim_v_start_n182657;
+(void)slim_v_nonempty_n182686;
 {
-bool slim_v_in_95bounds_n182679 = {0};
-slim_v_in_95bounds_n182679 = slim_v_end_n182650 <= slim_v_source_95length_n182660;
-(void)slim_v_in_95bounds_n182679;
+bool slim_v_in_95bounds_n182696 = {0};
+slim_v_in_95bounds_n182696 = slim_v_end_n182667 <= slim_v_source_95length_n182677;
+(void)slim_v_in_95bounds_n182696;
 {
-bool slim_v_can_95read_n182689 = {0};
-slim_v_can_95read_n182689 = slim_v_nonempty_n182669 && slim_v_in_95bounds_n182679;
-(void)slim_v_can_95read_n182689;
-if (slim_v_can_95read_n182689) {
+bool slim_v_can_95read_n182706 = {0};
+slim_v_can_95read_n182706 = slim_v_nonempty_n182686 && slim_v_in_95bounds_n182696;
+(void)slim_v_can_95read_n182706;
+if (slim_v_can_95read_n182706) {
 {
-int64_t slim_v_last_n182704 = {0};
-slim_v_last_n182704 = slim_i64_sub(slim_v_end_n182650, INT64_C(1));
-(void)slim_v_last_n182704;
+int64_t slim_v_last_n182721 = {0};
+slim_v_last_n182721 = slim_i64_sub(slim_v_end_n182667, INT64_C(1));
+(void)slim_v_last_n182721;
 {
-uint8_t slim_v_byte_n182714 = {0};
-slim_v_byte_n182714 = slim_bytes_get(slim_v_source_n182593, slim_v_last_n182704);
-(void)slim_v_byte_n182714;
+uint8_t slim_v_byte_n182731 = {0};
+slim_v_byte_n182731 = slim_bytes_get(slim_v_source_n182610, slim_v_last_n182721);
+(void)slim_v_byte_n182731;
 {
-int64_t slim_v_code_n182724 = {0};
-slim_v_code_n182724 = (int64_t)slim_v_byte_n182714;
-(void)slim_v_code_n182724;
-slim_result = slim_v_code_n182724 == INT64_C(34);
+int64_t slim_v_code_n182741 = {0};
+slim_v_code_n182741 = (int64_t)slim_v_byte_n182731;
+(void)slim_v_code_n182741;
+slim_result = slim_v_code_n182741 == INT64_C(34);
 }
 }
 }
@@ -83616,45 +83626,45 @@ slim_result = true;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95tokens_95valid(SlimBytes slim_v_source_n182766, SlimVec slim_v_tokens_n182770, int64_t slim_v_index_n182777, int64_t slim_v_length_n182781, SlimRegion *slim_region) {
-(void)slim_v_source_n182766;
-(void)slim_v_tokens_n182770;
-(void)slim_v_index_n182777;
-(void)slim_v_length_n182781;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95string_95tokens_95valid(SlimBytes slim_v_source_n182783, SlimVec slim_v_tokens_n182787, int64_t slim_v_index_n182794, int64_t slim_v_length_n182798, SlimRegion *slim_region) {
+(void)slim_v_source_n182783;
+(void)slim_v_tokens_n182787;
+(void)slim_v_index_n182794;
+(void)slim_v_length_n182798;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 slim_recur: ;
 {
-bool slim_v_done_n182792 = {0};
-slim_v_done_n182792 = slim_v_index_n182777 >= slim_v_length_n182781;
-(void)slim_v_done_n182792;
-if (slim_v_done_n182792) {
+bool slim_v_done_n182809 = {0};
+slim_v_done_n182809 = slim_v_index_n182794 >= slim_v_length_n182798;
+(void)slim_v_done_n182809;
+if (slim_v_done_n182809) {
 slim_result = true;
 }
 else {
 {
-bool slim_v_valid_n182811 = {0};
-slim_v_valid_n182811 = slim_fn_validate_95string_95token_95valid(slim_v_source_n182766, slim_v_tokens_n182770, slim_v_index_n182777, slim_allocation_region);
-(void)slim_v_valid_n182811;
-if (slim_v_valid_n182811) {
+bool slim_v_valid_n182828 = {0};
+slim_v_valid_n182828 = slim_fn_validate_95string_95token_95valid(slim_v_source_n182783, slim_v_tokens_n182787, slim_v_index_n182794, slim_allocation_region);
+(void)slim_v_valid_n182828;
+if (slim_v_valid_n182828) {
 {
-int64_t slim_v_next_n182827 = {0};
-slim_v_next_n182827 = slim_fn_syntax_95ast_95node_95after(slim_v_index_n182777, slim_allocation_region);
-(void)slim_v_next_n182827;
-SlimBytes slim_t_182836 = {0};
-slim_t_182836 = slim_v_source_n182766;
-SlimVec slim_t_182837 = {0};
-slim_t_182837 = slim_v_tokens_n182770;
-int64_t slim_t_182838 = {0};
-slim_t_182838 = slim_v_next_n182827;
-int64_t slim_t_182839 = {0};
-slim_t_182839 = slim_v_length_n182781;
-slim_v_source_n182766 = slim_t_182836;
-slim_v_tokens_n182770 = slim_t_182837;
-slim_v_index_n182777 = slim_t_182838;
-slim_v_length_n182781 = slim_t_182839;
+int64_t slim_v_next_n182844 = {0};
+slim_v_next_n182844 = slim_fn_syntax_95ast_95node_95after(slim_v_index_n182794, slim_allocation_region);
+(void)slim_v_next_n182844;
+SlimBytes slim_t_182853 = {0};
+slim_t_182853 = slim_v_source_n182783;
+SlimVec slim_t_182854 = {0};
+slim_t_182854 = slim_v_tokens_n182787;
+int64_t slim_t_182855 = {0};
+slim_t_182855 = slim_v_next_n182844;
+int64_t slim_t_182856 = {0};
+slim_t_182856 = slim_v_length_n182798;
+slim_v_source_n182783 = slim_t_182853;
+slim_v_tokens_n182787 = slim_t_182854;
+slim_v_index_n182794 = slim_t_182855;
+slim_v_length_n182798 = slim_t_182856;
 goto slim_recur;
 }
 }
@@ -83667,61 +83677,61 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95form_95count_95at_95least(SlimVec slim_v_tokens_n182858, int64_t slim_v_cursor_n182865, int64_t slim_v_count_n182869, int64_t slim_v_minimum_n182873, SlimRegion *slim_region) {
-(void)slim_v_tokens_n182858;
-(void)slim_v_cursor_n182865;
-(void)slim_v_count_n182869;
-(void)slim_v_minimum_n182873;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95form_95count_95at_95least(SlimVec slim_v_tokens_n182875, int64_t slim_v_cursor_n182882, int64_t slim_v_count_n182886, int64_t slim_v_minimum_n182890, SlimRegion *slim_region) {
+(void)slim_v_tokens_n182875;
+(void)slim_v_cursor_n182882;
+(void)slim_v_count_n182886;
+(void)slim_v_minimum_n182890;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 slim_recur: ;
 {
-int64_t slim_v_kind_n182884 = {0};
-slim_v_kind_n182884 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182858, slim_v_cursor_n182865, slim_allocation_region);
-(void)slim_v_kind_n182884;
+int64_t slim_v_kind_n182901 = {0};
+slim_v_kind_n182901 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n182875, slim_v_cursor_n182882, slim_allocation_region);
+(void)slim_v_kind_n182901;
 {
-bool slim_v_done_n182894 = {0};
-slim_v_done_n182894 = slim_v_kind_n182884 == INT64_C(1);
-(void)slim_v_done_n182894;
-if (slim_v_done_n182894) {
-slim_result = slim_v_count_n182869 >= slim_v_minimum_n182873;
+bool slim_v_done_n182911 = {0};
+slim_v_done_n182911 = slim_v_kind_n182901 == INT64_C(1);
+(void)slim_v_done_n182911;
+if (slim_v_done_n182911) {
+slim_result = slim_v_count_n182886 >= slim_v_minimum_n182890;
 }
 else {
 {
-bool slim_v_invalid_n182918 = {0};
-slim_v_invalid_n182918 = slim_v_kind_n182884 < INT64_C(0);
-(void)slim_v_invalid_n182918;
-if (slim_v_invalid_n182918) {
+bool slim_v_invalid_n182935 = {0};
+slim_v_invalid_n182935 = slim_v_kind_n182901 < INT64_C(0);
+(void)slim_v_invalid_n182935;
+if (slim_v_invalid_n182935) {
 slim_result = false;
 }
 else {
 {
-int64_t slim_v_next_n182937 = {0};
-slim_v_next_n182937 = slim_fn_syntax_95ast_95next(slim_v_tokens_n182858, slim_v_cursor_n182865, slim_allocation_region);
-(void)slim_v_next_n182937;
+int64_t slim_v_next_n182954 = {0};
+slim_v_next_n182954 = slim_fn_syntax_95ast_95next(slim_v_tokens_n182875, slim_v_cursor_n182882, slim_allocation_region);
+(void)slim_v_next_n182954;
 {
-bool slim_v_progressed_n182947 = {0};
-slim_v_progressed_n182947 = slim_v_next_n182937 > slim_v_cursor_n182865;
-(void)slim_v_progressed_n182947;
-if (slim_v_progressed_n182947) {
+bool slim_v_progressed_n182964 = {0};
+slim_v_progressed_n182964 = slim_v_next_n182954 > slim_v_cursor_n182882;
+(void)slim_v_progressed_n182964;
+if (slim_v_progressed_n182964) {
 {
-int64_t slim_v_next_95count_n182962 = {0};
-slim_v_next_95count_n182962 = slim_i64_add(slim_v_count_n182869, INT64_C(1));
-(void)slim_v_next_95count_n182962;
-SlimVec slim_t_182972 = {0};
-slim_t_182972 = slim_v_tokens_n182858;
-int64_t slim_t_182973 = {0};
-slim_t_182973 = slim_v_next_n182937;
-int64_t slim_t_182974 = {0};
-slim_t_182974 = slim_v_next_95count_n182962;
-int64_t slim_t_182975 = {0};
-slim_t_182975 = slim_v_minimum_n182873;
-slim_v_tokens_n182858 = slim_t_182972;
-slim_v_cursor_n182865 = slim_t_182973;
-slim_v_count_n182869 = slim_t_182974;
-slim_v_minimum_n182873 = slim_t_182975;
+int64_t slim_v_next_95count_n182979 = {0};
+slim_v_next_95count_n182979 = slim_i64_add(slim_v_count_n182886, INT64_C(1));
+(void)slim_v_next_95count_n182979;
+SlimVec slim_t_182989 = {0};
+slim_t_182989 = slim_v_tokens_n182875;
+int64_t slim_t_182990 = {0};
+slim_t_182990 = slim_v_next_n182954;
+int64_t slim_t_182991 = {0};
+slim_t_182991 = slim_v_next_95count_n182979;
+int64_t slim_t_182992 = {0};
+slim_t_182992 = slim_v_minimum_n182890;
+slim_v_tokens_n182875 = slim_t_182989;
+slim_v_cursor_n182882 = slim_t_182990;
+slim_v_count_n182886 = slim_t_182991;
+slim_v_minimum_n182890 = slim_t_182992;
 goto slim_recur;
 }
 }
@@ -83738,67 +83748,67 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95expression_95minimum(SlimBytes slim_v_source_n182999, SlimVec slim_v_tokens_n183003, int64_t slim_v_expression_n183010, SlimRegion *slim_region) {
-(void)slim_v_source_n182999;
-(void)slim_v_tokens_n183003;
-(void)slim_v_expression_n183010;
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95expression_95minimum(SlimBytes slim_v_source_n183016, SlimVec slim_v_tokens_n183020, int64_t slim_v_expression_n183027, SlimRegion *slim_region) {
+(void)slim_v_source_n183016;
+(void)slim_v_tokens_n183020;
+(void)slim_v_expression_n183027;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 int64_t slim_result = {0};
 {
-bool slim_v_let_95form_n183021 = {0};
-slim_v_let_95form_n183021 = slim_fn_syntax_95ast_95expression_95is_95let(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_let_95form_n183021;
-if (slim_v_let_95form_n183021) {
+bool slim_v_let_95form_n183038 = {0};
+slim_v_let_95form_n183038 = slim_fn_syntax_95ast_95expression_95is_95let(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_let_95form_n183038;
+if (slim_v_let_95form_n183038) {
 slim_result = INT64_C(4);
 }
 else {
 {
-bool slim_v_call_95form_n183041 = {0};
-slim_v_call_95form_n183041 = slim_fn_syntax_95ast_95expression_95is_95call(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_call_95form_n183041;
-if (slim_v_call_95form_n183041) {
+bool slim_v_call_95form_n183058 = {0};
+slim_v_call_95form_n183058 = slim_fn_syntax_95ast_95expression_95is_95call(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_call_95form_n183058;
+if (slim_v_call_95form_n183058) {
 slim_result = INT64_C(0);
 }
 else {
 {
-bool slim_v_make_95form_n183061 = {0};
-slim_v_make_95form_n183061 = slim_fn_syntax_95ast_95expression_95is_95make(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_make_95form_n183061;
-if (slim_v_make_95form_n183061) {
+bool slim_v_make_95form_n183078 = {0};
+slim_v_make_95form_n183078 = slim_fn_syntax_95ast_95expression_95is_95make(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_make_95form_n183078;
+if (slim_v_make_95form_n183078) {
 slim_result = INT64_C(0);
 }
 else {
 {
-bool slim_v_get_95form_n183081 = {0};
-slim_v_get_95form_n183081 = slim_fn_syntax_95ast_95expression_95is_95get(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_get_95form_n183081;
-if (slim_v_get_95form_n183081) {
+bool slim_v_get_95form_n183098 = {0};
+slim_v_get_95form_n183098 = slim_fn_syntax_95ast_95expression_95is_95get(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_get_95form_n183098;
+if (slim_v_get_95form_n183098) {
 slim_result = INT64_C(2);
 }
 else {
 {
-bool slim_v_case_95form_n183101 = {0};
-slim_v_case_95form_n183101 = slim_fn_syntax_95ast_95expression_95is_95case(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_case_95form_n183101;
-if (slim_v_case_95form_n183101) {
+bool slim_v_case_95form_n183118 = {0};
+slim_v_case_95form_n183118 = slim_fn_syntax_95ast_95expression_95is_95case(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_case_95form_n183118;
+if (slim_v_case_95form_n183118) {
 slim_result = INT64_C(1);
 }
 else {
 {
-bool slim_v_match_95form_n183121 = {0};
-slim_v_match_95form_n183121 = slim_fn_syntax_95ast_95expression_95is_95match(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_match_95form_n183121;
-if (slim_v_match_95form_n183121) {
+bool slim_v_match_95form_n183138 = {0};
+slim_v_match_95form_n183138 = slim_fn_syntax_95ast_95expression_95is_95match(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_match_95form_n183138;
+if (slim_v_match_95form_n183138) {
 slim_result = INT64_C(2);
 }
 else {
 {
-bool slim_v_set_95form_n183141 = {0};
-slim_v_set_95form_n183141 = slim_fn_syntax_95ast_95expression_95is_95set(slim_v_source_n182999, slim_v_tokens_n183003, slim_v_expression_n183010, slim_allocation_region);
-(void)slim_v_set_95form_n183141;
-if (slim_v_set_95form_n183141) {
+bool slim_v_set_95form_n183158 = {0};
+slim_v_set_95form_n183158 = slim_fn_syntax_95ast_95expression_95is_95set(slim_v_source_n183016, slim_v_tokens_n183020, slim_v_expression_n183027, slim_allocation_region);
+(void)slim_v_set_95form_n183158;
+if (slim_v_set_95form_n183158) {
 slim_result = INT64_C(3);
 }
 else {
@@ -83820,49 +83830,49 @@ slim_result = INT64_C(0);
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95expression_95shape_95valid(SlimBytes slim_v_source_n183187, SlimVec slim_v_tokens_n183191, int64_t slim_v_index_n183198, SlimRegion *slim_region) {
-(void)slim_v_source_n183187;
-(void)slim_v_tokens_n183191;
-(void)slim_v_index_n183198;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95expression_95shape_95valid(SlimBytes slim_v_source_n183204, SlimVec slim_v_tokens_n183208, int64_t slim_v_index_n183215, SlimRegion *slim_region) {
+(void)slim_v_source_n183204;
+(void)slim_v_tokens_n183208;
+(void)slim_v_index_n183215;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_kind_n183209 = {0};
-slim_v_kind_n183209 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183191, slim_v_index_n183198, slim_allocation_region);
-(void)slim_v_kind_n183209;
+int64_t slim_v_kind_n183226 = {0};
+slim_v_kind_n183226 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183208, slim_v_index_n183215, slim_allocation_region);
+(void)slim_v_kind_n183226;
 {
-bool slim_v_scalar_n183219 = {0};
-slim_v_scalar_n183219 = slim_v_kind_n183209 >= INT64_C(2);
-(void)slim_v_scalar_n183219;
-if (slim_v_scalar_n183219) {
+bool slim_v_scalar_n183236 = {0};
+slim_v_scalar_n183236 = slim_v_kind_n183226 >= INT64_C(2);
+(void)slim_v_scalar_n183236;
+if (slim_v_scalar_n183236) {
 slim_result = true;
 }
 else {
 {
-bool slim_v_form_n183238 = {0};
-slim_v_form_n183238 = slim_v_kind_n183209 == INT64_C(0);
-(void)slim_v_form_n183238;
-if (slim_v_form_n183238) {
+bool slim_v_form_n183255 = {0};
+slim_v_form_n183255 = slim_v_kind_n183226 == INT64_C(0);
+(void)slim_v_form_n183255;
+if (slim_v_form_n183255) {
 {
-int64_t slim_v_head_n183253 = {0};
-slim_v_head_n183253 = slim_fn_syntax_95ast_95list_95first(slim_v_index_n183198, slim_allocation_region);
-(void)slim_v_head_n183253;
+int64_t slim_v_head_n183270 = {0};
+slim_v_head_n183270 = slim_fn_syntax_95ast_95list_95first(slim_v_index_n183215, slim_allocation_region);
+(void)slim_v_head_n183270;
 {
-bool slim_v_head_95atom_n183262 = {0};
-slim_v_head_95atom_n183262 = slim_fn_validate_95atom_95at(slim_v_tokens_n183191, slim_v_head_n183253, slim_allocation_region);
-(void)slim_v_head_95atom_n183262;
-if (slim_v_head_95atom_n183262) {
+bool slim_v_head_95atom_n183279 = {0};
+slim_v_head_95atom_n183279 = slim_fn_validate_95atom_95at(slim_v_tokens_n183208, slim_v_head_n183270, slim_allocation_region);
+(void)slim_v_head_95atom_n183279;
+if (slim_v_head_95atom_n183279) {
 {
-int64_t slim_v_minimum_n183277 = {0};
-slim_v_minimum_n183277 = slim_fn_validate_95expression_95minimum(slim_v_source_n183187, slim_v_tokens_n183191, slim_v_index_n183198, slim_allocation_region);
-(void)slim_v_minimum_n183277;
+int64_t slim_v_minimum_n183294 = {0};
+slim_v_minimum_n183294 = slim_fn_validate_95expression_95minimum(slim_v_source_n183204, slim_v_tokens_n183208, slim_v_index_n183215, slim_allocation_region);
+(void)slim_v_minimum_n183294;
 {
-int64_t slim_v_first_95child_n183288 = {0};
-slim_v_first_95child_n183288 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183191, slim_v_head_n183253, slim_allocation_region);
-(void)slim_v_first_95child_n183288;
-slim_result = slim_fn_validate_95form_95count_95at_95least(slim_v_tokens_n183191, slim_v_first_95child_n183288, INT64_C(0), slim_v_minimum_n183277, slim_allocation_region);
+int64_t slim_v_first_95child_n183305 = {0};
+slim_v_first_95child_n183305 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183208, slim_v_head_n183270, slim_allocation_region);
+(void)slim_v_first_95child_n183305;
+slim_result = slim_fn_validate_95form_95count_95at_95least(slim_v_tokens_n183208, slim_v_first_95child_n183305, INT64_C(0), slim_v_minimum_n183294, slim_allocation_region);
 }
 }
 }
@@ -83882,104 +83892,104 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95function_95item_95valid(SlimBytes slim_v_source_n183331, SlimVec slim_v_tokens_n183335, int64_t slim_v_index_n183342, SlimRegion *slim_region) {
-(void)slim_v_source_n183331;
-(void)slim_v_tokens_n183335;
-(void)slim_v_index_n183342;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95function_95item_95valid(SlimBytes slim_v_source_n183348, SlimVec slim_v_tokens_n183352, int64_t slim_v_index_n183359, SlimRegion *slim_region) {
+(void)slim_v_source_n183348;
+(void)slim_v_tokens_n183352;
+(void)slim_v_index_n183359;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_name_n183353 = {0};
-slim_v_name_n183353 = slim_fn_syntax_95ast_95item_95name(slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_name_n183353;
+int64_t slim_v_name_n183370 = {0};
+slim_v_name_n183370 = slim_fn_syntax_95ast_95item_95name(slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_name_n183370;
 {
-int64_t slim_v_params_n183362 = {0};
-slim_v_params_n183362 = slim_fn_syntax_95ast_95function_95parameters(slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_params_n183362;
+int64_t slim_v_params_n183379 = {0};
+slim_v_params_n183379 = slim_fn_syntax_95ast_95function_95parameters(slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_params_n183379;
 {
-bool slim_v_name_95valid_n183371 = {0};
-slim_v_name_95valid_n183371 = slim_fn_validate_95atom_95at(slim_v_tokens_n183335, slim_v_name_n183353, slim_allocation_region);
-(void)slim_v_name_95valid_n183371;
+bool slim_v_name_95valid_n183388 = {0};
+slim_v_name_95valid_n183388 = slim_fn_validate_95atom_95at(slim_v_tokens_n183352, slim_v_name_n183370, slim_allocation_region);
+(void)slim_v_name_95valid_n183388;
 {
-int64_t slim_v_params_95kind_n183381 = {0};
-slim_v_params_95kind_n183381 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183335, slim_v_params_n183362, slim_allocation_region);
-(void)slim_v_params_95kind_n183381;
+int64_t slim_v_params_95kind_n183398 = {0};
+slim_v_params_95kind_n183398 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183352, slim_v_params_n183379, slim_allocation_region);
+(void)slim_v_params_95kind_n183398;
 {
-bool slim_v_params_95valid_n183391 = {0};
-slim_v_params_95valid_n183391 = slim_v_params_95kind_n183381 == INT64_C(0);
-(void)slim_v_params_95valid_n183391;
+bool slim_v_params_95valid_n183408 = {0};
+slim_v_params_95valid_n183408 = slim_v_params_95kind_n183398 == INT64_C(0);
+(void)slim_v_params_95valid_n183408;
 {
-int64_t slim_v_return_95type_n183401 = {0};
-slim_v_return_95type_n183401 = slim_fn_syntax_95ast_95function_95return_95type(slim_v_tokens_n183335, slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_return_95type_n183401;
+int64_t slim_v_return_95type_n183418 = {0};
+slim_v_return_95type_n183418 = slim_fn_syntax_95ast_95function_95return_95type(slim_v_tokens_n183352, slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_return_95type_n183418;
 {
-int64_t slim_v_return_95kind_n183411 = {0};
-slim_v_return_95kind_n183411 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183335, slim_v_return_95type_n183401, slim_allocation_region);
-(void)slim_v_return_95kind_n183411;
+int64_t slim_v_return_95kind_n183428 = {0};
+slim_v_return_95kind_n183428 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183352, slim_v_return_95type_n183418, slim_allocation_region);
+(void)slim_v_return_95kind_n183428;
 {
-bool slim_v_return_95valid_n183421 = {0};
-slim_v_return_95valid_n183421 = slim_v_return_95kind_n183411 >= INT64_C(0);
-(void)slim_v_return_95valid_n183421;
+bool slim_v_return_95valid_n183438 = {0};
+slim_v_return_95valid_n183438 = slim_v_return_95kind_n183428 >= INT64_C(0);
+(void)slim_v_return_95valid_n183438;
 {
-int64_t slim_v_effects_n183431 = {0};
-slim_v_effects_n183431 = slim_fn_syntax_95ast_95function_95effects(slim_v_tokens_n183335, slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_effects_n183431;
+int64_t slim_v_effects_n183448 = {0};
+slim_v_effects_n183448 = slim_fn_syntax_95ast_95function_95effects(slim_v_tokens_n183352, slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_effects_n183448;
 {
-int64_t slim_v_effects_95kind_n183441 = {0};
-slim_v_effects_95kind_n183441 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183335, slim_v_effects_n183431, slim_allocation_region);
-(void)slim_v_effects_95kind_n183441;
+int64_t slim_v_effects_95kind_n183458 = {0};
+slim_v_effects_95kind_n183458 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183352, slim_v_effects_n183448, slim_allocation_region);
+(void)slim_v_effects_95kind_n183458;
 {
-bool slim_v_effects_95form_n183451 = {0};
-slim_v_effects_95form_n183451 = slim_v_effects_95kind_n183441 == INT64_C(0);
-(void)slim_v_effects_95form_n183451;
+bool slim_v_effects_95form_n183468 = {0};
+slim_v_effects_95form_n183468 = slim_v_effects_95kind_n183458 == INT64_C(0);
+(void)slim_v_effects_95form_n183468;
 {
-bool slim_v_effects_95valid_n183461 = {0};
-if (slim_v_effects_95form_n183451) {
-slim_v_effects_95valid_n183461 = slim_fn_syntax_95ast_95effects_95is_95form(slim_v_source_n183331, slim_v_tokens_n183335, slim_v_effects_n183431, slim_allocation_region);
+bool slim_v_effects_95valid_n183478 = {0};
+if (slim_v_effects_95form_n183468) {
+slim_v_effects_95valid_n183478 = slim_fn_syntax_95ast_95effects_95is_95form(slim_v_source_n183348, slim_v_tokens_n183352, slim_v_effects_n183448, slim_allocation_region);
 }
 else {
-slim_v_effects_95valid_n183461 = false;
+slim_v_effects_95valid_n183478 = false;
 }
-(void)slim_v_effects_95valid_n183461;
+(void)slim_v_effects_95valid_n183478;
 {
-int64_t slim_v_body_n183483 = {0};
-slim_v_body_n183483 = slim_fn_syntax_95ast_95function_95body(slim_v_tokens_n183335, slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_body_n183483;
+int64_t slim_v_body_n183500 = {0};
+slim_v_body_n183500 = slim_fn_syntax_95ast_95function_95body(slim_v_tokens_n183352, slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_body_n183500;
 {
-bool slim_v_body_95valid_n183493 = {0};
-slim_v_body_95valid_n183493 = slim_fn_validate_95expression_95shape_95valid(slim_v_source_n183331, slim_v_tokens_n183335, slim_v_body_n183483, slim_allocation_region);
-(void)slim_v_body_95valid_n183493;
+bool slim_v_body_95valid_n183510 = {0};
+slim_v_body_95valid_n183510 = slim_fn_validate_95expression_95shape_95valid(slim_v_source_n183348, slim_v_tokens_n183352, slim_v_body_n183500, slim_allocation_region);
+(void)slim_v_body_95valid_n183510;
 {
-int64_t slim_v_body_95end_n183504 = {0};
-slim_v_body_95end_n183504 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183335, slim_v_body_n183483, slim_allocation_region);
-(void)slim_v_body_95end_n183504;
+int64_t slim_v_body_95end_n183521 = {0};
+slim_v_body_95end_n183521 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183352, slim_v_body_n183500, slim_allocation_region);
+(void)slim_v_body_95end_n183521;
 {
-int64_t slim_v_closing_n183514 = {0};
-slim_v_closing_n183514 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n183335, slim_v_index_n183342, slim_allocation_region);
-(void)slim_v_closing_n183514;
+int64_t slim_v_closing_n183531 = {0};
+slim_v_closing_n183531 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n183352, slim_v_index_n183359, slim_allocation_region);
+(void)slim_v_closing_n183531;
 {
-bool slim_v_exact_n183524 = {0};
-slim_v_exact_n183524 = slim_v_body_95end_n183504 == slim_v_closing_n183514;
-(void)slim_v_exact_n183524;
+bool slim_v_exact_n183541 = {0};
+slim_v_exact_n183541 = slim_v_body_95end_n183521 == slim_v_closing_n183531;
+(void)slim_v_exact_n183541;
 {
-bool slim_v_first_n183534 = {0};
-slim_v_first_n183534 = slim_v_name_95valid_n183371 && slim_v_params_95valid_n183391;
-(void)slim_v_first_n183534;
+bool slim_v_first_n183551 = {0};
+slim_v_first_n183551 = slim_v_name_95valid_n183388 && slim_v_params_95valid_n183408;
+(void)slim_v_first_n183551;
 {
-bool slim_v_second_n183544 = {0};
-slim_v_second_n183544 = slim_v_return_95valid_n183421 && slim_v_effects_95valid_n183461;
-(void)slim_v_second_n183544;
+bool slim_v_second_n183561 = {0};
+slim_v_second_n183561 = slim_v_return_95valid_n183438 && slim_v_effects_95valid_n183478;
+(void)slim_v_second_n183561;
 {
-bool slim_v_third_n183554 = {0};
-slim_v_third_n183554 = slim_v_body_95valid_n183493 && slim_v_exact_n183524;
-(void)slim_v_third_n183554;
+bool slim_v_third_n183571 = {0};
+slim_v_third_n183571 = slim_v_body_95valid_n183510 && slim_v_exact_n183541;
+(void)slim_v_third_n183571;
 {
-bool slim_v_left_n183564 = {0};
-slim_v_left_n183564 = slim_v_first_n183534 && slim_v_second_n183544;
-(void)slim_v_left_n183564;
-slim_result = slim_v_left_n183564 && slim_v_third_n183554;
+bool slim_v_left_n183581 = {0};
+slim_v_left_n183581 = slim_v_first_n183551 && slim_v_second_n183561;
+(void)slim_v_left_n183581;
+slim_result = slim_v_left_n183581 && slim_v_third_n183571;
 }
 }
 }
@@ -84004,50 +84014,50 @@ slim_result = slim_v_left_n183564 && slim_v_third_n183554;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95data_95item_95valid(SlimVec slim_v_tokens_n183605, int64_t slim_v_index_n183612, SlimRegion *slim_region) {
-(void)slim_v_tokens_n183605;
-(void)slim_v_index_n183612;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95data_95item_95valid(SlimVec slim_v_tokens_n183622, int64_t slim_v_index_n183629, SlimRegion *slim_region) {
+(void)slim_v_tokens_n183622;
+(void)slim_v_index_n183629;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_name_n183623 = {0};
-slim_v_name_n183623 = slim_fn_syntax_95ast_95item_95name(slim_v_index_n183612, slim_allocation_region);
-(void)slim_v_name_n183623;
+int64_t slim_v_name_n183640 = {0};
+slim_v_name_n183640 = slim_fn_syntax_95ast_95item_95name(slim_v_index_n183629, slim_allocation_region);
+(void)slim_v_name_n183640;
 {
-int64_t slim_v_body_n183632 = {0};
-slim_v_body_n183632 = slim_fn_syntax_95ast_95data_95body(slim_v_index_n183612, slim_allocation_region);
-(void)slim_v_body_n183632;
+int64_t slim_v_body_n183649 = {0};
+slim_v_body_n183649 = slim_fn_syntax_95ast_95data_95body(slim_v_index_n183629, slim_allocation_region);
+(void)slim_v_body_n183649;
 {
-bool slim_v_name_95valid_n183641 = {0};
-slim_v_name_95valid_n183641 = slim_fn_validate_95atom_95at(slim_v_tokens_n183605, slim_v_name_n183623, slim_allocation_region);
-(void)slim_v_name_95valid_n183641;
+bool slim_v_name_95valid_n183658 = {0};
+slim_v_name_95valid_n183658 = slim_fn_validate_95atom_95at(slim_v_tokens_n183622, slim_v_name_n183640, slim_allocation_region);
+(void)slim_v_name_95valid_n183658;
 {
-int64_t slim_v_body_95kind_n183651 = {0};
-slim_v_body_95kind_n183651 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183605, slim_v_body_n183632, slim_allocation_region);
-(void)slim_v_body_95kind_n183651;
+int64_t slim_v_body_95kind_n183668 = {0};
+slim_v_body_95kind_n183668 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183622, slim_v_body_n183649, slim_allocation_region);
+(void)slim_v_body_95kind_n183668;
 {
-bool slim_v_body_95valid_n183661 = {0};
-slim_v_body_95valid_n183661 = slim_v_body_95kind_n183651 == INT64_C(0);
-(void)slim_v_body_95valid_n183661;
+bool slim_v_body_95valid_n183678 = {0};
+slim_v_body_95valid_n183678 = slim_v_body_95kind_n183668 == INT64_C(0);
+(void)slim_v_body_95valid_n183678;
 {
-int64_t slim_v_body_95end_n183671 = {0};
-slim_v_body_95end_n183671 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183605, slim_v_body_n183632, slim_allocation_region);
-(void)slim_v_body_95end_n183671;
+int64_t slim_v_body_95end_n183688 = {0};
+slim_v_body_95end_n183688 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183622, slim_v_body_n183649, slim_allocation_region);
+(void)slim_v_body_95end_n183688;
 {
-int64_t slim_v_closing_n183681 = {0};
-slim_v_closing_n183681 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n183605, slim_v_index_n183612, slim_allocation_region);
-(void)slim_v_closing_n183681;
+int64_t slim_v_closing_n183698 = {0};
+slim_v_closing_n183698 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n183622, slim_v_index_n183629, slim_allocation_region);
+(void)slim_v_closing_n183698;
 {
-bool slim_v_exact_n183691 = {0};
-slim_v_exact_n183691 = slim_v_body_95end_n183671 == slim_v_closing_n183681;
-(void)slim_v_exact_n183691;
+bool slim_v_exact_n183708 = {0};
+slim_v_exact_n183708 = slim_v_body_95end_n183688 == slim_v_closing_n183698;
+(void)slim_v_exact_n183708;
 {
-bool slim_v_left_n183701 = {0};
-slim_v_left_n183701 = slim_v_name_95valid_n183641 && slim_v_body_95valid_n183661;
-(void)slim_v_left_n183701;
-slim_result = slim_v_left_n183701 && slim_v_exact_n183691;
+bool slim_v_left_n183718 = {0};
+slim_v_left_n183718 = slim_v_name_95valid_n183658 && slim_v_body_95valid_n183678;
+(void)slim_v_left_n183718;
+slim_result = slim_v_left_n183718 && slim_v_exact_n183708;
 }
 }
 }
@@ -84060,45 +84070,45 @@ slim_result = slim_v_left_n183701 && slim_v_exact_n183691;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95valid(SlimBytes slim_v_source_n183730, SlimVec slim_v_tokens_n183734, int64_t slim_v_index_n183741, SlimRegion *slim_region) {
-(void)slim_v_source_n183730;
-(void)slim_v_tokens_n183734;
-(void)slim_v_index_n183741;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95valid(SlimBytes slim_v_source_n183747, SlimVec slim_v_tokens_n183751, int64_t slim_v_index_n183758, SlimRegion *slim_region) {
+(void)slim_v_source_n183747;
+(void)slim_v_tokens_n183751;
+(void)slim_v_index_n183758;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_kind_n183752 = {0};
-slim_v_kind_n183752 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
-(void)slim_v_kind_n183752;
+int64_t slim_v_kind_n183769 = {0};
+slim_v_kind_n183769 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
+(void)slim_v_kind_n183769;
 {
-bool slim_v_form_n183762 = {0};
-slim_v_form_n183762 = slim_v_kind_n183752 == INT64_C(0);
-(void)slim_v_form_n183762;
-if (slim_v_form_n183762) {
+bool slim_v_form_n183779 = {0};
+slim_v_form_n183779 = slim_v_kind_n183769 == INT64_C(0);
+(void)slim_v_form_n183779;
+if (slim_v_form_n183779) {
 {
-bool slim_v_function_n183777 = {0};
-slim_v_function_n183777 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n183730, slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
-(void)slim_v_function_n183777;
-if (slim_v_function_n183777) {
-slim_result = slim_fn_validate_95function_95item_95valid(slim_v_source_n183730, slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
+bool slim_v_function_n183794 = {0};
+slim_v_function_n183794 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n183747, slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
+(void)slim_v_function_n183794;
+if (slim_v_function_n183794) {
+slim_result = slim_fn_validate_95function_95item_95valid(slim_v_source_n183747, slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
 }
 else {
 {
-bool slim_v_record_n183803 = {0};
-slim_v_record_n183803 = slim_fn_syntax_95ast_95item_95is_95record(slim_v_source_n183730, slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
-(void)slim_v_record_n183803;
+bool slim_v_record_n183820 = {0};
+slim_v_record_n183820 = slim_fn_syntax_95ast_95item_95is_95record(slim_v_source_n183747, slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
+(void)slim_v_record_n183820;
 {
-bool slim_v_variant_n183814 = {0};
-slim_v_variant_n183814 = slim_fn_syntax_95ast_95item_95is_95variant(slim_v_source_n183730, slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
-(void)slim_v_variant_n183814;
+bool slim_v_variant_n183831 = {0};
+slim_v_variant_n183831 = slim_fn_syntax_95ast_95item_95is_95variant(slim_v_source_n183747, slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
+(void)slim_v_variant_n183831;
 {
-bool slim_v_data_n183825 = {0};
-slim_v_data_n183825 = slim_v_record_n183803 || slim_v_variant_n183814;
-(void)slim_v_data_n183825;
-if (slim_v_data_n183825) {
-slim_result = slim_fn_validate_95data_95item_95valid(slim_v_tokens_n183734, slim_v_index_n183741, slim_allocation_region);
+bool slim_v_data_n183842 = {0};
+slim_v_data_n183842 = slim_v_record_n183820 || slim_v_variant_n183831;
+(void)slim_v_data_n183842;
+if (slim_v_data_n183842) {
+slim_result = slim_fn_validate_95data_95item_95valid(slim_v_tokens_n183751, slim_v_index_n183758, slim_allocation_region);
 }
 else {
 slim_result = false;
@@ -84117,55 +84127,55 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95list_95valid(SlimBytes slim_v_source_n183870, SlimVec slim_v_tokens_n183874, int64_t slim_v_cursor_n183881, int64_t slim_v_closing_n183885, SlimRegion *slim_region) {
-(void)slim_v_source_n183870;
-(void)slim_v_tokens_n183874;
-(void)slim_v_cursor_n183881;
-(void)slim_v_closing_n183885;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95item_95list_95valid(SlimBytes slim_v_source_n183887, SlimVec slim_v_tokens_n183891, int64_t slim_v_cursor_n183898, int64_t slim_v_closing_n183902, SlimRegion *slim_region) {
+(void)slim_v_source_n183887;
+(void)slim_v_tokens_n183891;
+(void)slim_v_cursor_n183898;
+(void)slim_v_closing_n183902;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 slim_recur: ;
 {
-bool slim_v_done_n183896 = {0};
-slim_v_done_n183896 = slim_v_cursor_n183881 == slim_v_closing_n183885;
-(void)slim_v_done_n183896;
-if (slim_v_done_n183896) {
+bool slim_v_done_n183913 = {0};
+slim_v_done_n183913 = slim_v_cursor_n183898 == slim_v_closing_n183902;
+(void)slim_v_done_n183913;
+if (slim_v_done_n183913) {
 slim_result = true;
 }
 else {
 {
-bool slim_v_below_n183915 = {0};
-slim_v_below_n183915 = slim_v_cursor_n183881 < slim_v_closing_n183885;
-(void)slim_v_below_n183915;
-if (slim_v_below_n183915) {
+bool slim_v_below_n183932 = {0};
+slim_v_below_n183932 = slim_v_cursor_n183898 < slim_v_closing_n183902;
+(void)slim_v_below_n183932;
+if (slim_v_below_n183932) {
 {
-bool slim_v_valid_n183930 = {0};
-slim_v_valid_n183930 = slim_fn_validate_95item_95valid(slim_v_source_n183870, slim_v_tokens_n183874, slim_v_cursor_n183881, slim_allocation_region);
-(void)slim_v_valid_n183930;
-if (slim_v_valid_n183930) {
+bool slim_v_valid_n183947 = {0};
+slim_v_valid_n183947 = slim_fn_validate_95item_95valid(slim_v_source_n183887, slim_v_tokens_n183891, slim_v_cursor_n183898, slim_allocation_region);
+(void)slim_v_valid_n183947;
+if (slim_v_valid_n183947) {
 {
-int64_t slim_v_next_n183946 = {0};
-slim_v_next_n183946 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183874, slim_v_cursor_n183881, slim_allocation_region);
-(void)slim_v_next_n183946;
+int64_t slim_v_next_n183963 = {0};
+slim_v_next_n183963 = slim_fn_syntax_95ast_95next(slim_v_tokens_n183891, slim_v_cursor_n183898, slim_allocation_region);
+(void)slim_v_next_n183963;
 {
-bool slim_v_progressed_n183956 = {0};
-slim_v_progressed_n183956 = slim_v_next_n183946 > slim_v_cursor_n183881;
-(void)slim_v_progressed_n183956;
-if (slim_v_progressed_n183956) {
-SlimBytes slim_t_183971 = {0};
-slim_t_183971 = slim_v_source_n183870;
-SlimVec slim_t_183972 = {0};
-slim_t_183972 = slim_v_tokens_n183874;
-int64_t slim_t_183973 = {0};
-slim_t_183973 = slim_v_next_n183946;
-int64_t slim_t_183974 = {0};
-slim_t_183974 = slim_v_closing_n183885;
-slim_v_source_n183870 = slim_t_183971;
-slim_v_tokens_n183874 = slim_t_183972;
-slim_v_cursor_n183881 = slim_t_183973;
-slim_v_closing_n183885 = slim_t_183974;
+bool slim_v_progressed_n183973 = {0};
+slim_v_progressed_n183973 = slim_v_next_n183963 > slim_v_cursor_n183898;
+(void)slim_v_progressed_n183973;
+if (slim_v_progressed_n183973) {
+SlimBytes slim_t_183988 = {0};
+slim_t_183988 = slim_v_source_n183887;
+SlimVec slim_t_183989 = {0};
+slim_t_183989 = slim_v_tokens_n183891;
+int64_t slim_t_183990 = {0};
+slim_t_183990 = slim_v_next_n183963;
+int64_t slim_t_183991 = {0};
+slim_t_183991 = slim_v_closing_n183902;
+slim_v_source_n183887 = slim_t_183988;
+slim_v_tokens_n183891 = slim_t_183989;
+slim_v_cursor_n183898 = slim_t_183990;
+slim_v_closing_n183902 = slim_t_183991;
 goto slim_recur;
 }
 else {
@@ -84188,70 +84198,70 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95main_95count(SlimBytes slim_v_source_n184007, SlimVec slim_v_tokens_n184011, int64_t slim_v_cursor_n184018, int64_t slim_v_closing_n184022, int64_t slim_v_count_n184026, SlimRegion *slim_region) {
-(void)slim_v_source_n184007;
-(void)slim_v_tokens_n184011;
-(void)slim_v_cursor_n184018;
-(void)slim_v_closing_n184022;
-(void)slim_v_count_n184026;
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_validate_95main_95count(SlimBytes slim_v_source_n184024, SlimVec slim_v_tokens_n184028, int64_t slim_v_cursor_n184035, int64_t slim_v_closing_n184039, int64_t slim_v_count_n184043, SlimRegion *slim_region) {
+(void)slim_v_source_n184024;
+(void)slim_v_tokens_n184028;
+(void)slim_v_cursor_n184035;
+(void)slim_v_closing_n184039;
+(void)slim_v_count_n184043;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 int64_t slim_result = {0};
 slim_recur: ;
 {
-bool slim_v_done_n184037 = {0};
-slim_v_done_n184037 = slim_v_cursor_n184018 == slim_v_closing_n184022;
-(void)slim_v_done_n184037;
-if (slim_v_done_n184037) {
-slim_result = slim_v_count_n184026;
+bool slim_v_done_n184054 = {0};
+slim_v_done_n184054 = slim_v_cursor_n184035 == slim_v_closing_n184039;
+(void)slim_v_done_n184054;
+if (slim_v_done_n184054) {
+slim_result = slim_v_count_n184043;
 }
 else {
 {
-bool slim_v_function_n184056 = {0};
-slim_v_function_n184056 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n184007, slim_v_tokens_n184011, slim_v_cursor_n184018, slim_allocation_region);
-(void)slim_v_function_n184056;
+bool slim_v_function_n184073 = {0};
+slim_v_function_n184073 = slim_fn_syntax_95ast_95item_95is_95function(slim_v_source_n184024, slim_v_tokens_n184028, slim_v_cursor_n184035, slim_allocation_region);
+(void)slim_v_function_n184073;
 {
-int64_t slim_v_name_n184067 = {0};
-slim_v_name_n184067 = slim_fn_syntax_95ast_95item_95name(slim_v_cursor_n184018, slim_allocation_region);
-(void)slim_v_name_n184067;
+int64_t slim_v_name_n184084 = {0};
+slim_v_name_n184084 = slim_fn_syntax_95ast_95item_95name(slim_v_cursor_n184035, slim_allocation_region);
+(void)slim_v_name_n184084;
 {
-bool slim_v_named_95main_n184076 = {0};
-if (slim_v_function_n184056) {
-slim_v_named_95main_n184076 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n184007, slim_v_tokens_n184011, slim_v_name_n184067, slim_bytes_static((const uint8_t *)"main", (int64_t)(sizeof("main") - 1)), slim_allocation_region);
+bool slim_v_named_95main_n184093 = {0};
+if (slim_v_function_n184073) {
+slim_v_named_95main_n184093 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n184024, slim_v_tokens_n184028, slim_v_name_n184084, slim_bytes_static((const uint8_t *)"main", (int64_t)(sizeof("main") - 1)), slim_allocation_region);
 }
 else {
-slim_v_named_95main_n184076 = false;
+slim_v_named_95main_n184093 = false;
 }
-(void)slim_v_named_95main_n184076;
+(void)slim_v_named_95main_n184093;
 {
-int64_t slim_v_next_95count_n184099 = {0};
-if (slim_v_named_95main_n184076) {
-slim_v_next_95count_n184099 = slim_i64_add(slim_v_count_n184026, INT64_C(1));
+int64_t slim_v_next_95count_n184116 = {0};
+if (slim_v_named_95main_n184093) {
+slim_v_next_95count_n184116 = slim_i64_add(slim_v_count_n184043, INT64_C(1));
 }
 else {
-slim_v_next_95count_n184099 = slim_v_count_n184026;
+slim_v_next_95count_n184116 = slim_v_count_n184043;
 }
-(void)slim_v_next_95count_n184099;
+(void)slim_v_next_95count_n184116;
 {
-int64_t slim_v_next_n184120 = {0};
-slim_v_next_n184120 = slim_fn_syntax_95ast_95next(slim_v_tokens_n184011, slim_v_cursor_n184018, slim_allocation_region);
-(void)slim_v_next_n184120;
-SlimBytes slim_t_184130 = {0};
-slim_t_184130 = slim_v_source_n184007;
-SlimVec slim_t_184131 = {0};
-slim_t_184131 = slim_v_tokens_n184011;
-int64_t slim_t_184132 = {0};
-slim_t_184132 = slim_v_next_n184120;
-int64_t slim_t_184133 = {0};
-slim_t_184133 = slim_v_closing_n184022;
-int64_t slim_t_184134 = {0};
-slim_t_184134 = slim_v_next_95count_n184099;
-slim_v_source_n184007 = slim_t_184130;
-slim_v_tokens_n184011 = slim_t_184131;
-slim_v_cursor_n184018 = slim_t_184132;
-slim_v_closing_n184022 = slim_t_184133;
-slim_v_count_n184026 = slim_t_184134;
+int64_t slim_v_next_n184137 = {0};
+slim_v_next_n184137 = slim_fn_syntax_95ast_95next(slim_v_tokens_n184028, slim_v_cursor_n184035, slim_allocation_region);
+(void)slim_v_next_n184137;
+SlimBytes slim_t_184147 = {0};
+slim_t_184147 = slim_v_source_n184024;
+SlimVec slim_t_184148 = {0};
+slim_t_184148 = slim_v_tokens_n184028;
+int64_t slim_t_184149 = {0};
+slim_t_184149 = slim_v_next_n184137;
+int64_t slim_t_184150 = {0};
+slim_t_184150 = slim_v_closing_n184039;
+int64_t slim_t_184151 = {0};
+slim_t_184151 = slim_v_next_95count_n184116;
+slim_v_source_n184024 = slim_t_184147;
+slim_v_tokens_n184028 = slim_t_184148;
+slim_v_cursor_n184035 = slim_t_184149;
+slim_v_closing_n184039 = slim_t_184150;
+slim_v_count_n184043 = slim_t_184151;
 goto slim_recur;
 }
 }
@@ -84263,79 +84273,79 @@ goto slim_recur;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid_95from(SlimBytes slim_v_source_n184150, SlimVec slim_v_tokens_n184154, int64_t slim_v_root_n184161, int64_t slim_v_end_n184165, SlimRegion *slim_region) {
-(void)slim_v_source_n184150;
-(void)slim_v_tokens_n184154;
-(void)slim_v_root_n184161;
-(void)slim_v_end_n184165;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid_95from(SlimBytes slim_v_source_n184167, SlimVec slim_v_tokens_n184171, int64_t slim_v_root_n184178, int64_t slim_v_end_n184182, SlimRegion *slim_region) {
+(void)slim_v_source_n184167;
+(void)slim_v_tokens_n184171;
+(void)slim_v_root_n184178;
+(void)slim_v_end_n184182;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_length_n184176 = {0};
-slim_v_length_n184176 = slim_i64_sub(slim_v_end_n184165, slim_v_root_n184161);
-(void)slim_v_length_n184176;
+int64_t slim_v_length_n184193 = {0};
+slim_v_length_n184193 = slim_i64_sub(slim_v_end_n184182, slim_v_root_n184178);
+(void)slim_v_length_n184193;
 {
-bool slim_v_bounded_n184186 = {0};
-slim_v_bounded_n184186 = slim_v_length_n184176 <= INT64_C(1000000);
-(void)slim_v_bounded_n184186;
+bool slim_v_bounded_n184203 = {0};
+slim_v_bounded_n184203 = slim_v_length_n184193 <= INT64_C(1000000);
+(void)slim_v_bounded_n184203;
 {
-bool slim_v_enough_n184196 = {0};
-slim_v_enough_n184196 = slim_v_length_n184176 >= INT64_C(4);
-(void)slim_v_enough_n184196;
+bool slim_v_enough_n184213 = {0};
+slim_v_enough_n184213 = slim_v_length_n184193 >= INT64_C(4);
+(void)slim_v_enough_n184213;
 {
-bool slim_v_sized_n184206 = {0};
-slim_v_sized_n184206 = slim_v_bounded_n184186 && slim_v_enough_n184196;
-(void)slim_v_sized_n184206;
-if (slim_v_sized_n184206) {
+bool slim_v_sized_n184223 = {0};
+slim_v_sized_n184223 = slim_v_bounded_n184203 && slim_v_enough_n184213;
+(void)slim_v_sized_n184223;
+if (slim_v_sized_n184223) {
 {
-int64_t slim_v_closing_n184221 = {0};
-slim_v_closing_n184221 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n184154, slim_v_root_n184161, slim_allocation_region);
-(void)slim_v_closing_n184221;
+int64_t slim_v_closing_n184238 = {0};
+slim_v_closing_n184238 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n184171, slim_v_root_n184178, slim_allocation_region);
+(void)slim_v_closing_n184238;
 {
-bool slim_v_root_95form_n184231 = {0};
-slim_v_root_95form_n184231 = slim_fn_syntax_95ast_95node_95is_95list(slim_v_tokens_n184154, slim_v_root_n184161, slim_allocation_region);
-(void)slim_v_root_95form_n184231;
+bool slim_v_root_95form_n184248 = {0};
+slim_v_root_95form_n184248 = slim_fn_syntax_95ast_95node_95is_95list(slim_v_tokens_n184171, slim_v_root_n184178, slim_allocation_region);
+(void)slim_v_root_95form_n184248;
 {
-bool slim_v_module_95head_n184241 = {0};
-slim_v_module_95head_n184241 = slim_fn_syntax_95ast_95module_95is(slim_v_source_n184150, slim_v_tokens_n184154, slim_v_root_n184161, slim_allocation_region);
-(void)slim_v_module_95head_n184241;
+bool slim_v_module_95head_n184258 = {0};
+slim_v_module_95head_n184258 = slim_fn_syntax_95ast_95module_95is(slim_v_source_n184167, slim_v_tokens_n184171, slim_v_root_n184178, slim_allocation_region);
+(void)slim_v_module_95head_n184258;
 {
-bool slim_v_module_95name_n184252 = {0};
-int64_t slim_t_184258 = {0};
-slim_t_184258 = slim_fn_syntax_95ast_95module_95name(slim_v_root_n184161, slim_allocation_region);
-slim_v_module_95name_n184252 = slim_fn_validate_95atom_95at(slim_v_tokens_n184154, slim_t_184258, slim_allocation_region);
-(void)slim_v_module_95name_n184252;
+bool slim_v_module_95name_n184269 = {0};
+int64_t slim_t_184275 = {0};
+slim_t_184275 = slim_fn_syntax_95ast_95module_95name(slim_v_root_n184178, slim_allocation_region);
+slim_v_module_95name_n184269 = slim_fn_validate_95atom_95at(slim_v_tokens_n184171, slim_t_184275, slim_allocation_region);
+(void)slim_v_module_95name_n184269;
 {
-int64_t slim_v_close_95kind_n184266 = {0};
-slim_v_close_95kind_n184266 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n184154, slim_v_closing_n184221, slim_allocation_region);
-(void)slim_v_close_95kind_n184266;
+int64_t slim_v_close_95kind_n184283 = {0};
+slim_v_close_95kind_n184283 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n184171, slim_v_closing_n184238, slim_allocation_region);
+(void)slim_v_close_95kind_n184283;
 {
-bool slim_v_close_95valid_n184276 = {0};
-slim_v_close_95valid_n184276 = slim_v_close_95kind_n184266 == INT64_C(1);
-(void)slim_v_close_95valid_n184276;
+bool slim_v_close_95valid_n184293 = {0};
+slim_v_close_95valid_n184293 = slim_v_close_95kind_n184283 == INT64_C(1);
+(void)slim_v_close_95valid_n184293;
 {
-bool slim_v_first_n184286 = {0};
-slim_v_first_n184286 = slim_v_root_95form_n184231 && slim_v_module_95head_n184241;
-(void)slim_v_first_n184286;
+bool slim_v_first_n184303 = {0};
+slim_v_first_n184303 = slim_v_root_95form_n184248 && slim_v_module_95head_n184258;
+(void)slim_v_first_n184303;
 {
-bool slim_v_second_n184296 = {0};
-slim_v_second_n184296 = slim_v_module_95name_n184252 && slim_v_close_95valid_n184276;
-(void)slim_v_second_n184296;
+bool slim_v_second_n184313 = {0};
+slim_v_second_n184313 = slim_v_module_95name_n184269 && slim_v_close_95valid_n184293;
+(void)slim_v_second_n184313;
 {
-bool slim_v_header_n184306 = {0};
-slim_v_header_n184306 = slim_v_first_n184286 && slim_v_second_n184296;
-(void)slim_v_header_n184306;
-if (slim_v_header_n184306) {
+bool slim_v_header_n184323 = {0};
+slim_v_header_n184323 = slim_v_first_n184303 && slim_v_second_n184313;
+(void)slim_v_header_n184323;
+if (slim_v_header_n184323) {
 {
-bool slim_v_strings_n184321 = {0};
-slim_v_strings_n184321 = slim_fn_validate_95string_95tokens_95valid(slim_v_source_n184150, slim_v_tokens_n184154, slim_v_root_n184161, slim_v_end_n184165, slim_allocation_region);
-(void)slim_v_strings_n184321;
-if (slim_v_strings_n184321) {
-int64_t slim_t_184341 = {0};
-slim_t_184341 = slim_fn_syntax_95ast_95module_95items(slim_v_root_n184161, slim_allocation_region);
-slim_result = slim_fn_validate_95item_95list_95valid(slim_v_source_n184150, slim_v_tokens_n184154, slim_t_184341, slim_v_closing_n184221, slim_allocation_region);
+bool slim_v_strings_n184338 = {0};
+slim_v_strings_n184338 = slim_fn_validate_95string_95tokens_95valid(slim_v_source_n184167, slim_v_tokens_n184171, slim_v_root_n184178, slim_v_end_n184182, slim_allocation_region);
+(void)slim_v_strings_n184338;
+if (slim_v_strings_n184338) {
+int64_t slim_t_184358 = {0};
+slim_t_184358 = slim_fn_syntax_95ast_95module_95items(slim_v_root_n184178, slim_allocation_region);
+slim_result = slim_fn_validate_95item_95list_95valid(slim_v_source_n184167, slim_v_tokens_n184171, slim_t_184358, slim_v_closing_n184238, slim_allocation_region);
 }
 else {
 slim_result = false;
@@ -84365,45 +84375,45 @@ slim_result = false;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid(SlimBytes slim_v_source_n184386, SlimVec slim_v_tokens_n184390, SlimRegion *slim_region) {
-(void)slim_v_source_n184386;
-(void)slim_v_tokens_n184390;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95module_95shape_95valid(SlimBytes slim_v_source_n184403, SlimVec slim_v_tokens_n184407, SlimRegion *slim_region) {
+(void)slim_v_source_n184403;
+(void)slim_v_tokens_n184407;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-int64_t slim_v_end_n184404 = {0};
-slim_v_end_n184404 = (slim_v_tokens_n184390).len;
-(void)slim_v_end_n184404;
-slim_result = slim_fn_validate_95module_95shape_95valid_95from(slim_v_source_n184386, slim_v_tokens_n184390, INT64_C(0), slim_v_end_n184404, slim_allocation_region);
+int64_t slim_v_end_n184421 = {0};
+slim_v_end_n184421 = (slim_v_tokens_n184407).len;
+(void)slim_v_end_n184421;
+slim_result = slim_fn_validate_95module_95shape_95valid_95from(slim_v_source_n184403, slim_v_tokens_n184407, INT64_C(0), slim_v_end_n184421, slim_allocation_region);
 }
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95executable_95shape_95valid(SlimBytes slim_v_source_n184426, SlimVec slim_v_tokens_n184430, SlimRegion *slim_region) {
-(void)slim_v_source_n184426;
-(void)slim_v_tokens_n184430;
+static SLIM_UNUSED_FUNCTION bool slim_fn_validate_95executable_95shape_95valid(SlimBytes slim_v_source_n184443, SlimVec slim_v_tokens_n184447, SlimRegion *slim_region) {
+(void)slim_v_source_n184443;
+(void)slim_v_tokens_n184447;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
 {
-bool slim_v_valid_n184444 = {0};
-slim_v_valid_n184444 = slim_fn_validate_95module_95shape_95valid(slim_v_source_n184426, slim_v_tokens_n184430, slim_allocation_region);
-(void)slim_v_valid_n184444;
-if (slim_v_valid_n184444) {
+bool slim_v_valid_n184461 = {0};
+slim_v_valid_n184461 = slim_fn_validate_95module_95shape_95valid(slim_v_source_n184443, slim_v_tokens_n184447, slim_allocation_region);
+(void)slim_v_valid_n184461;
+if (slim_v_valid_n184461) {
 {
-int64_t slim_v_closing_n184459 = {0};
-slim_v_closing_n184459 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n184430, INT64_C(0), slim_allocation_region);
-(void)slim_v_closing_n184459;
+int64_t slim_v_closing_n184476 = {0};
+slim_v_closing_n184476 = slim_fn_syntax_95ast_95list_95close(slim_v_tokens_n184447, INT64_C(0), slim_allocation_region);
+(void)slim_v_closing_n184476;
 {
-int64_t slim_v_mains_n184469 = {0};
-int64_t slim_t_184476 = {0};
-slim_t_184476 = slim_fn_syntax_95ast_95module_95items(INT64_C(0), slim_allocation_region);
-slim_v_mains_n184469 = slim_fn_validate_95main_95count(slim_v_source_n184426, slim_v_tokens_n184430, slim_t_184476, slim_v_closing_n184459, INT64_C(0), slim_allocation_region);
-(void)slim_v_mains_n184469;
-slim_result = slim_v_mains_n184469 == INT64_C(1);
+int64_t slim_v_mains_n184486 = {0};
+int64_t slim_t_184493 = {0};
+slim_t_184493 = slim_fn_syntax_95ast_95module_95items(INT64_C(0), slim_allocation_region);
+slim_v_mains_n184486 = slim_fn_validate_95main_95count(slim_v_source_n184443, slim_v_tokens_n184447, slim_t_184493, slim_v_closing_n184476, INT64_C(0), slim_allocation_region);
+(void)slim_v_mains_n184486;
+slim_result = slim_v_mains_n184486 == INT64_C(1);
 }
 }
 }

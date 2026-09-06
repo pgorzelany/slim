@@ -2521,7 +2521,30 @@ fn append_borrowed_return_issue(source: Bytes, tokens: Vec[syntax.Token], return
   else:
     void
 
-fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, bindings: @Vec[Binding], facts: @Vec[Fact], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> Void effects[alloc, partial]:
+fn check_function(source: Bytes, tokens: @Vec[syntax.Token], item: I64, facts: @Vec[Fact], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+  let scopes: Vec[ownership.Scope] = vec.new()
+  let initial_scope: ownership.Scope = ownership.Scope(parent: 1, rank: 0, ancestor: 1, depth: 0, alternatives: 0, arms: 0)
+  vec.push(@scopes, initial_scope)
+  vec.push(@scopes, initial_scope)
+  let frames: Vec[ownership.Frame] = vec.new()
+  let bindings: Vec[Binding] = vec.new()
+  let loan_slot: Binding = Binding(name: -1, type: -1, mode: 0, mutable: false, move_scope: -1, owner: -1, parent: -1, access_call: -1, access_mode: 0)
+  vec.push(@bindings, loan_slot)
+  vec.push(@bindings, loan_slot)
+  let params: I64 = syntax.ast_function_parameters(item)
+  let parent: I64 = bind_parameters(source, @tokens, syntax.ast_parameters_first(params), -1, @bindings)
+  let return_type: I64 = syntax.ast_function_return_type(tokens, item)
+  let effects: I64 = syntax.ast_function_effects(tokens, item)
+  let body: I64 = syntax.ast_function_body(tokens, item)
+  let typed: TypeRef = infer_expr(source, @tokens, body, return_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
+  let valid: Bool = type_valid(typed)
+  if valid:
+    append_borrowed_return_issue(source, tokens, return_type, body, bindings, @issues)
+  else:
+    void
+  retain_binding_facts(source, tokens, bindings, 2, @facts)
+
+fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], index: I64, facts: @Vec[Fact], issues: @Vec[Issue]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(declarations)
   let done: Bool = index >= count
   let failed: Bool = issues_block_inference(issues)
@@ -2533,22 +2556,11 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[
     let item: I64 = declaration.form
     let function: Bool = syntax.ast_item_is_function(source, tokens, item)
     if function:
-      let params: I64 = syntax.ast_function_parameters(item)
-      let parent: I64 = bind_parameters(source, @tokens, syntax.ast_parameters_first(params), -1, @bindings)
-      let return_type: I64 = syntax.ast_function_return_type(tokens, item)
-      let effects: I64 = syntax.ast_function_effects(tokens, item)
-      let body: I64 = syntax.ast_function_body(tokens, item)
-      let typed: TypeRef = infer_expr(source, @tokens, body, return_type, parent, params, return_type, @bindings, @facts, @issues, @scopes, @frames)
-      let valid: Bool = type_valid(typed)
-      if valid:
-        append_borrowed_return_issue(source, tokens, return_type, body, bindings, @issues)
-      else:
-        void
-      void
+      check_function(source, @tokens, item, @facts, @issues)
     else:
       void
     let next: I64 = index + 1
-    recur(source, @tokens, declarations, next, @bindings, @facts, @issues, @scopes, @frames)
+    recur(source, @tokens, declarations, next, @facts, @issues)
 
 fn retain_binding_facts(source: Bytes, tokens: Vec[syntax.Token], bindings: Vec[Binding], index: I64, facts: @Vec[Fact]) -> Void effects[partial]:
   if index >= vec.len(bindings):
@@ -2563,15 +2575,6 @@ fn retain_binding_facts(source: Bytes, tokens: Vec[syntax.Token], bindings: Vec[
 fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> View effects[alloc, partial]:
   syntax.link_declaration_names(source, @tokens)
   link_declaration_locals(source, @tokens, declarations, 0)
-  let scopes: Vec[ownership.Scope] = vec.new()
-  let initial_scope: ownership.Scope = ownership.Scope(parent: 1, rank: 0, ancestor: 1, depth: 0, alternatives: 0, arms: 0)
-  vec.push(@scopes, initial_scope)
-  vec.push(@scopes, initial_scope)
-  let frames: Vec[ownership.Frame] = vec.new()
-  let bindings: Vec[Binding] = vec.new()
-  let loan_slot: Binding = Binding(name: -1, type: -1, mode: 0, mutable: false, move_scope: -1, owner: -1, parent: -1, access_call: -1, access_mode: 0)
-  vec.push(@bindings, loan_slot)
-  vec.push(@bindings, loan_slot)
   let facts: Vec[Fact] = vec.new()
   initialize_facts(tokens, 0, @facts)
   let issues: Vec[Issue] = vec.new()
@@ -2581,6 +2584,5 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     void
   else:
     check_declaration_types(source, tokens, declarations, 0, @issues)
-  check_functions(source, @tokens, declarations, 0, @bindings, @facts, @issues, @scopes, @frames)
-  retain_binding_facts(source, tokens, bindings, 2, @facts)
+  check_functions(source, @tokens, declarations, 0, @facts, @issues)
   View(facts: facts, issues: issues)

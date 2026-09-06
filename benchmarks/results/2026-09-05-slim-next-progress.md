@@ -1221,7 +1221,7 @@ Validation and observations:
   these record sizes are not peak-memory measurements or portable ABI promises.
 - All 10 unit and 62 integration tests pass, plus the expanded LF/CRLF and duplicate
   source tests. Conformance remains 331 fixtures and 2,000 malformed-input mutations.
-  Bootstrap, governance, formatting, Clippy, required performance/reduction/
+  Bootstrap, governance, formatting, required performance/reduction/
   parallelism/comparison/agent gates, and resource/parallel-runtime/incremental/work
   gates pass. ASan/UBSan execute the production mapping fixture; the 128-ordinal
   source-index campaign still observes 109 failures with exit 71 and no estimate,
@@ -1251,3 +1251,88 @@ the complete configuration identity, and full M1 differential/reuse/release gate
 remain required. The previously recorded C type-definition ordering and minimum
 I64 literal emission issues remain open for the emission stage. Detailed logs are
 under `build/slim-next-m1/revision-mapping/`.
+
+
+## M1 independent function checking — 2026-09-06
+
+RFC-0127 makes the existing production function checker independently callable.
+Each call creates its own binding, loan, ownership-scope, and branch-frame scratch
+state; parameter/body/borrowed-return rules remain in the same SLIM implementation.
+Binding facts are materialized into current canonical-source slots before the
+operation returns. The whole-program driver retains its lexical order, global
+link/layout/interface checks, diagnostic stop policy, and downstream analyses.
+There is one inference implementation and no retained semantic result yet.
+
+The positive scratch links on binding-name tokens now start locally in each
+function. Canonical declaration links and retained facts remain the interface to
+downstream consumers. The current conservative memory planner uses the caller
+region for a function with exclusive output parameters, so physical scratch
+allocations remain until that region closes. Logical independence is implemented;
+per-function physical reclamation is not. This distinction is explicit in the
+accepted contract and must remain visible during retained-session storage design.
+
+Validation:
+
+- The production SLIM checker probe checks all 92 accepted conformance/native
+  files in reverse and then forward order, comparing every type/mode fact and all
+  six fields of every canonical token with ordinary checking. This covers owned
+  parameters, loans, branch reinitialization, and recurrence. Cargo and the
+  permanent ASan/UBSan verification script run the same probe.
+- Baseline 2a37677 and candidate produce identical status/stdout/stderr for all
+  193 rejected fixtures. All 20 native applications produce identical generated
+  C and complete analysis. The existing M0 ownership path oracles remain passing.
+- Bootstrap reproduces **3,610,169 C bytes**, SHA-256
+  `bcca014c1c2ac92a45d4189e7377d447297dcd12843f6a4a91ec1111ecbbcd36`,
+  715 bytes above 2a37677. All 10 unit and 63 integration tests, 331 conformance
+  fixtures plus 2,000 deterministic mutations, governance, formatting, Clippy,
+  required performance/reduction/parallelism/comparison/agent gates, and
+  resources/parallel-runtime/incremental/work gates pass.
+- Clippy found `revision_mapping_campaign` placed after the test module in the
+  previous checkpoint. Moving the test module last fixes it without changing
+  behavior. The previous section's blanket Clippy-pass claim was inaccurate for
+  that final file ordering; this checkpoint supplies the corrected passing result.
+- The work observer now has 42 counters. The generated family checks exactly N+1
+  bodies and visits 2(N+1) binding-materialization headers. A permanent bound of
+  16N+128 allocation attempts holds for check and emission. Allocation counters
+  include an injected failed attempt and exclude subsequent declined calls;
+  requested bytes exclude runtime metadata/libc overhead and do not mean peak
+  memory. [504 geometric work rows](2026-09-06-m1-function-work.tsv) retain
+  ordinary-versus-sanitized output equality and repeated exact observations.
+- The 128-ordinal ownership fault campaign reaches 111 failures, including 26
+  after function checking begins (86–111), and 17 successful ordinals beyond the
+  allocations made. Every failed attempt equals its injected ordinal and has
+  no partial standard output. [Per-ordinal results](2026-09-06-m1-function-faults.tsv)
+  are retained. Source-identity and revision-map sanitizer probes and both older
+  allocation-fault campaigns remain passing; no gate is removed or relaxed.
+
+[Uninstrumented paired measurements](2026-09-06-m1-function-checking.tsv) use eleven
+alternating-order pairs after two warmups at six sizes from 125 to 4,000 functions.
+At 1,000 functions, checking takes 7.500 ms versus 7.215 ms (1.040 ratio), while
+emission takes 14.090 ms versus 13.967 ms (1.009 ratio). At 4,000, these ratios
+are 1.042 and 1.034. Native output and diagnostics match for every timed run.
+
+[Separate allocation measurements](2026-09-06-m1-function-allocation.tsv) record
+attempts, cumulative requested payload, and peak live payload. At 1,000 functions,
+checking makes 9,099 versus 7,106 attempts and requests 9,226,388 versus 8,412,692
+payload bytes; peak live payload is 6,058,867 versus 5,172,019 bytes (1.171 ratio).
+At 4,000, peak payload is 24,230,179 versus 20,684,515 bytes. Emission's peak
+payload at 1,000 is 26,446,899 versus 25,560,051 bytes. The additional setup remains
+linear but is a real cost: RFC-0127 records Compile -1, Analysis +2, score 5.
+
+The separate memory observer increments attempts/requested bytes at the existing
+runtime attempt increment, adds live payload after successful `calloc`, subtracts
+the stored allocation size at both existing free sites, and reports at process
+exit. Checked U64 arithmetic rejects observer overflow; every measured run ends
+with zero live payload and the same standard output as the ordinary compiler.
+These figures exclude runtime headers, allocator overhead, and external C backend
+memory; they are not RSS measurements. Compiler binaries use the ordinary strict
+O2 flags; the observer is compiled separately with assertions enabled. Timing runs
+use uninstrumented binaries. Artifacts record compiler/runtime/observer identities.
+
+M1 remains **in progress**. This checkpoint establishes a reusable body-check
+operation, not a control-flow graph, typed persistent semantic facts, retained
+queries, complete dependency observation, transactional publication, or cached
+analysis/C/backend work. Those requirements, the two recorded C emission defects,
+and full M1 differential/locality/release validation remain outstanding. Detailed
+logs and the separate measurement recipe are under
+`build/slim-next-m1/function-checking/`.

@@ -21,6 +21,13 @@ foundation is implemented; retaining checked declarations and emitted C remains
 M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
 are recorded separately from the historical estimates.
 
+[RFC-0127](../design/rfcs/0127-isolated-function-checking.md) makes the existing
+function body checker independently callable with fresh binding/loan/ownership
+scratch and materialized source facts. Forward, reverse, and repeated checking
+produce identical facts and links over the accepted regression corpus. Physical
+scratch allocations still live in the caller's region. This is a prerequisite
+for declaration queries; it does not yet retain checked results across revisions.
+
 The four integers printed by the internal `session` command retain historical
 field names `parsed lowered checked generated`. They are **invalidation
 estimates**, not counters of operations performed. In `query.measure_update`,

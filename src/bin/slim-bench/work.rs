@@ -111,6 +111,18 @@ const HOOKS: &[Hook] = &[
         amount: "1",
     },
     Hook {
+        metric: "function_check_calls",
+        function: "typing.check_function",
+        point: Point::Entry,
+        amount: "1",
+    },
+    Hook {
+        metric: "binding_fact_materialization_steps",
+        function: "typing.retain_binding_facts",
+        point: Point::Header,
+        amount: "1",
+    },
+    Hook {
         metric: "expression_check_calls",
         function: "typing.infer_expr",
         point: Point::Entry,
@@ -245,12 +257,14 @@ const HOOKS: &[Hook] = &[
 ];
 const READ_CALL: &str = "file_read_calls";
 const READ_BYTES: &str = "file_read_bytes";
+const ALLOC_ATTEMPTS: &str = "allocation_attempts";
+const ALLOC_BYTES: &str = "allocation_requested_bytes";
 
 fn names() -> Vec<&'static str> {
     HOOKS
         .iter()
         .map(|hook| hook.metric)
-        .chain([READ_CALL, READ_BYTES])
+        .chain([READ_CALL, READ_BYTES, ALLOC_ATTEMPTS, ALLOC_BYTES])
         .collect()
 }
 
@@ -358,9 +372,19 @@ fn instrument(seed: &str) -> Result<String, String> {
 }
 
 fn instrument_runtime(runtime: &str) -> Result<String, String> {
-    let call = "bool slim_read_file(SlimBytes path, SlimVec *output) {\n";
+    let allocation = "    uint64_t attempt = atomic_fetch_add(&status->attempts, 1) + 1;\n";
     let runtime = replace_once(
         runtime,
+        allocation,
+        &format!(
+            "{allocation}    slim_work_add({}, 1);\n    slim_work_add({}, (uint64_t)size);\n",
+            HOOKS.len() + 2,
+            HOOKS.len() + 3
+        ),
+    )?;
+    let call = "bool slim_read_file(SlimBytes path, SlimVec *output) {\n";
+    let runtime = replace_once(
+        &runtime,
         call,
         &format!("{call}    slim_work_add({}, 1);\n", HOOKS.len()),
     )?;
@@ -735,6 +759,12 @@ pub(super) fn run() {
             assert_eq!(result.exact("typing_calls"), 1);
             assert_eq!(result.exact("declaration_index_steps"), size as u64 + 2);
             assert_eq!(result.exact("typing_declaration_steps"), size as u64 + 2);
+            assert_eq!(result.exact("function_check_calls"), size as u64 + 1);
+            assert!(result.exact(ALLOC_ATTEMPTS) <= 16 * size as u64 + 128);
+            assert_eq!(
+                result.exact("binding_fact_materialization_steps"),
+                2 * (size as u64 + 1)
+            );
             assert_eq!(result.exact("expression_check_calls"), 2 * size as u64 + 3);
             assert!(result.exact("source_lexer_steps") <= 2 * source.len() as u64 + 1);
             assert!(result.exact("name_insert_steps") > 0);
@@ -803,6 +833,8 @@ pub(super) fn run() {
         }
     }
     let witness = root.join("conformance/pass/reinit_branches.slim");
+    let mut failed_inside_function = false;
+    let mut passed_beyond_function_allocations = false;
     for ordinal in 1..=128 {
         let result = runner.observe(
             &format!("allocation-fault-{ordinal}"),
@@ -811,11 +843,20 @@ pub(super) fn run() {
         );
         assert!([Some(0), Some(71)].contains(&result.output.status.code()));
         assert_eq!(result.exact("c_generation_calls"), 0);
+        if result.output.status.code() == Some(71) {
+            assert_eq!(result.exact(ALLOC_ATTEMPTS), ordinal as u64);
+            assert!(result.output.stdout.is_empty());
+            failed_inside_function |= result.exact("function_check_calls") > 0;
+        } else {
+            passed_beyond_function_allocations = true;
+        }
         if ordinal == 1 {
             assert_eq!(result.exact("program_parse_calls"), 0);
             assert_eq!(result.exact("checker_calls"), 0);
         }
     }
+    assert!(failed_inside_function);
+    assert!(passed_beyond_function_allocations);
     assert_eq!(
         fs::read(&runner.ordinary).unwrap(),
         ordinary_bytes,
@@ -1122,102 +1163,6 @@ fn execute_backend(directory: &Path, case: &str, generated: &[u8]) {
     );
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn observation_anchors_reject_missing_or_duplicate_definitions() {
-        let seed = fs::read_to_string(repository_root().join("bootstrap/slimc-seed.c")).unwrap();
-        assert!(instrument(&seed).is_ok());
-        assert!(instrument("").is_err());
-        assert!(instrument(&format!("{seed}{seed}")).is_err());
-        assert!(replace_once("same same", "same", "new").is_err());
-        assert!(instrument_runtime("").is_err());
-    }
-
-    #[test]
-    fn missing_and_incomplete_observations_are_unknown() {
-        let directory = TemporaryDirectory::new("missing-work-report");
-        let report = directory.path.join("report");
-        assert!(read_report(&report, CAP).unwrap_err().contains("unknown"));
-        fs::write(&report, format!("slim-work\t1\t{CAP}\n")).unwrap();
-        assert!(read_report(&report, CAP).is_err());
-    }
-
-    #[test]
-    fn native_counters_saturate_without_overflow_and_preserve_exact_zeros() {
-        let root = repository_root();
-        let directory = TemporaryDirectory::new("work-counter-cap");
-        write_support(&directory.path, 7);
-        let source = directory.path.join("exercise.c");
-        fs::write(&source, "#include \"work_probe.h\"\nint main(void) { slim_work_init(); slim_work_add(0, UINT64_MAX); slim_work_add(0, UINT64_MAX); slim_work_add(1, 7); slim_work_add(1, 1); slim_work_add(2, 6); slim_work_add(3, 7); return 0; }\n").unwrap();
-        let binary = directory.path.join("exercise");
-        let build = Command::new("cc")
-            .args([
-                "-std=c11",
-                "-Wall",
-                "-Wextra",
-                "-Werror",
-                "-fsanitize=undefined",
-            ])
-            .arg("-I")
-            .arg(&directory.path)
-            .arg(&source)
-            .arg(root.join("benchmarks/instrumentation/work_probe.c"))
-            .arg(directory.path.join("work_names.c"))
-            .arg("-o")
-            .arg(&binary)
-            .output()
-            .unwrap();
-        assert!(
-            build.status.success(),
-            "{}",
-            String::from_utf8_lossy(&build.stderr)
-        );
-        let report = directory.path.join("report.tsv");
-        let output = Command::new(binary)
-            .env("SLIM_WORK_REPORT", &report)
-            .output()
-            .unwrap();
-        assert!(output.status.success() && output.stdout.is_empty() && output.stderr.is_empty());
-        let counters = read_report(&report, 7).unwrap();
-        let metrics = names();
-        for name in &metrics[0..2] {
-            assert_eq!(
-                counters[*name],
-                Counter {
-                    value: 7,
-                    bounded: true
-                }
-            );
-        }
-        assert_eq!(
-            counters[metrics[2]],
-            Counter {
-                value: 6,
-                bounded: false
-            }
-        );
-        assert_eq!(
-            counters[metrics[3]],
-            Counter {
-                value: 7,
-                bounded: false
-            }
-        );
-        for name in &metrics[4..] {
-            assert_eq!(
-                counters[*name],
-                Counter {
-                    value: 0,
-                    bounded: false
-                }
-            );
-        }
-    }
-}
-
 fn revision_mapping_campaign(runner: &mut Runner) {
     let directory = runner.directory.join("revision-mapping");
     fs::create_dir(&directory).unwrap();
@@ -1319,4 +1264,100 @@ fn revision_mapping_campaign(runner: &mut Runner) {
         passed_beyond_allocations,
         "fault campaign did not cross all allocations of its fixture"
     );
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn observation_anchors_reject_missing_or_duplicate_definitions() {
+        let seed = fs::read_to_string(repository_root().join("bootstrap/slimc-seed.c")).unwrap();
+        assert!(instrument(&seed).is_ok());
+        assert!(instrument("").is_err());
+        assert!(instrument(&format!("{seed}{seed}")).is_err());
+        assert!(replace_once("same same", "same", "new").is_err());
+        assert!(instrument_runtime("").is_err());
+    }
+
+    #[test]
+    fn missing_and_incomplete_observations_are_unknown() {
+        let directory = TemporaryDirectory::new("missing-work-report");
+        let report = directory.path.join("report");
+        assert!(read_report(&report, CAP).unwrap_err().contains("unknown"));
+        fs::write(&report, format!("slim-work\t1\t{CAP}\n")).unwrap();
+        assert!(read_report(&report, CAP).is_err());
+    }
+
+    #[test]
+    fn native_counters_saturate_without_overflow_and_preserve_exact_zeros() {
+        let root = repository_root();
+        let directory = TemporaryDirectory::new("work-counter-cap");
+        write_support(&directory.path, 7);
+        let source = directory.path.join("exercise.c");
+        fs::write(&source, "#include \"work_probe.h\"\nint main(void) { slim_work_init(); slim_work_add(0, UINT64_MAX); slim_work_add(0, UINT64_MAX); slim_work_add(1, 7); slim_work_add(1, 1); slim_work_add(2, 6); slim_work_add(3, 7); return 0; }\n").unwrap();
+        let binary = directory.path.join("exercise");
+        let build = Command::new("cc")
+            .args([
+                "-std=c11",
+                "-Wall",
+                "-Wextra",
+                "-Werror",
+                "-fsanitize=undefined",
+            ])
+            .arg("-I")
+            .arg(&directory.path)
+            .arg(&source)
+            .arg(root.join("benchmarks/instrumentation/work_probe.c"))
+            .arg(directory.path.join("work_names.c"))
+            .arg("-o")
+            .arg(&binary)
+            .output()
+            .unwrap();
+        assert!(
+            build.status.success(),
+            "{}",
+            String::from_utf8_lossy(&build.stderr)
+        );
+        let report = directory.path.join("report.tsv");
+        let output = Command::new(binary)
+            .env("SLIM_WORK_REPORT", &report)
+            .output()
+            .unwrap();
+        assert!(output.status.success() && output.stdout.is_empty() && output.stderr.is_empty());
+        let counters = read_report(&report, 7).unwrap();
+        let metrics = names();
+        for name in &metrics[0..2] {
+            assert_eq!(
+                counters[*name],
+                Counter {
+                    value: 7,
+                    bounded: true
+                }
+            );
+        }
+        assert_eq!(
+            counters[metrics[2]],
+            Counter {
+                value: 6,
+                bounded: false
+            }
+        );
+        assert_eq!(
+            counters[metrics[3]],
+            Counter {
+                value: 7,
+                bounded: false
+            }
+        );
+        for name in &metrics[4..] {
+            assert_eq!(
+                counters[*name],
+                Counter {
+                    value: 0,
+                    bounded: false
+                }
+            );
+        }
+    }
 }

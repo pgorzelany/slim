@@ -1,0 +1,80 @@
+module zzprobe
+
+fn check_order(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], step: I64, reverse: Bool, facts: @Vec[typing.Fact], issues: @Vec[typing.Issue]) -> Void effects[alloc, partial]:
+  let count: I64 = vec.len(declarations)
+  if step >= count:
+    void
+  else:
+    let index: I64 = if reverse:
+      (count - 1) - step
+    else:
+      step
+    let declaration: ir.Declaration = vec.get(declarations, index)
+    let item: I64 = declaration.form
+    if syntax.ast_item_is_function(source, tokens, item):
+      typing.link_function_locals(source, @tokens, item)
+      typing.check_function(source, @tokens, item, @facts, @issues)
+    else:
+      void
+    let next: I64 = step + 1
+    recur(source, @tokens, declarations, next, reverse, @facts, @issues)
+
+fn same_facts(left: Vec[typing.Fact], right: Vec[typing.Fact], index: I64) -> Bool effects[partial]:
+  if index >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if index < vec.len(right):
+      let a: typing.Fact = vec.get(left, index)
+      let b: typing.Fact = vec.get(right, index)
+      if (a.tag == b.tag) && (a.form == b.form):
+        let next: I64 = index + 1
+        recur(left, right, next)
+      else:
+        false
+    else:
+      false
+
+fn same_tokens(left: Vec[syntax.Token], right: Vec[syntax.Token], index: I64) -> Bool effects[partial]:
+  if index >= vec.len(left):
+    vec.len(left) == vec.len(right)
+  else:
+    if index < vec.len(right):
+      let a: syntax.Token = vec.get(left, index)
+      let b: syntax.Token = vec.get(right, index)
+      if (((((a.kind == b.kind) && (a.tag == b.tag)) && (a.start == b.start)) && (a.end == b.end)) && (a.link == b.link)) && (a.next == b.next):
+        let next: I64 = index + 1
+        recur(left, right, next)
+      else:
+        false
+    else:
+      false
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let path: Bytes = vec.get(args, 1)
+  let bytes: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(path, @bytes)
+  let source: Bytes = bytes.freeze(^bytes)
+  let baseline_tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @baseline_tokens)
+  let baseline: typing.Checked = check.check_source_deferred(source, @baseline_tokens)
+  if (read && parsed.valid) && (baseline.status == 0):
+    let tokens: Vec[syntax.Token] = vec.new()
+    let parsed_again: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+    syntax.link_declaration_names(source, @tokens)
+    let declarations: Vec[ir.Declaration] = syntax.index_declarations(source, tokens)
+    let facts: Vec[typing.Fact] = vec.new()
+    typing.initialize_facts(tokens, 0, @facts)
+    let issues: Vec[typing.Issue] = vec.new()
+    check_order(source, @tokens, declarations, 0, true, @facts, @issues)
+    let reversed: Bool = ((parsed_again.valid && (vec.len(issues) == 0)) && same_facts(baseline.view.facts, facts, 0)) && same_tokens(baseline_tokens, tokens, 0)
+    check_order(source, @tokens, declarations, 0, false, @facts, @issues)
+    let repeated: Bool = ((vec.len(issues) == 0) && same_facts(baseline.view.facts, facts, 0)) && same_tokens(baseline_tokens, tokens, 0)
+    if reversed && repeated:
+      io.println("ok isolated function checking")
+      0
+    else:
+      io.println("failed isolated function checking")
+      1
+  else:
+    io.println("fixture must be accepted by the normal checker")
+    1
