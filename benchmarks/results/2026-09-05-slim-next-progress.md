@@ -14,7 +14,7 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | Checkpoint `49ea4a0` validates internal retained parsing, typing, memory plans, range queries and C function fragments with transactional recovery. Typed identities are implemented; RFC-0141 adds validated shared control descriptions and continuation-based ownership orchestration. Public host-bound sessions, retained global analyses, native backend caching, the recorded emission repair and full closure remain. |
+| M1: compiler substrate | in progress | Checkpoint `bdb18d2` validates internal retained parsing, typing, memory plans, range queries, C fragments and shared checking continuations. The following literal-Bytes address repair passes the complete checkpoint gate. Public host-bound sessions, retained global analyses, native backend caching, a newly identified hexadecimal-escape repair and full closure remain. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -24,9 +24,9 @@ portable C seed.
 
 ## Current M1 closure ledger
 
-This ledger includes the validated RFC-0141 fixed point
-`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`
-on top of checkpoint `49ea4a0`; dated sections below preserve historical costs
+This ledger includes the validated literal-Bytes address fixed point
+`3f1b6b59620d838d5164de0b974e865b85fdee7397c9c109e4c7fa769eee378d`
+on top of checkpoint `bdb18d2`; dated sections below preserve historical costs
 and checkpoint-specific results. An implemented internal query
 is not evidence that the public session already provides that query.
 
@@ -36,10 +36,10 @@ is not evidence that the public session already provides that query.
 | Branch/recurrence ownership foundation | RFC-0129/0141 share canonical form and lexical-scope descriptions between the optional graph and explicit checking continuations. The normal checker remains the sole producer of move, availability and loan decisions; all expression families are migrated. | Preserve the validated transitions and source-relative bounds through public session integration. The separate recursive name-resolution prepass retains its documented sanitizer depth limit. |
 | Reusable declaration queries | RFC-0130/0131/0132/0135 retain typing and parsing with validated dependencies and current source links. | Exercise the same production queries through real public updates and preserve locality through the remaining analysis integration. |
 | Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. Complete current global scans and parallel analysis still execute. | Retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
-| Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. The 96 accepted-fixture differential is raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly; repair the baseline literal-Bytes storage-address emission defect reproduced during RFC-0141 validation. |
+| Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. Literal Bytes now have valid vector/arena insertion addresses; the existing 96-fixture differential remains raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly; repair the separate fixed-width hexadecimal-escape boundary defect recorded in the literal-storage report. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs, admitted usage, last-good snapshots and failed-update recovery; RFC-0140 tests malformed fragment metadata and damaged bytes. | Bind compiler/runtime/target/options to the actual host, implement public transport and owning-epoch cleanup/reset, and retain explicit last-good revision identities. |
 | Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
-| Differential, locality and release evidence | Every completed child has measured domains and required checkpoint gates. RFC-0140 passes the full session sanitizer campaign, 6,144 fault ordinals and unchanged durable budgets. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
+| Differential, locality and release evidence | The literal-address fixed point passes one complete `scripts/verify.sh` run, including 6,144 session fault ordinals and unchanged durable budgets. Quiet baseline controls and exact C/analysis comparisons are recorded. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
 
 The public `session` command still reports invalidation estimates. The complete
 M1 goal remains active; none of the remaining rows is waived by the C-fragment
@@ -3239,3 +3239,33 @@ applications retain exact C and output in the 20-application domain.
 M1 remains in progress. Public host-bound sessions and owning-epoch lifecycle,
 retained global/parallel analyses, native backend caching, the literal-Bytes
 storage-address repair and integrated full release closure remain required.
+
+
+## Literal Bytes storage addresses (2026-09-07)
+
+On top of `bdb18d2`, the accepted literal Bytes value now receives an addressable
+C11 descriptor when inserted into a vector or arena. The old emitter produced
+an undeclared binding name. Twenty native insertion/read cases cover empty,
+escaped and binary bytes, named values, returned values and both storage growth
+paths. Ordinary and ASan/UBSan runs each preserve exact output and five failures
+among 64 injected allocation positions. Four source rejections retain their
+exact ordered diagnostics. The existing 96 accepted and 197 rejected fixture
+differentials remain exact, including C bytes, analysis and native worker modes.
+
+The portable fixed point is 4,433,406 C bytes, SHA-256
+`3f1b6b59620d838d5164de0b974e865b85fdee7397c9c109e4c7fa769eee378d`:
++1,034 bytes (0.0233%). One complete `scripts/verify.sh` invocation exits zero,
+including all required commands and the extended sanitizer/fault campaigns.
+Quiet 18-group baseline controls cover 26 check/emission measurements; every
+median above one stays below the corresponding control upper quartile.
+Self-hosting check/emission ratios are 1.00310/0.99981. The
+[repair report](2026-09-07-m1-literal-storage.md) links raw costs, the exact
+C differential and identified gate results. No performance gate is relaxed.
+
+A separate boundary check found that both the baseline and repaired compiler
+interpret the valid SLIM literal `"\x00A"` as one native byte rather than the
+specified zero byte followed by `A`. Copying the token into C lets its hexadecimal
+escape consume the following digit. That defect is recorded for the next repair;
+this address checkpoint does not claim to fix all literal emission. M1 remains
+active with that repair, public sessions, global analysis reuse, native caching
+and integrated release closure still required.

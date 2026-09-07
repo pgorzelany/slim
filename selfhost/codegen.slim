@@ -7,21 +7,27 @@ fn emit_value_address(source: Bytes, tokens: Vec[syntax.Token], params: I64, val
     text.append_text(@output, "&")
     emit_temp_name(params, value, @output)
   else:
-    let true_value: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
-    let false_value: Bool = syntax.ast_node_text_is(source, tokens, value, "false")
-    let boolean: Bool = true_value || false_value
-    if boolean:
-      text.append_text(@output, "&(bool){")
+    let string_value: Bool = kind == 3
+    if string_value:
+      text.append_text(@output, "&((SlimBytes[]){")
       emit_value(source, tokens, params, value, @output)
-      text.append_text(@output, "}")
+      text.append_text(@output, "})[0]")
     else:
-      let number: Bool = syntax.first_byte_is_number(source, tokens, value)
-      if number:
-        text.append_text(@output, "&(int64_t){")
+      let true_value: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
+      let false_value: Bool = syntax.ast_node_text_is(source, tokens, value, "false")
+      let boolean: Bool = true_value || false_value
+      if boolean:
+        text.append_text(@output, "&(bool){")
         emit_value(source, tokens, params, value, @output)
         text.append_text(@output, "}")
       else:
-        emit_binding_address(source, tokens, params, value, @output)
+        let number: Bool = syntax.first_byte_is_number(source, tokens, value)
+        if number:
+          text.append_text(@output, "&(int64_t){")
+          emit_value(source, tokens, params, value, @output)
+          text.append_text(@output, "}")
+        else:
+          emit_binding_address(source, tokens, params, value, @output)
 
 fn index_has_versioned_bound(tokens: Vec[syntax.Token], index: I64, range_facts: Vec[ranges.Fact]) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, index)

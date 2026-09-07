@@ -375,8 +375,10 @@ session. The checkpoint measures frontend/backend/runtime/resource costs separat
 including initial regressions and final noise controls, without a general speedup
 claim or relaxed budget.
 
-The remaining public host-bound service, retained global analysis, native backend
-caching, recorded literal-Bytes emission repair and integrated
+The literal-Bytes storage-address repair passes the complete checkpoint gate;
+the separate fixed-width hexadecimal-escape defect is recorded in the progress
+report. The remaining public host-bound service, retained global analysis, native backend
+caching, hexadecimal-escape repair and integrated
 differential/locality/release obligations must all pass before this parent is
 complete. M0 remains the historical comparison baseline, not a claim that the
 current seed is unchanged.
