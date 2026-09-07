@@ -600,6 +600,62 @@ fn emit_integer(source: Bytes, tokens: Vec[syntax.Token], value: I64, output: @V
     text.append_span(source, start, end, @output)
     text.append_text(@output, ")")
 
+fn hexadecimal_digit(code: I64) -> Bool:
+  ((code >= 48) && (code <= 57)) || (((code >= 65) && (code <= 70)) || ((code >= 97) && (code <= 102)))
+
+fn trigraph_suffix(code: I64) -> Bool:
+  ((code == 61) || (code == 47)) || (((code == 39) || (code == 40)) || (((code == 41) || (code == 33)) || (((code == 60) || (code == 62)) || (code == 45))))
+
+fn emit_string_span(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= end:
+    void
+  else:
+    let byte: U8 = bytes.get(source, index)
+    vec.push(@output, byte)
+    let code: I64 = u8.to_i64(byte)
+    if (code == 92) || (code == 63):
+      let remaining: I64 = end - index
+      if (code == 92) && (remaining > 1):
+        let escaped: U8 = bytes.get(source, index + 1)
+        vec.push(@output, escaped)
+        if (u8.to_i64(escaped) == 120) && (remaining > 4):
+          let first: U8 = bytes.get(source, index + 2)
+          let second: U8 = bytes.get(source, index + 3)
+          if hexadecimal_digit(u8.to_i64(first)) && hexadecimal_digit(u8.to_i64(second)):
+            vec.push(@output, first)
+            vec.push(@output, second)
+            let following: U8 = bytes.get(source, index + 4)
+            if hexadecimal_digit(u8.to_i64(following)):
+              text.append_text(@output, "\"\"")
+            else:
+              void
+            recur(source, index + 4, end, @output)
+          else:
+            recur(source, index + 2, end, @output)
+        else:
+          recur(source, index + 2, end, @output)
+      else:
+        if (code == 63) && (remaining > 2):
+          let following: U8 = bytes.get(source, index + 1)
+          if u8.to_i64(following) == 63:
+            let third: U8 = bytes.get(source, index + 2)
+            if trigraph_suffix(u8.to_i64(third)):
+              text.append_text(@output, "\"\"")
+            else:
+              void
+          else:
+            void
+        else:
+          void
+        recur(source, index + 1, end, @output)
+    else:
+      recur(source, index + 1, end, @output)
+
+fn emit_string_token(source: Bytes, tokens: Vec[syntax.Token], value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let start: I64 = syntax.ast_node_start(tokens, value)
+  let end: I64 = syntax.ast_node_end(tokens, value)
+  emit_string_span(source, start, end, @output)
+
 fn emit_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, value)
   let form: Bool = kind == 0
@@ -609,9 +665,9 @@ fn emit_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64,
     let string_value: Bool = kind == 3
     if string_value:
       text.append_text(@output, "slim_bytes_static((const uint8_t *)")
-      text.append_token(source, tokens, value, @output)
+      emit_string_token(source, tokens, value, @output)
       text.append_text(@output, ", (int64_t)(sizeof(")
-      text.append_token(source, tokens, value, @output)
+      emit_string_token(source, tokens, value, @output)
       text.append_text(@output, ") - 1))")
     else:
       let is_true: Bool = syntax.ast_node_text_is(source, tokens, value, "true")

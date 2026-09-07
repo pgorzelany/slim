@@ -1928,6 +1928,22 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
 }
 
 #[test]
+fn byte_literals_preserve_c_lexical_boundaries() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("python3")
+        .arg(root.join("scripts/verify-hex-literals.py"))
+        .arg(root.join("build/toolchain/slimc"))
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "{}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
+
+#[test]
 fn literal_bytes_have_native_storage_addresses() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let output = Command::new("python3")

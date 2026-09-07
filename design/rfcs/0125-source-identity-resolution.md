@@ -135,7 +135,7 @@ Implemented in the production `identity`, `query`, and `session` modules.
 The 7,350-result independent boundary oracle, source-index integration tests,
 reproduced seed, required compiler gates, and sanitizer/fault campaign pass.
 See the [M1 source identity checkpoint](../../benchmarks/results/2026-09-05-slim-next-progress.md)
-and [same-host measurements](../../benchmarks/results/2026-09-06-m1-source-identities.tsv).
+and [same-host measurements](../../benchmarks/results/archive/2026-09-06-m1-source-identities.tsv.gz).
 This completes this child boundary only; RFC-0124 and M1 remain incomplete.
 
 ## Removal and supersession

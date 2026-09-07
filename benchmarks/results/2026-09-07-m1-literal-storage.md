@@ -66,9 +66,9 @@ control's upper quartile. Self-hosting check/emission ratios are 1.00310/0.99981
 inside their respective control intervals. No expanded repeat was triggered by
 the recorded above-one/above-control-quartile rule.
 
-The [raw timings](2026-09-07-m1-literal-storage-latency.tsv),
-[summaries](2026-09-07-m1-literal-storage-latency-summary.tsv) and
-[exact C differential](2026-09-07-m1-literal-storage-differential.tsv) retain
+The [raw timings](archive/2026-09-07-m1-literal-storage-latency.tsv.gz),
+[summaries](archive/2026-09-07-m1-literal-storage-latency-summary.tsv.gz) and
+[exact C differential](archive/2026-09-07-m1-literal-storage-differential.tsv.gz) retain
 the measured scope. This is compiler process latency, not a native speedup for
 the newly repaired fixture, whose baseline C fails to compile.
 
@@ -81,7 +81,7 @@ benchmark gates, all continuation regressions, and the full sanitizer/recovery
 suffix. The new ordinary and sanitized native fixture each passes all 64 fault
 positions. Existing flow, retained typing/project, session, place, parser,
 integer and runtime failure campaigns retain their previous expected outcomes.
-The [gate and identity ledger](2026-09-07-m1-literal-storage-gates.tsv) records
+The [gate and identity ledger](archive/2026-09-07-m1-literal-storage-gates.tsv.gz) records
 the exact domains, source/tool hashes and full-run log identity. No gate or
 performance budget is waived.
 Public sessions, retained global analyses, native artifact caching and the full

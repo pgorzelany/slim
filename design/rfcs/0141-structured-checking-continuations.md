@@ -312,7 +312,7 @@ child requests in the same expression-entry metric, excluding parent resumes
 and the already-counted root. Its schema, caps and exact geometric expectations
 are preserved.
 
-[Checkpoint validation](../../benchmarks/results/2026-09-07-m1-continuations-token-read-checkpoint-gates.tsv)
+[Checkpoint validation](../../benchmarks/results/archive/2026-09-07-m1-continuations-token-read-checkpoint-gates.tsv.gz)
 passes all required commands and applicable gates. Complete state/graph and
 C/analysis comparisons remain exact over their named baseline domains. The
 continuation gate covers all 18 phases, 16,038 independent ownership cases,

@@ -1,8 +1,0 @@
-# date=2026-09-06; seed_sha256=86eadc2e41200ad66cd64f5497bb81c706e7ecaa248b6d4706077aa4b58e8a46; probe=ASan/UBSan,O1; each observation repeated identically; graph is first complete derive; native counters cover all probe derivations including bounded/invalid cases
-bindings	source_bytes	sanitizer_stack_kib	blocks	edges	tasks	derive_calls	walk_calls	walk_headers	reported_steps	complete	bounded	invalid	failed
-125	3211	8176	379	377	251	9	3	756	753	2	1	6	0
-250	6586	8176	754	752	501	9	3	1506	1503	2	1	6	0
-500	13336	8176	1504	1502	1001	9	3	3006	3003	2	1	6	0
-1000	26836	8176	3004	3002	2001	9	3	6006	6003	2	1	6	0
-2000	55836	8176	6004	6002	4001	9	3	12006	12003	2	1	6	0
-4000	113836	65520	12004	12002	8001	9	3	24006	24003	2	1	6	0

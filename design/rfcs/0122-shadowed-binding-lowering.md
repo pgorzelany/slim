@@ -137,7 +137,7 @@ is independently checked through native execution.
 
 All 20 complete native analysis reports are byte-identical. Their generated C
 changes only local identifiers; per-application size changes are recorded in
-`benchmarks/results/2026-09-06-binding-identity-native-changes.tsv`. Paired frontend
+`benchmarks/results/archive/2026-09-06-binding-identity-native-changes.tsv.gz`. Paired frontend
 and compiler-source emission samples are retained separately. Bootstrap,
 governance, formatting, Clippy, all 10 unit and 59 integration tests, 331 conformance
 fixtures and 2,000 malformed mutations, quick performance/reduction, parallelism,

@@ -107,6 +107,10 @@ The Core 0.3 freeze report in `results/2026-07-21-core-03.md` records the full
 release gate, bootstrap size, conformance denominator, self-host clean/cache/
 session process timings, and explicit claims that remain out of scope.
 
+The [evidence index](results/README.md) links current checkpoint summaries and
+lossless archives of dated measurements, with verification and extraction commands.
+Keep routine rerun output local and preserve decision evidence at checkpoints.
+
 The `agent` command reads a permanent manifest of matched repairs in SLIM,
 C11, and Rust. Core 1C covers unknown operations, type mismatches, missing
 capabilities, non-exhaustive matches, and unterminated input. It reports source

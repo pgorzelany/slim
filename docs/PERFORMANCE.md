@@ -190,8 +190,8 @@ RFC-0130's internal entry point has native-observed inference reuse; the public
 session remains an estimate command. Its geometric family executes zero function
 checks for unchanged updates and one for a single helper-body edit. Parsing,
 linking, global checks and generation still run. Native counts and repeated
-clean-equivalence checks are in the [current work table](../benchmarks/results/2026-09-06-m1-compact-retained-work.tsv).
-The [current latency table](../benchmarks/results/2026-09-06-m1-compact-retained-latency.tsv)
+clean-equivalence checks are in the [current work table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-work.tsv.gz).
+The [current latency table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-latency.tsv.gz)
 separates ordinary checks, old/new retained storage and two-clean-check comparisons.
 RFC-0131 reduces retained setup/update overhead, but constructing a retained snapshot
 plus one update is still slower than two clean checks in this measured workload.
@@ -208,23 +208,23 @@ within this token domain. `executed = -1` means work was not counted by the reta
 loop: capacity misses use the ordinary checker; early rejected inputs do not enter
 typing. Missing counters are never treated as zero work. The separate native
 observer has 64 phases and checked saturation at 1,000,000,000 calls; phase returns
-do not certify successful publication. [Current fault observations](../benchmarks/results/2026-09-06-m1-compact-retained-faults.tsv)
+do not certify successful publication. [Current fault observations](../benchmarks/results/archive/2026-09-06-m1-compact-retained-faults.tsv.gz)
 cover 512 allocation ordinals through the full differential probe.
 
 
 ### Retained project preparation
 
 RFC-0132 connects the same retained checker to current project validation and
-source-mapped preparation. [Project work observations](../benchmarks/results/2026-09-07-m1-retained-project-work.tsv)
+source-mapped preparation. [Project work observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-work.tsv.gz)
 count actual function-check calls within retained project attempts: zero on
 unchanged input and one on the maintained helper-body edit, through 4,000 helpers
 in two modules. Full prepared fields, memory plans and C match clean preparation.
 The permanent family imports 15N+22 or 15N+7 canonical nodes respectively.
 Module parsing, flattening/reparse, global checking and generation remain work.
 
-[Project timings](../benchmarks/results/2026-09-07-m1-retained-project-latency.tsv)
+[Project timings](../benchmarks/results/archive/2026-09-07-m1-retained-project-latency.tsv.gz)
 separate ordinary before/after preparation from two-clean-versus-retained runs.
 The latter still favors clean preparation in this family and is not isolated
-warm-query latency. [Project fault observations](../benchmarks/results/2026-09-07-m1-retained-project-faults.tsv)
+warm-query latency. [Project fault observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-faults.tsv.gz)
 cover 2,048 ordinals of the complete differential probe. Native phase returns
 remain distinct from publication. Public session commands still report estimates.

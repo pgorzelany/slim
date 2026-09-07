@@ -163,8 +163,8 @@ index is lazy and retained in its source state; its geometric work gate passes.
 Bootstrap, governance, 62 integration tests, 331 conformance fixtures, required
 benchmarks, sanitizer and allocation-fault checks pass. See the
 [checkpoint evidence](../../benchmarks/results/2026-09-05-slim-next-progress.md),
-[paired measurements](../../benchmarks/results/2026-09-06-m1-revision-maps.tsv), and
-[actual work](../../benchmarks/results/2026-09-06-m1-revision-map-work.tsv).
+[paired measurements](../../benchmarks/results/archive/2026-09-06-m1-revision-maps.tsv.gz), and
+[actual work](../../benchmarks/results/archive/2026-09-06-m1-revision-map-work.tsv.gz).
 This child contract is complete; RFC-0124 and M1 remain incomplete.
 
 ## Removal and supersession

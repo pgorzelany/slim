@@ -159,7 +159,7 @@ Bootstrap, governance, formatting, Clippy, all 10 unit and 58 integration tests,
 325 conformance fixtures and 2,000 malformed mutations, quick performance and
 reduction, parallelism, resources, quick native comparison, quick parallel runtime,
 and agent gates pass. Actual records and limitations are retained in
-`benchmarks/results/2026-09-06-observed-compiler-work.tsv` and the SLIM Next progress
+`benchmarks/results/archive/2026-09-06-observed-compiler-work.tsv.gz` and the SLIM Next progress
 report. An unchanged snapshot's four parses are distinguished from its four zero
 invalidation estimates. A cold two-module emission has three parses, including
 flattened-source reparsing. These are observed current behavior, not M1 reuse.

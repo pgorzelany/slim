@@ -18,7 +18,8 @@ def main():
     root = Path(__file__).resolve().parent.parent
     environment = dict(os.environ)
     environment.pop('SLIM_ALLOC_FAIL_AT', None)
-    expected = b'0i64.add|true|42|quote:" slash:\\|\n\r\t|\x00Z\xff|named|returned|last|' * 2
+    segment = b'0i64.add|true|42|quote:" slash:\\|\n\r\t|\x00Z\xff|named|returned|last|'
+    expected = segment + b'\x00A??/' + segment + b'AB??='
     with tempfile.TemporaryDirectory(prefix='slim-literal-storage-') as temporary:
         directory = Path(temporary)
         fixture = root / 'tests/fixtures/literal_storage.slim'

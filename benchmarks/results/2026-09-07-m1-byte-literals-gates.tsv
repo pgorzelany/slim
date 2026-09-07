@@ -1,0 +1,51 @@
+item	status	scope_or_identity
+baseline_commit	identified	010be59; compiler identical to 0f19fbc
+candidate_seed	identified	614ac65c7350c3c131d5393571344ead9e298f54dcf1576f91a195d31635675a
+candidate_seed_bytes	measured	4444746
+host	identified	macOS-26.6.1-arm64-arm-64bit
+verify_sh	interrupted	exit 143 at maintainer request; place ordinal 1850; not a complete pass
+selfhost/codegen.slim	sha256	2438334805c83645e6219a669739c792e78373870d3bd65b639a565fdbb1ab5e
+bootstrap/slimc-seed.c	sha256	614ac65c7350c3c131d5393571344ead9e298f54dcf1576f91a195d31635675a
+bootstrap/slimc-seed.sha256	sha256	3807d0c76f11db687b6f804e36f86ac043b09b9f5e116a04b342b24ccafbe3a6
+runtime/slim_rt.c	sha256	3177ababe3764348cc334df939e6c3288305241f760d27552f171dfcaf2c5503
+runtime/slim_rt.h	sha256	dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f
+scripts/verify.sh	sha256	4747ef57764bf12592abe8de8382152a143342ae89a0a194569b23a2f0aa2f2a
+scripts/verify-hex-literals.py	sha256	0f414c7913dcbca0a6f2aada4d868e1e55920efe1c12560e04ec26fa5a315e8c
+scripts/verify-literal-storage.py	sha256	105ea539e95ec033eb2afb7de642a786da2127b5b17eb18f028e2c45d582afe4
+scripts/measure-continuations.py	sha256	4075ee44a26b0e5b17efb1d5ba04dc989fba8134cdc33e65531995e0cac48145
+tests/fixtures/literal_storage.slim	sha256	edc3f1fc0723f0222bc88737fba73941d489a2f3b2b4ec4bef43aef4accdab77
+tests/e2e.rs	sha256	3cff94796ec7cfefaecdce667e4d5a159fc195ba9a6cf7bedec60af2d58d8f1a
+build/toolchain/slimc	sha256	c98db9f9857bc82d92d7ebdb1c8e15766a2317c5dd7b66eee1c13599f94f3cad
+build/slim-next-m1/hex-escapes/baseline/slimc	sha256	f3b71533b8f6c3c7989232909170312216f0562af98ea4d85d955c9275dfdd04
+build/slim-next-m1/hex-escapes/remaining-verify.sh	sha256	55058f165a324efc499956ba42046fedc33b2e9e5d736ae43d2f39c17e1402c1
+bootstrap	pass	fixed point; candidate seed 4444746 C bytes
+cargo_fmt_clippy	pass	cargo fmt --check; cargo clippy --all-targets -- -D warnings
+cargo_test	pass	10 unit tests; 75 integration tests
+governance	pass	all hard gates; also rerun after archive reference changes
+conformance	pass	338 fixtures; 2000 malformed-input mutants; bounded tool probes
+library	pass	10 source examples; 12 ordinary modules; 12 sanitized modules
+performance	pass	--quick; all durable gates
+reduction	pass	--quick; all durable gates
+parallelism	pass	exact durable analysis baseline
+compare	pass	--quick; 20 native challenges
+agent	pass	all matched repair fixtures
+extended_benchmarks	pass	work --quick; resources; host; parallel-runtime --quick; incremental --quick; project --quick; applications --quick
+continuations	pass	full domain; 116952 token spellings; 16038 argument cases; 293 corpus cases; 1601 mutants; 1024 total fault ordinals
+literal_oracles	pass	ordinary and ASan/UBSan; 10648 hex, 90 trigraph, 102 controls, 7 composites; 24 storage values; 64 storage fault ordinals
+flow	pass	512 fault ordinals; 72 failures including 34 after walking; 440 successes
+retained_typing	pass	95 fixtures; 1024 fault ordinals; 572 failures, 452 successes
+retained_project	pass	95 fixtures; 2048 fault ordinals; 620 failures, 1428 successes
+session	pass	6144 fault ordinals across cold/update/fragments
+codegen_differential	pass	96 accepted raw-C/analysis comparisons and 197 exact rejections; relocation/module/worker cases
+same_host_latency	pass	26 cells; 18 groups; paired identical-baseline controls; no above-one/above-control-Q3 trigger
+places	pass	2048 full fault ordinals; 193 failures, 1855 successes
+resumed_suffix	pass	exit 0; complete places, parsing, integers, source-index and final runtime stages; composite with interrupted prefix
+full_m1_release	pending	scripts/verify-0.9.sh required at M1 closure
+parsing	pass	1720 corpus/edit cases; 2000 mutants; geometric work through 4000 helpers; source/token/lexeme capacity boundaries; 2048 fault ordinals, 94 failures and 1954 successes
+integers	pass	456 decimal values; 16 exact out-of-range diagnostics; 512 fault ordinals, 117 failures and 395 successes
+source_index	pass	128 fault ordinals; 109 failures
+final_runtime	pass	compiler allocation boundary; native sieve; sanitized vector sum; 6 exact native allocation failures
+archive_integrity	pass	257 original TSVs equal 010be59 bytes; lossless payload hash/size/line verification; updated links/anchors resolve; optimized-Python overwrite/immutability/corruption tests
+interrupted_log	sha256	cce3f8f881d6c65770d41a3e8c2cd93cd059c3de9f1b982c1ff92f6fd367d594
+resumed_suffix_log	sha256	956b7c9387ddc557141dc30fece86e4a15078c5847ff8999b76822e785bf1a71
+archive_utility	sha256	1726c63238f4a7b2e22b31269e649884510a0d385c3516dd5e50a9e5a34d6901

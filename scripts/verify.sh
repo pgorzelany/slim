@@ -35,6 +35,7 @@ clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
 "$verify_dir/slimc-seed-sanitized" examples/hello.slim > "$verify_dir/hello.c"
 test -s "$verify_dir/hello.c"
 python3 scripts/verify-literal-storage.py "$verify_dir/slimc-seed-sanitized" --sanitize
+python3 scripts/verify-hex-literals.py "$verify_dir/slimc-seed-sanitized" --sanitize
 
 # Exercise the production identity module, including extreme and stale handles,
 # under the same sanitizers as the compiler. The independent expected values are
