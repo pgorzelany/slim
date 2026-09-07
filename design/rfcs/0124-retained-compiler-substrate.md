@@ -364,6 +364,9 @@ validated rows. Current global parameter scans, termination validation and paral
 analysis still execute. Retaining eligible global analysis requires its complete
 body, call-site, ordering and budget dependencies; no fabricated universal
 dependency or unobserved cache-hit claim discharges that work.
+RFC-0142 defines complete ordered parameter-input queries as the next retained
+analysis contract. Its implementation remains pending; it supplies no current
+scan-reuse claim or waiver of the remaining global/parallel work.
 
 RFC-0139 stabilizes declaration-local C names. RFC-0140 retains function prototypes,
 bodies and private wrappers against complete checked and consumed lowering inputs,

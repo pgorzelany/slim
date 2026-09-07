@@ -115,6 +115,12 @@ producer entries, fragment imports, copied bytes and counted-record lookups.
 Public host-bound sessions, retained global analyses and native backend artifacts
 remain M1 work.
 
+[RFC-0142](../design/rfcs/0142-retained-parameter-input-queries.md) accepts the next
+parameter-input query contract. It requires complete ordered caller contributions,
+current argument facts and recurrence invariants, with both existing input modes
+and all four transfer rounds preserved. Its implementation is pending: the current
+retained analyzer still executes the eight ordinary whole-token input scans.
+
 ## What the current session command measures
 
 `selfhost/session.slim` loads the initial and updated projects and builds
