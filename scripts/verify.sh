@@ -161,6 +161,8 @@ test "$flow_succeeded" -gt 0
 echo "verification: flow faults $flow_failed, failures after task walking $flow_failed_in_walk, successes $flow_succeeded"
 
 ./scripts/verify-retained.sh "$verify_dir/slimc-seed-sanitized"
+sh scripts/verify-inputs.sh "$verify_dir/slimc-seed-sanitized"
+sh scripts/verify-session-analysis.sh "$verify_dir/slimc-seed-sanitized"
 ./scripts/verify-retained-project.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-places.sh "$verify_dir/slimc-seed-sanitized"

@@ -1,0 +1,32 @@
+item	status	scope_or_identity
+baseline	identified	67055823aa43b11f3ab49466fea81b76b63d4f72
+seed	identified	64107135f2677bcada015bfe5cd292bb1c3a8f41216fe2c92ebf7793c9df5f61
+bootstrap	pass	lazy-bootstrap.log; identical fixed point; 4716564 C bytes
+govern	pass	cargo run --bin slim-govern -- check; 23.838 seconds; archived verification record
+cargo-test	pass	cargo test; 72.758 seconds; archived verification record
+performance	pass	cargo run --release --bin slim-bench -- performance --quick; 4.496 seconds; archived verification record
+reduction	pass	cargo run --release --bin slim-bench -- reduction --quick; 1.004 seconds; archived verification record
+parallelism	pass	cargo run --release --bin slim-bench -- parallelism; 0.296 seconds; archived verification record
+compare	pass	cargo run --release --bin slim-bench -- compare --quick; 36.848 seconds; archived verification record
+agent	pass	cargo run --release --bin slim-bench -- agent; 3.97 seconds; archived verification record
+input	pass	sh scripts/verify-inputs.sh; 34.141 seconds; archived verification record
+retained	pass	sh scripts/verify-retained.sh; 131.026 seconds; archived verification record
+session-full	pass	sh scripts/verify-session.sh build/toolchain/slimc full; 679.194 seconds; archived verification record
+session-analysis	pass	96 fixtures cold/unchanged/insertion; six caller/callee edits; complete parallel fields and report components; ordinary/ASan/UBSan
+clean-latency	pass	26 cells; 18 groups; all medians within identical-baseline control comparison
+retained-latency	pass	18 cells; three flagged cells repeated66groups; all clear; cold-plus-update process totals
+resources	measured	18 scenarios x3; deterministic allocations/live bytes/copies; zero live bytes after cleanup
+native	pass	20 applications; raw C identical; native status/stdout/stderr agree
+final-governance	pass	all hard gates; after RFC implementation/doc updates
+archive-integrity	pass	all outer payloads verified; 66 inner log payloads verified; all three source patches reconstruct frozen hashes
+m1-release	pending	full scripts/verify-0.9.sh remains M1 closure work
+m1-public-session	pending	public command still reports estimates
+m1-global-analysis	pending	global parallel analysis still executes
+m1-native-cache	pending	native artifacts are not retained by the internal session
+scripts/verify.sh	sha256	112d3c68b21300b51823d6f17a75316905edc9bc4347250f632ce35eea2bdb15
+tests/fixtures/session_analysis.slim	sha256	d07040db13f0d5928c2e9c7b0865e9114b5ad24462e877234ef991337aa10125
+scripts/verify-session-analysis.sh	sha256	f323c5071b1f50c4fde9858f80c48b8f6cffe82575373bf24c794be2648f5750
+scripts/verify-session-analysis.py	sha256	8e5256547cb43694b087068559daf513352d217be5b9793cd67d36f38d725f97
+design/rfcs/0142-retained-parameter-input-queries.md	sha256	0f018656bd6d22361eabaddeccc2e5560112808e9ba58a5566fe8e3e27df8614
+selfhost/slim.project	sha256	57d853841e46a7fa83eadfc43a506e15bd219e388f205ad204281df2d887b8c0
+final-governance-log	sha256	abf387e1700d3381d8bf1128c754561c9b944b442787f63d35a477fd470aa667

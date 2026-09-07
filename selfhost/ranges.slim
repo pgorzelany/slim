@@ -321,18 +321,7 @@ fn scan_parameter_calls(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[Fac
   if cursor >= length:
     void
   else:
-    let kind: I64 = syntax.ast_node_kind(tokens, cursor)
-    let form: Bool = kind == 0
-    let head: I64 = syntax.ast_list_first(cursor)
-    let call_form: Bool = if form:
-      syntax.ast_expression_is_call(source, tokens, cursor)
-    else:
-      false
-    let callee: I64 = syntax.ast_call_callee(cursor)
-    let declaration: I64 = if call_form:
-      syntax.ast_node_link(tokens, callee)
-    else:
-      -1
+    let declaration: I64 = parameter_call_target(source, tokens, cursor)
     let user: Bool = declaration >= 0
     if user:
       collect_call_arguments(source, tokens, facts, invariants, syntax.ast_parameters_first(syntax.ast_function_parameters(declaration)), syntax.ast_call_arguments(cursor), @parameter_facts)
@@ -1777,3 +1766,12 @@ fn emit_resource_evidence(source: Bytes, tokens: Vec[syntax.Token], view: View, 
   else:
     text.append_text(@output, "exact")
   text.append_text(@output, "))")
+
+fn parameter_call_target(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 0:
+    if syntax.ast_expression_is_call(source, tokens, cursor):
+      syntax.ast_node_link(tokens, syntax.ast_call_callee(cursor))
+    else:
+      -1
+  else:
+    -1

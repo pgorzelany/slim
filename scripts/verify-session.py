@@ -37,16 +37,18 @@ def run(before, after, mode="work", expected=None, epochs=1, third=None):
     assert plain.returncode == native.returncode == 0, (mode, plain.returncode, native.returncode, plain.stdout[:400], native.stderr[:400])
     assert plain.stdout == native.stdout and plain.stderr == native.stderr, mode
     lines = report_path.read_text().splitlines()
-    assert lines[0] == f"slim-session\t6\texact\t1000000000\t{epochs}", lines[0]
+    assert lines[0] == f"slim-session\t7\texact\t1000000000\t{epochs}", lines[0]
     rows = [list(map(int, line.split("\t"))) for line in lines[1:]]
-    assert all(row[0] == i and len(row) == 23 for i, row in enumerate(rows)), rows
+    assert all(row[0] == i and len(row) == 24 for i, row in enumerate(rows)), rows
     for row in rows:
         assert row[17] == row[18], (mode, rows)
         assert (row[20] > 0) == (row[21] > 0), (mode, rows)
+        if row[9] == 0:
+            assert row[23] == 0, (mode, rows)
         if row[3] == 0:
             assert row[17:22] == [0] * 5, (mode, rows)
         if row[9] > 0:
-            assert row[8:10] == [0, 1] and row[12:14] == [5, 8] and row[15:17] == [3, 4], (mode, rows)
+            assert row[8:10] == [0, 1] and row[12] == 5 and row[23] == 4 and row[13] in (0, 2, 4, 6, 8) and row[15:17] == [3, 4], (mode, rows)
             assert row[10] + row[11] == 5 * (row[6] + row[7]), (mode, rows)
 
     if expected is not None:
@@ -168,7 +170,7 @@ for mode, middle in [("work", fragment_moved), ("corrupt", fragment_before), ("m
     if mode == "work":
         assert rows[1][3] == 0 and rows[1][17:22] == [0] * 5 and rows[1][22] == 3, rows
 rows, _ = run(fragment_before, fragment_before, "emission-seal", third=fragment_after)
-assert rows[1][17:] == [0] * 6 and rows[2][17:22] == [3, 3, 0, 0, 0], rows
+assert rows[1][17:] == [0] * 7 and rows[2][17:22] == [3, 3, 0, 0, 0], rows
 
 # Explicit sites and inferred pure sites need not have function-lexical global
 # order. Import wrappers in the current site's order, including selection limits.
@@ -246,7 +248,7 @@ env = dict(os.environ, SLIM_SESSION_REPORT=str(report_path),
 p = subprocess.run([str(observed), str(captured), str(initial), "captured"], env=env, capture_output=True)
 assert p.returncode == 0 and not p.stderr, (p.returncode, p.stdout[:400], p.stderr[:400])
 assert replacement.read_text() == (rejected.parent / "program.slim").read_text()
-assert [list(map(int, line.split("\t"))) for line in report_path.read_text().splitlines()[1:]] == [[0, 2, 1, 1, 2, 0, 1, 0, 0, 1, 1, 4, 5, 8, 1, 3, 4, 1, 1, 0, 0, 0, 1], [1] + [0] * 22]
+assert [list(map(int, line.split("\t"))) for line in report_path.read_text().splitlines()[1:]] == [[0, 2, 1, 1, 2, 0, 1, 0, 0, 1, 1, 4, 5, 0, 1, 3, 4, 1, 1, 0, 0, 0, 1, 4], [1] + [0] * 23]
 print("session-captured-input\texact\tfile-replaced-before-preparation", flush=True)
 
 # Global interface and body-derived facts always compare against a clean preparation.
@@ -463,7 +465,7 @@ for fixture in fixtures:
     print("session-corpus", fixture, sep="\t", flush=True)
     wrapped = project("wrapped", fixture.read_text())
     rows, reports = run(wrapped, wrapped)
-    assert rows[1][1:] == [0] * 22, fixture
+    assert rows[1][1:] == [0] * 23, fixture
     assert reports[1][2:4] == reports[0][2:4], fixture
     shifted = project("wrapped-trivia", "# force preparation of unchanged canonical source\n" + fixture.read_text())
     rows, _ = run(wrapped, shifted)

@@ -1,0 +1,94 @@
+module zzprobe
+
+fn same_bool(left: Bool, right: Bool) -> Bool:
+  if left:
+    right
+  else:
+    !right
+
+fn same_blockers(left: parallel.Blockers, right: parallel.Blockers) -> Bool:
+  same_bool(left.declared_effects, right.declared_effects) && same_bool(left.exclusive_borrow, right.exclusive_borrow) && same_bool(left.mutation, right.mutation) && same_bool(left.checked_trap, right.checked_trap) && same_bool(left.allocation_or_io, right.allocation_or_io) && same_bool(left.recurrence, right.recurrence) && same_bool(left.callee_not_safe, right.callee_not_safe) && same_bool(left.call_cycle, right.call_cycle) && same_bool(left.function_limit, right.function_limit) && same_bool(left.edge_limit, right.edge_limit) && same_bool(left.missing_typed_fact, right.missing_typed_fact)
+
+fn same_function(left: parallel.FunctionFact, right: parallel.FunctionFact) -> Bool:
+  (left.item == right.item) && (left.name == right.name) && (left.status == right.status) && (left.reason == right.reason) && (left.first_edge == right.first_edge) && (left.edge_count == right.edge_count) && (left.body == right.body) && (left.body_tokens == right.body_tokens) && same_blockers(left.blockers, right.blockers)
+
+fn same_site(left: parallel.Site, right: parallel.Site) -> Bool:
+  (left.site == right.site) && (left.first == right.first) && (left.second == right.second) && (left.join == right.join) && (left.first_work == right.first_work) && (left.second_work == right.second_work) && same_bool(left.allocates, right.allocates) && same_bool(left.explicit, right.explicit) && same_bool(left.executable, right.executable)
+
+fn same_schedule(left: parallel.Schedule, right: parallel.Schedule) -> Bool:
+  (left.candidates == right.candidates) && (left.selected == right.selected) && (left.reported == right.reported) && (left.executable == right.executable) && (left.executed == right.executed) && (left.selected_until == right.selected_until)
+
+fn same_functions(left: Vec[parallel.FunctionFact], right: Vec[parallel.FunctionFact], at: I64) -> Bool effects[partial]:
+  if vec.len(left) == vec.len(right):
+    if at >= vec.len(left):
+      true
+    else:
+      if same_function(vec.get(left, at), vec.get(right, at)):
+        recur(left, right, at + 1)
+      else:
+        false
+  else:
+    false
+
+fn same_sites(left: Vec[parallel.Site], right: Vec[parallel.Site], at: I64) -> Bool effects[partial]:
+  if vec.len(left) == vec.len(right):
+    if at >= vec.len(left):
+      true
+    else:
+      if same_site(vec.get(left, at), vec.get(right, at)):
+        recur(left, right, at + 1)
+      else:
+        false
+  else:
+    false
+
+fn same_parallel(left: parallel.View, right: parallel.View) -> Bool effects[partial]:
+  (left.functions == right.functions) && same_bool(left.exact, right.exact) && same_schedule(left.schedule, right.schedule) && same_functions(left.facts, right.facts, 0) && same_sites(left.sites, right.sites, 0)
+
+fn components(prepared: project.PreparedProject, range_view: ranges.View, parallel_view: parallel.View) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  ranges.emit_module_facts(prepared.source, prepared.tokens, range_view, @output)
+  quality.emit_module_facts(prepared.source, prepared.tokens, range_view.facts, @output)
+  parallel.emit_module_facts(prepared.source, prepared.tokens, parallel_view, @output)
+  bytes.freeze(^output)
+
+fn compare(path: Bytes, kept: project.PreparedProject) -> I64 effects[alloc, io, partial]:
+  let clean: project.PreparedProject = project.prepare_project_path(path)
+  if (clean.status == 0) && kept.range_ready:
+    let clean_ranges: ranges.View = ranges.analyze(clean.source, clean.tokens, clean.facts)
+    let clean_parallel: parallel.View = parallel.analyze(clean.source, clean.tokens, clean.facts, clean_ranges)
+    let kept_parallel: parallel.View = parallel.analyze(kept.source, kept.tokens, kept.facts, kept.range_view)
+    if same_parallel(clean_parallel, kept_parallel):
+      let clean_report: Bytes = components(clean, clean_ranges, clean_parallel)
+      let kept_report: Bytes = components(kept, kept.range_view, kept_parallel)
+      if retained.equal(clean_report, kept_report):
+        0
+      else:
+        18
+    else:
+      19
+  else:
+    20
+
+fn run_epoch(before: Bytes, after: Bytes) -> I64 effects[alloc, io, partial]:
+  let limits: session.Limits = session.Limits(attempts: 64, input_bytes: 67108864, canonical_nodes: 1000000, code_bytes: 67108864)
+  let config: session.Config = session.Config(compiler: "current", runtime: "current", target: "native", options: "default")
+  let state: session.State = session.start(1, limits)
+  let input: project.ProjectInput = project.capture_project_input(before)
+  let first: session.Report = session.update(@state, ^input, config)
+  if first.status == 0:
+    let initial: I64 = compare(before, state.good.prepared)
+    let input: project.ProjectInput = project.capture_project_input(after)
+    let second: session.Report = session.update(@state, ^input, config)
+    if (initial == 0) && (second.status == 0):
+      compare(after, state.good.prepared)
+    else:
+      21
+  else:
+    22
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 3:
+    run_epoch(vec.get(args, 1), vec.get(args, 2))
+  else:
+    64

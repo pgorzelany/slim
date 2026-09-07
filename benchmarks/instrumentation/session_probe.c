@@ -1,18 +1,19 @@
 /* Measurement only. No observed value participates in compiler acceptance.
- * Schema 6: program lexings, function checks, C generations, declaration grammar
+ * Schema 7: program lexings, function checks, C generations, declaration grammar
  * executions, parsed canonical-node imports, memory-plan constructions and
  * memory-plan imports, then fresh range analyses, retained range queries, range
  * function production, range imports, range passes, parameter scans and parallel
  * analyses, full fact-vector initializations and complete output-vector resets,
  * then prototype/body/wrapper producers, fragment imports and imported C bytes,
- * then counted-record cursor lookups, in that order. */
+ * then counted-record cursor lookups and retained parameter-input transfers,
+ * in that order. Parameter scans continue to count only actual ordinary scans. */
 #include "session_probe.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define SESSION_PHASES 256
 #define SESSION_CAP UINT64_C(1000000000)
-static uint64_t counts[SESSION_PHASES][22];
+static uint64_t counts[SESSION_PHASES][23];
 static unsigned phases, epochs;
 static int active, bounded, epoch_active;
 static SlimRegion *epoch_parent;
@@ -23,7 +24,7 @@ void slim_session_probe_begin(void) {
     if (phases >= SESSION_PHASES) bounded = 1;
 }
 void slim_session_probe_count(unsigned kind) {
-    if (kind >= 22) abort();
+    if (kind >= 23) abort();
     if (!active || phases >= SESSION_PHASES) return;
     if (counts[phases][kind] == SESSION_CAP) bounded = 1;
     else ++counts[phases][kind];
@@ -83,10 +84,10 @@ static void report(void) {
     if (path == NULL) return;
     FILE *output = fopen(path, "wb");
     if (output == NULL) return;
-    fprintf(output, "slim-session\t6\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
+    fprintf(output, "slim-session\t7\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
     for (unsigned i = 0; i < phases; ++i) {
         fprintf(output, "%u", i);
-        for (unsigned j = 0; j < 22; ++j)
+        for (unsigned j = 0; j < 23; ++j)
             fprintf(output, "\t%" PRIu64, counts[i][j]);
         fputc('\n', output);
     }

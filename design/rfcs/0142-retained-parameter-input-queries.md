@@ -1,7 +1,7 @@
 # RFC-0142: Retained parameter-input queries
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -130,8 +130,11 @@ contributors leaves the exact existing default in every parameter slot.
 The result contains both final facts for every ordered parameter binding.
 Pass number is not an input to the merge. Search current-candidate versions
 first, then eligible previous-snapshot versions, with at most four distinct
-versions per callee. Preserve the ordinary function-range query's separate
-incoming-refinement-count key: this RFC does not weaken RFC-0138's dependencies.
+versions per callee across one transfer lookup. Each snapshot may retain up to
+four versions. After a current miss, compare the previous chain only if its
+complete length fits the remaining lookup allowance; otherwise recompute. Never
+accept a matching prefix of an over-budget chain. Preserve the ordinary
+function-range query's separate incoming-refinement-count key: this RFC does not weaken RFC-0138's dependencies.
 Budget effects that change an argument fact therefore change this transfer key.
 
 ### Internal API and records
@@ -290,9 +293,27 @@ external review or permission to weaken a source, safety or performance gate.
 
 ## Implementation
 
-Pending. The existing compiler still executes the ordinary global input scans.
-Record the identified implementation, measured domains, costs and remaining M1
-obligations before changing this field to complete.
+Implemented in the production SLIM compiler and portable seed
+`64107135f2677bcada015bfe5cd292bb1c3a8f41216fe2c92ebf7793c9df5f61`
+(4,716,564 C bytes). Complete current/previous query results and eligible unchanged
+structure are retained; the ordinary scans remain the conservative fallback.
+Complete empty adjacency omits an unnecessary query, and the full entry-invariant
+mask is materialized only when ordinary fallback needs it.
+
+The [checkpoint report](../../benchmarks/results/2026-09-07-m1-input-queries.md)
+records the complete four-round/two-array oracle, 19 edit pairs, corruption and
+budget/version boundaries, and geometric actual-work measurements through 4,000
+callers. Ordinary and ASan/UBSan session comparisons preserve prepared fields,
+ranges, recurrence records, plans, C, complete derived parallel-view fields and
+range/quality/parallel report components. All required checkpoint commands pass,
+as do 1,024 retained-typing and 6,144 session allocation-fault ordinals.
+
+The final clean and retained same-host control comparisons pass. Earlier rejected
+cost measurements remain archived. The seed, row widths, allocations, live bytes,
+copies and external backend/native costs are recorded separately; no performance
+budget is relaxed and no significant agent-productivity benefit is established.
+Public host-bound sessions, retained global analysis, native artifact caching and
+the complete parent release audit remain M1 obligations.
 
 ## Removal and supersession
 

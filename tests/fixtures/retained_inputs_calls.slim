@@ -1,0 +1,42 @@
+module inputs
+
+struct Pair:
+  left: I64
+  right: I64
+
+enum Value:
+  Some(I64)
+  None
+
+fn unused(value: I64) -> I64:
+  value
+
+fn zero() -> I64:
+  0
+
+fn identity(value: I64) -> I64:
+  value
+
+fn combine(first: I64, second: I64, text: Bytes) -> I64:
+  first + second
+
+fn recurrence(n: I64, invariant: I64) -> I64 effects[partial]:
+  if n > 0:
+    recur(n - 1, invariant)
+  else:
+    invariant
+
+fn borrow(values: Vec[I64], value: I64) -> I64:
+  value + vec.len(values)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 1)
+  io.print_i64(combine(1, identity(3), "known"))
+  io.print_i64(combine(bytes.len("unknown"), 4, "unknown"))
+  io.print_i64(combine(1000000001, 1, "out of domain"))
+  io.print_i64(combine(identity(5), identity(8), "nested"))
+  io.print_i64(recurrence(5, 7))
+  io.print_i64(recurrence(vec.len(args), 9))
+  io.print_i64(borrow(values, zero()))
+  0

@@ -10,6 +10,7 @@ not certify the current working tree.
 | M0 repairs and M1 development through 2026-09-07 | [Complete development history](archive/2026-09-07-slim-next-development-history.md.gz) |
 | Validated literal-storage checkpoint `0f19fbc` | [Scope, costs and verification](2026-09-07-m1-literal-storage.md) |
 | Validated byte-literal checkpoint (composite verification) | [Scope, costs and pending checks](2026-09-07-m1-byte-literals.md) |
+| Validated RFC-0142 input-query checkpoint | [Verified domains, costs and remaining M1 work](2026-09-07-m1-input-queries.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 
 ## Archived evidence
@@ -28,6 +29,11 @@ The original consolidation captures 270,342 text lines (16,274,889 bytes) in
 Later checkpoint archives are listed separately in the same manifest. Existing
 Git history is preserved, so this reduces the current textual diff rather than
 removing historical blobs from the repository.
+
+The input-query checkpoint retains measurements for all three implementation
+candidates, including rejected costs. Its compressed reproduction record contains
+scripts and hash-verified source patches; its verification record contains the
+individual log payloads, hashes and completed command/source identities.
 
 The history is a snapshot of the development log before consolidation. Its last
 entry says verification was running. That run was subsequently interrupted at the

@@ -16,7 +16,8 @@ fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: re
   let nodes: Vec[retained.Saved] = mem.replace(@candidate.nodes, vec.new())
   let planning: retained.PlanCache = mem.replace(@candidate.planning, retained.empty_plan_cache())
   let range_history: Vec[retained.RangeHistory] = mem.replace(@candidate.range_history, vec.new())
-  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning, range_history: range_history)
+  let input_history: Vec[retained.InputHistory] = mem.replace(@candidate.input_history, vec.new())
+  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning, range_history: range_history, input_history: input_history)
   Attempt(transition: transition, checked: checked, cache: cache, work: work, range_ready: range_ready, range_view: range_view)
 
 fn empty_checked() -> typing.Checked effects[alloc]:

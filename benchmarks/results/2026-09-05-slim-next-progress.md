@@ -14,7 +14,7 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | The current byte-literal checkpoint includes validated internal retained parsing, typing, memory plans, range queries, C fragments, shared checking continuations and the literal-Bytes address repair. RFC-0142 defines pending parameter-input retention. Hexadecimal/trigraph byte literals pass the recorded composite verification and same-host controls. Public host-bound sessions, retained global analyses, native backend caching and full closure remain. |
+| M1: compiler substrate | in progress | The current byte-literal checkpoint includes validated internal retained parsing, typing, memory plans, range queries, C fragments, shared checking continuations and the literal-Bytes address repair. RFC-0142 parameter-input retention now passes its complete query, cost, analysis and fault checks. Hexadecimal/trigraph byte literals pass the recorded composite verification and same-host controls. Public host-bound sessions, retained global analyses, native backend caching and full closure remain. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -24,9 +24,9 @@ portable C seed.
 
 ## Current M1 closure ledger
 
-This ledger includes the validated byte-literal fixed point
-`614ac65c7350c3c131d5393571344ead9e298f54dcf1576f91a195d31635675a`
-following checkpoint `0f19fbc`; the [evidence index](README.md) preserves dated
+This ledger includes the validated input-query fixed point
+`64107135f2677bcada015bfe5cd292bb1c3a8f41216fe2c92ebf7793c9df5f61`
+following checkpoint `6705582`; the [evidence index](README.md) preserves dated
 costs and checkpoint-specific results. An implemented internal query
 is not evidence that the public session already provides that query.
 
@@ -35,11 +35,11 @@ is not evidence that the public session already provides that query.
 | Revision-owned source, declaration, node and span identities | RFC-0125/0126 implement checked ownership, exact revision maps and source relocation; RFC-0134 adds retained typed place identities. | Preserve these contracts through the public session lifecycle and all configuration changes. |
 | Branch/recurrence ownership foundation | RFC-0129/0141 share canonical form and lexical-scope descriptions between the optional graph and explicit checking continuations. The normal checker remains the sole producer of move, availability and loan decisions; all expression families are migrated. | Preserve the validated transitions and source-relative bounds through public session integration. The separate recursive name-resolution prepass retains its documented sanitizer depth limit. |
 | Reusable declaration queries | RFC-0130/0131/0132/0135 retain typing and parsing with validated dependencies and current source links. | Exercise the same production queries through real public updates and preserve locality through the remaining analysis integration. |
-| Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 accepts a complete parameter-input query contract, with implementation pending. Current global scans and parallel analysis still execute. | Implement the accepted input-query contract and retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
+| Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 retains complete parameter-input queries with validated caller contributions. Global parallel analysis still executes. | Retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
 | Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. Literal Bytes have valid vector/arena insertion addresses and preserve hexadecimal/trigraph boundaries; the existing 96-fixture differential remains raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs, admitted usage, last-good snapshots and failed-update recovery; RFC-0140 tests malformed fragment metadata and damaged bytes. | Bind compiler/runtime/target/options to the actual host, implement public transport and owning-epoch cleanup/reset, and retain explicit last-good revision identities. |
 | Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
-| Differential, locality and release evidence | The current seed passes required commands and extended stages through an identified interrupted prefix and successful resumed suffix, including 6,144 session fault ordinals and unchanged durable budgets. Quiet baseline controls and exact C/analysis comparisons are recorded. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
+| Differential, locality and release evidence | The current seed passes all required checkpoint commands, 1,024 retained and 6,144 session fault ordinals, complete parallel-view/report comparisons and quiet timing controls. The prior byte-literal extended verification remains identified separately. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
 
 The public `session` command still reports invalidation estimates. The
 M1 milestone remains in progress; none of the remaining rows is waived by the
@@ -72,14 +72,20 @@ commands and extended stages pass across these two identified runs; there is no
 claim of one uninterrupted full invocation. See the
 [byte-literal checkpoint report](2026-09-07-m1-byte-literals.md).
 
-RFC-0142 has an isolated draft, with no production integration or claimed latency
-benefit. Its current-candidate input reuse and final integrity checks pass the
-96-fixture, six-limit ordinary and sanitizer domain. Previous-snapshot import,
-corruption tests, observers, integration and measured costs remain required.
+RFC-0142's validated input-query seed is
+`64107135f2677bcada015bfe5cd292bb1c3a8f41216fe2c92ebf7793c9df5f61`.
+Complete input/corruption/edit oracles, geometric actual-work gates, all required
+checkpoint commands, complete analysis-consumer comparisons, 1,024 retained
+faults and 6,144 session faults pass. Clean and retained timing controls pass after
+two measured cost refinements. Earlier regressions, physical memory/copy costs,
+source identities and verification logs are preserved in the
+[checkpoint report](2026-09-07-m1-input-queries.md) and compressed evidence.
+No significant latency or agent-productivity improvement is inferred.
 
-Next: integrate and validate RFC-0142, then complete the public session, global
-analysis, native cache and release obligations
-in the closure ledger. M2-M7 remain outside this goal.
+Next: connect the retained engine to a public session bound to actual host
+identities, then complete global analysis retention, native artifact caching and
+release obligations in the closure ledger. The public command still reports
+estimates. M2-M7 remain outside this goal.
 
 ## Historical checkpoints
 

@@ -7,7 +7,7 @@ which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
 parsing, function memory plans, range queries and C function fragments as described
 below. Manifest/import validation, declaration/layout checks, termination validation,
-global parameter scans, parallel analysis and complete C assembly remain current-revision
+parallel analysis and complete C assembly remain current-revision
 work. Termination and emission consume the current retained range view. The public `session` command
 still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
@@ -76,7 +76,8 @@ revisions. Keys include complete checked declaration dependencies, both input fa
 for each parameter and the incoming global refinement count. Sparse saved facts
 and recurrence records validate and relocate against current canonical nodes;
 invalid optional history causes a miss. Three reusable scratch vectors preserve
-all five passes and eight global input scans. The resulting complete view feeds
+all five passes. RFC-0142 below replaces eligible global input scans
+with complete retained transfers. The resulting complete view feeds
 ordinary termination validation and the sole C emitter. Parallel analysis still
 runs; RFC-0140 compares its current sites before reusing function fragments. Native observation separates range production,
 imports, passes, scans and scratch initialization/reset work. Costs, limits and
@@ -112,14 +113,21 @@ complete size, including imported bytes; failed candidates retain the last-good
 snapshot. Header/layout emission and C copying remain real work. Native session
 observation schema 6 retains all earlier counters and adds prototype/body/wrapper
 producer entries, fragment imports, copied bytes and counted-record lookups.
+RFC-0142 advances this to schema 7 by appending actual input-transfer
+entries; the old scan counter continues to count actual ordinary scan calls.
 Public host-bound sessions, retained global analyses and native backend artifacts
 remain M1 work.
 
-[RFC-0142](../design/rfcs/0142-retained-parameter-input-queries.md) accepts the next
-parameter-input query contract. It requires complete ordered caller contributions,
-current argument facts and recurrence invariants, with both existing input modes
-and all four transfer rounds preserved. Its implementation is pending: the current
-retained analyzer still executes the eight ordinary whole-token input scans.
+[RFC-0142](../design/rfcs/0142-retained-parameter-input-queries.md) implements
+parameter-input retention. It validates complete ordered
+caller contributions, all six current argument-fact fields and recurrence
+invariants, preserving both existing input modes and all four transfer rounds.
+Eligible queries reuse complete results; missing, damaged or bounded-away history
+uses the ordinary scans. Complete empty incoming adjacency leaves the exact
+cleared defaults without storing an empty query. The full true-invariant vector
+is initialized only when fallback needs it. Verified domains, allocation-fault
+campaigns and contrary measurements are recorded in the
+[checkpoint report](../benchmarks/results/2026-09-07-m1-input-queries.md).
 
 ## What the current session command measures
 

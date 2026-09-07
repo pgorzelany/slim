@@ -51,6 +51,9 @@
 /^static .*slim_fn_ranges_95scan_95parameter_95calls\(.*\) \{$/ {
     phase = 0; epoch = 0; capture = 0; importing = 0; parameter_scans++; print; print "slim_session_probe_count(12);"; next
 }
+/^static .*slim_fn_retained_95input_95transfer\(.*\) \{$/ {
+    phase = 0; epoch = 0; capture = 0; importing = 0; input_transfers++; print; print "slim_session_probe_count(22);"; next
+}
 /^static .*slim_fn_parallel_95analyze\(.*\) \{$/ {
     phase = 0; epoch = 0; capture = 0; importing = 0; parallel_analyzes++; print; print "slim_session_probe_count(13);"; next
 }
@@ -116,7 +119,7 @@ epoch && /^return slim_result;$/ { cleanups++; print "slim_session_probe_epoch_e
 }
 { print }
 END {
-    if (assemblies != 1 || assembly_returns != 1 || proof_functions != 1 || proof_returns != 1 || counted_lookups != 1 || prototypes != 1 || bodies != 1 || wrappers != 1 || fragments != 1 || fact_initializations != 1 || fact_resets != 1 || range_analyzes != 1 || range_queries != 1 || range_functions != 1 || range_imports != 1 || ordinary_passes != 1 || retained_passes != 1 || parameter_scans != 1 || parallel_analyzes != 1 || plans != 1 || plan_imports != 1 || grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != 1 || cleanups != 1) exit 1
+    if (input_transfers != 1 || assemblies != 1 || assembly_returns != 1 || proof_functions != 1 || proof_returns != 1 || counted_lookups != 1 || prototypes != 1 || bodies != 1 || wrappers != 1 || fragments != 1 || fact_initializations != 1 || fact_resets != 1 || range_analyzes != 1 || range_queries != 1 || range_functions != 1 || range_imports != 1 || ordinary_passes != 1 || retained_passes != 1 || parameter_scans != 1 || parallel_analyzes != 1 || plans != 1 || plan_imports != 1 || grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != 1 || cleanups != 1) exit 1
     print "_Static_assert(sizeof(Slim_type_retained_95Saved) <= 64, \"retained saved-row storage budget\");"
     print "_Static_assert(sizeof(Slim_type_retained_95StoredLink) <= 8, \"retained temporary-link storage budget\");"
 }
