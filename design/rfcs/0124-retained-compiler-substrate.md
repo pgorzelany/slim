@@ -336,71 +336,47 @@ implementation, or authorization to relax performance or compatibility policy.
 
 ## Implementation
 
-In progress. RFC-0125's checked source identities and RFC-0126's exact revision
-maps and lazy declaration index are implemented in production. RFC-0127 adds
-the independently callable function checker with isolated scratch state and
-materialized facts; it does not retain semantic results or reclaim backing
-storage per function. RFC-0128 retains the existing layout checker's completion
-order for dependency-ordered C definitions, removing the recorded forward-type
-emission blocker. RFC-0129 supplies the optional bounded structural function-flow
-view and native work/fault observations. Ownership orchestration over that view,
-typed place facts, full query/session integration, retained analysis/emission,
-service transactions and the full M1 validation remain pending. The SLIM
-Next progress report records each checkpoint; M0 remains the historical comparison
-baseline, not a claim that the current seed is unchanged.
+In progress at validated code checkpoint `49ea4a0`. The complete parent contract
+remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
+separates implemented internal operations from public-service and release work;
+the dated checkpoint sections preserve earlier measurements and limitations.
 
-RFC-0130 implements internal retained function typing with checked relocation and
-interface dependency invalidation. Global checks and analysis still execute; the
-public session is unchanged. Measured snapshot setup/copying overhead still exceeds
-the inference savings in the two-revision workload. Public query integration,
-service transactions and retained analysis/emission remain pending.
+RFC-0125/0126 provide revision-owned source identities, exact maps and indexed
+lookup. RFC-0127 isolates the sole function checker, and RFC-0128 retains checked
+layout completion order. RFC-0129 supplies a bounded structural flow view, and
+RFC-0134 exposes typed place facts from accepted bindings. Availability and loan
+orchestration still use the existing checker; the optional post-check graph does
+not complete the required ownership migration.
 
-RFC-0131 compacts retained storage while preserving full typed semantic handles at
-query boundaries. It reduces measured setup/update overhead and permanently gates
-fixed payload sizes; the two-revision workload remains slower than two clean checks.
-It does not change the remaining parent milestones or service obligations.
+RFC-0130/0131/0132 implement compact retained typing and integrate it with project
+preparation. RFC-0133 supplies captured inputs, transactional successful snapshots,
+bounded cumulative epoch accounting, failed-update recovery and whole-C integrity
+checks. RFC-0135 retains eligible declaration parsing. Configuration fingerprints
+remain caller-attested in the internal API; the public session still reports
+estimates. Actual host identity binding, transport, lifecycle/reset and external
+publication remain required.
 
-RFC-0132 connects retained inference to the shared project preparation path and
-fixes complete declaration source extents in retained/source-map keys. Current
-project visibility and source origins are validated before reuse. Public session
-transactions, retained parsing/analysis/emission and service lifecycle remain
-pending; this prerequisite does not complete them.
+RFC-0136 repairs minimum-I64 and decimal-literal lowering. RFC-0137/0138 retain
+function memory plans and range queries with complete consumed inputs and bounded,
+validated rows. Current global parameter scans, termination validation and parallel
+analysis still execute. Retaining eligible global analysis requires its complete
+body, call-site, ordering and budget dependencies; no fabricated universal
+dependency or unobserved cache-hit claim discharges that work.
 
-RFC-0133 implements the internal transactional project snapshot, bounded epoch
-accounting, failed-update recovery and optional whole-C integrity/reuse. Its
-configuration fingerprints remain caller-attested; public host binding and
-transport/lifecycle integration remain pending. Changed input still reparses
-project sources and regenerates whole C.
+RFC-0139 stabilizes declaration-local C names. RFC-0140 retains function prototypes,
+bodies and private wrappers against complete checked and consumed lowering inputs,
+using spans of the existing C artifact. Changed callers regenerate when consumed
+callee work or selected sites change. Source-equal whole artifacts retain their
+validated reuse path; bad optional metadata or bytes cause misses. C assembly and
+copying remain actual work, and native backend artifacts are not retained by this
+session. The checkpoint measures frontend/backend/runtime/resource costs separately,
+including initial regressions and final noise controls, without a general speedup
+claim or relaxed budget.
 
-RFC-0134 exposes typed, bounded lexical place facts from retained checked bindings
-and a matching-owner flow adapter. It preserves the saved-row budget and does not
-infer alias uniqueness, availability or loan state. Flow-based ownership
-orchestration, retained declaration parsing/global analysis/C fragments/backend
-work and complete M1 validation remain required.
-
-RFC-0135 implements retained declaration parsing for original modules and the
-flattened project, including lexical/lookahead dependencies, current canonical
-tokens, transactional publication and capacity tests. Native session schema 2
-separates lexing, declaration grammar execution and node imports. A body edit in
-the geometric fixture executes two declaration grammars, but metadata adds measured
-cost and global analysis and whole-C emission still run. Flow-based ownership/loan
-orchestration, public host identity and lifecycle integration, retained global
-analysis/C fragments/backend artifacts, and complete M1 closure remain required.
-
-RFC-0136 repairs the recorded minimum-I64 emission blocker and decimal leading-zero
-lowering, and rejects out-of-domain integer literals through E0361 under its
-explicit compatibility contract. This supplies correct literal artifacts for
-subsequent retained emission; it does not complete retained analysis or generation.
-
-RFC-0137 implements retained function memory plans with typed owners, local
-node/byte relocation, pooled saved rows, checked framing and independent record
-budgets. Native session schema 3 separates actual plan construction from imports.
-Full current plans and C match clean preparation across the corpus, relocation,
-metadata/capacity cases and scalar/dense geometry; two bounded fault campaigns
-cover unchanged and changed snapshots. The nested prototype's cold penalty and
-pooled candidate's cost evidence are preserved. This completes function memory
-planning reuse, not range/parallel analysis, flow ownership, public host-bound
-sessions, stable C fragments/backend artifacts or the full M1 exit criteria.
+The remaining ownership orchestration, public host-bound service, retained global
+analysis, native backend caching and integrated differential/locality/release
+obligations must all pass before this parent is complete. M0 remains the historical
+comparison baseline, not a claim that the current seed is unchanged.
 
 ## Removal and supersession
 

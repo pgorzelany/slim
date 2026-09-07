@@ -14,13 +14,35 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | RFC-0124 defines revision identities, derived control flow, dependency completeness, and transactional reuse. Implementation and measured incremental reuse remain pending. |
+| M1: compiler substrate | in progress | Checkpoint `49ea4a0` validates internal retained parsing, typing, memory plans, range queries and C function fragments with transactional recovery. Typed identities and the optional structural flow view are implemented. Ownership-flow orchestration, public host-bound sessions, retained global analyses, native backend caching and full closure remain. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
 | M5: systems contracts | pending | Resource capabilities and successor resource contracts not implemented. |
 | M6: kernel substrate | pending | No freestanding kernel claim. |
 | M7: OS research slice | pending | No end-to-end OS or productivity claim. |
+
+## Current M1 closure ledger
+
+This ledger describes checkpoint `49ea4a0`; the dated sections below preserve
+historical costs and checkpoint-specific results. An implemented internal query
+is not evidence that the public session already provides that query.
+
+| Obligation | Current result | Remaining closure work |
+| --- | --- | --- |
+| Revision-owned source, declaration, node and span identities | RFC-0125/0126 implement checked ownership, exact revision maps and source relocation; RFC-0134 adds retained typed place identities. | Preserve these contracts through the public session lifecycle and all configuration changes. |
+| Branch/recurrence ownership foundation | RFC-0129 implements a bounded structural flow view; the existing checker still produces move, availability and loan decisions. | Move orchestration onto the shared derived view while preserving acceptance, diagnostic order, lexical loan lifetime and simultaneous recurrence transfer. A post-check graph alone does not satisfy this row. |
+| Reusable declaration queries | RFC-0130/0131/0132/0135 retain typing and parsing with validated dependencies and current source links. | Exercise the same production queries through real public updates and preserve locality through the remaining analysis integration. |
+| Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. Complete current global scans and parallel analysis still execute. | Retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
+| Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. The 96 accepted-fixture differential is raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
+| Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs, admitted usage, last-good snapshots and failed-update recovery; RFC-0140 tests malformed fragment metadata and damaged bytes. | Bind compiler/runtime/target/options to the actual host, implement public transport and owning-epoch cleanup/reset, and retain explicit last-good revision identities. |
+| Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
+| Differential, locality and release evidence | Every completed child has measured domains and required checkpoint gates. RFC-0140 passes the full session sanitizer campaign, 6,144 fault ordinals and unchanged durable budgets. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
+
+The public `session` command still reports invalidation estimates. The complete
+M1 goal remains active; none of the remaining rows is waived by the C-fragment
+checkpoint. The known recursive-checker sanitizer stack limit remains recorded
+in the RFC-0129 evidence and is not fixed by retained emission.
 
 ## Measurement discipline
 
