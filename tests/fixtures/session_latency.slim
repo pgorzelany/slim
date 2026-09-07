@@ -1,0 +1,33 @@
+module zzprobe
+
+fn clean(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let prepared: project.PreparedProject = project.prepare_project_path(path)
+  if prepared.status == 0:
+    let code: Bytes = project.generate_prepared_project(prepared)
+    if bytes.len(code) > 0:
+      0
+    else:
+      1
+  else:
+    prepared.status
+
+fn run_epoch(before: Bytes, after: Bytes, mode: Bytes) -> I64 effects[alloc, io, partial]:
+  if retained.equal(mode, "cold"):
+    let first: I64 = clean(before)
+    let second: I64 = clean(after)
+    first + second
+  else:
+    let limits: session.Limits = session.Limits(attempts: 64, input_bytes: 67108864, canonical_nodes: 1000000, code_bytes: 67108864)
+    let config: session.Config = session.Config(compiler: "current", runtime: "current", target: "native", options: "default")
+    let state: session.State = session.start(1, limits)
+    let input: project.ProjectInput = project.capture_project_input(before)
+    let first: session.Report = session.update(@state, ^input, config)
+    let updated: project.ProjectInput = project.capture_project_input(after)
+    let second: session.Report = session.update(@state, ^updated, config)
+    first.status + second.status
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 4:
+    run_epoch(vec.get(args, 1), vec.get(args, 2), vec.get(args, 3))
+  else:
+    64

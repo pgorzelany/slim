@@ -5,9 +5,9 @@ checking or C generation**. The production compiler now has an internal retained
 function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
-parsing, function memory plans and range queries as described below. Manifest/import
-validation, declaration/layout checks, termination validation, global parameter
-scans, parallel analysis and changed-source C generation remain current-revision
+parsing, function memory plans, range queries and C function fragments as described
+below. Manifest/import validation, declaration/layout checks, termination validation,
+global parameter scans, parallel analysis and complete C assembly remain current-revision
 work. Termination and emission consume the current retained range view. The public `session` command
 still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
@@ -25,7 +25,7 @@ stale revisions cannot replace it. The caller selects a token limit in
 1..1,000,000; invalid limits or larger inputs execute ordinary checking and report
 a capacity miss. This does not bound source
 bytes or peak process memory. This internal typing layer does not complete M1's persistent service lifecycle,
-flow-based ownership orchestration, analysis retention or cached emission.
+flow-based ownership orchestration, global analysis retention or native backend caching.
 
 [RFC-0132](../design/rfcs/0132-retained-project-preparation.md) connects retained
 typing to shared project preparation. The attempt returns the complete prepared
@@ -33,8 +33,7 @@ project, eligible typing history and actual inference work. Both preparation mod
 run current manifest/module/import/export validation and retain current diagnostic
 origins. An unchanged flattened body cannot bypass a removed import or export.
 This entry point originally repeated module parsing; RFC-0135 now retains eligible
-declaration parses within it. Flattening, global checks and changed-source C
-generation still run. The public session protocol remains estimate-only.
+declaration parses within it. Flattening and global checks still run; RFC-0140 adds retained function emission. The public session protocol remains estimate-only.
 
 Retained typing and source snapshot maps now use complete declaration source keys,
 excluding trailing separator whitespace. A synthetic closing node is not a source
@@ -70,8 +69,8 @@ for each parameter and the incoming global refinement count. Sparse saved facts
 and recurrence records validate and relocate against current canonical nodes;
 invalid optional history causes a miss. Three reusable scratch vectors preserve
 all five passes and eight global input scans. The resulting complete view feeds
-ordinary termination validation and the sole C emitter. Parallel analysis and
-changed-source C emission still run. Native observation separates range production,
+ordinary termination validation and the sole C emitter. Parallel analysis still
+runs; RFC-0140 compares its current sites before reusing function fragments. Native observation separates range production,
 imports, passes, scans and scratch initialization/reset work. Costs, limits and
 complete differential evidence are in the
 [progress report](../benchmarks/results/2026-09-05-slim-next-progress.md).
@@ -80,8 +79,33 @@ complete differential evidence are in the
 C locals and temporaries parameter-list-relative node ordinals. Private parallel
 helpers also include their escaped qualified owner function name. Unrelated
 preceding edits and module relocation therefore preserve unchanged function
-fragments when all checked lowering inputs remain equal. The emitter still runs
-on changed-source updates; fragment dependency tracking and storage remain M1 work.
+fragments when all checked lowering inputs remain equal.
+
+[RFC-0140](../design/rfcs/0140-retained-c-function-fragments.md) adds actual
+retained function prototypes, bodies and private
+parallel wrappers to the internal session. It forwards the checker’s existing
+revision-bound declaration transition and compares complete checked facts/links,
+consumed memory-plan fields, all local range fields, counted records and ordered
+parallel sites. An unchanged caller regenerates when its callee changes consumed
+recurrence work or when graph/selection limits remove an executable site.
+
+The sole emitter records byte intervals while producing each fragment. Optional
+metadata shares the snapshot’s existing immutable C artifact; it does not own a
+second complete C payload. Revision/owner checks, bounded section framing and
+checksums precede import. Invalid history uses normal current emission. The
+checksum detects tested accidental corruption of compiler-owned state; it is not
+an authentication boundary for arbitrary imported C or semantic data. Limits are
+one million metadata records, 64 reported sites/two tasks per site and 67,108,864
+C bytes. The ordinary and retained emitters share a constant-work counted-record
+cursor; 64 counted report rows do not cap proof storage.
+
+No-change complete inputs keep whole-artifact reuse. New artifacts charge their
+complete size, including imported bytes; failed candidates retain the last-good
+snapshot. Header/layout emission and C copying remain real work. Native session
+observation schema 6 retains all earlier counters and adds prototype/body/wrapper
+producer entries, fragment imports, copied bytes and counted-record lookups.
+Public host-bound sessions, retained global analyses and native backend artifacts
+remain M1 work.
 
 ## What the current session command measures
 

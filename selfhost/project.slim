@@ -150,6 +150,7 @@ struct ProjectInput:
   modules: Vec[ModuleInput]
 
 struct ProjectAttempt:
+  transition: retained.Update
   canonical_nodes: I64
   prepared: PreparedProject
   cache: retained.Cache
@@ -437,7 +438,7 @@ fn invalid_project_attempt(status: I64) -> ProjectAttempt effects[alloc]:
   let prepared: PreparedProject = invalid_prepared_project(status)
   let cache: retained.Cache = retained.empty_cache()
   let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-  ProjectAttempt(canonical_nodes: 0, prepared: prepared, cache: cache, work: work)
+  ProjectAttempt(transition: retained.empty_update(), canonical_nodes: 0, prepared: prepared, cache: cache, work: work)
 
 fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let start_origin: Origin = vec.get(origins, issue.start)
@@ -473,7 +474,7 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.T
     let prepared: PreparedProject = invalid_prepared_project(65)
     let cache: retained.Cache = retained.empty_cache()
     let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: true)
-    ProjectAttempt(canonical_nodes: count, prepared: prepared, cache: cache, work: work)
+    ProjectAttempt(transition: retained.empty_update(), canonical_nodes: count, prepared: prepared, cache: cache, work: work)
   else:
     check_loaded_project(manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, retain, previous, revision, token_limit)
 
@@ -493,7 +494,8 @@ fn check_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Tok
   let range_view: ranges.View = mem.replace(@attempt.range_view, ranges.empty_view())
   let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan, range_ready: attempt.range_ready, range_view: range_view)
   let cache: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
-  ProjectAttempt(canonical_nodes: canonical_nodes, prepared: prepared, cache: cache, work: attempt.work)
+  let transition: retained.Update = mem.replace(@attempt.transition, retained.empty_update())
+  ProjectAttempt(transition: transition, canonical_nodes: canonical_nodes, prepared: prepared, cache: cache, work: attempt.work)
 
 fn parse_project_manifest(source: Bytes, tokens: @Vec[syntax.Token]) -> I64 effects[alloc, io, partial]:
   syntax.lex_data(source, 0, @tokens)
@@ -692,7 +694,7 @@ fn prepare_parsed_project(input: ProjectInput, module_tokens: Vec[syntax.Token],
     let prepared: PreparedProject = invalid_prepared_project(65)
     let cache: retained.Cache = retained.empty_cache()
     let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: capacity)
-    ProjectAttempt(canonical_nodes: count, prepared: prepared, cache: cache, work: work)
+    ProjectAttempt(transition: retained.empty_update(), canonical_nodes: count, prepared: prepared, cache: cache, work: work)
   else:
     let manifest_tokens: Vec[syntax.Token] = vec.new()
     copy_manifest_tokens(input.manifest_tokens, 0, @manifest_tokens)

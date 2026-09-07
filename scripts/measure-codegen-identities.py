@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Same-host C identifier costs; run after other validation jobs finish.
+"""Same-host C emission/runtime costs; run after other validation jobs finish.
 
 Supply O2 compilers built from the recorded baseline and candidate C. Measurements
 separate the complete frontend, external C backend and native execution. These
@@ -49,11 +49,18 @@ def main():
     parser.add_argument('--candidate-c', required=True)
     parser.add_argument('--work', required=True)
     parser.add_argument('--results', default='benchmarks/results')
+    parser.add_argument('--report-prefix', default='m1-stable-c')
+    parser.add_argument('--baseline-runtime', default='runtime')
+    parser.add_argument('--candidate-runtime', default='runtime')
     args = parser.parse_args()
+    assert args.report_prefix and all(c.isascii() and (c.isalnum() or c == '-')
+                                      for c in args.report_prefix)
     work, results = Path(args.work), Path(args.results)
     work.mkdir(parents=True, exist_ok=True)
     results.mkdir(parents=True, exist_ok=True)
     old, new = Path(args.baseline).resolve(), Path(args.candidate).resolve()
+    runtime_roots = [Path(args.baseline_runtime).resolve(),
+                     Path(args.candidate_runtime).resolve()]
     digest = hashlib.sha256(Path(args.candidate_c).read_bytes()).hexdigest()
     date = datetime.date.today().isoformat()
     posix = platform.system() in ('Darwin', 'Linux', 'FreeBSD', 'NetBSD', 'OpenBSD')
@@ -61,9 +68,13 @@ def main():
                 f'candidate_seed_sha256={digest}; same-host O2; process totals '
                 f'include startup and I/O; POSIX worker backend={posix}; '
                 'no portable timing claim\n')
+    for label, implementation in zip(('baseline', 'candidate'), runtime_roots):
+        for name in ('slim_rt.h', 'slim_rt.c'):
+            runtime_digest = hashlib.sha256((implementation / name).read_bytes()).hexdigest()
+            metadata += f'# {label} {name} SHA-256={runtime_digest}\n'
 
     def save(kind, protocol, columns, rows):
-        path = results / f'{date}-m1-stable-c-{kind}.tsv'
+        path = results / f'{date}-{args.report_prefix}-{kind}.tsv'
         path.write_text(metadata + f'# {protocol}\n' + columns + '\n' +
                         ''.join('\t'.join(map(str, row)) + '\n' for row in rows))
 
@@ -87,7 +98,8 @@ def main():
     for path in sorted(Path('benchmarks/challenges').glob('*/program.slim')):
         name = path.parent.name
         files, binaries, commands = [], [], []
-        for label, compiler in (('before', old), ('after', new)):
+        for label, compiler, implementation in (('before', old, runtime_roots[0]),
+                                                 ('after', new, runtime_roots[1])):
             _, code = timed([compiler, path])
             c_file = work / f'{name}-{label}.c'
             c_file.write_bytes(code)
@@ -100,8 +112,8 @@ def main():
                 if posix:
                     flags += ['-DSLIM_POSIX_WORKERS=1', '-pthread']
             commands.append([os.environ.get('CC', 'cc'), '-std=c11', '-O2', '-DNDEBUG',
-                             '-Wall', '-Wextra', '-Werror', *flags, '-I', 'runtime',
-                             c_file, 'runtime/slim_rt.c', '-o', binary])
+                             '-Wall', '-Wextra', '-Werror', *flags, '-I', implementation,
+                             c_file, implementation / 'slim_rt.c', '-o', binary])
         rows = pairs(*commands, count=5, warm=1)
         sizes = [binary.stat().st_size for binary in binaries]
         backend.extend([[name, *row[:4], *sizes] for row in rows])
@@ -112,7 +124,8 @@ def main():
         rows = pairs([binaries[0], *arguments], [binaries[1], *arguments])
         runtime.extend([[name, *row[:4]] for row in rows])
         identities.append([name, *[len(file.read_bytes()) for file in files],
-                           *sizes, hashlib.sha256(before).hexdigest(), 'exact'])
+                           *sizes, hashlib.sha256(before).hexdigest(), 'exact',
+                           files[0].read_bytes() == files[1].read_bytes()])
         print('native', name, 'runtime_ms',
               round(statistics.median(row[1] for row in rows) / 1e6, 3),
               round(statistics.median(row[2] for row in rows) / 1e6, 3), flush=True)
@@ -122,8 +135,8 @@ def main():
              'application\tpair\tbaseline_ns\tcandidate_ns\tratio\tbaseline_binary_bytes\tcandidate_binary_bytes', backend)
         save('runtime', 'two warmups, eleven alternating pairs; exact output agreement before sampling; default input except bytefreq=65536 bytes 0..255 repeated',
              'application\tpair\tbaseline_ns\tcandidate_ns\tratio', runtime)
-        save('native', 'Each changed C row separately verified as injective private identifier renaming with exact complete analysis in identities.tsv',
-             'application\tbaseline_C_bytes\tcandidate_C_bytes\tbaseline_binary_bytes\tcandidate_binary_bytes\tstdout_sha256\tstatus_stdout_stderr', identities)
+        save('native', 'C changes require a separate compiler/analysis differential; this table checks exact native outputs and records raw C equality',
+             'application\tbaseline_C_bytes\tcandidate_C_bytes\tbaseline_binary_bytes\tcandidate_binary_bytes\tstdout_sha256\tstatus_stdout_stderr\traw_C_equal', identities)
 
 
 if __name__ == '__main__':

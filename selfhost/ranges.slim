@@ -1320,20 +1320,6 @@ fn prove_counted_recurrence(source: Bytes, tokens: Vec[syntax.Token], typed_fact
   else:
     false
 
-fn find_counted(counted: Vec[Counted], item: I64, index: I64) -> I64 effects[partial]:
-  let count: I64 = vec.len(counted)
-  let done: Bool = index >= count
-  if done:
-    -1
-  else:
-    let fact: Counted = vec.get(counted, index)
-    let same: Bool = fact.item == item
-    if same:
-      index
-    else:
-      let next: I64 = index + 1
-      recur(counted, item, next)
-
 fn prove_tail_recurrence(source: Bytes, tokens: Vec[syntax.Token], facts: @Vec[Fact], params: I64, item: I64, body: I64, recurrences: @Vec[Recurrence]) -> Bool effects[alloc, partial]:
   let match_form: Bool = syntax.ast_expression_is_match(source, tokens, body)
   if match_form:

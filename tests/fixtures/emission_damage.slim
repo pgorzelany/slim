@@ -1,0 +1,301 @@
+module zdamage
+
+# Test-only mutations of compiler-owned optional history. No damaged record is
+# passed to the checker as a replacement for current source.
+fn starts(value: Bytes, prefix: Bytes, at: I64) -> Bool effects[partial]:
+  if at >= bytes.len(prefix):
+    true
+  else:
+    if at < bytes.len(value):
+      if u8.to_i64(bytes.get(value, at)) == u8.to_i64(bytes.get(prefix, at)):
+        recur(value, prefix, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn number(mode: Bytes, label: Bytes, value: I64) -> I64 effects[partial]:
+  if retained.equal(mode, label):
+    -9223372036854775808
+  else:
+    value
+
+fn checksum(mode: Bytes, label: Bytes, value: I64) -> I64 effects[partial]:
+  if retained.equal(mode, label):
+    0
+  else:
+    value
+
+fn flag(mode: Bytes, label: Bytes, value: Bool) -> Bool effects[partial]:
+  if retained.equal(mode, label):
+    !value
+  else:
+    value
+
+fn owner(old: identity.DeclarationId, mode: Bytes) -> identity.DeclarationId effects[partial]:
+  let revision: identity.Revision = identity.Revision(epoch: number(mode, "owner-epoch", old.file.revision.epoch), serial: number(mode, "owner-revision", old.file.revision.serial))
+  let file: identity.FileId = identity.FileId(revision: revision, slot: number(mode, "owner-file", old.file.slot))
+  identity.DeclarationId(file: file, slot: number(mode, "owner-slot", old.slot))
+
+fn prototype(old: fragments.Span, mode: Bytes) -> fragments.Span effects[partial]:
+  fragments.Span(start: number(mode, "prototype-start", old.start), end: number(mode, "prototype-end", old.end), checksum: checksum(mode, "prototype-checksum", old.checksum))
+
+fn body(old: fragments.Span, mode: Bytes) -> fragments.Span effects[partial]:
+  fragments.Span(start: number(mode, "body-start", old.start), end: number(mode, "body-end", old.end), checksum: checksum(mode, "body-checksum", old.checksum))
+
+fn wrapper_span(old: fragments.Span, mode: Bytes) -> fragments.Span effects[partial]:
+  fragments.Span(start: number(mode, "wrapper-span-start", old.start), end: number(mode, "wrapper-span-end", old.end), checksum: checksum(mode, "wrapper-span-checksum", old.checksum))
+
+fn damaged_payload(previous: session.Artifact, position: I64) -> session.Artifact effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  text.append_span(previous.code, 0, position, @output)
+  let byte: I64 = u8.to_i64(bytes.get(previous.code, position))
+  vec.push(@output, i64.to_u8((byte + 1) % 256))
+  text.append_span(previous.code, position + 1, bytes.len(previous.code), @output)
+  session.Artifact(code: bytes.freeze(^output), checksum: previous.checksum)
+
+fn replace_payload(state: @session.State, position: I64) -> Void effects[alloc, partial]:
+  let artifacts: Vec[session.Artifact] = mem.replace(@state.good.artifacts, vec.new())
+  let artifact: session.Artifact = damaged_payload(vec.get(artifacts, 0), position)
+  vec.set(@artifacts, 0, artifact)
+  let removed: Vec[session.Artifact] = mem.replace(@state.good.artifacts, artifacts)
+  void
+
+fn change(state: @session.State, mode: Bytes, reseal: Bool) -> Void effects[alloc, partial]:
+  let old: fragments.Cache = mem.replace(@state.good.emission, fragments.empty_cache())
+  if retained.equal(mode, "prototype-payload"):
+    let entry: fragments.Entry = vec.get(old.entries, 0)
+    replace_payload(@state, entry.prototype.start)
+  else:
+    if retained.equal(mode, "body-payload"):
+      let entry: fragments.Entry = vec.get(old.entries, 0)
+      replace_payload(@state, entry.body.start)
+    else:
+      if retained.equal(mode, "wrapper-payload"):
+        let wrapper: fragments.Wrapper = vec.get(old.wrappers, 0)
+        replace_payload(@state, wrapper.span.start)
+      else:
+        void
+  let entries: Vec[fragments.Entry] = mem.replace(@old.entries, vec.new())
+  let slots: Vec[I64] = mem.replace(@old.slots, vec.new())
+  let wrappers: Vec[fragments.Wrapper] = mem.replace(@old.wrappers, vec.new())
+  let sites: Vec[parallel.Site] = mem.replace(@old.sites, vec.new())
+  if vec.len(entries) > 0:
+    let entry: fragments.Entry = vec.get(entries, 0)
+    vec.set(@entries, 0, fragments.Entry(declaration: owner(entry.declaration, mode), plan: number(mode, "entry-plan", entry.plan), counted: number(mode, "entry-counted", entry.counted), prototype: prototype(entry.prototype, mode), body: body(entry.body, mode)))
+  else:
+    void
+  if retained.equal(mode, "entry-duplicate") && (vec.len(entries) > 1):
+    let duplicate: fragments.Entry = vec.get(entries, 0)
+    vec.set(@entries, 1, duplicate)
+  else:
+    void
+  if retained.equal(mode, "slot") && (vec.len(slots) > 0):
+    vec.set(@slots, 0, -9223372036854775808)
+  else:
+    void
+  if vec.len(wrappers) > 0:
+    let wrapper: fragments.Wrapper = vec.get(wrappers, 0)
+    vec.set(@wrappers, 0, fragments.Wrapper(declaration: owner(wrapper.declaration, mode), site: number(mode, "wrapper-site", wrapper.site), task: number(mode, "wrapper-task", wrapper.task), span: wrapper_span(wrapper.span, mode)))
+  else:
+    void
+  if retained.equal(mode, "wrapper-duplicate") && (vec.len(wrappers) > 1):
+    let duplicate: fragments.Wrapper = vec.get(wrappers, 0)
+    vec.set(@wrappers, 1, duplicate)
+  else:
+    void
+  if vec.len(sites) > 0:
+    let site: parallel.Site = vec.get(sites, 0)
+    vec.set(@sites, 0, parallel.Site(site: number(mode, "site-site", site.site), first: number(mode, "site-first", site.first), second: number(mode, "site-second", site.second), join: number(mode, "site-join", site.join), first_work: number(mode, "site-first-work", site.first_work), second_work: number(mode, "site-second-work", site.second_work), allocates: flag(mode, "site-allocates", site.allocates), explicit: flag(mode, "site-explicit", site.explicit), executable: flag(mode, "site-executable", site.executable)))
+  else:
+    void
+  if retained.equal(mode, "entries"):
+    let removed: Vec[fragments.Entry] = mem.replace(@entries, vec.new())
+    void
+  else:
+    void
+  if retained.equal(mode, "slots"):
+    let removed: Vec[I64] = mem.replace(@slots, vec.new())
+    void
+  else:
+    void
+  if retained.equal(mode, "wrappers"):
+    let removed: Vec[fragments.Wrapper] = mem.replace(@wrappers, vec.new())
+    void
+  else:
+    void
+  if retained.equal(mode, "sites"):
+    let removed: Vec[parallel.Site] = mem.replace(@sites, vec.new())
+    void
+  else:
+    void
+  let revision: identity.Revision = identity.Revision(epoch: number(mode, "epoch", old.revision.epoch), serial: number(mode, "revision", old.revision.serial))
+  let next: fragments.Cache = fragments.Cache(revision: revision, entries: entries, slots: slots, wrappers: wrappers, sites: sites, prototype_start: number(mode, "prototype-start", old.prototype_start), wrapper_start: number(mode, "wrapper-start", old.wrapper_start), body_start: number(mode, "body-start", old.body_start), footer_start: number(mode, "footer-start", old.footer_start), code_bytes: number(mode, "code-bytes", old.code_bytes), seal: number(mode, "seal", old.seal))
+  let changed: fragments.Cache = if reseal:
+    fragments.seal_cache(^next)
+  else:
+    next
+  let removed: fragments.Cache = mem.replace(@state.good.emission, changed)
+  void
+
+fn damage(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if starts(mode, "emission-", 0):
+    let reseal: Bool = starts(mode, "emission-sealed-", 0)
+    let prefix: I64 = if reseal:
+      16
+    else:
+      9
+    let output: Vec[U8] = vec.new()
+    text.append_span(mode, prefix, bytes.len(mode), @output)
+    let label: Bytes = bytes.freeze(^output)
+    damage_derived(@state, label)
+    damage_plan(@state, label)
+    change(@state, label, reseal)
+  else:
+    void
+
+fn damage_derived(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  let declaration: retained.Declaration = vec.get(state.good.typing.index.declarations, 0)
+  if starts(mode, "derived-range-", 0):
+    let facts: Vec[ranges.Fact] = mem.replace(@state.good.prepared.range_view.facts, vec.new())
+    let old: ranges.Fact = vec.get(facts, declaration.owner.first)
+    let changed: ranges.Fact = ranges.Fact(analyzed: flag(mode, "derived-range-analyzed", old.analyzed), lower_known: flag(mode, "derived-range-lower-known", old.lower_known), lower: number(mode, "derived-range-lower", old.lower), upper_known: flag(mode, "derived-range-upper-known", old.upper_known), upper: number(mode, "derived-range-upper", old.upper), total: flag(mode, "derived-range-total", old.total))
+    vec.set(@facts, declaration.owner.first, changed)
+    let removed: Vec[ranges.Fact] = mem.replace(@state.good.prepared.range_view.facts, facts)
+    void
+  else:
+    void
+  if starts(mode, "derived-counted-", 0):
+    let counted: Vec[ranges.Counted] = mem.replace(@state.good.prepared.range_view.counted, vec.new())
+    if retained.equal(mode, "derived-counted-absent"):
+      void
+    else:
+      let old: ranges.Counted = vec.get(counted, 0)
+      let changed: ranges.Counted = ranges.Counted(item: number(mode, "derived-counted-item", old.item), controller: number(mode, "derived-counted-controller", old.controller), start: number(mode, "derived-counted-start", old.start), bound: number(mode, "derived-counted-bound", old.bound), step: number(mode, "derived-counted-step", old.step), iterations: number(mode, "derived-counted-iterations", old.iterations), base: number(mode, "derived-counted-base", old.base), body: number(mode, "derived-counted-body", old.body))
+      vec.set(@counted, 0, changed)
+      let removed: Vec[ranges.Counted] = mem.replace(@state.good.prepared.range_view.counted, counted)
+      void
+  else:
+    void
+
+fn budget_case(snapshot: session.Snapshot, limit: I64, admitted: Bool) -> Bool effects[alloc, partial]:
+  let empty: retained.Cache = retained.empty_cache()
+  let missing: project.PreparedProject = project.invalid_prepared_project(1)
+  let history: fragments.Cache = fragments.empty_cache()
+  let mapping: retained.Update = retained.empty_update()
+  let actual: fragments.Generated = fragments.generate(missing, empty, "", history, snapshot.prepared, snapshot.typing, mapping, false, limit)
+  let artifact: session.Artifact = vec.get(snapshot.artifacts, 0)
+  let cached: Bool = if admitted:
+    vec.len(actual.history.entries) == snapshot.functions
+  else:
+    vec.len(actual.history.entries) == 0
+  let checksum: Bool = if admitted:
+    actual.checksum == artifact.checksum
+  else:
+    actual.checksum == -1
+  cached && (checksum && retained.equal(actual.code, artifact.code))
+
+fn check_budgets(snapshot: session.Snapshot) -> Bool effects[alloc, partial]:
+  let records: I64 = (vec.len(snapshot.typing.index.declarations) + snapshot.functions) + (3 * vec.len(snapshot.emission.sites))
+  budget_case(snapshot, records - 1, false) && (budget_case(snapshot, records, true) && (budget_case(snapshot, records + 1, true) && (budget_case(snapshot, 0, false) && (budget_case(snapshot, 1000000, true) && budget_case(snapshot, 1000001, false)))))
+
+fn copy_values(old: Vec[memory.ValuePlan], at: I64, output: @Vec[memory.ValuePlan]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, vec.get(old, at))
+    recur(old, at + 1, @output)
+
+fn copy_destructions(old: Vec[memory.DestructionPlan], at: I64, output: @Vec[memory.DestructionPlan]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, vec.get(old, at))
+    recur(old, at + 1, @output)
+
+fn copy_allocations(old: Vec[memory.AllocationPlan], at: I64, output: @Vec[memory.AllocationPlan], mode: Bytes) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    let allocation: memory.AllocationPlan = vec.get(old, at)
+    let changed: memory.AllocationPlan = if at == 0:
+      memory.AllocationPlan(site: number(mode, "derived-plan-allocation-site", allocation.site), region: number(mode, "derived-plan-allocation-region", allocation.region))
+    else:
+      allocation
+    vec.push(@output, changed)
+    recur(old, at + 1, @output, mode)
+
+fn damaged_plan(old: memory.FunctionPlan, mode: Bytes) -> memory.FunctionPlan effects[alloc, partial]:
+  let values: Vec[memory.ValuePlan] = vec.new()
+  let allocations: Vec[memory.AllocationPlan] = vec.new()
+  let destructions: Vec[memory.DestructionPlan] = vec.new()
+  copy_values(old.values, 0, @values)
+  copy_destructions(old.destructions, 0, @destructions)
+  if retained.equal(mode, "derived-plan-allocations"):
+    void
+  else:
+    copy_allocations(old.allocations, 0, @allocations, mode)
+  memory.FunctionPlan(function: number(mode, "derived-plan-function", old.function), return_storage: old.return_storage, local_region: flag(mode, "derived-plan-local-region", old.local_region), recursive: flag(mode, "derived-plan-recursive", old.recursive), liveness_precise: old.liveness_precise, values: values, allocations: allocations, destructions: destructions, escaping_values: old.escaping_values)
+
+fn damage_plan(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if starts(mode, "derived-plan-", 0):
+    let functions: Vec[memory.FunctionPlan] = mem.replace(@state.good.prepared.plan.functions, vec.new())
+    let changed: memory.FunctionPlan = damaged_plan(vec.get(functions, 0), mode)
+    vec.set(@functions, 0, changed)
+    let removed: Vec[memory.FunctionPlan] = mem.replace(@state.good.prepared.plan.functions, functions)
+    void
+  else:
+    void
+
+fn collect_keys(before: retained.Cache, current: retained.Cache, mapping: retained.Update, at: I64, output: @Vec[Bool]) -> Void effects[alloc, partial]:
+  if at >= vec.len(current.index.declarations):
+    void
+  else:
+    vec.push(@output, retained.same_checked_function(before, current, mapping, at))
+    recur(before, current, mapping, at + 1, @output)
+
+fn false_keys(count: I64, at: I64, output: @Vec[Bool]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, false)
+    recur(count, at + 1, @output)
+
+fn equal_keys(left: Vec[Bool], right: Vec[Bool], at: I64, hits: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    (vec.len(left) == vec.len(right)) && (hits > 0)
+  else:
+    let first: Bool = vec.get(left, at)
+    let second: Bool = vec.get(right, at)
+    let same: Bool = if first:
+      second
+    else:
+      !second
+    let next: I64 = if first:
+      hits + 1
+    else:
+      hits
+    if same:
+      recur(left, right, at + 1, next)
+    else:
+      false
+
+fn check_transition(before: Bytes, after: Bytes) -> Bool effects[alloc, io, partial]:
+  let empty: retained.Cache = retained.empty_cache()
+  let first: project.ProjectAttempt = project.prepare_project_retained(before, empty, identity.Revision(epoch: 7, serial: 1), 1000000)
+  let next: project.ProjectAttempt = project.prepare_project_retained(after, first.cache, identity.Revision(epoch: 7, serial: 2), 1000000)
+  let witnessed: Vec[Bool] = vec.new()
+  collect_keys(first.cache, next.cache, next.transition, 0, @witnessed)
+  let previous: Vec[Bool] = mem.replace(@next.transition.checked_imports, vec.new())
+  let absent: Vec[Bool] = vec.new()
+  false_keys(vec.len(previous), 0, @absent)
+  let removed: Vec[Bool] = mem.replace(@next.transition.checked_imports, absent)
+  let compared: Vec[Bool] = vec.new()
+  collect_keys(first.cache, next.cache, next.transition, 0, @compared)
+  let ready: Bool = retained.transition_ready(first.cache, next.cache, next.transition)
+  let history: fragments.Cache = fragments.empty_cache()
+  let first_code: fragments.Generated = fragments.generate(first.prepared, empty, "", history, first.prepared, first.cache, first.transition, false, 1000000)
+  let discarded: Vec[Bool] = mem.replace(@next.transition.checked_imports, vec.new())
+  let incomplete: Bool = !retained.transition_ready(first.cache, next.cache, next.transition)
+  let actual: fragments.Generated = fragments.generate(first.prepared, first.cache, first_code.code, first_code.history, next.prepared, next.cache, next.transition, true, 1000000)
+  ready && (incomplete && (equal_keys(witnessed, compared, 0, 0) && retained.equal(actual.code, project.generate_prepared_project(next.prepared))))

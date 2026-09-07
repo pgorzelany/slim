@@ -1,0 +1,675 @@
+module fragments
+
+struct Span:
+  start: I64
+  end: I64
+  checksum: I64
+
+struct Entry:
+  declaration: identity.DeclarationId
+  plan: I64
+  counted: I64
+  prototype: Span
+  body: Span
+
+struct Wrapper:
+  declaration: identity.DeclarationId
+  site: I64
+  task: I64
+  span: Span
+
+struct Cache:
+  revision: identity.Revision
+  entries: Vec[Entry]
+  slots: Vec[I64]
+  wrappers: Vec[Wrapper]
+  sites: Vec[parallel.Site]
+  prototype_start: I64
+  wrapper_start: I64
+  body_start: I64
+  footer_start: I64
+  code_bytes: I64
+  seal: I64
+
+struct Generated:
+  code: Bytes
+  history: Cache
+  checksum: I64
+
+fn empty_span() -> Span:
+  Span(start: 0, end: 0, checksum: 0)
+
+fn empty_cache() -> Cache effects[alloc]:
+  let entries: Vec[Entry] = vec.new()
+  let slots: Vec[I64] = vec.new()
+  let wrappers: Vec[Wrapper] = vec.new()
+  let sites: Vec[parallel.Site] = vec.new()
+  Cache(revision: identity.Revision(epoch: 0, serial: 0), entries: entries, slots: slots, wrappers: wrappers, sites: sites, prototype_start: 0, wrapper_start: 0, body_start: 0, footer_start: 0, code_bytes: 0, seal: 0)
+
+fn same_bool(left: Bool, right: Bool) -> Bool:
+  if left:
+    right
+  else:
+    !right
+
+fn same_range(left: ranges.Fact, right: ranges.Fact) -> Bool:
+  (same_bool(left.analyzed, right.analyzed) && same_bool(left.lower_known, right.lower_known)) && ((left.lower == right.lower) && (same_bool(left.upper_known, right.upper_known) && ((left.upper == right.upper) && same_bool(left.total, right.total))))
+
+fn same_ranges(old: Vec[ranges.Fact], current: Vec[ranges.Fact], before: identity.View, owner: identity.View, at: I64) -> Bool effects[partial]:
+  if at >= owner.count:
+    true
+  else:
+    if same_range(vec.get(old, before.first + at), vec.get(current, owner.first + at)):
+      recur(old, current, before, owner, at + 1)
+    else:
+      false
+
+fn local_node(node: I64, owner: identity.View) -> Bool effects[partial]:
+  (node >= owner.first) && (node < (owner.first + owner.count))
+
+fn same_local_node(left: I64, right: I64, before: identity.View, owner: identity.View) -> Bool effects[partial]:
+  if local_node(left, before) && local_node(right, owner):
+    (left - before.first) == (right - owner.first)
+  else:
+    false
+
+fn same_allocations(old: Vec[memory.AllocationPlan], current: Vec[memory.AllocationPlan], before: identity.View, owner: identity.View, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(old):
+    vec.len(old) == vec.len(current)
+  else:
+    if at < vec.len(current):
+      let left: memory.AllocationPlan = vec.get(old, at)
+      let right: memory.AllocationPlan = vec.get(current, at)
+      if (left.region == right.region) && same_local_node(left.site, right.site, before, owner):
+        recur(old, current, before, owner, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_plan(old: memory.FunctionPlan, current: memory.FunctionPlan, before: identity.View, owner: identity.View) -> Bool effects[partial]:
+  let aligned: Bool = (old.function == before.first) && (current.function == owner.first)
+  let flags: Bool = same_bool(old.local_region, current.local_region) && same_bool(old.recursive, current.recursive)
+  if aligned && flags:
+    same_allocations(old.allocations, current.allocations, before, owner, 0)
+  else:
+    false
+
+fn same_counted(old: Vec[ranges.Counted], current: Vec[ranges.Counted], previous: I64, index: I64, before: identity.View, owner: identity.View) -> Bool effects[partial]:
+  if previous == -1:
+    index == -1
+  else:
+    let valid: Bool = ((previous >= 0) && (previous < vec.len(old))) && ((index >= 0) && (index < vec.len(current)))
+    if valid:
+      let left: ranges.Counted = vec.get(old, previous)
+      let right: ranges.Counted = vec.get(current, index)
+      let aligned: Bool = (left.item == before.first) && (right.item == owner.first)
+      let numbers: Bool = ((left.start == right.start) && (left.bound == right.bound)) && ((left.step == right.step) && (left.iterations == right.iterations))
+      let controller: Bool = same_local_node(left.controller, right.controller, before, owner)
+      let body: Bool = same_local_node(left.body, right.body, before, owner)
+      let base: Bool = same_local_node(left.base, right.base, before, owner)
+      aligned && (numbers && (controller && (body && base)))
+    else:
+      false
+
+fn next_site(sites: Vec[parallel.Site], owner: identity.View, at: I64) -> I64 effects[partial]:
+  if at >= vec.len(sites):
+    -1
+  else:
+    let site: parallel.Site = vec.get(sites, at)
+    if local_node(site.site, owner):
+      at
+    else:
+      recur(sites, owner, at + 1)
+
+fn same_site(left: parallel.Site, right: parallel.Site, before: identity.View, owner: identity.View) -> Bool effects[partial]:
+  let first: Bool = same_local_node(left.first, right.first, before, owner)
+  let second: Bool = same_local_node(left.second, right.second, before, owner)
+  let join: Bool = same_local_node(left.join, right.join, before, owner)
+  let site: Bool = same_local_node(left.site, right.site, before, owner)
+  let work: Bool = (left.first_work == right.first_work) && (left.second_work == right.second_work)
+  let flags: Bool = same_bool(left.allocates, right.allocates) && (same_bool(left.explicit, right.explicit) && same_bool(left.executable, right.executable))
+  first && (second && (join && (site && (work && flags))))
+
+fn same_sites(old: Vec[parallel.Site], current: Vec[parallel.Site], before: identity.View, owner: identity.View, old_at: I64, at: I64) -> Bool effects[partial]:
+  let previous: I64 = next_site(old, before, old_at)
+  let index: I64 = next_site(current, owner, at)
+  if previous == -1:
+    index == -1
+  else:
+    if index >= 0:
+      if same_site(vec.get(old, previous), vec.get(current, index), before, owner):
+        recur(old, current, before, owner, previous + 1, index + 1)
+      else:
+        false
+    else:
+      false
+
+# Bounded metadata integrity, not authentication of externally supplied state.
+# Reducing each signed input before addition keeps even extreme corrupt words
+# inside the arithmetic domain. The running sum is always below this modulus.
+fn seal_word(sum: I64, value: I64) -> I64 effects[partial]:
+  let word: I64 = value % 1000000007
+  ((sum * 97) + (word + 1000000007)) % 1000000007
+
+fn seal_bool(sum: I64, value: Bool) -> I64 effects[partial]:
+  let word: I64 = if value:
+    1
+  else:
+    0
+  seal_word(sum, word)
+
+fn seal_revision(sum: I64, revision: identity.Revision) -> I64 effects[partial]:
+  seal_word(seal_word(sum, revision.epoch), revision.serial)
+
+fn seal_declaration(sum: I64, declaration: identity.DeclarationId) -> I64 effects[partial]:
+  let revision: I64 = seal_revision(sum, declaration.file.revision)
+  seal_word(seal_word(revision, declaration.file.slot), declaration.slot)
+
+fn seal_span(sum: I64, span: Span) -> I64 effects[partial]:
+  seal_word(seal_word(seal_word(sum, span.start), span.end), span.checksum)
+
+fn seal_entries(entries: Vec[Entry], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(entries):
+    sum
+  else:
+    let entry: Entry = vec.get(entries, at)
+    let owner: I64 = seal_declaration(sum, entry.declaration)
+    let indices: I64 = seal_word(seal_word(owner, entry.plan), entry.counted)
+    let spans: I64 = seal_span(seal_span(indices, entry.prototype), entry.body)
+    recur(entries, at + 1, spans)
+
+fn seal_slots(slots: Vec[I64], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(slots):
+    sum
+  else:
+    recur(slots, at + 1, seal_word(sum, vec.get(slots, at)))
+
+fn seal_wrappers(wrappers: Vec[Wrapper], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(wrappers):
+    sum
+  else:
+    let wrapper: Wrapper = vec.get(wrappers, at)
+    let owner: I64 = seal_declaration(sum, wrapper.declaration)
+    let site: I64 = seal_word(seal_word(owner, wrapper.site), wrapper.task)
+    recur(wrappers, at + 1, seal_span(site, wrapper.span))
+
+fn seal_sites(sites: Vec[parallel.Site], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(sites):
+    sum
+  else:
+    let site: parallel.Site = vec.get(sites, at)
+    let nodes: I64 = seal_word(seal_word(seal_word(seal_word(sum, site.site), site.first), site.second), site.join)
+    let work: I64 = seal_word(seal_word(nodes, site.first_work), site.second_work)
+    let flags: I64 = seal_bool(seal_bool(seal_bool(work, site.allocates), site.explicit), site.executable)
+    recur(sites, at + 1, flags)
+
+fn metadata_seal(history: Cache) -> I64 effects[partial]:
+  let owner: I64 = seal_revision(140, history.revision)
+  let counts: I64 = seal_word(seal_word(seal_word(seal_word(owner, vec.len(history.entries)), vec.len(history.slots)), vec.len(history.wrappers)), vec.len(history.sites))
+  let sections: I64 = seal_word(seal_word(seal_word(seal_word(counts, history.prototype_start), history.wrapper_start), history.body_start), history.footer_start)
+  let size: I64 = seal_word(sections, history.code_bytes)
+  let entries: I64 = seal_entries(history.entries, 0, size)
+  let slots: I64 = seal_slots(history.slots, 0, entries)
+  let wrappers: I64 = seal_wrappers(history.wrappers, 0, slots)
+  seal_sites(history.sites, 0, wrappers)
+
+fn span_valid(span: Span, size: I64) -> Bool:
+  (span.start >= 0) && ((span.end > span.start) && ((span.end <= size) && (span.checksum >= 0)))
+
+fn span_intact(code: Bytes, span: Span) -> Bool effects[partial]:
+  if (bytes.len(code) <= 67108864) && span_valid(span, bytes.len(code)):
+    cache.weighted_checksum(code, span.start, span.end, 0) == span.checksum
+  else:
+    false
+
+fn prepared_ready(prepared: project.PreparedProject, checked: retained.Cache) -> Bool effects[partial]:
+  let count: I64 = vec.len(checked.nodes)
+  let sizes: Bool = (vec.len(prepared.tokens) == count) && ((vec.len(prepared.facts) == count) && (vec.len(prepared.range_view.facts) == count))
+  ((prepared.status == 0) && prepared.range_ready) && (checked.valid && (((count > 0) && (count <= 1000000)) && (sizes && retained.equal(prepared.source, checked.index.source))))
+
+fn entry_frames_valid(history: Cache, before: retained.Cache, prepared: project.PreparedProject, at: I64, plan: I64, counted: I64, prototype: I64, body: I64) -> Bool effects[partial]:
+  if at >= vec.len(before.index.declarations):
+    let counts: Bool = (plan == vec.len(history.entries)) && (counted == vec.len(prepared.range_view.counted))
+    counts && (((prototype + 1) == history.wrapper_start) && (body == history.footer_start))
+  else:
+    let declaration: retained.Declaration = vec.get(before.index.declarations, at)
+    let slot: I64 = vec.get(history.slots, at)
+    let owner: identity.View = declaration.owner
+    if !identity.valid_view(owner, vec.len(before.nodes)):
+      false
+    else:
+      let selected: I64 = codegen.counted_record_index(prepared.range_view.counted, owner.first, counted)
+      if declaration.kind == 0:
+        if (slot == plan) && (plan < vec.len(history.entries)):
+          let entry: Entry = vec.get(history.entries, plan)
+          let aligned: Bool = identity.same_declaration(entry.declaration, owner.declaration) && ((entry.plan == plan) && (entry.counted == selected))
+          let spans: Bool = span_valid(entry.prototype, history.code_bytes) && span_valid(entry.body, history.code_bytes)
+          let positions: Bool = (entry.prototype.start == prototype) && (entry.body.start == body)
+          if (selected >= -1) && (aligned && (spans && positions)):
+            let next_counted: I64 = if selected >= 0:
+              counted + 1
+            else:
+              counted
+            recur(history, before, prepared, at + 1, plan + 1, next_counted, entry.prototype.end, entry.body.end)
+          else:
+            false
+        else:
+          false
+      else:
+        if (slot == -1) && (selected == -1):
+          recur(history, before, prepared, at + 1, plan, counted, prototype, body)
+        else:
+          false
+
+fn wrapper_frames_valid(history: Cache, before: retained.Cache, site_at: I64, task: I64, at: I64, position: I64) -> Bool effects[partial]:
+  if site_at >= vec.len(history.sites):
+    (at == vec.len(history.wrappers)) && (position == history.body_start)
+  else:
+    let site: parallel.Site = vec.get(history.sites, site_at)
+    if !site.executable:
+      recur(history, before, site_at + 1, 0, at, position)
+    else:
+      if (site.site < 0) || (site.site >= vec.len(before.index.owners)):
+        false
+      else:
+        let slot: I64 = vec.get(before.index.owners, site.site)
+        if (slot < 0) || (slot >= vec.len(before.index.declarations)):
+          false
+        else:
+          let declaration: retained.Declaration = vec.get(before.index.declarations, slot)
+          if (declaration.kind == 0) && (at < vec.len(history.wrappers)):
+            let wrapper: Wrapper = vec.get(history.wrappers, at)
+            let params: I64 = syntax.ast_function_parameters(declaration.owner.first)
+            let aligned: Bool = identity.same_declaration(wrapper.declaration, declaration.owner.declaration) && ((wrapper.site == (site.site - params)) && (wrapper.task == task))
+            let span: Bool = span_valid(wrapper.span, history.code_bytes) && (wrapper.span.start == position)
+            if aligned && span:
+              if task == 0:
+                recur(history, before, site_at, 1, at + 1, wrapper.span.end)
+              else:
+                recur(history, before, site_at + 1, 0, at + 1, wrapper.span.end)
+            else:
+              false
+          else:
+            false
+
+fn cache_ready(history: Cache, code: Bytes, before: retained.Cache, prepared: project.PreparedProject) -> Bool effects[partial]:
+  let size: I64 = bytes.len(code)
+  let count: I64 = vec.len(before.index.declarations)
+  let bounded: Bool = ((count > 0) && (count <= 1000000)) && ((vec.len(history.entries) <= count) && ((vec.len(history.slots) == count) && ((vec.len(history.wrappers) <= 128) && (vec.len(history.sites) <= 64))))
+  let code_size: Bool = ((size > 0) && (size <= 67108864)) && (history.code_bytes == size)
+  let revision: Bool = identity.same_revision(history.revision, before.index.revision)
+  let sections: Bool = (history.prototype_start >= 0) && ((history.prototype_start <= history.wrapper_start) && ((history.wrapper_start <= history.body_start) && ((history.body_start <= history.footer_start) && (history.footer_start < size))))
+  if bounded && (code_size && (revision && sections)):
+    if metadata_seal(history) == history.seal:
+      let counts: Bool = vec.len(history.entries) == vec.len(prepared.plan.functions)
+      if counts && entry_frames_valid(history, before, prepared, 0, 0, 0, history.prototype_start, history.body_start):
+        wrapper_frames_valid(history, before, 0, 0, 0, history.wrapper_start)
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn reusable_entry(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, sites: Vec[parallel.Site], at: I64, plan: I64, counted: I64) -> I64 effects[partial]:
+  if retained.same_checked_function(before, checked, mapping, at):
+    let previous_slot: I64 = vec.get(mapping.before, at)
+    let old_entry: I64 = vec.get(history.slots, previous_slot)
+    if (old_entry < 0) || (old_entry >= vec.len(history.entries)):
+      -1
+    else:
+      let entry: Entry = vec.get(history.entries, old_entry)
+      let old_declaration: retained.Declaration = vec.get(before.index.declarations, previous_slot)
+      let declaration: retained.Declaration = vec.get(checked.index.declarations, at)
+      let old_plan: memory.FunctionPlan = vec.get(previous.plan.functions, entry.plan)
+      let new_plan: memory.FunctionPlan = vec.get(current.plan.functions, plan)
+      let plans: Bool = same_plan(old_plan, new_plan, old_declaration.owner, declaration.owner)
+      let counts: Bool = same_counted(previous.range_view.counted, current.range_view.counted, entry.counted, counted, old_declaration.owner, declaration.owner)
+      if plans && counts:
+        let range_equal: Bool = same_ranges(previous.range_view.facts, current.range_view.facts, old_declaration.owner, declaration.owner, 0)
+        let sites_equal: Bool = same_sites(history.sites, sites, old_declaration.owner, declaration.owner, 0, 0)
+        if range_equal && sites_equal:
+          if span_intact(old_code, entry.prototype) && span_intact(old_code, entry.body):
+            old_entry
+          else:
+            -1
+        else:
+          -1
+      else:
+        -1
+  else:
+    -1
+
+fn build_entries(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, sites: Vec[parallel.Site], eligible: Bool, at: I64, plan: I64, counted: I64, entries: @Vec[Entry], slots: @Vec[I64], reused: @Vec[I64]) -> Void effects[alloc, partial]:
+  if at >= vec.len(checked.index.declarations):
+    if (plan == vec.len(current.plan.functions)) && (counted == vec.len(current.range_view.counted)):
+      void
+    else:
+      let invalid: I64 = at / 0
+      void
+  else:
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, at)
+    let selected: I64 = codegen.counted_record_index(current.range_view.counted, declaration.owner.first, counted)
+    let next_plan: I64 = if declaration.kind == 0:
+      let prior: I64 = if eligible:
+        reusable_entry(previous, before, old_code, history, current, checked, mapping, sites, at, plan, selected)
+      else:
+        -1
+      let row: Entry = Entry(declaration: declaration.owner.declaration, plan: plan, counted: selected, prototype: empty_span(), body: empty_span())
+      vec.push(@entries, row)
+      vec.push(@slots, plan)
+      vec.push(@reused, prior)
+      plan + 1
+    else:
+      vec.push(@slots, -1)
+      plan
+    let next_counted: I64 = if selected >= 0:
+      counted + 1
+    else:
+      if selected == -1:
+        counted
+      else:
+        at / 0
+    recur(previous, before, old_code, history, current, checked, mapping, sites, eligible, at + 1, next_plan, next_counted, @entries, @slots, @reused)
+
+# The caller has validated the old span. Hash the actual bytes while copying to
+# their current positions; no old checksum enters the new artifact checksum.
+fn append_checked_bytes(code: Bytes, at: I64, end: I64, position: I64, sum: I64, output: @Vec[U8]) -> I64 effects[alloc, partial]:
+  if at >= end:
+    sum
+  else:
+    let byte: U8 = bytes.get(code, at)
+    vec.push(@output, byte)
+    let next: I64 = position + 1
+    let checksum: I64 = sum + (u8.to_i64(byte) * next)
+    recur(code, at + 1, end, next, checksum, @output)
+
+fn append_fragment(code: Bytes, span: Span, output: @Vec[U8]) -> I64 effects[alloc, partial]:
+  let start: I64 = vec.len(output)
+  let length: I64 = span.end - span.start
+  if (start <= 67108864) && (length <= (67108864 - start)):
+    append_checked_bytes(code, span.start, span.end, start, 0, @output)
+  else:
+    text.append_span(code, span.start, span.end, @output)
+    -1
+
+fn with_prototype(entry: Entry, span: Span) -> Entry:
+  Entry(declaration: entry.declaration, plan: entry.plan, counted: entry.counted, prototype: span, body: entry.body)
+
+fn with_body(entry: Entry, span: Span) -> Entry:
+  Entry(declaration: entry.declaration, plan: entry.plan, counted: entry.counted, prototype: entry.prototype, body: span)
+
+fn emit_prototypes(old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, reused: Vec[I64], entries: @Vec[Entry], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at >= vec.len(entries):
+    text.append_text(@output, "\n")
+  else:
+    let entry: Entry = vec.get(entries, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, entry.declaration.slot)
+    let previous: I64 = vec.get(reused, at)
+    let start: I64 = vec.len(output)
+    let checksum: I64 = if previous >= 0:
+      let old_entry: Entry = vec.get(history.entries, previous)
+      append_fragment(old_code, old_entry.prototype, @output)
+    else:
+      codegen.emit_prototype(current.source, current.tokens, declaration.owner.first, @output)
+      -1
+    let span: Span = Span(start: start, end: vec.len(output), checksum: checksum)
+    vec.set(@entries, at, with_prototype(entry, span))
+    recur(old_code, history, current, checked, reused, @entries, at + 1, @output)
+
+fn find_wrapper(history: Cache, owner: identity.DeclarationId, site: I64, task: I64, at: I64) -> I64 effects[partial]:
+  if at >= vec.len(history.wrappers):
+    -1
+  else:
+    let wrapper: Wrapper = vec.get(history.wrappers, at)
+    if identity.same_declaration(wrapper.declaration, owner) && ((wrapper.site == site) && (wrapper.task == task)):
+      at
+    else:
+      recur(history, owner, site, task, at + 1)
+
+fn emit_wrappers(old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, sites: Vec[parallel.Site], reused: Vec[I64], entries: Vec[Entry], slots: Vec[I64], at: I64, task: I64, wrappers: @Vec[Wrapper], output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at >= vec.len(sites):
+    void
+  else:
+    let site: parallel.Site = vec.get(sites, at)
+    if !site.executable:
+      recur(old_code, history, current, checked, sites, reused, entries, slots, at + 1, 0, @wrappers, @output)
+    else:
+      let slot: I64 = vec.get(checked.index.owners, site.site)
+      let declaration: retained.Declaration = vec.get(checked.index.declarations, slot)
+      let entry_index: I64 = vec.get(slots, slot)
+      let params: I64 = syntax.ast_function_parameters(declaration.owner.first)
+      let local_site: I64 = site.site - params
+      let old_entry_index: I64 = vec.get(reused, entry_index)
+      let previous: I64 = if old_entry_index >= 0:
+        let old_entry: Entry = vec.get(history.entries, old_entry_index)
+        find_wrapper(history, old_entry.declaration, local_site, task, 0)
+      else:
+        -1
+      let import: Bool = if previous >= 0:
+        let prior: Wrapper = vec.get(history.wrappers, previous)
+        span_intact(old_code, prior.span)
+      else:
+        false
+      let start: I64 = vec.len(output)
+      let checksum: I64 = if import:
+        let prior: Wrapper = vec.get(history.wrappers, previous)
+        append_fragment(old_code, prior.span, @output)
+      else:
+        let expression: I64 = if task == 0:
+          site.first
+        else:
+          site.second
+        codegen.emit_parallel_call_wrapper(current.source, current.tokens, current.facts, params, site.site, expression, task, @output)
+        -1
+      let span: Span = Span(start: start, end: vec.len(output), checksum: checksum)
+      vec.push(@wrappers, Wrapper(declaration: declaration.owner.declaration, site: local_site, task: task, span: span))
+      if task == 0:
+        recur(old_code, history, current, checked, sites, reused, entries, slots, at, 1, @wrappers, @output)
+      else:
+        recur(old_code, history, current, checked, sites, reused, entries, slots, at + 1, 0, @wrappers, @output)
+
+fn emit_bodies(old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, sites: Vec[parallel.Site], reused: Vec[I64], entries: @Vec[Entry], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at >= vec.len(entries):
+    void
+  else:
+    let entry: Entry = vec.get(entries, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, entry.declaration.slot)
+    let previous: I64 = vec.get(reused, at)
+    let start: I64 = vec.len(output)
+    let checksum: I64 = if previous >= 0:
+      let old_entry: Entry = vec.get(history.entries, previous)
+      append_fragment(old_code, old_entry.body, @output)
+    else:
+      let plan: memory.FunctionPlan = vec.get(current.plan.functions, entry.plan)
+      codegen.emit_function(current.source, current.tokens, current.facts, sites, current.range_view.counted, syntax.ast_module_items(0), declaration.owner.first, plan, entry.counted, @output, current.range_view.facts)
+      -1
+    let span: Span = Span(start: start, end: vec.len(output), checksum: checksum)
+    vec.set(@entries, at, with_body(entry, span))
+    recur(old_code, history, current, checked, sites, reused, @entries, at + 1, @output)
+
+fn checksummed_span(code: Bytes, span: Span) -> Span effects[partial]:
+  if span.checksum >= 0:
+    span
+  else:
+    Span(start: span.start, end: span.end, checksum: cache.weighted_checksum(code, span.start, span.end, 0))
+
+fn checksum_entries(code: Bytes, entries: @Vec[Entry], at: I64) -> Void effects[partial]:
+  if at >= vec.len(entries):
+    void
+  else:
+    let entry: Entry = vec.get(entries, at)
+    let prototype: Span = checksummed_span(code, entry.prototype)
+    let body: Span = checksummed_span(code, entry.body)
+    vec.set(@entries, at, with_body(with_prototype(entry, prototype), body))
+    recur(code, @entries, at + 1)
+
+fn checksum_wrappers(code: Bytes, wrappers: @Vec[Wrapper], at: I64) -> Void effects[partial]:
+  if at >= vec.len(wrappers):
+    void
+  else:
+    let wrapper: Wrapper = vec.get(wrappers, at)
+    let span: Span = checksummed_span(code, wrapper.span)
+    vec.set(@wrappers, at, Wrapper(declaration: wrapper.declaration, site: wrapper.site, task: wrapper.task, span: span))
+    recur(code, @wrappers, at + 1)
+
+fn assemble(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, sites: ^Vec[parallel.Site], eligible: Bool) -> Generated effects[alloc, partial]:
+  let entries: Vec[Entry] = vec.new()
+  let slots: Vec[I64] = vec.new()
+  let reused: Vec[I64] = vec.new()
+  build_entries(previous, before, old_code, history, current, checked, mapping, sites, eligible, 0, 0, 0, @entries, @slots, @reused)
+  let output: Vec[U8] = vec.new()
+  codegen.emit_program_prefix(current.source, current.tokens, current.layouts, sites, @output)
+  let prototype_start: I64 = vec.len(output)
+  emit_prototypes(old_code, history, current, checked, reused, @entries, 0, @output)
+  let wrapper_start: I64 = vec.len(output)
+  let wrappers: Vec[Wrapper] = vec.new()
+  emit_wrappers(old_code, history, current, checked, sites, reused, entries, slots, 0, 0, @wrappers, @output)
+  let body_start: I64 = vec.len(output)
+  emit_bodies(old_code, history, current, checked, sites, reused, @entries, 0, @output)
+  let footer_start: I64 = vec.len(output)
+  codegen.emit_program_footer(@output)
+  let code: Bytes = bytes.freeze(^output)
+  let length: I64 = bytes.len(code)
+  let next: Cache = if (length > 0) && (length <= 67108864):
+    checksum_entries(code, @entries, 0)
+    checksum_wrappers(code, @wrappers, 0)
+    let next: Cache = Cache(revision: checked.index.revision, entries: entries, slots: slots, wrappers: wrappers, sites: sites, prototype_start: prototype_start, wrapper_start: wrapper_start, body_start: body_start, footer_start: footer_start, code_bytes: length, seal: 0)
+    seal_cache(^next)
+  else:
+    empty_cache()
+  let checksum: I64 = if (length > 0) && (next.code_bytes == length):
+    assembly_checksum(code, next)
+  else:
+    -1
+  Generated(code: code, history: next, checksum: checksum)
+
+fn generate(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, eligible: Bool, limit: I64) -> Generated effects[alloc, partial]:
+  let ready: Bool = prepared_ready(current, checked) && ((limit >= 1) && (limit <= 1000000))
+  if ready:
+    let analysis: parallel.View = parallel.analyze(current.source, current.tokens, current.facts, current.range_view)
+    let sites: Vec[parallel.Site] = mem.replace(@analysis.sites, vec.new())
+    let records: I64 = (vec.len(checked.index.declarations) + vec.len(current.plan.functions)) + (3 * vec.len(sites))
+    if (records <= limit) && (vec.len(sites) <= 64):
+      let reuse: Bool = if eligible && retained.transition_ready(before, checked, mapping):
+        if prepared_ready(previous, before):
+          cache_ready(history, old_code, before, previous)
+        else:
+          false
+      else:
+        false
+      assemble(previous, before, old_code, history, current, checked, mapping, ^sites, reuse)
+    else:
+      let output: Vec[U8] = vec.new()
+      codegen.emit_program_sites(current.source, current.tokens, current.facts, current.plan, current.layouts, current.range_view, sites, @output)
+      Generated(code: bytes.freeze(^output), history: empty_cache(), checksum: -1)
+  else:
+    Generated(code: project.generate_prepared_project(current), history: empty_cache(), checksum: -1)
+
+fn seal_cache(history: ^Cache) -> Cache effects[alloc, partial]:
+  let seal: I64 = metadata_seal(history)
+  let entries: Vec[Entry] = mem.replace(@history.entries, vec.new())
+  let slots: Vec[I64] = mem.replace(@history.slots, vec.new())
+  let wrappers: Vec[Wrapper] = mem.replace(@history.wrappers, vec.new())
+  let sites: Vec[parallel.Site] = mem.replace(@history.sites, vec.new())
+  Cache(revision: history.revision, entries: entries, slots: slots, wrappers: wrappers, sites: sites, prototype_start: history.prototype_start, wrapper_start: history.wrapper_start, body_start: history.body_start, footer_start: history.footer_start, code_bytes: history.code_bytes, seal: seal)
+
+fn rebase_entries(old: Vec[Entry], checked: retained.Cache, at: I64, output: @Vec[Entry]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    let entry: Entry = vec.get(old, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, entry.declaration.slot)
+    vec.push(@output, Entry(declaration: declaration.owner.declaration, plan: entry.plan, counted: entry.counted, prototype: entry.prototype, body: entry.body))
+    recur(old, checked, at + 1, @output)
+
+fn rebase_wrappers(old: Vec[Wrapper], checked: retained.Cache, at: I64, output: @Vec[Wrapper]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    let wrapper: Wrapper = vec.get(old, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, wrapper.declaration.slot)
+    vec.push(@output, Wrapper(declaration: declaration.owner.declaration, site: wrapper.site, task: wrapper.task, span: wrapper.span))
+    recur(old, checked, at + 1, @output)
+
+fn copy_slots(old: Vec[I64], at: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, vec.get(old, at))
+    recur(old, at + 1, @output)
+
+fn copy_sites(old: Vec[parallel.Site], at: I64, output: @Vec[parallel.Site]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, vec.get(old, at))
+    recur(old, at + 1, @output)
+
+fn identical_positions(before: retained.Cache, checked: retained.Cache, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(before.index.declarations):
+    vec.len(before.index.declarations) == vec.len(checked.index.declarations)
+  else:
+    if at < vec.len(checked.index.declarations):
+      let old: retained.Declaration = vec.get(before.index.declarations, at)
+      let current: retained.Declaration = vec.get(checked.index.declarations, at)
+      let position: Bool = (old.owner.first == current.owner.first) && (old.owner.count == current.owner.count)
+      let name: Bool = (old.kind == current.kind) && retained.equal(old.name, current.name)
+      if position && name:
+        recur(before, checked, at + 1)
+      else:
+        false
+    else:
+      false
+
+# The session has already accepted whole-artifact reuse under identical flattened
+# source and configuration. Rebind only metadata; do not generate or copy C.
+fn rebase(history: Cache, code: Bytes, previous: project.PreparedProject, before: retained.Cache, current: project.PreparedProject, checked: retained.Cache) -> Cache effects[alloc, partial]:
+  if prepared_ready(previous, before) && prepared_ready(current, checked):
+    if retained.equal(previous.source, current.source) && identical_positions(before, checked, 0):
+      if cache_ready(history, code, before, previous):
+        let entries: Vec[Entry] = vec.new()
+        let slots: Vec[I64] = vec.new()
+        let wrappers: Vec[Wrapper] = vec.new()
+        let sites: Vec[parallel.Site] = vec.new()
+        rebase_entries(history.entries, checked, 0, @entries)
+        copy_slots(history.slots, 0, @slots)
+        rebase_wrappers(history.wrappers, checked, 0, @wrappers)
+        copy_sites(history.sites, 0, @sites)
+        let next: Cache = Cache(revision: checked.index.revision, entries: entries, slots: slots, wrappers: wrappers, sites: sites, prototype_start: history.prototype_start, wrapper_start: history.wrapper_start, body_start: history.body_start, footer_start: history.footer_start, code_bytes: history.code_bytes, seal: 0)
+        seal_cache(^next)
+      else:
+        empty_cache()
+    else:
+      empty_cache()
+  else:
+    empty_cache()
+
+# Only freshly checksummed, emitter-owned intervals enter these sums. They are
+# disjoint parts of one at-most-64-MiB artifact, so every nonnegative partial sum
+# is bounded by 256 * n * (n + 1) / 2 < 2^63. No optional-history checksum is
+# trusted here: each value was computed from actual bytes during the current
+# copy or by checksummed_span after the sole producer wrote fresh bytes.
+fn entry_checksum_sum(entries: Vec[Entry], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(entries):
+    sum
+  else:
+    let entry: Entry = vec.get(entries, at)
+    recur(entries, at + 1, (sum + entry.prototype.checksum) + entry.body.checksum)
+
+fn wrapper_checksum_sum(wrappers: Vec[Wrapper], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(wrappers):
+    sum
+  else:
+    let wrapper: Wrapper = vec.get(wrappers, at)
+    recur(wrappers, at + 1, sum + wrapper.span.checksum)
+
+# Prototype spans exclude the one trailing newline. The sole section sequence
+# covers header, prototypes, newline, wrappers, bodies and footer exactly once.
+fn assembly_checksum(code: Bytes, history: Cache) -> I64 effects[partial]:
+  let prefix: I64 = cache.weighted_checksum(code, 0, history.prototype_start, 0)
+  let separator: I64 = cache.weighted_checksum(code, history.wrapper_start - 1, history.wrapper_start, prefix)
+  let footer: I64 = cache.weighted_checksum(code, history.footer_start, history.code_bytes, separator)
+  let entries: I64 = entry_checksum_sum(history.entries, 0, footer)
+  wrapper_checksum_sum(history.wrappers, 0, entries)

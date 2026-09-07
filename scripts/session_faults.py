@@ -5,7 +5,7 @@ import subprocess
 import sys
 
 
-def run_faults(root, before, after, label, require_import=False):
+def run_faults(root, before, after, label, require_import=False, require_fragments=False):
     report_path = root / "fault-report.tsv"
     failed = succeeded = imported = 0
     for ordinal in range(1, 2049):
@@ -24,15 +24,17 @@ def run_faults(root, before, after, label, require_import=False):
             succeeded += 1
         lines = report_path.read_text().splitlines()
         assert 1 <= len(lines) <= 3, (label, ordinal)
-        assert lines[0].split("\t")[:2] == ["slim-session", "5"], (label, ordinal)
+        assert lines[0].split("\t")[:2] == ["slim-session", "6"], (label, ordinal)
         rows = []
         for i, line in enumerate(lines[1:]):
             row = list(map(int, line.split("\t")))
-            assert len(row) == 17 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), (label, ordinal)
+            assert len(row) == 23 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), (label, ordinal)
             rows.append(row)
         if require_import and plain.returncode == 0:
             assert len(rows) == 2 and rows[1][6:8] == [1, 1], (label, ordinal, rows)
             imported += 1
+        if require_fragments and plain.returncode == 0:
+            assert len(rows) == 2 and rows[1][20] > 0 and rows[1][21] > 0, (label, ordinal, rows)
         print("session-" + label, ordinal, plain.returncode, len(rows), sep="\t", flush=True)
     assert failed > 0 and succeeded > 0, (label, failed, succeeded)
     if require_import:

@@ -744,6 +744,7 @@ fn damage_ranges(state: @session.State, mode: Bytes) -> Void effects[alloc, part
     void
 
 fn damage(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  zdamage.damage(@state, mode)
   let range_damage: Bool = range_metadata_mode(mode) || range_recurrence_mode(mode) || range_counted_mode(mode) || equal(mode, "range-wrapper") || equal(mode, "range-history") || equal(mode, "range-heads") || equal(mode, "range-head") || equal(mode, "range-entries") || equal(mode, "range-keys") || equal(mode, "range-key") || equal(mode, "range-facts") || equal(mode, "range-tag") || equal(mode, "range-node") || equal(mode, "range-owner") || equal(mode, "range-source") || equal(mode, "range-prefix") || equal(mode, "range-slice") || equal(mode, "range-next") || equal(mode, "range-refinements") || equal(mode, "range-parent")
   if range_damage:
     damage_ranges(@state, mode)
@@ -1056,7 +1057,7 @@ fn check_range_storage(snapshot: session.Snapshot, prefix: I64) -> Bool effects[
   else:
     false
 
-fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effects[alloc, io, partial]:
+fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64, restoration: Bytes) -> I64 effects[alloc, io, partial]:
   let initial_input: project.ProjectInput = project.capture_project_input(before)
   let limits: session.Limits = limits_for(before, mode, initial_input)
   let state: session.State = session.start(epoch, limits)
@@ -1090,7 +1091,15 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
         check_range_storage(state.good, 63) && check_range_storage(state.good, 64)
       else:
         true
-    let first_same: I64 = if history_bound && (plan_bounds && (range_bounds && range_fixture_bound(state.good, mode))):
+    let emission_bounds: Bool = if equal(mode, "emission-budget"):
+      zdamage.check_budgets(state.good)
+    else:
+      true
+    let import_proof: Bool = if equal(mode, "emission-proof"):
+      zdamage.check_transition(before, after)
+    else:
+      true
+    let first_same: I64 = if import_proof && (emission_bounds && history_bound) && (plan_bounds && (range_bounds && range_fixture_bound(state.good, mode))):
       compare(reference, state.good)
     else:
       27
@@ -1159,10 +1168,10 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
               else:
                 29
               if second_same == 0:
-                if equal(mode, "reinsert"):
-                  let restored_input: project.ProjectInput = project.capture_project_input(before)
+                if equal(mode, "reinsert") || (!equal(restoration, before)):
+                  let restored_input: project.ProjectInput = project.capture_project_input(restoration)
                   let restored: session.Report = session.update(@state, ^restored_input, config(""))
-                  if (restored.status == 0) && (compare(before, state.good) == 0):
+                  if (restored.status == 0) && (compare(restoration, state.good) == 0):
                     print_report(initial)
                     print_report(changed)
                     print_report(restored)
@@ -1170,22 +1179,31 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
                   else:
                     28
                 else:
-                  print_report(initial)
-                  print_report(changed)
-                  0
+                  if equal(mode, "emission-output"):
+                    let artifact: session.Artifact = session.artifact(state.good)
+                    io.println(artifact.code)
+                    0
+                  else:
+                    print_report(initial)
+                    print_report(changed)
+                    0
               else:
                 second_same
 
 fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
-  if vec.len(args) == 4:
+  if (vec.len(args) == 4) || (vec.len(args) == 5):
+    let restoration: Bytes = if vec.len(args) == 5:
+      vec.get(args, 4)
+    else:
+      vec.get(args, 1)
     let mode: Bytes = vec.get(args, 3)
-    let first: I64 = run_epoch(vec.get(args, 1), vec.get(args, 2), mode, 1)
+    let first: I64 = run_epoch(vec.get(args, 1), vec.get(args, 2), mode, 1, restoration)
     if (first == 0) && equal(mode, "epochs"):
       match identity.reset(identity.Revision(epoch: 1, serial: 3)):
         None:
           25
         Some(next):
-          run_epoch(vec.get(args, 1), vec.get(args, 2), mode, next.epoch)
+          run_epoch(vec.get(args, 1), vec.get(args, 2), mode, next.epoch, restoration)
     else:
       first
   else:

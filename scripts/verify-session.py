@@ -7,7 +7,7 @@ import sys
 from session_faults import run_faults
 
 root = Path(sys.argv[1])
-full = sys.argv[2] == "full"
+full = sys.argv[2] != "quick"
 report_path = root / "report.tsv"
 ordinary = root / "ordinary"
 observed = root / "observed"
@@ -26,8 +26,10 @@ def project(name, source, manifest=None, **modules):
     return directory / "slim.project"
 
 
-def run(before, after, mode="work", expected=None, epochs=1):
+def run(before, after, mode="work", expected=None, epochs=1, third=None):
     args = [str(before), str(after), mode]
+    if third is not None:
+        args.append(str(third))
     plain = subprocess.run([str(ordinary), *args], capture_output=True)
     report_path.unlink(missing_ok=True)
     native = subprocess.run([str(observed), *args], capture_output=True,
@@ -35,10 +37,14 @@ def run(before, after, mode="work", expected=None, epochs=1):
     assert plain.returncode == native.returncode == 0, (mode, plain.returncode, native.returncode, plain.stdout[:400], native.stderr[:400])
     assert plain.stdout == native.stdout and plain.stderr == native.stderr, mode
     lines = report_path.read_text().splitlines()
-    assert lines[0] == f"slim-session\t5\texact\t1000000000\t{epochs}", lines[0]
+    assert lines[0] == f"slim-session\t6\texact\t1000000000\t{epochs}", lines[0]
     rows = [list(map(int, line.split("\t"))) for line in lines[1:]]
-    assert all(row[0] == i and len(row) == 17 for i, row in enumerate(rows)), rows
+    assert all(row[0] == i and len(row) == 23 for i, row in enumerate(rows)), rows
     for row in rows:
+        assert row[17] == row[18], (mode, rows)
+        assert (row[20] > 0) == (row[21] > 0), (mode, rows)
+        if row[3] == 0:
+            assert row[17:22] == [0] * 5, (mode, rows)
         if row[9] > 0:
             assert row[8:10] == [0, 1] and row[12:14] == [5, 8] and row[15:17] == [3, 4], (mode, rows)
             assert row[10] + row[11] == 5 * (row[6] + row[7]), (mode, rows)
@@ -85,6 +91,152 @@ relocated = project("relocated", source,
                     **{"moved.slim": source})
 run(initial, relocated)
 
+# Observe actual retained fragments, including misses from damaged optional
+# metadata. Re-sealed cases exercise structural validation independently of the
+# accidental-corruption checksum; no external cache is admitted by this test.
+fragment_source = "module hello\n\nfn answer() -> I64:\n  42\n\nfn keep(x: I64) -> I64:\n  x\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n"
+fragment_before = project("fragment-before", fragment_source)
+fragment_after = project("fragment-after", fragment_source.replace("  0\n", "  1\n"))
+rows, _ = run(fragment_before, fragment_after)
+assert rows[0][17:21] == [3, 3, 0, 0] and rows[1][17:21] == [1, 1, 0, 4], rows
+fragment_frames = ["epoch", "revision", "owner-epoch", "owner-revision", "owner-file", "owner-slot", "entry-plan", "entry-counted", "entry-duplicate", "slot", "entries", "slots", "prototype-start", "wrapper-start", "body-start", "footer-start", "code-bytes", "prototype-end", "body-end"]
+for mode in fragment_frames + ["seal", "prototype-checksum", "body-checksum"]:
+    rows, _ = run(fragment_before, fragment_after, "emission-" + mode)
+    assert rows[1][17:22] == [3, 3, 0, 0, 0], (mode, rows)
+for mode in fragment_frames:
+    rows, _ = run(fragment_before, fragment_after, "emission-sealed-" + mode)
+    assert rows[1][17:22] == [3, 3, 0, 0, 0], (mode, rows)
+for mode in ["prototype-payload", "body-payload", "sealed-prototype-checksum", "sealed-body-checksum"]:
+    rows, _ = run(fragment_before, fragment_after, "emission-" + mode)
+    assert rows[1][17:21] == [2, 2, 0, 2], (mode, rows)
+
+wrapper_source = "module hello\n\nfn observed(x: I64) -> I64 effects[io]:\n  let tick: I64 = io.monotonic_ms()\n  x\n\n" + "".join(f"fn work{i}(x: I64, y: I64) -> I64 effects[io, partial]:\n  parallel:\n    let a: I64 = observed(x)\n    let b: I64 = observed(y)\n    a + b\n\n" for i in range(2)) + "fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:\n  let first: I64 = work0(0, 0)\n  let second: I64 = work1(0, 0)\n  first + second\n"
+wrapper_before = project("wrapper-before", wrapper_source)
+wrapper_after = project("wrapper-after", wrapper_source.replace("fn observed", "fn inserted() -> I64:\n  7\n\nfn observed"))
+rows, _ = run(wrapper_before, wrapper_after)
+assert rows[0][17:21] == [4, 4, 4, 0] and rows[1][17:21] == [1, 1, 0, 12], rows
+wrapper_frames = ["wrapper-site", "wrapper-task", "wrapper-duplicate", "wrapper-span-start", "wrapper-span-end", "wrappers", "sites"]
+site_fields = ["site-" + field for field in ["site", "first", "second", "join", "first-work", "second-work", "allocates", "explicit", "executable"]]
+for mode in wrapper_frames + site_fields + ["wrapper-span-checksum"]:
+    rows, _ = run(wrapper_before, wrapper_after, "emission-" + mode)
+    assert rows[1][17:22] == [5, 5, 4, 0, 0], (mode, rows)
+for mode in wrapper_frames:
+    rows, _ = run(wrapper_before, wrapper_after, "emission-sealed-" + mode)
+    assert rows[1][17:22] == [5, 5, 4, 0, 0], (mode, rows)
+for mode in ["wrapper-payload", "sealed-wrapper-span-checksum"]:
+    rows, _ = run(wrapper_before, wrapper_after, "emission-" + mode)
+    assert rows[1][17:21] == [1, 1, 1, 11], (mode, rows)
+
+for before, after in [(fragment_before, fragment_after), (wrapper_before, wrapper_after)]:
+    run(before, after, "emission-budget")
+    run(before, after, "emission-proof")
+for field in ["analyzed", "lower-known", "lower", "upper-known", "upper", "total"]:
+    rows, _ = run(fragment_before, fragment_after, "emission-derived-range-" + field)
+    assert rows[1][17:21] == [2, 2, 0, 2], (field, rows)
+for field in ["first", "second", "join", "first-work", "second-work", "allocates", "explicit"]:
+    rows, _ = run(wrapper_before, wrapper_after, "emission-sealed-site-" + field)
+    assert rows[1][17:21] == [2, 2, 2, 8], (field, rows)
+counted_source = fragment_source.replace("fn answer() -> I64:\n  42", "fn answer(x: I64) -> I64 effects[partial]:\n  if x == 3:\n    0\n  else:\n    recur(x + 1)").replace("  x\n", "  x\n\nfn invoke() -> I64 effects[partial]:\n  answer(0)\n")
+counted_before = project("fragment-counted-before", counted_source)
+# Change only main, so the counted owner would otherwise import.
+counted_after = project("fragment-counted-after", counted_source.rsplit("  0\n", 1)[0] + "  1\n")
+rows, _ = run(counted_before, counted_after)
+assert rows[1][17:21] == [1, 1, 0, 6], rows
+for field in ["controller", "start", "bound", "step", "iterations", "base", "body"]:
+    rows, _ = run(counted_before, counted_after, "emission-derived-counted-" + field)
+    assert rows[1][17:21] == [2, 2, 0, 4], (field, rows)
+for field in ["item", "absent"]:
+    rows, _ = run(counted_before, counted_after, "emission-derived-counted-" + field)
+    assert rows[1][17:22] == [4, 4, 0, 0, 0], (field, rows)
+
+for field in ["function", "local-region", "recursive"]:
+    rows, _ = run(fragment_before, fragment_after, "emission-derived-plan-" + field)
+    assert rows[1][17:21] == [2, 2, 0, 2], (field, rows)
+fragment_alloc = fragment_source.replace("fn answer() -> I64:\n  42", "fn answer() -> I64 effects[alloc, partial]:\n  let values: Vec[I64] = vec.new()\n  vec.push(@values, 42)\n  vec.len(values)")
+alloc_before = project("fragment-alloc-before", fragment_alloc)
+alloc_after = project("fragment-alloc-after", fragment_alloc.rsplit("  0\n", 1)[0] + "  1\n")
+for field in ["allocations", "allocation-site", "allocation-region"]:
+    rows, _ = run(alloc_before, alloc_after, "emission-derived-plan-" + field)
+    assert rows[1][17:21] == [2, 2, 0, 2], (field, rows)
+
+# Rebinding metadata after whole-artifact reuse must preserve later fragment
+# eligibility. A repaired C artifact also retains valid metadata for the next edit.
+fragment_moved = project("fragment-moved", fragment_source, '(project 1 (entry hello) (module hello "moved.slim" (imports) (exports)))\n', **{"moved.slim": fragment_source})
+for mode, middle in [("work", fragment_moved), ("corrupt", fragment_before), ("missing-code", fragment_before)]:
+    rows, _ = run(fragment_before, middle, mode, third=fragment_after)
+    assert rows[2][17:21] == [1, 1, 0, 4], (mode, rows)
+    if mode == "work":
+        assert rows[1][3] == 0 and rows[1][17:22] == [0] * 5 and rows[1][22] == 3, rows
+rows, _ = run(fragment_before, fragment_before, "emission-seal", third=fragment_after)
+assert rows[1][17:] == [0] * 6 and rows[2][17:22] == [3, 3, 0, 0, 0], rows
+
+# Explicit sites and inferred pure sites need not have function-lexical global
+# order. Import wrappers in the current site's order, including selection limits.
+mixed = wrapper_source.replace("fn main", "fn count(index: I64) -> I64 effects[partial]:\n  if index <= 0:\n    0\n  else:\n    recur(index - 1)\n\nfn automatic() -> I64 effects[partial]:\n  let a: I64 = count(2000000)\n  let b: I64 = count(2000000)\n  a + b\n\nfn main")
+mixed_before = project("fragment-mixed-before", mixed)
+mixed_after = project("fragment-mixed-after", mixed.replace("fn observed", "fn inserted() -> I64:\n  7\n\nfn observed"))
+rows, _ = run(mixed_before, mixed_after)
+assert rows[0][19] == 6 and rows[1][17:21] == [1, 1, 0, 18], rows
+# An unchanged automatic caller consumes the callee's recurrence work. Changing
+# that body must invalidate the caller even when ordinary typing imports it.
+for step, produced_wrappers in [(2, 2), (3, 0)]:
+    changed = project(f"fragment-mixed-step-{step}", mixed.replace("recur(index - 1)", f"recur(index - {step})"))
+    rows, _ = run(mixed_before, changed)
+    assert rows[1][2] == 1 and rows[1][17:21] == [2, 2, produced_wrappers, 12], (step, rows)
+
+for sites in [63, 64, 65]:
+    header = "module hello\n\nfn observed(x: I64) -> I64 effects[io]:\n  let tick: I64 = io.monotonic_ms()\n  x\n\n"
+    def worker(name):
+        return f"fn {name}(x: I64, y: I64) -> I64 effects[io, partial]:\n  parallel:\n    let a: I64 = observed(x)\n    let b: I64 = observed(y)\n    a + b\n\n"
+    functions = "".join(worker(f"work{i}") for i in range(sites))
+    main0 = "fn main(args: Vec[Bytes]) -> I64:\n  0\n"
+    before = project(f"fragment-sites-{sites}", header + functions + main0)
+    after = project(f"fragment-sites-{sites}-insert", header + worker("inserted") + functions + main0)
+    rows, _ = run(before, after)
+    # The ordinary graph retains 64 functions: observed plus 63 workers.
+    # Inserting a worker moves work62 outside that complete graph. Its old
+    # executable site disappears, despite identical checked body/plan/ranges.
+    selected = min(sites, 63)
+    produced = 2
+    imported_sites = 62
+    imported_functions = sites + 3 - produced
+    assert rows[0][19] == 2 * selected, (sites, rows)
+    assert rows[1][17:21] == [produced, produced, 2, 2 * (imported_functions + imported_sites)], (sites, rows)
+
+# Reach the independent 64-site limit inside one function, without exhausting
+# the graph's function budget. A 65th candidate remains serial in clean output.
+for sites in [63, 64, 65]:
+    header = "module hello\n\nfn count(index: I64) -> I64 effects[partial]:\n  if index <= 0:\n    0\n  else:\n    recur(index - 1)\n\n"
+    chain = "fn many() -> I64 effects[partial]:\n" + "".join(f"  let first{i}: I64 = count(1000000)\n  let second{i}: I64 = count(1000000)\n" for i in range(sites)) + f"  first{sites - 1} + second{sites - 1}\n\n"
+    source_many = header + chain + "fn main(args: Vec[Bytes]) -> I64:\n  0\n"
+    before = project(f"fragment-chain-{sites}", source_many)
+    after = project(f"fragment-chain-{sites}-insert", source_many.replace("fn count", "fn inserted() -> I64:\n  7\n\nfn count"))
+    rows, _ = run(before, after)
+    wrappers = 2 * min(sites, 64)
+    assert rows[0][19] == wrappers and rows[1][17:21] == [1, 1, 0, 6 + wrappers], (sites, rows)
+
+# Execute C obtained from a retained update. Byte equality is checked first;
+# then the unchanged runtime's serial, POSIX, declined-spawn and join paths run.
+for label, before, after in [("wrappers", wrapper_before, wrapper_after), ("mixed", mixed_before, mixed_after)]:
+    expected = subprocess.run([compiler, str(after)], capture_output=True, check=True).stdout
+    outputs = []
+    for binary in [ordinary, observed]:
+        result = subprocess.run([str(binary), str(before), str(after), "emission-output"], capture_output=True)
+        assert result.returncode == 0 and not result.stderr and result.stdout == expected + b"\n", (label, result.returncode, result.stderr[:200])
+        outputs.append(result.stdout)
+    cfile = root / (label + ".c")
+    cfile.write_bytes(outputs[0])
+    executable = root / (label + "-native")
+    for flags in [[], ["-DSLIM_POSIX_WORKERS=1", "-pthread"]]:
+        subprocess.run([os.environ.get("CC", "cc"), "-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-DSLIM_PARALLEL=1", *flags, "-I", "runtime", str(cfile), "runtime/slim_rt.c", "-o", str(executable)], capture_output=True, check=True)
+        for fail in ["0", "1"]:
+            result = subprocess.run([str(executable)], capture_output=True, env=dict(os.environ, SLIM_TASK_FAIL_AT=fail))
+            assert result.returncode == 0 and not result.stdout and not result.stderr, (label, flags, fail, result)
+        if flags:
+            result = subprocess.run([str(executable)], capture_output=True, env=dict(os.environ, SLIM_TASK_JOIN_FAIL_AT="1"))
+            assert result.returncode == 70 and result.stderr == b"SLIM runtime trap: injected structured task join failure\n", (label, result)
+    print("session-retained-native", label, "exact", sep="\t", flush=True)
+
 # Real file replacement after first complete capture; compare to an untouched copy.
 captured = project("captured", source)
 replacement = captured.parent / "program.slim"
@@ -94,7 +246,7 @@ env = dict(os.environ, SLIM_SESSION_REPORT=str(report_path),
 p = subprocess.run([str(observed), str(captured), str(initial), "captured"], env=env, capture_output=True)
 assert p.returncode == 0 and not p.stderr, (p.returncode, p.stdout[:400], p.stderr[:400])
 assert replacement.read_text() == (rejected.parent / "program.slim").read_text()
-assert [list(map(int, line.split("\t"))) for line in report_path.read_text().splitlines()[1:]] == [[0, 2, 1, 1, 2, 0, 1, 0, 0, 1, 1, 4, 5, 8, 1, 3, 4], [1] + [0] * 16]
+assert [list(map(int, line.split("\t"))) for line in report_path.read_text().splitlines()[1:]] == [[0, 2, 1, 1, 2, 0, 1, 0, 0, 1, 1, 4, 5, 8, 1, 3, 4, 1, 1, 0, 0, 0, 1], [1] + [0] * 22]
 print("session-captured-input\texact\tfile-replaced-before-preparation", flush=True)
 
 # Global interface and body-derived facts always compare against a clean preparation.
@@ -304,19 +456,25 @@ for name, content, layout, modules in [
         assert (clean.returncode, clean.stdout, clean.stderr) == (candidate.returncode, candidate.stdout, candidate.stderr), (name, clean.stdout[:400], candidate.stdout[:400], candidate.stderr[:400])
     print("session-rejection", name, clean.returncode, sep="\t", flush=True)
 
-fixtures = sorted(Path("conformance/pass").glob("*.slim")) + sorted(Path("benchmarks/challenges").glob("*/program.slim"))
+fixtures = sorted(Path("conformance/pass").glob("*.slim")) + sorted(Path("benchmarks/challenges").glob("*/program.slim")) + [Path("tests/fixtures/stable_codegen.slim")]
 if not full:
     fixtures = [Path("examples/hello.slim")]
 for fixture in fixtures:
     print("session-corpus", fixture, sep="\t", flush=True)
     wrapped = project("wrapped", fixture.read_text())
     rows, reports = run(wrapped, wrapped)
-    assert rows[1][1:] == [0] * 16, fixture
+    assert rows[1][1:] == [0] * 22, fixture
     assert reports[1][2:4] == reports[0][2:4], fixture
     shifted = project("wrapped-trivia", "# force preparation of unchanged canonical source\n" + fixture.read_text())
     rows, _ = run(wrapped, shifted)
     assert rows[1][6:8] == [0, rows[0][6]], (fixture, rows)
     assert rows[1][10] == 0 and rows[1][11] == 5 * rows[0][6], (fixture, rows)
+    original = fixture.read_text()
+    header = re.search(r"(?m)^module [^\n]+\n", original)
+    assert header and "fn slim_fragment_padding(" not in original, fixture
+    padded = project("wrapped-padding", original[:header.end()] + "\nfn slim_fragment_padding() -> I64:\n  7\n\n" + original[header.end():])
+    rows, _ = run(wrapped, padded, "reinsert")
+    assert rows[1][2] == 1 and rows[2][2] == 0, (fixture, rows)
 print(f"session-differential\t{len(fixtures)}\tcomplete-prepared-fields-and-C", flush=True)
 
 for size in ([1, 2, 125, 250, 500, 1000, 2000, 4000] if full else [1, 2]):
@@ -336,6 +494,10 @@ for size in ([1, 2, 125, 250, 500, 1000, 2000, 4000] if full else [1, 2]):
             assert rows[1][4] == 2 and rows[1][5] > 0, (size, rows)
             assert rows[1][6:8] == [1, size], (size, rows)
             assert rows[1][10:12] == [2, 5 * (size + 1) - 2], (size, rows)
+        if kind == "body":
+            assert rows[1][17:21] == [1, 1, 0, 2 * size], (size, rows)
+        else:
+            assert rows[1][17:22] == [0] * 5, (size, rows)
         imports = 0 if kind == "unchanged" else 15 * size + 7
         assert int(reports[1][7]) == imports, (size, kind, reports)
         print("session-geometric", size, kind, reports[1][5], reports[1][6], imports, rows[1][4], rows[1][5], rows[1][6], rows[1][7], sep="\t", flush=True)
@@ -357,6 +519,22 @@ for size in ([32, 128, 512] if full else [2]):
     assert rows[0][6:8] == [size + 1, 0] and rows[1][6:8] == [1, size], (size, rows)
     print("session-dense", size, 64, rows[1][6], rows[1][7], sep="\t", flush=True)
 
-if full:
+# Counted proof storage is not capped by the 64-row reporting limit. Every
+# cursor lookup does constant record work; cold N and warm 2N lookups are exact.
+for size in ([63, 64, 65, 125, 250, 500, 1000, 2000] if full else [63, 64, 65]):
+    functions = "".join(f"fn counted_{i}(index: I64) -> I64 effects[partial]:\n  if index == 3:\n    42\n  else:\n    recur(index + 1)\n\nfn call_{i}() -> I64 effects[partial]:\n  counted_{i}(0)\n\n" for i in range(size))
+    counted = "module hello\n\n" + functions + "fn main(args: Vec[Bytes]) -> I64:\n  0\n"
+    before = project(f"emission-counted-{size}", counted)
+    after = project(f"emission-counted-{size}-edit", counted.rsplit("  0\n", 1)[0] + "  1\n")
+    rows, _ = run(before, after)
+    total = 2 * size + 1
+    assert rows[0][22] == total and rows[1][22] == 2 * total, (size, rows)
+    assert rows[1][17:21] == [1, 1, 0, 4 * size], (size, rows)
+    clean = subprocess.run([compiler, str(before)], capture_output=True, check=True).stdout
+    assert clean.count(b") do {") == 3 * size, size
+    print("session-counted-work", size, rows[0][22], rows[1][22], rows[1][21], sep="\t", flush=True)
+
+if sys.argv[2] == "full":
     run_faults(root, initial, initial, "fault")
     run_faults(root, pair, plan_changed, "update-fault", require_import=True)
+    run_faults(root, fragment_before, fragment_after, "fragment-fault", require_fragments=True)

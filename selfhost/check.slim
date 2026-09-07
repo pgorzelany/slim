@@ -1,13 +1,14 @@
 module check
 
 struct Attempt:
+  transition: retained.Update
   checked: typing.Checked
   cache: retained.Cache
   work: retained.Work
   range_ready: Bool
   range_view: ranges.View
 
-fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: retained.Work, previous: identity.Revision, range_ready: Bool, range_view: ^ranges.View) -> Attempt effects[alloc]:
+fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: retained.Work, previous: identity.Revision, range_ready: Bool, range_view: ^ranges.View, transition: ^retained.Update) -> Attempt effects[alloc]:
   let current: identity.Revision = candidate.index.revision
   let newer: Bool = (current.epoch > previous.epoch) || ((current.epoch == previous.epoch) && (current.serial > previous.serial))
   let eligible: Bool = (checked.status == 0) && (newer && identity.same_revision(current, current))
@@ -16,7 +17,7 @@ fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: re
   let planning: retained.PlanCache = mem.replace(@candidate.planning, retained.empty_plan_cache())
   let range_history: Vec[retained.RangeHistory] = mem.replace(@candidate.range_history, vec.new())
   let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning, range_history: range_history)
-  Attempt(checked: checked, cache: cache, work: work, range_ready: range_ready, range_view: range_view)
+  Attempt(transition: transition, checked: checked, cache: cache, work: work, range_ready: range_ready, range_view: range_view)
 
 fn empty_checked() -> typing.Checked effects[alloc]:
   let view: typing.View = typing.empty_view()
@@ -27,7 +28,7 @@ fn empty_checked() -> typing.Checked effects[alloc]:
 fn uncached_attempt(checked: ^typing.Checked) -> Attempt effects[alloc]:
   let cache: retained.Cache = retained.empty_cache()
   let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-  Attempt(checked: checked, cache: cache, work: work, range_ready: false, range_view: ranges.empty_view())
+  Attempt(transition: retained.empty_update(), checked: checked, cache: cache, work: work, range_ready: false, range_view: ranges.empty_view())
 
 struct Diagnostic:
   code: Bytes
@@ -215,9 +216,10 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
         let ordinary: typing.View = typing.analyze(input, @tokens, declarations)
         let cache: retained.Cache = retained.empty_cache()
         let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-        retained.Analyzed(view: ordinary, cache: cache, work: work, plan: memory.empty_plan(), range_ready: false, range_view: ranges.empty_view())
+        retained.Analyzed(transition: retained.empty_update(), view: ordinary, cache: cache, work: work, plan: memory.empty_plan(), range_ready: false, range_view: ranges.empty_view())
       let view: typing.View = mem.replace(@analyzed.view, typing.empty_view())
       let cache: retained.Cache = mem.replace(@analyzed.cache, retained.empty_cache())
+      let transition: retained.Update = mem.replace(@analyzed.transition, retained.empty_update())
       let work: retained.Work = analyzed.work
       let range_ready: Bool = analyzed.range_ready
       let range_view: ranges.View = mem.replace(@analyzed.range_view, ranges.empty_view())
@@ -260,7 +262,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
       else:
         0
       let checked: typing.Checked = typing.Checked(status: status, view: view, issues: issues, plan: plan)
-      finish_attempt(^checked, ^cache, work, previous.index.revision, range_ready, ^range_view)
+      finish_attempt(^checked, ^cache, work, previous.index.revision, range_ready, ^range_view, ^transition)
   else:
     let declarations: Vec[ir.Declaration] = vec.new()
     let status: I64 = check_path(input, tokens, declarations)

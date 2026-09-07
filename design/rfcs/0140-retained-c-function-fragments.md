@@ -1,7 +1,7 @@
 # RFC-0140: Retained C function fragments
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -77,6 +77,19 @@ node facts and binding/source links through their current declared owners and
 local ordinals; do not compare relocated absolute indices as stable identities.
 Referenced source type forms and interfaces must remain valid under that same
 correspondence. Missing owners or unsupported links cause a miss.
+
+The transition may also carry per-declaration evidence that the normal checker
+actually completed its validated typed-node import for this update. Such evidence
+must follow validated declaration ownership/name/correspondence, exact
+interface/body byte comparisons and full shape/prior-link classification,
+successful type/binding
+relocation validation and the actual writes captured in current checked state.
+An exact completed import establishes the corresponding ownership, source and
+checked-row equality without repeating those comparisons. An absent, false or incomplete result is not
+proof; compare the rows normally or miss. Native differential tests must recompute
+the full ownership, source and checked-row comparison for every positive
+imported-facts result. This execution data
+remains internal to the bound checked transition, never an imported certificate.
 
 ### Complete consumed lowering inputs
 
@@ -177,6 +190,17 @@ through checking and project preparation only as needed for current emission.
 Do not enlarge canonical Token, add a parsed IR, C parser, production Rust path,
 runtime primitive or external dependency.
 
+The existing runtime vector append may use a scalar copy for one-byte elements
+after its unchanged capacity, size and allocation-failure checks. For that width,
+the old offset `len * element_size` equals `len`, and the scalar unsigned-byte
+copy preserves the exact single-byte object representation. Other widths retain
+the generic copy; length increments once after success. The operation, runtime
+interface, allocation sequence, failure propagation and source semantics remain
+unchanged. This is a small implementation optimization inside the existing
+primitive, not a new compiler capability, primitive or ABI. Validate all byte
+values, multiple non-byte widths, growth boundaries and every bounded allocation
+failure against the preceding runtime; measure native workloads before adoption.
+
 ## Compatibility and migration
 
 Accepted SLIM, diagnostics, runtime ABI and generated C stay unchanged from
@@ -252,10 +276,19 @@ validation; it does not redefine M1 around function-fragment retention.
 
 ## Implementation
 
-Pending. Start from validated checkpoint 7dc0737. Record implementation and exact
-evidence in the SLIM Next progress report. Actual flow availability/loans, public
-host-bound sessions, retained parallel/global analysis, native backend artifact
-retention and complete release closure remain in the full M1 scope.
+Complete in the production SLIM compiler and internal session. The checked-in
+seed is 4,320,037 C bytes, SHA-256
+`b37bc2ad21e91f5d3975d0455319127322c510b73cc64e1a25a3a03fcb2353d4`,
+regenerated from the preceding checked-in production seed at 7dc0737 and verified
+by strict bootstrap. The [SLIM Next progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md)
+records exact C/analysis/native differentials, sanitizer and fault domains,
+observed producer/import work, initial rejected costs, final paired measurements,
+noise controls, resource costs and unchanged performance gates.
+
+Actual flow availability/loans, public host-bound sessions, retained
+parallel/global analysis, native backend artifact retention and complete release
+closure remain in the full M1 scope. This internal-emission checkpoint does not
+complete M1 or make the public session command's estimates actual execution.
 
 ## Removal and supersession
 

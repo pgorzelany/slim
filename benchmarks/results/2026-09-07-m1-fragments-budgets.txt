@@ -1,0 +1,339 @@
+# RFC-0140 final checkpoint evidence; baseline=7dc0737; candidate_seed_sha256=b37bc2ad21e91f5d3975d0455319127322c510b73cc64e1a25a3a03fcb2353d4; runtime_header_sha256=dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f; full M1 remains incomplete.
+
+# gate: performance
+declarations	source_bytes	generated_bytes	check_us	emit_us	check_ns_per_byte	emit_ns_per_byte	emit_check_ratio
+250	14197	118822	3726	5660	262.46	398.69	1.519
+500	28447	236322	4201	7282	147.70	256.01	1.733
+1000	56947	471322	5819	11489	102.20	201.76	1.974
+2000	114947	943322	8630	20648	75.08	179.64	2.392
+separator_declarations	source_bytes	lexemes	commas	canonical_ast_nodes	parse_check_us
+250	23712	6771	1000	1005	3800
+500	47462	13521	2000	2005	5072
+1000	94962	27021	4000	4005	7547
+2000	190962	54021	8000	8005	12415
+generated-common-prefix-declarations	source_bytes	check_us
+2000	106064	6471
+4000	212064	10142
+8000	424064	16748
+16000	848064	33000
+generated-common-prefix-declarations-exponent	0.783
+generated-branch-moves	source_bytes	check_us
+125	14554	5087
+250	29304	7536
+500	58804	12210
+1000	117804	22146
+generated-branch-moves-exponent	0.707
+generated-conditional-result-moves	source_bytes	check_us
+125	23084	5688
+250	46584	8827
+500	93584	15222
+1000	187584	29447
+generated-conditional-result-moves-exponent	0.791
+generated-nested-loans	source_bytes	check_us
+125	18886	5565
+250	38386	7634
+500	77386	13174
+1000	155386	24967
+generated-nested-loans-exponent	0.722
+generated-local-loans	source_bytes	check_us
+125	4648	2857
+250	9398	3281
+500	18898	4204
+1000	37898	6325
+generated-local-loans-exponent	0.382
+generated-field-replacement	source_bytes	check_us
+125	24733	5778
+250	49733	9049
+500	99733	15788
+1000	199733	30139
+generated-field-replacement-exponent	0.794
+generated-reinitialization	source_bytes	check_us
+125	16404	5304
+250	33154	7577
+500	66654	13473
+1000	133654	24903
+generated-reinitialization-exponent	0.744
+generated-nested-reinitialization	source_bytes	check_us
+16	3836	2891
+32	10108	3493
+64	30332	5100
+128	101640	9092
+generated-nested-reinitialization-exponent	0.551
+generated-enum-match-ownership	source_bytes	check_us
+125	13680	3158
+250	27180	3588
+500	54180	4643
+1000	108180	6839
+generated-enum-match-ownership-exponent	0.372
+generated-disjoint-local-loans	source_bytes	check_us
+125	16039	4459
+250	32164	6496
+500	64414	10419
+1000	128914	18758
+generated-disjoint-local-loans-exponent	0.691
+generated-call-chain	source_bytes	check_us
+125	6298	2560
+250	12548	2919
+500	25048	3636
+1000	50048	4713
+generated-call-chain-exponent	0.293
+generated-shared-call-dag	source_bytes	check_us
+125	10972	2752
+250	21972	3374
+500	43972	4482
+1000	87972	6520
+generated-shared-call-dag-exponent	0.415
+generated-pure-recurrence-context	source_bytes	check_us
+125	4270	3046
+250	8395	3559
+500	16645	4311
+1000	33145	6151
+generated-pure-recurrence-context-exponent	0.338
+nested_bindings	source_bytes	check_us	check_ns_per_byte
+125	4775	3084	645.92
+250	9525	3722	390.77
+500	19025	4956	260.51
+1000	38025	7529	198.02
+computed_arguments	source_bytes	emit_us	emit_ns_per_byte
+125	1399	3251	2324.29
+250	2649	3560	1343.90
+500	5149	4334	841.90
+1000	10149	5990	590.23
+aggregate_temporaries	source_bytes	emit_us	emit_ns_per_byte
+125	7691	3980	517.56
+250	15566	5394	346.59
+500	31316	7744	247.31
+1000	62816	12592	200.46
+planned_allocation_calls	source_bytes	emit_us	emit_ns_per_byte
+125	1485	3066	2064.97
+250	2735	3446	1259.98
+500	5235	4527	864.89
+1000	10235	6355	620.93
+shared_binding_reads	source_bytes	emit_us	emit_ns_per_byte
+125	5127	4490	875.81
+250	10377	5999	578.16
+500	20877	10045	481.20
+1000	41877	19493	465.51
+named_type_parameters	source_bytes	check_us	check_ns_per_byte
+125	5354	2972	555.16
+250	10729	3103	289.22
+500	21479	3628	168.92
+1000	42979	5071	118.00
+owned_transfers	source_bytes	check_us	check_ns_per_byte
+125	5413	3371	622.88
+250	10913	3855	353.33
+500	21913	5435	248.05
+1000	43913	8495	193.47
+owned_transfer_normalized_ratio	0.977
+
+# gate: reduction
+declarations	bytes	reduce_us	analyze_us	proof_us	reduced_bytes	analysis_bytes	proof_bytes
+250	14197	4808	5240	5465	14194	285321	282
+500	28447	6494	8003	8253	28444	559071	282
+1000	56947	10514	13551	13868	56944	1109420	284
+2000	114947	18232	23614	25630	114944	2212420	286
+
+# gate: parallelism
+challenge	source_bytes	functions	checked_sites	reported_total_sites	refinements	safe_functions	declared_effects	exclusive_borrow	mutation	checked_trap	allocation_or_io	recurrence	callee_not_safe	call_cycle	function_limit	edge_limit	missing_typed_fact	blocker_declared_effects	blocker_exclusive_borrow	blocker_mutation	blocker_checked_trap	blocker_allocation_or_io	blocker_recurrence	blocker_callee_not_safe	blocker_call_cycle	blocker_function_limit	blocker_edge_limit	blocker_missing_typed_fact	candidate_sites	selected_sites	reported_sites	executable_sites	executed_sites	eligible_sites
+gcd_fib	443	3	4	0	0	0	0	0	0	1	0	2	0	0	0	0	0	0	0	0	3	1	2	1	0	0	0	0	0	0	0	0	0	0
+sieve	1287	5	14	3	6	0	0	4	0	0	1	0	0	0	0	0	0	0	4	0	4	2	4	2	0	0	0	0	0	0	0	0	0	0
+bfs	731	3	6	0	2	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	3	1	2	0	0	0	0	0	0	0	0	0	0
+matrix	1367	4	19	11	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
+merge_sort	2898	9	32	1	0	0	0	8	0	0	1	0	0	0	0	0	0	0	8	0	7	2	6	4	0	0	0	0	0	0	0	0	0	0
+bytefreq	1309	4	12	1	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	1	0	0	0	0	0	0	0	0	0	0
+binary_search	1222	4	12	4	0	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	2	2	3	2	0	0	0	0	0	0	0	0	0	0
+prefix_sum	702	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
+records	601	3	6	0	0	0	0	0	0	2	0	1	0	0	0	0	0	0	0	0	3	1	1	2	0	0	0	0	0	0	0	0	0	0
+variants	785	4	6	4	0	1	0	0	0	1	1	1	0	0	0	0	0	0	0	0	1	1	1	2	0	0	0	0	0	0	0	0	0	0
+state_machine	1172	4	1	1	2	3	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	4	3	3	1	1	4
+signal_network	1806	4	1	1	2	3	0	0	0	0	1	0	0	0	0	0	0	0	0	0	0	1	0	0	0	0	0	0	8	5	5	1	1	8
+arena_sum	891	3	7	3	0	0	0	2	0	0	1	0	0	0	0	0	0	0	2	0	1	2	2	1	0	0	0	0	0	0	0	0	0	0
+knapsack	1249	4	15	2	4	0	0	3	0	0	1	0	0	0	0	0	0	0	3	0	3	2	3	2	0	0	0	0	0	0	0	0	0	0
+floyd_warshall	2042	6	25	12	0	0	0	4	0	0	1	1	0	0	0	0	0	0	4	0	3	2	5	3	0	0	0	0	0	0	0	0	0	0
+n_queens	1918	5	16	3	2	0	0	3	0	1	1	0	0	0	0	0	0	0	3	0	3	2	3	3	0	0	0	0	0	0	0	0	0	0
+union_find	1684	7	11	7	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	5	5	0	0	0	0	0	0	0	0	0	0
+game_of_life	2890	7	33	26	0	0	0	6	0	0	1	0	0	0	0	0	0	0	6	0	4	2	6	3	0	0	0	0	0	0	0	0	0	0
+image_convolution	2547	6	45	29	0	0	0	5	0	0	1	0	0	0	0	0	0	0	5	0	3	2	5	2	0	0	0	0	0	0	0	0	0	0
+edit_distance	3303	9	26	0	0	2	0	6	0	0	1	0	0	0	0	0	0	0	6	0	7	2	6	3	0	0	0	0	0	0	0	0	0	0
+
+# gate: resources
+challenge	source_bytes	recurrence_profiles	profiled_call_sites	exact_call_work_sites	unknown_call_work_sites	maximum_exact_iterations	expression_nodes	allocation_sites	trap_sites	owned_bindings	max_live_owned	effectful_functions	allocation_effect_functions	partial_functions	total_functions
+gcd_fib	443	0	0	0	0	0	39	0	4	0	0	3	0	3	0
+sieve	1287	0	0	0	0	0	125	2	14	1	1	5	2	5	0
+bfs	731	0	0	0	0	0	66	3	6	1	1	3	3	2	0
+matrix	1367	0	0	0	0	0	131	3	19	2	2	4	2	4	0
+merge_sort	2898	0	0	0	0	0	251	3	32	2	2	9	2	9	0
+bytefreq	1309	0	0	0	0	0	111	3	12	2	1	4	2	4	0
+binary_search	1222	0	0	0	0	0	109	2	12	1	1	4	2	4	0
+prefix_sum	702	0	0	0	0	0	63	2	7	1	1	3	2	3	0
+records	601	0	0	0	0	0	53	0	6	0	0	3	0	3	0
+variants	785	0	0	0	0	0	56	0	6	0	0	4	0	4	1
+state_machine	1172	1	2	2	0	2000000	111	0	1	0	0	2	0	2	2
+signal_network	1806	1	2	2	0	2000000	188	0	1	0	0	2	0	2	2
+arena_sum	891	0	0	0	0	0	72	4	7	2	2	3	2	3	0
+knapsack	1249	0	0	0	0	0	113	2	15	1	1	4	2	4	0
+floyd_warshall	2042	0	0	0	0	0	183	2	25	1	1	6	2	6	0
+n_queens	1918	0	0	0	0	0	171	2	16	1	1	4	2	4	0
+union_find	1684	0	0	0	0	0	135	2	11	1	1	7	2	7	0
+game_of_life	2890	0	0	0	0	0	264	4	33	2	2	7	2	7	0
+image_convolution	2547	0	0	0	0	0	245	4	45	2	2	6	2	6	0
+edit_distance	3303	0	0	0	0	0	251	4	26	2	2	7	2	7	1
+
+# gate: parallel-runtime
+iterations	repetitions	serial_us	manual_parallel_us	parallel_over_serial
+0	200	2507	7225	2.881
+10000	100	3741	5791	1.548
+100000	20	4286	4083	0.953
+2000000	2	4910	4036	0.822
+generated_challenge	serial_us	parallel_us	parallel_over_serial
+state_machine	4691	3497	0.746
+signal_network	6430	3809	0.592
+
+# gate: host
+calls	slim_us	c_us	slim_over_c
+100000	4571	4476	1.021
+binary	host_bytes	without_network_bytes	host_over_reference
+hello	52840	52056	1.015
+structured_host	serial_us	parallel_us	parallel_over_serial
+dual_fetch	181158	90583	0.500
+structured_host	serial_us	parallel_us	parallel_over_serial
+dual_health	176181	91893	0.522
+
+# gate: incremental
+graph	modules	scenario	session_us	work
+wide	5	no-change	4513	0 0 0 0
+wide	5	private-body	3260	1 1 1 1
+wide	5	public-interface	3105	1 1 2 2
+wide	9	no-change	3583	0 0 0 0
+wide	9	private-body	3626	1 1 1 1
+wide	9	public-interface	3784	1 1 2 2
+wide	17	no-change	4855	0 0 0 0
+wide	17	private-body	4631	1 1 1 1
+wide	17	public-interface	4629	1 1 2 2
+deep	5	no-change	3330	0 0 0 0
+deep	5	private-body	3354	1 1 1 1
+deep	5	public-interface	3406	1 1 5 5
+deep	9	no-change	3669	0 0 0 0
+deep	9	private-body	4161	1 1 1 1
+deep	9	public-interface	3826	1 1 9 9
+deep	17	no-change	4947	0 0 0 0
+deep	17	private-body	4591	1 1 1 1
+deep	17	public-interface	4612	1 1 17 17
+
+# gate: project
+graph	modules	jobs	emit_us	generated_bytes
+wide	5	1	2655	3884
+wide	5	2	3404	3884
+wide	5	4	2791	3884
+wide	9	1	2989	6216
+wide	9	2	2820	6216
+wide	9	4	3320	6216
+wide	17	1	3997	10880
+wide	17	2	3386	10880
+wide	17	4	3298	10880
+deep	5	1	2840	3950
+deep	5	2	2490	3950
+deep	5	4	2579	3950
+deep	9	1	2970	6383
+deep	9	2	2779	6383
+deep	9	4	2785	6383
+deep	17	1	3465	11223
+deep	17	2	3124	11223
+deep	17	4	3249	11223
+
+# gate: applications
+application	modules	source_bytes	check_us	emit_us	generated_bytes	emit_check_ratio
+api-diff	3	15434	4717	6394	75204	1.355
+http	8	18380	5628	7482	88548	1.330
+ledger	9	25048	6398	8911	123519	1.393
+lz4	6	13987	4913	6320	68625	1.286
+ndjson	9	32617	7745	11027	162115	1.424
+raster	10	21165	5907	8414	110484	1.424
+sat	10	26366	6754	9540	127580	1.412
+source-gen	5	12685	4495	6038	64673	1.343
+standard-library	11	21458	5948	8305	110655	1.396
+std-docs	3	9359	4063	5136	46244	1.264
+
+# gate: compare
+challenge	language	compile_ms	runtime_us	binary_bytes
+gcd_fib	slim	166.240	2533	52848
+gcd_fib	c	62.719	2039	33432
+gcd_fib	rust	133.897	2485	466256
+sieve	slim	177.702	5260	52840
+sieve	c	72.601	3009	33560
+sieve	rust	138.240	3326	465864
+bfs	slim	170.352	3543	52872
+bfs	c	69.301	2643	33512
+bfs	rust	116.159	3188	466552
+matrix	slim	179.273	4753	52872
+matrix	c	73.127	3252	33512
+matrix	rust	136.762	4037	466296
+merge_sort	slim	186.170	3561	52912
+merge_sort	c	76.677	2727	33552
+merge_sort	rust	152.356	3171	466368
+bytefreq	slim	179.022	8075	52848
+bytefreq	c	69.661	6050	33816
+bytefreq	rust	136.724	6203	469280
+binary_search	slim	174.983	4725	52848
+binary_search	c	71.172	3674	33520
+binary_search	rust	127.069	3838	466304
+prefix_sum	slim	173.583	3379	52848
+prefix_sum	c	69.170	2793	33520
+prefix_sum	rust	123.392	3044	466304
+records	slim	168.618	3294	52848
+records	c	60.639	2104	33432
+records	rust	106.359	2357	466256
+variants	slim	169.588	4241	52848
+variants	c	63.585	5052	33432
+variants	rust	103.779	5246	466256
+state_machine	slim	208.825	3266	53376
+state_machine	c	66.040	3479	33440
+state_machine	rust	117.817	3775	466336
+signal_network	slim	210.087	3922	53376
+signal_network	c	69.439	4701	33440
+signal_network	rust	126.995	5145	466336
+arena_sum	slim	169.582	3251	52848
+arena_sum	c	70.624	3299	33512
+arena_sum	rust	128.056	3697	466560
+knapsack	slim	182.490	3215	52848
+knapsack	c	75.279	2237	33512
+knapsack	rust	120.993	3074	466304
+floyd_warshall	slim	187.224	7169	52848
+floyd_warshall	c	74.144	6288	33520
+floyd_warshall	rust	130.667	6402	466304
+n_queens	slim	189.875	554775	52880
+n_queens	c	70.493	419392	33512
+n_queens	rust	123.050	415818	466304
+union_find	slim	208.801	58573	52848
+union_find	c	72.587	54399	33520
+union_find	rust	133.052	57107	465856
+game_of_life	slim	205.715	5257	52848
+game_of_life	c	73.642	8029	33616
+game_of_life	rust	135.617	5398	465856
+image_convolution	slim	193.983	8543	52856
+image_convolution	c	70.809	7293	33616
+image_convolution	rust	133.498	7314	466312
+edit_distance	slim	209.084	5427	52848
+edit_distance	c	86.377	6839	33664
+edit_distance	rust	188.448	9153	468576
+aggregate	applications	slim_over_c	slim_over_rust
+all	20	1.151	1.056
+serial	18	1.185	1.087
+
+# gate: agent
+case	language	broken_bytes	fixed_bytes	broken_lexical_tokens	fixed_lexical_tokens	broken_model_token_proxy	fixed_model_token_proxy	removed_bytes	inserted_bytes	diagnostic_bytes	broken_accepted	fixed_accepted	broken_feedback_us	fixed_feedback_us	safety_outcome
+unknown-operation	slim	121	113	32	30	31	29	14	6	50	false	true	20912	20466	unknown-operation-rejected
+unknown-operation	c	90	82	29	27	23	21	14	6	308	false	true	27023	25728	unknown-operation-rejected
+unknown-operation	rust	88	80	33	31	22	20	14	6	373	false	true	37333	31183	unknown-operation-rejected
+type-mismatch	slim	60	57	17	17	15	15	4	1	50	false	true	21702	21247	type-mismatch-rejected
+type-mismatch	c	81	77	25	25	21	20	5	1	297	false	true	27794	28371	type-mismatch-rejected
+type-mismatch	rust	71	68	26	26	18	17	4	1	384	false	true	33684	32449	type-mismatch-rejected
+missing-capability	slim	78	90	23	27	20	23	0	12	50	false	true	22577	21984	missing-capability-rejected
+missing-capability	c	42	61	15	22	11	16	0	19	259	false	true	26543	31277	missing-capability-rejected
+missing-capability	rust	60	80	25	34	15	20	0	20	885	false	true	38725	32565	missing-capability-rejected
+nonexhaustive	slim	86	85	22	23	22	22	29	28	50	false	true	21557	21097	nonexhaustive-match-rejected
+nonexhaustive	c	144	173	43	52	36	44	1	30	731	false	true	26791	26475	nonexhaustive-match-rejected
+nonexhaustive	rust	79	91	29	34	20	23	0	12	752	false	true	30527	32082	nonexhaustive-match-rejected
+unterminated	slim	76	59	22	17	19	15	17	0	50	false	true	21817	21247	unterminated-input-rejected
+unterminated	c	27	29	9	10	7	8	0	2	224	false	true	24583	25767	unterminated-input-rejected
+unterminated	rust	35	37	16	17	9	10	0	2	193	false	true	25947	30887	unterminated-input-rejected

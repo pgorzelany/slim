@@ -238,9 +238,15 @@ static inline bool slim_vec_push(SlimVec *vector, const void *value) {
         vector->data = resized;
         vector->capacity = new_capacity;
     }
-    memcpy(vector->data + (size_t)vector->len * vector->element_size,
-           value,
-           vector->element_size);
+    /* A byte append needs one scalar copy after the shared growth/failure path.
+     * Keep other element representations on the identical generic copy path. */
+    if (vector->element_size == 1) {
+        vector->data[vector->len] = *(const uint8_t *)value;
+    } else {
+        memcpy(vector->data + (size_t)vector->len * vector->element_size,
+               value,
+               vector->element_size);
+    }
     vector->len += 1;
     return true;
 }

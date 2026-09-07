@@ -2556,3 +2556,135 @@ M1 remains **in progress**. Actual flow availability/loans, public host-bound
 sessions and lifecycle, retained parallel/global analysis, C-fragment and native
 backend artifact retention, and complete locality/differential/release closure
 remain. This naming prerequisite does not itself retain function fragments.
+
+### RFC-0140 completed checkpoint: retained C function fragments
+
+Internal successful sessions now retain function prototypes, definitions and
+private parallel wrappers in their existing immutable C artifact. The sole
+emitter records and assembles exact byte intervals; no second program
+representation or semantic compiler is introduced. The checker’s revision-bound
+transition supplies declaration correspondence and complete dependency
+invalidation. Reuse requires equal source/checked facts, consumed memory-plan
+fields, all local range fields, counted records and complete ordered parallel
+sites. Current global analysis remains authoritative. Optional-history misses
+use ordinary emission, and failed updates preserve the last successful snapshot.
+
+The full M1 goal remains active. Public host-bound sessions, actual flow/loan
+orchestration, retained global analyses, native backend caching and the full M1
+release/locality closure remain unfinished. The public `session` command still
+reports estimates. The earlier recursive-checker sanitizer stack limitation is
+not resolved by this checkpoint.
+
+The preceding production checkpoint is **7dc0737**, with a 4,090,266-byte seed.
+The final seed was regenerated mechanically from that checked-in seed and passes
+strict bootstrap at **4,320,037 C bytes**, SHA-256
+`b37bc2ad21e91f5d3975d0455319127322c510b73cc64e1a25a3a03fcb2353d4`.
+
+Completed checker imports carry internal execution evidence after validated
+owner/name correspondence, exact source/shape comparisons, relocation checks and
+actual imported writes. False evidence uses the full comparison; incomplete
+evidence misses. The native observer independently repeats the complete
+ownership/source/checked-row comparison for every positive eligibility result.
+Imported bytes receive their new positional checksum during copying, after old
+span integrity passed. Disjoint fresh span sums plus prefix/separator/footer
+checksums establish the complete artifact checksum. An independent native oracle
+recomputes that complete checksum; allocation-failed default returns stay in the
+failure differential. No old checksum or proof text authorizes current source.
+
+Observation schema 6 retains all 16 earlier counters and adds six for prototype,
+body and wrapper producers, fragment imports, copied bytes and counted cursor
+lookups. The three-initialization/four-reset range scratch budget remains intact.
+At 2,000 counted functions plus 2,000 callers and main, cold/warm counted lookups
+are 4,001/8,002. A main-body edit produces one prototype/body and imports 8,000
+fragments. The ordinary emitter also uses the constant-work counted cursor.
+Complete C assembly, copying and integrity checks remain linear byte work.
+
+The permanent matrix includes body/interface/layout/effect/borrow-mode and
+configuration changes; actual insertion/deletion, relocation/reordering and
+recovery; every new metadata/span field and payload corruption; capacity
+boundaries; mixed implicit/explicit wrappers; and 63/64/65 graph/site boundaries.
+One graph-bound case inserts a worker before `work62`: typing, memory and ranges
+remain equal, but its executable site disappears and the body must regenerate.
+Callee recurrence-step edits likewise regenerate unchanged callers when consumed
+work changes or crosses the execution threshold.
+
+Final validation passes strict bootstrap, 10 unit and 73 integration tests,
+338 conformance fixtures and 2,000 deterministic malformed-input mutations,
+format/Clippy checks, and the 10-project library corpus. The exact C/analysis
+comparison covers 96 accepted fixtures with four relocation edits each and 197
+exact rejected results. The final ASan/UBSan session run covers 96 corpus inputs
+and all three 2,048-ordinal allocation-failure campaigns:
+
+| Campaign | Failures | Successes |
+|---|---:|---:|
+| Unchanged input | 550 | 1,498 |
+| Retained-plan update | 1,008 | 1,040 |
+| Actual fragment imports | 982 | 1,066 |
+
+Every successful fragment-update run observes real imports. The completed-import
+bitmap adds one allocation per checked attempt, explaining the +1/+2/+2 failure
+ordinals relative to the initial candidate. The final byte-copy optimization
+changes none of these counts. The full frozen-shell run exits successfully.
+
+The initial implementation regressed scalar edits by about 10–13%, dense edits
+5–7% and counted edits about 8%; those results blocked that version. The
+[initial rows](2026-09-07-m1-fragments-initial-session-latency.tsv),
+[intermediate refinements](2026-09-07-m1-fragments-refinement-latency.tsv) and
+[byte-copy prototype](2026-09-07-m1-byte-append-latency.tsv) remain recorded.
+The existing runtime append helper now copies one-byte elements directly after
+its unchanged capacity/allocation checks; other widths retain the generic copy.
+This changes no interface, ABI, allocation sequence or source semantics. A
+pre-adoption ASan/UBSan old/new differential checks eight widths, all 256 byte
+values, growth through 512 capacity and 64 fault ordinals: 56 failures and nine
+successful runs including the uninjected run match exactly. A permanent native
+fixture and integration test preserve that domain. Loop unrolling and generated-C
+type guards were measured and not adopted.
+
+The [final session measurements](2026-09-07-m1-fragments-session-latency.tsv) retain
+660 samples across 60 cohorts, including comparison with both the preceding
+session and two independent ordinary compilations. These are uninstrumented
+whole-process totals, not isolated warm-query latency or portable budgets:
+
+| Body-edit geometry | Baseline median ms | Final median ms | Median paired ratio |
+|---|---:|---:|---:|
+| 4,000 scalar functions | 78.392 | 75.300 | 0.960 |
+| 512 dense functions | 248.388 | 241.435 | 0.967 |
+| 2,000 counted functions plus callers | 154.786 | 145.170 | 0.934 |
+
+Of 30 preceding-session cohorts, 28 have lower median paired ratios. The other
+two have mixed signs (six slower pairs out of eleven): scalar-500 unchanged has
+a +0.109-ms median paired difference and counted-64 body edits +0.003 ms. No
+speedup is claimed for those small noisy cases, or uniformly against two-clean.
+
+The paired [frontend](2026-09-07-m1-fragments-frontend.tsv),
+[external backend](2026-09-07-m1-fragments-backend.tsv),
+[native runtime](2026-09-07-m1-fragments-runtime.tsv) and
+[native identity](2026-09-07-m1-fragments-native.tsv) reports use separate old/new
+runtime implementations and record their hashes. All 20 applications retain
+exact C and native output. Native timings are not uniformly lower. Three suspect
+runtime cases received balanced same-binary controls: `knapsack` and `arena_sum`
+show +0.030/+0.029-ms group-median shifts against 0.256/0.210-ms median absolute
+baseline self-pair differences; `binary_search` is lower in the confirmation.
+The [runtime controls](2026-09-07-m1-fragments-native-confirmation.tsv) preserve all
+samples. The [backend controls](2026-09-07-m1-fragments-backend-confirmation.tsv)
+show near-zero shifts for `variants` and `knapsack`. `n_queens` retains a small
+positive build-time shift (+1.1%, +1.676 ms, 21/24 slower groups), below its
+1.934-ms median absolute baseline self-pair spread. Record this observed cost;
+do not claim zero native compilation overhead. No performance budget is relaxed.
+
+Final [resource measurements](2026-09-07-m1-fragments-final-resources.tsv) read the
+production allocation counter and process peak RSS separately from timing. For
+scalar/dense/counted body edits above, allocation attempts are respectively
+119,306/119,386, 102,850/102,914 and 159,468/159,548 baseline/final. Median peak RSS
+is 108.31/110.16, 339.39/340.53 and 195.44/193.52 MiB. These three-sample process
+peaks include transient memory; they are not retained-live-storage measurements.
+The [pre-byte-copy resource rows](2026-09-07-m1-fragments-refined-resources.tsv)
+remain available independently.
+
+All unchanged required and durable gates pass: performance, work, reduction,
+parallelism, resources, host, parallel-runtime, incremental, project, applications,
+compare and agent. Generated parallel/serial ratios are 0.746 for `state_machine`
+and 0.592 for `signal_network`. The [gate record](2026-09-07-m1-fragments-gates.tsv),
+[complete deterministic work rows](2026-09-07-m1-fragments-work.tsv) and
+[budget outputs](2026-09-07-m1-fragments-budgets.txt) retain the evidence. These
+checkpoint results do not complete M1 or establish an LLM success rate.

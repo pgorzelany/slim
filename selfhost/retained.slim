@@ -189,6 +189,7 @@ struct Work:
   capacity: Bool
 
 struct Analyzed:
+  transition: Update
   view: typing.View
   cache: Cache
   work: Work
@@ -202,10 +203,21 @@ struct Edge:
   next: I64
 
 struct Update:
+  checked_imports: Vec[Bool]
+  previous: identity.Revision
+  current: identity.Revision
   before: Vec[I64]
   after: Vec[I64]
   interfaces: Vec[Bool]
   bodies: Vec[Bool]
+
+fn empty_update() -> Update effects[alloc]:
+  let before: Vec[I64] = vec.new()
+  let after: Vec[I64] = vec.new()
+  let interfaces: Vec[Bool] = vec.new()
+  let bodies: Vec[Bool] = vec.new()
+  let invalid: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+  Update(checked_imports: vec.new(), previous: invalid, current: invalid, before: before, after: after, interfaces: interfaces, bodies: bodies)
 
 fn empty_index() -> Index effects[alloc]:
   let declarations: Vec[Declaration] = vec.new()
@@ -641,7 +653,7 @@ fn update(old: Cache, current: Index, prior: Vec[StoredLink]) -> Update effects[
   fill_missing(vec.len(current.declarations), @heads)
   dependencies(current, prior, 0, @heads, @edges)
   propagate(heads, edges, 0, @interfaces, @bodies, @queue)
-  Update(before: before, after: after, interfaces: interfaces, bodies: bodies)
+  Update(checked_imports: vec.new(), previous: old.index.revision, current: current.revision, before: before, after: after, interfaces: interfaces, bodies: bodies)
 
 fn relocate(old: Index, current: Index, mapping: Update, node: identity.NodeId) -> I64 effects[partial]:
   let absolute: I64 = corresponding(old, current, mapping.after, node)
@@ -722,7 +734,7 @@ fn import_nodes(old: Cache, current: Index, mapping: Update, declaration: Declar
     syntax.ast_node_set_link(@tokens, first + at, link)
     recur(old, current, mapping, declaration, first, at + 1, @tokens, @facts)
 
-fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], old: Cache, current: Index, mapping: Update, at: I64, facts: @Vec[typing.Fact], issues: @Vec[typing.Issue], executed: I64, reused: I64, imported: I64) -> Work effects[alloc, partial]:
+fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], old: Cache, current: Index, mapping: Update, at: I64, facts: @Vec[typing.Fact], issues: @Vec[typing.Issue], executed: I64, reused: I64, imported: I64, checked_imports: @Vec[Bool]) -> Work effects[alloc, partial]:
   if (at >= vec.len(current.declarations)) || typing.issues_block_inference(issues):
     Work(executed: executed, reused: reused, imported: imported, capacity: false)
   else:
@@ -746,6 +758,7 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], old: Cache, curren
         typing.check_function(source, @tokens, declaration.owner.first, @facts, @issues)
     else:
       void
+    vec.push(@checked_imports, hit)
     let next_executed: I64 = if function && (!hit):
       executed + 1
     else:
@@ -758,7 +771,7 @@ fn check_functions(source: Bytes, tokens: @Vec[syntax.Token], old: Cache, curren
       imported + declaration.owner.count
     else:
       imported
-    recur(source, @tokens, old, current, mapping, at + 1, @facts, @issues, next_executed, next_reused, next_imported)
+    recur(source, @tokens, old, current, mapping, at + 1, @facts, @issues, next_executed, next_reused, next_imported, @checked_imports)
 
 fn save_nodes(index: Index, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], prior: Vec[StoredLink], at: I64, output: @Vec[Saved]) -> Void effects[alloc, partial]:
   if at >= vec.len(tokens):
@@ -1512,7 +1525,7 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
       ranges.analyze(source, tokens, view.facts)
     else:
       ranges.empty_view()
-    Analyzed(view: view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
+    Analyzed(transition: empty_update(), view: view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
   else:
     let view: typing.View = typing.prepare(source, @tokens, declarations)
     let index: Index = build_index(source, tokens, declarations, revision)
@@ -1522,7 +1535,9 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     let facts: Vec[typing.Fact] = mem.replace(@view.facts, vec.new())
     let issues: Vec[typing.Issue] = mem.replace(@view.issues, vec.new())
     let layouts: Vec[I64] = mem.replace(@view.layouts, vec.new())
-    let work: Work = check_functions(source, @tokens, old, index, mapping, 0, @facts, @issues, 0, 0, 0)
+    let checked_imports: Vec[Bool] = vec.new()
+    let work: Work = check_functions(source, @tokens, old, index, mapping, 0, @facts, @issues, 0, 0, 0, @checked_imports)
+    let mapping: Update = with_checked_imports(^mapping, ^checked_imports)
     let nodes: Vec[Saved] = vec.new()
     save_nodes(index, tokens, facts, prior, 0, @nodes)
     let planned: Planned = if vec.len(issues) == 0:
@@ -1545,7 +1560,7 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     let range_view: ranges.View = mem.replace(@ranged.view, ranges.empty_view())
     let cache: Cache = Cache(valid: false, index: index, nodes: nodes, planning: planning, range_history: range_history)
     let checked_view: typing.View = typing.View(facts: facts, issues: issues, layouts: layouts)
-    Analyzed(view: checked_view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
+    Analyzed(transition: mapping, view: checked_view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
 
 fn place_node_position(cache: Cache, node: identity.NodeId) -> I64 effects[partial]:
   let total: I64 = vec.len(cache.nodes)
@@ -1670,3 +1685,98 @@ fn place_fact(cache: Cache, place: PlaceId, budget: I64) -> PlaceResult effects[
             PlaceResult::Unknown("missing-checked-type")
           Found(node):
             place_walk(cache, place, place.node, type, kind, 0, budget)
+
+# Emission uses this same checked transition, never a second dependency graph.
+fn transition_ready(old: Cache, current: Cache, mapping: Update) -> Bool effects[partial]:
+  let old_count: I64 = vec.len(old.index.owners)
+  let count: I64 = vec.len(current.index.owners)
+  let old_rows: I64 = vec.len(old.index.declarations)
+  let rows: I64 = vec.len(current.index.declarations)
+  let owners: Bool = identity.same_revision(mapping.previous, old.index.revision) && identity.same_revision(mapping.current, current.index.revision)
+  let newer: Bool = (mapping.previous.epoch == mapping.current.epoch) && (mapping.previous.serial < mapping.current.serial)
+  let sizes: Bool = ((old_count > 0) && (old_count <= 1000000)) && ((count > 0) && (count <= 1000000))
+  let nodes: Bool = ((vec.len(old.nodes) == old_count) && (vec.len(old.index.shapes) == old_count)) && ((vec.len(current.nodes) == count) && (vec.len(current.index.shapes) == count))
+  let frames: Bool = ((vec.len(mapping.before) == rows) && (vec.len(mapping.after) == old_rows)) && ((vec.len(mapping.interfaces) == rows) && (vec.len(mapping.bodies) == rows))
+  (old.valid && current.valid) && (owners && (newer && (sizes && (nodes && (frames && (vec.len(mapping.checked_imports) == rows))))))
+
+fn same_checked_rows(old: Cache, current: Cache, mapping: Update, before: Declaration, declaration: Declaration, at: I64) -> Bool effects[partial]:
+  if at >= declaration.owner.count:
+    true
+  else:
+    let old_node: I64 = before.owner.first + at
+    let node: I64 = declaration.owner.first + at
+    let saved: Saved = vec.get(old.nodes, old_node)
+    let checked: Saved = vec.get(current.nodes, node)
+    let old_shape: Shape = vec.get(old.index.shapes, old_node)
+    let shape: Shape = vec.get(current.index.shapes, node)
+    let remaining: I64 = declaration.owner.count - at
+    let shapes: Bool = ((old_shape.kind == shape.kind) && (old_shape.tag == shape.tag)) && ((old_shape.next == shape.next) || ((old_shape.next > remaining) && (shape.next > remaining)))
+    let owned: Bool = (vec.get(old.index.owners, old_node) == before.owner.declaration.slot) && (vec.get(current.index.owners, node) == declaration.owner.declaration.slot)
+    let valid: Bool = owned && (valid_saved(saved, before.owner.declaration) && valid_saved(checked, declaration.owner.declaration))
+    if valid && (shapes && (saved.tag == checked.tag)):
+      let type: TypeId = saved_type(old.index, saved)
+      let relocated_type: I64 = relocate_ref(old.index, current.index, mapping, type.node)
+      let relocated_link: I64 = relocate_link(old.index, current.index, mapping, before.owner.declaration, saved_link(old.index, saved))
+      let prior: Bool = same_link(old.index, current.index, mapping.after, capture_link(old.index, saved.prior.value), capture_link(current.index, checked.prior.value))
+      let equal: Bool = ((relocated_type >= 0) && (relocated_type == checked.type.position)) && ((!(relocated_link == -2)) && (relocated_link == checked.link.value))
+      if prior && equal:
+        recur(old, current, mapping, before, declaration, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn same_checked_function_rows(old: Cache, current: Cache, mapping: Update, at: I64) -> Bool effects[partial]:
+  if (at < 0) || (at >= vec.len(mapping.before)):
+    false
+  else:
+    let slot: I64 = vec.get(mapping.before, at)
+    if (slot < 0) || (slot >= vec.len(old.index.declarations)):
+      false
+    else:
+      let before: Declaration = vec.get(old.index.declarations, slot)
+      let declaration: Declaration = vec.get(current.index.declarations, at)
+      let revisions: Bool = identity.same_revision(before.owner.declaration.file.revision, old.index.revision) && identity.same_revision(declaration.owner.declaration.file.revision, current.index.revision)
+      let slots: Bool = ((before.owner.declaration.slot == slot) && (before.owner.declaration.file.slot == 0)) && ((declaration.owner.declaration.slot == at) && (declaration.owner.declaration.file.slot == 0))
+      let owners: Bool = (revisions && slots) && (identity.valid_view(before.owner, vec.len(old.nodes)) && identity.valid_view(declaration.owner, vec.len(current.nodes)))
+      let names: Bool = (before.kind == 0) && ((declaration.kind == 0) && equal(before.name, declaration.name))
+      let sizes: Bool = (before.owner.count == declaration.owner.count) && (before.prefix == declaration.prefix)
+      let dependencies: Bool = (vec.get(mapping.after, slot) == at) && ((!vec.get(mapping.interfaces, at)) && (!vec.get(mapping.bodies, at)))
+      if owners && (names && (sizes && dependencies)):
+        if equal(before.body, declaration.body) && equal(before.interface, declaration.interface):
+          same_checked_rows(old, current, mapping, before, declaration, 0)
+        else:
+          false
+      else:
+        false
+
+# transition_ready binds this evidence to these immutable old/current caches.
+# match_declarations validated prior ownership, qualified name and correspondence;
+# classify validated prefix/count, exact source, shapes and prior links. The
+# checked import then validated and wrote every relocated type and binding.
+fn same_checked_function(old: Cache, current: Cache, mapping: Update, at: I64) -> Bool effects[partial]:
+  if (at < 0) || (at >= vec.len(mapping.before)):
+    false
+  else:
+    let slot: I64 = vec.get(mapping.before, at)
+    if (slot < 0) || (slot >= vec.len(mapping.after)):
+      false
+    else:
+      let dependencies: Bool = (vec.get(mapping.after, slot) == at) && ((!vec.get(mapping.interfaces, at)) && (!vec.get(mapping.bodies, at)))
+      if dependencies && vec.get(mapping.checked_imports, at):
+        true
+      else:
+        same_checked_function_rows(old, current, mapping, at)
+
+# A true row records actual completed import_nodes, after classify checked every
+# canonical shape/prior link and exact interface/body bytes, and import_valid
+# checked every type/binding relocation. The owned snapshots are immutable.
+# import_nodes writes those exact tags/forms/links; save_nodes captures them before
+# any consumer sees this transition. Incomplete/error paths cannot pass readiness.
+# This is current compiler-owned execution evidence, not a persisted certificate.
+fn with_checked_imports(mapping: ^Update, checked_imports: ^Vec[Bool]) -> Update effects[alloc]:
+  let before: Vec[I64] = mem.replace(@mapping.before, vec.new())
+  let after: Vec[I64] = mem.replace(@mapping.after, vec.new())
+  let interfaces: Vec[Bool] = mem.replace(@mapping.interfaces, vec.new())
+  let bodies: Vec[Bool] = mem.replace(@mapping.bodies, vec.new())
+  Update(checked_imports: checked_imports, previous: mapping.previous, current: mapping.current, before: before, after: after, interfaces: interfaces, bodies: bodies)

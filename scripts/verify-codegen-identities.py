@@ -141,7 +141,10 @@ def main():
     parser.add_argument('compiler')
     parser.add_argument('--baseline')
     parser.add_argument('--report')
+    parser.add_argument('--exact', action='store_true', help='require byte-identical baseline C, including private identifiers')
     args = parser.parse_args()
+    if args.exact and not args.baseline:
+        parser.error('--exact requires --baseline')
     compiler = Path(args.compiler).resolve()
     oracle_checks()
     fixtures = sorted(Path('conformance/pass').glob('*.slim'))
@@ -167,6 +170,8 @@ def main():
                 assert not original_units - actual, (fixture, 'relocated fragment changed', list((original_units-actual))[:1])
             if args.baseline:
                 previous = emit(args.baseline, fixture)
+                if args.exact:
+                    assert previous == original, (fixture, 'C bytes changed')
                 renamed = identity_only(previous, original)
                 same_result(run(args.baseline, 'analyze', fixture), run(compiler, 'analyze', fixture), (fixture, 'analysis'))
                 rows.append((str(fixture), len(previous.encode()), len(original.encode()), renamed, 'exact'))

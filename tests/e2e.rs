@@ -1928,6 +1928,62 @@ fn typed_vector_set_preserves_aggregate_values_and_bounds_checks() {
 }
 
 #[test]
+fn vector_append_preserves_bytes_growth_and_allocation_failures() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let directory = temporary_directory("vector-append-runtime");
+    let executable = directory.join("vector-append");
+    let build = Command::new(native_compiler())
+        .args(["-std=c11", "-O2", "-Wall", "-Wextra", "-Werror", "-I"])
+        .arg(root.join("runtime"))
+        .arg(root.join("tests/fixtures/vector_append_runtime.c"))
+        .arg(root.join("runtime/slim_rt.c"))
+        .arg("-o")
+        .arg(&executable)
+        .output()
+        .unwrap();
+    assert!(
+        build.status.success(),
+        "{}",
+        String::from_utf8_lossy(&build.stderr)
+    );
+    let expected = b"vector append: 8 widths, 257 values\n";
+    let ordinary = Command::new(&executable)
+        .env_remove("SLIM_ALLOC_FAIL_AT")
+        .output()
+        .unwrap();
+    assert!(ordinary.status.success());
+    assert_eq!(ordinary.stdout, expected);
+    assert!(ordinary.stderr.is_empty());
+    let mut failures = 0;
+    for ordinal in 1..=64 {
+        let run = Command::new(&executable)
+            .env("SLIM_ALLOC_FAIL_AT", ordinal.to_string())
+            .output()
+            .unwrap();
+        match run.status.code() {
+            Some(0) => {
+                assert_eq!(run.stdout, expected, "ordinal {ordinal}");
+                assert!(run.stderr.is_empty(), "ordinal {ordinal}");
+            }
+            Some(71) => {
+                failures += 1;
+                assert!(run.stdout.is_empty(), "ordinal {ordinal}");
+                assert_eq!(
+                    run.stderr,
+                    format!("SLIM allocation failure: exhausted at allocation {ordinal}\n")
+                        .as_bytes()
+                );
+            }
+            code => panic!("unexpected exit at ordinal {ordinal}: {code:?}"),
+        }
+    }
+    // Seven growth allocations for each of the eight widths; the copy itself
+    // must add no allocation and every failed push preserves all prior values.
+    assert_eq!(failures, 56);
+    fs::remove_dir_all(directory).unwrap();
+}
+
+#[test]
 fn propagates_typed_allocation_failure() {
     let directory = temporary_directory("allocation-failure");
     let source = write_source(

@@ -1856,7 +1856,7 @@ fn emit_counted_function_body(source: Bytes, tokens: Vec[syntax.Token], facts: V
   emit_parallel_body(source, tokens, facts, allocations, sites, module_items, params, fact.base, 0, true, return_type, @output, range_facts)
   text.append_text(@output, "slim_counted_exit: ;\n")
 
-fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], sites: Vec[parallel.Site], counted: Vec[ranges.Counted], module_items: I64, item: I64, function_plan: memory.FunctionPlan, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
+fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], sites: Vec[parallel.Site], counted: Vec[ranges.Counted], module_items: I64, item: I64, function_plan: memory.FunctionPlan, counted_index: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_item_name(item)
   let params: I64 = syntax.ast_function_parameters(item)
   let return_type: I64 = syntax.ast_function_return_type(tokens, item)
@@ -1892,7 +1892,6 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fac
   else:
     void
   let recursive: Bool = function_plan.recursive
-  let counted_index: I64 = ranges.find_counted(counted, item, 0)
   let counted_candidate: Bool = counted_index >= 0
   let counted_has_site: Bool = if counted_candidate:
     let counted_fact: ranges.Counted = vec.get(counted, counted_index)
@@ -1920,31 +1919,56 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fac
     void
   text.append_text(@output, "return slim_result;\n}\n\n")
 
-fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], sites: Vec[parallel.Site], counted: Vec[ranges.Counted], module_items: I64, function_plans: Vec[memory.FunctionPlan], cursor: I64, plan_index: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
+fn counted_record_index(counted: Vec[ranges.Counted], item: I64, cursor: I64) -> I64 effects[partial]:
+  if (cursor < 0) || (cursor > vec.len(counted)):
+    -2
+  else:
+    if cursor == vec.len(counted):
+      -1
+    else:
+      let fact: ranges.Counted = vec.get(counted, cursor)
+      if fact.item == item:
+        cursor
+      else:
+        if fact.item > item:
+          -1
+        else:
+          -2
+
+fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], sites: Vec[parallel.Site], counted: Vec[ranges.Counted], module_items: I64, function_plans: Vec[memory.FunctionPlan], cursor: I64, plan_index: I64, counted_cursor: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
-    void
+    if counted_cursor == vec.len(counted):
+      void
+    else:
+      let invalid: I64 = cursor / 0
+      void
   else:
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
+    let selected: I64 = counted_record_index(counted, cursor, counted_cursor)
+    let counted_index: I64 = if selected >= -1:
+      selected
+    else:
+      cursor / 0
+    let next_counted: I64 = if counted_index >= 0:
+      counted_cursor + 1
+    else:
+      counted_cursor
     let next_plan: I64 = if function_item:
       let function_plan: memory.FunctionPlan = vec.get(function_plans, plan_index)
-      emit_function(source, tokens, facts, sites, counted, module_items, cursor, function_plan, @output, range_facts)
+      emit_function(source, tokens, facts, sites, counted, module_items, cursor, function_plan, counted_index, @output, range_facts)
       plan_index + 1
     else:
       plan_index
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, facts, sites, counted, module_items, function_plans, next, next_plan, @output, range_facts)
+    recur(source, tokens, facts, sites, counted, module_items, function_plans, next, next_plan, next_counted, @output, range_facts)
 
 fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let range_view: ranges.View = ranges.analyze(source, tokens, facts)
   emit_program_view(source, tokens, facts, plan, layouts, range_view, @output)
 
-fn emit_program_view(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], range_view: ranges.View, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let range_facts: Vec[ranges.Fact] = range_view.facts
-  let parallel_view: parallel.View = parallel.analyze(source, tokens, facts, range_view)
-  let sites: Vec[parallel.Site] = parallel_view.sites
-  let counted: Vec[ranges.Counted] = range_view.counted
+fn emit_program_prefix(source: Bytes, tokens: Vec[syntax.Token], layouts: Vec[I64], sites: Vec[parallel.Site], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let enabled: Bool = has_executable_sites(sites, 0)
   if enabled:
     text.append_text(@output, "#define SLIM_PARALLEL 1\n")
@@ -1954,11 +1978,26 @@ fn emit_program_view(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing
   let module_items: I64 = syntax.ast_module_items(0)
   emit_forward_types(source, tokens, module_items, @output)
   emit_data_items(source, tokens, layouts, 0, @output)
+
+fn emit_program_footer(output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "int main(int argc, char **argv) {\nSlimAllocStatus slim_status;\nslim_alloc_status_init(&slim_status);\nSlimRegion slim_root;\nslim_rt_init(&slim_root, &slim_status);\nSlimVec slim_args = slim_vec_new(sizeof(SlimBytes), &slim_root);\nfor (int slim_i = 0; slim_i < argc; ++slim_i) {\nSlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\nif (!slim_vec_push(&slim_args, &slim_arg)) {\nslim_alloc_report(&slim_status);\nslim_rt_shutdown();\nreturn 71;\n}\n}\nint64_t slim_exit_code = slim_fn_main(slim_args, &slim_root);\nif (slim_region_failed(&slim_root)) {\nslim_alloc_report(&slim_status);\nslim_rt_shutdown();\nreturn 71;\n}\nif (slim_exit_code < 0 || slim_exit_code > 255) {\nslim_rt_trap(\"main result is outside 0..255\");\n}\nslim_rt_shutdown();\nreturn (int)slim_exit_code;\n}\n")
+
+fn emit_program_view(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], range_view: ranges.View, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let parallel_view: parallel.View = parallel.analyze(source, tokens, facts, range_view)
+  emit_program_sites(source, tokens, facts, plan, layouts, range_view, parallel_view.sites, @output)
+
+# Both ordinary generation and a retained-history capacity miss use this section
+# sequence after the one current parallel analysis has produced its checked sites.
+fn emit_program_sites(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], range_view: ranges.View, sites: Vec[parallel.Site], output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let range_facts: Vec[ranges.Fact] = range_view.facts
+  let counted: Vec[ranges.Counted] = range_view.counted
+  emit_program_prefix(source, tokens, layouts, sites, @output)
+  let module_items: I64 = syntax.ast_module_items(0)
   emit_prototypes(source, tokens, module_items, @output)
   emit_parallel_wrappers(source, tokens, facts, sites, 0, @output)
   let function_plans: Vec[memory.FunctionPlan] = plan.functions
-  emit_functions(source, tokens, facts, sites, counted, module_items, function_plans, module_items, 0, @output, range_facts)
-  text.append_text(@output, "int main(int argc, char **argv) {\nSlimAllocStatus slim_status;\nslim_alloc_status_init(&slim_status);\nSlimRegion slim_root;\nslim_rt_init(&slim_root, &slim_status);\nSlimVec slim_args = slim_vec_new(sizeof(SlimBytes), &slim_root);\nfor (int slim_i = 0; slim_i < argc; ++slim_i) {\nSlimBytes slim_arg = slim_bytes_static((const uint8_t *)argv[slim_i], (int64_t)strlen(argv[slim_i]));\nif (!slim_vec_push(&slim_args, &slim_arg)) {\nslim_alloc_report(&slim_status);\nslim_rt_shutdown();\nreturn 71;\n}\n}\nint64_t slim_exit_code = slim_fn_main(slim_args, &slim_root);\nif (slim_region_failed(&slim_root)) {\nslim_alloc_report(&slim_status);\nslim_rt_shutdown();\nreturn 71;\n}\nif (slim_exit_code < 0 || slim_exit_code > 255) {\nslim_rt_trap(\"main result is outside 0..255\");\n}\nslim_rt_shutdown();\nreturn (int)slim_exit_code;\n}\n")
+  emit_functions(source, tokens, facts, sites, counted, module_items, function_plans, module_items, 0, 0, @output, range_facts)
+  emit_program_footer(@output)
 
 fn emit_tcp_exchange_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, callee: I64, arguments: I64, destination: I64, result: Bool, output: @Vec[U8]) -> Bool effects[alloc, partial]:
   let tcp: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.tcp_exchange")
