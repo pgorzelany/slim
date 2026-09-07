@@ -47,9 +47,10 @@ RFC-0143 now has a working public framed session in the current checkout. Its
 query observation confirms zero producer/import entries on unchanged updates
 and two physically cleaned epochs. The legacy estimate driver now lives in its own production-generated fixture;
 its existing gates pass. Actual build identities are checked. Remaining public
-limit/resource/edit coverage and release closure are recorded in the
+limit/resource/edit coverage and full release closure are recorded in the
 [host-session checkpoint report](2026-09-08-m1-host-session.md), including the
-22.5% slower large body-edit result. The
+22.5% slower large body-edit result. The reproducible source package and clean
+installed public-session smoke check pass at checkpoint `2ffc37b`. The
 M1 milestone remains in progress; none of the remaining rows is waived by the
 C-fragment checkpoint. RFC-0141 removes recursive expression inference; the remaining
 sanitizer stack limit in `check.find_unknown_expr` is recorded separately.

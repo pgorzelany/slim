@@ -28,7 +28,8 @@ The old estimate CLI driver is now a SLIM measurement fixture. Existing estimate
 work, source-map fault and geometric latency gates are preserved. Verification
 Rust only builds/drives production-generated fixtures; it adds no semantics.
 Bootstrap builds the adapter, and the exact release inventory now includes its
-`compiler/` directory under RFC-0143. Installed-release execution is still pending.
+`compiler/` directory under RFC-0143. A reproducible source package and clean installed public-session smoke test
+pass at source checkpoint `2ffc37b`.
 
 ## Observed verification
 
@@ -83,8 +84,8 @@ request latency.
 
 Complete public edit/identity/limit coverage, update/recovery allocation faults,
 physical resource accounting and permanent public latency gates. Keep the existing
-internal detailed query and corruption oracles. Verify the committed source
-package through the public launcher, then complete the full M1 release gate.
+internal detailed query and corruption oracles. The source package at `2ffc37b` passes clean-install verification through the
+public launcher; the full M1 release gate remains required.
 Global analysis retention and native artifact caching remain required M1 work.
 RFC-0143 is deliberately still marked implementation pending.
 
@@ -111,3 +112,11 @@ acceptance evidence.
 retains both build recipes, final identity checks, the concurrent-build check and
 public smoke results. It changes build publication and recipe identity; it does
 not change the measured compiler or transport algorithms.
+
+[Clean-release log](archive/2026-09-08-m1-host-session-release.log.gz) records
+reproducible packaging and an installed bootstrap/public-session/native-program
+smoke test at `2ffc37b`. This is the source-release check, not the full M1
+`verify-0.9.sh` closure. The archive inventory now contains 291 verified files.
+The initial verification source-hash snapshot precedes a whitespace-only cleanup
+of the estimate fixture's extra final blank line; compiler sources and seed were
+unchanged by that cleanup.
