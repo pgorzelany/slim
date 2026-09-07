@@ -1,0 +1,18 @@
+# date=2026-09-07; seed_sha256=dddb3865357a149932bc4c2cd2b09e05e822c65cb16d0bee6413d0412a320b82; actual production query operand/root visits after budget check; ordinary and ASan/UBSan outputs equal; two identical repetitions; preparation excluded; fixed metadata lookup cost is not counted as path visits
+projections	budget_mode	native_visits
+1	full	2
+1	short	1
+2	full	3
+2	short	1
+8	full	9
+8	short	1
+16	full	17
+16	short	1
+32	full	33
+32	short	1
+64	full	65
+64	short	1
+128	full	129
+128	short	1
+256	full	257
+256	short	1

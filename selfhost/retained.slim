@@ -7,6 +7,28 @@ struct BindingId:
   owner: identity.DeclarationId
   slot: I64
 
+struct PlaceId:
+  node: identity.NodeId
+
+struct PlaceFact:
+  place: PlaceId
+  root: PlaceId
+  declaration: identity.NodeId
+  binding: BindingId
+  root_type: TypeId
+  value_type: TypeId
+  root_kind: I64
+  value_kind: I64
+  borrow_mode: I64
+  projections: I64
+  steps: I64
+
+enum PlaceResult:
+  Invalid(Bytes)
+  Unknown(Bytes)
+  Bounded(I64)
+  Exact(PlaceFact)
+
 enum NodeRef:
   Missing
   Found(identity.NodeId)
@@ -667,3 +689,127 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     let cache: Cache = Cache(valid: false, index: index, nodes: nodes)
     let checked_view: typing.View = typing.View(facts: facts, issues: issues, layouts: layouts)
     Analyzed(view: checked_view, cache: cache, work: work)
+
+fn place_node_position(cache: Cache, node: identity.NodeId) -> I64 effects[partial]:
+  let total: I64 = vec.len(cache.nodes)
+  let slot: I64 = node.declaration.slot
+  if (cache.valid && ((total > 0) && (total <= 1000000))) && ((vec.len(cache.index.owners) == total) && (vec.len(cache.index.shapes) == total)):
+    if (slot >= 0) && (slot < vec.len(cache.index.declarations)):
+      let declaration: Declaration = vec.get(cache.index.declarations, slot)
+      let revision: Bool = identity.same_revision(cache.index.revision, node.declaration.file.revision)
+      let local: Bool = (node.declaration.file.slot == 0) && ((declaration.kind == 0) && (declaration.owner.declaration.slot == slot))
+      if revision && local:
+        match identity.resolve_node(declaration.owner, node, total):
+          Invalid:
+            -1
+          Found(at):
+            let saved: Saved = vec.get(cache.nodes, at)
+            if (vec.get(cache.index.owners, at) == slot) && valid_saved(saved, node.declaration):
+              at
+            else:
+              -1
+      else:
+        -1
+    else:
+      -1
+  else:
+    -1
+
+fn place_binding(cache: Cache, place: PlaceId, root: PlaceId, declaration: identity.NodeId, value_type: TypeId, value_kind: I64, steps: I64) -> PlaceResult effects[partial]:
+  let at: I64 = place_node_position(cache, declaration)
+  if (at < 0) || (!identity.same_declaration(place.node.declaration, declaration.declaration)):
+    PlaceResult::Invalid("invalid-place-binding")
+  else:
+    let saved: Saved = vec.get(cache.nodes, at)
+    let kind: I64 = (saved.tag % 8) - 2
+    let mode: I64 = (saved.tag / 8) - 1
+    if (kind < -1) || ((mode < 0) || (mode > 2)):
+      PlaceResult::Unknown("missing-checked-binding")
+    else:
+      let root_type: TypeId = saved_type(cache.index, saved)
+      match root_type.node:
+        Missing:
+          PlaceResult::Unknown("missing-checked-type")
+        Found(type_node):
+          match saved_link(cache.index, saved):
+            Missing:
+              PlaceResult::Unknown("missing-checked-binding")
+            Source(node):
+              PlaceResult::Unknown("missing-checked-binding")
+            Binding(binding):
+              if (binding.slot >= 2) && (binding.slot < vec.len(cache.nodes)):
+                let fact: PlaceFact = PlaceFact(place: place, root: root, declaration: declaration, binding: binding, root_type: root_type, value_type: value_type, root_kind: kind, value_kind: value_kind, borrow_mode: mode, projections: steps - 1, steps: steps)
+                PlaceResult::Exact(fact)
+              else:
+                PlaceResult::Unknown("missing-checked-binding")
+            Local(link):
+              PlaceResult::Unknown("missing-checked-binding")
+            Invalid:
+              PlaceResult::Invalid("invalid-place-binding")
+
+fn place_walk(cache: Cache, place: PlaceId, current: identity.NodeId, value_type: TypeId, value_kind: I64, steps: I64, budget: I64) -> PlaceResult effects[partial]:
+  if steps >= budget:
+    PlaceResult::Bounded(budget)
+  else:
+    let at: I64 = place_node_position(cache, current)
+    if at < 0:
+      PlaceResult::Invalid("invalid-place-node")
+    else:
+      let shape: Shape = vec.get(cache.index.shapes, at)
+      let next_steps: I64 = steps + 1
+      if shape.kind == 2:
+        let root: PlaceId = PlaceId(node: current)
+        let saved: Saved = vec.get(cache.nodes, at)
+        if saved.tag >= 8:
+          place_binding(cache, place, root, current, value_type, value_kind, next_steps)
+        else:
+          match saved_link(cache.index, saved):
+            Missing:
+              PlaceResult::Unknown("missing-checked-binding")
+            Source(node):
+              PlaceResult::Unknown("not-a-local-binding")
+            Binding(binding):
+              PlaceResult::Unknown("missing-checked-binding")
+            Local(link):
+              place_binding(cache, place, root, link.binding, value_type, value_kind, next_steps)
+            Invalid:
+              PlaceResult::Invalid("invalid-place-binding")
+      else:
+        if (shape.kind == 0) && ((shape.tag >= 0) && ((shape.tag % 1000) == 12)):
+          let declaration: Declaration = vec.get(cache.index.declarations, current.declaration.slot)
+          let remaining: I64 = declaration.owner.count - current.ordinal
+          if (remaining < 4) || ((shape.next < 4) || (shape.next > remaining)):
+            PlaceResult::Invalid("invalid-place-projection")
+          else:
+            let operand: Shape = vec.get(cache.index.shapes, at + 2)
+            if (operand.next < 1) || (operand.next >= (shape.next - 2)):
+              PlaceResult::Invalid("invalid-place-projection")
+            else:
+              let field: Shape = vec.get(cache.index.shapes, (at + 2) + operand.next)
+              if field.kind == 2:
+                let child: identity.NodeId = identity.NodeId(declaration: current.declaration, ordinal: current.ordinal + 2)
+                recur(cache, place, child, value_type, value_kind, next_steps, budget)
+              else:
+                PlaceResult::Invalid("invalid-place-projection")
+        else:
+          PlaceResult::Unknown("computed-place-base")
+
+fn place_fact(cache: Cache, place: PlaceId, budget: I64) -> PlaceResult effects[partial]:
+  if (budget < 1) || (budget > 1000000):
+    PlaceResult::Invalid("invalid-place-budget")
+  else:
+    let at: I64 = place_node_position(cache, place.node)
+    if at < 0:
+      PlaceResult::Invalid("invalid-place-node")
+    else:
+      let saved: Saved = vec.get(cache.nodes, at)
+      let kind: I64 = (saved.tag % 8) - 2
+      let type: TypeId = saved_type(cache.index, saved)
+      if kind < -1:
+        PlaceResult::Unknown("missing-checked-type")
+      else:
+        match type.node:
+          Missing:
+            PlaceResult::Unknown("missing-checked-type")
+          Found(node):
+            place_walk(cache, place, place.node, type, kind, 0, budget)

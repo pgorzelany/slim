@@ -1881,3 +1881,64 @@ orchestration, retained declaration parsing/global analysis/C fragments/backend
 work, and complete M1 differential/locality/release closure remain required. The
 minimum-I64 literal emission bug and recursive-checker sanitizer stack limitation
 remain open. This checkpoint preserves the full goal and does not complete M1.
+
+## M1 checkpoint: retained typed place identities (2026-09-07)
+
+RFC-0134 adds a nominal PlaceId and bounded read-only queries over existing checked
+canonical nodes, binding links and types. The flow adapter accepts matching
+function/revision owners and exposes applicable operation facts. Exact results
+identify the lexical root occurrence, binding declaration and nominal binding,
+root/value types, checked borrow mode and projection depth. They do not establish
+allocation identity, alias disjointness, availability or permission to mutate or
+transfer. Computed bases remain unknown. Old handles are rejected; cross-revision
+reuse requires an independently established exact canonical node map.
+
+No retained row, allocation or ordinary compilation pass is added. Saved remains
+at most 64 bytes and StoredLink at most eight bytes. Each point query has constant
+auxiliary storage and an explicit 1..1,000,000 node budget. A future batch ownership
+consumer must bound aggregate traversal or memoize repeated projection paths;
+repeated independent queries over all nested projections can otherwise repeat work.
+
+Validation and observations:
+
+- The [sanitized matrix](2026-09-07-m1-places-matrix.tsv) covers all 94 accepted
+  conformance/native sources, lexical shadowing, owned/shared/exclusive parameters,
+  local aliases, enum bindings, nested projections, missing individual type and
+  binding facts, malformed metadata, invalid identities and flow owners. A normal
+  compiler diagnostic rejects passing NodeId where PlaceId is required.
+- Current node facts compare exactly against fresh checked caches after unchanged,
+  inserted, relocated, CRLF, renamed, body, layout and ownership-signature inputs.
+  Mapped old identities are separately checked through the existing exact node-map
+  API. A zero mapping count does not imply missing current checked facts.
+- [Observed native work](2026-09-07-m1-places-work.tsv) is depth + 1 for full
+  projection queries through depth 256, and exactly one visited node before a
+  one-step bound. Both repetitions and ordinary/ASan/UBSan outputs agree. These
+  counts exclude preparation and constant terminal binding/type metadata lookups.
+- All [2,048 allocation-fault ordinals](2026-09-07-m1-places-faults.tsv) pass:
+  153 status-71 failures with empty stdout and 1,895 successes. Ordinary and
+  sanitized status/stdout/stderr agree, including the final missing-facts tests.
+- Relative to 07d721d, 193 rejected source fixtures retain exact status and
+  diagnostics. All 20 native applications preserve complete analysis, resource
+  rows and [byte-identical generated C](2026-09-07-m1-places-native.tsv).
+- The bootstrap fixed point is **4,033,892 C bytes**, 48,412 above 07d721d, SHA-256
+  `dddb3865357a149932bc4c2cd2b09e05e822c65cb16d0bee6413d0412a320b82`.
+  All 10 unit and 69 integration tests pass; the final fixture expansion also
+  passes its targeted integration test. Conformance passes 333 fixtures and 2,000
+  malformed mutations. Governance, formatting, Clippy, required performance,
+  reduction, parallelism, comparison and agent gates, plus resources,
+  parallel-runtime, incremental and ordinary-work gates pass without relaxation.
+
+[Paired O2 default-check timings](2026-09-07-m1-places-latency.tsv) use two warmup
+pairs and 11 alternating measured pairs. At 4,000 helpers, medians are 20.383 ms
+for 07d721d and 21.112 ms for this checkpoint (approximately 3.6% higher). These
+are whole-process observations including startup and I/O, not isolated query
+costs or portable budgets. Default compilation does not call the optional place
+query; this observation is not a claim of improved compile performance. Recipes
+and detailed logs are in `build/slim-next-m1/place-identities/`.
+
+M1 remains **in progress**. Actual flow-based ownership orchestration and loan
+state, public transactional transport with actual host identities and service
+lifecycle, retained declaration parsing/global analysis/C fragments/backend work,
+and complete differential/locality/release closure remain required. The known
+minimum-I64 literal C emission bug and recursive-checker sanitizer stack limitation
+remain open. This checkpoint completes RFC-0134, not the parent M1 goal.

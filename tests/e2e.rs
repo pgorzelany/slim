@@ -5037,3 +5037,21 @@ fn transactional_session_publishes_complete_snapshots_and_observes_reuse() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn retained_places_preserve_checked_binding_identity_and_flow_owners() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("sh")
+        .arg(root.join("scripts/verify-places.sh"))
+        .arg(root.join("build/toolchain/slimc"))
+        .arg("quick")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "place verification failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

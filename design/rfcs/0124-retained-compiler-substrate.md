@@ -366,6 +366,18 @@ project visibility and source origins are validated before reuse. Public session
 transactions, retained parsing/analysis/emission and service lifecycle remain
 pending; this prerequisite does not complete them.
 
+RFC-0133 implements the internal transactional project snapshot, bounded epoch
+accounting, failed-update recovery and optional whole-C integrity/reuse. Its
+configuration fingerprints remain caller-attested; public host binding and
+transport/lifecycle integration remain pending. Changed input still reparses
+project sources and regenerates whole C.
+
+RFC-0134 exposes typed, bounded lexical place facts from retained checked bindings
+and a matching-owner flow adapter. It preserves the saved-row budget and does not
+infer alias uniqueness, availability or loan state. Flow-based ownership
+orchestration, retained declaration parsing/global analysis/C fragments/backend
+work and complete M1 validation remain required.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale

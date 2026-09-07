@@ -303,3 +303,82 @@ fn derive(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, own
         let depth: I64 = push(0, body, entry, exit, 0, budget, @tasks)
         walk(source, tokens, checked.view.facts, owner, depth, 0, budget, @blocks, @edges, @tasks)
   Graph(owner: owner, budget: budget, steps: report.steps, status: report.status, blocks: blocks, edges: edges)
+
+fn operation_has_place(operation: Operation) -> Bool:
+  match operation:
+    Entry:
+      false
+    Return:
+      false
+    Abrupt:
+      false
+    Eval:
+      true
+    Bind:
+      true
+    Statement:
+      false
+    ScopeExit:
+      false
+    Assign:
+      false
+    Argument:
+      true
+    Call:
+      false
+    CallExit:
+      false
+    Make:
+      false
+    Project:
+      true
+    Case:
+      false
+    Branch:
+      false
+    ArmEnter:
+      false
+    ArmExit:
+      false
+    Join:
+      false
+    Recur:
+      false
+    ForkEnter:
+      false
+    ForkJoin:
+      false
+
+fn same_place_owner(graph: Graph, cache: retained.Cache) -> Bool effects[partial]:
+  let slot: I64 = graph.owner.declaration.slot
+  if (cache.valid && identity.same_revision(graph.owner.declaration.file.revision, cache.index.revision)) && ((slot >= 0) && (slot < vec.len(cache.index.declarations))):
+    let declaration: retained.Declaration = vec.get(cache.index.declarations, slot)
+    let same: Bool = identity.same_declaration(graph.owner.declaration, declaration.owner.declaration)
+    same && ((declaration.kind == 0) && ((graph.owner.first == declaration.owner.first) && (graph.owner.count == declaration.owner.count)))
+  else:
+    false
+
+fn place_fact(graph: Graph, block: BlockId, cache: retained.Cache, budget: I64) -> retained.PlaceResult effects[partial]:
+  match graph.status:
+    Complete:
+      if same_place_owner(graph, cache):
+        match resolve_block(graph, block):
+          Invalid:
+            retained.PlaceResult::Invalid("invalid-flow-block")
+          Found(at):
+            let operation: Block = vec.get(graph.blocks, at)
+            if identity.same_declaration(graph.owner.declaration, operation.node.declaration):
+              if operation_has_place(operation.operation):
+                retained.place_fact(cache, retained.PlaceId(node: operation.node), budget)
+              else:
+                retained.PlaceResult::Unknown("flow-operation-has-no-place")
+            else:
+              retained.PlaceResult::Invalid("invalid-flow-owner")
+      else:
+        retained.PlaceResult::Invalid("invalid-flow-owner")
+    Bounded:
+      retained.PlaceResult::Bounded(graph.budget)
+    InvalidSource:
+      retained.PlaceResult::Invalid("invalid-flow-source")
+    InvalidBudget:
+      retained.PlaceResult::Invalid("invalid-flow-budget")

@@ -1,0 +1,12 @@
+# date=2026-09-07; seed_sha256=dddb3865357a149932bc4c2cd2b09e05e822c65cb16d0bee6413d0412a320b82; ordered scripts/verify-places.py full matrix; 94 accepted sources; exact query/type/binding comparison after mapping and current-versus-fresh facts; unknown computed expressions are not ownership proofs
+place-bindings	exact	shadowing-owned-shared-exclusive-enum-alias
+place-mapping	unchanged	98
+place-mapping	inserted	98
+place-mapping	relocated	98
+place-mapping	crlf	0
+place-mapping	renamed	0
+place-mapping	body	36
+place-mapping	layout	129
+place-mapping	ownership	106
+place-corpus	94	checked-bindings-and-flow
+place-fault-summary	153	1895

@@ -1,0 +1,22 @@
+# date=2026-09-07; baseline=07d721d; candidate_seed_sha256=dddb3865357a149932bc4c2cd2b09e05e822c65cb16d0bee6413d0412a320b82; all generated C identical; complete analysis identical
+application	baseline_C_bytes	candidate_C_bytes	inserted_void_lines	analysis
+arena_sum	5938	5938	0	identical
+bfs	5719	5719	0	identical
+binary_search	7735	7735	0	identical
+bytefreq	8154	8154	0	identical
+edit_distance	18246	18246	0	identical
+floyd_warshall	12069	12069	0	identical
+game_of_life	33269	33269	0	identical
+gcd_fib	3927	3927	0	identical
+image_convolution	15010	15010	0	identical
+knapsack	8064	8064	0	identical
+matrix	8891	8891	0	identical
+merge_sort	17072	17072	0	identical
+n_queens	15104	15104	0	identical
+prefix_sum	5328	5328	0	identical
+records	5035	5035	0	identical
+sieve	8940	8940	0	identical
+signal_network	13591	13591	0	identical
+state_machine	9473	9473	0	identical
+union_find	14646	14646	0	identical
+variants	5666	5666	0	identical

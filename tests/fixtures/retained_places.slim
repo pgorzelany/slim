@@ -1,0 +1,473 @@
+module zzprobe
+
+fn print_result(result: retained.PlaceResult) -> Void effects[io]:
+  match result:
+    Invalid(reason):
+      io.print_bytes("invalid ")
+      io.println(reason)
+    Unknown(reason):
+      io.print_bytes("unknown ")
+      io.println(reason)
+    Bounded(budget):
+      io.print_bytes("bounded ")
+      io.print_i64(budget)
+      io.println("")
+    Exact(fact):
+      io.print_bytes("exact ")
+      io.print_i64(fact.place.node.ordinal)
+      io.print_bytes(" ")
+      io.print_i64(fact.root.node.ordinal)
+      io.print_bytes(" ")
+      io.print_i64(fact.declaration.ordinal)
+      io.print_bytes(" ")
+      io.print_i64(fact.binding.slot)
+      io.print_bytes(" ")
+      io.print_i64(fact.borrow_mode)
+      io.print_bytes(" ")
+      io.print_i64(fact.projections)
+      io.print_bytes(" ")
+      io.print_i64(fact.steps)
+      io.println("")
+
+fn same_node(left: identity.NodeId, right: identity.NodeId) -> Bool:
+  identity.same_declaration(left.declaration, right.declaration) && (left.ordinal == right.ordinal)
+
+fn check_fact(cache: retained.Cache, place: retained.PlaceId) -> I64 effects[partial]:
+  let first: retained.PlaceResult = retained.place_fact(cache, place, 1000000)
+  match first:
+    Invalid(reason):
+      0
+    Unknown(reason):
+      0
+    Bounded(budget):
+      11
+    Exact(fact):
+      let exact: retained.PlaceResult = retained.place_fact(cache, place, fact.steps)
+      let exact_valid: Bool = match exact:
+        Invalid(reason):
+          false
+        Unknown(reason):
+          false
+        Bounded(budget):
+          false
+        Exact(other):
+          same_node(fact.root.node, other.root.node) && (same_node(fact.declaration, other.declaration) && ((fact.binding.slot == other.binding.slot) && (fact.borrow_mode == other.borrow_mode)))
+      let smaller: retained.PlaceResult = retained.place_fact(cache, place, fact.steps - 1)
+      let smaller_valid: Bool = match smaller:
+        Invalid(reason):
+          fact.steps == 1
+        Unknown(reason):
+          false
+        Bounded(budget):
+          budget == fact.steps - 1
+        Exact(other):
+          false
+      if exact_valid && smaller_valid:
+        0
+      else:
+        12
+
+fn invalid(result: retained.PlaceResult) -> Bool:
+  match result:
+    Invalid(reason):
+      true
+    Unknown(reason):
+      false
+    Bounded(budget):
+      false
+    Exact(fact):
+      false
+
+fn invalid_handles(cache: retained.Cache, place: retained.PlaceId) -> Bool effects[partial]:
+  let owner: identity.DeclarationId = place.node.declaration
+  let stale: identity.Revision = identity.Revision(epoch: owner.file.revision.epoch, serial: owner.file.revision.serial + 1)
+  let stale_file: identity.FileId = identity.FileId(revision: stale, slot: owner.file.slot)
+  let stale_owner: identity.DeclarationId = identity.DeclarationId(file: stale_file, slot: owner.slot)
+  let stale_place: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: stale_owner, ordinal: place.node.ordinal))
+  let foreign_file: identity.FileId = identity.FileId(revision: owner.file.revision, slot: 1)
+  let foreign_owner: identity.DeclarationId = identity.DeclarationId(file: foreign_file, slot: owner.slot)
+  let foreign: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: foreign_owner, ordinal: place.node.ordinal))
+  let negative: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: owner, ordinal: -1))
+  let oversized: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: owner, ordinal: 9223372036854775807))
+  invalid(retained.place_fact(cache, stale_place, 1000000)) && (invalid(retained.place_fact(cache, foreign, 1000000)) && (invalid(retained.place_fact(cache, negative, 1000000)) && (invalid(retained.place_fact(cache, oversized, 1000000)) && invalid(retained.place_fact(cache, place, 1000001)))))
+
+fn unknown_reason(result: retained.PlaceResult, expected: Bytes) -> Bool effects[partial]:
+  match result:
+    Invalid(reason):
+      false
+    Unknown(reason):
+      retained.equal(reason, expected)
+    Bounded(budget):
+      false
+    Exact(fact):
+      false
+
+fn missing_facts(cache: @retained.Cache, place: retained.PlaceId, at: I64) -> Bool effects[alloc, partial]:
+  let before: retained.PlaceResult = retained.place_fact(cache, place, 1000000)
+  let rows: Vec[retained.Saved] = mem.replace(@cache.nodes, vec.new())
+  let saved: retained.Saved = vec.get(rows, at)
+  vec.set(@rows, at, retained.Saved(owner: saved.owner, tag: saved.tag, type: retained.StoredType(position: 9223372036854775807), link: saved.link, prior: saved.prior))
+  let empty: Vec[retained.Saved] = mem.replace(@cache.nodes, rows)
+  let absent_type: Bool = unknown_reason(retained.place_fact(cache, place, 1000000), "missing-checked-type")
+  let restored: Vec[retained.Saved] = mem.replace(@cache.nodes, vec.new())
+  vec.set(@restored, at, saved)
+  let old: Vec[retained.Saved] = mem.replace(@cache.nodes, restored)
+  let absent_binding: Bool = match before:
+    Invalid(reason):
+      false
+    Unknown(reason):
+      true
+    Bounded(budget):
+      false
+    Exact(fact):
+      let declaration: retained.Declaration = vec.get(cache.index.declarations, fact.declaration.declaration.slot)
+      let root: I64 = declaration.owner.first + fact.declaration.ordinal
+      let rows: Vec[retained.Saved] = mem.replace(@cache.nodes, vec.new())
+      let original: retained.Saved = vec.get(rows, root)
+      vec.set(@rows, root, retained.Saved(owner: original.owner, tag: original.tag, type: original.type, link: retained.StoredLink(value: -9223372036854775807), prior: original.prior))
+      let discarded: Vec[retained.Saved] = mem.replace(@cache.nodes, rows)
+      let unknown: Bool = unknown_reason(retained.place_fact(cache, place, 1000000), "missing-checked-binding")
+      let restored: Vec[retained.Saved] = mem.replace(@cache.nodes, vec.new())
+      vec.set(@restored, root, original)
+      let prior: Vec[retained.Saved] = mem.replace(@cache.nodes, restored)
+      unknown
+  absent_type && absent_binding
+
+fn boundary(cache: @retained.Cache, place: retained.PlaceId) -> I64 effects[alloc, partial]:
+  let rows: Vec[retained.Saved] = mem.replace(@cache.nodes, vec.new())
+  let absent: Bool = invalid(retained.place_fact(cache, place, 1000000))
+  let empty: Vec[retained.Saved] = mem.replace(@cache.nodes, rows)
+  let declaration: retained.Declaration = vec.get(cache.index.declarations, place.node.declaration.slot)
+  let at: I64 = declaration.owner.first + place.node.ordinal
+  let missing: Bool = missing_facts(@cache, place, at)
+  let shapes: Vec[retained.Shape] = mem.replace(@cache.index.shapes, vec.new())
+  let original: retained.Shape = vec.get(shapes, at)
+  vec.set(@shapes, at, retained.Shape(kind: original.kind, tag: original.tag, next: 0))
+  let discarded: Vec[retained.Shape] = mem.replace(@cache.index.shapes, shapes)
+  let malformed: Bool = invalid(retained.place_fact(cache, place, 1000000))
+  let repaired: Vec[retained.Shape] = mem.replace(@cache.index.shapes, vec.new())
+  vec.set(@repaired, at, original)
+  let discarded_repair: Vec[retained.Shape] = mem.replace(@cache.index.shapes, repaired)
+  if absent && (missing && (malformed && invalid_handles(cache, place))):
+    0
+  else:
+    13
+
+fn boundaries(cache: @retained.Cache, at: I64) -> I64 effects[alloc, partial]:
+  if at >= vec.len(cache.index.shapes):
+    0
+  else:
+    let owner: I64 = vec.get(cache.index.owners, at)
+    if owner < 0:
+      recur(@cache, at + 1)
+    else:
+      let declaration: retained.Declaration = vec.get(cache.index.declarations, owner)
+      let shape: retained.Shape = vec.get(cache.index.shapes, at)
+      if (declaration.kind == 0) && ((shape.kind == 0) && ((shape.tag % 1000) == 12)):
+        let place: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: declaration.owner.declaration, ordinal: at - declaration.owner.first))
+        let status: I64 = boundary(@cache, place)
+        if status == 0:
+          recur(@cache, at + 1)
+        else:
+          status
+      else:
+        recur(@cache, at + 1)
+
+fn flow_blocks(graph: flow.Graph, cache: retained.Cache, at: I64) -> I64 effects[partial]:
+  if at >= vec.len(graph.blocks):
+    0
+  else:
+    let id: flow.BlockId = flow.BlockId(declaration: graph.owner.declaration, ordinal: at)
+    let result: retained.PlaceResult = flow.place_fact(graph, id, cache, 1000000)
+    let valid: Bool = match result:
+      Invalid(reason):
+        false
+      Unknown(reason):
+        true
+      Bounded(budget):
+        false
+      Exact(fact):
+        let block: flow.Block = vec.get(graph.blocks, at)
+        same_node(block.node, fact.place.node)
+    if valid:
+      recur(graph, cache, at + 1)
+    else:
+      14
+
+fn bad_graphs(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, cache: retained.Cache, declaration: retained.Declaration) -> Bool effects[alloc, partial]:
+  let bounded: flow.Graph = flow.derive(source, tokens, checked, declaration.owner, 1)
+  let block: flow.BlockId = flow.BlockId(declaration: declaration.owner.declaration, ordinal: 0)
+  let bounded_ok: Bool = match flow.place_fact(bounded, block, cache, 1000000):
+    Invalid(reason):
+      false
+    Unknown(reason):
+      false
+    Bounded(budget):
+      budget == 1
+    Exact(fact):
+      false
+  let stale: identity.FileId = identity.FileId(revision: identity.Revision(epoch: 1, serial: 2), slot: 0)
+  let owner: identity.DeclarationId = identity.DeclarationId(file: stale, slot: declaration.owner.declaration.slot)
+  let view: identity.View = identity.View(declaration: owner, first: declaration.owner.first, count: declaration.owner.count)
+  let graph: flow.Graph = flow.derive(source, tokens, checked, view, 1000000)
+  let stale_block: flow.BlockId = flow.BlockId(declaration: owner, ordinal: 0)
+  bounded_ok && invalid(flow.place_fact(graph, stale_block, cache, 1000000))
+
+fn flow_functions(source: Bytes, tokens: Vec[syntax.Token], checked: typing.Checked, cache: retained.Cache, at: I64) -> I64 effects[alloc, partial]:
+  if at >= vec.len(cache.index.declarations):
+    0
+  else:
+    let declaration: retained.Declaration = vec.get(cache.index.declarations, at)
+    let status: I64 = if declaration.kind == 0:
+      let graph: flow.Graph = flow.derive(source, tokens, checked, declaration.owner, 1000000)
+      let oversized: flow.BlockId = flow.BlockId(declaration: declaration.owner.declaration, ordinal: 9223372036854775807)
+      if invalid(flow.place_fact(graph, oversized, cache, 1000000)) && bad_graphs(source, tokens, checked, cache, declaration):
+        flow_blocks(graph, cache, 0)
+      else:
+        15
+    else:
+      0
+    if status == 0:
+      recur(source, tokens, checked, cache, at + 1)
+    else:
+      status
+
+fn inspect(cache: retained.Cache, at: I64) -> I64 effects[io, partial]:
+  if at >= vec.len(cache.index.shapes):
+    0
+  else:
+    let owner: I64 = vec.get(cache.index.owners, at)
+    if owner < 0:
+      recur(cache, at + 1)
+    else:
+      let declaration: retained.Declaration = vec.get(cache.index.declarations, owner)
+      let shape: retained.Shape = vec.get(cache.index.shapes, at)
+      let projection: Bool = (shape.kind == 0) && ((shape.tag % 1000) == 12)
+      let saved: retained.Saved = vec.get(cache.nodes, at)
+      let binding: Bool = (shape.kind == 2) && ((saved.tag >= 8) || (saved.link.value < -1))
+      let call: Bool = (shape.kind == 0) && ((shape.tag % 1000) == 10)
+      if (declaration.kind == 0) && ((projection || binding) || call):
+        let node: identity.NodeId = identity.NodeId(declaration: declaration.owner.declaration, ordinal: at - declaration.owner.first)
+        let place: retained.PlaceId = retained.PlaceId(node: node)
+        let valid: I64 = check_fact(cache, place)
+        if valid == 0:
+          io.print_bytes(declaration.name)
+          io.print_bytes(" ")
+          print_result(retained.place_fact(cache, place, 1000000))
+          recur(cache, at + 1)
+        else:
+          valid
+      else:
+        recur(cache, at + 1)
+
+fn snapshot(source: Bytes, tokens: Vec[syntax.Token], cache: retained.Cache, declaration: retained.Declaration) -> query.Snapshot effects[partial]:
+  let start: I64 = syntax.ast_node_start(tokens, declaration.owner.first)
+  let end: I64 = syntax.ast_declaration_end(source, tokens, declaration.owner.first)
+  let body: identity.Span = identity.Span(file: declaration.owner.declaration.file, start: start, end: end)
+  let interface: identity.Span = identity.Span(file: declaration.owner.declaration.file, start: start, end: start + bytes.len(declaration.interface))
+  query.Snapshot(unique: cache.valid, module: cache.index.module, kind: declaration.kind, name: declaration.name, source: source, view: declaration.owner, body: body, interface: interface)
+
+fn same_type(left: retained.TypeId, right: retained.TypeId) -> Bool:
+  match left.node:
+    Missing:
+      match right.node:
+        Missing:
+          true
+        Found(node):
+          false
+    Found(node):
+      match right.node:
+        Missing:
+          false
+        Found(other):
+          same_node(node, other)
+
+fn same_result(left: retained.PlaceResult, right: retained.PlaceResult) -> Bool effects[partial]:
+  match left:
+    Invalid(reason):
+      match right:
+        Invalid(other):
+          retained.equal(reason, other)
+        Unknown(other):
+          false
+        Bounded(budget):
+          false
+        Exact(fact):
+          false
+    Unknown(reason):
+      match right:
+        Invalid(other):
+          false
+        Unknown(other):
+          retained.equal(reason, other)
+        Bounded(budget):
+          false
+        Exact(fact):
+          false
+    Bounded(budget):
+      match right:
+        Invalid(other):
+          false
+        Unknown(other):
+          false
+        Bounded(other):
+          budget == other
+        Exact(fact):
+          false
+    Exact(fact):
+      match right:
+        Invalid(other):
+          false
+        Unknown(other):
+          false
+        Bounded(budget):
+          false
+        Exact(other):
+          same_node(fact.place.node, other.place.node) && (same_node(fact.root.node, other.root.node) && (same_node(fact.declaration, other.declaration) && ((identity.same_declaration(fact.binding.owner, other.binding.owner) && (fact.binding.slot == other.binding.slot)) && ((same_type(fact.root_type, other.root_type) && same_type(fact.value_type, other.value_type)) && ((fact.root_kind == other.root_kind) && ((fact.value_kind == other.value_kind) && ((fact.borrow_mode == other.borrow_mode) && ((fact.projections == other.projections) && (fact.steps == other.steps)))))))))
+
+fn mapped_nodes(mapping: query.Mapping, before: retained.Cache, current: retained.Cache, fresh: retained.Cache, at: I64, count: I64) -> I64 effects[partial]:
+  if at >= mapping.before.count:
+    count
+  else:
+    let old: identity.NodeId = identity.NodeId(declaration: mapping.before.declaration, ordinal: at)
+    let stale: retained.PlaceResult = retained.place_fact(current, retained.PlaceId(node: old), 1000000)
+    if !invalid(stale):
+      -1
+    else:
+      match query.map_node(mapping, old):
+        Missing:
+          -2
+        Mapped(node):
+          let place: retained.PlaceId = retained.PlaceId(node: node)
+          let retained_fact: retained.PlaceResult = retained.place_fact(current, place, 1000000)
+          let fresh_fact: retained.PlaceResult = retained.place_fact(fresh, place, 1000000)
+          if same_result(retained_fact, fresh_fact):
+            recur(mapping, before, current, fresh, at + 1, count + 1)
+          else:
+            -3
+
+fn mappings(before_source: Bytes, before_tokens: Vec[syntax.Token], after_source: Bytes, after_tokens: Vec[syntax.Token], before: retained.Cache, current: retained.Cache, fresh: retained.Cache, at: I64, count: I64) -> I64 effects[partial]:
+  if at >= vec.len(before.index.declarations):
+    count
+  else:
+    let prior: retained.Declaration = vec.get(before.index.declarations, at)
+    let slot: I64 = syntax.lookup_name_chars(prior.name, 0, bytes.len(prior.name), 0, current.index.names, current.index.edges)
+    let mapped: I64 = if (prior.kind == 0) && ((slot >= 0) && (slot < vec.len(current.index.declarations))):
+      let following: retained.Declaration = vec.get(current.index.declarations, slot)
+      let initial: query.Snapshot = snapshot(before_source, before_tokens, before, prior)
+      let updated: query.Snapshot = snapshot(after_source, after_tokens, current, following)
+      match query.prepare_mapping(initial, updated, vec.len(before.nodes), vec.len(current.nodes)):
+        Missing:
+          0
+        Mapped(mapping):
+          mapped_nodes(mapping, before, current, fresh, 0, 0)
+    else:
+      0
+    if mapped >= 0:
+      recur(before_source, before_tokens, after_source, after_tokens, before, current, fresh, at + 1, count + mapped)
+    else:
+      mapped
+
+fn compare_current(current: retained.Cache, fresh: retained.Cache, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(current.nodes):
+    true
+  else:
+    let slot: I64 = vec.get(current.index.owners, at)
+    let same: Bool = if slot >= 0:
+      let declaration: retained.Declaration = vec.get(current.index.declarations, slot)
+      let place: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: declaration.owner.declaration, ordinal: at - declaration.owner.first))
+      same_result(retained.place_fact(current, place, 1000000), retained.place_fact(fresh, place, 1000000))
+    else:
+      true
+    if same:
+      recur(current, fresh, at + 1)
+    else:
+      false
+
+fn compare_revision(source: Bytes, tokens: Vec[syntax.Token], before: retained.Cache, path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let current_source: Bytes = bytes.freeze(^input)
+    let current_tokens: Vec[syntax.Token] = vec.new()
+    let parsed: syntax.ProgramParse = syntax.parse_program_result(current_source, @current_tokens)
+    if parsed.valid:
+      let revision: identity.Revision = identity.Revision(epoch: 1, serial: 2)
+      let current: check.Attempt = check.check_source_retained(current_source, @current_tokens, before, revision, 1000000)
+      if current.checked.status == 0:
+        let fresh_tokens: Vec[syntax.Token] = vec.new()
+        let fresh_parsed: syntax.ProgramParse = syntax.parse_program_result(current_source, @fresh_tokens)
+        let empty: retained.Cache = retained.empty_cache()
+        let fresh: check.Attempt = check.check_source_retained(current_source, @fresh_tokens, empty, revision, 1000000)
+        let mapped: I64 = mappings(source, tokens, current_source, current_tokens, before, current.cache, fresh.cache, 0, 0)
+        let valid: Bool = fresh_parsed.valid && ((fresh.checked.status == 0) && compare_current(current.cache, fresh.cache, 0))
+        if (mapped >= 0) && valid:
+          io.print_bytes("mapped ")
+          io.print_i64(mapped)
+          io.println("")
+          0
+        else:
+          if mapped < 0:
+            20 - mapped
+          else:
+            24
+      else:
+        current.checked.status
+    else:
+      1
+  else:
+    1
+
+fn one(cache: retained.Cache, at: I64, budget: I64) -> I64 effects[io, partial]:
+  if at >= vec.len(cache.index.shapes):
+    30
+  else:
+    let owner: I64 = vec.get(cache.index.owners, at)
+    if owner < 0:
+      recur(cache, at + 1, budget)
+    else:
+      let declaration: retained.Declaration = vec.get(cache.index.declarations, owner)
+      let shape: retained.Shape = vec.get(cache.index.shapes, at)
+      if (declaration.kind == 0) && ((shape.kind == 0) && ((shape.tag % 1000) == 12)):
+        let place: retained.PlaceId = retained.PlaceId(node: identity.NodeId(declaration: declaration.owner.declaration, ordinal: at - declaration.owner.first))
+        print_result(retained.place_fact(cache, place, budget))
+        0
+      else:
+        recur(cache, at + 1, budget)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if ((vec.len(args) == 2) || (vec.len(args) == 3)) || (vec.len(args) == 4):
+    let input: Vec[U8] = vec.new()
+    if io.read_file(vec.get(args, 1), @input):
+      let source: Bytes = bytes.freeze(^input)
+      let tokens: Vec[syntax.Token] = vec.new()
+      let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+      if parsed.valid:
+        let empty: retained.Cache = retained.empty_cache()
+        let attempt: check.Attempt = check.check_source_retained(source, @tokens, empty, identity.Revision(epoch: 1, serial: 1), 1000000)
+        if attempt.checked.status == 0:
+          let cache: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
+          if vec.len(args) == 4:
+            let budget: I64 = if retained.equal(vec.get(args, 3), "short"):
+              1
+            else:
+              1000000
+            one(cache, 0, budget)
+          else:
+            let checked: I64 = boundaries(@cache, 0)
+            let flow: I64 = flow_functions(source, tokens, attempt.checked, cache, 0)
+            if (checked == 0) && (flow == 0):
+              if vec.len(args) == 3:
+                compare_revision(source, tokens, cache, vec.get(args, 2))
+              else:
+                inspect(cache, 0)
+            else:
+              checked + flow
+
+        else:
+          attempt.checked.status
+      else:
+        1
+    else:
+      1
+  else:
+    64
