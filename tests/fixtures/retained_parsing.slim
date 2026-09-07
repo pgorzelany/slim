@@ -1,0 +1,158 @@
+module zzprobe
+
+fn same_bytes(left: Bytes, right: Bytes) -> Bool effects[partial]:
+  retained.equal(left, right)
+
+fn compare_tokens(left: Vec[syntax.Token], right: Vec[syntax.Token], at: I64) -> Bool effects[partial]:
+  if vec.len(left) == vec.len(right):
+    if at >= vec.len(left):
+      true
+    else:
+      let a: syntax.Token = vec.get(left, at)
+      let b: syntax.Token = vec.get(right, at)
+      let same: Bool = (a.kind == b.kind) && ((a.tag == b.tag) && ((a.start == b.start) && ((a.end == b.end) && ((a.link == b.link) && (a.next == b.next)))))
+      if same:
+        recur(left, right, at + 1)
+      else:
+        false
+  else:
+    false
+
+fn read_source(path: Bytes) -> Bytes effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(path, @output)
+  bytes.freeze(^output)
+
+fn owner(serial: I64) -> identity.FileId:
+  identity.FileId(revision: identity.Revision(epoch: 1, serial: serial), slot: 0)
+
+fn compare_result(left: syntax.ProgramParse, right: syntax.ProgramParse) -> Bool effects[partial]:
+  let valid: Bool = if left.valid:
+    right.valid
+  else:
+    !right.valid
+  valid && ((left.start == right.start) && ((left.end == right.end) && same_bytes(left.code, right.code)))
+
+fn prefix(count: I64, tokens: @Vec[syntax.Token]) -> Void effects[alloc, partial]:
+  if count <= 0:
+    void
+  else:
+    let at: I64 = vec.len(tokens)
+    vec.push(@tokens, syntax.Token(kind: 2, tag: 0, start: 0, end: 0, link: -1, next: at + 1))
+    recur(count - 1, @tokens)
+
+fn config_bytes(count: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if count <= 0:
+    void
+  else:
+    vec.push(@output, bytes.get("x", 0))
+    recur(count - 1, @output)
+
+fn large_config(mode: Bytes) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  let count: I64 = if same_bytes(mode, "config-max"):
+    4096
+  else:
+    4097
+  config_bytes(count, @output)
+  bytes.freeze(^output)
+
+fn parse_update(before: Bytes, source: Bytes, mode: Bytes) -> I64 effects[alloc, io, partial]:
+  let old_tokens: Vec[syntax.Token] = vec.new()
+  if same_bytes(mode, "prefix"):
+    prefix(7, @old_tokens)
+  else:
+    void
+  let empty: syntax.ParseCache = syntax.empty_parse_cache()
+  let old: syntax.RetainedParse = syntax.parse_program_retained(before, @old_tokens, empty, owner(1), "parser-0.9")
+  if same_bytes(mode, "missing-tokens"):
+    let removed: Vec[syntax.Token] = mem.replace(@old.cache.tokens, vec.new())
+    void
+  else:
+    void
+  if same_bytes(mode, "missing-lexemes"):
+    let removed: Vec[syntax.Lexeme] = mem.replace(@old.cache.lexemes, vec.new())
+    void
+  else:
+    void
+  if same_bytes(mode, "missing-declarations"):
+    let removed: Vec[syntax.ParsedDeclaration] = mem.replace(@old.cache.declarations, vec.new())
+    void
+  else:
+    void
+  if same_bytes(mode, "missing-names"):
+    let removed: Vec[syntax.NameNode] = mem.replace(@old.cache.names, vec.new())
+    void
+  else:
+    void
+  if same_bytes(mode, "missing-edges"):
+    let removed: Vec[syntax.NameEdge] = mem.replace(@old.cache.edges, vec.new())
+    void
+  else:
+    void
+  let next_owner: identity.FileId = if same_bytes(mode, "epoch"):
+    identity.FileId(revision: identity.Revision(epoch: 2, serial: 1), slot: 0)
+  else:
+    if same_bytes(mode, "invalid-owner"):
+      owner(0)
+    else:
+      owner(2)
+  let config: Bytes = if same_bytes(mode, "config"):
+    "parser-other"
+  else:
+    if same_bytes(mode, "invalid-config"):
+      ""
+    else:
+      if same_bytes(mode, "config-max") || same_bytes(mode, "config-over"):
+        large_config(mode)
+      else:
+        "parser-0.9"
+  let fresh: Vec[syntax.Token] = vec.new()
+  if same_bytes(mode, "prefix"):
+    prefix(11, @fresh)
+  else:
+    void
+  let clean: syntax.ProgramParse = syntax.parse_program_result(source, @fresh)
+  let current: Vec[syntax.Token] = vec.new()
+  if same_bytes(mode, "prefix"):
+    prefix(11, @current)
+  else:
+    void
+  let updated: syntax.RetainedParse = syntax.parse_program_retained(source, @current, old.cache, next_owner, config)
+  let cache_expected: Bool = if same_bytes(mode, "cache-yes") || same_bytes(mode, "config-max"):
+    updated.cache.valid && updated.result.valid
+  else:
+    if same_bytes(mode, "cache-no") || same_bytes(mode, "config-over"):
+      (!updated.cache.valid) && updated.result.valid
+    else:
+      true
+  if cache_expected && (compare_result(clean, updated.result) && compare_tokens(fresh, current, 0)):
+    io.print_i64(updated.executed)
+    io.print_bytes(" ")
+    io.print_i64(updated.reused)
+    io.print_bytes(" ")
+    io.print_i64(updated.imported)
+    if same_bytes(mode, "cache-yes") || same_bytes(mode, "cache-no"):
+      io.print_bytes(" ")
+      io.print_i64(vec.len(current))
+      io.print_bytes(" ")
+      io.print_i64(vec.len(updated.cache.lexemes))
+    else:
+      void
+    io.print_bytes("\n")
+    0
+  else:
+    io.print_bytes("parse differential mismatch\n")
+    1
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if (vec.len(args) == 3) || (vec.len(args) == 4):
+    let before: Bytes = read_source(vec.get(args, 1))
+    let source: Bytes = read_source(vec.get(args, 2))
+    let mode: Bytes = if vec.len(args) == 4:
+      vec.get(args, 3)
+    else:
+      "work"
+    parse_update(before, source, mode)
+  else:
+    64

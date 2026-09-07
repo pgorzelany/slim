@@ -34,11 +34,11 @@ def run(before, after, mode="work", expected=None, epochs=1):
     assert plain.returncode == native.returncode == 0, (mode, plain.returncode, native.returncode, plain.stdout[:400], native.stderr[:400])
     assert plain.stdout == native.stdout and plain.stderr == native.stderr, mode
     lines = report_path.read_text().splitlines()
-    assert lines[0] == f"slim-session\t1\texact\t1000000000\t{epochs}", lines[0]
+    assert lines[0] == f"slim-session\t2\texact\t1000000000\t{epochs}", lines[0]
     rows = [list(map(int, line.split("\t"))) for line in lines[1:]]
-    assert all(row[0] == i and len(row) == 4 for i, row in enumerate(rows)), rows
+    assert all(row[0] == i and len(row) == 6 for i, row in enumerate(rows)), rows
     if expected is not None:
-        assert [row[1:] for row in rows] == expected, (mode, rows, expected)
+        assert [row[1:4] for row in rows] == expected, (mode, rows, expected)
     reports = [line.split() for line in native.stdout.decode().splitlines() if re.match(r"^\d+ \d+ \d+ \d+ ", line)]
     # Full-epoch suppresses intermediate textual reports, but native phases remain visible.
     if mode != "full-epoch":
@@ -88,7 +88,7 @@ env = dict(os.environ, SLIM_SESSION_REPORT=str(report_path),
 p = subprocess.run([str(observed), str(captured), str(initial), "captured"], env=env, capture_output=True)
 assert p.returncode == 0 and not p.stderr, (p.returncode, p.stdout[:400], p.stderr[:400])
 assert replacement.read_text() == (rejected.parent / "program.slim").read_text()
-assert report_path.read_text().splitlines()[1:] == ["0\t2\t1\t1", "1\t0\t0\t0"]
+assert report_path.read_text().splitlines()[1:] == ["0\t2\t1\t1\t2\t0", "1\t0\t0\t0\t0\t0"]
 print("session-captured-input\texact\tfile-replaced-before-preparation", flush=True)
 
 # Global interface and body-derived facts always compare against a clean preparation.
@@ -109,6 +109,13 @@ for name, new_main, new_helper in [
         run(changed, pair)
 invalid_argument = project("invalid-argument", main.replace("helper(1)", "helper(false)"), manifest, **{"data.slim": helper})
 run(pair, invalid_argument, "recover")
+for mode in ["history-token-fit", "history-token-under"]:
+    run(pair, pair, mode, expected=[[3, 2, 1], [0, 0, 0]])
+parameters = ", ".join(f"v{i}: @Vec[I64]" for i in range(32))
+lexical_helper = f"module data\nfn helper({parameters}) -> I64:\n  0\n"
+lexical_project = project("lexical-history", source, manifest, **{"data.slim": lexical_helper})
+for mode in ["history-lexeme-fit", "history-lexeme-under"]:
+    run(lexical_project, lexical_project, mode, expected=[[3, 2, 1], [0, 0, 0]])
 
 renamed = project("renamed", main.replace("helper", "renamed"), manifest.replace("exports helper", "exports renamed"), **{"data.slim": helper.replace("helper", "renamed")})
 run(pair, renamed)
@@ -116,6 +123,16 @@ module_renamed = project("module-renamed", main.replace("data.", "dep."), manife
 run(pair, module_renamed)
 run(initial, pair)
 run(pair, initial)
+rows, reports = run(pair, initial, "reinsert")
+assert rows[2][4] == 4, rows
+module_order = '(project 1 (entry hello) (module hello "program.slim" (imports data) (exports)) (module data "data.slim" (imports) (exports helper)))\n'
+module_reorder = project("module-reorder", main, module_order, **{"data.slim": helper})
+run(pair, module_reorder, "recover", expected=[[3, 2, 1], [0, 0, 0], [0, 0, 0]])
+with_extra = manifest.replace('(module data', '(module aux "aux.slim" (imports) (exports)) (module data')
+module_insert = project("module-insert", main, with_extra, **{"data.slim": helper, "aux.slim": "module aux\nfn idle() -> I64:\n  0\n"})
+run(pair, module_insert)
+rows, reports = run(module_insert, pair, "reinsert")
+assert rows[2][4] == 2, rows
 reordered_before = project("reordered-before", main, manifest, **{"data.slim": helper + "\nfn idle() -> I64:\n  0\n"})
 reordered_after = project("reordered-after", main, manifest, **{"data.slim": helper.replace("fn helper", "fn idle() -> I64:\n  0\n\nfn helper")})
 run(reordered_before, reordered_after)
@@ -159,11 +176,11 @@ if not full:
 for fixture in fixtures:
     wrapped = project("wrapped", fixture.read_text())
     rows, reports = run(wrapped, wrapped)
-    assert rows[1][1:] == [0, 0, 0], fixture
+    assert rows[1][1:] == [0, 0, 0, 0, 0], fixture
     assert reports[1][2:4] == reports[0][2:4], fixture
 print(f"session-differential\t{len(fixtures)}\tcomplete-prepared-fields-and-C", flush=True)
 
-for size in ([1, 2, 125, 250, 500, 1000] if full else [1, 2]):
+for size in ([1, 2, 125, 250, 500, 1000, 2000, 4000] if full else [1, 2]):
     data = "module data\n\n" + "".join(f"fn f_{i}(x: I64) -> I64:\n  x\n\n" for i in range(size))
     app = "module hello\n\nfn main(args: Vec[Bytes]) -> I64:\n  data.f_0(1)\n"
     layout = '(project 1 (entry hello) (module data "data.slim" (imports) (exports f_0)) (module hello "program.slim" (imports data) (exports)))\n'
@@ -172,9 +189,19 @@ for size in ([1, 2, 125, 250, 500, 1000] if full else [1, 2]):
     for kind, updated in [("unchanged", before), ("body", after)]:
         expected = [[3, size + 1, 1], [0, 0, 0] if kind == "unchanged" else [3, 1, 1]]
         rows, reports = run(before, updated, expected=expected)
+        assert rows[0][4:] == [2 * (size + 1), 0], (size, rows)
+        if kind == "unchanged":
+            assert rows[1][4:] == [0, 0], (size, rows)
+        else:
+            assert rows[1][4] == 2 and rows[1][5] > 0, (size, rows)
         imports = 0 if kind == "unchanged" else 15 * size + 7
         assert int(reports[1][7]) == imports, (size, kind, reports)
-        print("session-geometric", size, kind, reports[1][5], reports[1][6], imports, sep="\t", flush=True)
+        print("session-geometric", size, kind, reports[1][5], reports[1][6], imports, rows[1][4], rows[1][5], sep="\t", flush=True)
+    for mode in ["parse-metadata", "parse-modules", "parse-module-names", "parse-module-edges"]:
+        rows, reports = run(before, after, mode, expected=[[3, size + 1, 1], [3, 1, 1]])
+        assert rows[1][4] == size + 2 and rows[1][5] > 0, (size, mode, rows)
+    if size <= 2:
+        run(before, after, "node-limit", expected=[[3, size + 1, 1], [3, 0, 0], [0, 0, 0]])
 
 if full:
     failed = succeeded = 0
@@ -194,10 +221,10 @@ if full:
             succeeded += 1
         lines = report_path.read_text().splitlines()
         assert 1 <= len(lines) <= 3, ordinal
-        assert lines[0].split("\t")[:2] == ["slim-session", "1"], ordinal
+        assert lines[0].split("\t")[:2] == ["slim-session", "2"], ordinal
         for i, line in enumerate(lines[1:]):
             row = list(map(int, line.split("\t")))
-            assert len(row) == 4 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), ordinal
+            assert len(row) == 6 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), ordinal
         print("session-fault", ordinal, plain.returncode, len(lines)-1, sep="\t", flush=True)
     assert failed > 0 and succeeded > 0, (failed, succeeded)
     print("session-fault-summary", failed, succeeded, sep="\t", flush=True)

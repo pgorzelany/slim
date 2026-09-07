@@ -1942,3 +1942,95 @@ lifecycle, retained declaration parsing/global analysis/C fragments/backend work
 and complete differential/locality/release closure remain required. The known
 minimum-I64 literal C emission bug and recursive-checker sanitizer stack limitation
 remain open. This checkpoint completes RFC-0134, not the parent M1 goal.
+
+## M1 checkpoint: retained declaration parsing (2026-09-07)
+
+RFC-0135 is implemented in production SLIM. Original modules and the flattened
+project now retain successful declaration parses under current typed FileId
+owners. Reuse requires exact raw source, lexical context and the first unconsumed
+lookahead; it imports only syntax tags and translated spans, resets links and
+rebuilds current canonical boundaries. The ordinary lexer, header and declaration
+grammar remain the sole authority for new syntax. Both histories publish only
+with the complete checked snapshot. Failed edits preserve last-good history.
+
+The portable fixed point is **4,142,232 C bytes**, SHA-256
+`c0359c9f031c5182e2637a5681b9952de8c60273a5881a0155edc1a96be1eb6b`.
+This adds 108,340 bytes (2.69%) over the 4,033,892-byte RFC-0134 seed at 29ce920.
+The runtime ABI and ordinary language acceptance are unchanged. Detailed recipes
+and logs are under `build/slim-next-m1/retained-parsing/`.
+
+[Complete parser comparisons](2026-09-07-m1-parsing-matrix.tsv) cover all token
+fields and diagnostic fields in 1,695 cases derived from 339 source inputs, plus
+2,000 deterministic malformed edits. Native accessor observation checks every
+successful item parse stays within entry..returned-next, including successful
+items before malformed source. Current output prefixes differ from previous
+prefixes, and stale epochs/configurations or missing optional vectors miss.
+Permanent capacity cases cross 64 MiB source, 1,000,000 canonical tokens,
+1,000,000 lexemes and 4,096 configuration bytes. The canonical-token over-case
+contains 1,000,003 tokens. A lexeme over-case reports zero retained lexemes because
+retention was declined. These huge fixtures prove parser equality, not type or
+ownership acceptance. Aggregate module history token/lexeme budgets are separately
+crossed at the required size and one below, with current checked acceptance and
+ordinary/ASan/UBSan agreement.
+
+[Observed geometric parser work](2026-09-07-m1-parsing-work.tsv) through 4,000
+helpers is zero declaration grammar calls for unchanged source and one for a body
+edit; at 4,000 helpers these cases import 44,018 and 44,007 canonical nodes.
+Both repetitions agree. [Parser fault injection](2026-09-07-m1-parsing-faults.tsv)
+covers 2,048 ordinals: 94 status-71 failures and 1,954 successes with exact
+ordinary/sanitized status, stdout and stderr equality.
+
+[The integrated session matrix](2026-09-07-m1-parsing-session-matrix.tsv) compares
+all prepared fields and generated C over 94 accepted fixtures and the edit,
+recovery, configuration and metadata-withdrawal matrix. Current original-module
+cache owners and all cached syntax tokens are compared with fresh parses.
+Manifest ordering retains its existing E0406 rejection; sorted module insertion,
+deletion/reinsertion and declaration reordering establish current owners.
+[All 2,048 session fault ordinals](2026-09-07-m1-parsing-session-faults.tsv) agree
+under ordinary and ASan/UBSan execution: 471 status-71 failures and 1,577 successes.
+Epoch teardown checks pass. The four final aggregate-history boundary cases ran
+in an additional targeted ordinary/sanitized matrix on this same seed.
+
+Native session schema 2 records program lexings, checked functions, C generations,
+declaration grammar executions and parsed-node imports. For N helpers plus main
+in two modules, cold preparation executes 2(N+1) declaration grammars. A body edit
+executes **two declaration grammars and one function check**, independent of N in
+the measured range through 4,000. It imports 30N+14 syntax nodes and 15N+7 checked
+nodes. Missing one class of parse history executes N+2 grammars. Unchanged snapshot
+reuse skips lexical, grammar, check and generation operations. Source capture,
+matching, indexing, linear assembly and integrity work are not free; changed input
+still runs three lexical passes, global analysis and whole-C generation.
+
+[Paired default-project checks](2026-09-07-m1-parsing-latency.tsv), with two warmup
+pairs and 11 alternating measured pairs, give medians of 20.721 ms at 29ce920 and
+21.039 ms on this seed at 4,000 helpers. [Separate session measurements](2026-09-07-m1-parsing-session-latency.tsv)
+use the same O2 host and sample counts. At 4,000 helpers, prior/current session
+cold-plus-unchanged medians are 44.208/46.131 ms, and cold-plus-body-update medians
+are 91.166/95.838 ms. Compared separately with two clean current preparations,
+retained unchanged takes 47.148 versus 65.920 ms; retained body update takes
+95.593 versus 64.716 ms. These are complete process workloads, not isolated warm
+query latencies. Metadata costs currently exceed the saved grammar/inference work
+for the two-revision body workload. No speedup or budget relaxation is claimed.
+
+Measured fixed records are 120 bytes for ModuleParses, 264 for ParseCache, 32 for
+ParsedDeclaration, 40 per Lexeme, 48 per Token, 1,064 for ParsedProject, 1,256 for
+Snapshot and 1,328 for State. Referenced buffers are additional storage. Separate
+aggregate module token/lexeme bounds constrain retained records, not peak RSS;
+candidate buffers remain owned by their epoch. Saved-row/stored-link gates remain.
+
+Bootstrap, governance, 10 unit and 70 integration tests, 333 conformance fixtures
+and 2,000 malformed conformance mutations pass. Required quick performance,
+reduction, parallelism, comparison and agent gates, plus resources, parallel-runtime,
+incremental, ordinary-work, formatting and Clippy pass. [Native differential evidence](2026-09-07-m1-parsing-native.tsv)
+preserves diagnostics for 193 rejected fixtures and full analysis/generated C for
+20 native applications against 29ce920. A historical pre-integration quick
+comparison failed prefix_sum at 2.450 versus its 2.000 budget despite identical C;
+its full 15-sample comparison and subsequent quick check passed. Those logs remain
+preserved. All current required gates pass without changing a budget.
+
+M1 remains **in progress** with its original scope. Flow-based availability and
+loan orchestration, public transport with actual host identity binding/lifecycle,
+retained global analysis/C fragments/backend artifacts, complete locality and
+differential evidence, and full release closure remain required. The minimum-I64
+C literal emission bug and recursive-checker sanitizer stack limitation remain
+open. This checkpoint completes RFC-0135, not the parent milestone.

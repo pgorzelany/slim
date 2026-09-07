@@ -1,0 +1,14 @@
+# date=2026-09-07; seed_sha256=c0359c9f031c5182e2637a5681b9952de8c60273a5881a0155edc1a96be1eb6b; syntax_source_sha256=182c4ab55ea9b3b4f3874c474afa1294d42fb9615f4551274ee457a5d49e840d; production retained declaration parser; ordinary O1 and ASan/UBSan O1; full token and diagnostic equality; final parser and capacity campaign
+helpers	update	grammar_executed	declarations_reused	canonical_nodes_imported
+125	unchanged	0	126	1393
+125	body	1	125	1382
+250	unchanged	0	251	2768
+250	body	1	250	2757
+500	unchanged	0	501	5518
+500	body	1	500	5507
+1000	unchanged	0	1001	11018
+1000	body	1	1000	11007
+2000	unchanged	0	2001	22018
+2000	body	1	2000	22007
+4000	unchanged	0	4001	44018
+4000	body	1	4000	44007

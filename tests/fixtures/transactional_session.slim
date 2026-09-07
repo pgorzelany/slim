@@ -151,6 +151,32 @@ fn same_plans(left: Vec[memory.FunctionPlan], right: Vec[memory.FunctionPlan], a
     else:
       false
 
+fn same_parse_cache(cache: syntax.ParseCache, source: Bytes, revision: identity.Revision, slot: I64) -> Bool effects[alloc, partial]:
+  if cache.valid && (vec.len(cache.tokens) > 0):
+    let current: Vec[syntax.Token] = vec.new()
+    let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @current)
+    parsed.valid && (identity.same_revision(cache.owner.revision, revision) && ((cache.owner.slot == slot) && (equal(cache.source, source) && same_tokens(cache.tokens, current, 0))))
+  else:
+    true
+
+fn same_module_parses(snapshot: session.Snapshot, at: I64) -> Bool effects[alloc, partial]:
+  let count: I64 = vec.len(snapshot.module_parsing.caches)
+  if count == 0:
+    true
+  else:
+    if count == vec.len(snapshot.input.modules):
+      if at >= count:
+        true
+      else:
+        let cache: syntax.ParseCache = vec.get(snapshot.module_parsing.caches, at)
+        let source: project.ModuleInput = vec.get(snapshot.input.modules, at)
+        if same_parse_cache(cache, source.source, snapshot.revision, at + 1):
+          recur(snapshot, at + 1)
+        else:
+          false
+    else:
+      false
+
 fn compare(path: Bytes, snapshot: session.Snapshot) -> I64 effects[alloc, io, partial]:
   let clean: project.PreparedProject = project.prepare_project_path(path)
   let kept: project.PreparedProject = snapshot.prepared
@@ -159,7 +185,8 @@ fn compare(path: Bytes, snapshot: session.Snapshot) -> I64 effects[alloc, io, pa
   let facts: Bool = same_facts(kept.facts, clean.facts, 0) && (same_numbers(kept.layouts, clean.layouts, 0) && same_issues(kept.issues, clean.issues, 0))
   let plans: Bool = same_plans(kept.plan.functions, clean.plan.functions, 0)
   let stored: session.Artifact = session.artifact(snapshot)
-  if (kept.status == clean.status) && (source && (syntax && (facts && plans))):
+  let parses: Bool = same_module_parses(snapshot, 0) && same_parse_cache(snapshot.parsing, snapshot.prepared.source, snapshot.revision, 0)
+  if parses && ((kept.status == clean.status) && (source && (syntax && (facts && plans)))):
     if equal(stored.code, project.generate_prepared_project(clean)):
       0
     else:
@@ -220,6 +247,26 @@ fn print_report(report: session.Report) -> Void effects[io]:
   io.println(report.reason)
 
 fn damage(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if equal(mode, "parse-modules"):
+    let previous: Vec[syntax.ParseCache] = mem.replace(@state.good.module_parsing.caches, vec.new())
+    void
+  else:
+    void
+  if equal(mode, "parse-module-names"):
+    let previous: Vec[syntax.NameNode] = mem.replace(@state.good.module_parsing.names, vec.new())
+    void
+  else:
+    void
+  if equal(mode, "parse-module-edges"):
+    let previous: Vec[syntax.NameEdge] = mem.replace(@state.good.module_parsing.edges, vec.new())
+    void
+  else:
+    void
+  if equal(mode, "parse-metadata"):
+    let previous: Vec[syntax.Token] = mem.replace(@state.good.parsing.tokens, vec.new())
+    void
+  else:
+    void
   if equal(mode, "corrupt") || equal(mode, "missing-code"):
     let artifacts: Vec[session.Artifact] = vec.new()
     if equal(mode, "corrupt"):
@@ -254,6 +301,21 @@ fn module_size(modules: Vec[project.ModuleInput], at: I64, total: I64) -> I64 ef
     let input: project.ModuleInput = vec.get(modules, at)
     recur(modules, at + 1, total + bytes.len(input.source))
 
+fn history_size(modules: Vec[project.ModuleInput], at: I64, total: I64, lexical: Bool) -> I64 effects[alloc, partial]:
+  if at >= vec.len(modules):
+    total
+  else:
+    let input: project.ModuleInput = vec.get(modules, at)
+    let tokens: Vec[syntax.Token] = vec.new()
+    let empty: syntax.ParseCache = syntax.empty_parse_cache()
+    let owner: identity.FileId = identity.FileId(revision: identity.Revision(epoch: 1, serial: 1), slot: at + 1)
+    let parsed: syntax.RetainedParse = syntax.parse_program_retained(input.source, @tokens, empty, owner, "budget-probe")
+    let count: I64 = if lexical:
+      vec.len(parsed.cache.lexemes)
+    else:
+      vec.len(parsed.cache.tokens)
+    recur(modules, at + 1, total + count, lexical)
+
 fn limits_for(before: Bytes, mode: Bytes, input: project.ProjectInput) -> session.Limits effects[alloc, io, partial]:
   let attempts: I64 = if equal(mode, "attempt-limit"):
     1
@@ -270,7 +332,16 @@ fn limits_for(before: Bytes, mode: Bytes, input: project.ProjectInput) -> sessio
     let clean: project.PreparedProject = project.prepare_project_path(before)
     vec.len(clean.tokens) + 1
   else:
-    1000000
+    let token: Bool = equal(mode, "history-token-fit") || equal(mode, "history-token-under")
+    let lexical: Bool = equal(mode, "history-lexeme-fit") || equal(mode, "history-lexeme-under")
+    if token || lexical:
+      let exact: I64 = history_size(input.modules, 0, 0, lexical)
+      if equal(mode, "history-token-under") || equal(mode, "history-lexeme-under"):
+        exact - 1
+      else:
+        exact
+    else:
+      1000000
   let code_bytes: I64 = if equal(mode, "code-limit"):
     let clean: project.PreparedProject = project.prepare_project_path(before)
     bytes.len(project.generate_prepared_project(clean)) + 1
@@ -337,7 +408,17 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
       after
     else:
       before
-    let first_same: I64 = compare(reference, state.good)
+    let history_bound: Bool = if (equal(mode, "node-limit") && (vec.len(state.good.input.modules) > 1)) || (equal(mode, "history-token-under") || equal(mode, "history-lexeme-under")):
+      vec.len(state.good.module_parsing.caches) == 0
+    else:
+      if equal(mode, "history-token-fit") || equal(mode, "history-lexeme-fit"):
+        vec.len(state.good.module_parsing.caches) == vec.len(state.good.input.modules)
+      else:
+        true
+    let first_same: I64 = if history_bound:
+      compare(reference, state.good)
+    else:
+      27
     if first_same > 0:
       first_same
     else:
@@ -400,9 +481,20 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
             else:
               let second_same: I64 = compare(after, state.good)
               if second_same == 0:
-                print_report(initial)
-                print_report(changed)
-                0
+                if equal(mode, "reinsert"):
+                  let restored_input: project.ProjectInput = project.capture_project_input(before)
+                  let restored: session.Report = session.update(@state, ^restored_input, config(""))
+                  if (restored.status == 0) && (compare(before, state.good) == 0):
+                    print_report(initial)
+                    print_report(changed)
+                    print_report(restored)
+                    0
+                  else:
+                    28
+                else:
+                  print_report(initial)
+                  print_report(changed)
+                  0
               else:
                 second_same
 

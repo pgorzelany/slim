@@ -378,6 +378,15 @@ infer alias uniqueness, availability or loan state. Flow-based ownership
 orchestration, retained declaration parsing/global analysis/C fragments/backend
 work and complete M1 validation remain required.
 
+RFC-0135 implements retained declaration parsing for original modules and the
+flattened project, including lexical/lookahead dependencies, current canonical
+tokens, transactional publication and capacity tests. Native session schema 2
+separates lexing, declaration grammar execution and node imports. A body edit in
+the geometric fixture executes two declaration grammars, but metadata adds measured
+cost and global analysis and whole-C emission still run. Flow-based ownership/loan
+orchestration, public host identity and lifecycle integration, retained global
+analysis/C fragments/backend artifacts, and complete M1 closure remain required.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale

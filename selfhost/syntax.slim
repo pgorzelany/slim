@@ -2152,7 +2152,7 @@ fn parse_familiar_items(source: Bytes, lexemes: Vec[Lexeme], index: I64, tokens:
   else:
     parse_success(index)
 
-fn parse_familiar_module(source: Bytes, lexemes: Vec[Lexeme], tokens: @Vec[Token]) -> Parse effects[alloc, partial]:
+fn parse_familiar_header(source: Bytes, lexemes: Vec[Lexeme], tokens: @Vec[Token]) -> Parse effects[alloc, partial]:
   let header: Bool = lexeme_equal(source, lexemes, 0, "module") && lexeme_at_indent(lexemes, 0, 0)
   if header:
     let root: I64 = begin_tagged_form(lexemes, 0, 1, @tokens)
@@ -2160,50 +2160,63 @@ fn parse_familiar_module(source: Bytes, lexemes: Vec[Lexeme], tokens: @Vec[Token
     let name: Bool = push_name_lexeme(lexemes, 1, @tokens)
     let same_line: Bool = lexeme_on_line(lexemes, 1, lexeme_line(lexemes, 0))
     if name && same_line:
-      let items: Parse = parse_familiar_items(source, lexemes, 2, @tokens)
-      if items.valid:
-        let length: I64 = bytes.len(source)
-        push_token(@tokens, 1, length, length)
-        items
-      else:
-        items
+      parse_success(2)
     else:
       parse_failure(1)
   else:
     parse_failure(0)
 
-fn parse_program_result(source: Bytes, tokens: @Vec[Token]) -> ProgramParse effects[alloc, partial]:
-  let lexemes: Vec[Lexeme] = vec.new()
+fn parse_familiar_module(source: Bytes, lexemes: Vec[Lexeme], tokens: @Vec[Token]) -> Parse effects[alloc, partial]:
+  let header: Parse = parse_familiar_header(source, lexemes, @tokens)
+  if header.valid:
+    let items: Parse = parse_familiar_items(source, lexemes, header.next, @tokens)
+    if items.valid:
+      let length: I64 = bytes.len(source)
+      push_token(@tokens, 1, length, length)
+      items
+    else:
+      items
+  else:
+    header
+
+fn lex_program(source: Bytes, lexemes: @Vec[Lexeme]) -> LexResult effects[alloc, partial]:
   let lexical: LexResult = lex_modern(source, @lexemes)
   if lexical.valid:
     let jump: I64 = indentation_jump(lexemes, 0, -1, 0)
-    let skipped: Bool = jump >= 0
-    if skipped:
+    if jump >= 0:
       let width: I64 = lexeme_indent(lexemes, jump) * 2
       let end: I64 = lexeme_start(lexemes, jump)
-      let start: I64 = end - width
-      ProgramParse(valid: false, code: "E0105", start: start, end: end)
+      LexResult(valid: false, code: "E0105", start: end - width, end: end)
     else:
-      let first_token: I64 = vec.len(tokens)
-      let parsed: Parse = parse_familiar_module(source, lexemes, @tokens)
-      let complete: Bool = parsed.next == vec.len(lexemes)
-      let valid: Bool = parsed.valid && complete
-      if valid:
-        index_form_boundaries(@tokens, first_token)
-        let length: I64 = bytes.len(source)
-        ProgramParse(valid: true, code: "", start: length, end: length)
-      else:
-        let failure: I64 = parsed.next
-        let available: Bool = lexeme_index_valid(lexemes, failure)
-        let start: I64 = if available:
-          lexeme_start(lexemes, failure)
-        else:
-          bytes.len(source)
-        let end: I64 = if available:
-          lexeme_end(lexemes, failure)
-        else:
-          start
-        ProgramParse(valid: false, code: parsed.code, start: start, end: end)
+      lexical
+  else:
+    lexical
+
+fn finish_program_parse(source: Bytes, lexemes: Vec[Lexeme], parsed: Parse, tokens: @Vec[Token], first_token: I64) -> ProgramParse effects[alloc, partial]:
+  let valid: Bool = parsed.valid && (parsed.next == vec.len(lexemes))
+  if valid:
+    index_form_boundaries(@tokens, first_token)
+    let length: I64 = bytes.len(source)
+    ProgramParse(valid: true, code: "", start: length, end: length)
+  else:
+    let available: Bool = lexeme_index_valid(lexemes, parsed.next)
+    let start: I64 = if available:
+      lexeme_start(lexemes, parsed.next)
+    else:
+      bytes.len(source)
+    let end: I64 = if available:
+      lexeme_end(lexemes, parsed.next)
+    else:
+      start
+    ProgramParse(valid: false, code: parsed.code, start: start, end: end)
+
+fn parse_program_result(source: Bytes, tokens: @Vec[Token]) -> ProgramParse effects[alloc, partial]:
+  let lexemes: Vec[Lexeme] = vec.new()
+  let lexical: LexResult = lex_program(source, @lexemes)
+  if lexical.valid:
+    let first_token: I64 = vec.len(tokens)
+    let parsed: Parse = parse_familiar_module(source, lexemes, @tokens)
+    finish_program_parse(source, lexemes, parsed, @tokens, first_token)
   else:
     ProgramParse(valid: false, code: lexical.code, start: lexical.start, end: lexical.end)
 
@@ -2929,3 +2942,232 @@ fn index_declarations(source: Bytes, tokens: Vec[Token]) -> Vec[ir.Declaration] 
   let declarations: Vec[ir.Declaration] = vec.new()
   index_declarations_from(source, tokens, 3, @declarations)
   declarations
+
+struct ParsedDeclaration:
+  first_lexeme: I64
+  after_lexeme: I64
+  first_token: I64
+  after_token: I64
+
+struct ParseCache:
+  valid: Bool
+  owner: identity.FileId
+  config: Bytes
+  source: Bytes
+  lexemes: Vec[Lexeme]
+  tokens: Vec[Token]
+  declarations: Vec[ParsedDeclaration]
+  names: Vec[NameNode]
+  edges: Vec[NameEdge]
+
+struct RetainedParse:
+  result: ProgramParse
+  cache: ParseCache
+  executed: I64
+  reused: I64
+  imported: I64
+
+struct ParseWork:
+  parsed: Parse
+  unique: Bool
+  executed: I64
+  reused: I64
+  imported: I64
+
+fn empty_parse_cache() -> ParseCache effects[alloc]:
+  let lexemes: Vec[Lexeme] = vec.new()
+  let tokens: Vec[Token] = vec.new()
+  let declarations: Vec[ParsedDeclaration] = vec.new()
+  let names: Vec[NameNode] = vec.new()
+  let edges: Vec[NameEdge] = vec.new()
+  let owner: identity.FileId = identity.FileId(revision: identity.Revision(epoch: 0, serial: 0), slot: -1)
+  ParseCache(valid: false, owner: owner, config: "", source: "", lexemes: lexemes, tokens: tokens, declarations: declarations, names: names, edges: edges)
+
+fn parse_cross_bytes(left: Bytes, first: I64, right: Bytes, other: I64, count: I64, at: I64) -> Bool effects[partial]:
+  if at >= count:
+    true
+  else:
+    if u8.to_i64(bytes.get(left, first + at)) == u8.to_i64(bytes.get(right, other + at)):
+      recur(left, first, right, other, count, at + 1)
+    else:
+      false
+
+fn parse_equal_span(left: Bytes, first: I64, end: I64, right: Bytes, other: I64, after: I64) -> Bool effects[partial]:
+  if ((first >= 0) && (end >= first)) && ((other >= 0) && (after >= other)):
+    if ((end <= bytes.len(left)) && (after <= bytes.len(right))) && ((end - first) == (after - other)):
+      parse_cross_bytes(left, first, right, other, end - first, 0)
+    else:
+      false
+  else:
+    false
+
+fn parse_context_equal(old: ParseCache, source: Bytes, lexemes: Vec[Lexeme], first: I64, other: I64, count: I64, at: I64) -> Bool effects[partial]:
+  if at > count:
+    true
+  else:
+    let a: I64 = first + at
+    let b: I64 = other + at
+    if (a == vec.len(old.lexemes)) || (b == vec.len(lexemes)):
+      (a == vec.len(old.lexemes)) && (b == vec.len(lexemes))
+    else:
+      let original: Lexeme = vec.get(old.lexemes, a)
+      let current: Lexeme = vec.get(lexemes, b)
+      let original_first: Lexeme = vec.get(old.lexemes, first)
+      let current_first: Lexeme = vec.get(lexemes, other)
+      let same: Bool = (original.kind == current.kind) && ((original.indent == current.indent) && (((original.line - original_first.line) == (current.line - current_first.line)) && (((original.start - original_first.start) == (current.start - current_first.start)) && ((original.end - original_first.start) == (current.end - current_first.start)))))
+      if same:
+        if at == count:
+          parse_equal_span(old.source, original.start, original.end, source, current.start, current.end)
+        else:
+          recur(old, source, lexemes, first, other, count, at + 1)
+      else:
+        false
+
+fn parse_tokens_valid(tokens: Vec[Token], first: I64, end: I64, start: I64, after: I64) -> Bool effects[partial]:
+  if first >= end:
+    true
+  else:
+    let token: Token = vec.get(tokens, first)
+    if ((token.start >= start) && (token.end >= token.start)) && (token.end <= after):
+      recur(tokens, first + 1, end, start, after)
+    else:
+      false
+
+fn parse_candidate_matches(old: ParseCache, entry: ParsedDeclaration, source: Bytes, lexemes: Vec[Lexeme], at: I64) -> Bool effects[partial]:
+  let first: I64 = entry.first_lexeme
+  let end: I64 = entry.after_lexeme
+  if ((first >= 2) && (end > first)) && (end <= vec.len(old.lexemes)):
+    let count: I64 = end - first
+    if count <= (vec.len(lexemes) - at):
+      let token_range: Bool = ((entry.first_token >= 3) && (entry.after_token > entry.first_token)) && (entry.after_token <= vec.len(old.tokens))
+      if token_range:
+        let before: Lexeme = vec.get(old.lexemes, first)
+        let last: Lexeme = vec.get(old.lexemes, end - 1)
+        let current: Lexeme = vec.get(lexemes, at)
+        let final: Lexeme = vec.get(lexemes, (at + count) - 1)
+        if parse_equal_span(old.source, before.start, last.end, source, current.start, final.end):
+          if parse_context_equal(old, source, lexemes, first, at, count, 0):
+            parse_tokens_valid(old.tokens, entry.first_token, entry.after_token, before.start, last.end)
+          else:
+            false
+        else:
+          false
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn parse_cached_slot(old: ParseCache, source: Bytes, lexemes: Vec[Lexeme], at: I64, eligible: Bool) -> I64 effects[partial]:
+  if eligible && lexeme_is_kind(lexemes, at + 1, 0):
+    let name: Lexeme = vec.get(lexemes, at + 1)
+    let slot: I64 = lookup_name_chars(source, name.start, name.end, 0, old.names, old.edges)
+    if (slot >= 0) && (slot < vec.len(old.declarations)):
+      let entry: ParsedDeclaration = vec.get(old.declarations, slot)
+      if parse_candidate_matches(old, entry, source, lexemes, at):
+        slot
+      else:
+        -1
+    else:
+      -1
+  else:
+    -1
+
+fn import_parse_tokens(old: Vec[Token], first: I64, end: I64, before: I64, current: I64, output: @Vec[Token]) -> Void effects[alloc, partial]:
+  if first >= end:
+    void
+  else:
+    let token: Token = vec.get(old, first)
+    push_tagged_token(@output, token.kind, token.tag, current + (token.start - before), current + (token.end - before))
+    recur(old, first + 1, end, before, current, @output)
+
+fn parse_retained_items(source: Bytes, lexemes: Vec[Lexeme], at: I64, base: I64, old: ParseCache, eligible: Bool, tokens: @Vec[Token], declarations: @Vec[ParsedDeclaration], names: @Vec[NameNode], edges: @Vec[NameEdge], unique: Bool, executed: I64, reused: I64, imported: I64) -> ParseWork effects[alloc, partial]:
+  if at >= vec.len(lexemes):
+    ParseWork(parsed: parse_success(at), unique: unique, executed: executed, reused: reused, imported: imported)
+  else:
+    let first_token: I64 = vec.len(tokens)
+    let slot: I64 = parse_cached_slot(old, source, lexemes, at, eligible)
+    let item: Parse = if slot >= 0:
+      let entry: ParsedDeclaration = vec.get(old.declarations, slot)
+      let original: Lexeme = vec.get(old.lexemes, entry.first_lexeme)
+      let current: Lexeme = vec.get(lexemes, at)
+      import_parse_tokens(old.tokens, entry.first_token, entry.after_token, original.start, current.start, @tokens)
+      parse_success(at + (entry.after_lexeme - entry.first_lexeme))
+    else:
+      parse_familiar_item(source, lexemes, at, @tokens)
+    let next_executed: I64 = if slot >= 0:
+      executed
+    else:
+      executed + 1
+    let next_reused: I64 = if slot >= 0:
+      reused + 1
+    else:
+      reused
+    let next_imported: I64 = if slot >= 0:
+      imported + (vec.len(tokens) - first_token)
+    else:
+      imported
+    if item.valid:
+      let entry: ParsedDeclaration = ParsedDeclaration(first_lexeme: at, after_lexeme: item.next, first_token: first_token - base, after_token: vec.len(tokens) - base)
+      let index: I64 = vec.len(declarations)
+      let name: Lexeme = vec.get(lexemes, at + 1)
+      let duplicate: I64 = insert_name_chars(source, name.start, name.end, index, 0, @names, @edges)
+      vec.push(@declarations, entry)
+      recur(source, lexemes, item.next, base, old, eligible, @tokens, @declarations, @names, @edges, unique && (duplicate < 0), next_executed, next_reused, next_imported)
+    else:
+      ParseWork(parsed: item, unique: false, executed: next_executed, reused: next_reused, imported: next_imported)
+
+fn parse_cache_eligible(old: ParseCache, source: Bytes, lexemes: Vec[Lexeme], owner: identity.FileId, config: Bytes) -> Bool effects[partial]:
+  if old.valid && ((old.owner.revision.epoch == owner.revision.epoch) && ((vec.len(old.names) > 0) && (vec.len(old.edges) > 0))):
+    if ((vec.len(old.lexemes) >= 2) && (vec.len(old.lexemes) <= 1000000)) && ((vec.len(old.tokens) >= 4) && (vec.len(old.tokens) <= 1000000)):
+      if parse_equal_span(old.config, 0, bytes.len(old.config), config, 0, bytes.len(config)):
+        let name: Lexeme = vec.get(old.lexemes, 1)
+        parse_equal_span(old.source, name.start, name.end, source, lexeme_start(lexemes, 1), lexeme_end(lexemes, 1))
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn parse_program_retained(source: Bytes, tokens: @Vec[Token], old: ParseCache, owner: identity.FileId, config: Bytes) -> RetainedParse effects[alloc, partial]:
+  let lexemes: Vec[Lexeme] = vec.new()
+  let lexical: LexResult = lex_program(source, @lexemes)
+  if !lexical.valid:
+    let cache: ParseCache = empty_parse_cache()
+    let result: ProgramParse = ProgramParse(valid: false, code: lexical.code, start: lexical.start, end: lexical.end)
+    RetainedParse(result: result, cache: cache, executed: 0, reused: 0, imported: 0)
+  else:
+    let first: I64 = vec.len(tokens)
+    let admitted: Bool = ((bytes.len(source) <= 67108864) && (vec.len(lexemes) <= 1000000)) && (((bytes.len(config) > 0) && (bytes.len(config) <= 4096)) && ((owner.slot >= 0) && identity.same_revision(owner.revision, owner.revision)))
+    if !admitted:
+      let parsed: Parse = parse_familiar_module(source, lexemes, @tokens)
+      let result: ProgramParse = finish_program_parse(source, lexemes, parsed, @tokens, first)
+      let cache: ParseCache = empty_parse_cache()
+      RetainedParse(result: result, cache: cache, executed: -1, reused: 0, imported: 0)
+    else:
+      let declarations: Vec[ParsedDeclaration] = vec.new()
+      let names: Vec[NameNode] = vec.new()
+      let edges: Vec[NameEdge] = vec.new()
+      let root: I64 = append_name_node(-1, @names)
+      let header: Parse = parse_familiar_header(source, lexemes, @tokens)
+      let eligible: Bool = parse_cache_eligible(old, source, lexemes, owner, config)
+      let work: ParseWork = if header.valid:
+        parse_retained_items(source, lexemes, header.next, first, old, eligible, @tokens, @declarations, @names, @edges, true, 0, 0, 0)
+      else:
+        ParseWork(parsed: header, unique: false, executed: 0, reused: 0, imported: 0)
+      if work.parsed.valid:
+        push_token(@tokens, 1, bytes.len(source), bytes.len(source))
+      else:
+        void
+      let result: ProgramParse = finish_program_parse(source, lexemes, work.parsed, @tokens, first)
+      let saved: Vec[Token] = vec.new()
+      let valid: Bool = (result.valid && work.unique) && ((vec.len(tokens) - first) <= 1000000)
+      if valid:
+        copy_unlinked_tokens(tokens, first, @saved)
+        index_form_boundaries(@saved, 0)
+      else:
+        void
+      let cache: ParseCache = ParseCache(valid: valid, owner: owner, config: config, source: source, lexemes: lexemes, tokens: saved, declarations: declarations, names: names, edges: edges)
+      RetainedParse(result: result, cache: cache, executed: work.executed, reused: work.reused, imported: work.imported)

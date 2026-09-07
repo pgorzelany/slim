@@ -5055,3 +5055,21 @@ fn retained_places_preserve_checked_binding_identity_and_flow_owners() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn retained_parsing_matches_canonical_tokens_and_observed_grammar_work() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("sh")
+        .arg(root.join("scripts/verify-parsing.sh"))
+        .arg(root.join("build/toolchain/slimc"))
+        .arg("quick")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "retained parsing verification failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

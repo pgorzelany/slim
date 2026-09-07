@@ -208,7 +208,7 @@ fn append_loaded_project_modules(manifest_source: Bytes, manifest_tokens: Vec[sy
     let next: I64 = index + 1
     recur(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, next, @output, @flat_tokens, @origins)
 
-fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
+fn flatten_loaded_source(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
   let atom_source: Vec[U8] = vec.new()
   let flat_tokens: Vec[syntax.Token] = vec.new()
   push_flat_token(0, 1, 0, 0, @flat_tokens)
@@ -228,7 +228,10 @@ fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.To
   syntax.index_ast_boundaries(@flat_tokens)
   let output: Vec[U8] = vec.new()
   format.emit_module(atoms, flat_tokens, @output)
-  let source: Bytes = bytes.freeze(^output)
+  bytes.freeze(^output)
+
+fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
+  let source: Bytes = flatten_loaded_source(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, @origins)
   let parsed: Bool = syntax.parse_program(source, @tokens)
   source
 
@@ -574,38 +577,148 @@ fn copy_manifest_tokens(source: Vec[syntax.Token], at: I64, output: @Vec[syntax.
     vec.push(@output, vec.get(source, at))
     recur(source, at + 1, @output)
 
-fn load_input_modules(input: ProjectInput, cursor: I64, at: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
-  let end: Bool = syntax.ast_node_kind(input.manifest_tokens, cursor) == 1
-  if end:
-    if at == vec.len(input.modules):
+struct ModuleParses:
+  caches: Vec[syntax.ParseCache]
+  names: Vec[syntax.NameNode]
+  edges: Vec[syntax.NameEdge]
+
+struct ModuleParseWork:
+  status: I64
+  retained: Bool
+  executed: I64
+  reused: I64
+  imported: I64
+
+fn empty_module_parses() -> ModuleParses effects[alloc]:
+  let caches: Vec[syntax.ParseCache] = vec.new()
+  let names: Vec[syntax.NameNode] = vec.new()
+  let edges: Vec[syntax.NameEdge] = vec.new()
+  ModuleParses(caches: caches, names: names, edges: edges)
+
+fn prior_module_parse(input: ProjectInput, cursor: I64, old: ModuleParses) -> I64 effects[partial]:
+  if (vec.len(old.names) > 0) && (vec.len(old.edges) > 0):
+    let name: I64 = cursor + 2
+    let slot: I64 = syntax.lookup_name_chars(input.manifest_source, syntax.ast_node_start(input.manifest_tokens, name), syntax.ast_node_end(input.manifest_tokens, name), 0, old.names, old.edges)
+    if (slot >= 0) && (slot < vec.len(old.caches)):
+      slot
+    else:
+      -1
+  else:
+    -1
+
+fn count_parse_work(before: I64, after: I64) -> I64 effects[partial]:
+  if (before < 0) || (after < 0):
+    -1
+  else:
+    before + after
+
+fn load_retained_modules(input: ProjectInput, cursor: I64, at: I64, old: ModuleParses, revision: identity.Revision, config: Bytes, remaining_tokens: I64, remaining_lexemes: I64, capturing: Bool, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule], caches: @Vec[syntax.ParseCache], names: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge], executed: I64, reused: I64, imported: I64) -> ModuleParseWork effects[alloc, io, partial]:
+  if syntax.ast_node_kind(input.manifest_tokens, cursor) == 1:
+    let status: I64 = if at == vec.len(input.modules):
       0
     else:
       report_project_diagnostic("Q0002", "-", 0, 0)
+    ModuleParseWork(status: status, retained: capturing, executed: executed, reused: reused, imported: imported)
   else:
     if at >= vec.len(input.modules):
-      report_project_diagnostic("Q0002", "-", 0, 0)
+      let status: I64 = report_project_diagnostic("Q0002", "-", 0, 0)
+      ModuleParseWork(status: status, retained: false, executed: executed, reused: reused, imported: imported)
     else:
       let module: ModuleInput = vec.get(input.modules, at)
-      let result: I64 = load_module_input(input.manifest_source, input.manifest_tokens, cursor, module, @module_tokens, @loaded)
-      if result == 0:
-        recur(input, syntax.ast_next(input.manifest_tokens, cursor), at + 1, @module_tokens, @loaded)
+      if !module.read:
+        let status: I64 = load_module_input(input.manifest_source, input.manifest_tokens, cursor, module, @module_tokens, @loaded)
+        ModuleParseWork(status: status, retained: false, executed: executed, reused: reused, imported: imported)
       else:
-        result
+        let root: I64 = vec.len(module_tokens)
+        let owner: identity.FileId = if capturing:
+          identity.FileId(revision: revision, slot: at + 1)
+        else:
+          identity.FileId(revision: identity.Revision(epoch: 0, serial: 0), slot: -1)
+        let slot: I64 = prior_module_parse(input, cursor, old)
+        let empty: syntax.ParseCache = syntax.empty_parse_cache()
+        let parsed: syntax.RetainedParse = if slot >= 0:
+          let previous: syntax.ParseCache = vec.get(old.caches, slot)
+          syntax.parse_program_retained(module.source, @module_tokens, previous, owner, config)
+        else:
+          syntax.parse_program_retained(module.source, @module_tokens, empty, owner, config)
+        let status: I64 = finish_module_parse(input.manifest_source, input.manifest_tokens, cursor, module.source, root, parsed.result, @module_tokens, @loaded)
+        let next_executed: I64 = count_parse_work(executed, parsed.executed)
+        let next_reused: I64 = reused + parsed.reused
+        let next_imported: I64 = imported + parsed.imported
+        if status > 0:
+          ModuleParseWork(status: status, retained: false, executed: next_executed, reused: next_reused, imported: next_imported)
+        else:
+          let token_count: I64 = vec.len(parsed.cache.tokens)
+          let lexeme_count: I64 = vec.len(parsed.cache.lexemes)
+          let keep: Bool = (capturing && parsed.cache.valid) && ((token_count <= remaining_tokens) && (lexeme_count <= remaining_lexemes))
+          if keep:
+            let name: I64 = cursor + 2
+            let previous: I64 = syntax.insert_name_chars(input.manifest_source, syntax.ast_node_start(input.manifest_tokens, name), syntax.ast_node_end(input.manifest_tokens, name), vec.len(caches), 0, @names, @edges)
+            let cache: syntax.ParseCache = mem.replace(@parsed.cache, syntax.empty_parse_cache())
+            vec.push(@caches, cache)
+            recur(input, syntax.ast_next(input.manifest_tokens, cursor), at + 1, old, revision, config, remaining_tokens - token_count, remaining_lexemes - lexeme_count, true, @module_tokens, @loaded, @caches, @names, @edges, next_executed, next_reused, next_imported)
+          else:
+            recur(input, syntax.ast_next(input.manifest_tokens, cursor), at + 1, old, revision, config, 0, 0, false, @module_tokens, @loaded, @caches, @names, @edges, next_executed, next_reused, next_imported)
 
-fn prepare_project_input(input: ProjectInput, retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+struct ParsedProject:
+  attempt: ProjectAttempt
+  parsing: syntax.ParseCache
+  module_parsing: ModuleParses
+  executed: I64
+  reused: I64
+  imported: I64
+
+fn uncached_parsed_project(status: I64, executed: I64, reused: I64, imported: I64) -> ParsedProject effects[alloc]:
+  let attempt: ProjectAttempt = invalid_project_attempt(status)
+  let parsing: syntax.ParseCache = syntax.empty_parse_cache()
+  let module_parsing: ModuleParses = empty_module_parses()
+  ParsedProject(attempt: attempt, parsing: parsing, module_parsing: module_parsing, executed: executed, reused: reused, imported: imported)
+
+fn prepare_parsed_project(input: ProjectInput, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], module_parsing: ^ModuleParses, module_work: ModuleParseWork, previous: retained.Cache, old_parse: syntax.ParseCache, revision: identity.Revision, token_limit: I64, config: Bytes) -> ParsedProject effects[alloc, io, partial]:
+  let origins: Vec[Origin] = vec.new()
+  let tokens: Vec[syntax.Token] = vec.new()
+  let source: Bytes = flatten_loaded_source(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded, @origins)
+  let owner: identity.FileId = identity.FileId(revision: revision, slot: 0)
+  let parsed: syntax.RetainedParse = syntax.parse_program_retained(source, @tokens, old_parse, owner, config)
+  let count: I64 = vec.len(tokens)
+  let capacity: Bool = (token_limit < 1) || (count > token_limit)
+  let attempt: ProjectAttempt = if (!parsed.result.valid) || capacity:
+    let prepared: PreparedProject = invalid_prepared_project(65)
+    let cache: retained.Cache = retained.empty_cache()
+    let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: capacity)
+    ProjectAttempt(canonical_nodes: count, prepared: prepared, cache: cache, work: work)
+  else:
+    let manifest_tokens: Vec[syntax.Token] = vec.new()
+    copy_manifest_tokens(input.manifest_tokens, 0, @manifest_tokens)
+    check_loaded_project(input.manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, true, previous, revision, token_limit)
+  let parsing: syntax.ParseCache = mem.replace(@parsed.cache, syntax.empty_parse_cache())
+  ParsedProject(attempt: attempt, parsing: parsing, module_parsing: module_parsing, executed: count_parse_work(module_work.executed, parsed.executed), reused: module_work.reused + parsed.reused, imported: module_work.imported + parsed.imported)
+
+fn prepare_project_input(input: ProjectInput, previous: retained.Cache, old_parse: syntax.ParseCache, old_modules: ModuleParses, revision: identity.Revision, token_limit: I64, config: Bytes) -> ParsedProject effects[alloc, io, partial]:
   if input.status > 0:
-    invalid_project_attempt(input.status)
+    uncached_parsed_project(input.status, 0, 0, 0)
   else:
     let module_tokens: Vec[syntax.Token] = vec.new()
     let loaded: Vec[LoadedModule] = vec.new()
     let first: I64 = syntax.ast_next(input.manifest_tokens, 3)
-    let result: I64 = load_input_modules(input, first, 0, @module_tokens, @loaded)
-    if result > 0:
-      invalid_project_attempt(result)
+    let caches: Vec[syntax.ParseCache] = vec.new()
+    let names: Vec[syntax.NameNode] = vec.new()
+    let edges: Vec[syntax.NameEdge] = vec.new()
+    let root: I64 = syntax.append_name_node(-1, @names)
+    let capturing: Bool = (token_limit >= 1) && (token_limit <= 1000000)
+    let work: ModuleParseWork = load_retained_modules(input, first, 0, old_modules, revision, config, token_limit, token_limit, capturing, @module_tokens, @loaded, @caches, @names, @edges, 0, 0, 0)
+    if work.status > 0:
+      uncached_parsed_project(work.status, work.executed, work.reused, work.imported)
     else:
-      let tokens: Vec[syntax.Token] = vec.new()
-      copy_manifest_tokens(input.manifest_tokens, 0, @tokens)
-      finish_project_preparation(input.manifest_source, ^tokens, module_tokens, loaded, retain, strict, previous, revision, token_limit)
+      let errors: I64 = report_loaded_project(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded)
+      if errors > 0:
+        uncached_parsed_project(errors, work.executed, work.reused, work.imported)
+      else:
+        let module_parsing: ModuleParses = if work.retained:
+          ModuleParses(caches: caches, names: names, edges: edges)
+        else:
+          empty_module_parses()
+        prepare_parsed_project(input, module_tokens, loaded, ^module_parsing, work, previous, old_parse, revision, token_limit, config)
 
 fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
   let previous: retained.Cache = retained.empty_cache()
@@ -1148,6 +1261,22 @@ struct LoadedModule:
   source: Bytes
   root: I64
 
+fn finish_module_parse(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, source: Bytes, root: I64, parsed: syntax.ProgramParse, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let name: I64 = cursor + 2
+  let path: I64 = cursor + 3
+  let end: I64 = vec.len(module_tokens)
+  let shaped: Bool = validate.module_shape_valid_from(source, module_tokens, root, end)
+  if parsed.valid && shaped:
+    syntax.link_declaration_names_from(source, @module_tokens, root)
+    vec.push(@loaded, LoadedModule(manifest: cursor, name: name, path: path, source: source, root: root))
+    0
+  else:
+    let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
+    if parsed.valid:
+      report_project_diagnostic("E0102", module_name, 0, bytes.len(source))
+    else:
+      report_project_diagnostic(parsed.code, module_name, parsed.start, parsed.end)
+
 fn load_module_input(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, input: ModuleInput, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
   let name: I64 = cursor + 2
   let path: I64 = cursor + 3
@@ -1155,18 +1284,7 @@ fn load_module_input(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token],
     let source: Bytes = input.source
     let root: I64 = vec.len(module_tokens)
     let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @module_tokens)
-    let end: I64 = vec.len(module_tokens)
-    let shaped: Bool = validate.module_shape_valid_from(source, module_tokens, root, end)
-    if parsed.valid && shaped:
-      syntax.link_declaration_names_from(source, @module_tokens, root)
-      vec.push(@loaded, LoadedModule(manifest: cursor, name: name, path: path, source: source, root: root))
-      0
-    else:
-      let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-      if parsed.valid:
-        report_project_diagnostic("E0102", module_name, 0, bytes.len(source))
-      else:
-        report_project_diagnostic(parsed.code, module_name, parsed.start, parsed.end)
+    finish_module_parse(manifest_source, manifest_tokens, cursor, source, root, parsed, @module_tokens, @loaded)
   else:
     let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
     report_project_diagnostic("E0409", module_name, syntax.ast_node_start(manifest_tokens, path), syntax.ast_node_end(manifest_tokens, path))

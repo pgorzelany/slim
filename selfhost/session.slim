@@ -23,6 +23,8 @@ struct Snapshot:
   input: project.ProjectInput
   prepared: project.PreparedProject
   typing: retained.Cache
+  parsing: syntax.ParseCache
+  module_parsing: project.ModuleParses
   functions: I64
   layout_count: I64
   canonical_nodes: I64
@@ -58,7 +60,9 @@ fn empty_snapshot() -> Snapshot effects[alloc]:
   let prepared: project.PreparedProject = project.invalid_prepared_project(1)
   let typing: retained.Cache = retained.empty_cache()
   let artifacts: Vec[Artifact] = vec.new()
-  Snapshot(valid: false, revision: identity.Revision(epoch: 0, serial: 0), config: empty_config(), input: input, prepared: prepared, typing: typing, functions: 0, layout_count: 0, canonical_nodes: 0, artifacts: artifacts)
+  let parsing: syntax.ParseCache = syntax.empty_parse_cache()
+  let module_parsing: project.ModuleParses = project.empty_module_parses()
+  Snapshot(valid: false, revision: identity.Revision(epoch: 0, serial: 0), config: empty_config(), input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: 0, layout_count: 0, canonical_nodes: 0, artifacts: artifacts)
 
 fn start(epoch: I64, limits: Limits) -> State effects[alloc, partial]:
   let good: Snapshot = empty_snapshot()
@@ -204,10 +208,13 @@ fn prepare_update(state: @State, input: ^project.ProjectInput, config: Config, e
     failure(state, 65, "S0005")
   else:
     let empty: retained.Cache = retained.empty_cache()
-    let attempt: project.ProjectAttempt = if eligible:
-      project.prepare_project_input(input, true, true, state.good.typing, current.counter, remaining)
+    let empty_parse: syntax.ParseCache = syntax.empty_parse_cache()
+    let empty_modules: project.ModuleParses = project.empty_module_parses()
+    let parsed: project.ParsedProject = if eligible:
+      project.prepare_project_input(input, state.good.typing, state.good.parsing, state.good.module_parsing, current.counter, remaining, config.compiler)
     else:
-      project.prepare_project_input(input, true, true, empty, current.counter, remaining)
+      project.prepare_project_input(input, empty, empty_parse, empty_modules, current.counter, remaining, config.compiler)
+    let attempt: project.ProjectAttempt = mem.replace(@parsed.attempt, project.invalid_project_attempt(1))
     let count: I64 = attempt.canonical_nodes
     let charged: I64 = if count > remaining:
       state.limits.canonical_nodes
@@ -223,9 +230,11 @@ fn prepare_update(state: @State, input: ^project.ProjectInput, config: Config, e
         if !attempt.cache.valid:
           result(current.counter, state.good.revision, 65, "S0008", attempt.work, false, 0, false)
         else:
-          publish_update(@state, ^input, config, ^attempt, eligible)
+          let parsing: syntax.ParseCache = mem.replace(@parsed.parsing, syntax.empty_parse_cache())
+          let module_parsing: project.ModuleParses = mem.replace(@parsed.module_parsing, project.empty_module_parses())
+          publish_update(@state, ^input, config, ^attempt, ^parsing, ^module_parsing, eligible)
 
-fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, attempt: ^project.ProjectAttempt, eligible: Bool) -> Report effects[alloc, partial]:
+fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, attempt: ^project.ProjectAttempt, parsing: ^syntax.ParseCache, module_parsing: ^project.ModuleParses, eligible: Bool) -> Report effects[alloc, partial]:
   let current: Usage = usage(state)
   let reuse: Bool = if eligible:
     retained.equal(state.good.prepared.source, attempt.prepared.source) && code_valid(state.good)
@@ -258,7 +267,7 @@ fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, a
       let typing: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
       let artifacts: Vec[Artifact] = vec.new()
       vec.push(@artifacts, Artifact(code: code, checksum: checksum))
-      let snapshot: Snapshot = Snapshot(valid: true, revision: current.counter, config: config, input: input, prepared: prepared, typing: typing, functions: functions, layout_count: layouts, canonical_nodes: attempt.canonical_nodes, artifacts: artifacts)
+      let snapshot: Snapshot = Snapshot(valid: true, revision: current.counter, config: config, input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: functions, layout_count: layouts, canonical_nodes: attempt.canonical_nodes, artifacts: artifacts)
       if !reuse:
         let next_code_used: I64 = current.code_used + size
         charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)

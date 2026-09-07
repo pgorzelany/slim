@@ -1,11 +1,13 @@
-/* Measurement only. No observed value participates in compiler acceptance. */
+/* Measurement only. No observed value participates in compiler acceptance.
+ * Schema 2: program lexings, function checks, C generations, declaration grammar
+ * executions, and parsed canonical-node imports, in that order. */
 #include "session_probe.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define SESSION_PHASES 256
 #define SESSION_CAP UINT64_C(1000000000)
-static uint64_t counts[SESSION_PHASES][3];
+static uint64_t counts[SESSION_PHASES][5];
 static unsigned phases, epochs;
 static int active, bounded, epoch_active;
 static SlimRegion *epoch_parent;
@@ -16,7 +18,7 @@ void slim_session_probe_begin(void) {
     if (phases >= SESSION_PHASES) bounded = 1;
 }
 void slim_session_probe_count(unsigned kind) {
-    if (kind >= 3) abort();
+    if (kind >= 5) abort();
     if (!active || phases >= SESSION_PHASES) return;
     if (counts[phases][kind] == SESSION_CAP) bounded = 1;
     else ++counts[phases][kind];
@@ -66,9 +68,9 @@ static void report(void) {
     if (path == NULL) return;
     FILE *output = fopen(path, "wb");
     if (output == NULL) return;
-    fprintf(output, "slim-session\t1\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
+    fprintf(output, "slim-session\t2\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
     for (unsigned i = 0; i < phases; ++i)
-        fprintf(output, "%u\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\n", i, counts[i][0], counts[i][1], counts[i][2]);
+        fprintf(output, "%u\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\n", i, counts[i][0], counts[i][1], counts[i][2], counts[i][3], counts[i][4]);
     int error = ferror(output);
     if (fclose(output) != 0) error = 1;
     if (error) remove(path);
