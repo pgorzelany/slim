@@ -14,7 +14,7 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | Checkpoint `49ea4a0` validates internal retained parsing, typing, memory plans, range queries and C function fragments with transactional recovery. Typed identities and the optional structural flow view are implemented. Ownership-flow orchestration, public host-bound sessions, retained global analyses, native backend caching and full closure remain. |
+| M1: compiler substrate | in progress | Checkpoint `49ea4a0` validates internal retained parsing, typing, memory plans, range queries and C function fragments with transactional recovery. Typed identities are implemented; RFC-0141 adds validated shared control descriptions and continuation-based ownership orchestration. Public host-bound sessions, retained global analyses, native backend caching, the recorded emission repair and full closure remain. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -24,25 +24,27 @@ portable C seed.
 
 ## Current M1 closure ledger
 
-This ledger describes checkpoint `49ea4a0`; the dated sections below preserve
-historical costs and checkpoint-specific results. An implemented internal query
+This ledger includes the validated RFC-0141 fixed point
+`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`
+on top of checkpoint `49ea4a0`; dated sections below preserve historical costs
+and checkpoint-specific results. An implemented internal query
 is not evidence that the public session already provides that query.
 
 | Obligation | Current result | Remaining closure work |
 | --- | --- | --- |
 | Revision-owned source, declaration, node and span identities | RFC-0125/0126 implement checked ownership, exact revision maps and source relocation; RFC-0134 adds retained typed place identities. | Preserve these contracts through the public session lifecycle and all configuration changes. |
-| Branch/recurrence ownership foundation | RFC-0129 implements a bounded structural flow view; the existing checker still produces move, availability and loan decisions. | Move orchestration onto the shared derived view while preserving acceptance, diagnostic order, lexical loan lifetime and simultaneous recurrence transfer. A post-check graph alone does not satisfy this row. |
+| Branch/recurrence ownership foundation | RFC-0129/0141 share canonical form and lexical-scope descriptions between the optional graph and explicit checking continuations. The normal checker remains the sole producer of move, availability and loan decisions; all expression families are migrated. | Preserve the validated transitions and source-relative bounds through public session integration. The separate recursive name-resolution prepass retains its documented sanitizer depth limit. |
 | Reusable declaration queries | RFC-0130/0131/0132/0135 retain typing and parsing with validated dependencies and current source links. | Exercise the same production queries through real public updates and preserve locality through the remaining analysis integration. |
 | Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. Complete current global scans and parallel analysis still execute. | Retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
-| Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. The 96 accepted-fixture differential is raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
+| Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. The 96 accepted-fixture differential is raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly; repair the baseline literal-Bytes storage-address emission defect reproduced during RFC-0141 validation. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs, admitted usage, last-good snapshots and failed-update recovery; RFC-0140 tests malformed fragment metadata and damaged bytes. | Bind compiler/runtime/target/options to the actual host, implement public transport and owning-epoch cleanup/reset, and retain explicit last-good revision identities. |
 | Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
 | Differential, locality and release evidence | Every completed child has measured domains and required checkpoint gates. RFC-0140 passes the full session sanitizer campaign, 6,144 fault ordinals and unchanged durable budgets. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
 
 The public `session` command still reports invalidation estimates. The complete
 M1 goal remains active; none of the remaining rows is waived by the C-fragment
-checkpoint. The known recursive-checker sanitizer stack limit remains recorded
-in the RFC-0129 evidence and is not fixed by retained emission.
+checkpoint. RFC-0141 removes recursive expression inference; the remaining
+sanitizer stack limit in `check.find_unknown_expr` is recorded separately.
 
 ## Measurement discipline
 
@@ -2710,3 +2712,530 @@ and 0.592 for `signal_network`. The [gate record](2026-09-07-m1-fragments-gates.
 [complete deterministic work rows](2026-09-07-m1-fragments-work.tsv) and
 [budget outputs](2026-09-07-m1-fragments-budgets.txt) retain the evidence. These
 checkpoint results do not complete M1 or establish an LLM success rate.
+
+## RFC-0141 working implementation: structured checking continuations
+
+The accepted contract is checkpoint `dfbb722`, based on production `49ea4a0` and
+the corrected parent ledger at `17373e5`. This section records unfinished working
+implementation evidence, not a completed compiler checkpoint or M1 closure.
+The checked-in seed and installed compiler remain at the validated RFC-0140 code.
+
+The new canonical `control` descriptors supply binding and assignment children to
+both the normal checker and optional `flow` graph. The checker replaces those two
+families' recursive orchestration with explicit initializer/value and body phases.
+It preserves initializer move/loan registration, destination checks, successful
+assignment restoration, blocking-error behavior and enclosing fact completion.
+The active frame is a scalar machine parameter; only suspended parents enter the
+reused vector. A one-frame expression therefore needs no vector backing allocation.
+The depth bound is the current root expression's canonical node count, not the
+optional graph's one-million-record reporting limit. Other expression families
+still use their existing orchestration and remain required RFC-0141 work.
+
+The initial active-frame experimental compiler's generated C is 4,347,076 bytes, SHA-256
+`9825ea437268d5c42770fc65175882a160e0e5ef7ebc6a84451730adfeadef2d`.
+It is generated by the baseline compiler and reproduces those exact bytes itself.
+It has not replaced the portable seed. Two earlier binding-only and vector-stack
+binding/assignment candidates are retained with their source images and binaries
+under `build/slim-next-m1/ownership-flow/` for comparison.
+
+### Intermediate compatibility evidence
+
+- The current candidate matches raw C and complete `analyze` output on 96 accepted
+  fixtures, passes four declaration relocation edits per fixture plus module
+  relocation/reordering, and preserves tested native serial/worker/fallback results.
+  All 197 rejected fixtures have exact ordinary status/stdout/stderr.
+- The new `tests/fixtures/checking_continuations.slim` probe dumps all canonical
+  token fields, fact rows, ordered view/final issues and layout rows. It is compiled
+  against both source checkpoints and is never consumed as compiler authority.
+  The current candidate matches the baseline over 293 fixtures: 269 reach checked
+  state and 24 report parser rejection without attempting the checker. These are
+  complete comparisons of the named records, not proof of every possible program.
+- The preceding vector-stack candidate passes this 293-fixture probe under
+  ASan/UBSan and two 512-ordinal ordinary/sanitized fault differentials. Branch
+  reinitialization observes 125 status-71 failures and 387 successes; the borrowed
+  initializer observes 76 failures and 436 successes. Every successful dump equals
+  the uninjected dump and failures emit no partial dump. These ordinal counts
+  belong to that candidate; the active-frame version is checked separately.
+- The active-frame version also passes the full 293-fixture sanitizer comparison.
+  Its two 512-ordinal campaigns observe 122 failures/390 successes for branch
+  reinitialization and 74 failures/438 successes for the borrowed initializer,
+  totaling 196 failures and 828 successes. Complete successful dumps and all
+  failure outputs match ordinary/sanitized execution. The changed allocation
+  counts are consistent with fewer vector backing allocations; no ordinal is
+  assumed to identify the same allocation across different compiler versions.
+  [Checked-state rows](2026-09-07-m1-continuations-state.tsv) and
+  [fault rows](2026-09-07-m1-continuations-faults.tsv) identify this candidate.
+
+### Initial costs and remaining work
+
+Two warmup pairs and eleven alternating uninstrumented process pairs cover
+binding spines, small functions and assignment spines at 125, 500, 2,000 and 4,000
+items. Source inspection/output work is included. C equality is checked before
+measurement. The raw reports include binary/C/runtime identities:
+[binding-only measurements](2026-09-07-m1-continuations-bindings-initial.tsv),
+[vector-stack assignments](2026-09-07-m1-continuations-assignments-initial.tsv), and
+[active-frame measurements](2026-09-07-m1-continuations-inline-initial.tsv).
+
+The initial binding-only 4,000-small-function check has median paired ratio 1.030;
+adding assignments with every frame in the vector gives 1.036. Keeping the active
+frame directly reduces the measured ratio to 1.017, with the corresponding C
+emission ratio 1.008. The 4,000-assignment spine's latest check/emission ratios are
+0.971/0.989; the binding spine is 1.000/1.003. These are intermediate same-host
+measurements, not a general speedup or permission to accept a reproducible cost
+outside the recorded noise band. The earlier regressions remain part of the
+record. Full resource/backend/runtime costs and durable gates remain outstanding.
+
+At that initial candidate, branch, call, aggregate, projection, recurrence and
+parallel continuations were still pending. Subsequent working migration is recorded
+below. Complete shared lexical boundaries, exact native work and stack observations,
+permanent cross-phase tests, complete fault/session campaigns and all required
+checkpoint checks remain open. No existing gate or semantic rule is relaxed.
+The full M1 goal also retains public host-bound sessions, global-analysis retention,
+native backend caching and integrated release closure.
+
+### Branch, unary, aggregate and argument continuation migration
+
+The corrected branch candidate emits 4,369,112 C bytes, SHA-256
+`08334b726220c87e9eadc01fc4ba9eb3f7f1614349db0c410485ee2709b849c5`.
+The subsequent projection/parallel candidate emits 4,376,110 bytes, SHA-256
+`386874c869ea2acf6b6da43139a21f8eeb8f7ecab53bb005546a75e49dad71b7`.
+Both reproduce their compiler C exactly. Each matches 293 complete checked-state
+fixtures and 96 complete function-graph fixtures. The unary descendant additionally
+passes the exact C/analysis, relocation and native-execution suite above.
+[Branch state](2026-09-07-m1-continuations-branch-state.tsv),
+[branch graph](2026-09-07-m1-continuations-branch-graph.tsv),
+[unary state](2026-09-07-m1-continuations-unary-state.tsv) and
+[unary graph](2026-09-07-m1-continuations-unary-graph.tsv) retain named comparisons.
+
+Both candidates pass the 293-fixture ASan/UBSan checked-state comparison and two
+512-ordinal fault domains. Each observes 123 failures/389 successes for branch
+reinitialization and 76 failures/436 successes for the borrowed initializer:
+199 status-71 failures and 825 successes overall. Ordinary/sanitized results match
+exactly, successful dumps equal the uninjected result and failed dumps are empty.
+[Branch faults](2026-09-07-m1-continuations-branch-state-faults.tsv) and
+[unary faults](2026-09-07-m1-continuations-unary-state-faults.tsv) identify their
+respective compiler fingerprints; ordinals are not cross-version allocation IDs.
+
+The first branch implementation was rejected by the complete-state differential.
+In `duplicate_variant_arm.slim`, fact 29 changed from baseline tag 5/form 34 to
+tag 0/form 29, despite matching status, diagnostics and accepted generated C.
+Inspection of baseline C established that the old arm loop's `recur` jumps before
+its trailing validity expression. The corrected continuation retains the original
+first-arm result, exhaustiveness result and outer scrutinee-move override, while
+preserving all rejecting issues. The old record-member, variant-payload and call
+argument loops have the same terminal-jump structure. Their migration preserves
+executed pre-transfer work and final arity/name results; it does not introduce
+post-jump validity aggregation. The rejected candidate and first mismatch remain
+in the private experiment directory, and no seed was adopted from it.
+
+The new explicit-compiler `scripts/verify-continuation-ownership.py` harness runs
+the independent 486-case move/read and 15,552-case move/reset path models. Both
+the corrected branch candidate and the later user-call/recurrence candidate pass
+all 16,038 cases: 7,230 accepted and 8,808 rejected, with exact baseline outputs.
+The oracle evaluates bounded action paths independently of compiler facts.
+
+Aggregate members and user-call/recurrence arguments are subsequently migrated.
+Each intermediate candidate matches 293 complete checked-state fixtures, 96 full
+graph fixtures and its self-emitted C. The argument candidate also passes all
+96 accepted C/analysis/relocation/native comparisons and 197 rejected outputs.
+The newest working source migrates built-ins and replacement operands; its
+validation is still in progress. These are working experiments, not compiler
+checkpoint commits or completed RFC-0141 acceptance.
+
+The [branch measurements](2026-09-07-m1-continuations-branch-initial-latency.tsv)
+and [unary measurements](2026-09-07-m1-continuations-unary-initial-latency.tsv)
+retain two warmup pairs and eleven alternating pairs at each geometric size.
+At 4,000 small branch functions, the branch candidate's median check/emission
+ratios are 1.040/1.013; the unary descendant's are 1.044/1.020. At 4,000 projection
+functions the unary ratios are 1.016/1.002. These measured costs remain open for
+containment and repeat noise analysis before adoption. No regression is waived.
+
+### Complete expression traversal candidate and measured refinements
+
+The first candidate with all expression families migrated emits 4,405,570 C bytes,
+SHA-256 `d2b6ff8e33a8cdb1057b74c13a7c168e38f4835cf4219d837aa33661e3a17bdf`.
+Its only call to `infer_expr` is function entry; expression children resume the
+explicit machine. It reproduces its compiler C exactly and passes 293 complete
+state comparisons, 96 complete graph comparisons, all accepted C/analysis/
+relocation/native checks and 197 exact rejected outputs. The
+[state](2026-09-07-m1-continuations-builtin-state.tsv),
+[graph](2026-09-07-m1-continuations-builtin-graph.tsv) and
+[C/analysis](2026-09-07-m1-continuations-builtin-exact.tsv) rows identify it.
+
+This candidate passes ASan/UBSan over the 293-fixture checked-state domain. Its
+two 512-ordinal campaigns observe 128 failures/384 successes for branch
+reinitialization and 79 failures/433 successes for the borrowed initializer,
+totaling 207 failures and 817 successes. The
+[fault rows](2026-09-07-m1-continuations-builtin-state-faults.tsv) preserve those
+candidate-specific counts and exact ordinary/sanitized comparisons.
+
+New native observation records actual entry/exit, continuation steps, requests,
+pushes, finish events, live depths and each built-in operand phase. The counter
+cap is one billion, with explicit saturation status; these binaries are excluded
+from latency measurements. All 293 fixtures exercise every continuation phase
+0–12 and every applicable built-in operand phase, with identical repeated work
+and ordinary/observed outputs. Eight independent generated families—binding,
+assignment, branch, user call, scalar built-in, record construction, variant
+payload and recurrence—pass at sizes 8, 32, 128 and 512. Observed native machine
+nesting is one, live depth stays within the source-relative bound, and the
+fourfold-size step ratio stays below 4.5. The
+[complete work rows](2026-09-07-m1-continuations-builtin-work.tsv) retain exact
+measurements for this domain. These are traversal counts, not a count of all
+existing source/origin scans or proof that every compiler helper is iterative.
+An initial generated aggregate fixture used unsupported constructor projection;
+both compilers rejected it. The corrected fixture composes a constructor with
+an ordinary function returning its field, without adding syntax.
+
+`scripts/verify-continuations.sh` now builds ordinary/observed current-source
+compilers and runs the permanent work and independent ownership oracles. Its
+full mode also builds ordinary/sanitized complete-state probes and runs the fixed
+fault domains. The full release script invokes this gate. Source-based and
+explicit-binary comparison tools retain failed sources for diagnosis. Integration
+is still subject to its own execution and the required full checkpoint gates.
+
+Governance initially rejected the removed `infer_tcp_exchange` source anchor.
+RFC-0141 replaces that implementation with shared operand continuations. The
+gate now requires the exact zero-operand I64 clock shape, six-operand TCP shape
+and scalar/reservation/byte-output helpers. All prior runtime, effect, conformance
+and host-execution checks remain. Governance passes with these updated anchors.
+
+The [full-traversal timing sample](2026-09-07-m1-continuations-builtin-initial-latency.tsv)
+still shows 1.049/1.019 median check/emission ratios for 4,000 small branch
+functions. A subsequent single structural classifier shared with the graph
+preserves all state/graph comparisons; its generated C is 4,404,535 bytes,
+SHA-256 `2c76d1eab4b6602397b2bdd6a05415741d829cc50eced844698856a116b5f2ea`.
+Its [timing sample](2026-09-07-m1-continuations-dispatch-initial-latency.tsv)
+shows 1.041/1.026 for that shape, with mixed shifts elsewhere. This is not a
+resolved performance regression or a general improvement claim. The next working
+experiment keeps the active branch record directly and stores only suspended
+branch ancestors. Adoption, shared lexical lifetime completion, counter-cap tests,
+full resource/backend/session campaigns and all checkpoint checks remain open.
+
+### Shared scopes and compact active continuation state
+
+The later working candidate (`argument-top`) emits 4,432,453 bytes of compiler C,
+SHA-256 `81d80e0176216530fa9f42cdd7c529e61eef60cd5e83a998417da3d8a175f33a`.
+It keeps the active expression, branch and user-call argument state directly in
+the machine; reused vectors hold their suspended ancestors. Unary/binary scalar
+built-ins use compact continuation phases 13–17, avoiding a separate built-in
+pool entry. Collection, I/O and replacement contexts retain their pool. Completed
+forms finish and pop directly, and an atom or blocked entry resumes its parent
+in the same iteration. These changes preserve the existing post-child checking
+sequence. `control.Scope` now supplies both lexical loan membership and the
+validated graph scope extent.
+
+This candidate reproduces its own compiler C and passes the complete
+[293-fixture state comparison](2026-09-07-m1-continuations-argument-top-state.tsv),
+[96-fixture graph comparison](2026-09-07-m1-continuations-argument-top-graph.tsv),
+and [C/analysis/relocation/native comparison](2026-09-07-m1-continuations-argument-top-exact.tsv).
+The [fixed malformed-input domain](2026-09-07-m1-continuations-argument-top-mutations.tsv)
+has 1,601 exact baseline comparisons: 115 accepted, 1,300 checker-rejected and
+186 parser-rejected, within its fixed 4,096-case cap.
+
+The full `verify-continuations.sh` gate also passes on this candidate. Observation
+schema 2 crosses all 18 continuation phases and all applicable built-in operand
+phases, including exact and saturated four-event counter tests. The eight
+geometric families preserve native traversal depth one over sizes 8/32/128/512.
+The independent ownership domains retain 16,038 exact cases (7,230 accepted and
+8,808 rejected). All 293 complete states and 1,601 malformed cases agree between
+ordinary and ASan/UBSan builds. The two 512-position allocation-fault campaigns
+record 125 failures/387 successes for branch reinitialization and 77 failures/435
+successes for the borrowed initializer: 202 failures and 822 successes in total.
+Failure remains status 71 with the exact allocation diagnostic. These results
+do not substitute for the separate full retained-session fault campaign.
+
+The [initial six-shape timings](2026-09-07-m1-continuations-argument-top-initial-latency.tsv),
+[additional four-shape timings](2026-09-07-m1-continuations-argument-top-additional-latency.tsv)
+and [selfhost timings](2026-09-07-m1-continuations-argument-top-selfhost-latency.tsv)
+retain two warmups and eleven alternating uninstrumented pairs. At 4,000 helper
+functions, checking ratios are 1.012 for scalar built-ins, 1.023 for user calls,
+1.003 for aggregate construction and 1.021 for recurrence. Selfhost check/emission
+ratios are 1.011/1.012. Scalar and active-argument storage reduced earlier measured
+costs, but these samples alone do not establish the noise band or adoption.
+Interleaved identical-baseline controls, complete resource/backend/session costs
+and the required checkpoint gates remain open. The checked-in portable seed and
+installed compiler still identify the previous production checkpoint.
+
+The completed [66-group control run](2026-09-07-m1-continuations-argument-top-control.tsv)
+rotates all six orders of two identical baseline runs and one candidate, with
+two warmups. Most candidate medians fall within the corresponding baseline
+ratio interquartile interval. Three checking medians exceed that interval's
+upper quartile: flat branches 1.01141 (control 0.98982–1.00590), user-call helpers
+1.01869 (0.98405–1.01681), and selfhost 1.01054 (0.99063–1.00590). These small
+remaining costs are recorded rather than declared noise. The follow-up
+`root-completion` candidate returns a finished outermost expression directly,
+removing its otherwise empty final machine iteration. Nested completions still
+restore and resume their suspended parent. It emits 4,432,432 C bytes, SHA-256
+`a80b4d897eaac295e8f53212df831277d2abe824c04d908b4ed04a18c1c01056`, reproduces
+that C, and preserves all 293 complete states and 96 graph outputs. Full gates
+and adoption measurements for this refinement are in progress.
+
+`scripts/measure-continuations.py` retains all ten timing generators and the
+rotating identical-baseline protocol, with bounded sizes/repetition counts and
+compiler/input fingerprints. Its generated 4,000-size sources are byte-identical
+to the inputs used above. Timing outputs remain evidence for explicit binaries,
+not a source-acceptance path or an automatic performance waiver.
+
+The root-completion candidate passes the complete
+[state](2026-09-07-m1-continuations-root-completion-state.tsv),
+[graph](2026-09-07-m1-continuations-root-completion-graph.tsv),
+[malformed-input](2026-09-07-m1-continuations-root-completion-mutations.tsv) and
+[C/analysis/native](2026-09-07-m1-continuations-root-completion-exact.tsv)
+baseline comparisons. Its [native work rows](2026-09-07-m1-continuations-root-completion-work.tsv)
+cover all 18 continuation phases and every applicable built-in operand phase,
+with exact repeated outputs/counters across the 293-fixture corpus and all eight
+geometric families. Native expression-machine depth remains one. The separate
+flow-boundary E2E test passes against a probe built from the current source.
+
+The [resource report](2026-09-07-m1-continuations-root-completion-resources.tsv)
+contains 1,008 rows: three samples for each compiler variant across 168 measured
+combinations. Ten shallow families use sizes 125/500/2,000/4,000 and eight nested
+families use 8/32/128/512; clean checking/emission, selfhost, and unchanged/body-
+edited sessions remain separate. Observers read the actual root allocation
+attempt counter after shutdown and `getrusage` process peak RSS. They are excluded
+from latency measurements. Attempts are deterministic across the three samples;
+RSS values below are their medians, not retained-live-storage totals.
+
+At 4,000 scalar, user-call, branch-helper, projection and construction functions,
+checking allocation counts match the baseline. A 4,000-binding spine uses
+4,145 versus 4,135 attempts; deeply nested continuations require scratch storage.
+For selfhost checking, attempts are 109,815 versus 106,590 and median peak RSS is
+171,261,952 versus 170,311,680 bytes. The 4,000-flat-branch case rises from
+32,161,792 to 34,013,184 bytes. At 512 dense session bodies, unchanged/update
+attempts are 87,762/104,967 versus 85,714/102,915, with candidate median peaks
+202,833,920/358,334,464 versus 201,900,032/357,384,192 bytes. Scalar session
+allocation counts remain equal at 4,000 helpers. These measured costs are not
+hidden by traversal counters or described as a passed latency gate.
+
+The [sanitized geometric observations](2026-09-07-m1-continuations-root-completion-sanitized-work.tsv)
+pass all eight families at 8/32/128/512 under the host's default stack limit,
+with exact ordinary/sanitized outputs and repeated counter rows. Full continuation
+verification now includes this additional geometric sanitizer step; ordinary
+corpus coverage still independently requires all 18 phases. The already completed
+[gate results](2026-09-07-m1-continuations-root-completion-gates.tsv) retain the
+ownership domain, checked-state sanitizer/fault/mutation results, retained-place
+campaign (193 failures/1,855 successes in 2,048 positions), independent flow E2E
+and governance. Final integrated checkpoint execution remains required.
+
+The historical RFC-0129 4,000-binding source was also checked on this candidate.
+Its SHA-256 is `4620a34ca44c1db4ee314cc4ee703438be8b765fabcd5ae6d5048020b78b71c3`.
+Ordinary checking succeeds; O1 ASan/UBSan aborts with stack overflow under the
+8,372,224-byte soft stack limit. `atos` resolves the repeated PCs to
+`check.find_unknown_expr`, including generated observed-C lines 11529/11550.
+This preceding name-resolution traversal is unchanged by RFC-0141. The abort
+does not publish a counter report; no missing counters are interpreted as zero.
+The old limit remains explicit, and expression-machine depth one is not a claim
+that every compiler helper is iterative.
+
+The candidate's [full retained-session campaign](2026-09-07-m1-continuations-root-completion-session.tsv)
+passes the corruption, failed/recovered update, configuration, relocation,
+insertion/deletion/reordering and corpus/geometric work matrix. All 6,144 fault
+positions preserve ordinary/sanitized status, output and diagnostics. The cold
+campaign records 550 failures/1,498 successes; changed-update records 1,008/1,040;
+fragment publication records 982/1,066. Successful update/fragment cases retain
+the expected query and fragment imports. Total failures/successes are
+2,540/3,604. This validates the internal session on the candidate; public host
+binding and transport remain separate M1 obligations. Its final latency controls
+start after all these native validation jobs finish.
+
+The [root-completion controls](2026-09-07-m1-continuations-root-completion-control.tsv)
+still show selfhost checking at 1.01154 against a baseline-control IQR of
+0.99116–1.01041. The candidate remains unadopted. A subsequent `single-read`
+experiment moved expression-family decoding into one checked canonical-token
+read in `syntax`, preserving exactly the existing tag and legacy-head behavior.
+It emitted 4,435,148 C bytes, SHA-256
+`dc66cf17c94723f319cb84299c80a7138b3611e2cecf749977bd48565567375d`, reproduced
+its C, and passed [293 state](2026-09-07-m1-continuations-single-read-state.tsv)
+and [96 graph](2026-09-07-m1-continuations-single-read-graph.tsv) comparisons.
+Its quick continuation gate passed, including 218,448 classifier combinations,
+24 extreme tags and five invalid indices compared with the prior predicate
+cascade. That functional compatibility did not establish a performance gain:
+[66-group controls](2026-09-07-m1-continuations-single-read-control.tsv) still
+show selfhost checking at 1.01191 (control IQR 0.99552–1.00993). The experiment
+was reverted to the frozen root-completion source; its private source/probe and
+measurements remain available. The unsuccessful read-consolidation experiment
+does not justify changing the noise criterion or any existing performance gate.
+
+The `operand-modes` refinement derives operand modes from the already decoded
+built-in operation and restores the existing short-circuit lookup for
+`mem.replace`. Mode/capability diagnostics retain their order; no source mode or
+capability changes. Its 4,431,295-byte C has SHA-256
+`bc1387b12b86fd494105c74360d6413c5d6e9ef4b13f99061cd43cb11ae2490c`.
+Self-reproduction, complete state/graph comparisons, 1,601 malformed cases and
+the quick continuation gate pass. Its
+[66-group focused controls](2026-09-07-m1-continuations-operand-modes-focused-control.tsv)
+show built-in checking at 1.00078 (control IQR 0.98604–1.01309), user-call
+checking at 1.01384 (0.99475–1.01173) and selfhost checking at 1.00849
+(0.98954–1.01124). The remaining user-call cost motivates retaining the
+already-resolved parameter type in the unused argument continuation field.
+
+That `argument-type` candidate emits 4,432,108 bytes, SHA-256
+`42e0c7b6b4644df727a78cfe551395958c1479269f87325522c30128a2a7c12e`,
+and reproduces its C exactly. Its
+[293 complete states](2026-09-07-m1-continuations-argument-type-state.tsv),
+[96 complete graphs](2026-09-07-m1-continuations-argument-type-graph.tsv) and
+[1,601 malformed inputs](2026-09-07-m1-continuations-argument-type-mutations.tsv)
+match `49ea4a0`. The parameter declaration cannot change during child checking;
+the retained value is replaced when advancing each sibling argument. These
+results do not substitute for final performance and integrated checkpoint gates.
+
+The argument-type quick gate passes all 16,038 ownership cases. Its
+[focused controls](2026-09-07-m1-continuations-argument-type-focused-control.tsv)
+show call checking at 1.01440 against control IQR 0.98988–1.01047; the small
+repeatable cost remains. Selfhost checking is 1.00847 against 0.99021–1.00934.
+No performance exception is inferred from either result.
+
+The `token-read` refinement consolidates three immutable token accesses inside
+`syntax.token_equal`. It preserves both eager comparisons, including span traps
+when a virtual spelling matches, and the invalid-index empty-span behavior.
+It is separate from the rejected expression-classifier experiment. C size is
+4,432,372 bytes, SHA-256
+`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`, with exact
+self-reproduction, [293 states](2026-09-07-m1-continuations-token-read-state.tsv),
+[96 graphs](2026-09-07-m1-continuations-token-read-graph.tsv), and
+[1,601 malformed cases](2026-09-07-m1-continuations-token-read-mutations.tsv).
+The permanent independent token oracle covers 116,952 results, including
+encoded/negative/extreme tags, virtual and exact spellings, empty/reversed spans,
+and invalid indices. Ordinary and ASan/UBSan probes also retain bounds and
+subtraction-overflow traps after positive virtual matches.
+
+The token fixture exposed an existing emission defect: passing a string literal
+directly to `vec.push` can emit an undeclared C variable. The minimal program
+`let values: Vec[Bytes] = vec.new(); vec.push(@values, "i64.add")`, written as
+ordinary separate SLIM statements, is accepted by both `49ea4a0` and token-read;
+both emit the identical undeclared variable and fail native C compilation. The
+private reproducer and both diagnostic artifacts are retained in the ownership-
+flow work directory. The boundary fixture uses named Bytes values to continue
+its independent test. This defect remains a recorded follow-up for M1 closure;
+it is not attributed to the token-read change or treated as supported execution.
+
+The [token-read focused controls](2026-09-07-m1-continuations-token-read-focused-control.tsv)
+complete 66 groups per operation. Candidate checking medians are 0.98921 for
+built-in helpers, 1.00349 for user-call helpers and 0.99244 for selfhost, against
+respective baseline-control IQRs 0.98335–1.00953, 0.98377–1.00683 and
+0.99551–1.00969. Emission medians are 0.98839, 0.98752 and 0.99210. This
+removes the observed call-checking regression in that measured domain. Geometric,
+retained-session, resource and external-backend measurements and final integrated
+checkpoint gates remain required. The quick gate passes with the independent
+token boundary oracle, every continuation phase and all 16,038 ownership cases.
+
+The final candidate's [geometric controls](2026-09-07-m1-continuations-token-read-geometric-control.tsv)
+cover ten shallow families at 125/500/2,000/4,000;
+[nested controls](2026-09-07-m1-continuations-token-read-nested-control.tsv) cover
+eight families at 8/32/128/512. Each operation has 18 interleaved three-run
+groups. All ten rows whose median initially exceeded both one and the control
+upper quartile were selected explicitly for 66-group repeats;
+[selection](2026-09-07-m1-continuations-token-read-repeat-selection.tsv) and all
+repeat rows remain recorded. Nine repeats lie inside the measured noise band.
+The 4,000-function checking repeat is borderline: median 1.01194, upper control
+quartile 1.01142. A larger
+[120-group confirmation](2026-09-07-m1-continuations-token-read-functions-confirmation.tsv)
+records 1.00997 against control IQR 0.98713–1.01103. No criterion or durable
+budget was relaxed; the earlier borderline samples remain visible rather than
+being replaced by the larger confirmation. These are same-host measured domains,
+not proof that every program has unchanged latency.
+
+The [retained-session latency matrix](2026-09-07-m1-continuations-token-read-session-latency.tsv)
+contains 660 rows over 15 geometries, unchanged/body updates, previous-session
+and two-clean comparisons, with 11 alternating pairs after warmup. The only
+previous-session median above 1.01 is the 125-scalar body edit at 1.01228. Its
+[66-group control](2026-09-07-m1-continuations-token-read-session-confirmation.tsv)
+is 0.99737 against IQR 0.97852–1.01745.
+
+[Resource observations](2026-09-07-m1-continuations-token-read-resources.tsv)
+retain 1,008 separate allocation/peak-RSS rows. Selfhost checking uses
+109,840 versus 106,615 allocation attempts; median peak RSS is 170,573,824
+versus 168,542,208 bytes. At 512 dense session functions, unchanged/update
+attempts are 87,760/104,966 versus 85,712/102,914; candidate RSS medians
+are 201,146,368/354,926,592 versus 199,049,216/356,417,536 bytes. Allocation
+attempts remain exact within each three-sample case. RSS is process peak
+storage, not retained-live-storage or an inferred allocation count.
+
+Separate [frontend](2026-09-07-m1-continuations-token-read-frontend.tsv),
+[external backend](2026-09-07-m1-continuations-token-read-backend.tsv),
+[native runtime](2026-09-07-m1-continuations-token-read-runtime.tsv), and
+[native identities](2026-09-07-m1-continuations-token-read-native.tsv) cover the
+20 applications. Every application retains byte-identical C and exact output.
+Four candidate Mach-O files are eight bytes smaller; all their named sections
+remain [byte-identical](2026-09-07-m1-continuations-token-read-native-sections.json).
+No executable-code size reduction is claimed from those container differences.
+The complete [C/analysis/relocation differential](2026-09-07-m1-continuations-token-read-exact.tsv)
+passes 96 accepted fixtures, four relocation edits each, module relocation and
+reordering, native serial/worker/fallback checks, and 197 rejected fixtures.
+Governance, formatting and diff checks pass. Seed refresh and the complete
+checkpoint verification suite follow these candidate measurements; this entry
+does not yet mark RFC-0141 or M1 complete.
+
+Integrated checkpoint verification first encountered sandbox denial of loopback
+listener creation in three existing E2E tests. The authorized local-network run
+passed all 73 E2E tests. Its ordinary performance gate passed, then the older
+work observer exposed a stale anchor: `expression_check_calls` observed only
+126 function-root entries instead of the unchanged expected 253 expression
+entries in the 125-helper fixture.
+
+The test-only observer now adds actual child requests at the continuation loop
+header to that same counter. It excludes parent resumes, declined arguments and
+the already-counted depth-zero root, resolving the returning/depth formals from
+the exact generated signature. Both entry anchors are checked for exactly one
+occurrence. The metric names, schema, caps and all geometric expectations remain
+unchanged. The [complete work campaign](2026-09-07-m1-continuations-token-read-work-gate.tsv)
+passes, including ordinary/observed output equality, cap crossing and allocation
+failure observations. Production SLIM and seed identities are unchanged by this
+observer correction; the integrated suite is rerunning with it.
+
+The next integrated run passed conformance, all benchmark stages, the full
+continuation gate, source-identity/flow checks and the retained-typing corpus,
+then stopped because all 512 retained-typing fault ordinals failed. The required
+successful ordinal was outside that old campaign.
+[Boundary measurements](2026-09-07-m1-continuations-token-read-retained-window.tsv)
+show that `49ea4a0` already uses 569 root allocation attempts on this unchanged
+probe and fails at ordinal 512; the candidate uses 572. Both fail at their last
+allocation and succeed at the immediately following ordinal. This is an outdated
+fault-coverage window, not a newly exceeded 512-allocation performance budget.
+The fixed campaign now covers positions 1–1,024, retaining all original positions
+and both failure/success assertions. Existing work/resource/performance budgets
+are unchanged. The candidate adds three measured probe allocations; neither that
+cost nor the baseline failure is hidden. The extended retained gate and the
+remaining downstream gates are being validated before integrated closure.
+
+The extended [retained-typing gate](2026-09-07-m1-continuations-token-read-retained-gate.tsv)
+passes 95 fixtures and all 1,024 fault positions: 572 failures and 452 successes.
+Verification resumes from the remaining `verify.sh` commands with a fresh
+sanitized seed compiler. Already-passed bootstrap, Cargo, conformance, all
+benchmark stages, continuation and flow results apply to the unchanged production
+seed. The corrected test-only gate is independently reverified. The earlier
+whole-script invocation remains recorded as stopped; it is not relabelled a
+successful run. Full M1 release closure will still run the complete
+`verify-0.9.sh` command on its final identified checkpoint.
+
+## M1 shared checking continuation checkpoint — 2026-09-07
+
+RFC-0141 is complete on seed
+`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`.
+The [verification ledger](2026-09-07-m1-continuations-token-read-checkpoint-gates.tsv)
+records all eight required commands, the additional work/host/resource/project
+benchmarks and every applicable sanitizer/recovery gate. Verification consists
+of the successful prefix on this seed, the corrected observer and extended
+retained-typing gate, and the [remaining exact script steps](2026-09-07-m1-continuations-token-read-remaining-gates.tsv).
+The remaining-step runner exited zero. This is explicit composite verification;
+the earlier whole-script stops are retained and explained above.
+
+The complete session campaign passes 550/1,498 cold, 1,008/1,040 update and
+982/1,066 fragment failure/success counts. Retained projects pass 620/1,428
+across 2,048 positions; places pass 193/1,855. Parsing passes 1,720 complete
+comparisons, 2,000 mutations, geometric reuse, exact/beyond source/token/lexeme
+capacities and 94/1,954 fault results. Integer lowering passes its full gate
+with 117/395 fault results. Source indexing checks 109 failures in 128 ordinals;
+the final compiler/native allocation checks and sieve/vector programs pass.
+
+The implementation shares canonical control descriptions with the optional graph
+and migrates every expression inference family onto source-bounded continuations.
+Complete checked-state, diagnostic, graph, analysis and emitted-C comparisons
+remain exact over the recorded baseline domains. Compiler scratch allocation,
+RSS and seed growth are measured; pending frames are internal compiler storage.
+The portable seed grows by 112,335 bytes (2.60%) from `49ea4a0`. Compiled user
+applications retain exact C and output in the 20-application domain.
+
+M1 remains in progress. Public host-bound sessions and owning-epoch lifecycle,
+retained global/parallel analyses, native backend caching, the literal-Bytes
+storage-address repair and integrated full release closure remain required.

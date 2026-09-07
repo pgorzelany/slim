@@ -1,0 +1,26 @@
+# status: intermediate RFC-0141 argument-top candidate; adoption pending
+# baseline_code: 49ea4a0
+# candidate_c_sha256: 81d80e0176216530fa9f42cdd7c529e61eef60cd5e83a998417da3d8a175f33a
+command	sample	order	baseline_ns	candidate_ns
+check	0	baseline	142628542	146861209
+check	1	candidate	144459250	146902334
+check	2	baseline	144803833	145717417
+check	3	candidate	146392708	146896250
+check	4	baseline	147533375	148323375
+check	5	candidate	146693416	150086625
+check	6	baseline	146238083	148408625
+check	7	candidate	145876250	149673250
+check	8	baseline	145208375	146863542
+check	9	candidate	146004083	146449542
+check	10	baseline	146457458	147683209
+emit	0	baseline	234143500	237181542
+emit	1	candidate	232108417	234483042
+emit	2	baseline	232699167	234942584
+emit	3	candidate	230916167	259275417
+emit	4	baseline	230952959	233807542
+emit	5	candidate	226363667	234673667
+emit	6	baseline	227272417	231248417
+emit	7	candidate	229184625	230124833
+emit	8	baseline	230056375	232039417
+emit	9	candidate	229130959	233123125
+emit	10	baseline	229920792	232515125

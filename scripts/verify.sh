@@ -23,6 +23,7 @@ cargo run --release --quiet --bin slim-bench -- project --quick
 cargo run --release --quiet --bin slim-bench -- applications --quick
 cargo run --release --quiet --bin slim-bench -- compare --quick
 cargo run --release --quiet --bin slim-bench -- agent
+./scripts/verify-continuations.sh build/toolchain/slimc full
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
 trap 'rm -rf "$verify_dir"' EXIT HUP INT TERM

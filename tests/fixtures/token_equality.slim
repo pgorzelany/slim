@@ -1,0 +1,162 @@
+module zzprobe
+
+# Synthetic token boundary inputs; this probe prints actual production results.
+fn tag(row: I64) -> I64 effects[partial]:
+  if row < 705:
+    (row / 141 - 2) * 1000 + row % 141
+  else:
+    if row == 705:
+      -9223372036854775808
+    else:
+      if row == 706:
+        9223372036854775807
+      else:
+        -1
+
+fn rows(tokens: @Vec[syntax.Token], targets: Vec[Bytes], row: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if row >= 116820:
+    void
+  else:
+    let variant: I64 = row % 5
+    let start: I64 = if variant == 1:
+      1
+    else:
+      if variant == 3:
+        7
+      else:
+        0
+    let end: I64 = if variant == 0:
+      7
+    else:
+      if variant == 1:
+        4
+      else:
+        if variant == 4:
+          1
+        else:
+          0
+    let token: syntax.Token = syntax.Token(kind: 2, tag: tag(row / 165), start: start, end: end, link: -1, next: 1)
+    vec.set(@tokens, 0, token)
+    let target: Bytes = vec.get(targets, (row / 5) % 33)
+    let value: Bool = syntax.ast_node_text_is("i64.add", tokens, 0, target)
+    let byte: U8 = if value:
+      i64.to_u8(49)
+    else:
+      i64.to_u8(48)
+    vec.push(@output, byte)
+    recur(@tokens, targets, row + 1, @output)
+
+fn missing(tokens: Vec[syntax.Token], targets: Vec[Bytes], row: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if row >= 132:
+    void
+  else:
+    let index: I64 = if row / 33 == 0:
+      -9223372036854775808
+    else:
+      if row / 33 == 1:
+        -1
+      else:
+        if row / 33 == 2:
+          1
+        else:
+          9223372036854775807
+    let value: Bool = syntax.ast_node_text_is("i64.add", tokens, index, vec.get(targets, row % 33))
+    let byte: U8 = if value:
+      i64.to_u8(49)
+    else:
+      i64.to_u8(48)
+    vec.push(@output, byte)
+    recur(tokens, targets, row + 1, @output)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  vec.push(@tokens, syntax.Token(kind: 2, tag: 31, start: 0, end: 0, link: -1, next: 1))
+  if vec.len(args) > 1:
+    let arithmetic: Bool = bytes.len(vec.get(args, 1)) == 8
+    let start: I64 = if arithmetic:
+      -9223372036854775808
+    else:
+      -1
+    let end: I64 = if arithmetic:
+      9223372036854775807
+    else:
+      6
+    vec.set(@tokens, 0, syntax.Token(kind: 2, tag: 31, start: start, end: end, link: -1, next: 1))
+    let value: Bool = syntax.ast_node_text_is("i64.add", tokens, 0, "i64.add")
+    if value:
+      0
+    else:
+      1
+  else:
+    let targets: Vec[Bytes] = vec.new()
+    let target_0: Bytes = ""
+    vec.push(@targets, target_0)
+    let target_1: Bytes = "i64.add"
+    vec.push(@targets, target_1)
+    let target_2: Bytes = "i64.sub"
+    vec.push(@targets, target_2)
+    let target_3: Bytes = "i64.mul"
+    vec.push(@targets, target_3)
+    let target_4: Bytes = "i64.div"
+    vec.push(@targets, target_4)
+    let target_5: Bytes = "i64.rem"
+    vec.push(@targets, target_5)
+    let target_6: Bytes = "i64.eq"
+    vec.push(@targets, target_6)
+    let target_7: Bytes = "i64.lt"
+    vec.push(@targets, target_7)
+    let target_8: Bytes = "i64.le"
+    vec.push(@targets, target_8)
+    let target_9: Bytes = "i64.gt"
+    vec.push(@targets, target_9)
+    let target_10: Bytes = "i64.ge"
+    vec.push(@targets, target_10)
+    let target_11: Bytes = "bool.not"
+    vec.push(@targets, target_11)
+    let target_12: Bytes = "bool.and"
+    vec.push(@targets, target_12)
+    let target_13: Bytes = "bool.or"
+    vec.push(@targets, target_13)
+    let target_14: Bytes = "void"
+    vec.push(@targets, target_14)
+    let target_15: Bytes = "true"
+    vec.push(@targets, target_15)
+    let target_16: Bytes = "false"
+    vec.push(@targets, target_16)
+    let target_17: Bytes = "Void"
+    vec.push(@targets, target_17)
+    let target_18: Bytes = "i64.to_u8"
+    vec.push(@targets, target_18)
+    let target_19: Bytes = "u8.to_i64"
+    vec.push(@targets, target_19)
+    let target_20: Bytes = "bytes.get"
+    vec.push(@targets, target_20)
+    let target_21: Bytes = "bytes.len"
+    vec.push(@targets, target_21)
+    let target_22: Bytes = "bytes.freeze"
+    vec.push(@targets, target_22)
+    let target_23: Bytes = "io.print_i64"
+    vec.push(@targets, target_23)
+    let target_24: Bytes = "io.println"
+    vec.push(@targets, target_24)
+    let target_25: Bytes = "io.tcp_exchange"
+    vec.push(@targets, target_25)
+    let target_26: Bytes = "io.monotonic_ms"
+    vec.push(@targets, target_26)
+    let target_27: Bytes = "vec.new"
+    vec.push(@targets, target_27)
+    let target_28: Bytes = "arena.get"
+    vec.push(@targets, target_28)
+    let target_29: Bytes = "mem.replace"
+    vec.push(@targets, target_29)
+    let target_30: Bytes = "64."
+    vec.push(@targets, target_30)
+    let target_31: Bytes = "i"
+    vec.push(@targets, target_31)
+    let target_32: Bytes = "opaque"
+    vec.push(@targets, target_32)
+    let output: Vec[U8] = vec.new()
+    rows(@tokens, targets, 0, @output)
+    missing(tokens, targets, 0, @output)
+    io.print_bytes(bytes.freeze(^output))
+    0

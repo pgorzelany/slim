@@ -336,17 +336,19 @@ implementation, or authorization to relax performance or compatibility policy.
 
 ## Implementation
 
-In progress at validated code checkpoint `49ea4a0`. The complete parent contract
-remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
+In progress through the validated RFC-0141 fixed point
+`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`,
+built on checkpoint `49ea4a0`. The complete parent contract remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
 separates implemented internal operations from public-service and release work;
 the dated checkpoint sections preserve earlier measurements and limitations.
 
 RFC-0125/0126 provide revision-owned source identities, exact maps and indexed
 lookup. RFC-0127 isolates the sole function checker, and RFC-0128 retains checked
 layout completion order. RFC-0129 supplies a bounded structural flow view, and
-RFC-0134 exposes typed place facts from accepted bindings. Availability and loan
-orchestration still use the existing checker; the optional post-check graph does
-not complete the required ownership migration.
+RFC-0134 exposes typed place facts from accepted bindings. RFC-0141 shares
+canonical control and lexical-scope descriptions between that graph and explicit checking continuations. Every expression family is
+migrated; the normal checker still produces the same semantic decisions. The
+optional graph retains its own reporting budgets.
 
 RFC-0130/0131/0132 implement compact retained typing and integrate it with project
 preparation. RFC-0133 supplies captured inputs, transactional successful snapshots,
@@ -373,10 +375,11 @@ session. The checkpoint measures frontend/backend/runtime/resource costs separat
 including initial regressions and final noise controls, without a general speedup
 claim or relaxed budget.
 
-The remaining ownership orchestration, public host-bound service, retained global
-analysis, native backend caching and integrated differential/locality/release
-obligations must all pass before this parent is complete. M0 remains the historical
-comparison baseline, not a claim that the current seed is unchanged.
+The remaining public host-bound service, retained global analysis, native backend
+caching, recorded literal-Bytes emission repair and integrated
+differential/locality/release obligations must all pass before this parent is
+complete. M0 remains the historical comparison baseline, not a claim that the
+current seed is unchanged.
 
 ## Removal and supersession
 

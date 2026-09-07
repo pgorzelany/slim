@@ -15,6 +15,16 @@ typedef struct Slim_type_cache_95Probe Slim_type_cache_95Probe;
 typedef struct Slim_type_check_95Attempt Slim_type_check_95Attempt;
 typedef struct Slim_type_check_95Diagnostic Slim_type_check_95Diagnostic;
 typedef struct Slim_type_check_95TerminationFrame Slim_type_check_95TerminationFrame;
+typedef struct Slim_type_control_95Binding Slim_type_control_95Binding;
+typedef struct Slim_type_control_95Assignment Slim_type_control_95Assignment;
+typedef struct Slim_type_control_95Branch Slim_type_control_95Branch;
+typedef struct Slim_type_control_95Arm Slim_type_control_95Arm;
+typedef struct Slim_type_control_95Projection Slim_type_control_95Projection;
+typedef struct Slim_type_control_95Unary Slim_type_control_95Unary;
+typedef struct Slim_type_control_95Construction Slim_type_control_95Construction;
+typedef struct Slim_type_control_95Member Slim_type_control_95Member;
+typedef struct Slim_type_control_95Invocation Slim_type_control_95Invocation;
+typedef struct Slim_type_control_95Scope Slim_type_control_95Scope;
 typedef struct Slim_type_flow_95Status Slim_type_flow_95Status;
 typedef struct Slim_type_flow_95Operation Slim_type_flow_95Operation;
 typedef struct Slim_type_flow_95EdgeKind Slim_type_flow_95EdgeKind;
@@ -152,9 +162,20 @@ typedef struct Slim_type_typing_95Issue Slim_type_typing_95Issue;
 typedef struct Slim_type_typing_95View Slim_type_typing_95View;
 typedef struct Slim_type_typing_95Checked Slim_type_typing_95Checked;
 typedef struct Slim_type_typing_95Binding Slim_type_typing_95Binding;
+typedef struct Slim_type_typing_95Pending Slim_type_typing_95Pending;
+typedef struct Slim_type_typing_95AssignmentTarget Slim_type_typing_95AssignmentTarget;
+typedef struct Slim_type_typing_95BranchState Slim_type_typing_95BranchState;
+typedef struct Slim_type_typing_95BranchNext Slim_type_typing_95BranchNext;
+typedef struct Slim_type_typing_95BoundValue Slim_type_typing_95BoundValue;
 typedef struct Slim_type_typing_95ScopeNode Slim_type_typing_95ScopeNode;
 typedef struct Slim_type_typing_95ScopeEdge Slim_type_typing_95ScopeEdge;
 typedef struct Slim_type_typing_95ScopeChange Slim_type_typing_95ScopeChange;
+typedef struct Slim_type_typing_95ArgumentState Slim_type_typing_95ArgumentState;
+typedef struct Slim_type_typing_95ArgumentNext Slim_type_typing_95ArgumentNext;
+typedef struct Slim_type_typing_95BuiltinState Slim_type_typing_95BuiltinState;
+typedef struct Slim_type_typing_95BuiltinNext Slim_type_typing_95BuiltinNext;
+typedef struct Slim_type_typing_95Members Slim_type_typing_95Members;
+typedef struct Slim_type_typing_95MemberNext Slim_type_typing_95MemberNext;
 
 struct Slim_type_analysis_95BindingFact {
 int64_t slim_field_id;
@@ -276,6 +297,61 @@ int64_t slim_field_end;
 struct Slim_type_check_95TerminationFrame {
 int64_t slim_field_item;
 int64_t slim_field_cursor;
+int64_t slim_field_end;
+};
+
+struct Slim_type_control_95Binding {
+int64_t slim_field_name;
+int64_t slim_field_type;
+int64_t slim_field_value;
+int64_t slim_field_body;
+};
+
+struct Slim_type_control_95Assignment {
+int64_t slim_field_name;
+int64_t slim_field_value;
+int64_t slim_field_body;
+};
+
+struct Slim_type_control_95Branch {
+int64_t slim_field_value;
+int64_t slim_field_arms;
+};
+
+struct Slim_type_control_95Arm {
+int64_t slim_field_pattern;
+int64_t slim_field_body;
+int64_t slim_field_next;
+};
+
+struct Slim_type_control_95Projection {
+int64_t slim_field_value;
+int64_t slim_field_field;
+};
+
+struct Slim_type_control_95Unary {
+int64_t slim_field_value;
+};
+
+struct Slim_type_control_95Construction {
+int64_t slim_field_type;
+int64_t slim_field_name;
+int64_t slim_field_members;
+};
+
+struct Slim_type_control_95Member {
+int64_t slim_field_name;
+int64_t slim_field_value;
+int64_t slim_field_next;
+};
+
+struct Slim_type_control_95Invocation {
+int64_t slim_field_callee;
+int64_t slim_field_arguments;
+};
+
+struct Slim_type_control_95Scope {
+int64_t slim_field_first;
 int64_t slim_field_end;
 };
 
@@ -1314,6 +1390,50 @@ int64_t slim_field_access_95call;
 int64_t slim_field_access_95mode;
 };
 
+struct Slim_type_typing_95Pending {
+int64_t slim_field_expr;
+int64_t slim_field_expected;
+int64_t slim_field_parent;
+int64_t slim_field_phase;
+bool slim_field_valid;
+int64_t slim_field_type;
+int64_t slim_field_before;
+};
+
+struct Slim_type_typing_95AssignmentTarget {
+int64_t slim_field_type;
+bool slim_field_affine;
+};
+
+struct Slim_type_typing_95BranchState {
+int64_t slim_field_variant;
+int64_t slim_field_cursor;
+int64_t slim_field_case_95cursor;
+int64_t slim_field_source_95mode;
+int64_t slim_field_source_95owner;
+int64_t slim_field_branch_95scope;
+int64_t slim_field_enclosing_95scope;
+Slim_type_typing_95TypeRef slim_field_first;
+bool slim_field_has_95first;
+bool slim_field_seen_95true;
+bool slim_field_seen_95false;
+bool slim_field_move_95valid;
+int64_t slim_field_arm_95scope;
+};
+
+struct Slim_type_typing_95BranchNext {
+Slim_type_typing_95BranchState slim_field_state;
+bool slim_field_done;
+int64_t slim_field_body;
+int64_t slim_field_parent;
+Slim_type_typing_95TypeRef slim_field_result;
+};
+
+struct Slim_type_typing_95BoundValue {
+int64_t slim_field_parent;
+bool slim_field_valid;
+};
+
 struct Slim_type_typing_95ScopeNode {
 int64_t slim_field_value;
 int64_t slim_field_first_95edge;
@@ -1328,6 +1448,59 @@ int64_t slim_field_next_95edge;
 struct Slim_type_typing_95ScopeChange {
 int64_t slim_field_node;
 int64_t slim_field_previous;
+};
+
+struct Slim_type_typing_95ArgumentState {
+int64_t slim_field_argument;
+int64_t slim_field_parameter;
+int64_t slim_field_owner;
+int64_t slim_field_before;
+bool slim_field_mode_95matches;
+bool slim_field_capable;
+bool slim_field_allowed;
+bool slim_field_unknown;
+bool slim_field_restricted;
+};
+
+struct Slim_type_typing_95ArgumentNext {
+Slim_type_typing_95ArgumentState slim_field_state;
+bool slim_field_done;
+int64_t slim_field_expected;
+Slim_type_typing_95TypeRef slim_field_result;
+};
+
+struct Slim_type_typing_95BuiltinState {
+int64_t slim_field_operation;
+int64_t slim_field_phase;
+int64_t slim_field_argument;
+int64_t slim_field_kind;
+int64_t slim_field_result_95kind;
+int64_t slim_field_count;
+int64_t slim_field_element;
+bool slim_field_valid;
+bool slim_field_modes_95valid;
+bool slim_field_allowed;
+int64_t slim_field_before;
+Slim_type_typing_95TypeRef slim_field_result;
+};
+
+struct Slim_type_typing_95BuiltinNext {
+Slim_type_typing_95BuiltinState slim_field_state;
+bool slim_field_done;
+int64_t slim_field_expected;
+Slim_type_typing_95TypeRef slim_field_result;
+};
+
+struct Slim_type_typing_95Members {
+int64_t slim_field_cursor;
+int64_t slim_field_definition;
+};
+
+struct Slim_type_typing_95MemberNext {
+bool slim_field_done;
+int64_t slim_field_value;
+int64_t slim_field_expected;
+Slim_type_typing_95TypeRef slim_field_result;
 };
 
 static SLIM_UNUSED_FUNCTION bool slim_fn_analysis_95tokens_95equal(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_left_n13, int64_t slim_v_right_n17, SlimRegion *slim_region);
@@ -1597,6 +1770,19 @@ static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95cache(SlimVec slim_
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95session(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95transform(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, bool slim_v_analysis_95mode_n13, SlimBytes slim_v_usage_n17, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run(SlimVec slim_v_args_n2, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Binding slim_fn_control_95binding(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Assignment slim_fn_control_95assignment(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Branch slim_fn_control_95branch(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Arm slim_fn_control_95arm(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_control_95arm_95count(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_count_n13, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Projection slim_fn_control_95projection(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Unary slim_fn_control_95fork(int64_t slim_v_node_n2, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Construction slim_fn_control_95construction(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, bool slim_v_record_n13, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Member slim_fn_control_95member(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, bool slim_v_record_n13, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Invocation slim_fn_control_95invocation(int64_t slim_v_node_n2, bool slim_v_recursive_n6, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_control_95expression_95kind(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_node_n13, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Scope slim_fn_control_95scope(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_control_95scope_95contains(Slim_type_control_95Scope slim_v_control_95scope_n2, int64_t slim_v_node_n6, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_main(SlimVec slim_v_args_n2, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_edit_95parse_95digits(SlimBytes slim_v_source_n2, int64_t slim_v_index_n6, int64_t slim_v_end_n10, int64_t slim_v_value_n14, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_edit_95parse_95node(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_token_n13, SlimRegion *slim_region);
@@ -1651,6 +1837,7 @@ static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_equivalence_95compare_95cases(SlimB
 static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_equivalence_95emit_95comparison(SlimBytes slim_v_left_95source_n2, SlimVec slim_v_left_95tokens_n6, SlimBytes slim_v_right_95source_n13, SlimVec slim_v_right_95tokens_n17, SlimVec * slim_v_output_n24, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_identity_95Index slim_fn_flow_95resolve_95block(Slim_type_flow_95Graph slim_v_graph_n2, Slim_type_flow_95BlockId slim_v_flow_95block_n6, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_flow_95block(Slim_type_identity_95View slim_v_owner_n2, int64_t slim_v_node_n6, Slim_type_flow_95Operation slim_v_operation_n10, int64_t slim_v_mode_n14, int64_t slim_v_budget_n18, SlimVec * slim_v_blocks_n22, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_flow_95scoped_95block(SlimVec slim_v_tokens_n2, Slim_type_identity_95View slim_v_owner_n9, int64_t slim_v_node_n13, Slim_type_flow_95Operation slim_v_operation_n17, int64_t slim_v_budget_n21, SlimVec * slim_v_blocks_n25, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_flow_95edge(Slim_type_identity_95View slim_v_owner_n2, int64_t slim_v_from_n6, int64_t slim_v_to_n10, Slim_type_flow_95EdgeKind slim_v_kind_n14, int64_t slim_v_budget_n18, SlimVec * slim_v_edges_n22, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_flow_95push(int64_t slim_v_kind_n2, int64_t slim_v_node_n6, int64_t slim_v_from_n10, int64_t slim_v_to_n14, int64_t slim_v_depth_n18, int64_t slim_v_budget_n22, SlimVec * slim_v_tasks_n26, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_flow_95value_95task(SlimVec slim_v_tokens_n2, Slim_type_identity_95View slim_v_owner_n9, Slim_type_flow_95Task slim_v_task_n13, int64_t slim_v_depth_n17, int64_t slim_v_budget_n21, SlimVec * slim_v_blocks_n25, SlimVec * slim_v_edges_n32, SlimVec * slim_v_tasks_n39, SlimRegion *slim_region);
@@ -2663,7 +2850,6 @@ static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95retain_95loan(SlimVec slim
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95argument_95overlap(SlimVec slim_v_tokens_n2, int64_t slim_v_argument_n9, int64_t slim_v_owner_95index_n13, int64_t slim_v_call_n17, bool slim_v_unknown_95prior_n21, bool slim_v_restricted_95prior_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, bool slim_v_activate_n43, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95loan_95overlap(SlimVec slim_v_tokens_n2, int64_t slim_v_argument_n9, int64_t slim_v_actual_95mode_n13, int64_t slim_v_owner_95index_n17, int64_t slim_v_call_n21, bool slim_v_unknown_95prior_n25, bool slim_v_restricted_95prior_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_issues_n40, bool slim_v_activate_n47, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95named_95loan_95conflict(SlimVec slim_v_tokens_n2, SlimVec slim_v_bindings_n9, int64_t slim_v_index_n16, int64_t slim_v_node_n20, bool slim_v_moving_n24, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95collection_95operand(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_call_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95expression_95is_95storage_95read(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_value_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95merge_95borrow_95modes(int64_t slim_v_left_n2, int64_t slim_v_right_n6, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95arm_95values_95borrow_95mode(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_cursor_n13, SlimVec slim_v_bindings_n17, int64_t slim_v_mode_n24, SlimRegion *slim_region);
@@ -2680,8 +2866,8 @@ static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95builtin_95group_95scalar(SlimB
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95builtin_95group_95bytes_95io(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95builtin_95group_95storage(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95builtin_95known(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95builtin_95argument_95mode(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_position_n17, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95builtin_95argument_95modes(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_argument_n17, int64_t slim_v_position_n21, SlimVec slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95builtin_95argument_95mode(int64_t slim_v_operation_n2, int64_t slim_v_position_n6, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95builtin_95argument_95modes(SlimVec slim_v_tokens_n2, int64_t slim_v_operation_n9, int64_t slim_v_argument_n13, int64_t slim_v_position_n17, SlimVec slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95result_95is_95composite(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, Slim_type_typing_95TypeRef slim_v_type_n13, int64_t slim_v_constructor_n17, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95linked_95item(SlimVec slim_v_tokens_n2, int64_t slim_v_name_n9, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95item_95has_95kind(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_item_n13, int64_t slim_v_kind_n17, SlimRegion *slim_region);
@@ -2689,44 +2875,53 @@ static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95find_95named_95form(SlimByt
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95integer_95digits_95at_95most(SlimBytes slim_v_source_n2, int64_t slim_v_start_n6, SlimBytes slim_v_bound_n10, int64_t slim_v_at_n14, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95integer_95in_95i64_95range(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95atom(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95scalar_95argument(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_kind_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95two_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_argument_95kind_n21, int64_t slim_v_result_95kind_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95one_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_argument_95kind_n21, int64_t slim_v_result_95kind_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95collection_95new(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_expected_n21, int64_t slim_v_constructor_n25, SlimVec * slim_v_issues_n29, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95vector_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95arena_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95bytes_95freeze(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95read_95file(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95tcp_95exchange(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95zero_95scalar_95builtin(SlimVec slim_v_tokens_n2, int64_t slim_v_expr_n9, int64_t slim_v_arguments_n13, int64_t slim_v_result_95kind_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95builtin_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95recursive_95argument_95identity(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_parameter_n17, bool slim_v_recursive_n21, SlimVec * slim_v_issues_n25, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95owned_95argument(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_parameter_n17, bool slim_v_recursive_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95owned_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_argument_n13, bool slim_v_recursive_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95argument_95mode(SlimVec slim_v_tokens_n2, int64_t slim_v_argument_n9, int64_t slim_v_parameter_n13, SlimVec * slim_v_issues_n17, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95call_95arguments(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_parameter_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_callee_n33, int64_t slim_v_call_n37, bool slim_v_recursive_n41, bool slim_v_unknown_95owner_n45, bool slim_v_restricted_n49, SlimVec * slim_v_bindings_n53, SlimVec * slim_v_facts_n60, SlimVec * slim_v_issues_n67, SlimVec * slim_v_scopes_n74, SlimVec * slim_v_frames_n81, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95user_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_item_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95argument_95state(int64_t slim_v_argument_n2, int64_t slim_v_parameter_n6, bool slim_v_unknown_n10, bool slim_v_restricted_n14, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95prepare_95arguments(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, int64_t slim_v_params_n21, SlimVec * slim_v_issues_n25, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentNext slim_fn_typing_95next_95argument(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, int64_t slim_v_return_95type_n21, Slim_type_typing_95ArgumentState slim_v_state_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95finish_95argument(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, Slim_type_typing_95ArgumentState slim_v_state_n21, int64_t slim_v_expected_n25, Slim_type_typing_95TypeRef slim_v_actual_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_issues_n40, SlimVec * slim_v_scopes_n47, SlimVec * slim_v_frames_n54, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95argument(Slim_type_typing_95ArgumentState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_arguments_n14, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95user_95call(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95builtin_95state(int64_t slim_v_operation_n2, int64_t slim_v_argument_n6, int64_t slim_v_kind_n10, int64_t slim_v_result_95kind_n14, int64_t slim_v_count_n18, bool slim_v_modes_95valid_n22, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95advance_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_phase_n6, int64_t slim_v_argument_n10, int64_t slim_v_kind_n14, int64_t slim_v_element_n18, bool slim_v_valid_n22, Slim_type_typing_95TypeRef slim_v_result_n26, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95builtin_95child(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_expected_n6, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95complete_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_expr_n6, Slim_type_typing_95TypeRef slim_v_actual_n10, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95builtin_95shape(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_argument_n17, bool slim_v_modes_n21, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95reserve_95builtin_95operand(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95finish_95builtin_95operand(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95prepare_95replacement(SlimVec slim_v_tokens_n2, SlimBytes slim_v_source_n9, int64_t slim_v_expr_n13, int64_t slim_v_argument_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95prepare_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95finish_95scalar_95operand(SlimVec slim_v_tokens_n2, Slim_type_typing_95Pending slim_v_frame_n9, Slim_type_typing_95TypeRef slim_v_actual_n13, SlimVec * slim_v_issues_n17, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95collection_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95collection_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, Slim_type_typing_95BuiltinState slim_v_state_n21, Slim_type_typing_95TypeRef slim_v_actual_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimVec * slim_v_scopes_n43, SlimVec * slim_v_frames_n50, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95byte_95vector(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95replacement(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, Slim_type_typing_95BuiltinState slim_v_state_n21, Slim_type_typing_95TypeRef slim_v_actual_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimVec * slim_v_scopes_n43, SlimVec * slim_v_frames_n50, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_builtins_n14, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95replacement_95root(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_place_n13, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95replace(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95ordinary_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95make_95fields(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_cursor_n13, int64_t slim_v_definition_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_record_95name_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95make(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95get(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95payload(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_value_n13, int64_t slim_v_type_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_case_95name_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95case(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95Members slim_fn_typing_95prepare_95members(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_record_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95MemberNext slim_fn_typing_95next_95member(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, SlimVec * slim_v_issues_n17, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95project_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95TypeRef slim_v_owner_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95bind_95payload_95names(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_name_n13, int64_t slim_v_type_n17, int64_t slim_v_source_95mode_n21, int64_t slim_v_source_95owner_n25, int64_t slim_v_parent_n29, int64_t slim_v_case_95name_n33, int64_t slim_v_arm_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_issues_n48, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95case_95name_95matches(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_case_95form_n13, int64_t slim_v_pattern_n17, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95ordered_95arm_95parent(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_cursor_n13, int64_t slim_v_case_95cursor_n17, int64_t slim_v_pattern_n21, bool slim_v_boolean_95match_n25, int64_t slim_v_source_95mode_n29, int64_t slim_v_source_95owner_n33, int64_t slim_v_parent_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_issues_n48, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95ordered_95arm_95body(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_case_95cursor_n13, bool slim_v_boolean_95match_n17, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95match_95arms_95ordered(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_cursor_n13, int64_t slim_v_variant_95item_n17, int64_t slim_v_case_95cursor_n21, int64_t slim_v_match_95expr_n25, int64_t slim_v_source_95mode_n29, int64_t slim_v_source_95owner_n33, int64_t slim_v_expected_n37, int64_t slim_v_parent_n41, int64_t slim_v_params_n45, int64_t slim_v_return_95type_n49, bool slim_v_has_95first_n53, Slim_type_typing_95TypeRef slim_v_first_n57, bool slim_v_seen_95true_n61, bool slim_v_seen_95false_n65, SlimVec * slim_v_bindings_n69, SlimVec * slim_v_facts_n76, SlimVec * slim_v_issues_n83, SlimVec * slim_v_scopes_n90, SlimVec * slim_v_frames_n97, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95count_95move_95arms(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_count_n13, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95match_95ordered(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95fork(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95recur(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95let(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95set(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95form(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95empty_95branch(int64_t slim_v_expr_n2, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95prepare_95branch(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95TypeRef slim_v_scrutinee_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95branch(Slim_type_typing_95BranchState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_branches_n14, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchNext slim_fn_typing_95end_95branch(Slim_type_typing_95Pending slim_v_frame_n2, Slim_type_typing_95BranchState slim_v_state_n6, Slim_type_typing_95TypeRef slim_v_actual_n10, SlimVec * slim_v_scopes_n14, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchNext slim_fn_typing_95next_95branch_95arm(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95BranchState slim_v_state_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95finish_95branch_95arm(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95TypeRef slim_v_actual_n17, Slim_type_typing_95BranchState slim_v_state_n21, SlimVec * slim_v_issues_n25, SlimVec * slim_v_scopes_n32, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BoundValue slim_fn_typing_95bind_95value(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, Slim_type_typing_95TypeRef slim_v_value_95type_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95AssignmentTarget slim_fn_typing_95prepare_95set(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, SlimVec slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95assign_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95TypeRef slim_v_value_95type_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95pending(Slim_type_typing_95Pending slim_v_parent_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_pending_n14, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95control_95walk(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, bool slim_v_returning_n33, Slim_type_typing_95TypeRef slim_v_result_n37, int64_t slim_v_depth_n41, int64_t slim_v_limit_n45, Slim_type_typing_95Pending slim_v_top_n49, int64_t slim_v_branch_95depth_n53, Slim_type_typing_95BranchState slim_v_branch_95top_n57, int64_t slim_v_argument_95depth_n61, Slim_type_typing_95ArgumentState slim_v_argument_95top_n65, int64_t slim_v_builtin_95depth_n69, SlimVec * slim_v_builtins_n73, SlimVec * slim_v_arguments_n80, SlimVec * slim_v_branches_n87, SlimVec * slim_v_pending_n94, SlimVec * slim_v_bindings_n101, SlimVec * slim_v_facts_n108, SlimVec * slim_v_issues_n115, SlimVec * slim_v_scopes_n122, SlimVec * slim_v_frames_n129, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95expr(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95type_95form_95wellformed(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_type_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95type_95contains_95void(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_type_n13, SlimRegion *slim_region);
@@ -23247,6 +23442,373 @@ slim_region_destroy(&slim_function_region);
 return slim_result;
 }
 
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Binding slim_fn_control_95binding(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Binding slim_result = {0};
+{
+int64_t slim_v_value_n20 = {0};
+slim_v_value_n20 = slim_fn_syntax_95ast_95let_95value(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+(void)slim_v_value_n20;
+{
+int64_t slim_t_31 = {0};
+slim_t_31 = slim_fn_syntax_95ast_95let_95name(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_39 = {0};
+slim_t_39 = slim_fn_syntax_95ast_95let_95type(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_47 = {0};
+slim_t_47 = slim_v_value_n20;
+int64_t slim_t_51 = {0};
+slim_t_51 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_value_n20, slim_allocation_region);
+slim_result = (Slim_type_control_95Binding){.slim_field_name = slim_t_31, .slim_field_type = slim_t_39, .slim_field_value = slim_t_47, .slim_field_body = slim_t_51};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Assignment slim_fn_control_95assignment(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Assignment slim_result = {0};
+{
+int64_t slim_v_value_n20 = {0};
+slim_v_value_n20 = slim_fn_syntax_95ast_95set_95value(slim_v_node_n9, slim_allocation_region);
+(void)slim_v_value_n20;
+{
+int64_t slim_t_30 = {0};
+slim_t_30 = slim_fn_syntax_95ast_95set_95name(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_38 = {0};
+slim_t_38 = slim_v_value_n20;
+int64_t slim_t_42 = {0};
+slim_t_42 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_value_n20, slim_allocation_region);
+slim_result = (Slim_type_control_95Assignment){.slim_field_name = slim_t_30, .slim_field_value = slim_t_38, .slim_field_body = slim_t_42};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Branch slim_fn_control_95branch(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Branch slim_result = {0};
+{
+int64_t slim_t_21 = {0};
+slim_t_21 = slim_fn_syntax_95ast_95match_95value(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_29 = {0};
+slim_t_29 = slim_fn_syntax_95ast_95match_95arms(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Branch){.slim_field_value = slim_t_21, .slim_field_arms = slim_t_29};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Arm slim_fn_control_95arm(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Arm slim_result = {0};
+{
+int64_t slim_t_21 = {0};
+slim_t_21 = slim_fn_syntax_95ast_95arm_95pattern(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_29 = {0};
+slim_t_29 = slim_fn_syntax_95ast_95arm_95body(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_38 = {0};
+slim_t_38 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Arm){.slim_field_pattern = slim_t_21, .slim_field_body = slim_t_29, .slim_field_next = slim_t_38};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_control_95arm_95count(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_count_n13, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_cursor_n9;
+(void)slim_v_count_n13;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+slim_recur: ;
+bool slim_t_24 = {0};
+slim_t_24 = slim_fn_syntax_95ast_95list_95done(slim_v_tokens_n2, slim_v_cursor_n9, slim_allocation_region);
+if (slim_t_24) {
+slim_result = slim_v_count_n13;
+}
+else {
+SlimVec slim_t_38 = {0};
+slim_t_38 = slim_v_tokens_n2;
+int64_t slim_t_39 = {0};
+slim_t_39 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_cursor_n9, slim_allocation_region);
+int64_t slim_t_45 = {0};
+slim_t_45 = slim_i64_add(slim_v_count_n13, INT64_C(1));
+slim_v_tokens_n2 = slim_t_38;
+slim_v_cursor_n9 = slim_t_39;
+slim_v_count_n13 = slim_t_45;
+goto slim_recur;
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Projection slim_fn_control_95projection(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Projection slim_result = {0};
+{
+int64_t slim_t_21 = {0};
+slim_t_21 = slim_fn_syntax_95ast_95get_95value(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_29 = {0};
+slim_t_29 = slim_fn_syntax_95ast_95get_95field(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Projection){.slim_field_value = slim_t_21, .slim_field_field = slim_t_29};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Unary slim_fn_control_95fork(int64_t slim_v_node_n2, SlimRegion *slim_region) {
+(void)slim_v_node_n2;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Unary slim_result = {0};
+{
+int64_t slim_t_13 = {0};
+slim_t_13 = slim_fn_syntax_95ast_95fork_95body(slim_v_node_n2, slim_allocation_region);
+slim_result = (Slim_type_control_95Unary){.slim_field_value = slim_t_13};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Construction slim_fn_control_95construction(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, bool slim_v_record_n13, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_v_record_n13;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Construction slim_result = {0};
+if (slim_v_record_n13) {
+{
+int64_t slim_v_type_n29 = {0};
+slim_v_type_n29 = slim_fn_syntax_95ast_95make_95type(slim_v_node_n9, slim_allocation_region);
+(void)slim_v_type_n29;
+{
+int64_t slim_t_39 = {0};
+slim_t_39 = slim_v_type_n29;
+int64_t slim_t_43 = {0};
+slim_t_43 = slim_v_type_n29;
+int64_t slim_t_47 = {0};
+slim_t_47 = slim_fn_syntax_95ast_95make_95fields(slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Construction){.slim_field_type = slim_t_39, .slim_field_name = slim_t_43, .slim_field_members = slim_t_47};
+}
+}
+}
+else {
+{
+int64_t slim_t_63 = {0};
+slim_t_63 = slim_fn_syntax_95ast_95case_95type(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_71 = {0};
+slim_t_71 = slim_fn_syntax_95ast_95case_95name(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_80 = {0};
+slim_t_80 = slim_fn_syntax_95ast_95case_95payload(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Construction){.slim_field_type = slim_t_63, .slim_field_name = slim_t_71, .slim_field_members = slim_t_80};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Member slim_fn_control_95member(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, bool slim_v_record_n13, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_v_record_n13;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Member slim_result = {0};
+if (slim_v_record_n13) {
+{
+int64_t slim_t_30 = {0};
+slim_t_30 = slim_fn_syntax_95ast_95member_95name(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_38 = {0};
+slim_t_38 = slim_fn_syntax_95ast_95member_95value(slim_v_node_n9, slim_allocation_region);
+int64_t slim_t_46 = {0};
+slim_t_46 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Member){.slim_field_name = slim_t_30, .slim_field_value = slim_t_38, .slim_field_next = slim_t_46};
+}
+}
+else {
+{
+int64_t slim_t_62 = {0};
+slim_t_62 = slim_v_node_n9;
+int64_t slim_t_66 = {0};
+slim_t_66 = slim_v_node_n9;
+int64_t slim_t_70 = {0};
+slim_t_70 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Member){.slim_field_name = slim_t_62, .slim_field_value = slim_t_66, .slim_field_next = slim_t_70};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Invocation slim_fn_control_95invocation(int64_t slim_v_node_n2, bool slim_v_recursive_n6, SlimRegion *slim_region) {
+(void)slim_v_node_n2;
+(void)slim_v_recursive_n6;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Invocation slim_result = {0};
+if (slim_v_recursive_n6) {
+{
+int64_t slim_t_22 = {0};
+slim_t_22 = slim_fn_syntax_95ast_95expression_95marker(slim_v_node_n2, slim_allocation_region);
+int64_t slim_t_30 = {0};
+slim_t_30 = slim_fn_syntax_95ast_95recur_95arguments(slim_v_node_n2, slim_allocation_region);
+slim_result = (Slim_type_control_95Invocation){.slim_field_callee = slim_t_22, .slim_field_arguments = slim_t_30};
+}
+}
+else {
+{
+int64_t slim_t_45 = {0};
+slim_t_45 = slim_fn_syntax_95ast_95call_95callee(slim_v_node_n2, slim_allocation_region);
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_fn_syntax_95ast_95call_95arguments(slim_v_node_n2, slim_allocation_region);
+slim_result = (Slim_type_control_95Invocation){.slim_field_callee = slim_t_45, .slim_field_arguments = slim_t_53};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_control_95expression_95kind(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_node_n13, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_node_n13;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+bool slim_t_24 = {0};
+bool slim_t_27 = {0};
+int64_t slim_t_30 = {0};
+slim_t_30 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+slim_t_27 = slim_t_30 == INT64_C(0);
+slim_t_24 = !slim_t_27;
+if (slim_t_24) {
+slim_result = INT64_C(0);
+}
+else {
+bool slim_t_47 = {0};
+slim_t_47 = slim_fn_syntax_95ast_95expression_95is_95let(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_47) {
+slim_result = INT64_C(1);
+}
+else {
+bool slim_t_62 = {0};
+slim_t_62 = slim_fn_syntax_95ast_95expression_95is_95set(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_62) {
+slim_result = INT64_C(2);
+}
+else {
+bool slim_t_77 = {0};
+slim_t_77 = slim_fn_syntax_95ast_95expression_95is_95match(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_77) {
+slim_result = INT64_C(3);
+}
+else {
+bool slim_t_92 = {0};
+slim_t_92 = slim_fn_syntax_95ast_95expression_95is_95get(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_92) {
+slim_result = INT64_C(4);
+}
+else {
+bool slim_t_107 = {0};
+slim_t_107 = slim_fn_syntax_95ast_95expression_95is_95fork(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_107) {
+slim_result = INT64_C(5);
+}
+else {
+bool slim_t_122 = {0};
+slim_t_122 = slim_fn_syntax_95ast_95expression_95is_95make(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_122) {
+slim_result = INT64_C(6);
+}
+else {
+bool slim_t_137 = {0};
+slim_t_137 = slim_fn_syntax_95ast_95expression_95is_95case(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_137) {
+slim_result = INT64_C(7);
+}
+else {
+bool slim_t_152 = {0};
+slim_t_152 = slim_fn_syntax_95ast_95expression_95is_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_152) {
+slim_result = INT64_C(8);
+}
+else {
+bool slim_t_167 = {0};
+slim_t_167 = slim_fn_syntax_95ast_95expression_95is_95recur(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n13, slim_allocation_region);
+if (slim_t_167) {
+slim_result = INT64_C(9);
+}
+else {
+slim_result = INT64_C(10);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_control_95Scope slim_fn_control_95scope(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_node_n9;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_control_95Scope slim_result = {0};
+{
+int64_t slim_t_21 = {0};
+slim_t_21 = slim_v_node_n9;
+int64_t slim_t_25 = {0};
+slim_t_25 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_node_n9, slim_allocation_region);
+slim_result = (Slim_type_control_95Scope){.slim_field_first = slim_t_21, .slim_field_end = slim_t_25};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION bool slim_fn_control_95scope_95contains(Slim_type_control_95Scope slim_v_control_95scope_n2, int64_t slim_v_node_n6, SlimRegion *slim_region) {
+(void)slim_v_control_95scope_n2;
+(void)slim_v_node_n6;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+bool slim_result = {0};
+bool slim_t_17 = {0};
+int64_t slim_t_20 = {0};
+slim_t_20 = slim_v_control_95scope_n2.slim_field_first;
+slim_t_17 = slim_t_20 <= slim_v_node_n6;
+bool slim_t_27 = {0};
+int64_t slim_t_31 = {0};
+slim_t_31 = slim_v_control_95scope_n2.slim_field_end;
+slim_t_27 = slim_v_node_n6 < slim_t_31;
+slim_result = slim_t_17 && slim_t_27;
+return slim_result;
+}
+
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_main(SlimVec slim_v_args_n2, SlimRegion *slim_region) {
 (void)slim_v_args_n2;
 (void)slim_region;
@@ -27177,6 +27739,93 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_flow_95scoped_95block(SlimVec slim_v_tokens_n2, Slim_type_identity_95View slim_v_owner_n9, int64_t slim_v_node_n13, Slim_type_flow_95Operation slim_v_operation_n17, int64_t slim_v_budget_n21, SlimVec * slim_v_blocks_n25, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_owner_n9;
+(void)slim_v_node_n13;
+(void)slim_v_operation_n17;
+(void)slim_v_budget_n21;
+(void)slim_v_blocks_n25;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_40 = {0};
+int64_t slim_t_43 = {0};
+slim_t_43 = ((*slim_v_blocks_n25)).len;
+slim_t_40 = slim_t_43 >= slim_v_budget_n21;
+if (slim_t_40) {
+slim_result = INT64_C(-1);
+}
+else {
+bool slim_t_58 = {0};
+bool slim_t_61 = {0};
+int64_t slim_t_65 = {0};
+slim_t_65 = slim_v_owner_n9.slim_field_first;
+slim_t_61 = slim_v_node_n13 < slim_t_65;
+bool slim_t_71 = {0};
+int64_t slim_t_74 = {0};
+int64_t slim_t_78 = {0};
+slim_t_78 = slim_v_owner_n9.slim_field_first;
+slim_t_74 = slim_i64_sub(slim_v_node_n13, slim_t_78);
+int64_t slim_t_84 = {0};
+slim_t_84 = slim_v_owner_n9.slim_field_count;
+slim_t_71 = slim_t_74 >= slim_t_84;
+slim_t_58 = slim_t_61 || slim_t_71;
+if (slim_t_58) {
+slim_result = INT64_C(-2);
+}
+else {
+{
+Slim_type_control_95Scope slim_v_scope_n99 = {0};
+slim_v_scope_n99 = slim_fn_control_95scope(slim_v_tokens_n2, slim_v_node_n13, slim_allocation_region);
+(void)slim_v_scope_n99;
+{
+int64_t slim_v_remaining_n109 = {0};
+int64_t slim_t_114 = {0};
+slim_t_114 = slim_v_owner_n9.slim_field_count;
+int64_t slim_t_119 = {0};
+int64_t slim_t_122 = {0};
+slim_t_122 = slim_v_scope_n99.slim_field_first;
+int64_t slim_t_127 = {0};
+slim_t_127 = slim_v_owner_n9.slim_field_first;
+slim_t_119 = slim_i64_sub(slim_t_122, slim_t_127);
+slim_v_remaining_n109 = slim_i64_sub(slim_t_114, slim_t_119);
+(void)slim_v_remaining_n109;
+bool slim_t_136 = {0};
+bool slim_t_139 = {0};
+int64_t slim_t_142 = {0};
+slim_t_142 = slim_v_scope_n99.slim_field_end;
+int64_t slim_t_147 = {0};
+slim_t_147 = slim_v_scope_n99.slim_field_first;
+slim_t_139 = slim_t_142 <= slim_t_147;
+bool slim_t_153 = {0};
+int64_t slim_t_156 = {0};
+int64_t slim_t_159 = {0};
+slim_t_159 = slim_v_scope_n99.slim_field_end;
+int64_t slim_t_164 = {0};
+slim_t_164 = slim_v_scope_n99.slim_field_first;
+slim_t_156 = slim_i64_sub(slim_t_159, slim_t_164);
+slim_t_153 = slim_t_156 > slim_v_remaining_n109;
+slim_t_136 = slim_t_139 || slim_t_153;
+if (slim_t_136) {
+slim_result = INT64_C(-2);
+}
+else {
+int64_t slim_t_183 = {0};
+slim_t_183 = slim_v_scope_n99.slim_field_first;
+slim_result = slim_fn_flow_95block(slim_v_owner_n9, slim_t_183, slim_v_operation_n17, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
 static SLIM_UNUSED_FUNCTION bool slim_fn_flow_95edge(Slim_type_identity_95View slim_v_owner_n2, int64_t slim_v_from_n6, int64_t slim_v_to_n10, Slim_type_flow_95EdgeKind slim_v_kind_n14, int64_t slim_v_budget_n18, SlimVec * slim_v_edges_n22, SlimRegion *slim_region) {
 (void)slim_v_owner_n2;
 (void)slim_v_from_n6;
@@ -27356,48 +28005,46 @@ slim_result = INT64_C(-1);
 }
 else {
 {
-int64_t slim_v_value_n104 = {0};
-bool slim_t_108 = {0};
-int64_t slim_t_111 = {0};
-slim_t_111 = slim_v_task_n13.slim_field_kind;
-slim_t_108 = slim_t_111 == INT64_C(2);
-if (slim_t_108) {
-int64_t slim_t_123 = {0};
-slim_t_123 = slim_v_task_n13.slim_field_node;
-slim_v_value_n104 = slim_fn_syntax_95ast_95member_95value(slim_t_123, slim_allocation_region);
-}
-else {
-slim_v_value_n104 = slim_v_task_n13.slim_field_node;
-}
-(void)slim_v_value_n104;
+Slim_type_control_95Member slim_v_structure_n104 = {0};
+int64_t slim_t_110 = {0};
+slim_t_110 = slim_v_task_n13.slim_field_node;
+bool slim_t_115 = {0};
+int64_t slim_t_118 = {0};
+slim_t_118 = slim_v_task_n13.slim_field_kind;
+slim_t_115 = slim_t_118 == INT64_C(2);
+slim_v_structure_n104 = slim_fn_control_95member(slim_v_tokens_n2, slim_t_110, slim_t_115, slim_allocation_region);
+(void)slim_v_structure_n104;
 {
-int64_t slim_v_argument_n141 = {0};
-Slim_type_flow_95Operation slim_t_148 = {0};
+int64_t slim_v_value_n128 = {0};
+slim_v_value_n128 = slim_v_structure_n104.slim_field_value;
+(void)slim_v_value_n128;
 {
-slim_t_148 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Argument};
+int64_t slim_v_argument_n137 = {0};
+Slim_type_flow_95Operation slim_t_144 = {0};
+{
+slim_t_144 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Argument};
 }
-int64_t slim_t_153 = {0};
-slim_t_153 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n2, slim_v_value_n104, slim_allocation_region);
-slim_v_argument_n141 = slim_fn_flow_95block(slim_v_owner_n9, slim_v_value_n104, slim_t_148, slim_t_153, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+int64_t slim_t_149 = {0};
+slim_t_149 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n2, slim_v_value_n128, slim_allocation_region);
+slim_v_argument_n137 = slim_fn_flow_95block(slim_v_owner_n9, slim_v_value_n128, slim_t_144, slim_t_149, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_argument_n141;
+(void)slim_v_argument_n137;
 {
-int64_t slim_v_remaining_n164 = {0};
-int64_t slim_t_169 = {0};
-slim_t_169 = slim_v_task_n13.slim_field_kind;
-int64_t slim_t_174 = {0};
-int64_t slim_t_178 = {0};
-slim_t_178 = slim_v_task_n13.slim_field_node;
-slim_t_174 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_t_178, slim_allocation_region);
-int64_t slim_t_185 = {0};
-slim_t_185 = slim_v_task_n13.slim_field_to;
-slim_v_remaining_n164 = slim_fn_flow_95push(slim_t_169, slim_t_174, slim_v_argument_n141, slim_t_185, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+int64_t slim_v_remaining_n160 = {0};
+int64_t slim_t_165 = {0};
+slim_t_165 = slim_v_task_n13.slim_field_kind;
+int64_t slim_t_170 = {0};
+slim_t_170 = slim_v_structure_n104.slim_field_next;
+int64_t slim_t_176 = {0};
+slim_t_176 = slim_v_task_n13.slim_field_to;
+slim_v_remaining_n160 = slim_fn_flow_95push(slim_t_165, slim_t_170, slim_v_argument_n137, slim_t_176, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_remaining_n164;
-int64_t slim_t_199 = {0};
-slim_t_199 = slim_v_task_n13.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_v_value_n104, slim_t_199, slim_v_argument_n141, slim_v_remaining_n164, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+(void)slim_v_remaining_n160;
+int64_t slim_t_190 = {0};
+slim_t_190 = slim_v_task_n13.slim_field_from;
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_v_value_n128, slim_t_190, slim_v_argument_n137, slim_v_remaining_n160, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 }
 }
@@ -27429,75 +28076,78 @@ slim_result = slim_v_depth_n17;
 }
 else {
 {
-int64_t slim_v_enter_n72 = {0};
+Slim_type_control_95Arm slim_v_structure_n72 = {0};
 int64_t slim_t_78 = {0};
 slim_t_78 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_83 = {0};
+slim_v_structure_n72 = slim_fn_control_95arm(slim_v_tokens_n2, slim_t_78, slim_allocation_region);
+(void)slim_v_structure_n72;
 {
-slim_t_83 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ArmEnter};
+int64_t slim_v_enter_n86 = {0};
+int64_t slim_t_93 = {0};
+slim_t_93 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_98 = {0};
+{
+slim_t_98 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ArmEnter};
 }
-slim_v_enter_n72 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_78, slim_t_83, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_enter_n86 = slim_fn_flow_95scoped_95block(slim_v_tokens_n2, slim_v_owner_n9, slim_t_93, slim_t_98, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_enter_n72;
+(void)slim_v_enter_n86;
 {
-int64_t slim_v_leave_n94 = {0};
-int64_t slim_t_100 = {0};
-slim_t_100 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_105 = {0};
+int64_t slim_v_leave_n108 = {0};
+int64_t slim_t_115 = {0};
+slim_t_115 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_120 = {0};
 {
-slim_t_105 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ArmExit};
+slim_t_120 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ArmExit};
 }
-slim_v_leave_n94 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_100, slim_t_105, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_leave_n108 = slim_fn_flow_95scoped_95block(slim_v_tokens_n2, slim_v_owner_n9, slim_t_115, slim_t_120, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_leave_n94;
+(void)slim_v_leave_n108;
 {
-bool slim_v_entered_n116 = {0};
-int64_t slim_t_122 = {0};
-slim_t_122 = slim_v_task_n13.slim_field_from;
-Slim_type_flow_95EdgeKind slim_t_128 = {0};
+bool slim_v_entered_n130 = {0};
+int64_t slim_t_136 = {0};
+slim_t_136 = slim_v_task_n13.slim_field_from;
+Slim_type_flow_95EdgeKind slim_t_142 = {0};
 {
-slim_t_128 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Alternative};
+slim_t_142 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Alternative};
 }
-slim_v_entered_n116 = slim_fn_flow_95edge(slim_v_owner_n9, slim_t_122, slim_v_enter_n72, slim_t_128, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
+slim_v_entered_n130 = slim_fn_flow_95edge(slim_v_owner_n9, slim_t_136, slim_v_enter_n86, slim_t_142, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_entered_n116;
+(void)slim_v_entered_n130;
 {
-bool slim_v_joined_n138 = {0};
-int64_t slim_t_145 = {0};
-slim_t_145 = slim_v_task_n13.slim_field_to;
-Slim_type_flow_95EdgeKind slim_t_150 = {0};
+bool slim_v_joined_n152 = {0};
+int64_t slim_t_159 = {0};
+slim_t_159 = slim_v_task_n13.slim_field_to;
+Slim_type_flow_95EdgeKind slim_t_164 = {0};
 {
-slim_t_150 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Join};
+slim_t_164 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Join};
 }
-slim_v_joined_n138 = slim_fn_flow_95edge(slim_v_owner_n9, slim_v_leave_n94, slim_t_145, slim_t_150, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
+slim_v_joined_n152 = slim_fn_flow_95edge(slim_v_owner_n9, slim_v_leave_n108, slim_t_159, slim_t_164, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_joined_n138;
-bool slim_t_160 = {0};
-slim_t_160 = slim_v_entered_n116 && slim_v_joined_n138;
-if (slim_t_160) {
+(void)slim_v_joined_n152;
+bool slim_t_174 = {0};
+slim_t_174 = slim_v_entered_n130 && slim_v_joined_n152;
+if (slim_t_174) {
 {
-int64_t slim_v_remaining_n170 = {0};
-int64_t slim_t_176 = {0};
-int64_t slim_t_180 = {0};
-slim_t_180 = slim_v_task_n13.slim_field_node;
-slim_t_176 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_t_180, slim_allocation_region);
-int64_t slim_t_186 = {0};
-slim_t_186 = slim_v_task_n13.slim_field_from;
-int64_t slim_t_191 = {0};
-slim_t_191 = slim_v_task_n13.slim_field_to;
-slim_v_remaining_n170 = slim_fn_flow_95push(INT64_C(3), slim_t_176, slim_t_186, slim_t_191, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+int64_t slim_v_remaining_n184 = {0};
+int64_t slim_t_190 = {0};
+slim_t_190 = slim_v_structure_n72.slim_field_next;
+int64_t slim_t_195 = {0};
+slim_t_195 = slim_v_task_n13.slim_field_from;
+int64_t slim_t_200 = {0};
+slim_t_200 = slim_v_task_n13.slim_field_to;
+slim_v_remaining_n184 = slim_fn_flow_95push(INT64_C(3), slim_t_190, slim_t_195, slim_t_200, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_remaining_n170;
-int64_t slim_t_204 = {0};
-int64_t slim_t_208 = {0};
-slim_t_208 = slim_v_task_n13.slim_field_node;
-slim_t_204 = slim_fn_syntax_95ast_95arm_95body(slim_v_tokens_n2, slim_t_208, slim_allocation_region);
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_204, slim_v_enter_n72, slim_v_leave_n94, slim_v_remaining_n170, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+(void)slim_v_remaining_n184;
+int64_t slim_t_213 = {0};
+slim_t_213 = slim_v_structure_n72.slim_field_body;
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_213, slim_v_enter_n86, slim_v_leave_n108, slim_v_remaining_n184, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 else {
 slim_result = INT64_C(-1);
+}
 }
 }
 }
@@ -27525,81 +28175,82 @@ SlimRegion *slim_allocation_region = slim_region;
 int64_t slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_name_n65 = {0};
-int64_t slim_t_70 = {0};
-slim_t_70 = slim_v_task_n24.slim_field_node;
-slim_v_name_n65 = slim_fn_syntax_95ast_95let_95name(slim_t_70, slim_allocation_region);
-(void)slim_v_name_n65;
+Slim_type_control_95Binding slim_v_structure_n65 = {0};
+int64_t slim_t_71 = {0};
+slim_t_71 = slim_v_task_n24.slim_field_node;
+slim_v_structure_n65 = slim_fn_control_95binding(slim_v_tokens_n6, slim_t_71, slim_allocation_region);
+(void)slim_v_structure_n65;
 {
-Slim_type_flow_95Operation slim_v_kind_n78 = {0};
-bool slim_t_82 = {0};
-int64_t slim_t_86 = {0};
-slim_t_86 = slim_v_task_n24.slim_field_node;
-slim_t_82 = slim_fn_syntax_95ast_95expression_95is_95statement(slim_v_tokens_n6, slim_t_86, slim_allocation_region);
-if (slim_t_82) {
+int64_t slim_v_name_n79 = {0};
+slim_v_name_n79 = slim_v_structure_n65.slim_field_name;
+(void)slim_v_name_n79;
 {
-slim_v_kind_n78 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Statement};
+Slim_type_flow_95Operation slim_v_kind_n88 = {0};
+bool slim_t_92 = {0};
+int64_t slim_t_96 = {0};
+slim_t_96 = slim_v_task_n24.slim_field_node;
+slim_t_92 = slim_fn_syntax_95ast_95expression_95is_95statement(slim_v_tokens_n6, slim_t_96, slim_allocation_region);
+if (slim_t_92) {
+{
+slim_v_kind_n88 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Statement};
 }
 }
 else {
 {
-slim_v_kind_n78 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Bind};
+slim_v_kind_n88 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Bind};
 }
 }
-(void)slim_v_kind_n78;
+(void)slim_v_kind_n88;
 {
-Slim_type_typing_95Fact slim_v_fact_n111 = {0};
-slim_v_fact_n111 = ((Slim_type_typing_95Fact *)(slim_v_facts_n13).data)[slim_vec_check_index(&(slim_v_facts_n13), slim_v_name_n65)];
-(void)slim_v_fact_n111;
+Slim_type_typing_95Fact slim_v_fact_n121 = {0};
+slim_v_fact_n121 = ((Slim_type_typing_95Fact *)(slim_v_facts_n13).data)[slim_vec_check_index(&(slim_v_facts_n13), slim_v_name_n79)];
+(void)slim_v_fact_n121;
 {
-int64_t slim_v_bind_n121 = {0};
-int64_t slim_t_129 = {0};
-slim_t_129 = slim_fn_typing_95fact_95borrow_95mode(slim_v_fact_n111, slim_allocation_region);
-slim_v_bind_n121 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_name_n65, slim_v_kind_n78, slim_t_129, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+int64_t slim_v_bind_n131 = {0};
+int64_t slim_t_139 = {0};
+slim_t_139 = slim_fn_typing_95fact_95borrow_95mode(slim_v_fact_n121, slim_allocation_region);
+slim_v_bind_n131 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_name_n79, slim_v_kind_n88, slim_t_139, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_bind_n121;
+(void)slim_v_bind_n131;
 {
-int64_t slim_v_leave_n139 = {0};
-int64_t slim_t_145 = {0};
-slim_t_145 = slim_v_task_n24.slim_field_node;
-Slim_type_flow_95Operation slim_t_150 = {0};
+int64_t slim_v_leave_n149 = {0};
+int64_t slim_t_156 = {0};
+slim_t_156 = slim_v_task_n24.slim_field_node;
+Slim_type_flow_95Operation slim_t_161 = {0};
 {
-slim_t_150 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ScopeExit};
+slim_t_161 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ScopeExit};
 }
-slim_v_leave_n139 = slim_fn_flow_95block(slim_v_owner_n20, slim_t_145, slim_t_150, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+slim_v_leave_n149 = slim_fn_flow_95scoped_95block(slim_v_tokens_n6, slim_v_owner_n20, slim_t_156, slim_t_161, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_leave_n139;
-bool slim_t_161 = {0};
-int64_t slim_t_166 = {0};
-slim_t_166 = slim_v_task_n24.slim_field_to;
-Slim_type_flow_95EdgeKind slim_t_171 = {0};
+(void)slim_v_leave_n149;
+bool slim_t_171 = {0};
+int64_t slim_t_176 = {0};
+slim_t_176 = slim_v_task_n24.slim_field_to;
+Slim_type_flow_95EdgeKind slim_t_181 = {0};
 {
-slim_t_171 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+slim_t_181 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
 }
-slim_t_161 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_leave_n139, slim_t_166, slim_t_171, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+slim_t_171 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_leave_n149, slim_t_176, slim_t_181, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-if (slim_t_161) {
+if (slim_t_171) {
 {
-int64_t slim_v_body_n183 = {0};
-int64_t slim_t_189 = {0};
-int64_t slim_t_193 = {0};
-slim_t_193 = slim_v_task_n24.slim_field_node;
-slim_t_189 = slim_fn_syntax_95ast_95let_95body(slim_v_tokens_n6, slim_t_193, slim_allocation_region);
-slim_v_body_n183 = slim_fn_flow_95push(INT64_C(0), slim_t_189, slim_v_bind_n121, slim_v_leave_n139, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+int64_t slim_v_body_n193 = {0};
+int64_t slim_t_199 = {0};
+slim_t_199 = slim_v_structure_n65.slim_field_body;
+slim_v_body_n193 = slim_fn_flow_95push(INT64_C(0), slim_t_199, slim_v_bind_n131, slim_v_leave_n149, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_body_n183;
-int64_t slim_t_209 = {0};
-int64_t slim_t_213 = {0};
-slim_t_213 = slim_v_task_n24.slim_field_node;
-slim_t_209 = slim_fn_syntax_95ast_95let_95value(slim_v_tokens_n6, slim_t_213, slim_allocation_region);
+(void)slim_v_body_n193;
+int64_t slim_t_214 = {0};
+slim_t_214 = slim_v_structure_n65.slim_field_value;
 int64_t slim_t_219 = {0};
 slim_t_219 = slim_v_task_n24.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_209, slim_t_219, slim_v_bind_n121, slim_v_body_n183, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_214, slim_t_219, slim_v_bind_n131, slim_v_body_n193, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 else {
 slim_result = INT64_C(-1);
+}
 }
 }
 }
@@ -27625,58 +28276,61 @@ SlimRegion *slim_allocation_region = slim_region;
 int64_t slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_branch_n54 = {0};
+Slim_type_control_95Branch slim_v_structure_n54 = {0};
 int64_t slim_t_60 = {0};
 slim_t_60 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_65 = {0};
+slim_v_structure_n54 = slim_fn_control_95branch(slim_v_tokens_n2, slim_t_60, slim_allocation_region);
+(void)slim_v_structure_n54;
 {
-slim_t_65 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Branch};
+int64_t slim_v_branch_n68 = {0};
+int64_t slim_t_74 = {0};
+slim_t_74 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_79 = {0};
+{
+slim_t_79 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Branch};
 }
-slim_v_branch_n54 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_60, slim_t_65, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_branch_n68 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_74, slim_t_79, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_branch_n54;
+(void)slim_v_branch_n68;
 {
-int64_t slim_v_join_n76 = {0};
-int64_t slim_t_82 = {0};
-slim_t_82 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_87 = {0};
+int64_t slim_v_join_n90 = {0};
+int64_t slim_t_96 = {0};
+slim_t_96 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_101 = {0};
 {
-slim_t_87 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Join};
+slim_t_101 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Join};
 }
-slim_v_join_n76 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_82, slim_t_87, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_join_n90 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_96, slim_t_101, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_join_n76;
-bool slim_t_98 = {0};
-int64_t slim_t_103 = {0};
-slim_t_103 = slim_v_task_n13.slim_field_to;
-Slim_type_flow_95EdgeKind slim_t_108 = {0};
+(void)slim_v_join_n90;
+bool slim_t_112 = {0};
+int64_t slim_t_117 = {0};
+slim_t_117 = slim_v_task_n13.slim_field_to;
+Slim_type_flow_95EdgeKind slim_t_122 = {0};
 {
-slim_t_108 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+slim_t_122 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
 }
-slim_t_98 = slim_fn_flow_95edge(slim_v_owner_n9, slim_v_join_n76, slim_t_103, slim_t_108, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
+slim_t_112 = slim_fn_flow_95edge(slim_v_owner_n9, slim_v_join_n90, slim_t_117, slim_t_122, slim_v_budget_n21, slim_v_edges_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-if (slim_t_98) {
+if (slim_t_112) {
 {
-int64_t slim_v_arms_n120 = {0};
-int64_t slim_t_126 = {0};
-int64_t slim_t_130 = {0};
-slim_t_130 = slim_v_task_n13.slim_field_node;
-slim_t_126 = slim_fn_syntax_95ast_95match_95arms(slim_v_tokens_n2, slim_t_130, slim_allocation_region);
-slim_v_arms_n120 = slim_fn_flow_95push(INT64_C(3), slim_t_126, slim_v_branch_n54, slim_v_join_n76, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+int64_t slim_v_arms_n134 = {0};
+int64_t slim_t_140 = {0};
+slim_t_140 = slim_v_structure_n54.slim_field_arms;
+slim_v_arms_n134 = slim_fn_flow_95push(INT64_C(3), slim_t_140, slim_v_branch_n68, slim_v_join_n90, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arms_n120;
-int64_t slim_t_146 = {0};
-int64_t slim_t_149 = {0};
-slim_t_149 = slim_v_task_n13.slim_field_node;
-slim_t_146 = slim_fn_syntax_95ast_95match_95value(slim_t_149, slim_allocation_region);
+(void)slim_v_arms_n134;
 int64_t slim_t_155 = {0};
-slim_t_155 = slim_v_task_n13.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_146, slim_t_155, slim_v_branch_n54, slim_v_arms_n120, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+slim_t_155 = slim_v_structure_n54.slim_field_value;
+int64_t slim_t_160 = {0};
+slim_t_160 = slim_v_task_n13.slim_field_from;
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_155, slim_t_160, slim_v_branch_n68, slim_v_arms_n134, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 else {
 slim_result = INT64_C(-1);
+}
 }
 }
 }
@@ -27700,24 +28354,24 @@ int64_t slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
 int64_t slim_v_call_n54 = {0};
-int64_t slim_t_60 = {0};
-slim_t_60 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_65 = {0};
+int64_t slim_t_61 = {0};
+slim_t_61 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_66 = {0};
 {
-slim_t_65 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Call};
+slim_t_66 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Call};
 }
-slim_v_call_n54 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_60, slim_t_65, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_call_n54 = slim_fn_flow_95scoped_95block(slim_v_tokens_n2, slim_v_owner_n9, slim_t_61, slim_t_66, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_call_n54;
 {
 int64_t slim_v_leave_n76 = {0};
-int64_t slim_t_82 = {0};
-slim_t_82 = slim_v_task_n13.slim_field_node;
-Slim_type_flow_95Operation slim_t_87 = {0};
+int64_t slim_t_83 = {0};
+slim_t_83 = slim_v_task_n13.slim_field_node;
+Slim_type_flow_95Operation slim_t_88 = {0};
 {
-slim_t_87 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_CallExit};
+slim_t_88 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_CallExit};
 }
-slim_v_leave_n76 = slim_fn_flow_95block(slim_v_owner_n9, slim_t_82, slim_t_87, INT64_C(0), slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
+slim_v_leave_n76 = slim_fn_flow_95scoped_95block(slim_v_tokens_n2, slim_v_owner_n9, slim_t_83, slim_t_88, slim_v_budget_n21, slim_v_blocks_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 (void)slim_v_leave_n76;
 {
@@ -27754,14 +28408,19 @@ bool slim_t_159 = {0};
 slim_t_159 = slim_v_called_n98 && slim_v_returned_n116;
 slim_t_156 = slim_t_159 && slim_v_abrupt_n138;
 if (slim_t_156) {
-int64_t slim_t_173 = {0};
+{
+Slim_type_control_95Invocation slim_v_structure_n171 = {0};
 int64_t slim_t_176 = {0};
 slim_t_176 = slim_v_task_n13.slim_field_node;
-slim_t_173 = slim_fn_syntax_95ast_95call_95arguments(slim_t_176, slim_allocation_region);
-int64_t slim_t_182 = {0};
-slim_t_182 = slim_v_task_n13.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(1), slim_t_173, slim_t_182, slim_v_call_n54, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
+slim_v_structure_n171 = slim_fn_control_95invocation(slim_t_176, false, slim_allocation_region);
+(void)slim_v_structure_n171;
+int64_t slim_t_187 = {0};
+slim_t_187 = slim_v_structure_n171.slim_field_arguments;
+int64_t slim_t_192 = {0};
+slim_t_192 = slim_v_task_n13.slim_field_from;
+slim_result = slim_fn_flow_95push(INT64_C(1), slim_t_187, slim_t_192, slim_v_call_n54, slim_v_depth_n17, slim_v_budget_n21, slim_v_tasks_n39, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 else {
 slim_result = INT64_C(-1);
@@ -27888,56 +28547,58 @@ slim_v_node_n65 = slim_v_task_n24.slim_field_node;
 (void)slim_v_node_n65;
 {
 int64_t slim_v_kind_n74 = {0};
-slim_v_kind_n74 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
+slim_v_kind_n74 = slim_fn_control_95expression_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
 (void)slim_v_kind_n74;
-bool slim_t_84 = {0};
-bool slim_t_87 = {0};
-slim_t_87 = slim_v_kind_n74 == INT64_C(0);
-slim_t_84 = !slim_t_87;
-if (slim_t_84) {
-bool slim_t_98 = {0};
-bool slim_t_101 = {0};
-slim_t_101 = slim_v_kind_n74 == INT64_C(2);
-bool slim_t_107 = {0};
-slim_t_107 = slim_v_kind_n74 == INT64_C(3);
-slim_t_98 = slim_t_101 || slim_t_107;
-if (slim_t_98) {
+bool slim_t_85 = {0};
+slim_t_85 = slim_v_kind_n74 == INT64_C(0);
+if (slim_t_85) {
 {
-int64_t slim_v_value_n118 = {0};
-Slim_type_flow_95Operation slim_t_125 = {0};
+int64_t slim_v_atom_n95 = {0};
+slim_v_atom_n95 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
+(void)slim_v_atom_n95;
+bool slim_t_105 = {0};
+bool slim_t_108 = {0};
+slim_t_108 = slim_v_atom_n95 == INT64_C(2);
+bool slim_t_114 = {0};
+slim_t_114 = slim_v_atom_n95 == INT64_C(3);
+slim_t_105 = slim_t_108 || slim_t_114;
+if (slim_t_105) {
 {
-slim_t_125 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Eval};
+int64_t slim_v_value_n125 = {0};
+Slim_type_flow_95Operation slim_t_132 = {0};
+{
+slim_t_132 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Eval};
 }
-int64_t slim_t_130 = {0};
-slim_t_130 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-slim_v_value_n118 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_125, slim_t_130, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+int64_t slim_t_137 = {0};
+slim_t_137 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
+slim_v_value_n125 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_132, slim_t_137, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_n118;
+(void)slim_v_value_n125;
 {
-bool slim_v_before_n141 = {0};
-int64_t slim_t_147 = {0};
-slim_t_147 = slim_v_task_n24.slim_field_from;
-Slim_type_flow_95EdgeKind slim_t_153 = {0};
+bool slim_v_before_n148 = {0};
+int64_t slim_t_154 = {0};
+slim_t_154 = slim_v_task_n24.slim_field_from;
+Slim_type_flow_95EdgeKind slim_t_160 = {0};
 {
-slim_t_153 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+slim_t_160 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
 }
-slim_v_before_n141 = slim_fn_flow_95edge(slim_v_owner_n20, slim_t_147, slim_v_value_n118, slim_t_153, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+slim_v_before_n148 = slim_fn_flow_95edge(slim_v_owner_n20, slim_t_154, slim_v_value_n125, slim_t_160, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_before_n141;
+(void)slim_v_before_n148;
 {
-bool slim_v_after_n163 = {0};
-int64_t slim_t_170 = {0};
-slim_t_170 = slim_v_task_n24.slim_field_to;
-Slim_type_flow_95EdgeKind slim_t_175 = {0};
+bool slim_v_after_n170 = {0};
+int64_t slim_t_177 = {0};
+slim_t_177 = slim_v_task_n24.slim_field_to;
+Slim_type_flow_95EdgeKind slim_t_182 = {0};
 {
-slim_t_175 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+slim_t_182 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
 }
-slim_v_after_n163 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_value_n118, slim_t_170, slim_t_175, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+slim_v_after_n170 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_value_n125, slim_t_177, slim_t_182, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_after_n163;
-bool slim_t_185 = {0};
-slim_t_185 = slim_v_before_n141 && slim_v_after_n163;
-if (slim_t_185) {
+(void)slim_v_after_n170;
+bool slim_t_192 = {0};
+slim_t_192 = slim_v_before_n148 && slim_v_after_n170;
+if (slim_t_192) {
 slim_result = slim_v_depth_n28;
 }
 else {
@@ -27951,184 +28612,215 @@ else {
 slim_result = INT64_C(-2);
 }
 }
+}
 else {
-bool slim_t_214 = {0};
-slim_t_214 = slim_fn_syntax_95ast_95expression_95is_95let(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_214) {
+bool slim_t_222 = {0};
+slim_t_222 = slim_v_kind_n74 == INT64_C(1);
+if (slim_t_222) {
 slim_result = slim_fn_flow_95binding_95task(slim_v_source_n2, slim_v_tokens_n6, slim_v_facts_n13, slim_v_owner_n20, slim_v_task_n24, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-bool slim_t_242 = {0};
-slim_t_242 = slim_fn_syntax_95ast_95expression_95is_95set(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_242) {
+bool slim_t_249 = {0};
+slim_t_249 = slim_v_kind_n74 == INT64_C(2);
+if (slim_t_249) {
 {
-int64_t slim_v_assigned_n253 = {0};
-Slim_type_flow_95Operation slim_t_260 = {0};
+Slim_type_control_95Assignment slim_v_structure_n259 = {0};
+slim_v_structure_n259 = slim_fn_control_95assignment(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
+(void)slim_v_structure_n259;
 {
-slim_t_260 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Assign};
+int64_t slim_v_assigned_n269 = {0};
+Slim_type_flow_95Operation slim_t_276 = {0};
+{
+slim_t_276 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Assign};
 }
-slim_v_assigned_n253 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_260, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+slim_v_assigned_n269 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_276, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_assigned_n253;
+(void)slim_v_assigned_n269;
 {
-int64_t slim_v_body_n271 = {0};
-int64_t slim_t_277 = {0};
-slim_t_277 = slim_fn_syntax_95ast_95set_95body(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-int64_t slim_t_284 = {0};
-slim_t_284 = slim_v_task_n24.slim_field_to;
-slim_v_body_n271 = slim_fn_flow_95push(INT64_C(0), slim_t_277, slim_v_assigned_n253, slim_t_284, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+int64_t slim_v_body_n287 = {0};
+int64_t slim_t_293 = {0};
+slim_t_293 = slim_v_structure_n259.slim_field_body;
+int64_t slim_t_299 = {0};
+slim_t_299 = slim_v_task_n24.slim_field_to;
+slim_v_body_n287 = slim_fn_flow_95push(INT64_C(0), slim_t_293, slim_v_assigned_n269, slim_t_299, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_body_n271;
-int64_t slim_t_297 = {0};
-slim_t_297 = slim_fn_syntax_95ast_95set_95value(slim_v_node_n65, slim_allocation_region);
-int64_t slim_t_302 = {0};
-slim_t_302 = slim_v_task_n24.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_297, slim_t_302, slim_v_assigned_n253, slim_v_body_n271, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+(void)slim_v_body_n287;
+int64_t slim_t_312 = {0};
+slim_t_312 = slim_v_structure_n259.slim_field_value;
+int64_t slim_t_317 = {0};
+slim_t_317 = slim_v_task_n24.slim_field_from;
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_312, slim_t_317, slim_v_assigned_n269, slim_v_body_n287, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 }
 }
 else {
-bool slim_t_319 = {0};
-slim_t_319 = slim_fn_syntax_95ast_95expression_95is_95match(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_319) {
+bool slim_t_335 = {0};
+slim_t_335 = slim_v_kind_n74 == INT64_C(3);
+if (slim_t_335) {
 slim_result = slim_fn_flow_95branch_95task(slim_v_tokens_n6, slim_v_owner_n20, slim_v_task_n24, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-bool slim_t_345 = {0};
-slim_t_345 = slim_fn_syntax_95ast_95expression_95is_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_345) {
+bool slim_t_360 = {0};
+slim_t_360 = slim_v_kind_n74 == INT64_C(8);
+if (slim_t_360) {
 slim_result = slim_fn_flow_95call_95task(slim_v_tokens_n6, slim_v_owner_n20, slim_v_task_n24, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-bool slim_t_371 = {0};
-slim_t_371 = slim_fn_syntax_95ast_95expression_95is_95get(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_371) {
-int64_t slim_t_385 = {0};
-slim_t_385 = slim_fn_syntax_95ast_95get_95value(slim_v_node_n65, slim_allocation_region);
-Slim_type_flow_95Operation slim_t_390 = {0};
+bool slim_t_385 = {0};
+slim_t_385 = slim_v_kind_n74 == INT64_C(4);
+if (slim_t_385) {
 {
-slim_t_390 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Project};
+Slim_type_control_95Projection slim_v_structure_n395 = {0};
+slim_v_structure_n395 = slim_fn_control_95projection(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
+(void)slim_v_structure_n395;
+int64_t slim_t_408 = {0};
+slim_t_408 = slim_v_structure_n395.slim_field_value;
+Slim_type_flow_95Operation slim_t_413 = {0};
+{
+slim_t_413 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Project};
 }
-slim_result = slim_fn_flow_95unary_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_385, slim_t_390, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
+slim_result = slim_fn_flow_95unary_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_408, slim_t_413, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 else {
-bool slim_t_406 = {0};
-slim_t_406 = slim_fn_syntax_95ast_95expression_95is_95make(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_406) {
-int64_t slim_t_420 = {0};
-slim_t_420 = slim_fn_syntax_95ast_95make_95fields(slim_v_node_n65, slim_allocation_region);
-Slim_type_flow_95Operation slim_t_426 = {0};
+bool slim_t_430 = {0};
+slim_t_430 = slim_v_kind_n74 == INT64_C(6);
+if (slim_t_430) {
 {
-slim_t_426 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Make};
+Slim_type_control_95Construction slim_v_structure_n440 = {0};
+slim_v_structure_n440 = slim_fn_control_95construction(slim_v_tokens_n6, slim_v_node_n65, true, slim_allocation_region);
+(void)slim_v_structure_n440;
+int64_t slim_t_454 = {0};
+slim_t_454 = slim_v_structure_n440.slim_field_members;
+Slim_type_flow_95Operation slim_t_460 = {0};
+{
+slim_t_460 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Make};
 }
-slim_result = slim_fn_flow_95aggregate_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_420, INT64_C(2), slim_t_426, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
+slim_result = slim_fn_flow_95aggregate_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_454, INT64_C(2), slim_t_460, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 else {
-bool slim_t_442 = {0};
-slim_t_442 = slim_fn_syntax_95ast_95expression_95is_95case(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_442) {
-int64_t slim_t_456 = {0};
-slim_t_456 = slim_fn_syntax_95ast_95case_95payload(slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-Slim_type_flow_95Operation slim_t_463 = {0};
+bool slim_t_477 = {0};
+slim_t_477 = slim_v_kind_n74 == INT64_C(7);
+if (slim_t_477) {
 {
-slim_t_463 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Case};
+Slim_type_control_95Construction slim_v_structure_n487 = {0};
+slim_v_structure_n487 = slim_fn_control_95construction(slim_v_tokens_n6, slim_v_node_n65, false, slim_allocation_region);
+(void)slim_v_structure_n487;
+int64_t slim_t_501 = {0};
+slim_t_501 = slim_v_structure_n487.slim_field_members;
+Slim_type_flow_95Operation slim_t_507 = {0};
+{
+slim_t_507 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Case};
 }
-slim_result = slim_fn_flow_95aggregate_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_456, INT64_C(1), slim_t_463, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
+slim_result = slim_fn_flow_95aggregate_95task(slim_v_owner_n20, slim_v_task_n24, slim_t_501, INT64_C(1), slim_t_507, slim_v_depth_n28, slim_v_budget_n32, slim_v_blocks_n36, slim_v_edges_n43, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
 }
 else {
-bool slim_t_479 = {0};
-slim_t_479 = slim_fn_syntax_95ast_95expression_95is_95recur(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_479) {
+bool slim_t_524 = {0};
+slim_t_524 = slim_v_kind_n74 == INT64_C(9);
+if (slim_t_524) {
 {
-int64_t slim_v_transfer_n490 = {0};
-Slim_type_flow_95Operation slim_t_497 = {0};
+int64_t slim_v_transfer_n534 = {0};
+Slim_type_flow_95Operation slim_t_542 = {0};
 {
-slim_t_497 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Recur};
+slim_t_542 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_Recur};
 }
-slim_v_transfer_n490 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_497, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+slim_v_transfer_n534 = slim_fn_flow_95scoped_95block(slim_v_tokens_n6, slim_v_owner_n20, slim_v_node_n65, slim_t_542, slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_transfer_n490;
-bool slim_t_508 = {0};
-Slim_type_flow_95EdgeKind slim_t_514 = {0};
+(void)slim_v_transfer_n534;
+bool slim_t_552 = {0};
+Slim_type_flow_95EdgeKind slim_t_558 = {0};
 {
-slim_t_514 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Recur};
+slim_t_558 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Recur};
 }
-slim_t_508 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_transfer_n490, INT64_C(0), slim_t_514, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+slim_t_552 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_transfer_n534, INT64_C(0), slim_t_558, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-if (slim_t_508) {
-int64_t slim_t_528 = {0};
-slim_t_528 = slim_fn_syntax_95ast_95recur_95arguments(slim_v_node_n65, slim_allocation_region);
-int64_t slim_t_533 = {0};
-slim_t_533 = slim_v_task_n24.slim_field_from;
-slim_result = slim_fn_flow_95push(INT64_C(1), slim_t_528, slim_t_533, slim_v_transfer_n490, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+if (slim_t_552) {
+{
+Slim_type_control_95Invocation slim_v_structure_n570 = {0};
+slim_v_structure_n570 = slim_fn_control_95invocation(slim_v_node_n65, true, slim_allocation_region);
+(void)slim_v_structure_n570;
+int64_t slim_t_582 = {0};
+slim_t_582 = slim_v_structure_n570.slim_field_arguments;
+int64_t slim_t_587 = {0};
+slim_t_587 = slim_v_task_n24.slim_field_from;
+slim_result = slim_fn_flow_95push(INT64_C(1), slim_t_582, slim_t_587, slim_v_transfer_n534, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+else {
+slim_result = INT64_C(-1);
+}
+}
+}
+else {
+bool slim_t_610 = {0};
+slim_t_610 = slim_v_kind_n74 == INT64_C(5);
+if (slim_t_610) {
+{
+Slim_type_control_95Unary slim_v_structure_n620 = {0};
+slim_v_structure_n620 = slim_fn_control_95fork(slim_v_node_n65, slim_allocation_region);
+(void)slim_v_structure_n620;
+{
+int64_t slim_v_enter_n629 = {0};
+Slim_type_flow_95Operation slim_t_636 = {0};
+{
+slim_t_636 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ForkEnter};
+}
+slim_v_enter_n629 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_636, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_enter_n629;
+{
+int64_t slim_v_join_n647 = {0};
+Slim_type_flow_95Operation slim_t_654 = {0};
+{
+slim_t_654 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ForkJoin};
+}
+slim_v_join_n647 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_654, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_join_n647;
+{
+bool slim_v_entered_n665 = {0};
+int64_t slim_t_671 = {0};
+slim_t_671 = slim_v_task_n24.slim_field_from;
+Slim_type_flow_95EdgeKind slim_t_677 = {0};
+{
+slim_t_677 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+}
+slim_v_entered_n665 = slim_fn_flow_95edge(slim_v_owner_n20, slim_t_671, slim_v_enter_n629, slim_t_677, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_entered_n665;
+{
+bool slim_v_joined_n687 = {0};
+int64_t slim_t_694 = {0};
+slim_t_694 = slim_v_task_n24.slim_field_to;
+Slim_type_flow_95EdgeKind slim_t_699 = {0};
+{
+slim_t_699 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
+}
+slim_v_joined_n687 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_join_n647, slim_t_694, slim_t_699, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_joined_n687;
+bool slim_t_709 = {0};
+slim_t_709 = slim_v_entered_n665 && slim_v_joined_n687;
+if (slim_t_709) {
+int64_t slim_t_721 = {0};
+slim_t_721 = slim_v_structure_n620.slim_field_value;
+slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_721, slim_v_enter_n629, slim_v_join_n647, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
 slim_result = INT64_C(-1);
 }
-}
-}
-else {
-bool slim_t_555 = {0};
-slim_t_555 = slim_fn_syntax_95ast_95expression_95is_95fork(slim_v_source_n2, slim_v_tokens_n6, slim_v_node_n65, slim_allocation_region);
-if (slim_t_555) {
-{
-int64_t slim_v_enter_n566 = {0};
-Slim_type_flow_95Operation slim_t_573 = {0};
-{
-slim_t_573 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ForkEnter};
-}
-slim_v_enter_n566 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_573, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_enter_n566;
-{
-int64_t slim_v_join_n584 = {0};
-Slim_type_flow_95Operation slim_t_591 = {0};
-{
-slim_t_591 = (Slim_type_flow_95Operation){.tag = SLIM_TAG_flow_95Operation_ForkJoin};
-}
-slim_v_join_n584 = slim_fn_flow_95block(slim_v_owner_n20, slim_v_node_n65, slim_t_591, INT64_C(0), slim_v_budget_n32, slim_v_blocks_n36, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_join_n584;
-{
-bool slim_v_entered_n602 = {0};
-int64_t slim_t_608 = {0};
-slim_t_608 = slim_v_task_n24.slim_field_from;
-Slim_type_flow_95EdgeKind slim_t_614 = {0};
-{
-slim_t_614 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
-}
-slim_v_entered_n602 = slim_fn_flow_95edge(slim_v_owner_n20, slim_t_608, slim_v_enter_n566, slim_t_614, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_entered_n602;
-{
-bool slim_v_joined_n624 = {0};
-int64_t slim_t_631 = {0};
-slim_t_631 = slim_v_task_n24.slim_field_to;
-Slim_type_flow_95EdgeKind slim_t_636 = {0};
-{
-slim_t_636 = (Slim_type_flow_95EdgeKind){.tag = SLIM_TAG_flow_95EdgeKind_Next};
-}
-slim_v_joined_n624 = slim_fn_flow_95edge(slim_v_owner_n20, slim_v_join_n584, slim_t_631, slim_t_636, slim_v_budget_n32, slim_v_edges_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_joined_n624;
-bool slim_t_646 = {0};
-slim_t_646 = slim_v_entered_n602 && slim_v_joined_n624;
-if (slim_t_646) {
-int64_t slim_t_658 = {0};
-slim_t_658 = slim_fn_syntax_95ast_95fork_95body(slim_v_node_n65, slim_allocation_region);
-slim_result = slim_fn_flow_95push(INT64_C(0), slim_t_658, slim_v_enter_n566, slim_v_join_n584, slim_v_depth_n28, slim_v_budget_n32, slim_v_tasks_n50, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_result = INT64_C(-1);
 }
 }
 }
@@ -92516,31 +93208,36 @@ static SLIM_UNUSED_FUNCTION bool slim_fn_syntax_95token_95equal(SlimBytes slim_v
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 bool slim_result = {0};
+bool slim_t_28 = {0};
+slim_t_28 = slim_fn_syntax_95token_95index_95valid(slim_v_tokens_n6, slim_v_index_n13, slim_allocation_region);
+if (slim_t_28) {
 {
-int64_t slim_v_tag_n28 = {0};
-slim_v_tag_n28 = slim_fn_syntax_95token_95tag(slim_v_tokens_n6, slim_v_index_n13, slim_allocation_region);
-(void)slim_v_tag_n28;
+Slim_type_syntax_95Token slim_v_token_n38 = {0};
+slim_v_token_n38 = ((Slim_type_syntax_95Token *)(slim_v_tokens_n6).data)[slim_vec_check_index(&(slim_v_tokens_n6), slim_v_index_n13)];
+(void)slim_v_token_n38;
 {
-bool slim_v_virtual_n38 = {0};
-slim_v_virtual_n38 = slim_fn_syntax_95virtual_95token_95equal(slim_v_tag_n28, slim_v_text_n17, slim_allocation_region);
-(void)slim_v_virtual_n38;
+bool slim_v_virtual_n48 = {0};
+int64_t slim_t_53 = {0};
+int64_t slim_t_56 = {0};
+slim_t_56 = slim_v_token_n38.slim_field_tag;
+slim_t_53 = slim_t_56 % INT64_C(1000);
+slim_v_virtual_n48 = slim_fn_syntax_95virtual_95token_95equal(slim_t_53, slim_v_text_n17, slim_allocation_region);
+(void)slim_v_virtual_n48;
 {
-int64_t slim_v_start_n48 = {0};
-slim_v_start_n48 = slim_fn_syntax_95token_95start(slim_v_tokens_n6, slim_v_index_n13, slim_allocation_region);
-(void)slim_v_start_n48;
-{
-int64_t slim_v_end_n58 = {0};
-slim_v_end_n58 = slim_fn_syntax_95token_95end(slim_v_tokens_n6, slim_v_index_n13, slim_allocation_region);
-(void)slim_v_end_n58;
-{
-bool slim_v_exact_n68 = {0};
-slim_v_exact_n68 = slim_fn_syntax_95span_95equal(slim_v_source_n2, slim_v_start_n48, slim_v_end_n58, slim_v_text_n17, slim_allocation_region);
-(void)slim_v_exact_n68;
-slim_result = slim_v_virtual_n38 || slim_v_exact_n68;
+bool slim_v_exact_n67 = {0};
+int64_t slim_t_73 = {0};
+slim_t_73 = slim_v_token_n38.slim_field_start;
+int64_t slim_t_78 = {0};
+slim_t_78 = slim_v_token_n38.slim_field_end;
+slim_v_exact_n67 = slim_fn_syntax_95span_95equal(slim_v_source_n2, slim_t_73, slim_t_78, slim_v_text_n17, slim_allocation_region);
+(void)slim_v_exact_n67;
+slim_result = slim_v_virtual_n48 || slim_v_exact_n67;
 }
 }
 }
 }
+else {
+slim_result = slim_fn_syntax_95span_95equal(slim_v_source_n2, INT64_C(0), INT64_C(0), slim_v_text_n17, slim_allocation_region);
 }
 return slim_result;
 }
@@ -100123,9 +100820,9 @@ bool slim_t_33 = {0};
 slim_t_33 = slim_v_loan_n9 <= slim_v_node_n13;
 slim_t_24 = slim_t_27 && slim_t_33;
 if (slim_t_24) {
-int64_t slim_t_46 = {0};
-slim_t_46 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_loan_n9, slim_allocation_region);
-slim_result = slim_v_node_n13 < slim_t_46;
+Slim_type_control_95Scope slim_t_45 = {0};
+slim_t_45 = slim_fn_control_95scope(slim_v_tokens_n2, slim_v_loan_n9, slim_allocation_region);
+slim_result = slim_fn_control_95scope_95contains(slim_t_45, slim_v_node_n13, slim_allocation_region);
 }
 else {
 slim_result = false;
@@ -100494,80 +101191,6 @@ slim_result = slim_v_global_95conflict_n74 || slim_v_known_95conflict_n120;
 }
 }
 }
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95collection_95operand(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_call_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_argument_n13;
-(void)slim_v_call_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-int64_t slim_v_owner_n76 = {0};
-slim_v_owner_n76 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, (*slim_v_bindings_n33), slim_allocation_region);
-(void)slim_v_owner_n76;
-{
-bool slim_v_allowed_n88 = {0};
-slim_v_allowed_n88 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_argument_n13, slim_v_owner_n76, slim_v_call_n17, false, false, slim_v_bindings_n33, slim_v_issues_n47, false, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_allowed_n88;
-if (slim_v_allowed_n88) {
-{
-int64_t slim_v_issue_95count_n110 = {0};
-slim_v_issue_95count_n110 = ((*slim_v_issues_n47)).len;
-(void)slim_v_issue_95count_n110;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n119 = {0};
-slim_v_actual_n119 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_argument_n13, INT64_C(-1), slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n119;
-bool slim_t_139 = {0};
-bool slim_t_142 = {0};
-slim_t_142 = slim_fn_typing_95type_95valid(slim_v_actual_n119, slim_allocation_region);
-bool slim_t_147 = {0};
-int64_t slim_t_150 = {0};
-slim_t_150 = ((*slim_v_issues_n47)).len;
-slim_t_147 = slim_t_150 == slim_v_issue_95count_n110;
-slim_t_139 = slim_t_142 && slim_t_147;
-if (slim_t_139) {
-{
-int64_t slim_v_resolved_95owner_n162 = {0};
-slim_v_resolved_95owner_n162 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, (*slim_v_bindings_n33), slim_allocation_region);
-(void)slim_v_resolved_95owner_n162;
-{
-bool slim_v_registered_n174 = {0};
-slim_v_registered_n174 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_argument_n13, slim_v_resolved_95owner_n162, slim_v_call_n17, false, false, slim_v_bindings_n33, slim_v_issues_n47, true, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_registered_n174;
-slim_result = slim_v_actual_n119;
-}
-}
-}
-else {
-slim_result = slim_v_actual_n119;
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_argument_n13, slim_allocation_region);
-}
-}
-}
-slim_allocation_failed: ;
 return slim_result;
 }
 
@@ -101555,70 +102178,62 @@ slim_result = slim_v_replace_n79 || slim_t_93;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95builtin_95argument_95mode(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_position_n17, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_callee_n13;
-(void)slim_v_position_n17;
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95builtin_95argument_95mode(int64_t slim_v_operation_n2, int64_t slim_v_position_n6, SlimRegion *slim_region) {
+(void)slim_v_operation_n2;
+(void)slim_v_position_n6;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 int64_t slim_result = {0};
 {
-bool slim_v_first_n28 = {0};
-slim_v_first_n28 = slim_v_position_n17 == INT64_C(0);
-(void)slim_v_first_n28;
+bool slim_v_first_n16 = {0};
+slim_v_first_n16 = slim_v_position_n6 == INT64_C(0);
+(void)slim_v_first_n16;
 {
-bool slim_v_vector_95push_n38 = {0};
-slim_v_vector_95push_n38 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
-(void)slim_v_vector_95push_n38;
+bool slim_v_exclusive_95first_n26 = {0};
+bool slim_t_32 = {0};
+bool slim_t_35 = {0};
+slim_t_35 = slim_v_operation_n2 == INT64_C(5);
+bool slim_t_41 = {0};
+bool slim_t_44 = {0};
+slim_t_44 = slim_v_operation_n2 == INT64_C(6);
+bool slim_t_50 = {0};
+slim_t_50 = slim_v_operation_n2 == INT64_C(7);
+slim_t_41 = slim_t_44 || slim_t_50;
+slim_t_32 = slim_t_35 || slim_t_41;
+slim_v_exclusive_95first_n26 = slim_v_first_n16 && slim_t_32;
+(void)slim_v_exclusive_95first_n26;
 {
-bool slim_v_vector_95set_n50 = {0};
-slim_v_vector_95set_n50 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
-(void)slim_v_vector_95set_n50;
+bool slim_v_freeze_n61 = {0};
+bool slim_t_67 = {0};
+slim_t_67 = slim_v_operation_n2 == INT64_C(9);
+slim_v_freeze_n61 = slim_v_first_n16 && slim_t_67;
+(void)slim_v_freeze_n61;
 {
-bool slim_v_arena_95add_n62 = {0};
-slim_v_arena_95add_n62 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"arena.add", (int64_t)(sizeof("arena.add") - 1)), slim_allocation_region);
-(void)slim_v_arena_95add_n62;
+bool slim_v_read_95output_n76 = {0};
+bool slim_t_81 = {0};
+slim_t_81 = slim_v_position_n6 == INT64_C(1);
+bool slim_t_87 = {0};
+slim_t_87 = slim_v_operation_n2 == INT64_C(10);
+slim_v_read_95output_n76 = slim_t_81 && slim_t_87;
+(void)slim_v_read_95output_n76;
 {
-bool slim_v_exclusive_95first_n74 = {0};
-bool slim_t_80 = {0};
-bool slim_t_84 = {0};
-slim_t_84 = slim_v_vector_95set_n50 || slim_v_arena_95add_n62;
-slim_t_80 = slim_v_vector_95push_n38 || slim_t_84;
-slim_v_exclusive_95first_n74 = slim_v_first_n28 && slim_t_80;
-(void)slim_v_exclusive_95first_n74;
-{
-bool slim_v_freeze_n94 = {0};
-bool slim_t_100 = {0};
-slim_t_100 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bytes.freeze", (int64_t)(sizeof("bytes.freeze") - 1)), slim_allocation_region);
-slim_v_freeze_n94 = slim_v_first_n28 && slim_t_100;
-(void)slim_v_freeze_n94;
-{
-bool slim_v_read_95output_n111 = {0};
+bool slim_v_network_95output_n96 = {0};
+bool slim_t_101 = {0};
+slim_t_101 = slim_v_position_n6 == INT64_C(5);
+bool slim_t_107 = {0};
+slim_t_107 = slim_v_operation_n2 == INT64_C(11);
+slim_v_network_95output_n96 = slim_t_101 && slim_t_107;
+(void)slim_v_network_95output_n96;
 bool slim_t_116 = {0};
-slim_t_116 = slim_v_position_n17 == INT64_C(1);
-bool slim_t_122 = {0};
-slim_t_122 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.read_file", (int64_t)(sizeof("io.read_file") - 1)), slim_allocation_region);
-slim_v_read_95output_n111 = slim_t_116 && slim_t_122;
-(void)slim_v_read_95output_n111;
-{
-bool slim_v_network_95output_n133 = {0};
-bool slim_t_138 = {0};
-slim_t_138 = slim_v_position_n17 == INT64_C(5);
-bool slim_t_144 = {0};
-slim_t_144 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.tcp_exchange", (int64_t)(sizeof("io.tcp_exchange") - 1)), slim_allocation_region);
-slim_v_network_95output_n133 = slim_t_138 && slim_t_144;
-(void)slim_v_network_95output_n133;
-bool slim_t_155 = {0};
-bool slim_t_159 = {0};
-slim_t_159 = slim_v_read_95output_n111 || slim_v_network_95output_n133;
-slim_t_155 = slim_v_exclusive_95first_n74 || slim_t_159;
-if (slim_t_155) {
+bool slim_t_120 = {0};
+slim_t_120 = slim_v_read_95output_n76 || slim_v_network_95output_n96;
+slim_t_116 = slim_v_exclusive_95first_n26 || slim_t_120;
+if (slim_t_116) {
 slim_result = INT64_C(1);
 }
 else {
-if (slim_v_freeze_n94) {
+if (slim_v_freeze_n61) {
 slim_result = INT64_C(2);
 }
 else {
@@ -101630,20 +102245,16 @@ slim_result = INT64_C(0);
 }
 }
 }
-}
-}
-}
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95builtin_95argument_95modes(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_argument_n17, int64_t slim_v_position_n21, SlimVec slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_callee_n13;
-(void)slim_v_argument_n17;
-(void)slim_v_position_n21;
-(void)slim_v_bindings_n25;
-(void)slim_v_issues_n32;
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95builtin_95argument_95modes(SlimVec slim_v_tokens_n2, int64_t slim_v_operation_n9, int64_t slim_v_argument_n13, int64_t slim_v_position_n17, SlimVec slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_operation_n9;
+(void)slim_v_argument_n13;
+(void)slim_v_position_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
@@ -101651,100 +102262,94 @@ bool slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 slim_recur: ;
 {
-bool slim_v_done_n47 = {0};
-int64_t slim_t_52 = {0};
-slim_t_52 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n6, slim_v_argument_n17, slim_allocation_region);
-slim_v_done_n47 = slim_t_52 == INT64_C(1);
-(void)slim_v_done_n47;
-if (slim_v_done_n47) {
+bool slim_v_done_n43 = {0};
+int64_t slim_t_48 = {0};
+slim_t_48 = slim_fn_syntax_95ast_95node_95kind(slim_v_tokens_n2, slim_v_argument_n13, slim_allocation_region);
+slim_v_done_n43 = slim_t_48 == INT64_C(1);
+(void)slim_v_done_n43;
+if (slim_v_done_n43) {
 slim_result = true;
 }
 else {
 {
-int64_t slim_v_expected_n71 = {0};
-slim_v_expected_n71 = slim_fn_typing_95builtin_95argument_95mode(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_v_position_n21, slim_allocation_region);
-(void)slim_v_expected_n71;
+int64_t slim_v_expected_n67 = {0};
+slim_v_expected_n67 = slim_fn_typing_95builtin_95argument_95mode(slim_v_operation_n9, slim_v_position_n17, slim_allocation_region);
+(void)slim_v_expected_n67;
 {
-int64_t slim_v_actual_n83 = {0};
-slim_v_actual_n83 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n6, slim_v_argument_n17, slim_allocation_region);
-(void)slim_v_actual_n83;
+int64_t slim_v_actual_n77 = {0};
+slim_v_actual_n77 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n2, slim_v_argument_n13, slim_allocation_region);
+(void)slim_v_actual_n77;
 {
-bool slim_v_mode_95same_n93 = {0};
-slim_v_mode_95same_n93 = slim_v_expected_n71 == slim_v_actual_n83;
-(void)slim_v_mode_95same_n93;
+bool slim_v_mode_95same_n87 = {0};
+slim_v_mode_95same_n87 = slim_v_expected_n67 == slim_v_actual_n77;
+(void)slim_v_mode_95same_n87;
 {
-bool slim_v_capability_n103 = {0};
-slim_v_capability_n103 = slim_fn_typing_95check_95exclusive_95argument(slim_v_tokens_n6, slim_v_argument_n17, slim_v_bindings_n25, slim_v_issues_n32, slim_allocation_region);
+bool slim_v_capability_n97 = {0};
+slim_v_capability_n97 = slim_fn_typing_95check_95exclusive_95argument(slim_v_tokens_n2, slim_v_argument_n13, slim_v_bindings_n21, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_capability_n103;
+(void)slim_v_capability_n97;
 {
-bool slim_v_same_n115 = {0};
-slim_v_same_n115 = slim_v_mode_95same_n93 && slim_v_capability_n103;
-(void)slim_v_same_n115;
-if (slim_v_same_n115) {
+bool slim_v_same_n109 = {0};
+slim_v_same_n109 = slim_v_mode_95same_n87 && slim_v_capability_n97;
+(void)slim_v_same_n109;
+if (slim_v_same_n109) {
 {
-int64_t slim_v_next_n130 = {0};
-slim_v_next_n130 = slim_fn_syntax_95ast_95next(slim_v_tokens_n6, slim_v_argument_n17, slim_allocation_region);
-(void)slim_v_next_n130;
-SlimBytes slim_t_140 = {0};
-slim_t_140 = slim_v_source_n2;
-SlimVec slim_t_141 = {0};
-slim_t_141 = slim_v_tokens_n6;
-int64_t slim_t_142 = {0};
-slim_t_142 = slim_v_callee_n13;
-int64_t slim_t_143 = {0};
-slim_t_143 = slim_v_next_n130;
-int64_t slim_t_144 = {0};
-slim_t_144 = slim_i64_add(slim_v_position_n21, INT64_C(1));
-SlimVec slim_t_150 = {0};
-slim_t_150 = slim_v_bindings_n25;
-slim_v_source_n2 = slim_t_140;
-slim_v_tokens_n6 = slim_t_141;
-slim_v_callee_n13 = slim_t_142;
-slim_v_argument_n17 = slim_t_143;
-slim_v_position_n21 = slim_t_144;
-slim_v_bindings_n25 = slim_t_150;
+int64_t slim_v_next_n124 = {0};
+slim_v_next_n124 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_argument_n13, slim_allocation_region);
+(void)slim_v_next_n124;
+SlimVec slim_t_134 = {0};
+slim_t_134 = slim_v_tokens_n2;
+int64_t slim_t_135 = {0};
+slim_t_135 = slim_v_operation_n9;
+int64_t slim_t_136 = {0};
+slim_t_136 = slim_v_next_n124;
+int64_t slim_t_137 = {0};
+slim_t_137 = slim_i64_add(slim_v_position_n17, INT64_C(1));
+SlimVec slim_t_143 = {0};
+slim_t_143 = slim_v_bindings_n21;
+slim_v_tokens_n2 = slim_t_134;
+slim_v_operation_n9 = slim_t_135;
+slim_v_argument_n13 = slim_t_136;
+slim_v_position_n17 = slim_t_137;
+slim_v_bindings_n21 = slim_t_143;
 goto slim_recur;
 }
 }
 else {
 {
-SlimUnit slim_v__n159 = {0};
-if (slim_v_mode_95same_n93) {
-slim_v__n159 = (SlimUnit){0};
+SlimUnit slim_v__n152 = {0};
+if (slim_v_mode_95same_n87) {
+slim_v__n152 = (SlimUnit){0};
 }
 else {
-slim_v__n159 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_argument_n17, slim_v_issues_n32, slim_allocation_region);
+slim_v__n152 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_argument_n13, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
-(void)slim_v__n159;
+(void)slim_v__n152;
 {
-int64_t slim_v_next_n181 = {0};
-slim_v_next_n181 = slim_fn_syntax_95ast_95next(slim_v_tokens_n6, slim_v_argument_n17, slim_allocation_region);
-(void)slim_v_next_n181;
+int64_t slim_v_next_n174 = {0};
+slim_v_next_n174 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_argument_n13, slim_allocation_region);
+(void)slim_v_next_n174;
 {
-bool slim_v_remaining_n191 = {0};
-SlimBytes slim_t_195 = {0};
-slim_t_195 = slim_v_source_n2;
-SlimVec slim_t_196 = {0};
-slim_t_196 = slim_v_tokens_n6;
-int64_t slim_t_197 = {0};
-slim_t_197 = slim_v_callee_n13;
-int64_t slim_t_198 = {0};
-slim_t_198 = slim_v_next_n181;
-int64_t slim_t_199 = {0};
-slim_t_199 = slim_i64_add(slim_v_position_n21, INT64_C(1));
-SlimVec slim_t_205 = {0};
-slim_t_205 = slim_v_bindings_n25;
-slim_v_source_n2 = slim_t_195;
-slim_v_tokens_n6 = slim_t_196;
-slim_v_callee_n13 = slim_t_197;
-slim_v_argument_n17 = slim_t_198;
-slim_v_position_n21 = slim_t_199;
-slim_v_bindings_n25 = slim_t_205;
+bool slim_v_remaining_n184 = {0};
+SlimVec slim_t_188 = {0};
+slim_t_188 = slim_v_tokens_n2;
+int64_t slim_t_189 = {0};
+slim_t_189 = slim_v_operation_n9;
+int64_t slim_t_190 = {0};
+slim_t_190 = slim_v_next_n174;
+int64_t slim_t_191 = {0};
+slim_t_191 = slim_i64_add(slim_v_position_n17, INT64_C(1));
+SlimVec slim_t_197 = {0};
+slim_t_197 = slim_v_bindings_n21;
+slim_v_tokens_n2 = slim_t_188;
+slim_v_operation_n9 = slim_t_189;
+slim_v_argument_n13 = slim_t_190;
+slim_v_position_n17 = slim_t_191;
+slim_v_bindings_n21 = slim_t_197;
 goto slim_recur;
-(void)slim_v_remaining_n191;
-slim_result = slim_v_remaining_n191 && false;
+(void)slim_v_remaining_n184;
+slim_result = slim_v_remaining_n184 && false;
 }
 }
 }
@@ -102216,150 +102821,6 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95scalar_95argument(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_kind_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_argument_n13;
-(void)slim_v_kind_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-bool slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n76 = {0};
-slim_v_actual_n76 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_argument_n13, INT64_C(-1), slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n76;
-slim_result = slim_fn_typing_95expect_95kind(slim_v_actual_n76, slim_v_kind_n17, slim_v_argument_n13, slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95two_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_argument_95kind_n21, int64_t slim_v_result_95kind_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_arguments_n17;
-(void)slim_v_argument_95kind_n21;
-(void)slim_v_result_95kind_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_arity_n84 = {0};
-int64_t slim_t_92 = {0};
-slim_t_92 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
-slim_v_arity_n84 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n17, INT64_C(2), slim_t_92, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n84;
-if (slim_v_arity_n84) {
-{
-int64_t slim_v_second_n106 = {0};
-slim_v_second_n106 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n17, slim_allocation_region);
-(void)slim_v_second_n106;
-{
-bool slim_v_first_95ok_n116 = {0};
-slim_v_first_95ok_n116 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n17, slim_v_argument_95kind_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_first_95ok_n116;
-{
-bool slim_v_second_95ok_n136 = {0};
-slim_v_second_95ok_n136 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n106, slim_v_argument_95kind_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_second_95ok_n136;
-{
-bool slim_v_both_n156 = {0};
-slim_v_both_n156 = slim_v_first_95ok_n116 && slim_v_second_95ok_n136;
-(void)slim_v_both_n156;
-if (slim_v_both_n156) {
-slim_result = slim_fn_typing_95scalar_95type(slim_v_result_95kind_n25, slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95one_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_argument_95kind_n21, int64_t slim_v_result_95kind_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_arguments_n17;
-(void)slim_v_argument_95kind_n21;
-(void)slim_v_result_95kind_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_arity_n84 = {0};
-int64_t slim_t_92 = {0};
-slim_t_92 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
-slim_v_arity_n84 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n17, INT64_C(1), slim_t_92, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n84;
-if (slim_v_arity_n84) {
-{
-bool slim_v_valid_n106 = {0};
-slim_v_valid_n106 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n17, slim_v_argument_95kind_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_valid_n106;
-if (slim_v_valid_n106) {
-slim_result = slim_fn_typing_95scalar_95type(slim_v_result_95kind_n25, slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95collection_95new(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_arguments_n17, int64_t slim_v_expected_n21, int64_t slim_v_constructor_n25, SlimVec * slim_v_issues_n29, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
@@ -102427,784 +102888,6 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95vector_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_expected_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_new_95call_n84 = {0};
-slim_v_new_95call_n84 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.new", (int64_t)(sizeof("vec.new") - 1)), slim_allocation_region);
-(void)slim_v_new_95call_n84;
-if (slim_v_new_95call_n84) {
-slim_result = slim_fn_typing_95infer_95collection_95new(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_arguments_n21, slim_v_expected_n25, INT64_C(0), slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_len_95call_n115 = {0};
-slim_v_len_95call_n115 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.len", (int64_t)(sizeof("vec.len") - 1)), slim_allocation_region);
-(void)slim_v_len_95call_n115;
-{
-bool slim_v_get_95call_n127 = {0};
-slim_v_get_95call_n127 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.get", (int64_t)(sizeof("vec.get") - 1)), slim_allocation_region);
-(void)slim_v_get_95call_n127;
-{
-bool slim_v_push_95call_n139 = {0};
-slim_v_push_95call_n139 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
-(void)slim_v_push_95call_n139;
-{
-bool slim_v_set_95call_n151 = {0};
-slim_v_set_95call_n151 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
-(void)slim_v_set_95call_n151;
-{
-int64_t slim_v_arity_95expected_n163 = {0};
-if (slim_v_len_95call_n115) {
-slim_v_arity_95expected_n163 = INT64_C(1);
-}
-else {
-if (slim_v_get_95call_n127) {
-slim_v_arity_95expected_n163 = INT64_C(2);
-}
-else {
-if (slim_v_push_95call_n139) {
-slim_v_arity_95expected_n163 = INT64_C(2);
-}
-else {
-slim_v_arity_95expected_n163 = INT64_C(3);
-}
-}
-}
-(void)slim_v_arity_95expected_n163;
-{
-bool slim_v_arity_n201 = {0};
-slim_v_arity_n201 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, slim_v_arity_95expected_n163, slim_v_callee_n17, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n201;
-if (slim_v_arity_n201) {
-{
-Slim_type_typing_95TypeRef slim_v_vector_n219 = {0};
-slim_v_vector_n219 = slim_fn_typing_95infer_95collection_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, slim_v_expr_n13, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_vector_n219;
-{
-bool slim_v_vector_95ok_n239 = {0};
-slim_v_vector_95ok_n239 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_vector_n219, INT64_C(0), slim_allocation_region);
-(void)slim_v_vector_95ok_n239;
-if (slim_v_vector_95ok_n239) {
-{
-int64_t slim_v_element_95type_n256 = {0};
-int64_t slim_t_261 = {0};
-slim_t_261 = slim_v_vector_n219.slim_field_form;
-slim_v_element_95type_n256 = slim_i64_add(slim_t_261, INT64_C(2));
-(void)slim_v_element_95type_n256;
-if (slim_v_len_95call_n115) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(3), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-{
-int64_t slim_v_second_n284 = {0};
-slim_v_second_n284 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n21, slim_allocation_region);
-(void)slim_v_second_n284;
-if (slim_v_get_95call_n127) {
-{
-bool slim_v_index_95ok_n299 = {0};
-slim_v_index_95ok_n299 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n284, INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_index_95ok_n299;
-if (slim_v_index_95ok_n299) {
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_element_95type_n256, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-else {
-if (slim_v_push_95call_n139) {
-{
-Slim_type_typing_95TypeRef slim_v_value_n350 = {0};
-slim_v_value_n350 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n284, slim_v_element_95type_n256, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_n350;
-{
-bool slim_v_value_95valid_n370 = {0};
-slim_v_value_95valid_n370 = slim_fn_typing_95type_95valid(slim_v_value_n350, slim_allocation_region);
-(void)slim_v_value_95valid_n370;
-{
-bool slim_v_move_95valid_n379 = {0};
-slim_v_move_95valid_n379 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_second_n284, slim_v_element_95type_n256, slim_v_bindings_n41, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n379;
-{
-bool slim_v_valid_n395 = {0};
-slim_v_valid_n395 = slim_v_value_95valid_n370 && slim_v_move_95valid_n379;
-(void)slim_v_valid_n395;
-if (slim_v_valid_n395) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(0), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-else {
-{
-int64_t slim_v_third_n433 = {0};
-slim_v_third_n433 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_second_n284, slim_allocation_region);
-(void)slim_v_third_n433;
-{
-bool slim_v_index_95ok_n443 = {0};
-slim_v_index_95ok_n443 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n284, INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_index_95ok_n443;
-{
-Slim_type_typing_95TypeRef slim_v_value_n463 = {0};
-slim_v_value_n463 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_third_n433, slim_v_element_95type_n256, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_n463;
-{
-bool slim_v_value_95ok_n483 = {0};
-slim_v_value_95ok_n483 = slim_fn_typing_95type_95valid(slim_v_value_n463, slim_allocation_region);
-(void)slim_v_value_95ok_n483;
-{
-bool slim_v_move_95valid_n492 = {0};
-slim_v_move_95valid_n492 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_third_n433, slim_v_element_95type_n256, slim_v_bindings_n41, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n492;
-{
-bool slim_v_valid_n508 = {0};
-bool slim_t_514 = {0};
-slim_t_514 = slim_v_value_95ok_n483 && slim_v_move_95valid_n492;
-slim_v_valid_n508 = slim_v_index_95ok_n443 && slim_t_514;
-(void)slim_v_valid_n508;
-if (slim_v_valid_n508) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(0), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n561 = {0};
-slim_v__n561 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_arguments_n21, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n561;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95arena_95builtin(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_expected_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_new_95call_n84 = {0};
-slim_v_new_95call_n84 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"arena.new", (int64_t)(sizeof("arena.new") - 1)), slim_allocation_region);
-(void)slim_v_new_95call_n84;
-if (slim_v_new_95call_n84) {
-slim_result = slim_fn_typing_95infer_95collection_95new(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_arguments_n21, slim_v_expected_n25, INT64_C(1), slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_arity_n115 = {0};
-slim_v_arity_n115 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, INT64_C(2), slim_v_callee_n17, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n115;
-if (slim_v_arity_n115) {
-{
-Slim_type_typing_95TypeRef slim_v_arena_n133 = {0};
-slim_v_arena_n133 = slim_fn_typing_95infer_95collection_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, slim_v_expr_n13, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arena_n133;
-{
-bool slim_v_arena_95ok_n153 = {0};
-slim_v_arena_95ok_n153 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_arena_n133, INT64_C(1), slim_allocation_region);
-(void)slim_v_arena_95ok_n153;
-if (slim_v_arena_95ok_n153) {
-{
-int64_t slim_v_element_95type_n170 = {0};
-int64_t slim_t_175 = {0};
-slim_t_175 = slim_v_arena_n133.slim_field_form;
-slim_v_element_95type_n170 = slim_i64_add(slim_t_175, INT64_C(2));
-(void)slim_v_element_95type_n170;
-{
-int64_t slim_v_second_n184 = {0};
-slim_v_second_n184 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n21, slim_allocation_region);
-(void)slim_v_second_n184;
-{
-bool slim_v_add_95call_n194 = {0};
-slim_v_add_95call_n194 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"arena.add", (int64_t)(sizeof("arena.add") - 1)), slim_allocation_region);
-(void)slim_v_add_95call_n194;
-if (slim_v_add_95call_n194) {
-{
-Slim_type_typing_95TypeRef slim_v_value_n211 = {0};
-slim_v_value_n211 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n184, slim_v_element_95type_n170, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_n211;
-{
-bool slim_v_value_95valid_n231 = {0};
-slim_v_value_95valid_n231 = slim_fn_typing_95type_95valid(slim_v_value_n211, slim_allocation_region);
-(void)slim_v_value_95valid_n231;
-{
-bool slim_v_move_95valid_n240 = {0};
-slim_v_move_95valid_n240 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_second_n184, slim_v_element_95type_n170, slim_v_bindings_n41, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n240;
-{
-bool slim_v_contextual_n256 = {0};
-slim_v_contextual_n256 = slim_v_expected_n25 >= INT64_C(0);
-(void)slim_v_contextual_n256;
-{
-Slim_type_typing_95TypeRef slim_v_expected_95type_n266 = {0};
-if (slim_v_contextual_n256) {
-slim_v_expected_95type_n266 = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expected_n25, slim_allocation_region);
-}
-else {
-slim_v_expected_95type_n266 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-(void)slim_v_expected_95type_n266;
-{
-bool slim_v_id_95ok_n292 = {0};
-if (slim_v_contextual_n256) {
-slim_v_id_95ok_n292 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expected_95type_n266, INT64_C(2), slim_allocation_region);
-}
-else {
-slim_v_id_95ok_n292 = false;
-}
-(void)slim_v_id_95ok_n292;
-{
-bool slim_v_same_95inner_n315 = {0};
-if (slim_v_id_95ok_n292) {
-int64_t slim_t_328 = {0};
-slim_t_328 = slim_fn_syntax_95ast_95type_95argument(slim_v_expected_n25, slim_allocation_region);
-slim_v_same_95inner_n315 = slim_fn_typing_95type_95forms_95equal(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_element_95type_n170, slim_t_328, slim_allocation_region);
-}
-else {
-slim_v_same_95inner_n315 = false;
-}
-(void)slim_v_same_95inner_n315;
-{
-bool slim_v_valid_n342 = {0};
-bool slim_t_348 = {0};
-slim_t_348 = slim_v_move_95valid_n240 && slim_v_same_95inner_n315;
-slim_v_valid_n342 = slim_v_value_95valid_n231 && slim_t_348;
-(void)slim_v_valid_n342;
-if (slim_v_valid_n342) {
-slim_result = slim_v_expected_95type_n266;
-}
-else {
-{
-SlimUnit slim_v__n366 = {0};
-slim_v__n366 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_expr_n13, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n366;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-{
-Slim_type_typing_95TypeRef slim_v_identity_n396 = {0};
-slim_v_identity_n396 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n184, INT64_C(-1), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_identity_n396;
-{
-bool slim_v_id_95ok_n416 = {0};
-slim_v_id_95ok_n416 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_identity_n396, INT64_C(2), slim_allocation_region);
-(void)slim_v_id_95ok_n416;
-{
-bool slim_v_same_95inner_n428 = {0};
-if (slim_v_id_95ok_n416) {
-int64_t slim_t_441 = {0};
-int64_t slim_t_444 = {0};
-slim_t_444 = slim_v_identity_n396.slim_field_form;
-slim_t_441 = slim_i64_add(slim_t_444, INT64_C(2));
-slim_v_same_95inner_n428 = slim_fn_typing_95type_95forms_95equal(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_element_95type_n170, slim_t_441, slim_allocation_region);
-}
-else {
-slim_v_same_95inner_n428 = false;
-}
-(void)slim_v_same_95inner_n428;
-if (slim_v_same_95inner_n428) {
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_element_95type_n170, slim_allocation_region);
-}
-else {
-{
-SlimUnit slim_v__n475 = {0};
-slim_v__n475 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_second_n184, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n475;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n505 = {0};
-slim_v__n505 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_arguments_n21, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n505;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95bytes_95freeze(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_parent_n25;
-(void)slim_v_params_n29;
-(void)slim_v_return_95type_n33;
-(void)slim_v_bindings_n37;
-(void)slim_v_facts_n44;
-(void)slim_v_issues_n51;
-(void)slim_v_scopes_n58;
-(void)slim_v_frames_n65;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_arity_n80 = {0};
-slim_v_arity_n80 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, INT64_C(1), slim_v_callee_n17, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n80;
-if (slim_v_arity_n80) {
-{
-Slim_type_typing_95TypeRef slim_v_vector_n98 = {0};
-slim_v_vector_n98 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, INT64_C(-1), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_vector_n98;
-{
-bool slim_v_vector_95ok_n118 = {0};
-slim_v_vector_95ok_n118 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_vector_n98, INT64_C(0), slim_allocation_region);
-(void)slim_v_vector_95ok_n118;
-{
-int64_t slim_v_inner_n130 = {0};
-if (slim_v_vector_95ok_n118) {
-int64_t slim_t_140 = {0};
-slim_t_140 = slim_v_vector_n98.slim_field_form;
-slim_v_inner_n130 = slim_i64_add(slim_t_140, INT64_C(2));
-}
-else {
-slim_v_inner_n130 = INT64_C(-1);
-}
-(void)slim_v_inner_n130;
-{
-int64_t slim_v_inner_95kind_n155 = {0};
-if (slim_v_vector_95ok_n118) {
-slim_v_inner_95kind_n155 = slim_fn_syntax_95scalar_95type_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_inner_n130, slim_allocation_region);
-}
-else {
-slim_v_inner_95kind_n155 = INT64_C(-1);
-}
-(void)slim_v_inner_95kind_n155;
-{
-bool slim_v_byte_95vector_n177 = {0};
-slim_v_byte_95vector_n177 = slim_v_inner_95kind_n155 == INT64_C(2);
-(void)slim_v_byte_95vector_n177;
-{
-bool slim_v_valid_n187 = {0};
-slim_v_valid_n187 = slim_v_vector_95ok_n118 && slim_v_byte_95vector_n177;
-(void)slim_v_valid_n187;
-if (slim_v_valid_n187) {
-{
-bool slim_v_moved_n202 = {0};
-slim_v_moved_n202 = slim_fn_typing_95check_95owned_95value(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_arguments_n21, false, slim_v_bindings_n37, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_moved_n202;
-if (slim_v_moved_n202) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(4), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n243 = {0};
-slim_v__n243 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_arguments_n21, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n243;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95read_95file(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_parent_n25;
-(void)slim_v_params_n29;
-(void)slim_v_return_95type_n33;
-(void)slim_v_bindings_n37;
-(void)slim_v_facts_n44;
-(void)slim_v_issues_n51;
-(void)slim_v_scopes_n58;
-(void)slim_v_frames_n65;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_arity_n80 = {0};
-slim_v_arity_n80 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, INT64_C(2), slim_v_callee_n17, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n80;
-if (slim_v_arity_n80) {
-{
-int64_t slim_v_second_n98 = {0};
-slim_v_second_n98 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n21, slim_allocation_region);
-(void)slim_v_second_n98;
-{
-bool slim_v_path_95ok_n108 = {0};
-slim_v_path_95ok_n108 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, INT64_C(4), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_path_95ok_n108;
-{
-Slim_type_typing_95TypeRef slim_v_output_n128 = {0};
-slim_v_output_n128 = slim_fn_typing_95infer_95collection_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n98, slim_v_expr_n13, slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_output_n128;
-{
-bool slim_v_vector_95ok_n148 = {0};
-slim_v_vector_95ok_n148 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_output_n128, INT64_C(0), slim_allocation_region);
-(void)slim_v_vector_95ok_n148;
-{
-int64_t slim_v_inner_n160 = {0};
-if (slim_v_vector_95ok_n148) {
-int64_t slim_t_170 = {0};
-slim_t_170 = slim_v_output_n128.slim_field_form;
-slim_v_inner_n160 = slim_i64_add(slim_t_170, INT64_C(2));
-}
-else {
-slim_v_inner_n160 = INT64_C(-1);
-}
-(void)slim_v_inner_n160;
-{
-int64_t slim_v_inner_95kind_n185 = {0};
-if (slim_v_vector_95ok_n148) {
-slim_v_inner_95kind_n185 = slim_fn_syntax_95scalar_95type_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_inner_n160, slim_allocation_region);
-}
-else {
-slim_v_inner_95kind_n185 = INT64_C(-1);
-}
-(void)slim_v_inner_95kind_n185;
-{
-bool slim_v_bytes_95ok_n207 = {0};
-slim_v_bytes_95ok_n207 = slim_v_inner_95kind_n185 == INT64_C(2);
-(void)slim_v_bytes_95ok_n207;
-{
-bool slim_v_output_95ok_n217 = {0};
-slim_v_output_95ok_n217 = slim_v_vector_95ok_n148 && slim_v_bytes_95ok_n207;
-(void)slim_v_output_95ok_n217;
-{
-bool slim_v_valid_n227 = {0};
-slim_v_valid_n227 = slim_v_path_95ok_n108 && slim_v_output_95ok_n217;
-(void)slim_v_valid_n227;
-if (slim_v_valid_n227) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(1), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-{
-SlimUnit slim_v__n251 = {0};
-slim_v__n251 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_second_n98, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n251;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95tcp_95exchange(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_parent_n25, int64_t slim_v_params_n29, int64_t slim_v_return_95type_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_parent_n25;
-(void)slim_v_params_n29;
-(void)slim_v_return_95type_n33;
-(void)slim_v_bindings_n37;
-(void)slim_v_facts_n44;
-(void)slim_v_issues_n51;
-(void)slim_v_scopes_n58;
-(void)slim_v_frames_n65;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_arity_n80 = {0};
-slim_v_arity_n80 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, INT64_C(6), slim_v_callee_n17, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n80;
-if (slim_v_arity_n80) {
-{
-int64_t slim_v_second_n98 = {0};
-slim_v_second_n98 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n21, slim_allocation_region);
-(void)slim_v_second_n98;
-{
-int64_t slim_v_third_n108 = {0};
-slim_v_third_n108 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_second_n98, slim_allocation_region);
-(void)slim_v_third_n108;
-{
-int64_t slim_v_fourth_n118 = {0};
-slim_v_fourth_n118 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_third_n108, slim_allocation_region);
-(void)slim_v_fourth_n118;
-{
-int64_t slim_v_fifth_n128 = {0};
-slim_v_fifth_n128 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_fourth_n118, slim_allocation_region);
-(void)slim_v_fifth_n128;
-{
-int64_t slim_v_sixth_n138 = {0};
-slim_v_sixth_n138 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_fifth_n128, slim_allocation_region);
-(void)slim_v_sixth_n138;
-{
-bool slim_v_address_95ok_n148 = {0};
-slim_v_address_95ok_n148 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, INT64_C(4), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_address_95ok_n148;
-{
-bool slim_v_port_95ok_n168 = {0};
-slim_v_port_95ok_n168 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n98, INT64_C(3), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_port_95ok_n168;
-{
-bool slim_v_request_95ok_n188 = {0};
-slim_v_request_95ok_n188 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_third_n108, INT64_C(4), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_request_95ok_n188;
-{
-bool slim_v_limit_95ok_n208 = {0};
-slim_v_limit_95ok_n208 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_fourth_n118, INT64_C(3), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_limit_95ok_n208;
-{
-bool slim_v_timeout_95ok_n228 = {0};
-slim_v_timeout_95ok_n228 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_fifth_n128, INT64_C(3), slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_timeout_95ok_n228;
-{
-Slim_type_typing_95TypeRef slim_v_output_n248 = {0};
-slim_v_output_n248 = slim_fn_typing_95infer_95collection_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_sixth_n138, slim_v_expr_n13, slim_v_parent_n25, slim_v_params_n29, slim_v_return_95type_n33, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_output_n248;
-{
-bool slim_v_vector_95ok_n268 = {0};
-slim_v_vector_95ok_n268 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_output_n248, INT64_C(0), slim_allocation_region);
-(void)slim_v_vector_95ok_n268;
-{
-int64_t slim_v_inner_n280 = {0};
-if (slim_v_vector_95ok_n268) {
-int64_t slim_t_290 = {0};
-slim_t_290 = slim_v_output_n248.slim_field_form;
-slim_v_inner_n280 = slim_i64_add(slim_t_290, INT64_C(2));
-}
-else {
-slim_v_inner_n280 = INT64_C(-1);
-}
-(void)slim_v_inner_n280;
-{
-int64_t slim_v_inner_95kind_n305 = {0};
-if (slim_v_vector_95ok_n268) {
-slim_v_inner_95kind_n305 = slim_fn_syntax_95scalar_95type_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_inner_n280, slim_allocation_region);
-}
-else {
-slim_v_inner_95kind_n305 = INT64_C(-1);
-}
-(void)slim_v_inner_95kind_n305;
-{
-bool slim_v_bytes_95ok_n327 = {0};
-slim_v_bytes_95ok_n327 = slim_v_inner_95kind_n305 == INT64_C(2);
-(void)slim_v_bytes_95ok_n327;
-{
-bool slim_v_output_95ok_n337 = {0};
-slim_v_output_95ok_n337 = slim_v_vector_95ok_n268 && slim_v_bytes_95ok_n327;
-(void)slim_v_output_95ok_n337;
-{
-bool slim_v_scalar_95ok_n347 = {0};
-bool slim_t_353 = {0};
-bool slim_t_357 = {0};
-bool slim_t_361 = {0};
-slim_t_361 = slim_v_limit_95ok_n208 && slim_v_timeout_95ok_n228;
-slim_t_357 = slim_v_request_95ok_n188 && slim_t_361;
-slim_t_353 = slim_v_port_95ok_n168 && slim_t_357;
-slim_v_scalar_95ok_n347 = slim_v_address_95ok_n148 && slim_t_353;
-(void)slim_v_scalar_95ok_n347;
-{
-bool slim_v_valid_n372 = {0};
-slim_v_valid_n372 = slim_v_scalar_95ok_n347 && slim_v_output_95ok_n337;
-(void)slim_v_valid_n372;
-if (slim_v_valid_n372) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(1), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-{
-SlimUnit slim_v__n396 = {0};
-slim_v__n396 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_sixth_n138, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n396;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
 static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95zero_95scalar_95builtin(SlimVec slim_v_tokens_n2, int64_t slim_v_expr_n9, int64_t slim_v_arguments_n13, int64_t slim_v_result_95kind_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region) {
 (void)slim_v_tokens_n2;
 (void)slim_v_expr_n9;
@@ -103228,264 +102911,6 @@ slim_result = slim_fn_typing_95scalar_95type(slim_v_result_95kind_n17, slim_v_ex
 }
 else {
 slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n9, slim_allocation_region);
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95builtin_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_expected_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_expected_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_tcp_n84 = {0};
-slim_v_tcp_n84 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.tcp_exchange", (int64_t)(sizeof("io.tcp_exchange") - 1)), slim_allocation_region);
-(void)slim_v_tcp_n84;
-if (slim_v_tcp_n84) {
-slim_result = slim_fn_typing_95infer_95tcp_95exchange(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n17, slim_v_arguments_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_clock_n121 = {0};
-slim_v_clock_n121 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.monotonic_ms", (int64_t)(sizeof("io.monotonic_ms") - 1)), slim_allocation_region);
-(void)slim_v_clock_n121;
-if (slim_v_clock_n121) {
-slim_result = slim_fn_typing_95infer_95zero_95scalar_95builtin((*slim_v_tokens_n6), slim_v_expr_n13, slim_v_arguments_n21, INT64_C(3), slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_math_n150 = {0};
-slim_v_math_n150 = slim_fn_typing_95builtin_95group_95math(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_allocation_region);
-(void)slim_v_math_n150;
-if (slim_v_math_n150) {
-slim_result = slim_fn_typing_95infer_95two_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(3), INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_compare_n187 = {0};
-slim_v_compare_n187 = slim_fn_typing_95builtin_95group_95compare(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_allocation_region);
-(void)slim_v_compare_n187;
-if (slim_v_compare_n187) {
-slim_result = slim_fn_typing_95infer_95two_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(3), INT64_C(1), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_bool_95not_n224 = {0};
-slim_v_bool_95not_n224 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bool.not", (int64_t)(sizeof("bool.not") - 1)), slim_allocation_region);
-(void)slim_v_bool_95not_n224;
-if (slim_v_bool_95not_n224) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(1), INT64_C(1), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_bool_95binary_n262 = {0};
-bool slim_t_267 = {0};
-slim_t_267 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bool.and", (int64_t)(sizeof("bool.and") - 1)), slim_allocation_region);
-bool slim_t_275 = {0};
-slim_t_275 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bool.or", (int64_t)(sizeof("bool.or") - 1)), slim_allocation_region);
-slim_v_bool_95binary_n262 = slim_t_267 || slim_t_275;
-(void)slim_v_bool_95binary_n262;
-if (slim_v_bool_95binary_n262) {
-slim_result = slim_fn_typing_95infer_95two_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(1), INT64_C(1), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_u8_95to_95i64_n312 = {0};
-slim_v_u8_95to_95i64_n312 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"u8.to_i64", (int64_t)(sizeof("u8.to_i64") - 1)), slim_allocation_region);
-(void)slim_v_u8_95to_95i64_n312;
-if (slim_v_u8_95to_95i64_n312) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(2), INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_i64_95to_95u8_n350 = {0};
-slim_v_i64_95to_95u8_n350 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"i64.to_u8", (int64_t)(sizeof("i64.to_u8") - 1)), slim_allocation_region);
-(void)slim_v_i64_95to_95u8_n350;
-if (slim_v_i64_95to_95u8_n350) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(3), INT64_C(2), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_bytes_95len_n388 = {0};
-slim_v_bytes_95len_n388 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bytes.len", (int64_t)(sizeof("bytes.len") - 1)), slim_allocation_region);
-(void)slim_v_bytes_95len_n388;
-if (slim_v_bytes_95len_n388) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(4), INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_bytes_95get_n426 = {0};
-slim_v_bytes_95get_n426 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bytes.get", (int64_t)(sizeof("bytes.get") - 1)), slim_allocation_region);
-(void)slim_v_bytes_95get_n426;
-if (slim_v_bytes_95get_n426) {
-{
-bool slim_v_arity_n443 = {0};
-slim_v_arity_n443 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_arguments_n21, INT64_C(2), slim_v_callee_n17, slim_v_issues_n55, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n443;
-if (slim_v_arity_n443) {
-{
-int64_t slim_v_second_n461 = {0};
-slim_v_second_n461 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_arguments_n21, slim_allocation_region);
-(void)slim_v_second_n461;
-{
-bool slim_v_bytes_95ok_n471 = {0};
-slim_v_bytes_95ok_n471 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, INT64_C(4), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_bytes_95ok_n471;
-{
-bool slim_v_index_95ok_n491 = {0};
-slim_v_index_95ok_n491 = slim_fn_typing_95check_95scalar_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_v_second_n461, INT64_C(3), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_index_95ok_n491;
-{
-bool slim_v_valid_n511 = {0};
-slim_v_valid_n511 = slim_v_bytes_95ok_n471 && slim_v_index_95ok_n491;
-(void)slim_v_valid_n511;
-if (slim_v_valid_n511) {
-slim_result = slim_fn_typing_95scalar_95type(INT64_C(2), slim_v_expr_n13, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-else {
-{
-bool slim_v_freeze_n560 = {0};
-slim_v_freeze_n560 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"bytes.freeze", (int64_t)(sizeof("bytes.freeze") - 1)), slim_allocation_region);
-(void)slim_v_freeze_n560;
-if (slim_v_freeze_n560) {
-slim_result = slim_fn_typing_95infer_95bytes_95freeze(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n17, slim_v_arguments_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_print_95i64_n597 = {0};
-slim_v_print_95i64_n597 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.print_i64", (int64_t)(sizeof("io.print_i64") - 1)), slim_allocation_region);
-(void)slim_v_print_95i64_n597;
-if (slim_v_print_95i64_n597) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(3), INT64_C(0), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_print_95bytes_n635 = {0};
-slim_v_print_95bytes_n635 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.print_bytes", (int64_t)(sizeof("io.print_bytes") - 1)), slim_allocation_region);
-(void)slim_v_print_95bytes_n635;
-{
-bool slim_v_println_n647 = {0};
-slim_v_println_n647 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.println", (int64_t)(sizeof("io.println") - 1)), slim_allocation_region);
-(void)slim_v_println_n647;
-{
-bool slim_v_bytes_95output_n659 = {0};
-slim_v_bytes_95output_n659 = slim_v_print_95bytes_n635 || slim_v_println_n647;
-(void)slim_v_bytes_95output_n659;
-if (slim_v_bytes_95output_n659) {
-slim_result = slim_fn_typing_95infer_95one_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_arguments_n21, INT64_C(4), INT64_C(0), slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_read_95file_n695 = {0};
-slim_v_read_95file_n695 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"io.read_file", (int64_t)(sizeof("io.read_file") - 1)), slim_allocation_region);
-(void)slim_v_read_95file_n695;
-if (slim_v_read_95file_n695) {
-slim_result = slim_fn_typing_95infer_95read_95file(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n17, slim_v_arguments_n21, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-{
-bool slim_v_vector_95call_n732 = {0};
-bool slim_t_737 = {0};
-slim_t_737 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.new", (int64_t)(sizeof("vec.new") - 1)), slim_allocation_region);
-bool slim_t_745 = {0};
-bool slim_t_748 = {0};
-slim_t_748 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.len", (int64_t)(sizeof("vec.len") - 1)), slim_allocation_region);
-bool slim_t_756 = {0};
-bool slim_t_759 = {0};
-slim_t_759 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.get", (int64_t)(sizeof("vec.get") - 1)), slim_allocation_region);
-bool slim_t_767 = {0};
-bool slim_t_770 = {0};
-slim_t_770 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
-bool slim_t_778 = {0};
-slim_t_778 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n17, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
-slim_t_767 = slim_t_770 || slim_t_778;
-slim_t_756 = slim_t_759 || slim_t_767;
-slim_t_745 = slim_t_748 || slim_t_756;
-slim_v_vector_95call_n732 = slim_t_737 || slim_t_745;
-(void)slim_v_vector_95call_n732;
-if (slim_v_vector_95call_n732) {
-slim_result = slim_fn_typing_95infer_95vector_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n17, slim_v_arguments_n21, slim_v_expected_n25, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_result = slim_fn_typing_95infer_95arena_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n17, slim_v_arguments_n21, slim_v_expected_n25, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
 }
 }
 slim_allocation_failed: ;
@@ -103732,271 +103157,295 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95call_95arguments(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_argument_n13, int64_t slim_v_parameter_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_callee_n33, int64_t slim_v_call_n37, bool slim_v_recursive_n41, bool slim_v_unknown_95owner_n45, bool slim_v_restricted_n49, SlimVec * slim_v_bindings_n53, SlimVec * slim_v_facts_n60, SlimVec * slim_v_issues_n67, SlimVec * slim_v_scopes_n74, SlimVec * slim_v_frames_n81, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_argument_n13;
-(void)slim_v_parameter_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_callee_n33;
-(void)slim_v_call_n37;
-(void)slim_v_recursive_n41;
-(void)slim_v_unknown_95owner_n45;
-(void)slim_v_restricted_n49;
-(void)slim_v_bindings_n53;
-(void)slim_v_facts_n60;
-(void)slim_v_issues_n67;
-(void)slim_v_scopes_n74;
-(void)slim_v_frames_n81;
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95argument_95state(int64_t slim_v_argument_n2, int64_t slim_v_parameter_n6, bool slim_v_unknown_n10, bool slim_v_restricted_n14, SlimRegion *slim_region) {
+(void)slim_v_argument_n2;
+(void)slim_v_parameter_n6;
+(void)slim_v_unknown_n10;
+(void)slim_v_restricted_n14;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-bool slim_result = {0};
+Slim_type_typing_95ArgumentState slim_result = {0};
+{
+int64_t slim_t_25 = {0};
+slim_t_25 = slim_v_argument_n2;
+int64_t slim_t_29 = {0};
+slim_t_29 = slim_v_parameter_n6;
+int64_t slim_t_33 = {0};
+slim_t_33 = INT64_C(-1);
+int64_t slim_t_37 = {0};
+slim_t_37 = INT64_C(0);
+bool slim_t_41 = {0};
+slim_t_41 = false;
+bool slim_t_45 = {0};
+slim_t_45 = false;
+bool slim_t_49 = {0};
+slim_t_49 = true;
+bool slim_t_53 = {0};
+slim_t_53 = slim_v_unknown_n10;
+bool slim_t_57 = {0};
+slim_t_57 = slim_v_restricted_n14;
+slim_result = (Slim_type_typing_95ArgumentState){.slim_field_argument = slim_t_25, .slim_field_parameter = slim_t_29, .slim_field_owner = slim_t_33, .slim_field_before = slim_t_37, .slim_field_mode_95matches = slim_t_41, .slim_field_capable = slim_t_45, .slim_field_allowed = slim_t_49, .slim_field_unknown = slim_t_53, .slim_field_restricted = slim_t_57};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95prepare_95arguments(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, int64_t slim_v_params_n21, SlimVec * slim_v_issues_n25, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_recursive_n17;
+(void)slim_v_params_n21;
+(void)slim_v_issues_n25;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95ArgumentState slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-slim_recur: ;
 {
-int64_t slim_v_argument_95kind_n96 = {0};
-slim_v_argument_95kind_n96 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_argument_n13, slim_allocation_region);
-(void)slim_v_argument_95kind_n96;
-{
-int64_t slim_v_parameter_95kind_n106 = {0};
-slim_v_parameter_95kind_n106 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_parameter_n17, slim_allocation_region);
-(void)slim_v_parameter_95kind_n106;
-{
-bool slim_v_arguments_95done_n116 = {0};
-slim_v_arguments_95done_n116 = slim_v_argument_95kind_n96 == INT64_C(1);
-(void)slim_v_arguments_95done_n116;
-{
-bool slim_v_parameters_95done_n126 = {0};
-slim_v_parameters_95done_n126 = slim_v_parameter_95kind_n106 == INT64_C(1);
-(void)slim_v_parameters_95done_n126;
-{
-bool slim_v_either_95done_n136 = {0};
-slim_v_either_95done_n136 = slim_v_arguments_95done_n116 || slim_v_parameters_95done_n126;
-(void)slim_v_either_95done_n136;
-if (slim_v_either_95done_n136) {
-{
-bool slim_v_both_95done_n151 = {0};
-slim_v_both_95done_n151 = slim_v_arguments_95done_n116 && slim_v_parameters_95done_n126;
-(void)slim_v_both_95done_n151;
-if (slim_v_both_95done_n151) {
-slim_result = true;
+Slim_type_control_95Invocation slim_v_structure_n40 = {0};
+slim_v_structure_n40 = slim_fn_control_95invocation(slim_v_expr_n13, slim_v_recursive_n17, slim_allocation_region);
+(void)slim_v_structure_n40;
+if (slim_v_recursive_n17) {
+int64_t slim_t_56 = {0};
+slim_t_56 = slim_v_structure_n40.slim_field_arguments;
+int64_t slim_t_61 = {0};
+slim_t_61 = slim_fn_syntax_95ast_95parameters_95first(slim_v_params_n21, slim_allocation_region);
+slim_result = slim_fn_typing_95argument_95state(slim_t_56, slim_t_61, false, false, slim_allocation_region);
 }
 else {
 {
-SlimUnit slim_v__n170 = {0};
-slim_v__n170 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_v_callee_n33, slim_v_issues_n67, slim_allocation_region);
+int64_t slim_v_item_n74 = {0};
+int64_t slim_t_80 = {0};
+slim_t_80 = slim_v_structure_n40.slim_field_callee;
+slim_v_item_n74 = slim_fn_typing_95linked_95item(slim_v_tokens_n6, slim_t_80, slim_allocation_region);
+(void)slim_v_item_n74;
+bool slim_t_88 = {0};
+slim_t_88 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_item_n74, INT64_C(0), slim_allocation_region);
+if (slim_t_88) {
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_structure_n40.slim_field_arguments;
+int64_t slim_t_106 = {0};
+int64_t slim_t_109 = {0};
+slim_t_109 = slim_fn_syntax_95ast_95function_95parameters(slim_v_item_n74, slim_allocation_region);
+slim_t_106 = slim_fn_syntax_95ast_95parameters_95first(slim_t_109, slim_allocation_region);
+slim_result = slim_fn_typing_95argument_95state(slim_t_101, slim_t_106, false, false, slim_allocation_region);
+}
+else {
+{
+SlimUnit slim_v__n123 = {0};
+int64_t slim_t_129 = {0};
+slim_t_129 = slim_v_structure_n40.slim_field_callee;
+slim_v__n123 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0314", (int64_t)(sizeof("E0314") - 1)), slim_t_129, slim_v_issues_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n170;
-slim_result = false;
+(void)slim_v__n123;
+slim_result = slim_fn_typing_95argument_95state(INT64_C(-1), INT64_C(-1), false, false, slim_allocation_region);
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentNext slim_fn_typing_95next_95argument(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, int64_t slim_v_return_95type_n21, Slim_type_typing_95ArgumentState slim_v_state_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_recursive_n17;
+(void)slim_v_return_95type_n21;
+(void)slim_v_state_n25;
+(void)slim_v_bindings_n29;
+(void)slim_v_issues_n36;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95ArgumentNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_51 = {0};
+int64_t slim_t_54 = {0};
+slim_t_54 = slim_v_state_n25.slim_field_argument;
+slim_t_51 = slim_t_54 < INT64_C(0);
+if (slim_t_51) {
+{
+Slim_type_typing_95ArgumentState slim_t_66 = {0};
+slim_t_66 = slim_v_state_n25;
+bool slim_t_70 = {0};
+slim_t_70 = true;
+int64_t slim_t_74 = {0};
+slim_t_74 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_78 = {0};
+slim_t_78 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = (Slim_type_typing_95ArgumentNext){.slim_field_state = slim_t_66, .slim_field_done = slim_t_70, .slim_field_expected = slim_t_74, .slim_field_result = slim_t_78};
+}
+}
+else {
+{
+Slim_type_control_95Invocation slim_v_structure_n92 = {0};
+slim_v_structure_n92 = slim_fn_control_95invocation(slim_v_expr_n13, slim_v_recursive_n17, slim_allocation_region);
+(void)slim_v_structure_n92;
+{
+bool slim_v_arguments_95done_n102 = {0};
+int64_t slim_t_108 = {0};
+slim_t_108 = slim_v_state_n25.slim_field_argument;
+slim_v_arguments_95done_n102 = slim_fn_syntax_95ast_95list_95done(slim_v_tokens_n6, slim_t_108, slim_allocation_region);
+(void)slim_v_arguments_95done_n102;
+{
+bool slim_v_parameters_95done_n116 = {0};
+int64_t slim_t_122 = {0};
+slim_t_122 = slim_v_state_n25.slim_field_parameter;
+slim_v_parameters_95done_n116 = slim_fn_syntax_95ast_95list_95done(slim_v_tokens_n6, slim_t_122, slim_allocation_region);
+(void)slim_v_parameters_95done_n116;
+bool slim_t_130 = {0};
+slim_t_130 = slim_v_arguments_95done_n102 || slim_v_parameters_95done_n116;
+if (slim_t_130) {
+bool slim_t_140 = {0};
+slim_t_140 = slim_v_arguments_95done_n102 && slim_v_parameters_95done_n116;
+if (slim_t_140) {
+{
+int64_t slim_v_type_n150 = {0};
+if (slim_v_recursive_n17) {
+slim_v_type_n150 = slim_v_return_95type_n21;
+}
+else {
+int64_t slim_t_165 = {0};
+int64_t slim_t_169 = {0};
+slim_t_169 = slim_v_structure_n92.slim_field_callee;
+slim_t_165 = slim_fn_typing_95linked_95item(slim_v_tokens_n6, slim_t_169, slim_allocation_region);
+slim_v_type_n150 = slim_fn_syntax_95ast_95function_95return_95type(slim_v_tokens_n6, slim_t_165, slim_allocation_region);
+}
+(void)slim_v_type_n150;
+{
+Slim_type_typing_95ArgumentState slim_t_181 = {0};
+slim_t_181 = slim_v_state_n25;
+bool slim_t_185 = {0};
+slim_t_185 = true;
+int64_t slim_t_189 = {0};
+slim_t_189 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_193 = {0};
+slim_t_193 = slim_fn_typing_95source_95type(slim_v_source_n2, slim_v_tokens_n6, slim_v_type_n150, slim_allocation_region);
+slim_result = (Slim_type_typing_95ArgumentNext){.slim_field_state = slim_t_181, .slim_field_done = slim_t_185, .slim_field_expected = slim_t_189, .slim_field_result = slim_t_193};
+}
+}
+}
+else {
+{
+SlimUnit slim_v__n210 = {0};
+int64_t slim_t_216 = {0};
+slim_t_216 = slim_v_structure_n92.slim_field_callee;
+slim_v__n210 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_216, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n210;
+{
+Slim_type_typing_95ArgumentState slim_t_226 = {0};
+slim_t_226 = slim_v_state_n25;
+bool slim_t_230 = {0};
+slim_t_230 = true;
+int64_t slim_t_234 = {0};
+slim_t_234 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_238 = {0};
+slim_t_238 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = (Slim_type_typing_95ArgumentNext){.slim_field_state = slim_t_226, .slim_field_done = slim_t_230, .slim_field_expected = slim_t_234, .slim_field_result = slim_t_238};
 }
 }
 }
 }
 else {
 {
-int64_t slim_v_expected_n189 = {0};
-slim_v_expected_n189 = slim_fn_typing_95parameter_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_parameter_n17, slim_allocation_region);
-(void)slim_v_expected_n189;
+int64_t slim_v_expected_n255 = {0};
+int64_t slim_t_262 = {0};
+slim_t_262 = slim_v_state_n25.slim_field_parameter;
+slim_v_expected_n255 = slim_fn_typing_95parameter_95type(slim_v_source_n2, slim_v_tokens_n6, slim_t_262, slim_allocation_region);
+(void)slim_v_expected_n255;
 {
-bool slim_v_mode_95matches_n200 = {0};
-slim_v_mode_95matches_n200 = slim_fn_typing_95check_95argument_95mode((*slim_v_tokens_n6), slim_v_argument_n13, slim_v_parameter_n17, slim_v_issues_n67, slim_allocation_region);
+bool slim_v_mode_95matches_n270 = {0};
+int64_t slim_t_276 = {0};
+slim_t_276 = slim_v_state_n25.slim_field_argument;
+int64_t slim_t_281 = {0};
+slim_t_281 = slim_v_state_n25.slim_field_parameter;
+slim_v_mode_95matches_n270 = slim_fn_typing_95check_95argument_95mode(slim_v_tokens_n6, slim_t_276, slim_t_281, slim_v_issues_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_mode_95matches_n200;
+(void)slim_v_mode_95matches_n270;
 {
-bool slim_v_capability_n212 = {0};
-slim_v_capability_n212 = slim_fn_typing_95check_95exclusive_95argument((*slim_v_tokens_n6), slim_v_argument_n13, (*slim_v_bindings_n53), slim_v_issues_n67, slim_allocation_region);
+bool slim_v_capable_n290 = {0};
+int64_t slim_t_296 = {0};
+slim_t_296 = slim_v_state_n25.slim_field_argument;
+slim_v_capable_n290 = slim_fn_typing_95check_95exclusive_95argument(slim_v_tokens_n6, slim_t_296, (*slim_v_bindings_n29), slim_v_issues_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_capability_n212;
+(void)slim_v_capable_n290;
 {
-int64_t slim_v_owner_95index_n224 = {0};
-if (slim_v_mode_95matches_n200) {
-slim_v_owner_95index_n224 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, (*slim_v_bindings_n53), slim_allocation_region);
+int64_t slim_v_owner_n306 = {0};
+if (slim_v_mode_95matches_n270) {
+int64_t slim_t_318 = {0};
+slim_t_318 = slim_v_state_n25.slim_field_argument;
+slim_v_owner_n306 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_t_318, (*slim_v_bindings_n29), slim_allocation_region);
 }
 else {
-slim_v_owner_95index_n224 = INT64_C(-1);
+slim_v_owner_n306 = INT64_C(-1);
 }
-(void)slim_v_owner_95index_n224;
+(void)slim_v_owner_n306;
 {
-bool slim_v_no_95overlap_n247 = {0};
-if (slim_v_mode_95matches_n200) {
-slim_v_no_95overlap_n247 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_argument_n13, slim_v_owner_95index_n224, slim_v_call_n37, slim_v_unknown_95owner_n45, slim_v_restricted_n49, slim_v_bindings_n53, slim_v_issues_n67, false, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_v_no_95overlap_n247 = true;
-}
-(void)slim_v_no_95overlap_n247;
-{
-bool slim_v_identity_n275 = {0};
-slim_v_identity_n275 = slim_fn_typing_95check_95recursive_95argument_95identity(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, slim_v_parameter_n17, slim_v_recursive_n41, slim_v_issues_n67, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_identity_n275;
-{
-int64_t slim_v_issue_95count_n289 = {0};
-slim_v_issue_95count_n289 = ((*slim_v_issues_n67)).len;
-(void)slim_v_issue_95count_n289;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n298 = {0};
-if (slim_v_no_95overlap_n247) {
-slim_v_actual_n298 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_argument_n13, slim_v_expected_n189, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n53, slim_v_facts_n60, slim_v_issues_n67, slim_v_scopes_n74, slim_v_frames_n81, slim_allocation_region);
+bool slim_v_allowed_n333 = {0};
+if (slim_v_mode_95matches_n270) {
+int64_t slim_t_344 = {0};
+slim_t_344 = slim_v_state_n25.slim_field_argument;
+bool slim_t_351 = {0};
+slim_t_351 = slim_v_state_n25.slim_field_unknown;
+bool slim_t_356 = {0};
+slim_t_356 = slim_v_state_n25.slim_field_restricted;
+slim_v_allowed_n333 = slim_fn_typing_95check_95argument_95overlap(slim_v_tokens_n6, slim_t_344, slim_v_owner_n306, slim_v_expr_n13, slim_t_351, slim_t_356, slim_v_bindings_n29, slim_v_issues_n36, false, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v_actual_n298 = slim_fn_typing_95invalid_95type(slim_v_argument_n13, slim_allocation_region);
+slim_v_allowed_n333 = true;
 }
-(void)slim_v_actual_n298;
+(void)slim_v_allowed_n333;
 {
-bool slim_v_actual_95valid_n333 = {0};
-slim_v_actual_95valid_n333 = slim_fn_typing_95type_95valid(slim_v_actual_n298, slim_allocation_region);
-(void)slim_v_actual_95valid_n333;
-{
-bool slim_v_move_95valid_n342 = {0};
-if (slim_v_actual_95valid_n333) {
-slim_v_move_95valid_n342 = slim_fn_typing_95check_95owned_95argument(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, slim_v_parameter_n17, slim_v_recursive_n41, slim_v_bindings_n53, slim_v_issues_n67, slim_v_scopes_n74, slim_v_frames_n81, slim_allocation_region);
+bool slim_v_identity_n373 = {0};
+int64_t slim_t_380 = {0};
+slim_t_380 = slim_v_state_n25.slim_field_argument;
+int64_t slim_t_385 = {0};
+slim_t_385 = slim_v_state_n25.slim_field_parameter;
+slim_v_identity_n373 = slim_fn_typing_95check_95recursive_95argument_95identity(slim_v_source_n2, slim_v_tokens_n6, slim_t_380, slim_t_385, slim_v_recursive_n17, slim_v_issues_n36, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_v_move_95valid_n342 = true;
-}
-(void)slim_v_move_95valid_n342;
+(void)slim_v_identity_n373;
 {
-int64_t slim_v_storage_n370 = {0};
-slim_v_storage_n370 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expected_n189, slim_allocation_region);
-(void)slim_v_storage_n370;
+Slim_type_typing_95ArgumentState slim_v_next_n395 = {0};
 {
-bool slim_v_register_n381 = {0};
-bool slim_t_387 = {0};
-bool slim_t_391 = {0};
-bool slim_t_395 = {0};
-bool slim_t_399 = {0};
-bool slim_t_403 = {0};
-bool slim_t_406 = {0};
-slim_t_406 = slim_v_storage_n370 == INT64_C(2);
-bool slim_t_412 = {0};
-int64_t slim_t_415 = {0};
-slim_t_415 = ((*slim_v_issues_n67)).len;
-slim_t_412 = slim_t_415 == slim_v_issue_95count_n289;
-slim_t_403 = slim_t_406 && slim_t_412;
-slim_t_399 = slim_v_move_95valid_n342 && slim_t_403;
-slim_t_395 = slim_v_actual_95valid_n333 && slim_t_399;
-slim_t_391 = slim_v_no_95overlap_n247 && slim_t_395;
-slim_t_387 = slim_v_capability_n212 && slim_t_391;
-slim_v_register_n381 = slim_v_mode_95matches_n200 && slim_t_387;
-(void)slim_v_register_n381;
+int64_t slim_t_400 = {0};
+slim_t_400 = slim_v_state_n25.slim_field_argument;
+int64_t slim_t_408 = {0};
+slim_t_408 = slim_v_state_n25.slim_field_parameter;
+int64_t slim_t_416 = {0};
+slim_t_416 = slim_v_owner_n306;
+int64_t slim_t_420 = {0};
+slim_t_420 = ((*slim_v_issues_n36)).len;
+bool slim_t_428 = {0};
+slim_t_428 = slim_v_mode_95matches_n270;
+bool slim_t_432 = {0};
+slim_t_432 = slim_v_capable_n290;
+bool slim_t_436 = {0};
+slim_t_436 = slim_v_allowed_n333;
+bool slim_t_440 = {0};
+slim_t_440 = slim_v_state_n25.slim_field_unknown;
+bool slim_t_448 = {0};
+slim_t_448 = slim_v_state_n25.slim_field_restricted;
+slim_v_next_n395 = (Slim_type_typing_95ArgumentState){.slim_field_argument = slim_t_400, .slim_field_parameter = slim_t_408, .slim_field_owner = slim_t_416, .slim_field_before = slim_t_420, .slim_field_mode_95matches = slim_t_428, .slim_field_capable = slim_t_432, .slim_field_allowed = slim_t_436, .slim_field_unknown = slim_t_440, .slim_field_restricted = slim_t_448};
+}
+(void)slim_v_next_n395;
 {
-SlimUnit slim_v__n430 = {0};
-if (slim_v_register_n381) {
-{
-int64_t slim_v_resolved_95owner_n439 = {0};
-slim_v_resolved_95owner_n439 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_argument_n13, (*slim_v_bindings_n53), slim_allocation_region);
-(void)slim_v_resolved_95owner_n439;
-{
-bool slim_v_registered_n451 = {0};
-slim_v_registered_n451 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_argument_n13, slim_v_resolved_95owner_n439, slim_v_call_n37, slim_v_unknown_95owner_n45, slim_v_restricted_n49, slim_v_bindings_n53, slim_v_issues_n67, true, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_registered_n451;
-slim_v__n430 = (SlimUnit){0};
-}
-}
-}
-else {
-slim_v__n430 = (SlimUnit){0};
-}
-(void)slim_v__n430;
-{
-bool slim_v_valid_n477 = {0};
-bool slim_t_483 = {0};
-bool slim_t_487 = {0};
-bool slim_t_491 = {0};
-bool slim_t_495 = {0};
-slim_t_495 = slim_v_identity_n275 && slim_v_move_95valid_n342;
-slim_t_491 = slim_v_actual_95valid_n333 && slim_t_495;
-slim_t_487 = slim_v_no_95overlap_n247 && slim_t_491;
-slim_t_483 = slim_v_capability_n212 && slim_t_487;
-slim_v_valid_n477 = slim_v_mode_95matches_n200 && slim_t_483;
-(void)slim_v_valid_n477;
-{
-int64_t slim_v_next_95argument_n507 = {0};
-slim_v_next_95argument_n507 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_argument_n13, slim_allocation_region);
-(void)slim_v_next_95argument_n507;
-{
-int64_t slim_v_next_95parameter_n517 = {0};
-slim_v_next_95parameter_n517 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_parameter_n17, slim_allocation_region);
-(void)slim_v_next_95parameter_n517;
-{
-int64_t slim_v_actual_95mode_n527 = {0};
-slim_v_actual_95mode_n527 = slim_fn_syntax_95ast_95argument_95mode((*slim_v_tokens_n6), slim_v_argument_n13, slim_allocation_region);
-(void)slim_v_actual_95mode_n527;
-{
-bool slim_v_next_95unknown_95owner_n537 = {0};
-bool slim_t_543 = {0};
-bool slim_t_547 = {0};
-slim_t_547 = slim_v_owner_95index_n224 == INT64_C(-2);
-slim_t_543 = slim_v_mode_95matches_n200 && slim_t_547;
-slim_v_next_95unknown_95owner_n537 = slim_v_unknown_95owner_n45 || slim_t_543;
-(void)slim_v_next_95unknown_95owner_n537;
-{
-bool slim_v_next_95restricted_n557 = {0};
-bool slim_t_563 = {0};
-bool slim_t_567 = {0};
-slim_t_567 = slim_v_actual_95mode_n527 > INT64_C(0);
-slim_t_563 = slim_v_mode_95matches_n200 && slim_t_567;
-slim_v_next_95restricted_n557 = slim_v_restricted_n49 || slim_t_563;
-(void)slim_v_next_95restricted_n557;
-{
-bool slim_v_remaining_n577 = {0};
-SlimBytes slim_t_581 = {0};
-slim_t_581 = slim_v_source_n2;
-int64_t slim_t_583 = {0};
-slim_t_583 = slim_v_next_95argument_n507;
-int64_t slim_t_584 = {0};
-slim_t_584 = slim_v_next_95parameter_n517;
-int64_t slim_t_585 = {0};
-slim_t_585 = slim_v_parent_n21;
-int64_t slim_t_586 = {0};
-slim_t_586 = slim_v_params_n25;
-int64_t slim_t_587 = {0};
-slim_t_587 = slim_v_return_95type_n29;
-int64_t slim_t_588 = {0};
-slim_t_588 = slim_v_callee_n33;
-int64_t slim_t_589 = {0};
-slim_t_589 = slim_v_call_n37;
-bool slim_t_590 = {0};
-slim_t_590 = slim_v_recursive_n41;
-bool slim_t_591 = {0};
-slim_t_591 = slim_v_next_95unknown_95owner_n537;
-bool slim_t_592 = {0};
-slim_t_592 = slim_v_next_95restricted_n557;
-slim_v_source_n2 = slim_t_581;
-slim_v_argument_n13 = slim_t_583;
-slim_v_parameter_n17 = slim_t_584;
-slim_v_parent_n21 = slim_t_585;
-slim_v_params_n25 = slim_t_586;
-slim_v_return_95type_n29 = slim_t_587;
-slim_v_callee_n33 = slim_t_588;
-slim_v_call_n37 = slim_t_589;
-slim_v_recursive_n41 = slim_t_590;
-slim_v_unknown_95owner_n45 = slim_t_591;
-slim_v_restricted_n49 = slim_t_592;
-goto slim_recur;
-(void)slim_v_remaining_n577;
-slim_result = slim_v_valid_n477 && slim_v_remaining_n577;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
+Slim_type_typing_95ArgumentState slim_t_460 = {0};
+slim_t_460 = slim_v_next_n395;
+bool slim_t_464 = {0};
+slim_t_464 = false;
+int64_t slim_t_468 = {0};
+slim_t_468 = slim_v_expected_n255;
+Slim_type_typing_95TypeRef slim_t_472 = {0};
+int64_t slim_t_477 = {0};
+slim_t_477 = slim_v_state_n25.slim_field_argument;
+slim_t_472 = slim_fn_typing_95invalid_95type(slim_t_477, slim_allocation_region);
+slim_result = (Slim_type_typing_95ArgumentNext){.slim_field_state = slim_t_460, .slim_field_done = slim_t_464, .slim_field_expected = slim_t_468, .slim_field_result = slim_t_472};
 }
 }
 }
@@ -104014,54 +103463,1152 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95user_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_callee_n17, int64_t slim_v_arguments_n21, int64_t slim_v_item_n25, int64_t slim_v_parent_n29, int64_t slim_v_params_n33, int64_t slim_v_return_95type_n37, SlimVec * slim_v_bindings_n41, SlimVec * slim_v_facts_n48, SlimVec * slim_v_issues_n55, SlimVec * slim_v_scopes_n62, SlimVec * slim_v_frames_n69, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95ArgumentState slim_fn_typing_95finish_95argument(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_recursive_n17, Slim_type_typing_95ArgumentState slim_v_state_n21, int64_t slim_v_expected_n25, Slim_type_typing_95TypeRef slim_v_actual_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_issues_n40, SlimVec * slim_v_scopes_n47, SlimVec * slim_v_frames_n54, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
-(void)slim_v_callee_n17;
-(void)slim_v_arguments_n21;
-(void)slim_v_item_n25;
-(void)slim_v_parent_n29;
-(void)slim_v_params_n33;
-(void)slim_v_return_95type_n37;
-(void)slim_v_bindings_n41;
-(void)slim_v_facts_n48;
-(void)slim_v_issues_n55;
-(void)slim_v_scopes_n62;
-(void)slim_v_frames_n69;
+(void)slim_v_recursive_n17;
+(void)slim_v_state_n21;
+(void)slim_v_expected_n25;
+(void)slim_v_actual_n29;
+(void)slim_v_bindings_n33;
+(void)slim_v_issues_n40;
+(void)slim_v_scopes_n47;
+(void)slim_v_frames_n54;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95ArgumentState slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-bool slim_v_function_n84 = {0};
-slim_v_function_n84 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_item_n25, INT64_C(0), slim_allocation_region);
-(void)slim_v_function_n84;
-if (slim_v_function_n84) {
+bool slim_v_actual_95valid_n69 = {0};
+slim_v_actual_95valid_n69 = slim_fn_typing_95type_95valid(slim_v_actual_n29, slim_allocation_region);
+(void)slim_v_actual_95valid_n69;
 {
-int64_t slim_v_parameters_n101 = {0};
-slim_v_parameters_n101 = slim_fn_syntax_95ast_95function_95parameters(slim_v_item_n25, slim_allocation_region);
-(void)slim_v_parameters_n101;
-{
-int64_t slim_v_first_95parameter_n110 = {0};
-slim_v_first_95parameter_n110 = slim_fn_syntax_95ast_95parameters_95first(slim_v_parameters_n101, slim_allocation_region);
-(void)slim_v_first_95parameter_n110;
-{
-bool slim_v_valid_n119 = {0};
-slim_v_valid_n119 = slim_fn_typing_95check_95call_95arguments(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n21, slim_v_first_95parameter_n110, slim_v_parent_n29, slim_v_params_n33, slim_v_return_95type_n37, slim_v_callee_n17, slim_v_expr_n13, false, false, false, slim_v_bindings_n41, slim_v_facts_n48, slim_v_issues_n55, slim_v_scopes_n62, slim_v_frames_n69, slim_allocation_region);
+bool slim_v_moved_n78 = {0};
+if (slim_v_actual_95valid_n69) {
+int64_t slim_t_90 = {0};
+slim_t_90 = slim_v_state_n21.slim_field_argument;
+int64_t slim_t_95 = {0};
+slim_t_95 = slim_v_state_n21.slim_field_parameter;
+slim_v_moved_n78 = slim_fn_typing_95check_95owned_95argument(slim_v_source_n2, slim_v_tokens_n6, slim_t_90, slim_t_95, slim_v_recursive_n17, slim_v_bindings_n33, slim_v_issues_n40, slim_v_scopes_n47, slim_v_frames_n54, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_valid_n119;
-if (slim_v_valid_n119) {
+}
+else {
+slim_v_moved_n78 = true;
+}
+(void)slim_v_moved_n78;
 {
-int64_t slim_v_result_95type_n149 = {0};
-slim_v_result_95type_n149 = slim_fn_syntax_95ast_95function_95return_95type((*slim_v_tokens_n6), slim_v_item_n25, slim_allocation_region);
-(void)slim_v_result_95type_n149;
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_result_95type_n149, slim_allocation_region);
+int64_t slim_v_storage_n114 = {0};
+slim_v_storage_n114 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_expected_n25, slim_allocation_region);
+(void)slim_v_storage_n114;
+{
+bool slim_v_register_n125 = {0};
+bool slim_t_130 = {0};
+slim_t_130 = slim_v_state_n21.slim_field_mode_95matches;
+bool slim_t_135 = {0};
+bool slim_t_138 = {0};
+slim_t_138 = slim_v_state_n21.slim_field_capable;
+bool slim_t_143 = {0};
+bool slim_t_146 = {0};
+slim_t_146 = slim_v_state_n21.slim_field_allowed;
+bool slim_t_151 = {0};
+bool slim_t_155 = {0};
+bool slim_t_159 = {0};
+bool slim_t_162 = {0};
+slim_t_162 = slim_v_storage_n114 == INT64_C(2);
+bool slim_t_168 = {0};
+int64_t slim_t_171 = {0};
+slim_t_171 = ((*slim_v_issues_n40)).len;
+int64_t slim_t_176 = {0};
+slim_t_176 = slim_v_state_n21.slim_field_before;
+slim_t_168 = slim_t_171 == slim_t_176;
+slim_t_159 = slim_t_162 && slim_t_168;
+slim_t_155 = slim_v_moved_n78 && slim_t_159;
+slim_t_151 = slim_v_actual_95valid_n69 && slim_t_155;
+slim_t_143 = slim_t_146 && slim_t_151;
+slim_t_135 = slim_t_138 && slim_t_143;
+slim_v_register_n125 = slim_t_130 && slim_t_135;
+(void)slim_v_register_n125;
+{
+SlimUnit slim_v__n190 = {0};
+if (slim_v_register_n125) {
+{
+int64_t slim_v_owner_n199 = {0};
+int64_t slim_t_206 = {0};
+slim_t_206 = slim_v_state_n21.slim_field_argument;
+slim_v_owner_n199 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_t_206, (*slim_v_bindings_n33), slim_allocation_region);
+(void)slim_v_owner_n199;
+{
+bool slim_v_registered_n215 = {0};
+int64_t slim_t_221 = {0};
+slim_t_221 = slim_v_state_n21.slim_field_argument;
+bool slim_t_228 = {0};
+slim_t_228 = slim_v_state_n21.slim_field_unknown;
+bool slim_t_233 = {0};
+slim_t_233 = slim_v_state_n21.slim_field_restricted;
+slim_v_registered_n215 = slim_fn_typing_95check_95argument_95overlap(slim_v_tokens_n6, slim_t_221, slim_v_owner_n199, slim_v_expr_n13, slim_t_228, slim_t_233, slim_v_bindings_n33, slim_v_issues_n40, true, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_registered_n215;
+slim_v__n190 = (SlimUnit){0};
+}
 }
 }
 else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_v__n190 = (SlimUnit){0};
+}
+(void)slim_v__n190;
+{
+Slim_type_control_95Member slim_v_argument_n253 = {0};
+int64_t slim_t_259 = {0};
+slim_t_259 = slim_v_state_n21.slim_field_argument;
+slim_v_argument_n253 = slim_fn_control_95member(slim_v_tokens_n6, slim_t_259, false, slim_allocation_region);
+(void)slim_v_argument_n253;
+{
+int64_t slim_v_parameter_n268 = {0};
+int64_t slim_t_274 = {0};
+slim_t_274 = slim_v_state_n21.slim_field_parameter;
+slim_v_parameter_n268 = slim_fn_syntax_95ast_95next(slim_v_tokens_n6, slim_t_274, slim_allocation_region);
+(void)slim_v_parameter_n268;
+{
+int64_t slim_v_mode_n282 = {0};
+int64_t slim_t_288 = {0};
+slim_t_288 = slim_v_state_n21.slim_field_argument;
+slim_v_mode_n282 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n6, slim_t_288, slim_allocation_region);
+(void)slim_v_mode_n282;
+int64_t slim_t_297 = {0};
+slim_t_297 = slim_v_argument_n253.slim_field_next;
+bool slim_t_303 = {0};
+bool slim_t_306 = {0};
+slim_t_306 = slim_v_state_n21.slim_field_unknown;
+bool slim_t_311 = {0};
+bool slim_t_314 = {0};
+slim_t_314 = slim_v_state_n21.slim_field_mode_95matches;
+bool slim_t_319 = {0};
+int64_t slim_t_322 = {0};
+slim_t_322 = slim_v_state_n21.slim_field_owner;
+slim_t_319 = slim_t_322 == INT64_C(-2);
+slim_t_311 = slim_t_314 && slim_t_319;
+slim_t_303 = slim_t_306 || slim_t_311;
+bool slim_t_331 = {0};
+bool slim_t_334 = {0};
+slim_t_334 = slim_v_state_n21.slim_field_restricted;
+bool slim_t_339 = {0};
+bool slim_t_342 = {0};
+slim_t_342 = slim_v_state_n21.slim_field_mode_95matches;
+bool slim_t_347 = {0};
+slim_t_347 = slim_v_mode_n282 > INT64_C(0);
+slim_t_339 = slim_t_342 && slim_t_347;
+slim_t_331 = slim_t_334 || slim_t_339;
+slim_result = slim_fn_typing_95argument_95state(slim_t_297, slim_v_parameter_n268, slim_t_303, slim_t_331, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95argument(Slim_type_typing_95ArgumentState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_arguments_n14, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_depth_n6;
+(void)slim_v_limit_n10;
+(void)slim_v_arguments_n14;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+int64_t slim_v_permitted_n29 = {0};
+bool slim_t_33 = {0};
+bool slim_t_36 = {0};
+slim_t_36 = slim_v_depth_n6 >= INT64_C(0);
+bool slim_t_42 = {0};
+slim_t_42 = slim_v_depth_n6 < slim_v_limit_n10;
+slim_t_33 = slim_t_36 && slim_t_42;
+if (slim_t_33) {
+slim_v_permitted_n29 = INT64_C(1);
+}
+else {
+slim_v_permitted_n29 = INT64_C(0);
+}
+(void)slim_v_permitted_n29;
+{
+int64_t slim_v_checked_95depth_n60 = {0};
+slim_v_checked_95depth_n60 = slim_i64_div(slim_v_depth_n6, slim_v_permitted_n29);
+(void)slim_v_checked_95depth_n60;
+{
+SlimUnit slim_v__n70 = {0};
+bool slim_t_74 = {0};
+slim_t_74 = slim_v_checked_95depth_n60 > INT64_C(0);
+if (slim_t_74) {
+{
+int64_t slim_v_at_n84 = {0};
+slim_v_at_n84 = slim_i64_sub(slim_v_checked_95depth_n60, INT64_C(1));
+(void)slim_v_at_n84;
+bool slim_t_94 = {0};
+int64_t slim_t_98 = {0};
+slim_t_98 = ((*slim_v_arguments_n14)).len;
+slim_t_94 = slim_v_at_n84 < slim_t_98;
+if (slim_t_94) {
+((Slim_type_typing_95ArgumentState *)((*slim_v_arguments_n14)).data)[slim_vec_check_index(&((*slim_v_arguments_n14)), slim_v_at_n84)] = slim_v_state_n2; slim_v__n70 = (SlimUnit){0};
+}
+else {
+if (!slim_vec_push(slim_v_arguments_n14, &slim_v_state_n2)) goto slim_allocation_failed; slim_v__n70 = (SlimUnit){0};
+}
+}
+}
+else {
+slim_v__n70 = (SlimUnit){0};
+}
+(void)slim_v__n70;
+slim_result = slim_i64_add(slim_v_checked_95depth_n60, INT64_C(1));
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95user_95call(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+bool slim_result = {0};
+{
+Slim_type_control_95Invocation slim_v_structure_n24 = {0};
+slim_v_structure_n24 = slim_fn_control_95invocation(slim_v_expr_n13, false, slim_allocation_region);
+(void)slim_v_structure_n24;
+bool slim_t_34 = {0};
+int64_t slim_t_39 = {0};
+slim_t_39 = slim_v_structure_n24.slim_field_callee;
+slim_t_34 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_t_39, slim_bytes_static((const uint8_t *)"mem.replace", (int64_t)(sizeof("mem.replace") - 1)), slim_allocation_region);
+if (slim_t_34) {
+slim_result = false;
+}
+else {
+bool slim_t_55 = {0};
+int64_t slim_t_60 = {0};
+slim_t_60 = slim_v_structure_n24.slim_field_callee;
+slim_t_55 = slim_fn_typing_95builtin_95known(slim_v_source_n2, slim_v_tokens_n6, slim_t_60, slim_allocation_region);
+slim_result = !slim_t_55;
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95builtin_95state(int64_t slim_v_operation_n2, int64_t slim_v_argument_n6, int64_t slim_v_kind_n10, int64_t slim_v_result_95kind_n14, int64_t slim_v_count_n18, bool slim_v_modes_95valid_n22, SlimRegion *slim_region) {
+(void)slim_v_operation_n2;
+(void)slim_v_argument_n6;
+(void)slim_v_kind_n10;
+(void)slim_v_result_95kind_n14;
+(void)slim_v_count_n18;
+(void)slim_v_modes_95valid_n22;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinState slim_result = {0};
+{
+int64_t slim_t_33 = {0};
+slim_t_33 = slim_v_operation_n2;
+int64_t slim_t_37 = {0};
+slim_t_37 = INT64_C(0);
+int64_t slim_t_41 = {0};
+slim_t_41 = slim_v_argument_n6;
+int64_t slim_t_45 = {0};
+slim_t_45 = slim_v_kind_n10;
+int64_t slim_t_49 = {0};
+slim_t_49 = slim_v_result_95kind_n14;
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_count_n18;
+int64_t slim_t_57 = {0};
+slim_t_57 = INT64_C(-1);
+bool slim_t_61 = {0};
+slim_t_61 = true;
+bool slim_t_65 = {0};
+slim_t_65 = slim_v_modes_95valid_n22;
+bool slim_t_69 = {0};
+slim_t_69 = true;
+int64_t slim_t_73 = {0};
+slim_t_73 = INT64_C(0);
+Slim_type_typing_95TypeRef slim_t_77 = {0};
+slim_t_77 = slim_fn_typing_95invalid_95type(slim_v_argument_n6, slim_allocation_region);
+slim_result = (Slim_type_typing_95BuiltinState){.slim_field_operation = slim_t_33, .slim_field_phase = slim_t_37, .slim_field_argument = slim_t_41, .slim_field_kind = slim_t_45, .slim_field_result_95kind = slim_t_49, .slim_field_count = slim_t_53, .slim_field_element = slim_t_57, .slim_field_valid = slim_t_61, .slim_field_modes_95valid = slim_t_65, .slim_field_allowed = slim_t_69, .slim_field_before = slim_t_73, .slim_field_result = slim_t_77};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95advance_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_phase_n6, int64_t slim_v_argument_n10, int64_t slim_v_kind_n14, int64_t slim_v_element_n18, bool slim_v_valid_n22, Slim_type_typing_95TypeRef slim_v_result_n26, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_phase_n6;
+(void)slim_v_argument_n10;
+(void)slim_v_kind_n14;
+(void)slim_v_element_n18;
+(void)slim_v_valid_n22;
+(void)slim_v_result_n26;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinState slim_result = {0};
+{
+int64_t slim_t_37 = {0};
+slim_t_37 = slim_v_state_n2.slim_field_operation;
+int64_t slim_t_45 = {0};
+slim_t_45 = slim_v_phase_n6;
+int64_t slim_t_49 = {0};
+slim_t_49 = slim_v_argument_n10;
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_kind_n14;
+int64_t slim_t_57 = {0};
+slim_t_57 = slim_v_state_n2.slim_field_result_95kind;
+int64_t slim_t_65 = {0};
+slim_t_65 = slim_v_state_n2.slim_field_count;
+int64_t slim_t_73 = {0};
+slim_t_73 = slim_v_element_n18;
+bool slim_t_77 = {0};
+slim_t_77 = slim_v_valid_n22;
+bool slim_t_81 = {0};
+slim_t_81 = slim_v_state_n2.slim_field_modes_95valid;
+bool slim_t_89 = {0};
+slim_t_89 = true;
+int64_t slim_t_93 = {0};
+slim_t_93 = INT64_C(0);
+Slim_type_typing_95TypeRef slim_t_97 = {0};
+slim_t_97 = slim_v_result_n26;
+slim_result = (Slim_type_typing_95BuiltinState){.slim_field_operation = slim_t_37, .slim_field_phase = slim_t_45, .slim_field_argument = slim_t_49, .slim_field_kind = slim_t_53, .slim_field_result_95kind = slim_t_57, .slim_field_count = slim_t_65, .slim_field_element = slim_t_73, .slim_field_valid = slim_t_77, .slim_field_modes_95valid = slim_t_81, .slim_field_allowed = slim_t_89, .slim_field_before = slim_t_93, .slim_field_result = slim_t_97};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95builtin_95child(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_expected_n6, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_expected_n6;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+{
+Slim_type_typing_95BuiltinState slim_t_17 = {0};
+slim_t_17 = slim_v_state_n2;
+bool slim_t_21 = {0};
+slim_t_21 = false;
+int64_t slim_t_25 = {0};
+slim_t_25 = slim_v_expected_n6;
+Slim_type_typing_95TypeRef slim_t_29 = {0};
+int64_t slim_t_34 = {0};
+slim_t_34 = slim_v_state_n2.slim_field_argument;
+slim_t_29 = slim_fn_typing_95invalid_95type(slim_t_34, slim_allocation_region);
+slim_result = (Slim_type_typing_95BuiltinNext){.slim_field_state = slim_t_17, .slim_field_done = slim_t_21, .slim_field_expected = slim_t_25, .slim_field_result = slim_t_29};
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95complete_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_expr_n6, Slim_type_typing_95TypeRef slim_v_actual_n10, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_expr_n6;
+(void)slim_v_actual_n10;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+{
+Slim_type_typing_95TypeRef slim_v_result_n20 = {0};
+bool slim_t_24 = {0};
+slim_t_24 = slim_v_state_n2.slim_field_modes_95valid;
+if (slim_t_24) {
+slim_v_result_n20 = slim_v_actual_n10;
+}
+else {
+slim_v_result_n20 = slim_fn_typing_95invalid_95type(slim_v_expr_n6, slim_allocation_region);
+}
+(void)slim_v_result_n20;
+{
+Slim_type_typing_95BuiltinState slim_t_45 = {0};
+slim_t_45 = slim_v_state_n2;
+bool slim_t_49 = {0};
+slim_t_49 = true;
+int64_t slim_t_53 = {0};
+slim_t_53 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_57 = {0};
+slim_t_57 = slim_v_result_n20;
+slim_result = (Slim_type_typing_95BuiltinNext){.slim_field_state = slim_t_45, .slim_field_done = slim_t_49, .slim_field_expected = slim_t_53, .slim_field_result = slim_t_57};
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinState slim_fn_typing_95builtin_95shape(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_callee_n13, int64_t slim_v_argument_n17, bool slim_v_modes_n21, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_callee_n13;
+(void)slim_v_argument_n17;
+(void)slim_v_modes_n21;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinState slim_result = {0};
+bool slim_t_32 = {0};
+slim_t_32 = slim_fn_typing_95builtin_95group_95math(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_allocation_region);
+if (slim_t_32) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(3), INT64_C(3), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_56 = {0};
+slim_t_56 = slim_fn_typing_95builtin_95group_95compare(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_allocation_region);
+if (slim_t_56) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(3), INT64_C(1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_80 = {0};
+slim_t_80 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bool.not", (int64_t)(sizeof("bool.not") - 1)), slim_allocation_region);
+if (slim_t_80) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(1), INT64_C(1), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_105 = {0};
+bool slim_t_108 = {0};
+slim_t_108 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bool.and", (int64_t)(sizeof("bool.and") - 1)), slim_allocation_region);
+bool slim_t_116 = {0};
+slim_t_116 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bool.or", (int64_t)(sizeof("bool.or") - 1)), slim_allocation_region);
+slim_t_105 = slim_t_108 || slim_t_116;
+if (slim_t_105) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(1), INT64_C(1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_142 = {0};
+slim_t_142 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"u8.to_i64", (int64_t)(sizeof("u8.to_i64") - 1)), slim_allocation_region);
+if (slim_t_142) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(2), INT64_C(3), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_167 = {0};
+slim_t_167 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"i64.to_u8", (int64_t)(sizeof("i64.to_u8") - 1)), slim_allocation_region);
+if (slim_t_167) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(3), INT64_C(2), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_192 = {0};
+slim_t_192 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bytes.len", (int64_t)(sizeof("bytes.len") - 1)), slim_allocation_region);
+if (slim_t_192) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(4), INT64_C(3), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_217 = {0};
+slim_t_217 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bytes.get", (int64_t)(sizeof("bytes.get") - 1)), slim_allocation_region);
+if (slim_t_217) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(2), slim_v_argument_n17, INT64_C(4), INT64_C(2), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_242 = {0};
+slim_t_242 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"bytes.freeze", (int64_t)(sizeof("bytes.freeze") - 1)), slim_allocation_region);
+if (slim_t_242) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(9), slim_v_argument_n17, INT64_C(-1), INT64_C(4), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_267 = {0};
+slim_t_267 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.print_i64", (int64_t)(sizeof("io.print_i64") - 1)), slim_allocation_region);
+if (slim_t_267) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(3), INT64_C(0), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_292 = {0};
+bool slim_t_295 = {0};
+slim_t_295 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.print_bytes", (int64_t)(sizeof("io.print_bytes") - 1)), slim_allocation_region);
+bool slim_t_303 = {0};
+slim_t_303 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.println", (int64_t)(sizeof("io.println") - 1)), slim_allocation_region);
+slim_t_292 = slim_t_295 || slim_t_303;
+if (slim_t_292) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(1), slim_v_argument_n17, INT64_C(4), INT64_C(0), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_329 = {0};
+slim_t_329 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.read_file", (int64_t)(sizeof("io.read_file") - 1)), slim_allocation_region);
+if (slim_t_329) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(10), slim_v_argument_n17, INT64_C(4), INT64_C(1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_354 = {0};
+slim_t_354 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.tcp_exchange", (int64_t)(sizeof("io.tcp_exchange") - 1)), slim_allocation_region);
+if (slim_t_354) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(11), slim_v_argument_n17, INT64_C(4), INT64_C(1), INT64_C(6), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_379 = {0};
+slim_t_379 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"io.monotonic_ms", (int64_t)(sizeof("io.monotonic_ms") - 1)), slim_allocation_region);
+if (slim_t_379) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(100), slim_v_argument_n17, INT64_C(-1), INT64_C(3), INT64_C(0), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_404 = {0};
+slim_t_404 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.new", (int64_t)(sizeof("vec.new") - 1)), slim_allocation_region);
+if (slim_t_404) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(101), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(0), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_429 = {0};
+slim_t_429 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"arena.new", (int64_t)(sizeof("arena.new") - 1)), slim_allocation_region);
+if (slim_t_429) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(102), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(0), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_454 = {0};
+slim_t_454 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.len", (int64_t)(sizeof("vec.len") - 1)), slim_allocation_region);
+if (slim_t_454) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(3), slim_v_argument_n17, INT64_C(-1), INT64_C(3), INT64_C(1), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_479 = {0};
+slim_t_479 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.get", (int64_t)(sizeof("vec.get") - 1)), slim_allocation_region);
+if (slim_t_479) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(4), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_504 = {0};
+slim_t_504 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.push", (int64_t)(sizeof("vec.push") - 1)), slim_allocation_region);
+if (slim_t_504) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(5), slim_v_argument_n17, INT64_C(-1), INT64_C(0), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_529 = {0};
+slim_t_529 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"vec.set", (int64_t)(sizeof("vec.set") - 1)), slim_allocation_region);
+if (slim_t_529) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(6), slim_v_argument_n17, INT64_C(-1), INT64_C(0), INT64_C(3), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+bool slim_t_554 = {0};
+slim_t_554 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_v_callee_n13, slim_bytes_static((const uint8_t *)"arena.add", (int64_t)(sizeof("arena.add") - 1)), slim_allocation_region);
+if (slim_t_554) {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(7), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+else {
+slim_result = slim_fn_typing_95builtin_95state(INT64_C(8), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(2), slim_v_modes_n21, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95reserve_95builtin_95operand(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+int64_t slim_v_owner_n43 = {0};
+int64_t slim_t_50 = {0};
+slim_t_50 = slim_v_state_n17.slim_field_argument;
+slim_v_owner_n43 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_t_50, (*slim_v_bindings_n21), slim_allocation_region);
+(void)slim_v_owner_n43;
+{
+bool slim_v_allowed_n59 = {0};
+int64_t slim_t_65 = {0};
+slim_t_65 = slim_v_state_n17.slim_field_argument;
+slim_v_allowed_n59 = slim_fn_typing_95check_95argument_95overlap(slim_v_tokens_n6, slim_t_65, slim_v_owner_n43, slim_v_expr_n13, false, false, slim_v_bindings_n21, slim_v_issues_n28, false, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_allowed_n59;
+{
+Slim_type_typing_95BuiltinState slim_v_reserved_n80 = {0};
+{
+int64_t slim_t_85 = {0};
+slim_t_85 = slim_v_state_n17.slim_field_operation;
+int64_t slim_t_93 = {0};
+slim_t_93 = slim_v_state_n17.slim_field_phase;
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_state_n17.slim_field_argument;
+int64_t slim_t_109 = {0};
+slim_t_109 = slim_v_state_n17.slim_field_kind;
+int64_t slim_t_117 = {0};
+slim_t_117 = slim_v_state_n17.slim_field_result_95kind;
+int64_t slim_t_125 = {0};
+slim_t_125 = slim_v_state_n17.slim_field_count;
+int64_t slim_t_133 = {0};
+slim_t_133 = slim_v_state_n17.slim_field_element;
+bool slim_t_141 = {0};
+slim_t_141 = slim_v_state_n17.slim_field_valid;
+bool slim_t_149 = {0};
+slim_t_149 = slim_v_state_n17.slim_field_modes_95valid;
+bool slim_t_157 = {0};
+slim_t_157 = slim_v_allowed_n59;
+int64_t slim_t_161 = {0};
+slim_t_161 = ((*slim_v_issues_n28)).len;
+Slim_type_typing_95TypeRef slim_t_169 = {0};
+slim_t_169 = slim_v_state_n17.slim_field_result;
+slim_v_reserved_n80 = (Slim_type_typing_95BuiltinState){.slim_field_operation = slim_t_85, .slim_field_phase = slim_t_93, .slim_field_argument = slim_t_101, .slim_field_kind = slim_t_109, .slim_field_result_95kind = slim_t_117, .slim_field_count = slim_t_125, .slim_field_element = slim_t_133, .slim_field_valid = slim_t_141, .slim_field_modes_95valid = slim_t_149, .slim_field_allowed = slim_t_157, .slim_field_before = slim_t_161, .slim_field_result = slim_t_169};
+}
+(void)slim_v_reserved_n80;
+slim_result = slim_fn_typing_95builtin_95child(slim_v_reserved_n80, INT64_C(-1), slim_allocation_region);
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION SlimUnit slim_fn_typing_95finish_95builtin_95operand(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_actual_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+SlimUnit slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_47 = {0};
+bool slim_t_50 = {0};
+slim_t_50 = slim_v_state_n17.slim_field_allowed;
+bool slim_t_55 = {0};
+bool slim_t_58 = {0};
+slim_t_58 = slim_fn_typing_95type_95valid(slim_v_actual_n21, slim_allocation_region);
+bool slim_t_63 = {0};
+int64_t slim_t_66 = {0};
+slim_t_66 = ((*slim_v_issues_n32)).len;
+int64_t slim_t_71 = {0};
+slim_t_71 = slim_v_state_n17.slim_field_before;
+slim_t_63 = slim_t_66 == slim_t_71;
+slim_t_55 = slim_t_58 && slim_t_63;
+slim_t_47 = slim_t_50 && slim_t_55;
+if (slim_t_47) {
+{
+int64_t slim_v_owner_n83 = {0};
+int64_t slim_t_90 = {0};
+slim_t_90 = slim_v_state_n17.slim_field_argument;
+slim_v_owner_n83 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_t_90, (*slim_v_bindings_n25), slim_allocation_region);
+(void)slim_v_owner_n83;
+{
+bool slim_v_registered_n99 = {0};
+int64_t slim_t_105 = {0};
+slim_t_105 = slim_v_state_n17.slim_field_argument;
+slim_v_registered_n99 = slim_fn_typing_95check_95argument_95overlap(slim_v_tokens_n6, slim_t_105, slim_v_owner_n83, slim_v_expr_n13, false, false, slim_v_bindings_n25, slim_v_issues_n32, true, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_registered_n99;
+slim_result = (SlimUnit){0};
+}
+}
+}
+else {
+slim_result = (SlimUnit){0};
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95prepare_95replacement(SlimVec slim_v_tokens_n2, SlimBytes slim_v_source_n9, int64_t slim_v_expr_n13, int64_t slim_v_argument_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_source_n9;
+(void)slim_v_expr_n13;
+(void)slim_v_argument_n17;
+(void)slim_v_issues_n21;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+Slim_type_typing_95BuiltinState slim_v_state_n36 = {0};
+slim_v_state_n36 = slim_fn_typing_95builtin_95state(INT64_C(12), slim_v_argument_n17, INT64_C(-1), INT64_C(-1), INT64_C(2), true, slim_allocation_region);
+(void)slim_v_state_n36;
+bool slim_t_50 = {0};
+int64_t slim_t_56 = {0};
+slim_t_56 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
+slim_t_50 = slim_fn_typing_95expect_95arity(slim_v_tokens_n2, slim_v_argument_n17, INT64_C(2), slim_t_56, slim_v_issues_n21, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+if (slim_t_50) {
+{
+int64_t slim_v_value_n67 = {0};
+slim_v_value_n67 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_argument_n17, slim_allocation_region);
+(void)slim_v_value_n67;
+{
+int64_t slim_v_root_n77 = {0};
+slim_v_root_n77 = slim_fn_typing_95replacement_95root(slim_v_source_n9, slim_v_tokens_n2, slim_v_argument_n17, slim_allocation_region);
+(void)slim_v_root_n77;
+bool slim_t_88 = {0};
+slim_t_88 = slim_v_root_n77 < INT64_C(0);
+if (slim_t_88) {
+{
+SlimUnit slim_v__n98 = {0};
+slim_v__n98 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0348", (int64_t)(sizeof("E0348") - 1)), slim_v_argument_n17, slim_v_issues_n21, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n98;
+Slim_type_typing_95TypeRef slim_t_112 = {0};
+slim_t_112 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n36, slim_v_expr_n13, slim_t_112, slim_allocation_region);
+}
+}
+else {
+{
+bool slim_v_place_95mode_n124 = {0};
+int64_t slim_t_129 = {0};
+slim_t_129 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n2, slim_v_argument_n17, slim_allocation_region);
+slim_v_place_95mode_n124 = slim_t_129 == INT64_C(1);
+(void)slim_v_place_95mode_n124;
+{
+bool slim_v_value_95mode_n139 = {0};
+int64_t slim_t_144 = {0};
+slim_t_144 = slim_fn_syntax_95ast_95argument_95mode(slim_v_tokens_n2, slim_v_value_n67, slim_allocation_region);
+slim_v_value_95mode_n139 = slim_t_144 == INT64_C(0);
+(void)slim_v_value_95mode_n139;
+{
+SlimUnit slim_v__n154 = {0};
+if (slim_v_place_95mode_n124) {
+slim_v__n154 = (SlimUnit){0};
+}
+else {
+slim_v__n154 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_argument_n17, slim_v_issues_n21, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v__n154;
+{
+SlimUnit slim_v__n176 = {0};
+if (slim_v_value_95mode_n139) {
+slim_v__n176 = (SlimUnit){0};
+}
+else {
+slim_v__n176 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_value_n67, slim_v_issues_n21, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v__n176;
+{
+Slim_type_typing_95BuiltinState slim_v_prepared_n198 = {0};
+{
+int64_t slim_t_203 = {0};
+slim_t_203 = INT64_C(12);
+int64_t slim_t_207 = {0};
+slim_t_207 = INT64_C(0);
+int64_t slim_t_211 = {0};
+slim_t_211 = slim_v_argument_n17;
+int64_t slim_t_215 = {0};
+slim_t_215 = INT64_C(-1);
+int64_t slim_t_219 = {0};
+slim_t_219 = INT64_C(-1);
+int64_t slim_t_223 = {0};
+slim_t_223 = INT64_C(2);
+int64_t slim_t_227 = {0};
+slim_t_227 = slim_v_root_n77;
+bool slim_t_231 = {0};
+slim_t_231 = slim_v_place_95mode_n124 && slim_v_value_95mode_n139;
+bool slim_t_240 = {0};
+slim_t_240 = true;
+bool slim_t_244 = {0};
+slim_t_244 = true;
+int64_t slim_t_248 = {0};
+slim_t_248 = ((*slim_v_issues_n21)).len;
+Slim_type_typing_95TypeRef slim_t_256 = {0};
+slim_t_256 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_v_prepared_n198 = (Slim_type_typing_95BuiltinState){.slim_field_operation = slim_t_203, .slim_field_phase = slim_t_207, .slim_field_argument = slim_t_211, .slim_field_kind = slim_t_215, .slim_field_result_95kind = slim_t_219, .slim_field_count = slim_t_223, .slim_field_element = slim_t_227, .slim_field_valid = slim_t_231, .slim_field_modes_95valid = slim_t_240, .slim_field_allowed = slim_t_244, .slim_field_before = slim_t_248, .slim_field_result = slim_t_256};
+}
+(void)slim_v_prepared_n198;
+slim_result = slim_fn_typing_95builtin_95child(slim_v_prepared_n198, INT64_C(-1), slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+Slim_type_typing_95TypeRef slim_t_288 = {0};
+slim_t_288 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n36, slim_v_expr_n13, slim_t_288, slim_allocation_region);
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95prepare_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_expected_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+Slim_type_control_95Invocation slim_v_structure_n43 = {0};
+slim_v_structure_n43 = slim_fn_control_95invocation(slim_v_expr_n13, false, slim_allocation_region);
+(void)slim_v_structure_n43;
+bool slim_t_53 = {0};
+int64_t slim_t_58 = {0};
+slim_t_58 = slim_v_structure_n43.slim_field_callee;
+slim_t_53 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, slim_v_tokens_n6, slim_t_58, slim_bytes_static((const uint8_t *)"mem.replace", (int64_t)(sizeof("mem.replace") - 1)), slim_allocation_region);
+if (slim_t_53) {
+int64_t slim_t_73 = {0};
+slim_t_73 = slim_v_structure_n43.slim_field_arguments;
+slim_result = slim_fn_typing_95prepare_95replacement(slim_v_tokens_n6, slim_v_source_n2, slim_v_expr_n13, slim_t_73, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+{
+Slim_type_typing_95BuiltinState slim_v_shape_n85 = {0};
+int64_t slim_t_92 = {0};
+slim_t_92 = slim_v_structure_n43.slim_field_callee;
+int64_t slim_t_97 = {0};
+slim_t_97 = slim_v_structure_n43.slim_field_arguments;
+slim_v_shape_n85 = slim_fn_typing_95builtin_95shape(slim_v_source_n2, slim_v_tokens_n6, slim_t_92, slim_t_97, true, slim_allocation_region);
+(void)slim_v_shape_n85;
+{
+bool slim_v_modes_n106 = {0};
+int64_t slim_t_112 = {0};
+slim_t_112 = slim_v_shape_n85.slim_field_operation;
+int64_t slim_t_117 = {0};
+slim_t_117 = slim_v_structure_n43.slim_field_arguments;
+slim_v_modes_n106 = slim_fn_typing_95check_95builtin_95argument_95modes(slim_v_tokens_n6, slim_t_112, slim_t_117, INT64_C(0), (*slim_v_bindings_n21), slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_modes_n106;
+{
+Slim_type_typing_95BuiltinState slim_v_state_n128 = {0};
+int64_t slim_t_133 = {0};
+slim_t_133 = slim_v_shape_n85.slim_field_operation;
+int64_t slim_t_138 = {0};
+slim_t_138 = slim_v_shape_n85.slim_field_argument;
+int64_t slim_t_143 = {0};
+slim_t_143 = slim_v_shape_n85.slim_field_kind;
+int64_t slim_t_148 = {0};
+slim_t_148 = slim_v_shape_n85.slim_field_result_95kind;
+int64_t slim_t_153 = {0};
+slim_t_153 = slim_v_shape_n85.slim_field_count;
+slim_v_state_n128 = slim_fn_typing_95builtin_95state(slim_t_133, slim_t_138, slim_t_143, slim_t_148, slim_t_153, slim_v_modes_n106, slim_allocation_region);
+(void)slim_v_state_n128;
+bool slim_t_162 = {0};
+int64_t slim_t_165 = {0};
+slim_t_165 = slim_v_state_n128.slim_field_operation;
+slim_t_162 = slim_t_165 >= INT64_C(101);
+if (slim_t_162) {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n176 = {0};
+int64_t slim_t_184 = {0};
+slim_t_184 = slim_v_structure_n43.slim_field_arguments;
+int64_t slim_t_190 = {0};
+int64_t slim_t_193 = {0};
+slim_t_193 = slim_v_state_n128.slim_field_operation;
+slim_t_190 = slim_i64_sub(slim_t_193, INT64_C(101));
+slim_v_actual_n176 = slim_fn_typing_95infer_95collection_95new(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_t_184, slim_v_expected_n17, slim_t_190, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n176;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n128, slim_v_expr_n13, slim_v_actual_n176, slim_allocation_region);
+}
+}
+else {
+bool slim_t_215 = {0};
+int64_t slim_t_218 = {0};
+slim_t_218 = slim_v_state_n128.slim_field_operation;
+slim_t_215 = slim_t_218 == INT64_C(100);
+if (slim_t_215) {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n229 = {0};
+int64_t slim_t_236 = {0};
+slim_t_236 = slim_v_structure_n43.slim_field_arguments;
+int64_t slim_t_241 = {0};
+slim_t_241 = slim_v_state_n128.slim_field_result_95kind;
+slim_v_actual_n229 = slim_fn_typing_95infer_95zero_95scalar_95builtin(slim_v_tokens_n6, slim_v_expr_n13, slim_t_236, slim_t_241, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n229;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n128, slim_v_expr_n13, slim_v_actual_n229, slim_allocation_region);
+}
+}
+else {
+bool slim_t_261 = {0};
+int64_t slim_t_265 = {0};
+slim_t_265 = slim_v_structure_n43.slim_field_arguments;
+int64_t slim_t_270 = {0};
+slim_t_270 = slim_v_state_n128.slim_field_count;
+int64_t slim_t_275 = {0};
+slim_t_275 = slim_v_structure_n43.slim_field_callee;
+slim_t_261 = slim_fn_typing_95expect_95arity(slim_v_tokens_n6, slim_t_265, slim_t_270, slim_t_275, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+if (slim_t_261) {
+bool slim_t_286 = {0};
+bool slim_t_289 = {0};
+int64_t slim_t_292 = {0};
+slim_t_292 = slim_v_state_n128.slim_field_operation;
+slim_t_289 = slim_t_292 >= INT64_C(3);
+bool slim_t_299 = {0};
+int64_t slim_t_302 = {0};
+slim_t_302 = slim_v_state_n128.slim_field_operation;
+slim_t_299 = slim_t_302 <= INT64_C(8);
+slim_t_286 = slim_t_289 && slim_t_299;
+if (slim_t_286) {
+slim_result = slim_fn_typing_95reserve_95builtin_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n128, slim_v_bindings_n21, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_result = slim_fn_typing_95builtin_95child(slim_v_state_n128, INT64_C(-1), slim_allocation_region);
+}
+}
+else {
+Slim_type_typing_95TypeRef slim_t_341 = {0};
+slim_t_341 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n128, slim_v_expr_n13, slim_t_341, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95finish_95scalar_95operand(SlimVec slim_v_tokens_n2, Slim_type_typing_95Pending slim_v_frame_n9, Slim_type_typing_95TypeRef slim_v_actual_n13, SlimVec * slim_v_issues_n17, SlimRegion *slim_region) {
+(void)slim_v_tokens_n2;
+(void)slim_v_frame_n9;
+(void)slim_v_actual_n13;
+(void)slim_v_issues_n17;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+bool slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+Slim_type_control_95Invocation slim_v_structure_n32 = {0};
+int64_t slim_t_37 = {0};
+slim_t_37 = slim_v_frame_n9.slim_field_expr;
+slim_v_structure_n32 = slim_fn_control_95invocation(slim_t_37, false, slim_allocation_region);
+(void)slim_v_structure_n32;
+{
+int64_t slim_v_argument_n46 = {0};
+bool slim_t_50 = {0};
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_frame_n9.slim_field_phase;
+slim_t_50 = slim_t_53 >= INT64_C(16);
+if (slim_t_50) {
+{
+Slim_type_control_95Member slim_v_first_n64 = {0};
+int64_t slim_t_70 = {0};
+slim_t_70 = slim_v_structure_n32.slim_field_arguments;
+slim_v_first_n64 = slim_fn_control_95member(slim_v_tokens_n2, slim_t_70, false, slim_allocation_region);
+(void)slim_v_first_n64;
+slim_v_argument_n46 = slim_v_first_n64.slim_field_next;
+}
+}
+else {
+slim_v_argument_n46 = slim_v_structure_n32.slim_field_arguments;
+}
+(void)slim_v_argument_n46;
+int64_t slim_t_97 = {0};
+slim_t_97 = slim_v_frame_n9.slim_field_type;
+slim_result = slim_fn_typing_95expect_95kind(slim_v_actual_n13, slim_t_97, slim_v_argument_n46, slim_v_issues_n17, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95scalar_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_actual_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+bool slim_v_current_n47 = {0};
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_state_n17.slim_field_kind;
+int64_t slim_t_58 = {0};
+slim_t_58 = slim_v_state_n17.slim_field_argument;
+slim_v_current_n47 = slim_fn_typing_95expect_95kind(slim_v_actual_n21, slim_t_53, slim_t_58, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_current_n47;
+{
+bool slim_v_valid_n67 = {0};
+bool slim_t_72 = {0};
+slim_t_72 = slim_v_state_n17.slim_field_valid;
+slim_v_valid_n67 = slim_t_72 && slim_v_current_n47;
+(void)slim_v_valid_n67;
+{
+int64_t slim_v_phase_n81 = {0};
+int64_t slim_t_86 = {0};
+slim_t_86 = slim_v_state_n17.slim_field_phase;
+slim_v_phase_n81 = slim_i64_add(slim_t_86, INT64_C(1));
+(void)slim_v_phase_n81;
+{
+Slim_type_control_95Member slim_v_argument_n95 = {0};
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_state_n17.slim_field_argument;
+slim_v_argument_n95 = slim_fn_control_95member(slim_v_tokens_n6, slim_t_101, false, slim_allocation_region);
+(void)slim_v_argument_n95;
+{
+int64_t slim_v_kind_n110 = {0};
+bool slim_t_114 = {0};
+bool slim_t_117 = {0};
+int64_t slim_t_120 = {0};
+slim_t_120 = slim_v_state_n17.slim_field_operation;
+slim_t_117 = slim_t_120 == INT64_C(11);
+bool slim_t_127 = {0};
+slim_t_127 = slim_v_phase_n81 == INT64_C(2);
+slim_t_114 = slim_t_117 && slim_t_127;
+if (slim_t_114) {
+slim_v_kind_n110 = INT64_C(4);
+}
+else {
+slim_v_kind_n110 = INT64_C(3);
+}
+(void)slim_v_kind_n110;
+{
+Slim_type_typing_95BuiltinState slim_v_next_n145 = {0};
+int64_t slim_t_152 = {0};
+slim_t_152 = slim_v_argument_n95.slim_field_next;
+slim_v_next_n145 = slim_fn_typing_95advance_95builtin(slim_v_state_n17, slim_v_phase_n81, slim_t_152, slim_v_kind_n110, INT64_C(-1), slim_v_valid_n67, slim_v_actual_n21, slim_allocation_region);
+(void)slim_v_next_n145;
+bool slim_t_164 = {0};
+int64_t slim_t_168 = {0};
+int64_t slim_t_171 = {0};
+slim_t_171 = slim_v_state_n17.slim_field_count;
+slim_t_168 = slim_i64_sub(slim_t_171, INT64_C(1));
+slim_t_164 = slim_v_phase_n81 == slim_t_168;
+if (slim_t_164) {
+slim_result = slim_fn_typing_95reserve_95builtin_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_next_n145, slim_v_bindings_n25, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_result = slim_fn_typing_95builtin_95child(slim_v_next_n145, INT64_C(-1), slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95collection_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_actual_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+SlimUnit slim_v__n47 = {0};
+slim_v__n47 = slim_fn_typing_95finish_95builtin_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n17, slim_v_actual_n21, slim_v_bindings_n25, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n47;
+{
+int64_t slim_v_constructor_n62 = {0};
+bool slim_t_66 = {0};
+int64_t slim_t_69 = {0};
+slim_t_69 = slim_v_state_n17.slim_field_operation;
+slim_t_66 = slim_t_69 >= INT64_C(7);
+if (slim_t_66) {
+slim_v_constructor_n62 = INT64_C(1);
+}
+else {
+slim_v_constructor_n62 = INT64_C(0);
+}
+(void)slim_v_constructor_n62;
+bool slim_t_87 = {0};
+slim_t_87 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, slim_v_tokens_n6, slim_v_actual_n21, slim_v_constructor_n62, slim_allocation_region);
+if (slim_t_87) {
+{
+int64_t slim_v_element_n99 = {0};
+int64_t slim_t_104 = {0};
+slim_t_104 = slim_v_actual_n21.slim_field_form;
+slim_v_element_n99 = slim_i64_add(slim_t_104, INT64_C(2));
+(void)slim_v_element_n99;
+bool slim_t_113 = {0};
+int64_t slim_t_116 = {0};
+slim_t_116 = slim_v_state_n17.slim_field_operation;
+slim_t_113 = slim_t_116 == INT64_C(3);
+if (slim_t_113) {
+Slim_type_typing_95TypeRef slim_t_130 = {0};
+slim_t_130 = slim_fn_typing_95scalar_95type(INT64_C(3), slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_130, slim_allocation_region);
+}
+else {
+{
+Slim_type_control_95Member slim_v_argument_n142 = {0};
+int64_t slim_t_148 = {0};
+slim_t_148 = slim_v_state_n17.slim_field_argument;
+slim_v_argument_n142 = slim_fn_control_95member(slim_v_tokens_n6, slim_t_148, false, slim_allocation_region);
+(void)slim_v_argument_n142;
+{
+Slim_type_typing_95BuiltinState slim_v_next_n157 = {0};
+int64_t slim_t_164 = {0};
+slim_t_164 = slim_v_argument_n142.slim_field_next;
+slim_v_next_n157 = slim_fn_typing_95advance_95builtin(slim_v_state_n17, INT64_C(1), slim_t_164, INT64_C(3), slim_v_element_n99, true, slim_v_actual_n21, slim_allocation_region);
+(void)slim_v_next_n157;
+{
+int64_t slim_v_expected_n176 = {0};
+bool slim_t_180 = {0};
+bool slim_t_183 = {0};
+int64_t slim_t_186 = {0};
+slim_t_186 = slim_v_state_n17.slim_field_operation;
+slim_t_183 = slim_t_186 == INT64_C(5);
+bool slim_t_193 = {0};
+int64_t slim_t_196 = {0};
+slim_t_196 = slim_v_state_n17.slim_field_operation;
+slim_t_193 = slim_t_196 == INT64_C(7);
+slim_t_180 = slim_t_183 || slim_t_193;
+if (slim_t_180) {
+slim_v_expected_n176 = slim_v_element_n99;
+}
+else {
+slim_v_expected_n176 = INT64_C(-1);
+}
+(void)slim_v_expected_n176;
+slim_result = slim_fn_typing_95builtin_95child(slim_v_next_n157, slim_v_expected_n176, slim_allocation_region);
+}
 }
 }
 }
@@ -104069,11 +104616,678 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_r
 }
 else {
 {
-SlimUnit slim_v__n183 = {0};
-slim_v__n183 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0314", (int64_t)(sizeof("E0314") - 1)), slim_v_callee_n17, slim_v_issues_n55, slim_allocation_region);
+SlimUnit slim_v__n230 = {0};
+int64_t slim_t_236 = {0};
+slim_t_236 = slim_v_state_n17.slim_field_argument;
+slim_v__n230 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_t_236, slim_v_issues_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n183;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+(void)slim_v__n230;
+Slim_type_typing_95TypeRef slim_t_248 = {0};
+slim_t_248 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_248, slim_allocation_region);
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95collection_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, Slim_type_typing_95BuiltinState slim_v_state_n21, Slim_type_typing_95TypeRef slim_v_actual_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimVec * slim_v_scopes_n43, SlimVec * slim_v_frames_n50, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_expected_n17;
+(void)slim_v_state_n21;
+(void)slim_v_actual_n25;
+(void)slim_v_bindings_n29;
+(void)slim_v_issues_n36;
+(void)slim_v_scopes_n43;
+(void)slim_v_frames_n50;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_65 = {0};
+bool slim_t_68 = {0};
+int64_t slim_t_71 = {0};
+slim_t_71 = slim_v_state_n21.slim_field_operation;
+slim_t_68 = slim_t_71 == INT64_C(4);
+bool slim_t_78 = {0};
+bool slim_t_81 = {0};
+int64_t slim_t_84 = {0};
+slim_t_84 = slim_v_state_n21.slim_field_operation;
+slim_t_81 = slim_t_84 == INT64_C(6);
+bool slim_t_91 = {0};
+int64_t slim_t_94 = {0};
+slim_t_94 = slim_v_state_n21.slim_field_phase;
+slim_t_91 = slim_t_94 == INT64_C(1);
+slim_t_78 = slim_t_81 && slim_t_91;
+slim_t_65 = slim_t_68 || slim_t_78;
+if (slim_t_65) {
+{
+bool slim_v_index_95ok_n107 = {0};
+int64_t slim_t_114 = {0};
+slim_t_114 = slim_v_state_n21.slim_field_argument;
+slim_v_index_95ok_n107 = slim_fn_typing_95expect_95kind(slim_v_actual_n25, INT64_C(3), slim_t_114, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_index_95ok_n107;
+bool slim_t_123 = {0};
+int64_t slim_t_126 = {0};
+slim_t_126 = slim_v_state_n21.slim_field_operation;
+slim_t_123 = slim_t_126 == INT64_C(4);
+if (slim_t_123) {
+{
+Slim_type_typing_95TypeRef slim_v_result_n137 = {0};
+if (slim_v_index_95ok_n107) {
+int64_t slim_t_149 = {0};
+slim_t_149 = slim_v_state_n21.slim_field_element;
+slim_v_result_n137 = slim_fn_typing_95source_95type(slim_v_source_n2, slim_v_tokens_n6, slim_t_149, slim_allocation_region);
+}
+else {
+slim_v_result_n137 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_result_n137;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_v_result_n137, slim_allocation_region);
+}
+}
+else {
+{
+Slim_type_control_95Member slim_v_argument_n178 = {0};
+int64_t slim_t_184 = {0};
+slim_t_184 = slim_v_state_n21.slim_field_argument;
+slim_v_argument_n178 = slim_fn_control_95member(slim_v_tokens_n6, slim_t_184, false, slim_allocation_region);
+(void)slim_v_argument_n178;
+{
+Slim_type_typing_95BuiltinState slim_v_next_n193 = {0};
+int64_t slim_t_200 = {0};
+slim_t_200 = slim_v_argument_n178.slim_field_next;
+int64_t slim_t_206 = {0};
+slim_t_206 = slim_v_state_n21.slim_field_element;
+slim_v_next_n193 = slim_fn_typing_95advance_95builtin(slim_v_state_n21, INT64_C(2), slim_t_200, INT64_C(-1), slim_t_206, slim_v_index_95ok_n107, slim_v_actual_n25, slim_allocation_region);
+(void)slim_v_next_n193;
+int64_t slim_t_218 = {0};
+slim_t_218 = slim_v_state_n21.slim_field_element;
+slim_result = slim_fn_typing_95builtin_95child(slim_v_next_n193, slim_t_218, slim_allocation_region);
+}
+}
+}
+}
+}
+else {
+bool slim_t_234 = {0};
+int64_t slim_t_237 = {0};
+slim_t_237 = slim_v_state_n21.slim_field_operation;
+slim_t_234 = slim_t_237 == INT64_C(8);
+if (slim_t_234) {
+{
+bool slim_v_id_95ok_n248 = {0};
+slim_v_id_95ok_n248 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, slim_v_tokens_n6, slim_v_actual_n25, INT64_C(2), slim_allocation_region);
+(void)slim_v_id_95ok_n248;
+{
+bool slim_v_same_95inner_n260 = {0};
+if (slim_v_id_95ok_n248) {
+int64_t slim_t_272 = {0};
+slim_t_272 = slim_v_state_n21.slim_field_element;
+int64_t slim_t_277 = {0};
+int64_t slim_t_280 = {0};
+slim_t_280 = slim_v_actual_n25.slim_field_form;
+slim_t_277 = slim_i64_add(slim_t_280, INT64_C(2));
+slim_v_same_95inner_n260 = slim_fn_typing_95type_95forms_95equal(slim_v_source_n2, slim_v_tokens_n6, slim_t_272, slim_t_277, slim_allocation_region);
+}
+else {
+slim_v_same_95inner_n260 = false;
+}
+(void)slim_v_same_95inner_n260;
+if (slim_v_same_95inner_n260) {
+Slim_type_typing_95TypeRef slim_t_304 = {0};
+int64_t slim_t_309 = {0};
+slim_t_309 = slim_v_state_n21.slim_field_element;
+slim_t_304 = slim_fn_typing_95source_95type(slim_v_source_n2, slim_v_tokens_n6, slim_t_309, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_t_304, slim_allocation_region);
+}
+else {
+{
+SlimUnit slim_v__n321 = {0};
+int64_t slim_t_327 = {0};
+slim_t_327 = slim_v_state_n21.slim_field_argument;
+slim_v__n321 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_t_327, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n321;
+Slim_type_typing_95TypeRef slim_t_339 = {0};
+slim_t_339 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_t_339, slim_allocation_region);
+}
+}
+}
+}
+}
+else {
+{
+bool slim_v_value_95valid_n355 = {0};
+slim_v_value_95valid_n355 = slim_fn_typing_95type_95valid(slim_v_actual_n25, slim_allocation_region);
+(void)slim_v_value_95valid_n355;
+{
+bool slim_v_moved_n364 = {0};
+int64_t slim_t_371 = {0};
+slim_t_371 = slim_v_state_n21.slim_field_argument;
+int64_t slim_t_376 = {0};
+slim_t_376 = slim_v_state_n21.slim_field_element;
+slim_v_moved_n364 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, slim_v_tokens_n6, slim_t_371, slim_t_376, slim_v_bindings_n29, slim_v_issues_n36, slim_v_scopes_n43, slim_v_frames_n50, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_moved_n364;
+bool slim_t_388 = {0};
+int64_t slim_t_391 = {0};
+slim_t_391 = slim_v_state_n21.slim_field_operation;
+slim_t_388 = slim_t_391 == INT64_C(7);
+if (slim_t_388) {
+{
+bool slim_v_contextual_n402 = {0};
+slim_v_contextual_n402 = slim_v_expected_n17 >= INT64_C(0);
+(void)slim_v_contextual_n402;
+{
+Slim_type_typing_95TypeRef slim_v_expected_95type_n412 = {0};
+if (slim_v_contextual_n402) {
+slim_v_expected_95type_n412 = slim_fn_typing_95source_95type(slim_v_source_n2, slim_v_tokens_n6, slim_v_expected_n17, slim_allocation_region);
+}
+else {
+slim_v_expected_95type_n412 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_expected_95type_n412;
+{
+bool slim_v_id_95ok_n438 = {0};
+if (slim_v_contextual_n402) {
+slim_v_id_95ok_n438 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, slim_v_tokens_n6, slim_v_expected_95type_n412, INT64_C(2), slim_allocation_region);
+}
+else {
+slim_v_id_95ok_n438 = false;
+}
+(void)slim_v_id_95ok_n438;
+{
+bool slim_v_same_95inner_n461 = {0};
+if (slim_v_id_95ok_n438) {
+int64_t slim_t_473 = {0};
+slim_t_473 = slim_v_state_n21.slim_field_element;
+int64_t slim_t_478 = {0};
+slim_t_478 = slim_fn_syntax_95ast_95type_95argument(slim_v_expected_n17, slim_allocation_region);
+slim_v_same_95inner_n461 = slim_fn_typing_95type_95forms_95equal(slim_v_source_n2, slim_v_tokens_n6, slim_t_473, slim_t_478, slim_allocation_region);
+}
+else {
+slim_v_same_95inner_n461 = false;
+}
+(void)slim_v_same_95inner_n461;
+bool slim_t_492 = {0};
+bool slim_t_496 = {0};
+slim_t_496 = slim_v_moved_n364 && slim_v_same_95inner_n461;
+slim_t_492 = slim_v_value_95valid_n355 && slim_t_496;
+if (slim_t_492) {
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_v_expected_95type_n412, slim_allocation_region);
+}
+else {
+{
+SlimUnit slim_v__n517 = {0};
+slim_v__n517 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_expr_n13, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n517;
+Slim_type_typing_95TypeRef slim_t_531 = {0};
+slim_t_531 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_t_531, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95TypeRef slim_v_result_n549 = {0};
+bool slim_t_553 = {0};
+bool slim_t_556 = {0};
+slim_t_556 = slim_v_state_n21.slim_field_valid;
+bool slim_t_561 = {0};
+slim_t_561 = slim_v_value_95valid_n355 && slim_v_moved_n364;
+slim_t_553 = slim_t_556 && slim_t_561;
+if (slim_t_553) {
+slim_v_result_n549 = slim_fn_typing_95scalar_95type(INT64_C(0), slim_v_expr_n13, slim_allocation_region);
+}
+else {
+slim_v_result_n549 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_result_n549;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n21, slim_v_expr_n13, slim_v_result_n549, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95byte_95vector(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_actual_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_v_scopes_n39;
+(void)slim_v_frames_n46;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+SlimUnit slim_v__n61 = {0};
+bool slim_t_65 = {0};
+int64_t slim_t_68 = {0};
+slim_t_68 = slim_v_state_n17.slim_field_operation;
+slim_t_65 = slim_t_68 == INT64_C(9);
+if (slim_t_65) {
+slim_v__n61 = (SlimUnit){0};
+}
+else {
+slim_v__n61 = slim_fn_typing_95finish_95builtin_95operand(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n17, slim_v_actual_n21, slim_v_bindings_n25, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v__n61;
+{
+bool slim_v_vector_95ok_n96 = {0};
+slim_v_vector_95ok_n96 = slim_fn_typing_95result_95is_95composite(slim_v_source_n2, slim_v_tokens_n6, slim_v_actual_n21, INT64_C(0), slim_allocation_region);
+(void)slim_v_vector_95ok_n96;
+{
+int64_t slim_v_inner_95kind_n108 = {0};
+if (slim_v_vector_95ok_n96) {
+int64_t slim_t_120 = {0};
+int64_t slim_t_123 = {0};
+slim_t_123 = slim_v_actual_n21.slim_field_form;
+slim_t_120 = slim_i64_add(slim_t_123, INT64_C(2));
+slim_v_inner_95kind_n108 = slim_fn_syntax_95scalar_95type_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_t_120, slim_allocation_region);
+}
+else {
+slim_v_inner_95kind_n108 = INT64_C(-1);
+}
+(void)slim_v_inner_95kind_n108;
+{
+bool slim_v_valid_n139 = {0};
+bool slim_t_144 = {0};
+slim_t_144 = slim_v_state_n17.slim_field_valid;
+bool slim_t_149 = {0};
+bool slim_t_153 = {0};
+slim_t_153 = slim_v_inner_95kind_n108 == INT64_C(2);
+slim_t_149 = slim_v_vector_95ok_n96 && slim_t_153;
+slim_v_valid_n139 = slim_t_144 && slim_t_149;
+(void)slim_v_valid_n139;
+if (slim_v_valid_n139) {
+bool slim_t_168 = {0};
+int64_t slim_t_171 = {0};
+slim_t_171 = slim_v_state_n17.slim_field_operation;
+slim_t_168 = slim_t_171 == INT64_C(9);
+if (slim_t_168) {
+{
+bool slim_v_moved_n182 = {0};
+int64_t slim_t_189 = {0};
+slim_t_189 = slim_v_state_n17.slim_field_argument;
+slim_v_moved_n182 = slim_fn_typing_95check_95owned_95value(slim_v_source_n2, slim_v_tokens_n6, slim_t_189, false, slim_v_bindings_n25, slim_v_issues_n32, slim_v_scopes_n39, slim_v_frames_n46, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_moved_n182;
+{
+Slim_type_typing_95TypeRef slim_v_result_n202 = {0};
+if (slim_v_moved_n182) {
+slim_v_result_n202 = slim_fn_typing_95scalar_95type(INT64_C(4), slim_v_expr_n13, slim_allocation_region);
+}
+else {
+slim_v_result_n202 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_result_n202;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_v_result_n202, slim_allocation_region);
+}
+}
+}
+else {
+Slim_type_typing_95TypeRef slim_t_242 = {0};
+slim_t_242 = slim_fn_typing_95scalar_95type(INT64_C(1), slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_242, slim_allocation_region);
+}
+}
+else {
+{
+SlimUnit slim_v__n256 = {0};
+int64_t slim_t_262 = {0};
+slim_t_262 = slim_v_state_n17.slim_field_argument;
+slim_v__n256 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_t_262, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n256;
+Slim_type_typing_95TypeRef slim_t_274 = {0};
+slim_t_274 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_274, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95replacement(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95BuiltinState slim_v_state_n17, Slim_type_typing_95TypeRef slim_v_actual_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_state_n17;
+(void)slim_v_actual_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_v_scopes_n39;
+(void)slim_v_frames_n46;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_61 = {0};
+int64_t slim_t_64 = {0};
+slim_t_64 = slim_v_state_n17.slim_field_phase;
+slim_t_61 = slim_t_64 == INT64_C(0);
+if (slim_t_61) {
+{
+bool slim_v_affine_n75 = {0};
+bool slim_t_80 = {0};
+slim_t_80 = slim_fn_typing_95type_95valid(slim_v_actual_n21, slim_allocation_region);
+bool slim_t_85 = {0};
+int64_t slim_t_88 = {0};
+int64_t slim_t_93 = {0};
+slim_t_93 = slim_v_actual_n21.slim_field_form;
+slim_t_88 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_t_93, slim_allocation_region);
+slim_t_85 = slim_t_88 == INT64_C(2);
+slim_v_affine_n75 = slim_t_80 && slim_t_85;
+(void)slim_v_affine_n75;
+{
+int64_t slim_v_mode_n104 = {0};
+int64_t slim_t_110 = {0};
+slim_t_110 = slim_v_state_n17.slim_field_element;
+slim_v_mode_n104 = slim_fn_typing_95named_95binding_95mode(slim_v_tokens_n6, slim_t_110, (*slim_v_bindings_n25), slim_allocation_region);
+(void)slim_v_mode_n104;
+{
+int64_t slim_v_owner_n119 = {0};
+int64_t slim_t_126 = {0};
+slim_t_126 = slim_v_state_n17.slim_field_element;
+slim_v_owner_n119 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_t_126, (*slim_v_bindings_n25), slim_allocation_region);
+(void)slim_v_owner_n119;
+{
+bool slim_v_capable_n135 = {0};
+bool slim_t_140 = {0};
+slim_t_140 = slim_v_mode_n104 == INT64_C(0);
+bool slim_t_146 = {0};
+slim_t_146 = slim_v_mode_n104 == INT64_C(2);
+slim_v_capable_n135 = slim_t_140 || slim_t_146;
+(void)slim_v_capable_n135;
+{
+bool slim_v_known_n155 = {0};
+slim_v_known_n155 = slim_v_owner_n119 >= INT64_C(2);
+(void)slim_v_known_n155;
+{
+SlimUnit slim_v__n165 = {0};
+bool slim_t_169 = {0};
+slim_t_169 = !slim_v_affine_n75;
+if (slim_t_169) {
+int64_t slim_t_180 = {0};
+slim_t_180 = slim_v_state_n17.slim_field_argument;
+slim_v__n165 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_t_180, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v__n165 = (SlimUnit){0};
+}
+(void)slim_v__n165;
+{
+SlimUnit slim_v__n195 = {0};
+bool slim_t_199 = {0};
+bool slim_t_202 = {0};
+slim_t_202 = slim_v_capable_n135 && slim_v_known_n155;
+slim_t_199 = !slim_t_202;
+if (slim_t_199) {
+int64_t slim_t_215 = {0};
+slim_t_215 = slim_v_state_n17.slim_field_argument;
+slim_v__n195 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0347", (int64_t)(sizeof("E0347") - 1)), slim_t_215, slim_v_issues_n32, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v__n195 = (SlimUnit){0};
+}
+(void)slim_v__n195;
+{
+bool slim_v_valid_95place_n230 = {0};
+bool slim_t_235 = {0};
+slim_t_235 = slim_v_state_n17.slim_field_valid;
+bool slim_t_240 = {0};
+bool slim_t_244 = {0};
+bool slim_t_248 = {0};
+bool slim_t_252 = {0};
+int64_t slim_t_255 = {0};
+slim_t_255 = slim_v_state_n17.slim_field_before;
+int64_t slim_t_260 = {0};
+slim_t_260 = ((*slim_v_issues_n32)).len;
+slim_t_252 = slim_t_255 == slim_t_260;
+slim_t_248 = slim_v_known_n155 && slim_t_252;
+slim_t_244 = slim_v_capable_n135 && slim_t_248;
+slim_t_240 = slim_v_affine_n75 && slim_t_244;
+slim_v_valid_95place_n230 = slim_t_235 && slim_t_240;
+(void)slim_v_valid_95place_n230;
+if (slim_v_valid_95place_n230) {
+{
+bool slim_v_loan_n277 = {0};
+int64_t slim_t_283 = {0};
+slim_t_283 = slim_v_state_n17.slim_field_argument;
+slim_v_loan_n277 = slim_fn_typing_95check_95loan_95overlap(slim_v_tokens_n6, slim_t_283, INT64_C(1), slim_v_owner_n119, slim_v_expr_n13, false, false, slim_v_bindings_n25, slim_v_issues_n32, true, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_loan_n277;
+if (slim_v_loan_n277) {
+{
+Slim_type_control_95Member slim_v_argument_n304 = {0};
+int64_t slim_t_310 = {0};
+slim_t_310 = slim_v_state_n17.slim_field_argument;
+slim_v_argument_n304 = slim_fn_control_95member(slim_v_tokens_n6, slim_t_310, false, slim_allocation_region);
+(void)slim_v_argument_n304;
+{
+Slim_type_typing_95BuiltinState slim_v_next_n319 = {0};
+int64_t slim_t_326 = {0};
+slim_t_326 = slim_v_argument_n304.slim_field_next;
+int64_t slim_t_332 = {0};
+slim_t_332 = slim_v_actual_n21.slim_field_form;
+slim_v_next_n319 = slim_fn_typing_95advance_95builtin(slim_v_state_n17, INT64_C(1), slim_t_326, INT64_C(-1), slim_t_332, true, slim_v_actual_n21, slim_allocation_region);
+(void)slim_v_next_n319;
+int64_t slim_t_344 = {0};
+slim_t_344 = slim_v_actual_n21.slim_field_form;
+slim_result = slim_fn_typing_95builtin_95child(slim_v_next_n319, slim_t_344, slim_allocation_region);
+}
+}
+}
+else {
+Slim_type_typing_95TypeRef slim_t_360 = {0};
+slim_t_360 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_360, slim_allocation_region);
+}
+}
+}
+else {
+Slim_type_typing_95TypeRef slim_t_377 = {0};
+slim_t_377 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_t_377, slim_allocation_region);
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+{
+bool slim_v_transferred_n398 = {0};
+int64_t slim_t_405 = {0};
+slim_t_405 = slim_v_state_n17.slim_field_argument;
+int64_t slim_t_410 = {0};
+slim_t_410 = slim_v_state_n17.slim_field_element;
+slim_v_transferred_n398 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, slim_v_tokens_n6, slim_t_405, slim_t_410, slim_v_bindings_n25, slim_v_issues_n32, slim_v_scopes_n39, slim_v_frames_n46, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_transferred_n398;
+{
+Slim_type_typing_95TypeRef slim_v_result_n422 = {0};
+bool slim_t_426 = {0};
+bool slim_t_429 = {0};
+slim_t_429 = slim_fn_typing_95type_95valid(slim_v_actual_n21, slim_allocation_region);
+slim_t_426 = slim_t_429 && slim_v_transferred_n398;
+if (slim_t_426) {
+slim_v_result_n422 = slim_v_state_n17.slim_field_result;
+}
+else {
+slim_v_result_n422 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_result_n422;
+slim_result = slim_fn_typing_95complete_95builtin(slim_v_state_n17, slim_v_expr_n13, slim_v_result_n422, slim_allocation_region);
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BuiltinNext slim_fn_typing_95finish_95builtin(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, Slim_type_typing_95BuiltinState slim_v_state_n21, Slim_type_typing_95TypeRef slim_v_actual_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_issues_n36, SlimVec * slim_v_scopes_n43, SlimVec * slim_v_frames_n50, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_expr_n13;
+(void)slim_v_expected_n17;
+(void)slim_v_state_n21;
+(void)slim_v_actual_n25;
+(void)slim_v_bindings_n29;
+(void)slim_v_issues_n36;
+(void)slim_v_scopes_n43;
+(void)slim_v_frames_n50;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BuiltinNext slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+bool slim_t_65 = {0};
+int64_t slim_t_68 = {0};
+slim_t_68 = slim_v_state_n21.slim_field_operation;
+slim_t_65 = slim_t_68 == INT64_C(12);
+if (slim_t_65) {
+slim_result = slim_fn_typing_95finish_95replacement(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n21, slim_v_actual_n25, slim_v_bindings_n29, slim_v_issues_n36, slim_v_scopes_n43, slim_v_frames_n50, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+bool slim_t_95 = {0};
+bool slim_t_98 = {0};
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_state_n21.slim_field_operation;
+slim_t_98 = slim_t_101 == INT64_C(9);
+bool slim_t_108 = {0};
+bool slim_t_111 = {0};
+bool slim_t_114 = {0};
+int64_t slim_t_117 = {0};
+slim_t_117 = slim_v_state_n21.slim_field_operation;
+slim_t_114 = slim_t_117 == INT64_C(10);
+bool slim_t_124 = {0};
+int64_t slim_t_127 = {0};
+slim_t_127 = slim_v_state_n21.slim_field_operation;
+slim_t_124 = slim_t_127 == INT64_C(11);
+slim_t_111 = slim_t_114 || slim_t_124;
+bool slim_t_135 = {0};
+int64_t slim_t_138 = {0};
+slim_t_138 = slim_v_state_n21.slim_field_phase;
+int64_t slim_t_143 = {0};
+int64_t slim_t_146 = {0};
+slim_t_146 = slim_v_state_n21.slim_field_count;
+slim_t_143 = slim_i64_sub(slim_t_146, INT64_C(1));
+slim_t_135 = slim_t_138 == slim_t_143;
+slim_t_108 = slim_t_111 && slim_t_135;
+slim_t_95 = slim_t_98 || slim_t_108;
+if (slim_t_95) {
+slim_result = slim_fn_typing_95finish_95byte_95vector(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n21, slim_v_actual_n25, slim_v_bindings_n29, slim_v_issues_n36, slim_v_scopes_n43, slim_v_frames_n50, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+bool slim_t_176 = {0};
+int64_t slim_t_179 = {0};
+slim_t_179 = slim_v_state_n21.slim_field_operation;
+slim_t_176 = slim_t_179 >= INT64_C(10);
+if (slim_t_176) {
+slim_result = slim_fn_typing_95finish_95scalar_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n21, slim_v_actual_n25, slim_v_bindings_n29, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+bool slim_t_204 = {0};
+int64_t slim_t_207 = {0};
+slim_t_207 = slim_v_state_n21.slim_field_phase;
+slim_t_204 = slim_t_207 == INT64_C(0);
+if (slim_t_204) {
+slim_result = slim_fn_typing_95finish_95collection_95builtin(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_state_n21, slim_v_actual_n25, slim_v_bindings_n29, slim_v_issues_n36, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_result = slim_fn_typing_95finish_95collection_95value(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_state_n21, slim_v_actual_n25, slim_v_bindings_n29, slim_v_issues_n36, slim_v_scopes_n43, slim_v_frames_n50, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95builtin(Slim_type_typing_95BuiltinState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_builtins_n14, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_depth_n6;
+(void)slim_v_limit_n10;
+(void)slim_v_builtins_n14;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+int64_t slim_v_permitted_n29 = {0};
+bool slim_t_33 = {0};
+bool slim_t_36 = {0};
+slim_t_36 = slim_v_depth_n6 >= INT64_C(0);
+bool slim_t_42 = {0};
+slim_t_42 = slim_v_depth_n6 < slim_v_limit_n10;
+slim_t_33 = slim_t_36 && slim_t_42;
+if (slim_t_33) {
+slim_v_permitted_n29 = INT64_C(1);
+}
+else {
+slim_v_permitted_n29 = INT64_C(0);
+}
+(void)slim_v_permitted_n29;
+{
+int64_t slim_v_at_n60 = {0};
+slim_v_at_n60 = slim_i64_div(slim_v_depth_n6, slim_v_permitted_n29);
+(void)slim_v_at_n60;
+{
+SlimUnit slim_v__n70 = {0};
+bool slim_t_74 = {0};
+int64_t slim_t_78 = {0};
+slim_t_78 = ((*slim_v_builtins_n14)).len;
+slim_t_74 = slim_v_at_n60 < slim_t_78;
+if (slim_t_74) {
+((Slim_type_typing_95BuiltinState *)((*slim_v_builtins_n14)).data)[slim_vec_check_index(&((*slim_v_builtins_n14)), slim_v_at_n60)] = slim_v_state_n2; slim_v__n70 = (SlimUnit){0};
+}
+else {
+if (!slim_vec_push(slim_v_builtins_n14, &slim_v_state_n2)) goto slim_allocation_failed; slim_v__n70 = (SlimUnit){0};
+}
+(void)slim_v__n70;
+slim_result = slim_v_at_n60;
 }
 }
 }
@@ -104126,683 +105340,91 @@ slim_result = INT64_C(-1);
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95replace(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95Members slim_fn_typing_95prepare_95members(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, bool slim_v_record_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
-(void)slim_v_parent_n17;
-(void)slim_v_params_n21;
-(void)slim_v_return_95type_n25;
-(void)slim_v_bindings_n29;
-(void)slim_v_facts_n36;
-(void)slim_v_issues_n43;
-(void)slim_v_scopes_n50;
-(void)slim_v_frames_n57;
+(void)slim_v_record_n17;
+(void)slim_v_issues_n21;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95Members slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_place_n72 = {0};
-slim_v_place_n72 = slim_fn_syntax_95ast_95call_95arguments(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_place_n72;
+Slim_type_control_95Construction slim_v_structure_n36 = {0};
+slim_v_structure_n36 = slim_fn_control_95construction((*slim_v_tokens_n6), slim_v_expr_n13, slim_v_record_n17, slim_allocation_region);
+(void)slim_v_structure_n36;
 {
-bool slim_v_arity_n81 = {0};
-int64_t slim_t_89 = {0};
-slim_t_89 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
-slim_v_arity_n81 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_place_n72, INT64_C(2), slim_t_89, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n81;
-if (slim_v_arity_n81) {
+int64_t slim_v_item_n47 = {0};
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_structure_n36.slim_field_type;
+slim_v_item_n47 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_t_53, slim_allocation_region);
+(void)slim_v_item_n47;
 {
-int64_t slim_v_value_n103 = {0};
-slim_v_value_n103 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_place_n72, slim_allocation_region);
-(void)slim_v_value_n103;
+int64_t slim_v_kind_n61 = {0};
+if (slim_v_record_n17) {
+slim_v_kind_n61 = INT64_C(1);
+}
+else {
+slim_v_kind_n61 = INT64_C(2);
+}
+(void)slim_v_kind_n61;
+bool slim_t_77 = {0};
+slim_t_77 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_item_n47, slim_v_kind_n61, slim_allocation_region);
+if (slim_t_77) {
 {
-int64_t slim_v_root_n113 = {0};
-slim_v_root_n113 = slim_fn_typing_95replacement_95root(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_place_n72, slim_allocation_region);
-(void)slim_v_root_n113;
-bool slim_t_124 = {0};
-slim_t_124 = slim_v_root_n113 < INT64_C(0);
-if (slim_t_124) {
+int64_t slim_v_definitions_n89 = {0};
+slim_v_definitions_n89 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_item_n47, slim_allocation_region);
+(void)slim_v_definitions_n89;
+if (slim_v_record_n17) {
 {
-SlimUnit slim_v__n134 = {0};
-slim_v__n134 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0348", (int64_t)(sizeof("E0348") - 1)), slim_v_place_n72, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n134;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+int64_t slim_t_104 = {0};
+slim_t_104 = slim_v_structure_n36.slim_field_members;
+int64_t slim_t_112 = {0};
+slim_t_112 = slim_v_definitions_n89;
+slim_result = (Slim_type_typing_95Members){.slim_field_cursor = slim_t_104, .slim_field_definition = slim_t_112};
 }
 }
 else {
 {
-bool slim_v_place_95mode_n154 = {0};
-int64_t slim_t_159 = {0};
-slim_t_159 = slim_fn_syntax_95ast_95argument_95mode((*slim_v_tokens_n6), slim_v_place_n72, slim_allocation_region);
-slim_v_place_95mode_n154 = slim_t_159 == INT64_C(1);
-(void)slim_v_place_95mode_n154;
+int64_t slim_v_case_95form_n122 = {0};
+int64_t slim_t_130 = {0};
+slim_t_130 = slim_v_structure_n36.slim_field_name;
+slim_v_case_95form_n122 = slim_fn_typing_95find_95named_95form(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_definitions_n89, slim_t_130, slim_allocation_region);
+(void)slim_v_case_95form_n122;
+bool slim_t_138 = {0};
+slim_t_138 = slim_v_case_95form_n122 >= INT64_C(0);
+if (slim_t_138) {
 {
-bool slim_v_value_95mode_n169 = {0};
-int64_t slim_t_174 = {0};
-slim_t_174 = slim_fn_syntax_95ast_95argument_95mode((*slim_v_tokens_n6), slim_v_value_n103, slim_allocation_region);
-slim_v_value_95mode_n169 = slim_t_174 == INT64_C(0);
-(void)slim_v_value_95mode_n169;
+SlimUnit slim_v__n148 = {0};
+slim_v__n148 = slim_fn_syntax_95ast_95node_95set_95link(slim_v_tokens_n6, slim_v_expr_n13, slim_v_case_95form_n122, slim_allocation_region);
+(void)slim_v__n148;
 {
-SlimUnit slim_v__n184 = {0};
-if (slim_v_place_95mode_n154) {
-slim_v__n184 = (SlimUnit){0};
-}
-else {
-slim_v__n184 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_place_n72, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-(void)slim_v__n184;
-{
-SlimUnit slim_v__n206 = {0};
-if (slim_v_value_95mode_n169) {
-slim_v__n206 = (SlimUnit){0};
-}
-else {
-slim_v__n206 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0360", (int64_t)(sizeof("E0360") - 1)), slim_v_value_n103, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-(void)slim_v__n206;
-{
-int64_t slim_v_before_n228 = {0};
-slim_v_before_n228 = ((*slim_v_issues_n43)).len;
-(void)slim_v_before_n228;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n237 = {0};
-slim_v_actual_n237 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_place_n72, INT64_C(-1), slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n237;
-{
-bool slim_v_affine_n257 = {0};
-bool slim_t_262 = {0};
-slim_t_262 = slim_fn_typing_95type_95valid(slim_v_actual_n237, slim_allocation_region);
-bool slim_t_267 = {0};
-int64_t slim_t_270 = {0};
-int64_t slim_t_275 = {0};
-slim_t_275 = slim_v_actual_n237.slim_field_form;
-slim_t_270 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_275, slim_allocation_region);
-slim_t_267 = slim_t_270 == INT64_C(2);
-slim_v_affine_n257 = slim_t_262 && slim_t_267;
-(void)slim_v_affine_n257;
-{
-int64_t slim_v_mode_n286 = {0};
-slim_v_mode_n286 = slim_fn_typing_95named_95binding_95mode((*slim_v_tokens_n6), slim_v_root_n113, (*slim_v_bindings_n29), slim_allocation_region);
-(void)slim_v_mode_n286;
-{
-int64_t slim_v_owner_n297 = {0};
-slim_v_owner_n297 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_root_n113, (*slim_v_bindings_n29), slim_allocation_region);
-(void)slim_v_owner_n297;
-{
-bool slim_v_capable_n309 = {0};
-bool slim_t_314 = {0};
-slim_t_314 = slim_v_mode_n286 == INT64_C(0);
-bool slim_t_320 = {0};
-slim_t_320 = slim_v_mode_n286 == INT64_C(2);
-slim_v_capable_n309 = slim_t_314 || slim_t_320;
-(void)slim_v_capable_n309;
-{
-bool slim_v_known_n329 = {0};
-slim_v_known_n329 = slim_v_owner_n297 >= INT64_C(2);
-(void)slim_v_known_n329;
-{
-SlimUnit slim_v__n339 = {0};
-bool slim_t_343 = {0};
-slim_t_343 = !slim_v_affine_n257;
-if (slim_t_343) {
-slim_v__n339 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_place_n72, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_v__n339 = (SlimUnit){0};
-}
-(void)slim_v__n339;
-{
-SlimUnit slim_v__n365 = {0};
-bool slim_t_369 = {0};
-bool slim_t_372 = {0};
-slim_t_372 = slim_v_capable_n309 && slim_v_known_n329;
-slim_t_369 = !slim_t_372;
-if (slim_t_369) {
-slim_v__n365 = slim_fn_typing_95append_95ownership_95issue(slim_bytes_static((const uint8_t *)"E0347", (int64_t)(sizeof("E0347") - 1)), slim_v_place_n72, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_v__n365 = (SlimUnit){0};
-}
-(void)slim_v__n365;
-{
-bool slim_v_valid_95place_n396 = {0};
-bool slim_t_402 = {0};
-bool slim_t_406 = {0};
-bool slim_t_410 = {0};
-bool slim_t_414 = {0};
-bool slim_t_418 = {0};
-int64_t slim_t_422 = {0};
-slim_t_422 = ((*slim_v_issues_n43)).len;
-slim_t_418 = slim_v_before_n228 == slim_t_422;
-slim_t_414 = slim_v_known_n329 && slim_t_418;
-slim_t_410 = slim_v_capable_n309 && slim_t_414;
-slim_t_406 = slim_v_affine_n257 && slim_t_410;
-slim_t_402 = slim_v_value_95mode_n169 && slim_t_406;
-slim_v_valid_95place_n396 = slim_v_place_95mode_n154 && slim_t_402;
-(void)slim_v_valid_95place_n396;
-if (slim_v_valid_95place_n396) {
-{
-bool slim_v_loan_n440 = {0};
-slim_v_loan_n440 = slim_fn_typing_95check_95loan_95overlap((*slim_v_tokens_n6), slim_v_place_n72, INT64_C(1), slim_v_owner_n297, slim_v_expr_n13, false, false, slim_v_bindings_n29, slim_v_issues_n43, true, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_loan_n440;
-if (slim_v_loan_n440) {
-{
-Slim_type_typing_95TypeRef slim_v_replacement_n463 = {0};
-int64_t slim_t_471 = {0};
-slim_t_471 = slim_v_actual_n237.slim_field_form;
-slim_v_replacement_n463 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n103, slim_t_471, slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_replacement_n463;
-{
-bool slim_v_transferred_n487 = {0};
-int64_t slim_t_495 = {0};
-slim_t_495 = slim_v_actual_n237.slim_field_form;
-slim_v_transferred_n487 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n103, slim_t_495, slim_v_bindings_n29, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_transferred_n487;
-bool slim_t_507 = {0};
-bool slim_t_510 = {0};
-slim_t_510 = slim_fn_typing_95type_95valid(slim_v_replacement_n463, slim_allocation_region);
-slim_t_507 = slim_t_510 && slim_v_transferred_n487;
-if (slim_t_507) {
-slim_result = slim_v_actual_n237;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-int64_t slim_v_callee_n76 = {0};
-slim_v_callee_n76 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_callee_n76;
-bool slim_t_85 = {0};
-slim_t_85 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n76, slim_bytes_static((const uint8_t *)"mem.replace", (int64_t)(sizeof("mem.replace") - 1)), slim_allocation_region);
-if (slim_t_85) {
-slim_result = slim_fn_typing_95infer_95replace(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-else {
-slim_result = slim_fn_typing_95infer_95ordinary_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95ordinary_95call(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-int64_t slim_v_callee_n76 = {0};
-slim_v_callee_n76 = slim_fn_syntax_95ast_95call_95callee(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_callee_n76;
-{
-int64_t slim_v_arguments_n85 = {0};
-slim_v_arguments_n85 = slim_fn_syntax_95ast_95call_95arguments(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_arguments_n85;
-{
-bool slim_v_builtin_n94 = {0};
-slim_v_builtin_n94 = slim_fn_typing_95builtin_95known(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n76, slim_allocation_region);
-(void)slim_v_builtin_n94;
-if (slim_v_builtin_n94) {
-{
-bool slim_v_modes_95valid_n110 = {0};
-slim_v_modes_95valid_n110 = slim_fn_typing_95check_95builtin_95argument_95modes(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_callee_n76, slim_v_arguments_n85, INT64_C(0), (*slim_v_bindings_n33), slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_modes_95valid_n110;
-{
-Slim_type_typing_95TypeRef slim_v_inferred_n125 = {0};
-slim_v_inferred_n125 = slim_fn_typing_95infer_95builtin_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n76, slim_v_arguments_n85, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_inferred_n125;
-if (slim_v_modes_95valid_n110) {
-slim_result = slim_v_inferred_n125;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-else {
-{
-int64_t slim_v_item_n168 = {0};
-slim_v_item_n168 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_v_callee_n76, slim_allocation_region);
-(void)slim_v_item_n168;
-slim_result = slim_fn_typing_95infer_95user_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_callee_n76, slim_v_arguments_n85, slim_v_item_n168, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95make_95fields(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_cursor_n13, int64_t slim_v_definition_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_record_95name_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_cursor_n13;
-(void)slim_v_definition_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_record_95name_n33;
-(void)slim_v_bindings_n37;
-(void)slim_v_facts_n44;
-(void)slim_v_issues_n51;
-(void)slim_v_scopes_n58;
-(void)slim_v_frames_n65;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-bool slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-slim_recur: ;
-{
-int64_t slim_v_cursor_95kind_n80 = {0};
-slim_v_cursor_95kind_n80 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_cursor_95kind_n80;
-{
-int64_t slim_v_definition_95kind_n90 = {0};
-slim_v_definition_95kind_n90 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_definition_n17, slim_allocation_region);
-(void)slim_v_definition_95kind_n90;
-{
-bool slim_v_cursor_95done_n100 = {0};
-slim_v_cursor_95done_n100 = slim_v_cursor_95kind_n80 == INT64_C(1);
-(void)slim_v_cursor_95done_n100;
-{
-bool slim_v_definition_95done_n110 = {0};
-slim_v_definition_95done_n110 = slim_v_definition_95kind_n90 == INT64_C(1);
-(void)slim_v_definition_95done_n110;
-{
-bool slim_v_either_95done_n120 = {0};
-slim_v_either_95done_n120 = slim_v_cursor_95done_n100 || slim_v_definition_95done_n110;
-(void)slim_v_either_95done_n120;
-if (slim_v_either_95done_n120) {
-{
-bool slim_v_both_95done_n135 = {0};
-slim_v_both_95done_n135 = slim_v_cursor_95done_n100 && slim_v_definition_95done_n110;
-(void)slim_v_both_95done_n135;
-if (slim_v_both_95done_n135) {
-slim_result = true;
-}
-else {
-{
-SlimUnit slim_v__n154 = {0};
-slim_v__n154 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_v_record_95name_n33, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n154;
-slim_result = false;
-}
-}
-}
-}
-else {
-{
-int64_t slim_v_name_n173 = {0};
-slim_v_name_n173 = slim_fn_syntax_95ast_95member_95name(slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_name_n173;
-{
-int64_t slim_v_declared_95name_n182 = {0};
-slim_v_declared_95name_n182 = slim_fn_syntax_95ast_95member_95name(slim_v_definition_n17, slim_allocation_region);
-(void)slim_v_declared_95name_n182;
-{
-int64_t slim_v_name_95start_n191 = {0};
-slim_v_name_95start_n191 = slim_fn_syntax_95ast_95node_95start((*slim_v_tokens_n6), slim_v_name_n173, slim_allocation_region);
-(void)slim_v_name_95start_n191;
-{
-int64_t slim_v_name_95end_n201 = {0};
-slim_v_name_95end_n201 = slim_fn_syntax_95ast_95node_95end((*slim_v_tokens_n6), slim_v_name_n173, slim_allocation_region);
-(void)slim_v_name_95end_n201;
-{
-int64_t slim_v_declared_95start_n211 = {0};
-slim_v_declared_95start_n211 = slim_fn_syntax_95ast_95node_95start((*slim_v_tokens_n6), slim_v_declared_95name_n182, slim_allocation_region);
-(void)slim_v_declared_95start_n211;
-{
-int64_t slim_v_declared_95end_n221 = {0};
-slim_v_declared_95end_n221 = slim_fn_syntax_95ast_95node_95end((*slim_v_tokens_n6), slim_v_declared_95name_n182, slim_allocation_region);
-(void)slim_v_declared_95end_n221;
-{
-bool slim_v_same_95name_n231 = {0};
-slim_v_same_95name_n231 = slim_fn_syntax_95spans_95equal(slim_v_source_n2, slim_v_name_95start_n191, slim_v_name_95end_n201, slim_v_declared_95start_n211, slim_v_declared_95end_n221, slim_allocation_region);
-(void)slim_v_same_95name_n231;
-if (slim_v_same_95name_n231) {
-{
-SlimUnit slim_v__n249 = {0};
-slim_v__n249 = slim_fn_syntax_95ast_95node_95set_95link(slim_v_tokens_n6, slim_v_cursor_n13, slim_v_definition_n17, slim_allocation_region);
-(void)slim_v__n249;
-{
-int64_t slim_v_field_95type_n260 = {0};
-slim_v_field_95type_n260 = slim_fn_syntax_95ast_95member_95value(slim_v_definition_n17, slim_allocation_region);
-(void)slim_v_field_95type_n260;
-{
-int64_t slim_v_value_n269 = {0};
-slim_v_value_n269 = slim_fn_syntax_95ast_95member_95value(slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_value_n269;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n278 = {0};
-slim_v_actual_n278 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n269, slim_v_field_95type_n260, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n278;
-{
-bool slim_v_actual_95valid_n298 = {0};
-slim_v_actual_95valid_n298 = slim_fn_typing_95type_95valid(slim_v_actual_n278, slim_allocation_region);
-(void)slim_v_actual_95valid_n298;
-{
-bool slim_v_move_95valid_n307 = {0};
-slim_v_move_95valid_n307 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n269, slim_v_field_95type_n260, slim_v_bindings_n37, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n307;
-{
-bool slim_v_valid_n323 = {0};
-slim_v_valid_n323 = slim_v_actual_95valid_n298 && slim_v_move_95valid_n307;
-(void)slim_v_valid_n323;
-{
-int64_t slim_v_next_95cursor_n333 = {0};
-slim_v_next_95cursor_n333 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_next_95cursor_n333;
-{
-int64_t slim_v_next_95definition_n343 = {0};
-slim_v_next_95definition_n343 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_definition_n17, slim_allocation_region);
-(void)slim_v_next_95definition_n343;
-{
-bool slim_v_remaining_n353 = {0};
-SlimBytes slim_t_357 = {0};
-slim_t_357 = slim_v_source_n2;
-int64_t slim_t_359 = {0};
-slim_t_359 = slim_v_next_95cursor_n333;
-int64_t slim_t_360 = {0};
-slim_t_360 = slim_v_next_95definition_n343;
-int64_t slim_t_361 = {0};
-slim_t_361 = slim_v_parent_n21;
-int64_t slim_t_362 = {0};
-slim_t_362 = slim_v_params_n25;
-int64_t slim_t_363 = {0};
-slim_t_363 = slim_v_return_95type_n29;
-int64_t slim_t_364 = {0};
-slim_t_364 = slim_v_record_95name_n33;
-slim_v_source_n2 = slim_t_357;
-slim_v_cursor_n13 = slim_t_359;
-slim_v_definition_n17 = slim_t_360;
-slim_v_parent_n21 = slim_t_361;
-slim_v_params_n25 = slim_t_362;
-slim_v_return_95type_n29 = slim_t_363;
-slim_v_record_95name_n33 = slim_t_364;
-goto slim_recur;
-(void)slim_v_remaining_n353;
-slim_result = slim_v_valid_n323 && slim_v_remaining_n353;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n392 = {0};
-slim_v__n392 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_name_n173, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n392;
-slim_result = false;
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95make(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_parent_n17;
-(void)slim_v_params_n21;
-(void)slim_v_return_95type_n25;
-(void)slim_v_bindings_n29;
-(void)slim_v_facts_n36;
-(void)slim_v_issues_n43;
-(void)slim_v_scopes_n50;
-(void)slim_v_frames_n57;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-int64_t slim_v_record_95name_n72 = {0};
-slim_v_record_95name_n72 = slim_fn_syntax_95ast_95make_95type(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_record_95name_n72;
-{
-int64_t slim_v_item_n81 = {0};
-slim_v_item_n81 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_v_record_95name_n72, slim_allocation_region);
-(void)slim_v_item_n81;
-{
-bool slim_v_record_n91 = {0};
-slim_v_record_n91 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_item_n81, INT64_C(1), slim_allocation_region);
-(void)slim_v_record_n91;
-if (slim_v_record_n91) {
-{
-int64_t slim_v_definitions_n108 = {0};
-slim_v_definitions_n108 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_item_n81, slim_allocation_region);
-(void)slim_v_definitions_n108;
-{
-int64_t slim_v_provided_n117 = {0};
-slim_v_provided_n117 = slim_fn_syntax_95ast_95make_95fields(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_provided_n117;
-{
-bool slim_v_valid_n126 = {0};
-slim_v_valid_n126 = slim_fn_typing_95check_95make_95fields(slim_v_source_n2, slim_v_tokens_n6, slim_v_provided_n117, slim_v_definitions_n108, slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_v_record_95name_n72, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_valid_n126;
-if (slim_v_valid_n126) {
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_record_95name_n72, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n175 = {0};
-slim_v__n175 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_record_95name_n72, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n175;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95get(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_parent_n17;
-(void)slim_v_params_n21;
-(void)slim_v_return_95type_n25;
-(void)slim_v_bindings_n29;
-(void)slim_v_facts_n36;
-(void)slim_v_issues_n43;
-(void)slim_v_scopes_n50;
-(void)slim_v_frames_n57;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-int64_t slim_v_value_n72 = {0};
-slim_v_value_n72 = slim_fn_syntax_95ast_95get_95value(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_value_n72;
-{
-int64_t slim_v_field_n81 = {0};
-slim_v_field_n81 = slim_fn_syntax_95ast_95get_95field((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_field_n81;
-{
-Slim_type_typing_95TypeRef slim_v_owner_n91 = {0};
-slim_v_owner_n91 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n72, INT64_C(-1), slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_owner_n91;
-{
-bool slim_v_typing_95source_95type_n111 = {0};
-int64_t slim_t_116 = {0};
-slim_t_116 = slim_v_owner_n91.slim_field_kind;
-slim_v_typing_95source_95type_n111 = slim_t_116 == INT64_C(-1);
-(void)slim_v_typing_95source_95type_n111;
-if (slim_v_typing_95source_95type_n111) {
-{
-int64_t slim_v_item_n130 = {0};
-int64_t slim_t_136 = {0};
-slim_t_136 = slim_v_owner_n91.slim_field_form;
-slim_v_item_n130 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_t_136, slim_allocation_region);
-(void)slim_v_item_n130;
-{
-bool slim_v_record_n144 = {0};
-slim_v_record_n144 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_item_n130, INT64_C(1), slim_allocation_region);
-(void)slim_v_record_n144;
-if (slim_v_record_n144) {
-{
-int64_t slim_v_definition_n161 = {0};
+int64_t slim_t_160 = {0};
+slim_t_160 = slim_v_structure_n36.slim_field_members;
 int64_t slim_t_168 = {0};
-slim_t_168 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_item_n130, slim_allocation_region);
-slim_v_definition_n161 = slim_fn_typing_95find_95named_95form(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_168, slim_v_field_n81, slim_allocation_region);
-(void)slim_v_definition_n161;
-{
-bool slim_v_known_n177 = {0};
-slim_v_known_n177 = slim_v_definition_n161 >= INT64_C(0);
-(void)slim_v_known_n177;
-if (slim_v_known_n177) {
-int64_t slim_t_195 = {0};
-slim_t_195 = slim_fn_syntax_95ast_95member_95value(slim_v_definition_n161, slim_allocation_region);
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_195, slim_allocation_region);
-}
-else {
-{
-SlimUnit slim_v__n206 = {0};
-slim_v__n206 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_field_n81, slim_v_issues_n43, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n206;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
+slim_t_168 = slim_fn_syntax_95ast_95member_95value(slim_v_case_95form_n122, slim_allocation_region);
+slim_result = (Slim_type_typing_95Members){.slim_field_cursor = slim_t_160, .slim_field_definition = slim_t_168};
 }
 }
 }
 else {
 {
-SlimUnit slim_v__n230 = {0};
-slim_v__n230 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n72, slim_v_issues_n43, slim_allocation_region);
+SlimUnit slim_v__n183 = {0};
+int64_t slim_t_189 = {0};
+slim_t_189 = slim_v_structure_n36.slim_field_name;
+slim_v__n183 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_t_189, slim_v_issues_n21, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n230;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+(void)slim_v__n183;
+{
+int64_t slim_t_199 = {0};
+slim_t_199 = INT64_C(-1);
+int64_t slim_t_203 = {0};
+slim_t_203 = INT64_C(-1);
+slim_result = (Slim_type_typing_95Members){.slim_field_cursor = slim_t_199, .slim_field_definition = slim_t_203};
+}
+}
 }
 }
 }
@@ -104810,11 +105432,18 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_r
 }
 else {
 {
-SlimUnit slim_v__n254 = {0};
-slim_v__n254 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n72, slim_v_issues_n43, slim_allocation_region);
+SlimUnit slim_v__n220 = {0};
+int64_t slim_t_226 = {0};
+slim_t_226 = slim_v_structure_n36.slim_field_type;
+slim_v__n220 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_t_226, slim_v_issues_n21, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n254;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+(void)slim_v__n220;
+{
+int64_t slim_t_236 = {0};
+slim_t_236 = INT64_C(-1);
+int64_t slim_t_240 = {0};
+slim_t_240 = INT64_C(-1);
+slim_result = (Slim_type_typing_95Members){.slim_field_cursor = slim_t_236, .slim_field_definition = slim_t_240};
 }
 }
 }
@@ -104825,119 +105454,191 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95check_95payload(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_value_n13, int64_t slim_v_type_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, int64_t slim_v_case_95name_n33, SlimVec * slim_v_bindings_n37, SlimVec * slim_v_facts_n44, SlimVec * slim_v_issues_n51, SlimVec * slim_v_scopes_n58, SlimVec * slim_v_frames_n65, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95MemberNext slim_fn_typing_95next_95member(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, SlimVec * slim_v_issues_n17, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
-(void)slim_v_value_n13;
-(void)slim_v_type_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_case_95name_n33;
-(void)slim_v_bindings_n37;
-(void)slim_v_facts_n44;
-(void)slim_v_issues_n51;
-(void)slim_v_scopes_n58;
-(void)slim_v_frames_n65;
+(void)slim_v_frame_n13;
+(void)slim_v_issues_n17;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-bool slim_result = {0};
+Slim_type_typing_95MemberNext slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-slim_recur: ;
+bool slim_t_32 = {0};
+int64_t slim_t_35 = {0};
+slim_t_35 = slim_v_frame_n13.slim_field_type;
+slim_t_32 = slim_t_35 < INT64_C(0);
+if (slim_t_32) {
 {
-int64_t slim_v_value_95kind_n80 = {0};
-slim_v_value_95kind_n80 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_value_n13, slim_allocation_region);
-(void)slim_v_value_95kind_n80;
-{
-int64_t slim_v_type_95kind_n90 = {0};
-slim_v_type_95kind_n90 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_type_n17, slim_allocation_region);
-(void)slim_v_type_95kind_n90;
-{
-bool slim_v_values_95done_n100 = {0};
-slim_v_values_95done_n100 = slim_v_value_95kind_n80 == INT64_C(1);
-(void)slim_v_values_95done_n100;
-{
-bool slim_v_types_95done_n110 = {0};
-slim_v_types_95done_n110 = slim_v_type_95kind_n90 == INT64_C(1);
-(void)slim_v_types_95done_n110;
-{
-bool slim_v_either_95done_n120 = {0};
-slim_v_either_95done_n120 = slim_v_values_95done_n100 || slim_v_types_95done_n110;
-(void)slim_v_either_95done_n120;
-if (slim_v_either_95done_n120) {
-{
-bool slim_v_both_n135 = {0};
-slim_v_both_n135 = slim_v_values_95done_n100 && slim_v_types_95done_n110;
-(void)slim_v_both_n135;
-if (slim_v_both_n135) {
-slim_result = true;
-}
-else {
-{
-SlimUnit slim_v__n154 = {0};
-slim_v__n154 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_v_case_95name_n33, slim_v_issues_n51, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n154;
-slim_result = false;
-}
-}
+bool slim_t_47 = {0};
+slim_t_47 = true;
+int64_t slim_t_51 = {0};
+slim_t_51 = slim_v_frame_n13.slim_field_expr;
+int64_t slim_t_59 = {0};
+slim_t_59 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_63 = {0};
+int64_t slim_t_68 = {0};
+slim_t_68 = slim_v_frame_n13.slim_field_expr;
+slim_t_63 = slim_fn_typing_95invalid_95type(slim_t_68, slim_allocation_region);
+slim_result = (Slim_type_typing_95MemberNext){.slim_field_done = slim_t_47, .slim_field_value = slim_t_51, .slim_field_expected = slim_t_59, .slim_field_result = slim_t_63};
 }
 }
 else {
 {
-Slim_type_typing_95TypeRef slim_v_actual_n173 = {0};
-slim_v_actual_n173 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n13, slim_v_type_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n37, slim_v_facts_n44, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
+bool slim_v_record_n81 = {0};
+int64_t slim_t_86 = {0};
+slim_t_86 = slim_v_frame_n13.slim_field_phase;
+slim_v_record_n81 = slim_t_86 == INT64_C(8);
+(void)slim_v_record_n81;
+{
+Slim_type_control_95Construction slim_v_structure_n95 = {0};
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_frame_n13.slim_field_expr;
+slim_v_structure_n95 = slim_fn_control_95construction((*slim_v_tokens_n6), slim_t_101, slim_v_record_n81, slim_allocation_region);
+(void)slim_v_structure_n95;
+{
+bool slim_v_cursor_95done_n110 = {0};
+int64_t slim_t_116 = {0};
+slim_t_116 = slim_v_frame_n13.slim_field_type;
+slim_v_cursor_95done_n110 = slim_fn_syntax_95ast_95list_95done((*slim_v_tokens_n6), slim_t_116, slim_allocation_region);
+(void)slim_v_cursor_95done_n110;
+{
+bool slim_v_definition_95done_n124 = {0};
+int64_t slim_t_130 = {0};
+slim_t_130 = slim_v_frame_n13.slim_field_before;
+slim_v_definition_95done_n124 = slim_fn_syntax_95ast_95list_95done((*slim_v_tokens_n6), slim_t_130, slim_allocation_region);
+(void)slim_v_definition_95done_n124;
+bool slim_t_138 = {0};
+slim_t_138 = slim_v_cursor_95done_n110 || slim_v_definition_95done_n124;
+if (slim_t_138) {
+bool slim_t_148 = {0};
+slim_t_148 = slim_v_cursor_95done_n110 && slim_v_definition_95done_n124;
+if (slim_t_148) {
+{
+bool slim_t_159 = {0};
+slim_t_159 = true;
+int64_t slim_t_163 = {0};
+slim_t_163 = slim_v_frame_n13.slim_field_expr;
+int64_t slim_t_171 = {0};
+slim_t_171 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_175 = {0};
+int64_t slim_t_182 = {0};
+slim_t_182 = slim_v_structure_n95.slim_field_type;
+slim_t_175 = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_182, slim_allocation_region);
+slim_result = (Slim_type_typing_95MemberNext){.slim_field_done = slim_t_159, .slim_field_value = slim_t_163, .slim_field_expected = slim_t_171, .slim_field_result = slim_t_175};
+}
+}
+else {
+{
+SlimUnit slim_v__n195 = {0};
+int64_t slim_t_201 = {0};
+slim_t_201 = slim_v_structure_n95.slim_field_name;
+slim_v__n195 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_201, slim_v_issues_n17, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n173;
+(void)slim_v__n195;
 {
-bool slim_v_actual_95valid_n193 = {0};
-slim_v_actual_95valid_n193 = slim_fn_typing_95type_95valid(slim_v_actual_n173, slim_allocation_region);
-(void)slim_v_actual_95valid_n193;
+bool slim_t_211 = {0};
+slim_t_211 = true;
+int64_t slim_t_215 = {0};
+slim_t_215 = slim_v_frame_n13.slim_field_expr;
+int64_t slim_t_223 = {0};
+slim_t_223 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_227 = {0};
+int64_t slim_t_232 = {0};
+slim_t_232 = slim_v_frame_n13.slim_field_expr;
+slim_t_227 = slim_fn_typing_95invalid_95type(slim_t_232, slim_allocation_region);
+slim_result = (Slim_type_typing_95MemberNext){.slim_field_done = slim_t_211, .slim_field_value = slim_t_215, .slim_field_expected = slim_t_223, .slim_field_result = slim_t_227};
+}
+}
+}
+}
+else {
 {
-bool slim_v_move_95valid_n202 = {0};
-slim_v_move_95valid_n202 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n13, slim_v_type_n17, slim_v_bindings_n37, slim_v_issues_n51, slim_v_scopes_n58, slim_v_frames_n65, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n202;
-{
-bool slim_v_valid_n218 = {0};
-slim_v_valid_n218 = slim_v_actual_95valid_n193 && slim_v_move_95valid_n202;
-(void)slim_v_valid_n218;
-{
-int64_t slim_v_next_95value_n228 = {0};
-slim_v_next_95value_n228 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_value_n13, slim_allocation_region);
-(void)slim_v_next_95value_n228;
-{
-int64_t slim_v_next_95type_n238 = {0};
-slim_v_next_95type_n238 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_type_n17, slim_allocation_region);
-(void)slim_v_next_95type_n238;
-{
-bool slim_v_remaining_n248 = {0};
-SlimBytes slim_t_252 = {0};
-slim_t_252 = slim_v_source_n2;
+Slim_type_control_95Member slim_v_provided_n248 = {0};
 int64_t slim_t_254 = {0};
-slim_t_254 = slim_v_next_95value_n228;
-int64_t slim_t_255 = {0};
-slim_t_255 = slim_v_next_95type_n238;
-int64_t slim_t_256 = {0};
-slim_t_256 = slim_v_parent_n21;
-int64_t slim_t_257 = {0};
-slim_t_257 = slim_v_params_n25;
-int64_t slim_t_258 = {0};
-slim_t_258 = slim_v_return_95type_n29;
-int64_t slim_t_259 = {0};
-slim_t_259 = slim_v_case_95name_n33;
-slim_v_source_n2 = slim_t_252;
-slim_v_value_n13 = slim_t_254;
-slim_v_type_n17 = slim_t_255;
-slim_v_parent_n21 = slim_t_256;
-slim_v_params_n25 = slim_t_257;
-slim_v_return_95type_n29 = slim_t_258;
-slim_v_case_95name_n33 = slim_t_259;
-goto slim_recur;
-(void)slim_v_remaining_n248;
-slim_result = slim_v_valid_n218 && slim_v_remaining_n248;
+slim_t_254 = slim_v_frame_n13.slim_field_type;
+slim_v_provided_n248 = slim_fn_control_95member((*slim_v_tokens_n6), slim_t_254, slim_v_record_n81, slim_allocation_region);
+(void)slim_v_provided_n248;
+{
+Slim_type_control_95Member slim_v_definition_n263 = {0};
+int64_t slim_t_269 = {0};
+slim_t_269 = slim_v_frame_n13.slim_field_before;
+slim_v_definition_n263 = slim_fn_control_95member((*slim_v_tokens_n6), slim_t_269, slim_v_record_n81, slim_allocation_region);
+(void)slim_v_definition_n263;
+{
+bool slim_v_same_95name_n278 = {0};
+if (slim_v_record_n81) {
+int64_t slim_t_289 = {0};
+int64_t slim_t_293 = {0};
+slim_t_293 = slim_v_provided_n248.slim_field_name;
+slim_t_289 = slim_fn_syntax_95ast_95node_95start((*slim_v_tokens_n6), slim_t_293, slim_allocation_region);
+int64_t slim_t_299 = {0};
+int64_t slim_t_303 = {0};
+slim_t_303 = slim_v_provided_n248.slim_field_name;
+slim_t_299 = slim_fn_syntax_95ast_95node_95end((*slim_v_tokens_n6), slim_t_303, slim_allocation_region);
+int64_t slim_t_309 = {0};
+int64_t slim_t_313 = {0};
+slim_t_313 = slim_v_definition_n263.slim_field_name;
+slim_t_309 = slim_fn_syntax_95ast_95node_95start((*slim_v_tokens_n6), slim_t_313, slim_allocation_region);
+int64_t slim_t_319 = {0};
+int64_t slim_t_323 = {0};
+slim_t_323 = slim_v_definition_n263.slim_field_name;
+slim_t_319 = slim_fn_syntax_95ast_95node_95end((*slim_v_tokens_n6), slim_t_323, slim_allocation_region);
+slim_v_same_95name_n278 = slim_fn_syntax_95spans_95equal(slim_v_source_n2, slim_t_289, slim_t_299, slim_t_309, slim_t_319, slim_allocation_region);
 }
+else {
+slim_v_same_95name_n278 = true;
+}
+(void)slim_v_same_95name_n278;
+if (slim_v_same_95name_n278) {
+{
+SlimUnit slim_v__n343 = {0};
+if (slim_v_record_n81) {
+int64_t slim_t_354 = {0};
+slim_t_354 = slim_v_frame_n13.slim_field_type;
+int64_t slim_t_359 = {0};
+slim_t_359 = slim_v_frame_n13.slim_field_before;
+slim_v__n343 = slim_fn_syntax_95ast_95node_95set_95link(slim_v_tokens_n6, slim_t_354, slim_t_359, slim_allocation_region);
+}
+else {
+slim_v__n343 = (SlimUnit){0};
+}
+(void)slim_v__n343;
+{
+bool slim_t_374 = {0};
+slim_t_374 = false;
+int64_t slim_t_378 = {0};
+slim_t_378 = slim_v_provided_n248.slim_field_value;
+int64_t slim_t_386 = {0};
+slim_t_386 = slim_v_definition_n263.slim_field_value;
+Slim_type_typing_95TypeRef slim_t_394 = {0};
+int64_t slim_t_399 = {0};
+slim_t_399 = slim_v_frame_n13.slim_field_expr;
+slim_t_394 = slim_fn_typing_95invalid_95type(slim_t_399, slim_allocation_region);
+slim_result = (Slim_type_typing_95MemberNext){.slim_field_done = slim_t_374, .slim_field_value = slim_t_378, .slim_field_expected = slim_t_386, .slim_field_result = slim_t_394};
+}
+}
+}
+else {
+{
+SlimUnit slim_v__n413 = {0};
+int64_t slim_t_419 = {0};
+slim_t_419 = slim_v_provided_n248.slim_field_name;
+slim_v__n413 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_t_419, slim_v_issues_n17, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n413;
+{
+bool slim_t_429 = {0};
+slim_t_429 = true;
+int64_t slim_t_433 = {0};
+slim_t_433 = slim_v_frame_n13.slim_field_expr;
+int64_t slim_t_441 = {0};
+slim_t_441 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_445 = {0};
+int64_t slim_t_450 = {0};
+slim_t_450 = slim_v_frame_n13.slim_field_expr;
+slim_t_445 = slim_fn_typing_95invalid_95type(slim_t_450, slim_allocation_region);
+slim_result = (Slim_type_typing_95MemberNext){.slim_field_done = slim_t_429, .slim_field_value = slim_t_433, .slim_field_expected = slim_t_441, .slim_field_result = slim_t_445};
 }
 }
 }
@@ -104954,85 +105655,68 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95case(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95project_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95TypeRef slim_v_owner_n17, SlimVec * slim_v_issues_n21, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
-(void)slim_v_parent_n17;
-(void)slim_v_params_n21;
-(void)slim_v_return_95type_n25;
-(void)slim_v_bindings_n29;
-(void)slim_v_facts_n36;
-(void)slim_v_issues_n43;
-(void)slim_v_scopes_n50;
-(void)slim_v_frames_n57;
+(void)slim_v_owner_n17;
+(void)slim_v_issues_n21;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 Slim_type_typing_95TypeRef slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_variant_95name_n72 = {0};
-slim_v_variant_95name_n72 = slim_fn_syntax_95ast_95case_95type(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_variant_95name_n72;
+Slim_type_control_95Projection slim_v_structure_n36 = {0};
+slim_v_structure_n36 = slim_fn_control_95projection(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n36;
 {
-int64_t slim_v_case_95name_n81 = {0};
-slim_v_case_95name_n81 = slim_fn_syntax_95ast_95case_95name((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_case_95name_n81;
+int64_t slim_v_value_n46 = {0};
+slim_v_value_n46 = slim_v_structure_n36.slim_field_value;
+(void)slim_v_value_n46;
 {
-int64_t slim_v_item_n91 = {0};
-slim_v_item_n91 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_v_variant_95name_n72, slim_allocation_region);
-(void)slim_v_item_n91;
+int64_t slim_v_field_n55 = {0};
+slim_v_field_n55 = slim_v_structure_n36.slim_field_field;
+(void)slim_v_field_n55;
 {
-bool slim_v_variant_n101 = {0};
-slim_v_variant_n101 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_item_n91, INT64_C(2), slim_allocation_region);
-(void)slim_v_variant_n101;
-if (slim_v_variant_n101) {
+bool slim_v_typing_95source_95type_n64 = {0};
+int64_t slim_t_69 = {0};
+slim_t_69 = slim_v_owner_n17.slim_field_kind;
+slim_v_typing_95source_95type_n64 = slim_t_69 == INT64_C(-1);
+(void)slim_v_typing_95source_95type_n64;
+if (slim_v_typing_95source_95type_n64) {
 {
-int64_t slim_v_case_95form_n118 = {0};
-int64_t slim_t_125 = {0};
-slim_t_125 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_item_n91, slim_allocation_region);
-slim_v_case_95form_n118 = slim_fn_typing_95find_95named_95form(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_125, slim_v_case_95name_n81, slim_allocation_region);
-(void)slim_v_case_95form_n118;
+int64_t slim_v_item_n83 = {0};
+int64_t slim_t_89 = {0};
+slim_t_89 = slim_v_owner_n17.slim_field_form;
+slim_v_item_n83 = slim_fn_typing_95linked_95item(slim_v_tokens_n6, slim_t_89, slim_allocation_region);
+(void)slim_v_item_n83;
 {
-bool slim_v_known_n134 = {0};
-slim_v_known_n134 = slim_v_case_95form_n118 >= INT64_C(0);
-(void)slim_v_known_n134;
-if (slim_v_known_n134) {
+bool slim_v_record_n97 = {0};
+slim_v_record_n97 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_item_n83, INT64_C(1), slim_allocation_region);
+(void)slim_v_record_n97;
+if (slim_v_record_n97) {
 {
-SlimUnit slim_v__n149 = {0};
-slim_v__n149 = slim_fn_syntax_95ast_95node_95set_95link(slim_v_tokens_n6, slim_v_expr_n13, slim_v_case_95form_n118, slim_allocation_region);
-(void)slim_v__n149;
+int64_t slim_v_definition_n114 = {0};
+int64_t slim_t_121 = {0};
+slim_t_121 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_item_n83, slim_allocation_region);
+slim_v_definition_n114 = slim_fn_typing_95find_95named_95form(slim_v_source_n2, slim_v_tokens_n6, slim_t_121, slim_v_field_n55, slim_allocation_region);
+(void)slim_v_definition_n114;
 {
-int64_t slim_v_payload_n160 = {0};
-slim_v_payload_n160 = slim_fn_syntax_95ast_95case_95payload((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_payload_n160;
-{
-int64_t slim_v_payload_95type_n170 = {0};
-slim_v_payload_95type_n170 = slim_fn_syntax_95ast_95member_95value(slim_v_case_95form_n118, slim_allocation_region);
-(void)slim_v_payload_95type_n170;
-{
-bool slim_v_valid_n179 = {0};
-slim_v_valid_n179 = slim_fn_typing_95check_95payload(slim_v_source_n2, slim_v_tokens_n6, slim_v_payload_n160, slim_v_payload_95type_n170, slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_v_case_95name_n81, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_valid_n179;
-if (slim_v_valid_n179) {
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_variant_95name_n72, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
+bool slim_v_known_n130 = {0};
+slim_v_known_n130 = slim_v_definition_n114 >= INT64_C(0);
+(void)slim_v_known_n130;
+if (slim_v_known_n130) {
+int64_t slim_t_148 = {0};
+slim_t_148 = slim_fn_syntax_95ast_95member_95value(slim_v_definition_n114, slim_allocation_region);
+slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, slim_v_tokens_n6, slim_t_148, slim_allocation_region);
 }
 else {
 {
-SlimUnit slim_v__n229 = {0};
-slim_v__n229 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_case_95name_n81, slim_v_issues_n43, slim_allocation_region);
+SlimUnit slim_v__n159 = {0};
+slim_v__n159 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_field_n55, slim_v_issues_n21, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n229;
+(void)slim_v__n159;
 slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
 }
 }
@@ -105041,10 +105725,22 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_r
 }
 else {
 {
-SlimUnit slim_v__n253 = {0};
-slim_v__n253 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1)), slim_v_variant_95name_n72, slim_v_issues_n43, slim_allocation_region);
+SlimUnit slim_v__n183 = {0};
+slim_v__n183 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n46, slim_v_issues_n21, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n253;
+(void)slim_v__n183;
+slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+}
+}
+}
+}
+else {
+{
+SlimUnit slim_v__n207 = {0};
+slim_v__n207 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n46, slim_v_issues_n21, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n207;
 slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
 }
 }
@@ -105339,369 +106035,239 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95ordered_95arm_95body(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_case_95cursor_n13, bool slim_v_boolean_95match_n17, SlimRegion *slim_region) {
-(void)slim_v_tokens_n2;
-(void)slim_v_cursor_n9;
-(void)slim_v_case_95cursor_n13;
-(void)slim_v_boolean_95match_n17;
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95empty_95branch(int64_t slim_v_expr_n2, SlimRegion *slim_region) {
+(void)slim_v_expr_n2;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-int64_t slim_result = {0};
-slim_result = slim_fn_syntax_95ast_95arm_95body(slim_v_tokens_n2, slim_v_cursor_n9, slim_allocation_region);
+Slim_type_typing_95BranchState slim_result = {0};
+{
+int64_t slim_t_13 = {0};
+slim_t_13 = INT64_C(-2);
+int64_t slim_t_17 = {0};
+slim_t_17 = INT64_C(-1);
+int64_t slim_t_21 = {0};
+slim_t_21 = INT64_C(-1);
+int64_t slim_t_25 = {0};
+slim_t_25 = INT64_C(-1);
+int64_t slim_t_29 = {0};
+slim_t_29 = INT64_C(-1);
+int64_t slim_t_33 = {0};
+slim_t_33 = INT64_C(-1);
+int64_t slim_t_37 = {0};
+slim_t_37 = INT64_C(-1);
+Slim_type_typing_95TypeRef slim_t_41 = {0};
+slim_t_41 = slim_fn_typing_95invalid_95type(slim_v_expr_n2, slim_allocation_region);
+bool slim_t_49 = {0};
+slim_t_49 = false;
+bool slim_t_53 = {0};
+slim_t_53 = false;
+bool slim_t_57 = {0};
+slim_t_57 = false;
+bool slim_t_61 = {0};
+slim_t_61 = false;
+int64_t slim_t_65 = {0};
+slim_t_65 = INT64_C(-1);
+slim_result = (Slim_type_typing_95BranchState){.slim_field_variant = slim_t_13, .slim_field_cursor = slim_t_17, .slim_field_case_95cursor = slim_t_21, .slim_field_source_95mode = slim_t_25, .slim_field_source_95owner = slim_t_29, .slim_field_branch_95scope = slim_t_33, .slim_field_enclosing_95scope = slim_t_37, .slim_field_first = slim_t_41, .slim_field_has_95first = slim_t_49, .slim_field_seen_95true = slim_t_53, .slim_field_seen_95false = slim_t_57, .slim_field_move_95valid = slim_t_61, .slim_field_arm_95scope = slim_t_65};
+}
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95match_95arms_95ordered(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_cursor_n13, int64_t slim_v_variant_95item_n17, int64_t slim_v_case_95cursor_n21, int64_t slim_v_match_95expr_n25, int64_t slim_v_source_95mode_n29, int64_t slim_v_source_95owner_n33, int64_t slim_v_expected_n37, int64_t slim_v_parent_n41, int64_t slim_v_params_n45, int64_t slim_v_return_95type_n49, bool slim_v_has_95first_n53, Slim_type_typing_95TypeRef slim_v_first_n57, bool slim_v_seen_95true_n61, bool slim_v_seen_95false_n65, SlimVec * slim_v_bindings_n69, SlimVec * slim_v_facts_n76, SlimVec * slim_v_issues_n83, SlimVec * slim_v_scopes_n90, SlimVec * slim_v_frames_n97, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95prepare_95branch(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, Slim_type_typing_95TypeRef slim_v_scrutinee_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
-(void)slim_v_cursor_n13;
-(void)slim_v_variant_95item_n17;
-(void)slim_v_case_95cursor_n21;
-(void)slim_v_match_95expr_n25;
-(void)slim_v_source_95mode_n29;
-(void)slim_v_source_95owner_n33;
-(void)slim_v_expected_n37;
-(void)slim_v_parent_n41;
-(void)slim_v_params_n45;
-(void)slim_v_return_95type_n49;
-(void)slim_v_has_95first_n53;
-(void)slim_v_first_n57;
-(void)slim_v_seen_95true_n61;
-(void)slim_v_seen_95false_n65;
-(void)slim_v_bindings_n69;
-(void)slim_v_facts_n76;
-(void)slim_v_issues_n83;
-(void)slim_v_scopes_n90;
-(void)slim_v_frames_n97;
+(void)slim_v_expr_n13;
+(void)slim_v_scrutinee_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
+(void)slim_v_scopes_n35;
+(void)slim_v_frames_n42;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95BranchState slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-slim_recur: ;
 {
-int64_t slim_v_arm_95kind_n112 = {0};
-slim_v_arm_95kind_n112 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_arm_95kind_n112;
+Slim_type_control_95Branch slim_v_structure_n57 = {0};
+slim_v_structure_n57 = slim_fn_control_95branch(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n57;
 {
-bool slim_v_arms_95done_n122 = {0};
-slim_v_arms_95done_n122 = slim_v_arm_95kind_n112 == INT64_C(1);
-(void)slim_v_arms_95done_n122;
+int64_t slim_v_value_n67 = {0};
+slim_v_value_n67 = slim_v_structure_n57.slim_field_value;
+(void)slim_v_value_n67;
 {
-bool slim_v_boolean_95match_n132 = {0};
-slim_v_boolean_95match_n132 = slim_v_variant_95item_n17 < INT64_C(0);
-(void)slim_v_boolean_95match_n132;
+int64_t slim_v_source_95mode_n76 = {0};
+slim_v_source_95mode_n76 = slim_fn_typing_95value_95borrow_95mode(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n67, (*slim_v_bindings_n21), slim_allocation_region);
+(void)slim_v_source_95mode_n76;
 {
-int64_t slim_v_case_95kind_n142 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_case_95kind_n142 = INT64_C(1);
+int64_t slim_v_source_95owner_n88 = {0};
+bool slim_t_92 = {0};
+slim_t_92 = slim_v_source_95mode_n76 > INT64_C(0);
+if (slim_t_92) {
+slim_v_source_95owner_n88 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n67, (*slim_v_bindings_n21), slim_allocation_region);
 }
 else {
-slim_v_case_95kind_n142 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v_case_95cursor_n21, slim_allocation_region);
+slim_v_source_95owner_n88 = INT64_C(-1);
 }
-(void)slim_v_case_95kind_n142;
+(void)slim_v_source_95owner_n88;
 {
-bool slim_v_cases_95done_n163 = {0};
-slim_v_cases_95done_n163 = slim_v_case_95kind_n142 == INT64_C(1);
-(void)slim_v_cases_95done_n163;
-if (slim_v_arms_95done_n122) {
+bool slim_v_boolean_95match_n116 = {0};
+int64_t slim_t_121 = {0};
+slim_t_121 = slim_v_scrutinee_n17.slim_field_kind;
+slim_v_boolean_95match_n116 = slim_t_121 == INT64_C(1);
+(void)slim_v_boolean_95match_n116;
 {
-bool slim_v_bool_95complete_n178 = {0};
-slim_v_bool_95complete_n178 = slim_v_seen_95true_n61 && slim_v_seen_95false_n65;
-(void)slim_v_bool_95complete_n178;
+bool slim_v_if_95form_n130 = {0};
+slim_v_if_95form_n130 = slim_fn_syntax_95ast_95expression_95is_95if(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_if_95form_n130;
 {
-bool slim_v_exact_n188 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_exact_n188 = slim_v_bool_95complete_n178;
+bool slim_v_familiar_95match_n140 = {0};
+slim_v_familiar_95match_n140 = slim_fn_syntax_95ast_95expression_95is_95familiar_95match(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_familiar_95match_n140;
+{
+bool slim_v_familiar_95control_n150 = {0};
+slim_v_familiar_95control_n150 = slim_v_if_95form_n130 || slim_v_familiar_95match_n140;
+(void)slim_v_familiar_95control_n150;
+{
+bool slim_v_familiar_95kind_95valid_n160 = {0};
+if (slim_v_if_95form_n130) {
+slim_v_familiar_95kind_95valid_n160 = slim_v_boolean_95match_n116;
 }
 else {
-slim_v_exact_n188 = slim_v_cases_95done_n163;
+slim_v_familiar_95kind_95valid_n160 = !slim_v_boolean_95match_n116;
 }
-(void)slim_v_exact_n188;
-if (slim_v_exact_n188) {
-slim_result = slim_v_first_n57;
+(void)slim_v_familiar_95kind_95valid_n160;
+{
+bool slim_v_control_95kind_95valid_n180 = {0};
+if (slim_v_familiar_95control_n150) {
+slim_v_control_95kind_95valid_n180 = slim_v_familiar_95kind_95valid_n160;
 }
 else {
+slim_v_control_95kind_95valid_n180 = true;
+}
+(void)slim_v_control_95kind_95valid_n180;
 {
-SlimUnit slim_v__n213 = {0};
-int64_t slim_t_219 = {0};
-slim_t_219 = slim_fn_syntax_95ast_95expression_95marker(slim_v_match_95expr_n25, slim_allocation_region);
-slim_v__n213 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_219, slim_v_issues_n83, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n213;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_match_95expr_n25, slim_allocation_region);
-}
-}
-}
-}
+int64_t slim_v_variant_95item_n196 = {0};
+if (slim_v_boolean_95match_n116) {
+slim_v_variant_95item_n196 = INT64_C(-1);
 }
 else {
-{
-bool slim_v_extra_95variant_n241 = {0};
-bool slim_t_246 = {0};
-slim_t_246 = !slim_v_boolean_95match_n132;
-slim_v_extra_95variant_n241 = slim_t_246 && slim_v_cases_95done_n163;
-(void)slim_v_extra_95variant_n241;
-if (slim_v_extra_95variant_n241) {
-{
-SlimUnit slim_v__n260 = {0};
-int64_t slim_t_266 = {0};
-slim_t_266 = slim_fn_syntax_95ast_95expression_95marker(slim_v_match_95expr_n25, slim_allocation_region);
-slim_v__n260 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_266, slim_v_issues_n83, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n260;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_match_95expr_n25, slim_allocation_region);
+int64_t slim_t_211 = {0};
+slim_t_211 = slim_v_scrutinee_n17.slim_field_form;
+slim_v_variant_95item_n196 = slim_fn_typing_95linked_95item(slim_v_tokens_n6, slim_t_211, slim_allocation_region);
 }
+(void)slim_v_variant_95item_n196;
+{
+bool slim_v_variant_95shape_n221 = {0};
+if (slim_v_boolean_95match_n116) {
+slim_v_variant_95shape_n221 = true;
 }
 else {
+slim_v_variant_95shape_n221 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_variant_95item_n196, INT64_C(2), slim_allocation_region);
+}
+(void)slim_v_variant_95shape_n221;
 {
-int64_t slim_v_pattern_n284 = {0};
-slim_v_pattern_n284 = slim_fn_syntax_95ast_95arm_95pattern(slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_pattern_n284;
+bool slim_v_variant_n244 = {0};
+slim_v_variant_n244 = slim_v_control_95kind_95valid_n180 && slim_v_variant_95shape_n221;
+(void)slim_v_variant_n244;
+if (slim_v_variant_n244) {
 {
-bool slim_v_true_95pattern_n293 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_true_95pattern_n293 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_pattern_n284, slim_bytes_static((const uint8_t *)"true", (int64_t)(sizeof("true") - 1)), slim_allocation_region);
+bool slim_v_affine_n259 = {0};
+if (slim_v_boolean_95match_n116) {
+slim_v_affine_n259 = false;
 }
 else {
-slim_v_true_95pattern_n293 = false;
+int64_t slim_t_273 = {0};
+int64_t slim_t_278 = {0};
+slim_t_278 = slim_v_scrutinee_n17.slim_field_form;
+slim_t_273 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_t_278, slim_allocation_region);
+slim_v_affine_n259 = slim_t_273 == INT64_C(2);
 }
-(void)slim_v_true_95pattern_n293;
+(void)slim_v_affine_n259;
 {
-bool slim_v_false_95pattern_n316 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_false_95pattern_n316 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_pattern_n284, slim_bytes_static((const uint8_t *)"false", (int64_t)(sizeof("false") - 1)), slim_allocation_region);
-}
-else {
-slim_v_false_95pattern_n316 = false;
-}
-(void)slim_v_false_95pattern_n316;
-{
-bool slim_v_bool_95pattern_n339 = {0};
-slim_v_bool_95pattern_n339 = slim_v_true_95pattern_n293 || slim_v_false_95pattern_n316;
-(void)slim_v_bool_95pattern_n339;
-{
-bool slim_v_pattern_95known_n349 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_pattern_95known_n349 = slim_v_bool_95pattern_n339;
-}
-else {
-slim_v_pattern_95known_n349 = slim_fn_typing_95case_95name_95matches(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_case_95cursor_n21, slim_v_pattern_n284, slim_allocation_region);
-}
-(void)slim_v_pattern_95known_n349;
-{
-bool slim_v_duplicate_95true_n372 = {0};
-slim_v_duplicate_95true_n372 = slim_v_true_95pattern_n293 && slim_v_seen_95true_n61;
-(void)slim_v_duplicate_95true_n372;
-{
-bool slim_v_duplicate_95false_n382 = {0};
-slim_v_duplicate_95false_n382 = slim_v_false_95pattern_n316 && slim_v_seen_95false_n65;
-(void)slim_v_duplicate_95false_n382;
-{
-bool slim_v_duplicate_n392 = {0};
-slim_v_duplicate_n392 = slim_v_duplicate_95true_n372 || slim_v_duplicate_95false_n382;
-(void)slim_v_duplicate_n392;
-{
-bool slim_v_pattern_95valid_n402 = {0};
-bool slim_t_408 = {0};
-slim_t_408 = !slim_v_duplicate_n392;
-slim_v_pattern_95valid_n402 = slim_v_pattern_95known_n349 && slim_t_408;
-(void)slim_v_pattern_95valid_n402;
-{
-SlimBytes slim_v_pattern_95code_n416 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_pattern_95code_n416 = slim_bytes_static((const uint8_t *)"E0335", (int64_t)(sizeof("E0335") - 1));
-}
-else {
-slim_v_pattern_95code_n416 = slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1));
-}
-(void)slim_v_pattern_95code_n416;
-{
-SlimUnit slim_v__n432 = {0};
-if (slim_v_pattern_95valid_n402) {
-slim_v__n432 = (SlimUnit){0};
-}
-else {
-slim_v__n432 = slim_fn_typing_95record_95issue(slim_v_pattern_95code_n416, slim_v_pattern_n284, slim_v_issues_n83, slim_allocation_region);
+bool slim_v_move_95valid_n290 = {0};
+bool slim_t_294 = {0};
+bool slim_t_298 = {0};
+slim_t_298 = slim_v_source_95mode_n76 == INT64_C(0);
+slim_t_294 = slim_v_affine_n259 && slim_t_298;
+if (slim_t_294) {
+slim_v_move_95valid_n290 = slim_fn_typing_95mark_95result_95move(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n67, slim_v_bindings_n21, slim_v_issues_n28, slim_v_scopes_n35, slim_v_frames_n42, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
-(void)slim_v__n432;
+else {
+slim_v_move_95valid_n290 = true;
+}
+(void)slim_v_move_95valid_n290;
 {
-int64_t slim_v_arm_95parent_n454 = {0};
-slim_v_arm_95parent_n454 = slim_fn_typing_95ordered_95arm_95parent(slim_v_source_n2, slim_v_tokens_n6, slim_v_cursor_n13, slim_v_case_95cursor_n21, slim_v_pattern_n284, slim_v_boolean_95match_n132, slim_v_source_95mode_n29, slim_v_source_95owner_n33, slim_v_parent_n41, slim_v_bindings_n69, slim_v_issues_n83, slim_allocation_region);
+int64_t slim_v_first_95arm_n326 = {0};
+slim_v_first_95arm_n326 = slim_v_structure_n57.slim_field_arms;
+(void)slim_v_first_95arm_n326;
+{
+int64_t slim_v_first_95case_n335 = {0};
+if (slim_v_boolean_95match_n116) {
+slim_v_first_95case_n335 = INT64_C(-1);
+}
+else {
+slim_v_first_95case_n335 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_variant_95item_n196, slim_allocation_region);
+}
+(void)slim_v_first_95case_n335;
+{
+int64_t slim_v_enclosing_95scope_n355 = {0};
+slim_v_enclosing_95scope_n355 = slim_fn_ownership_95current((*slim_v_scopes_n35), slim_allocation_region);
+(void)slim_v_enclosing_95scope_n355;
+{
+int64_t slim_v_arm_95count_n364 = {0};
+slim_v_arm_95count_n364 = slim_fn_control_95arm_95count(slim_v_tokens_n6, slim_v_first_95arm_n326, INT64_C(0), slim_allocation_region);
+(void)slim_v_arm_95count_n364;
+{
+int64_t slim_v_branch_95scope_n375 = {0};
+slim_v_branch_95scope_n375 = slim_fn_ownership_95begin(slim_v_scopes_n35, slim_v_arm_95count_n364, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arm_95parent_n454;
+(void)slim_v_branch_95scope_n375;
 {
-bool slim_v_parent_95valid_n473 = {0};
-slim_v_parent_95valid_n473 = slim_v_arm_95parent_n454 >= INT64_C(-1);
-(void)slim_v_parent_95valid_n473;
+int64_t slim_t_386 = {0};
+slim_t_386 = slim_v_variant_95item_n196;
+int64_t slim_t_390 = {0};
+slim_t_390 = slim_v_first_95arm_n326;
+int64_t slim_t_394 = {0};
+slim_t_394 = slim_v_first_95case_n335;
+int64_t slim_t_398 = {0};
+slim_t_398 = slim_v_source_95mode_n76;
+int64_t slim_t_402 = {0};
+slim_t_402 = slim_v_source_95owner_n88;
+int64_t slim_t_406 = {0};
+slim_t_406 = slim_v_branch_95scope_n375;
+int64_t slim_t_410 = {0};
+slim_t_410 = slim_v_enclosing_95scope_n355;
+Slim_type_typing_95TypeRef slim_t_414 = {0};
+slim_t_414 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+bool slim_t_422 = {0};
+slim_t_422 = false;
+bool slim_t_426 = {0};
+slim_t_426 = false;
+bool slim_t_430 = {0};
+slim_t_430 = false;
+bool slim_t_434 = {0};
+slim_t_434 = slim_v_move_95valid_n290;
+int64_t slim_t_438 = {0};
+slim_t_438 = INT64_C(-1);
+slim_result = (Slim_type_typing_95BranchState){.slim_field_variant = slim_t_386, .slim_field_cursor = slim_t_390, .slim_field_case_95cursor = slim_t_394, .slim_field_source_95mode = slim_t_398, .slim_field_source_95owner = slim_t_402, .slim_field_branch_95scope = slim_t_406, .slim_field_enclosing_95scope = slim_t_410, .slim_field_first = slim_t_414, .slim_field_has_95first = slim_t_422, .slim_field_seen_95true = slim_t_426, .slim_field_seen_95false = slim_t_430, .slim_field_move_95valid = slim_t_434, .slim_field_arm_95scope = slim_t_438};
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
 {
-int64_t slim_v_body_n483 = {0};
-slim_v_body_n483 = slim_fn_typing_95ordered_95arm_95body((*slim_v_tokens_n6), slim_v_cursor_n13, slim_v_case_95cursor_n21, slim_v_boolean_95match_n132, slim_allocation_region);
-(void)slim_v_body_n483;
-{
-int64_t slim_v_enclosing_95scope_n495 = {0};
-slim_v_enclosing_95scope_n495 = slim_fn_ownership_95current((*slim_v_scopes_n90), slim_allocation_region);
-(void)slim_v_enclosing_95scope_n495;
-{
-int64_t slim_v_arm_95scope_n504 = {0};
-slim_v_arm_95scope_n504 = slim_fn_ownership_95begin(slim_v_scopes_n90, INT64_C(0), slim_allocation_region);
+SlimUnit slim_v__n455 = {0};
+slim_v__n455 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n67, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arm_95scope_n504;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n514 = {0};
-slim_v_actual_n514 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_body_n483, slim_v_expected_n37, slim_v_arm_95parent_n454, slim_v_params_n45, slim_v_return_95type_n49, slim_v_bindings_n69, slim_v_facts_n76, slim_v_issues_n83, slim_v_scopes_n90, slim_v_frames_n97, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_actual_n514;
-{
-SlimUnit slim_v__n534 = {0};
-slim_v__n534 = slim_fn_ownership_95end(slim_v_scopes_n90, slim_v_arm_95scope_n504, slim_v_enclosing_95scope_n495, slim_allocation_region);
-(void)slim_v__n534;
-{
-bool slim_v_actual_95valid_n545 = {0};
-slim_v_actual_95valid_n545 = slim_fn_typing_95type_95valid(slim_v_actual_n514, slim_allocation_region);
-(void)slim_v_actual_95valid_n545;
-{
-bool slim_v_compare_95first_n554 = {0};
-bool slim_t_560 = {0};
-slim_t_560 = slim_v_expected_n37 < INT64_C(0);
-slim_v_compare_95first_n554 = slim_v_has_95first_n53 && slim_t_560;
-(void)slim_v_compare_95first_n554;
-{
-bool slim_v_same_95type_n569 = {0};
-if (slim_v_compare_95first_n554) {
-slim_v_same_95type_n569 = slim_fn_typing_95types_95equal(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_first_n57, slim_v_actual_n514, slim_allocation_region);
-}
-else {
-slim_v_same_95type_n569 = true;
-}
-(void)slim_v_same_95type_n569;
-{
-SlimUnit slim_v__n592 = {0};
-if (slim_v_same_95type_n569) {
-slim_v__n592 = (SlimUnit){0};
-}
-else {
-slim_v__n592 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_body_n483, slim_v_issues_n83, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-(void)slim_v__n592;
-{
-Slim_type_typing_95TypeRef slim_v_next_95first_n614 = {0};
-if (slim_v_has_95first_n53) {
-slim_v_next_95first_n614 = slim_v_first_n57;
-}
-else {
-slim_v_next_95first_n614 = slim_v_actual_n514;
-}
-(void)slim_v_next_95first_n614;
-{
-int64_t slim_v_next_95arm_n630 = {0};
-slim_v_next_95arm_n630 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_cursor_n13, slim_allocation_region);
-(void)slim_v_next_95arm_n630;
-{
-int64_t slim_v_next_95case_n640 = {0};
-if (slim_v_boolean_95match_n132) {
-slim_v_next_95case_n640 = INT64_C(-1);
-}
-else {
-slim_v_next_95case_n640 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_case_95cursor_n21, slim_allocation_region);
-}
-(void)slim_v_next_95case_n640;
-{
-bool slim_v_next_95seen_95true_n661 = {0};
-slim_v_next_95seen_95true_n661 = slim_v_seen_95true_n61 || slim_v_true_95pattern_n293;
-(void)slim_v_next_95seen_95true_n661;
-{
-bool slim_v_next_95seen_95false_n671 = {0};
-slim_v_next_95seen_95false_n671 = slim_v_seen_95false_n65 || slim_v_false_95pattern_n316;
-(void)slim_v_next_95seen_95false_n671;
-{
-Slim_type_typing_95TypeRef slim_v_remaining_n681 = {0};
-SlimBytes slim_t_685 = {0};
-slim_t_685 = slim_v_source_n2;
-int64_t slim_t_687 = {0};
-slim_t_687 = slim_v_next_95arm_n630;
-int64_t slim_t_688 = {0};
-slim_t_688 = slim_v_variant_95item_n17;
-int64_t slim_t_689 = {0};
-slim_t_689 = slim_v_next_95case_n640;
-int64_t slim_t_690 = {0};
-slim_t_690 = slim_v_match_95expr_n25;
-int64_t slim_t_691 = {0};
-slim_t_691 = slim_v_source_95mode_n29;
-int64_t slim_t_692 = {0};
-slim_t_692 = slim_v_source_95owner_n33;
-int64_t slim_t_693 = {0};
-slim_t_693 = slim_v_expected_n37;
-int64_t slim_t_694 = {0};
-slim_t_694 = slim_v_parent_n41;
-int64_t slim_t_695 = {0};
-slim_t_695 = slim_v_params_n45;
-int64_t slim_t_696 = {0};
-slim_t_696 = slim_v_return_95type_n49;
-bool slim_t_697 = {0};
-slim_t_697 = true;
-Slim_type_typing_95TypeRef slim_t_698 = {0};
-slim_t_698 = slim_v_next_95first_n614;
-bool slim_t_699 = {0};
-slim_t_699 = slim_v_next_95seen_95true_n661;
-bool slim_t_700 = {0};
-slim_t_700 = slim_v_next_95seen_95false_n671;
-slim_v_source_n2 = slim_t_685;
-slim_v_cursor_n13 = slim_t_687;
-slim_v_variant_95item_n17 = slim_t_688;
-slim_v_case_95cursor_n21 = slim_t_689;
-slim_v_match_95expr_n25 = slim_t_690;
-slim_v_source_95mode_n29 = slim_t_691;
-slim_v_source_95owner_n33 = slim_t_692;
-slim_v_expected_n37 = slim_t_693;
-slim_v_parent_n41 = slim_t_694;
-slim_v_params_n45 = slim_t_695;
-slim_v_return_95type_n49 = slim_t_696;
-slim_v_has_95first_n53 = slim_t_697;
-slim_v_first_n57 = slim_t_698;
-slim_v_seen_95true_n61 = slim_t_699;
-slim_v_seen_95false_n65 = slim_t_700;
-goto slim_recur;
-(void)slim_v_remaining_n681;
-{
-bool slim_v_valid_n709 = {0};
-bool slim_t_715 = {0};
-bool slim_t_719 = {0};
-slim_t_719 = slim_v_actual_95valid_n545 && slim_v_same_95type_n569;
-slim_t_715 = slim_v_parent_95valid_n473 && slim_t_719;
-slim_v_valid_n709 = slim_v_pattern_95valid_n402 && slim_t_715;
-(void)slim_v_valid_n709;
-if (slim_v_valid_n709) {
-slim_result = slim_v_remaining_n681;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_body_n483, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
+(void)slim_v__n455;
+slim_result = slim_fn_typing_95empty_95branch(slim_v_expr_n13, slim_allocation_region);
 }
 }
 }
@@ -105721,228 +106287,369 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95count_95move_95arms(SlimVec slim_v_tokens_n2, int64_t slim_v_cursor_n9, int64_t slim_v_count_n13, SlimRegion *slim_region) {
-(void)slim_v_tokens_n2;
-(void)slim_v_cursor_n9;
-(void)slim_v_count_n13;
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95branch(Slim_type_typing_95BranchState slim_v_state_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_branches_n14, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_depth_n6;
+(void)slim_v_limit_n10;
+(void)slim_v_branches_n14;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 int64_t slim_result = {0};
-slim_recur: ;
-bool slim_t_24 = {0};
-slim_t_24 = slim_fn_syntax_95ast_95list_95done(slim_v_tokens_n2, slim_v_cursor_n9, slim_allocation_region);
-if (slim_t_24) {
-slim_result = slim_v_count_n13;
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+int64_t slim_v_permitted_n29 = {0};
+bool slim_t_33 = {0};
+bool slim_t_36 = {0};
+slim_t_36 = slim_v_depth_n6 >= INT64_C(0);
+bool slim_t_42 = {0};
+slim_t_42 = slim_v_depth_n6 < slim_v_limit_n10;
+slim_t_33 = slim_t_36 && slim_t_42;
+if (slim_t_33) {
+slim_v_permitted_n29 = INT64_C(1);
 }
 else {
-SlimVec slim_t_38 = {0};
-slim_t_38 = slim_v_tokens_n2;
+slim_v_permitted_n29 = INT64_C(0);
+}
+(void)slim_v_permitted_n29;
+{
+int64_t slim_v_checked_95depth_n60 = {0};
+slim_v_checked_95depth_n60 = slim_i64_div(slim_v_depth_n6, slim_v_permitted_n29);
+(void)slim_v_checked_95depth_n60;
+{
+SlimUnit slim_v__n70 = {0};
+bool slim_t_74 = {0};
+slim_t_74 = slim_v_checked_95depth_n60 > INT64_C(0);
+if (slim_t_74) {
+{
+int64_t slim_v_at_n84 = {0};
+slim_v_at_n84 = slim_i64_sub(slim_v_checked_95depth_n60, INT64_C(1));
+(void)slim_v_at_n84;
+bool slim_t_94 = {0};
+int64_t slim_t_98 = {0};
+slim_t_98 = ((*slim_v_branches_n14)).len;
+slim_t_94 = slim_v_at_n84 < slim_t_98;
+if (slim_t_94) {
+((Slim_type_typing_95BranchState *)((*slim_v_branches_n14)).data)[slim_vec_check_index(&((*slim_v_branches_n14)), slim_v_at_n84)] = slim_v_state_n2; slim_v__n70 = (SlimUnit){0};
+}
+else {
+if (!slim_vec_push(slim_v_branches_n14, &slim_v_state_n2)) goto slim_allocation_failed; slim_v__n70 = (SlimUnit){0};
+}
+}
+}
+else {
+slim_v__n70 = (SlimUnit){0};
+}
+(void)slim_v__n70;
+slim_result = slim_i64_add(slim_v_checked_95depth_n60, INT64_C(1));
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchNext slim_fn_typing_95end_95branch(Slim_type_typing_95Pending slim_v_frame_n2, Slim_type_typing_95BranchState slim_v_state_n6, Slim_type_typing_95TypeRef slim_v_actual_n10, SlimVec * slim_v_scopes_n14, SlimRegion *slim_region) {
+(void)slim_v_frame_n2;
+(void)slim_v_state_n6;
+(void)slim_v_actual_n10;
+(void)slim_v_scopes_n14;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_typing_95BranchNext slim_result = {0};
+{
+SlimUnit slim_v__n28 = {0};
+int64_t slim_t_34 = {0};
+slim_t_34 = slim_v_state_n6.slim_field_branch_95scope;
 int64_t slim_t_39 = {0};
-slim_t_39 = slim_fn_syntax_95ast_95next(slim_v_tokens_n2, slim_v_cursor_n9, slim_allocation_region);
-int64_t slim_t_45 = {0};
-slim_t_45 = slim_i64_add(slim_v_count_n13, INT64_C(1));
-slim_v_tokens_n2 = slim_t_38;
-slim_v_cursor_n9 = slim_t_39;
-slim_v_count_n13 = slim_t_45;
-goto slim_recur;
+slim_t_39 = slim_v_state_n6.slim_field_enclosing_95scope;
+slim_v__n28 = slim_fn_ownership_95end(slim_v_scopes_n14, slim_t_34, slim_t_39, slim_allocation_region);
+(void)slim_v__n28;
+{
+Slim_type_typing_95TypeRef slim_v_result_n47 = {0};
+bool slim_t_51 = {0};
+bool slim_t_54 = {0};
+slim_t_54 = slim_v_state_n6.slim_field_move_95valid;
+slim_t_51 = !slim_t_54;
+if (slim_t_51) {
+int64_t slim_t_65 = {0};
+slim_t_65 = slim_v_frame_n2.slim_field_expr;
+slim_v_result_n47 = slim_fn_typing_95invalid_95type(slim_t_65, slim_allocation_region);
+}
+else {
+slim_v_result_n47 = slim_v_actual_n10;
+}
+(void)slim_v_result_n47;
+{
+Slim_type_typing_95BranchState slim_t_80 = {0};
+slim_t_80 = slim_v_state_n6;
+bool slim_t_84 = {0};
+slim_t_84 = true;
+int64_t slim_t_88 = {0};
+slim_t_88 = slim_v_frame_n2.slim_field_expr;
+int64_t slim_t_96 = {0};
+slim_t_96 = slim_v_frame_n2.slim_field_parent;
+Slim_type_typing_95TypeRef slim_t_104 = {0};
+slim_t_104 = slim_v_result_n47;
+slim_result = (Slim_type_typing_95BranchNext){.slim_field_state = slim_t_80, .slim_field_done = slim_t_84, .slim_field_body = slim_t_88, .slim_field_parent = slim_t_96, .slim_field_result = slim_t_104};
+}
+}
 }
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95match_95ordered(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchNext slim_fn_typing_95next_95branch_95arm(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95BranchState slim_v_state_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
+(void)slim_v_frame_n13;
+(void)slim_v_state_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
+(void)slim_v_scopes_n35;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95BranchNext slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_value_n76 = {0};
-slim_v_value_n76 = slim_fn_syntax_95ast_95match_95value(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_value_n76;
+bool slim_v_arms_95done_n50 = {0};
+int64_t slim_t_55 = {0};
+int64_t slim_t_59 = {0};
+slim_t_59 = slim_v_state_n17.slim_field_cursor;
+slim_t_55 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_t_59, slim_allocation_region);
+slim_v_arms_95done_n50 = slim_t_55 == INT64_C(1);
+(void)slim_v_arms_95done_n50;
 {
-Slim_type_typing_95TypeRef slim_v_scrutinee_n85 = {0};
-slim_v_scrutinee_n85 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n76, INT64_C(-1), slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+bool slim_v_boolean_95match_n69 = {0};
+int64_t slim_t_74 = {0};
+slim_t_74 = slim_v_state_n17.slim_field_variant;
+slim_v_boolean_95match_n69 = slim_t_74 < INT64_C(0);
+(void)slim_v_boolean_95match_n69;
+{
+bool slim_v_cases_95done_n83 = {0};
+if (slim_v_boolean_95match_n69) {
+slim_v_cases_95done_n83 = true;
+}
+else {
+int64_t slim_t_97 = {0};
+int64_t slim_t_101 = {0};
+slim_t_101 = slim_v_state_n17.slim_field_case_95cursor;
+slim_t_97 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_t_101, slim_allocation_region);
+slim_v_cases_95done_n83 = slim_t_97 == INT64_C(1);
+}
+(void)slim_v_cases_95done_n83;
+if (slim_v_arms_95done_n50) {
+{
+bool slim_v_exact_n118 = {0};
+if (slim_v_boolean_95match_n69) {
+bool slim_t_128 = {0};
+slim_t_128 = slim_v_state_n17.slim_field_seen_95true;
+bool slim_t_133 = {0};
+slim_t_133 = slim_v_state_n17.slim_field_seen_95false;
+slim_v_exact_n118 = slim_t_128 && slim_t_133;
+}
+else {
+slim_v_exact_n118 = slim_v_cases_95done_n83;
+}
+(void)slim_v_exact_n118;
+{
+Slim_type_typing_95TypeRef slim_v_actual_n147 = {0};
+if (slim_v_exact_n118) {
+slim_v_actual_n147 = slim_v_state_n17.slim_field_first;
+}
+else {
+{
+SlimUnit slim_v__n164 = {0};
+int64_t slim_t_170 = {0};
+int64_t slim_t_173 = {0};
+slim_t_173 = slim_v_frame_n13.slim_field_expr;
+slim_t_170 = slim_fn_syntax_95ast_95expression_95marker(slim_t_173, slim_allocation_region);
+slim_v__n164 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_170, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_scrutinee_n85;
-{
-int64_t slim_v_source_95mode_n105 = {0};
-slim_v_source_95mode_n105 = slim_fn_typing_95value_95borrow_95mode(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n76, (*slim_v_bindings_n33), slim_allocation_region);
-(void)slim_v_source_95mode_n105;
-{
-int64_t slim_v_source_95owner_n117 = {0};
-bool slim_t_121 = {0};
-slim_t_121 = slim_v_source_95mode_n105 > INT64_C(0);
-if (slim_t_121) {
-slim_v_source_95owner_n117 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n76, (*slim_v_bindings_n33), slim_allocation_region);
+(void)slim_v__n164;
+int64_t slim_t_184 = {0};
+slim_t_184 = slim_v_frame_n13.slim_field_expr;
+slim_v_actual_n147 = slim_fn_typing_95invalid_95type(slim_t_184, slim_allocation_region);
+}
+}
+(void)slim_v_actual_n147;
+slim_result = slim_fn_typing_95end_95branch(slim_v_frame_n13, slim_v_state_n17, slim_v_actual_n147, slim_v_scopes_n35, slim_allocation_region);
+}
+}
 }
 else {
-slim_v_source_95owner_n117 = INT64_C(-1);
+bool slim_t_208 = {0};
+bool slim_t_211 = {0};
+slim_t_211 = !slim_v_boolean_95match_n69;
+slim_t_208 = slim_t_211 && slim_v_cases_95done_n83;
+if (slim_t_208) {
+{
+SlimUnit slim_v__n222 = {0};
+int64_t slim_t_228 = {0};
+int64_t slim_t_231 = {0};
+slim_t_231 = slim_v_frame_n13.slim_field_expr;
+slim_t_228 = slim_fn_syntax_95ast_95expression_95marker(slim_t_231, slim_allocation_region);
+slim_v__n222 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0351", (int64_t)(sizeof("E0351") - 1)), slim_t_228, slim_v_issues_n28, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v__n222;
+Slim_type_typing_95TypeRef slim_t_244 = {0};
+int64_t slim_t_247 = {0};
+slim_t_247 = slim_v_frame_n13.slim_field_expr;
+slim_t_244 = slim_fn_typing_95invalid_95type(slim_t_247, slim_allocation_region);
+slim_result = slim_fn_typing_95end_95branch(slim_v_frame_n13, slim_v_state_n17, slim_t_244, slim_v_scopes_n35, slim_allocation_region);
 }
-(void)slim_v_source_95owner_n117;
-{
-bool slim_v_boolean_95match_n145 = {0};
-int64_t slim_t_150 = {0};
-slim_t_150 = slim_v_scrutinee_n85.slim_field_kind;
-slim_v_boolean_95match_n145 = slim_t_150 == INT64_C(1);
-(void)slim_v_boolean_95match_n145;
-{
-bool slim_v_if_95form_n159 = {0};
-slim_v_if_95form_n159 = slim_fn_syntax_95ast_95expression_95is_95if((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_if_95form_n159;
-{
-bool slim_v_familiar_95match_n169 = {0};
-slim_v_familiar_95match_n169 = slim_fn_syntax_95ast_95expression_95is_95familiar_95match((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_familiar_95match_n169;
-{
-bool slim_v_familiar_95control_n179 = {0};
-slim_v_familiar_95control_n179 = slim_v_if_95form_n159 || slim_v_familiar_95match_n169;
-(void)slim_v_familiar_95control_n179;
-{
-bool slim_v_familiar_95kind_95valid_n189 = {0};
-if (slim_v_if_95form_n159) {
-slim_v_familiar_95kind_95valid_n189 = slim_v_boolean_95match_n145;
 }
 else {
-slim_v_familiar_95kind_95valid_n189 = !slim_v_boolean_95match_n145;
-}
-(void)slim_v_familiar_95kind_95valid_n189;
 {
-bool slim_v_control_95kind_95valid_n209 = {0};
-if (slim_v_familiar_95control_n179) {
-slim_v_control_95kind_95valid_n209 = slim_v_familiar_95kind_95valid_n189;
+Slim_type_control_95Arm slim_v_structure_n261 = {0};
+int64_t slim_t_267 = {0};
+slim_t_267 = slim_v_state_n17.slim_field_cursor;
+slim_v_structure_n261 = slim_fn_control_95arm((*slim_v_tokens_n6), slim_t_267, slim_allocation_region);
+(void)slim_v_structure_n261;
+{
+int64_t slim_v_pattern_n275 = {0};
+slim_v_pattern_n275 = slim_v_structure_n261.slim_field_pattern;
+(void)slim_v_pattern_n275;
+{
+bool slim_v_true_95pattern_n284 = {0};
+if (slim_v_boolean_95match_n69) {
+slim_v_true_95pattern_n284 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_pattern_n275, slim_bytes_static((const uint8_t *)"true", (int64_t)(sizeof("true") - 1)), slim_allocation_region);
 }
 else {
-slim_v_control_95kind_95valid_n209 = true;
+slim_v_true_95pattern_n284 = false;
 }
-(void)slim_v_control_95kind_95valid_n209;
+(void)slim_v_true_95pattern_n284;
 {
-int64_t slim_v_variant_95item_n225 = {0};
-if (slim_v_boolean_95match_n145) {
-slim_v_variant_95item_n225 = INT64_C(-1);
+bool slim_v_false_95pattern_n307 = {0};
+if (slim_v_boolean_95match_n69) {
+slim_v_false_95pattern_n307 = slim_fn_syntax_95ast_95node_95text_95is(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_pattern_n275, slim_bytes_static((const uint8_t *)"false", (int64_t)(sizeof("false") - 1)), slim_allocation_region);
 }
 else {
-int64_t slim_t_240 = {0};
-slim_t_240 = slim_v_scrutinee_n85.slim_field_form;
-slim_v_variant_95item_n225 = slim_fn_typing_95linked_95item((*slim_v_tokens_n6), slim_t_240, slim_allocation_region);
+slim_v_false_95pattern_n307 = false;
 }
-(void)slim_v_variant_95item_n225;
+(void)slim_v_false_95pattern_n307;
 {
-bool slim_v_variant_95shape_n250 = {0};
-if (slim_v_boolean_95match_n145) {
-slim_v_variant_95shape_n250 = true;
+bool slim_v_pattern_95known_n330 = {0};
+if (slim_v_boolean_95match_n69) {
+slim_v_pattern_95known_n330 = slim_v_true_95pattern_n284 || slim_v_false_95pattern_n307;
 }
 else {
-slim_v_variant_95shape_n250 = slim_fn_typing_95item_95has_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_variant_95item_n225, INT64_C(2), slim_allocation_region);
+int64_t slim_t_351 = {0};
+slim_t_351 = slim_v_state_n17.slim_field_case_95cursor;
+slim_v_pattern_95known_n330 = slim_fn_typing_95case_95name_95matches(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_351, slim_v_pattern_n275, slim_allocation_region);
 }
-(void)slim_v_variant_95shape_n250;
+(void)slim_v_pattern_95known_n330;
 {
-bool slim_v_variant_n273 = {0};
-slim_v_variant_n273 = slim_v_control_95kind_95valid_n209 && slim_v_variant_95shape_n250;
-(void)slim_v_variant_n273;
-if (slim_v_variant_n273) {
+bool slim_v_duplicate_n362 = {0};
+bool slim_t_367 = {0};
+bool slim_t_371 = {0};
+slim_t_371 = slim_v_state_n17.slim_field_seen_95true;
+slim_t_367 = slim_v_true_95pattern_n284 && slim_t_371;
+bool slim_t_377 = {0};
+bool slim_t_381 = {0};
+slim_t_381 = slim_v_state_n17.slim_field_seen_95false;
+slim_t_377 = slim_v_false_95pattern_n307 && slim_t_381;
+slim_v_duplicate_n362 = slim_t_367 || slim_t_377;
+(void)slim_v_duplicate_n362;
 {
-bool slim_v_affine_n288 = {0};
-if (slim_v_boolean_95match_n145) {
-slim_v_affine_n288 = false;
+bool slim_v_pattern_95valid_n390 = {0};
+bool slim_t_396 = {0};
+slim_t_396 = !slim_v_duplicate_n362;
+slim_v_pattern_95valid_n390 = slim_v_pattern_95known_n330 && slim_t_396;
+(void)slim_v_pattern_95valid_n390;
+{
+SlimBytes slim_v_pattern_95code_n404 = {0};
+if (slim_v_boolean_95match_n69) {
+slim_v_pattern_95code_n404 = slim_bytes_static((const uint8_t *)"E0335", (int64_t)(sizeof("E0335") - 1));
 }
 else {
-int64_t slim_t_302 = {0};
-int64_t slim_t_307 = {0};
-slim_t_307 = slim_v_scrutinee_n85.slim_field_form;
-slim_t_302 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_307, slim_allocation_region);
-slim_v_affine_n288 = slim_t_302 == INT64_C(2);
+slim_v_pattern_95code_n404 = slim_bytes_static((const uint8_t *)"E0352", (int64_t)(sizeof("E0352") - 1));
 }
-(void)slim_v_affine_n288;
+(void)slim_v_pattern_95code_n404;
 {
-bool slim_v_move_95valid_n319 = {0};
-bool slim_t_323 = {0};
-bool slim_t_327 = {0};
-slim_t_327 = slim_v_source_95mode_n105 == INT64_C(0);
-slim_t_323 = slim_v_affine_n288 && slim_t_327;
-if (slim_t_323) {
-slim_v_move_95valid_n319 = slim_fn_typing_95mark_95result_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n76, slim_v_bindings_n33, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+SlimUnit slim_v__n420 = {0};
+if (slim_v_pattern_95valid_n390) {
+slim_v__n420 = (SlimUnit){0};
+}
+else {
+slim_v__n420 = slim_fn_typing_95record_95issue(slim_v_pattern_95code_n404, slim_v_pattern_n275, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
-else {
-slim_v_move_95valid_n319 = true;
-}
-(void)slim_v_move_95valid_n319;
+(void)slim_v__n420;
 {
-int64_t slim_v_first_95arm_n355 = {0};
-slim_v_first_95arm_n355 = slim_fn_syntax_95ast_95match_95arms((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_first_95arm_n355;
-{
-int64_t slim_v_first_95case_n365 = {0};
-if (slim_v_boolean_95match_n145) {
-slim_v_first_95case_n365 = INT64_C(-1);
-}
-else {
-slim_v_first_95case_n365 = slim_fn_syntax_95ast_95data_95members_95first(slim_v_variant_95item_n225, slim_allocation_region);
-}
-(void)slim_v_first_95case_n365;
-{
-Slim_type_typing_95TypeRef slim_v_initial_n385 = {0};
-slim_v_initial_n385 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_initial_n385;
-{
-int64_t slim_v_enclosing_95scope_n394 = {0};
-slim_v_enclosing_95scope_n394 = slim_fn_ownership_95current((*slim_v_scopes_n54), slim_allocation_region);
-(void)slim_v_enclosing_95scope_n394;
-{
-int64_t slim_v_arm_95count_n403 = {0};
-slim_v_arm_95count_n403 = slim_fn_typing_95count_95move_95arms((*slim_v_tokens_n6), slim_v_first_95arm_n355, INT64_C(0), slim_allocation_region);
-(void)slim_v_arm_95count_n403;
-{
-int64_t slim_v_branch_95scope_n414 = {0};
-slim_v_branch_95scope_n414 = slim_fn_ownership_95begin(slim_v_scopes_n54, slim_v_arm_95count_n403, slim_allocation_region);
+int64_t slim_v_arm_95parent_n442 = {0};
+int64_t slim_t_449 = {0};
+slim_t_449 = slim_v_state_n17.slim_field_cursor;
+int64_t slim_t_454 = {0};
+slim_t_454 = slim_v_state_n17.slim_field_case_95cursor;
+int64_t slim_t_461 = {0};
+slim_t_461 = slim_v_state_n17.slim_field_source_95mode;
+int64_t slim_t_466 = {0};
+slim_t_466 = slim_v_state_n17.slim_field_source_95owner;
+int64_t slim_t_471 = {0};
+slim_t_471 = slim_v_frame_n13.slim_field_parent;
+slim_v_arm_95parent_n442 = slim_fn_typing_95ordered_95arm_95parent(slim_v_source_n2, slim_v_tokens_n6, slim_t_449, slim_t_454, slim_v_pattern_n275, slim_v_boolean_95match_n69, slim_t_461, slim_t_466, slim_t_471, slim_v_bindings_n21, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_branch_95scope_n414;
+(void)slim_v_arm_95parent_n442;
 {
-Slim_type_typing_95TypeRef slim_v_result_n424 = {0};
-slim_v_result_n424 = slim_fn_typing_95infer_95match_95arms_95ordered(slim_v_source_n2, slim_v_tokens_n6, slim_v_first_95arm_n355, slim_v_variant_95item_n225, slim_v_first_95case_n365, slim_v_expr_n13, slim_v_source_95mode_n105, slim_v_source_95owner_n117, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, false, slim_v_initial_n385, false, false, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+int64_t slim_v_arm_95scope_n481 = {0};
+slim_v_arm_95scope_n481 = slim_fn_ownership_95begin(slim_v_scopes_n35, INT64_C(0), slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_result_n424;
+(void)slim_v_arm_95scope_n481;
 {
-SlimUnit slim_v__n453 = {0};
-slim_v__n453 = slim_fn_ownership_95end(slim_v_scopes_n54, slim_v_branch_95scope_n414, slim_v_enclosing_95scope_n394, slim_allocation_region);
-(void)slim_v__n453;
-if (slim_v_move_95valid_n319) {
-slim_result = slim_v_result_n424;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-}
-else {
+Slim_type_typing_95BranchState slim_v_next_n491 = {0};
 {
-SlimUnit slim_v__n493 = {0};
-slim_v__n493 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_v_value_n76, slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n493;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+int64_t slim_t_496 = {0};
+slim_t_496 = slim_v_state_n17.slim_field_variant;
+int64_t slim_t_504 = {0};
+slim_t_504 = slim_v_state_n17.slim_field_cursor;
+int64_t slim_t_512 = {0};
+slim_t_512 = slim_v_state_n17.slim_field_case_95cursor;
+int64_t slim_t_520 = {0};
+slim_t_520 = slim_v_state_n17.slim_field_source_95mode;
+int64_t slim_t_528 = {0};
+slim_t_528 = slim_v_state_n17.slim_field_source_95owner;
+int64_t slim_t_536 = {0};
+slim_t_536 = slim_v_state_n17.slim_field_branch_95scope;
+int64_t slim_t_544 = {0};
+slim_t_544 = slim_v_state_n17.slim_field_enclosing_95scope;
+Slim_type_typing_95TypeRef slim_t_552 = {0};
+slim_t_552 = slim_v_state_n17.slim_field_first;
+bool slim_t_560 = {0};
+slim_t_560 = slim_v_state_n17.slim_field_has_95first;
+bool slim_t_568 = {0};
+bool slim_t_573 = {0};
+slim_t_573 = slim_v_state_n17.slim_field_seen_95true;
+slim_t_568 = slim_t_573 || slim_v_true_95pattern_n284;
+bool slim_t_581 = {0};
+bool slim_t_586 = {0};
+slim_t_586 = slim_v_state_n17.slim_field_seen_95false;
+slim_t_581 = slim_t_586 || slim_v_false_95pattern_n307;
+bool slim_t_594 = {0};
+slim_t_594 = slim_v_state_n17.slim_field_move_95valid;
+int64_t slim_t_602 = {0};
+slim_t_602 = slim_v_arm_95scope_n481;
+slim_v_next_n491 = (Slim_type_typing_95BranchState){.slim_field_variant = slim_t_496, .slim_field_cursor = slim_t_504, .slim_field_case_95cursor = slim_t_512, .slim_field_source_95mode = slim_t_520, .slim_field_source_95owner = slim_t_528, .slim_field_branch_95scope = slim_t_536, .slim_field_enclosing_95scope = slim_t_544, .slim_field_first = slim_t_552, .slim_field_has_95first = slim_t_560, .slim_field_seen_95true = slim_t_568, .slim_field_seen_95false = slim_t_581, .slim_field_move_95valid = slim_t_594, .slim_field_arm_95scope = slim_t_602};
+}
+(void)slim_v_next_n491;
+{
+Slim_type_typing_95BranchState slim_t_610 = {0};
+slim_t_610 = slim_v_next_n491;
+bool slim_t_614 = {0};
+slim_t_614 = false;
+int64_t slim_t_618 = {0};
+slim_t_618 = slim_v_structure_n261.slim_field_body;
+int64_t slim_t_626 = {0};
+slim_t_626 = slim_v_arm_95parent_n442;
+Slim_type_typing_95TypeRef slim_t_630 = {0};
+int64_t slim_t_635 = {0};
+slim_t_635 = slim_v_structure_n261.slim_field_body;
+slim_t_630 = slim_fn_typing_95invalid_95type(slim_t_635, slim_allocation_region);
+slim_result = (Slim_type_typing_95BranchNext){.slim_field_state = slim_t_610, .slim_field_done = slim_t_614, .slim_field_body = slim_t_618, .slim_field_parent = slim_t_626, .slim_field_result = slim_t_630};
+}
+}
+}
 }
 }
 }
@@ -105962,41 +106669,127 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95fork(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BranchState slim_fn_typing_95finish_95branch_95arm(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95TypeRef slim_v_actual_n17, Slim_type_typing_95BranchState slim_v_state_n21, SlimVec * slim_v_issues_n25, SlimVec * slim_v_scopes_n32, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
+(void)slim_v_frame_n13;
+(void)slim_v_actual_n17;
+(void)slim_v_state_n21;
+(void)slim_v_issues_n25;
+(void)slim_v_scopes_n32;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95BranchState slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_inner_n76 = {0};
-slim_v_inner_n76 = slim_fn_syntax_95ast_95fork_95body(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_inner_n76;
+Slim_type_control_95Arm slim_v_structure_n47 = {0};
+int64_t slim_t_53 = {0};
+slim_t_53 = slim_v_state_n21.slim_field_cursor;
+slim_v_structure_n47 = slim_fn_control_95arm(slim_v_tokens_n6, slim_t_53, slim_allocation_region);
+(void)slim_v_structure_n47;
 {
-bool slim_v_arity_n85 = {0};
-int64_t slim_t_93 = {0};
-slim_t_93 = slim_fn_syntax_95ast_95expression_95marker(slim_v_expr_n13, slim_allocation_region);
-slim_v_arity_n85 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_v_inner_n76, INT64_C(1), slim_t_93, slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_arity_n85;
-if (slim_v_arity_n85) {
-slim_result = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_inner_n76, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+SlimUnit slim_v__n61 = {0};
+int64_t slim_t_67 = {0};
+slim_t_67 = slim_v_state_n21.slim_field_arm_95scope;
+int64_t slim_t_72 = {0};
+slim_t_72 = slim_v_state_n21.slim_field_branch_95scope;
+slim_v__n61 = slim_fn_ownership_95end(slim_v_scopes_n32, slim_t_67, slim_t_72, slim_allocation_region);
+(void)slim_v__n61;
+{
+bool slim_v_same_95type_n80 = {0};
+bool slim_t_84 = {0};
+bool slim_t_87 = {0};
+slim_t_87 = slim_v_state_n21.slim_field_has_95first;
+bool slim_t_92 = {0};
+int64_t slim_t_95 = {0};
+slim_t_95 = slim_v_frame_n13.slim_field_expected;
+slim_t_92 = slim_t_95 < INT64_C(0);
+slim_t_84 = slim_t_87 && slim_t_92;
+if (slim_t_84) {
+Slim_type_typing_95TypeRef slim_t_110 = {0};
+slim_t_110 = slim_v_state_n21.slim_field_first;
+slim_v_same_95type_n80 = slim_fn_typing_95types_95equal(slim_v_source_n2, slim_v_tokens_n6, slim_t_110, slim_v_actual_n17, slim_allocation_region);
 }
 else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_v_same_95type_n80 = true;
+}
+(void)slim_v_same_95type_n80;
+{
+SlimUnit slim_v__n125 = {0};
+if (slim_v_same_95type_n80) {
+slim_v__n125 = (SlimUnit){0};
+}
+else {
+int64_t slim_t_140 = {0};
+slim_t_140 = slim_v_structure_n47.slim_field_body;
+slim_v__n125 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0344", (int64_t)(sizeof("E0344") - 1)), slim_t_140, slim_v_issues_n25, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v__n125;
+{
+Slim_type_typing_95TypeRef slim_v_first_n151 = {0};
+bool slim_t_155 = {0};
+slim_t_155 = slim_v_state_n21.slim_field_has_95first;
+if (slim_t_155) {
+slim_v_first_n151 = slim_v_state_n21.slim_field_first;
+}
+else {
+slim_v_first_n151 = slim_v_actual_n17;
+}
+(void)slim_v_first_n151;
+{
+int64_t slim_v_next_95case_n175 = {0};
+bool slim_t_179 = {0};
+int64_t slim_t_182 = {0};
+slim_t_182 = slim_v_state_n21.slim_field_variant;
+slim_t_179 = slim_t_182 < INT64_C(0);
+if (slim_t_179) {
+slim_v_next_95case_n175 = INT64_C(-1);
+}
+else {
+int64_t slim_t_199 = {0};
+slim_t_199 = slim_v_state_n21.slim_field_case_95cursor;
+slim_v_next_95case_n175 = slim_fn_syntax_95ast_95next(slim_v_tokens_n6, slim_t_199, slim_allocation_region);
+}
+(void)slim_v_next_95case_n175;
+{
+Slim_type_typing_95BranchState slim_v_next_n209 = {0};
+{
+int64_t slim_t_214 = {0};
+slim_t_214 = slim_v_state_n21.slim_field_variant;
+int64_t slim_t_222 = {0};
+slim_t_222 = slim_v_structure_n47.slim_field_next;
+int64_t slim_t_230 = {0};
+slim_t_230 = slim_v_next_95case_n175;
+int64_t slim_t_234 = {0};
+slim_t_234 = slim_v_state_n21.slim_field_source_95mode;
+int64_t slim_t_242 = {0};
+slim_t_242 = slim_v_state_n21.slim_field_source_95owner;
+int64_t slim_t_250 = {0};
+slim_t_250 = slim_v_state_n21.slim_field_branch_95scope;
+int64_t slim_t_258 = {0};
+slim_t_258 = slim_v_state_n21.slim_field_enclosing_95scope;
+Slim_type_typing_95TypeRef slim_t_266 = {0};
+slim_t_266 = slim_v_first_n151;
+bool slim_t_270 = {0};
+slim_t_270 = true;
+bool slim_t_274 = {0};
+slim_t_274 = slim_v_state_n21.slim_field_seen_95true;
+bool slim_t_282 = {0};
+slim_t_282 = slim_v_state_n21.slim_field_seen_95false;
+bool slim_t_290 = {0};
+slim_t_290 = slim_v_state_n21.slim_field_move_95valid;
+int64_t slim_t_298 = {0};
+slim_t_298 = INT64_C(-1);
+slim_v_next_n209 = (Slim_type_typing_95BranchState){.slim_field_variant = slim_t_214, .slim_field_cursor = slim_t_222, .slim_field_case_95cursor = slim_t_230, .slim_field_source_95mode = slim_t_234, .slim_field_source_95owner = slim_t_242, .slim_field_branch_95scope = slim_t_250, .slim_field_enclosing_95scope = slim_t_258, .slim_field_first = slim_t_266, .slim_field_has_95first = slim_t_270, .slim_field_seen_95true = slim_t_274, .slim_field_seen_95false = slim_t_282, .slim_field_move_95valid = slim_t_290, .slim_field_arm_95scope = slim_t_298};
+}
+(void)slim_v_next_n209;
+slim_result = slim_v_next_n209;
+}
+}
+}
+}
 }
 }
 }
@@ -106004,258 +106797,182 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95recur(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, int64_t slim_v_params_n21, int64_t slim_v_return_95type_n25, SlimVec * slim_v_bindings_n29, SlimVec * slim_v_facts_n36, SlimVec * slim_v_issues_n43, SlimVec * slim_v_scopes_n50, SlimVec * slim_v_frames_n57, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95BoundValue slim_fn_typing_95bind_95value(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, Slim_type_typing_95TypeRef slim_v_value_95type_n21, SlimVec * slim_v_bindings_n25, SlimVec * slim_v_issues_n32, SlimVec * slim_v_scopes_n39, SlimVec * slim_v_frames_n46, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
 (void)slim_v_parent_n17;
-(void)slim_v_params_n21;
-(void)slim_v_return_95type_n25;
-(void)slim_v_bindings_n29;
-(void)slim_v_facts_n36;
-(void)slim_v_issues_n43;
-(void)slim_v_scopes_n50;
-(void)slim_v_frames_n57;
+(void)slim_v_value_95type_n21;
+(void)slim_v_bindings_n25;
+(void)slim_v_issues_n32;
+(void)slim_v_scopes_n39;
+(void)slim_v_frames_n46;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95BoundValue slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_arguments_n72 = {0};
-slim_v_arguments_n72 = slim_fn_syntax_95ast_95recur_95arguments(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_arguments_n72;
+Slim_type_control_95Binding slim_v_structure_n61 = {0};
+slim_v_structure_n61 = slim_fn_control_95binding((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n61;
 {
-int64_t slim_v_first_95parameter_n81 = {0};
-slim_v_first_95parameter_n81 = slim_fn_syntax_95ast_95parameters_95first(slim_v_params_n21, slim_allocation_region);
-(void)slim_v_first_95parameter_n81;
+int64_t slim_v_name_n71 = {0};
+slim_v_name_n71 = slim_v_structure_n61.slim_field_name;
+(void)slim_v_name_n71;
 {
-bool slim_v_valid_n90 = {0};
-int64_t slim_t_102 = {0};
-slim_t_102 = slim_fn_syntax_95ast_95expression_95marker(slim_v_expr_n13, slim_allocation_region);
-slim_v_valid_n90 = slim_fn_typing_95check_95call_95arguments(slim_v_source_n2, slim_v_tokens_n6, slim_v_arguments_n72, slim_v_first_95parameter_n81, slim_v_parent_n17, slim_v_params_n21, slim_v_return_95type_n25, slim_t_102, slim_v_expr_n13, true, false, false, slim_v_bindings_n29, slim_v_facts_n36, slim_v_issues_n43, slim_v_scopes_n50, slim_v_frames_n57, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_valid_n90;
-if (slim_v_valid_n90) {
-slim_result = slim_fn_typing_95source_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_return_95type_n25, slim_allocation_region);
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-slim_allocation_failed: ;
-return slim_result;
-}
-
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95let(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
-(void)slim_v_source_n2;
-(void)slim_v_tokens_n6;
-(void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
-(void)slim_region;
-SlimRegion *slim_allocation_region = slim_region;
-(void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+int64_t slim_v_type_n80 = {0};
+slim_v_type_n80 = slim_v_structure_n61.slim_field_type;
+(void)slim_v_type_n80;
 {
-int64_t slim_v_name_n76 = {0};
-slim_v_name_n76 = slim_fn_syntax_95ast_95let_95name(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_name_n76;
+int64_t slim_v_value_n89 = {0};
+slim_v_value_n89 = slim_v_structure_n61.slim_field_value;
+(void)slim_v_value_n89;
 {
-int64_t slim_v_type_n85 = {0};
-slim_v_type_n85 = slim_fn_syntax_95ast_95let_95type(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_type_n85;
+bool slim_v_statement_n98 = {0};
+slim_v_statement_n98 = slim_fn_syntax_95ast_95expression_95is_95statement((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_statement_n98;
 {
-int64_t slim_v_value_n94 = {0};
-slim_v_value_n94 = slim_fn_syntax_95ast_95let_95value((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_value_n94;
+bool slim_v_stored_95void_n108 = {0};
+bool slim_t_113 = {0};
+slim_t_113 = !slim_v_statement_n98;
+bool slim_t_118 = {0};
+slim_t_118 = slim_fn_typing_95type_95contains_95void(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_type_n80, slim_allocation_region);
+slim_v_stored_95void_n108 = slim_t_113 && slim_t_118;
+(void)slim_v_stored_95void_n108;
 {
-int64_t slim_v_body_n104 = {0};
-slim_v_body_n104 = slim_fn_syntax_95ast_95let_95body((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_body_n104;
+bool slim_v_value_95void_n128 = {0};
+bool slim_t_133 = {0};
+slim_t_133 = slim_fn_typing_95type_95valid(slim_v_value_95type_n21, slim_allocation_region);
+bool slim_t_138 = {0};
+int64_t slim_t_141 = {0};
+slim_t_141 = slim_v_value_95type_n21.slim_field_kind;
+slim_t_138 = slim_t_141 == INT64_C(0);
+slim_v_value_95void_n128 = slim_t_133 && slim_t_138;
+(void)slim_v_value_95void_n128;
 {
-bool slim_v_statement_n114 = {0};
-slim_v_statement_n114 = slim_fn_syntax_95ast_95expression_95is_95statement((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_statement_n114;
+bool slim_v_discarded_n151 = {0};
+bool slim_t_157 = {0};
+slim_t_157 = !slim_v_value_95void_n128;
+slim_v_discarded_n151 = slim_v_statement_n98 && slim_t_157;
+(void)slim_v_discarded_n151;
 {
-int64_t slim_v_value_95expected_n124 = {0};
-if (slim_v_statement_n114) {
-slim_v_value_95expected_n124 = INT64_C(-1);
-}
-else {
-slim_v_value_95expected_n124 = slim_v_type_n85;
-}
-(void)slim_v_value_95expected_n124;
-{
-Slim_type_typing_95TypeRef slim_v_value_95type_n140 = {0};
-slim_v_value_95type_n140 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n94, slim_v_value_95expected_n124, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_95type_n140;
-{
-bool slim_v_stored_95void_n160 = {0};
-bool slim_t_165 = {0};
-slim_t_165 = !slim_v_statement_n114;
-bool slim_t_170 = {0};
-slim_t_170 = slim_fn_typing_95type_95contains_95void(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_type_n85, slim_allocation_region);
-slim_v_stored_95void_n160 = slim_t_165 && slim_t_170;
-(void)slim_v_stored_95void_n160;
-{
-bool slim_v_value_95void_n180 = {0};
-bool slim_t_185 = {0};
-slim_t_185 = slim_fn_typing_95type_95valid(slim_v_value_95type_n140, slim_allocation_region);
-bool slim_t_190 = {0};
-int64_t slim_t_193 = {0};
-slim_t_193 = slim_v_value_95type_n140.slim_field_kind;
-slim_t_190 = slim_t_193 == INT64_C(0);
-slim_v_value_95void_n180 = slim_t_185 && slim_t_190;
-(void)slim_v_value_95void_n180;
-{
-bool slim_v_discarded_n203 = {0};
-bool slim_t_209 = {0};
-slim_t_209 = !slim_v_value_95void_n180;
-slim_v_discarded_n203 = slim_v_statement_n114 && slim_t_209;
-(void)slim_v_discarded_n203;
-{
-SlimUnit slim_v__n217 = {0};
-if (slim_v_stored_95void_n160) {
-slim_v__n217 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0358", (int64_t)(sizeof("E0358") - 1)), slim_v_type_n85, slim_v_issues_n47, slim_allocation_region);
+SlimUnit slim_v__n165 = {0};
+if (slim_v_stored_95void_n108) {
+slim_v__n165 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0358", (int64_t)(sizeof("E0358") - 1)), slim_v_type_n80, slim_v_issues_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v__n217 = (SlimUnit){0};
+slim_v__n165 = (SlimUnit){0};
 }
-(void)slim_v__n217;
+(void)slim_v__n165;
 {
-SlimUnit slim_v__n239 = {0};
-if (slim_v_discarded_n203) {
-slim_v__n239 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0357", (int64_t)(sizeof("E0357") - 1)), slim_v_value_n94, slim_v_issues_n47, slim_allocation_region);
+SlimUnit slim_v__n187 = {0};
+if (slim_v_discarded_n151) {
+slim_v__n187 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0357", (int64_t)(sizeof("E0357") - 1)), slim_v_value_n89, slim_v_issues_n32, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v__n239 = (SlimUnit){0};
+slim_v__n187 = (SlimUnit){0};
 }
-(void)slim_v__n239;
+(void)slim_v__n187;
 {
-bool slim_v_mutable_n261 = {0};
-slim_v_mutable_n261 = slim_fn_syntax_95ast_95let_95is_95mutable(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_mutable_n261;
+bool slim_v_mutable_n209 = {0};
+slim_v_mutable_n209 = slim_fn_syntax_95ast_95let_95is_95mutable(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_mutable_n209;
 {
-int64_t slim_v_storage_n272 = {0};
-slim_v_storage_n272 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_type_n85, slim_allocation_region);
-(void)slim_v_storage_n272;
+int64_t slim_v_storage_n220 = {0};
+slim_v_storage_n220 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_type_n80, slim_allocation_region);
+(void)slim_v_storage_n220;
 {
-bool slim_v_affine_n283 = {0};
-slim_v_affine_n283 = slim_v_storage_n272 == INT64_C(2);
-(void)slim_v_affine_n283;
+bool slim_v_affine_n231 = {0};
+slim_v_affine_n231 = slim_v_storage_n220 == INT64_C(2);
+(void)slim_v_affine_n231;
 {
-int64_t slim_v_source_95mode_n293 = {0};
-slim_v_source_95mode_n293 = slim_fn_typing_95value_95borrow_95mode(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n94, (*slim_v_bindings_n33), slim_allocation_region);
-(void)slim_v_source_95mode_n293;
+int64_t slim_v_source_95mode_n241 = {0};
+slim_v_source_95mode_n241 = slim_fn_typing_95value_95borrow_95mode(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n89, (*slim_v_bindings_n25), slim_allocation_region);
+(void)slim_v_source_95mode_n241;
 {
-bool slim_v_borrowed_n305 = {0};
+bool slim_v_borrowed_n253 = {0};
+bool slim_t_259 = {0};
+slim_t_259 = slim_v_source_95mode_n241 > INT64_C(0);
+slim_v_borrowed_n253 = slim_v_affine_n231 && slim_t_259;
+(void)slim_v_borrowed_n253;
+{
+int64_t slim_v_mode_n268 = {0};
+if (slim_v_borrowed_n253) {
+slim_v_mode_n268 = INT64_C(1);
+}
+else {
+slim_v_mode_n268 = INT64_C(0);
+}
+(void)slim_v_mode_n268;
+{
+int64_t slim_v_owner_n284 = {0};
+if (slim_v_borrowed_n253) {
+slim_v_owner_n284 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n89, (*slim_v_bindings_n25), slim_allocation_region);
+}
+else {
+slim_v_owner_n284 = INT64_C(-1);
+}
+(void)slim_v_owner_n284;
+{
+bool slim_v_move_95valid_n307 = {0};
 bool slim_t_311 = {0};
-slim_t_311 = slim_v_source_95mode_n293 > INT64_C(0);
-slim_v_borrowed_n305 = slim_v_affine_n283 && slim_t_311;
-(void)slim_v_borrowed_n305;
-{
-int64_t slim_v_mode_n320 = {0};
-if (slim_v_borrowed_n305) {
-slim_v_mode_n320 = INT64_C(1);
-}
-else {
-slim_v_mode_n320 = INT64_C(0);
-}
-(void)slim_v_mode_n320;
-{
-int64_t slim_v_owner_n336 = {0};
-if (slim_v_borrowed_n305) {
-slim_v_owner_n336 = slim_fn_typing_95value_95borrow_95owner(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n94, (*slim_v_bindings_n33), slim_allocation_region);
-}
-else {
-slim_v_owner_n336 = INT64_C(-1);
-}
-(void)slim_v_owner_n336;
-{
-bool slim_v_move_95valid_n359 = {0};
-bool slim_t_363 = {0};
-bool slim_t_367 = {0};
-slim_t_367 = !slim_v_borrowed_n305;
-slim_t_363 = slim_v_affine_n283 && slim_t_367;
-if (slim_t_363) {
-slim_v_move_95valid_n359 = slim_fn_typing_95mark_95result_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n94, slim_v_bindings_n33, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+bool slim_t_315 = {0};
+slim_t_315 = !slim_v_borrowed_n253;
+slim_t_311 = slim_v_affine_n231 && slim_t_315;
+if (slim_t_311) {
+slim_v_move_95valid_n307 = slim_fn_typing_95mark_95result_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n89, slim_v_bindings_n25, slim_v_issues_n32, slim_v_scopes_n39, slim_v_frames_n46, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v_move_95valid_n359 = true;
+slim_v_move_95valid_n307 = true;
 }
-(void)slim_v_move_95valid_n359;
+(void)slim_v_move_95valid_n307;
 {
-bool slim_v_loan_95valid_n394 = {0};
-bool slim_t_398 = {0};
-bool slim_t_402 = {0};
-slim_t_402 = slim_fn_typing_95type_95valid(slim_v_value_95type_n140, slim_allocation_region);
-slim_t_398 = slim_v_borrowed_n305 && slim_t_402;
-if (slim_t_398) {
-slim_v_loan_95valid_n394 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_value_n94, slim_v_owner_n336, slim_v_expr_n13, false, false, slim_v_bindings_n33, slim_v_issues_n47, true, slim_allocation_region);
+bool slim_v_loan_95valid_n342 = {0};
+bool slim_t_346 = {0};
+bool slim_t_350 = {0};
+slim_t_350 = slim_fn_typing_95type_95valid(slim_v_value_95type_n21, slim_allocation_region);
+slim_t_346 = slim_v_borrowed_n253 && slim_t_350;
+if (slim_t_346) {
+slim_v_loan_95valid_n342 = slim_fn_typing_95check_95argument_95overlap((*slim_v_tokens_n6), slim_v_value_n89, slim_v_owner_n284, slim_v_expr_n13, false, false, slim_v_bindings_n25, slim_v_issues_n32, true, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_v_loan_95valid_n394 = true;
+slim_v_loan_95valid_n342 = true;
 }
-(void)slim_v_loan_95valid_n394;
+(void)slim_v_loan_95valid_n342;
 {
-int64_t slim_v_next_95parent_n431 = {0};
-slim_v_next_95parent_n431 = slim_fn_typing_95add_95binding(slim_v_tokens_n6, slim_v_name_n76, slim_v_type_n85, slim_v_mode_n320, slim_v_owner_n336, slim_v_mutable_n261, slim_v_parent_n21, slim_v_bindings_n33, slim_allocation_region);
+int64_t slim_v_next_95parent_n379 = {0};
+slim_v_next_95parent_n379 = slim_fn_typing_95add_95binding(slim_v_tokens_n6, slim_v_name_n71, slim_v_type_n80, slim_v_mode_n268, slim_v_owner_n284, slim_v_mutable_n209, slim_v_parent_n17, slim_v_bindings_n25, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_next_95parent_n431;
+(void)slim_v_next_95parent_n379;
 {
-Slim_type_typing_95TypeRef slim_v_body_95type_n447 = {0};
-slim_v_body_95type_n447 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_body_n104, slim_v_expected_n17, slim_v_next_95parent_n431, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_body_95type_n447;
+bool slim_v_value_95valid_n395 = {0};
+slim_v_value_95valid_n395 = slim_fn_typing_95type_95valid(slim_v_value_95type_n21, slim_allocation_region);
+(void)slim_v_value_95valid_n395;
 {
-bool slim_v_value_95valid_n467 = {0};
-slim_v_value_95valid_n467 = slim_fn_typing_95type_95valid(slim_v_value_95type_n140, slim_allocation_region);
-(void)slim_v_value_95valid_n467;
+bool slim_v_placement_95valid_n404 = {0};
+bool slim_t_409 = {0};
+slim_t_409 = slim_v_stored_95void_n108 || slim_v_discarded_n151;
+slim_v_placement_95valid_n404 = !slim_t_409;
+(void)slim_v_placement_95valid_n404;
 {
-bool slim_v_body_95valid_n476 = {0};
-slim_v_body_95valid_n476 = slim_fn_typing_95type_95valid(slim_v_body_95type_n447, slim_allocation_region);
-(void)slim_v_body_95valid_n476;
+bool slim_v_valid_n418 = {0};
+bool slim_t_424 = {0};
+bool slim_t_428 = {0};
+slim_t_428 = slim_v_loan_95valid_n342 && slim_v_value_95valid_n395;
+slim_t_424 = slim_v_move_95valid_n307 && slim_t_428;
+slim_v_valid_n418 = slim_v_placement_95valid_n404 && slim_t_424;
+(void)slim_v_valid_n418;
 {
-bool slim_v_placement_95valid_n485 = {0};
-bool slim_t_490 = {0};
-slim_t_490 = slim_v_stored_95void_n160 || slim_v_discarded_n203;
-slim_v_placement_95valid_n485 = !slim_t_490;
-(void)slim_v_placement_95valid_n485;
-{
-bool slim_v_valid_n499 = {0};
-bool slim_t_505 = {0};
-bool slim_t_509 = {0};
-bool slim_t_513 = {0};
-slim_t_513 = slim_v_value_95valid_n467 && slim_v_body_95valid_n476;
-slim_t_509 = slim_v_loan_95valid_n394 && slim_t_513;
-slim_t_505 = slim_v_move_95valid_n359 && slim_t_509;
-slim_v_valid_n499 = slim_v_placement_95valid_n485 && slim_t_505;
-(void)slim_v_valid_n499;
-if (slim_v_valid_n499) {
-slim_result = slim_v_body_95type_n447;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
+int64_t slim_t_439 = {0};
+slim_t_439 = slim_v_next_95parent_n379;
+bool slim_t_443 = {0};
+slim_t_443 = slim_v_valid_n418;
+slim_result = (Slim_type_typing_95BoundValue){.slim_field_parent = slim_t_439, .slim_field_valid = slim_t_443};
 }
 }
 }
@@ -106284,160 +107001,113 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95set(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95AssignmentTarget slim_fn_typing_95prepare_95set(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_parent_n17, SlimVec slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
-(void)slim_v_expected_n17;
-(void)slim_v_parent_n21;
-(void)slim_v_params_n25;
-(void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
+(void)slim_v_parent_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
-Slim_type_typing_95TypeRef slim_result = {0};
+Slim_type_typing_95AssignmentTarget slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 {
-int64_t slim_v_name_n76 = {0};
-slim_v_name_n76 = slim_fn_syntax_95ast_95set_95name(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_name_n76;
+Slim_type_control_95Assignment slim_v_structure_n43 = {0};
+slim_v_structure_n43 = slim_fn_control_95assignment(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n43;
 {
-int64_t slim_v_type_n85 = {0};
-slim_v_type_n85 = slim_fn_typing_95find_95binding_95type(slim_v_source_n2, (*slim_v_tokens_n6), (*slim_v_bindings_n33), slim_v_parent_n21, slim_v_name_n76, slim_allocation_region);
-(void)slim_v_type_n85;
+int64_t slim_v_name_n53 = {0};
+slim_v_name_n53 = slim_v_structure_n43.slim_field_name;
+(void)slim_v_name_n53;
 {
-bool slim_v_found_n98 = {0};
-slim_v_found_n98 = slim_v_type_n85 >= INT64_C(0);
-(void)slim_v_found_n98;
-if (slim_v_found_n98) {
+int64_t slim_v_type_n62 = {0};
+slim_v_type_n62 = slim_fn_typing_95find_95binding_95type(slim_v_source_n2, slim_v_tokens_n6, slim_v_bindings_n21, slim_v_parent_n17, slim_v_name_n53, slim_allocation_region);
+(void)slim_v_type_n62;
 {
-bool slim_v_familiar_n113 = {0};
-slim_v_familiar_n113 = slim_fn_syntax_95ast_95assignment_95is_95familiar((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_familiar_n113;
+bool slim_v_found_n75 = {0};
+slim_v_found_n75 = slim_v_type_n62 >= INT64_C(0);
+(void)slim_v_found_n75;
+if (slim_v_found_n75) {
 {
-bool slim_v_declared_95mutable_n123 = {0};
-slim_v_declared_95mutable_n123 = slim_fn_typing_95find_95binding_95mutable((*slim_v_tokens_n6), (*slim_v_bindings_n33), slim_v_name_n76, slim_allocation_region);
-(void)slim_v_declared_95mutable_n123;
+bool slim_v_familiar_n90 = {0};
+slim_v_familiar_n90 = slim_fn_syntax_95ast_95assignment_95is_95familiar(slim_v_tokens_n6, slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_familiar_n90;
 {
-bool slim_v_mutable_n134 = {0};
-bool slim_t_139 = {0};
-slim_t_139 = !slim_v_familiar_n113;
-slim_v_mutable_n134 = slim_t_139 || slim_v_declared_95mutable_n123;
-(void)slim_v_mutable_n134;
-if (slim_v_mutable_n134) {
+bool slim_v_declared_95mutable_n100 = {0};
+slim_v_declared_95mutable_n100 = slim_fn_typing_95find_95binding_95mutable(slim_v_tokens_n6, slim_v_bindings_n21, slim_v_name_n53, slim_allocation_region);
+(void)slim_v_declared_95mutable_n100;
 {
-bool slim_v_affine_n153 = {0};
-int64_t slim_t_158 = {0};
-slim_t_158 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_type_n85, slim_allocation_region);
-slim_v_affine_n153 = slim_t_158 == INT64_C(2);
-(void)slim_v_affine_n153;
+bool slim_v_mutable_n111 = {0};
+bool slim_t_116 = {0};
+slim_t_116 = !slim_v_familiar_n90;
+slim_v_mutable_n111 = slim_t_116 || slim_v_declared_95mutable_n100;
+(void)slim_v_mutable_n111;
+if (slim_v_mutable_n111) {
 {
-int64_t slim_v_binding_95index_n169 = {0};
-slim_v_binding_95index_n169 = slim_fn_typing_95linked_95binding_95index((*slim_v_tokens_n6), slim_v_name_n76, slim_allocation_region);
-(void)slim_v_binding_95index_n169;
+bool slim_v_affine_n130 = {0};
+int64_t slim_t_135 = {0};
+slim_t_135 = slim_fn_memory_95type_95storage_95kind(slim_v_source_n2, slim_v_tokens_n6, slim_v_type_n62, slim_allocation_region);
+slim_v_affine_n130 = slim_t_135 == INT64_C(2);
+(void)slim_v_affine_n130;
 {
-bool slim_v_loan_n179 = {0};
-bool slim_t_183 = {0};
-bool slim_t_187 = {0};
-slim_t_187 = slim_v_binding_95index_n169 >= INT64_C(0);
-slim_t_183 = slim_v_affine_n153 && slim_t_187;
-if (slim_t_183) {
-slim_v_loan_n179 = slim_fn_typing_95named_95loan_95conflict((*slim_v_tokens_n6), (*slim_v_bindings_n33), slim_v_binding_95index_n169, slim_v_name_n76, true, slim_allocation_region);
+int64_t slim_v_binding_95index_n146 = {0};
+slim_v_binding_95index_n146 = slim_fn_typing_95linked_95binding_95index(slim_v_tokens_n6, slim_v_name_n53, slim_allocation_region);
+(void)slim_v_binding_95index_n146;
+{
+bool slim_v_loan_n156 = {0};
+bool slim_t_160 = {0};
+bool slim_t_164 = {0};
+slim_t_164 = slim_v_binding_95index_n146 >= INT64_C(0);
+slim_t_160 = slim_v_affine_n130 && slim_t_164;
+if (slim_t_160) {
+slim_v_loan_n156 = slim_fn_typing_95named_95loan_95conflict(slim_v_tokens_n6, slim_v_bindings_n21, slim_v_binding_95index_n146, slim_v_name_n53, true, slim_allocation_region);
 }
 else {
-slim_v_loan_n179 = false;
+slim_v_loan_n156 = false;
 }
-(void)slim_v_loan_n179;
-if (slim_v_loan_n179) {
+(void)slim_v_loan_n156;
+if (slim_v_loan_n156) {
 {
-SlimUnit slim_v__n218 = {0};
-slim_v__n218 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0349", (int64_t)(sizeof("E0349") - 1)), slim_v_name_n76, slim_v_issues_n47, slim_allocation_region);
+SlimUnit slim_v__n195 = {0};
+slim_v__n195 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0349", (int64_t)(sizeof("E0349") - 1)), slim_v_name_n53, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n218;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+(void)slim_v__n195;
+{
+int64_t slim_t_207 = {0};
+slim_t_207 = INT64_C(-1);
+bool slim_t_211 = {0};
+slim_t_211 = false;
+slim_result = (Slim_type_typing_95AssignmentTarget){.slim_field_type = slim_t_207, .slim_field_affine = slim_t_211};
+}
 }
 }
 else {
 {
-int64_t slim_v_value_n238 = {0};
-slim_v_value_n238 = slim_fn_syntax_95ast_95set_95value(slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_value_n238;
-{
-int64_t slim_v_body_n247 = {0};
-slim_v_body_n247 = slim_fn_syntax_95ast_95set_95body((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_body_n247;
-{
-int64_t slim_v_before_n257 = {0};
-slim_v_before_n257 = ((*slim_v_issues_n47)).len;
-(void)slim_v_before_n257;
-{
-Slim_type_typing_95TypeRef slim_v_value_95type_n266 = {0};
-slim_v_value_95type_n266 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_value_n238, slim_v_type_n85, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_value_95type_n266;
-{
-bool slim_v_move_95valid_n286 = {0};
-slim_v_move_95valid_n286 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_value_n238, slim_v_type_n85, slim_v_bindings_n33, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_move_95valid_n286;
-{
-SlimUnit slim_v__n302 = {0};
-bool slim_t_306 = {0};
-bool slim_t_310 = {0};
-bool slim_t_313 = {0};
-slim_t_313 = slim_v_binding_95index_n169 >= INT64_C(0);
-bool slim_t_319 = {0};
-bool slim_t_323 = {0};
-bool slim_t_326 = {0};
-slim_t_326 = slim_fn_typing_95type_95valid(slim_v_value_95type_n266, slim_allocation_region);
-bool slim_t_331 = {0};
-int64_t slim_t_335 = {0};
-slim_t_335 = ((*slim_v_issues_n47)).len;
-slim_t_331 = slim_v_before_n257 == slim_t_335;
-slim_t_323 = slim_t_326 && slim_t_331;
-slim_t_319 = slim_v_move_95valid_n286 && slim_t_323;
-slim_t_310 = slim_t_313 && slim_t_319;
-slim_t_306 = slim_v_affine_n153 && slim_t_310;
-if (slim_t_306) {
-slim_v__n302 = slim_fn_typing_95reinitialize_95binding(slim_v_bindings_n33, slim_v_binding_95index_n169, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+int64_t slim_t_223 = {0};
+slim_t_223 = slim_v_type_n62;
+bool slim_t_227 = {0};
+slim_t_227 = slim_v_affine_n130;
+slim_result = (Slim_type_typing_95AssignmentTarget){.slim_field_type = slim_t_223, .slim_field_affine = slim_t_227};
+}
+}
+}
+}
+}
 }
 else {
-slim_v__n302 = (SlimUnit){0};
-}
-(void)slim_v__n302;
 {
-Slim_type_typing_95TypeRef slim_v_body_95type_n363 = {0};
-slim_v_body_95type_n363 = slim_fn_typing_95infer_95expr(slim_v_source_n2, slim_v_tokens_n6, slim_v_body_n247, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+SlimUnit slim_v__n242 = {0};
+slim_v__n242 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0359", (int64_t)(sizeof("E0359") - 1)), slim_v_name_n53, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v_body_95type_n363;
+(void)slim_v__n242;
 {
-bool slim_v_valid_n383 = {0};
-bool slim_t_389 = {0};
-bool slim_t_392 = {0};
-slim_t_392 = slim_fn_typing_95type_95valid(slim_v_value_95type_n266, slim_allocation_region);
-bool slim_t_397 = {0};
-slim_t_397 = slim_fn_typing_95type_95valid(slim_v_body_95type_n363, slim_allocation_region);
-slim_t_389 = slim_t_392 && slim_t_397;
-slim_v_valid_n383 = slim_v_move_95valid_n286 && slim_t_389;
-(void)slim_v_valid_n383;
-if (slim_v_valid_n383) {
-slim_result = slim_v_body_95type_n363;
-}
-else {
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-}
+int64_t slim_t_254 = {0};
+slim_t_254 = INT64_C(-1);
+bool slim_t_258 = {0};
+slim_t_258 = false;
+slim_result = (Slim_type_typing_95AssignmentTarget){.slim_field_type = slim_t_254, .slim_field_affine = slim_t_258};
 }
 }
 }
@@ -106447,24 +107117,18 @@ slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_r
 }
 else {
 {
-SlimUnit slim_v__n438 = {0};
-slim_v__n438 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0359", (int64_t)(sizeof("E0359") - 1)), slim_v_name_n76, slim_v_issues_n47, slim_allocation_region);
+SlimUnit slim_v__n274 = {0};
+slim_v__n274 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0314", (int64_t)(sizeof("E0314") - 1)), slim_v_name_n53, slim_v_issues_n28, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n438;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
-}
-}
-}
-}
-}
-}
-else {
+(void)slim_v__n274;
 {
-SlimUnit slim_v__n463 = {0};
-slim_v__n463 = slim_fn_typing_95record_95issue(slim_bytes_static((const uint8_t *)"E0314", (int64_t)(sizeof("E0314") - 1)), slim_v_name_n76, slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-(void)slim_v__n463;
-slim_result = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+int64_t slim_t_286 = {0};
+slim_t_286 = INT64_C(-1);
+bool slim_t_290 = {0};
+slim_t_290 = false;
+slim_result = (Slim_type_typing_95AssignmentTarget){.slim_field_type = slim_t_286, .slim_field_affine = slim_t_290};
+}
+}
 }
 }
 }
@@ -106474,7 +107138,145 @@ slim_allocation_failed: ;
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95form(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, SlimVec * slim_v_bindings_n33, SlimVec * slim_v_facts_n40, SlimVec * slim_v_issues_n47, SlimVec * slim_v_scopes_n54, SlimVec * slim_v_frames_n61, SlimRegion *slim_region) {
+static SLIM_UNUSED_FUNCTION bool slim_fn_typing_95assign_95value(SlimBytes slim_v_source_n2, SlimVec slim_v_tokens_n6, Slim_type_typing_95Pending slim_v_frame_n13, Slim_type_typing_95TypeRef slim_v_value_95type_n17, SlimVec * slim_v_bindings_n21, SlimVec * slim_v_issues_n28, SlimVec * slim_v_scopes_n35, SlimVec * slim_v_frames_n42, SlimRegion *slim_region) {
+(void)slim_v_source_n2;
+(void)slim_v_tokens_n6;
+(void)slim_v_frame_n13;
+(void)slim_v_value_95type_n17;
+(void)slim_v_bindings_n21;
+(void)slim_v_issues_n28;
+(void)slim_v_scopes_n35;
+(void)slim_v_frames_n42;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+bool slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+Slim_type_control_95Assignment slim_v_structure_n57 = {0};
+int64_t slim_t_63 = {0};
+slim_t_63 = slim_v_frame_n13.slim_field_expr;
+slim_v_structure_n57 = slim_fn_control_95assignment(slim_v_tokens_n6, slim_t_63, slim_allocation_region);
+(void)slim_v_structure_n57;
+{
+int64_t slim_v_binding_95index_n71 = {0};
+int64_t slim_t_77 = {0};
+slim_t_77 = slim_v_structure_n57.slim_field_name;
+slim_v_binding_95index_n71 = slim_fn_typing_95linked_95binding_95index(slim_v_tokens_n6, slim_t_77, slim_allocation_region);
+(void)slim_v_binding_95index_n71;
+{
+bool slim_v_move_95valid_n85 = {0};
+int64_t slim_t_92 = {0};
+slim_t_92 = slim_v_structure_n57.slim_field_value;
+int64_t slim_t_97 = {0};
+slim_t_97 = slim_v_frame_n13.slim_field_type;
+slim_v_move_95valid_n85 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, slim_v_tokens_n6, slim_t_92, slim_t_97, slim_v_bindings_n21, slim_v_issues_n28, slim_v_scopes_n35, slim_v_frames_n42, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_move_95valid_n85;
+{
+SlimUnit slim_v__n109 = {0};
+bool slim_t_113 = {0};
+bool slim_t_116 = {0};
+slim_t_116 = slim_v_frame_n13.slim_field_valid;
+bool slim_t_121 = {0};
+bool slim_t_124 = {0};
+slim_t_124 = slim_v_binding_95index_n71 >= INT64_C(0);
+bool slim_t_130 = {0};
+bool slim_t_134 = {0};
+bool slim_t_137 = {0};
+slim_t_137 = slim_fn_typing_95type_95valid(slim_v_value_95type_n17, slim_allocation_region);
+bool slim_t_142 = {0};
+int64_t slim_t_145 = {0};
+slim_t_145 = slim_v_frame_n13.slim_field_before;
+int64_t slim_t_150 = {0};
+slim_t_150 = ((*slim_v_issues_n28)).len;
+slim_t_142 = slim_t_145 == slim_t_150;
+slim_t_134 = slim_t_137 && slim_t_142;
+slim_t_130 = slim_v_move_95valid_n85 && slim_t_134;
+slim_t_121 = slim_t_124 && slim_t_130;
+slim_t_113 = slim_t_116 && slim_t_121;
+if (slim_t_113) {
+slim_v__n109 = slim_fn_typing_95reinitialize_95binding(slim_v_bindings_n21, slim_v_binding_95index_n71, slim_v_scopes_n35, slim_v_frames_n42, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v__n109 = (SlimUnit){0};
+}
+(void)slim_v__n109;
+bool slim_t_180 = {0};
+slim_t_180 = slim_fn_typing_95type_95valid(slim_v_value_95type_n17, slim_allocation_region);
+slim_result = slim_v_move_95valid_n85 && slim_t_180;
+}
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION int64_t slim_fn_typing_95push_95pending(Slim_type_typing_95Pending slim_v_parent_n2, int64_t slim_v_depth_n6, int64_t slim_v_limit_n10, SlimVec * slim_v_pending_n14, SlimRegion *slim_region) {
+(void)slim_v_parent_n2;
+(void)slim_v_depth_n6;
+(void)slim_v_limit_n10;
+(void)slim_v_pending_n14;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+int64_t slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+int64_t slim_v_permitted_n29 = {0};
+bool slim_t_33 = {0};
+bool slim_t_36 = {0};
+slim_t_36 = slim_v_depth_n6 >= INT64_C(0);
+bool slim_t_42 = {0};
+slim_t_42 = slim_v_depth_n6 < slim_v_limit_n10;
+slim_t_33 = slim_t_36 && slim_t_42;
+if (slim_t_33) {
+slim_v_permitted_n29 = INT64_C(1);
+}
+else {
+slim_v_permitted_n29 = INT64_C(0);
+}
+(void)slim_v_permitted_n29;
+{
+int64_t slim_v_checked_95depth_n60 = {0};
+slim_v_checked_95depth_n60 = slim_i64_div(slim_v_depth_n6, slim_v_permitted_n29);
+(void)slim_v_checked_95depth_n60;
+{
+SlimUnit slim_v__n70 = {0};
+bool slim_t_74 = {0};
+slim_t_74 = slim_v_checked_95depth_n60 > INT64_C(0);
+if (slim_t_74) {
+{
+int64_t slim_v_at_n84 = {0};
+slim_v_at_n84 = slim_i64_sub(slim_v_checked_95depth_n60, INT64_C(1));
+(void)slim_v_at_n84;
+bool slim_t_94 = {0};
+int64_t slim_t_98 = {0};
+slim_t_98 = ((*slim_v_pending_n14)).len;
+slim_t_94 = slim_v_at_n84 < slim_t_98;
+if (slim_t_94) {
+((Slim_type_typing_95Pending *)((*slim_v_pending_n14)).data)[slim_vec_check_index(&((*slim_v_pending_n14)), slim_v_at_n84)] = slim_v_parent_n2; slim_v__n70 = (SlimUnit){0};
+}
+else {
+if (!slim_vec_push(slim_v_pending_n14, &slim_v_parent_n2)) goto slim_allocation_failed; slim_v__n70 = (SlimUnit){0};
+}
+}
+}
+else {
+slim_v__n70 = (SlimUnit){0};
+}
+(void)slim_v__n70;
+slim_result = slim_i64_add(slim_v_checked_95depth_n60, INT64_C(1));
+}
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95control_95walk(SlimBytes slim_v_source_n2, SlimVec * slim_v_tokens_n6, int64_t slim_v_expr_n13, int64_t slim_v_expected_n17, int64_t slim_v_parent_n21, int64_t slim_v_params_n25, int64_t slim_v_return_95type_n29, bool slim_v_returning_n33, Slim_type_typing_95TypeRef slim_v_result_n37, int64_t slim_v_depth_n41, int64_t slim_v_limit_n45, Slim_type_typing_95Pending slim_v_top_n49, int64_t slim_v_branch_95depth_n53, Slim_type_typing_95BranchState slim_v_branch_95top_n57, int64_t slim_v_argument_95depth_n61, Slim_type_typing_95ArgumentState slim_v_argument_95top_n65, int64_t slim_v_builtin_95depth_n69, SlimVec * slim_v_builtins_n73, SlimVec * slim_v_arguments_n80, SlimVec * slim_v_branches_n87, SlimVec * slim_v_pending_n94, SlimVec * slim_v_bindings_n101, SlimVec * slim_v_facts_n108, SlimVec * slim_v_issues_n115, SlimVec * slim_v_scopes_n122, SlimVec * slim_v_frames_n129, SlimRegion *slim_region) {
 (void)slim_v_source_n2;
 (void)slim_v_tokens_n6;
 (void)slim_v_expr_n13;
@@ -106482,90 +107284,2784 @@ static SLIM_UNUSED_FUNCTION Slim_type_typing_95TypeRef slim_fn_typing_95infer_95
 (void)slim_v_parent_n21;
 (void)slim_v_params_n25;
 (void)slim_v_return_95type_n29;
-(void)slim_v_bindings_n33;
-(void)slim_v_facts_n40;
-(void)slim_v_issues_n47;
-(void)slim_v_scopes_n54;
-(void)slim_v_frames_n61;
+(void)slim_v_returning_n33;
+(void)slim_v_result_n37;
+(void)slim_v_depth_n41;
+(void)slim_v_limit_n45;
+(void)slim_v_top_n49;
+(void)slim_v_branch_95depth_n53;
+(void)slim_v_branch_95top_n57;
+(void)slim_v_argument_95depth_n61;
+(void)slim_v_argument_95top_n65;
+(void)slim_v_builtin_95depth_n69;
+(void)slim_v_builtins_n73;
+(void)slim_v_arguments_n80;
+(void)slim_v_branches_n87;
+(void)slim_v_pending_n94;
+(void)slim_v_bindings_n101;
+(void)slim_v_facts_n108;
+(void)slim_v_issues_n115;
+(void)slim_v_scopes_n122;
+(void)slim_v_frames_n129;
 (void)slim_region;
 SlimRegion *slim_allocation_region = slim_region;
 (void)slim_allocation_region;
 Slim_type_typing_95TypeRef slim_result = {0};
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+slim_recur: ;
 {
-bool slim_v_let_95form_n76 = {0};
-slim_v_let_95form_n76 = slim_fn_syntax_95ast_95expression_95is_95let(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_let_95form_n76;
-if (slim_v_let_95form_n76) {
-slim_result = slim_fn_typing_95infer_95let(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+bool slim_v_failed_n144 = {0};
+if (slim_v_returning_n33) {
+slim_v_failed_n144 = false;
+}
+else {
+slim_v_failed_n144 = slim_fn_typing_95issues_95block_95inference((*slim_v_issues_n115), slim_allocation_region);
+}
+(void)slim_v_failed_n144;
+{
+int64_t slim_v_kind_n164 = {0};
+bool slim_t_168 = {0};
+slim_t_168 = slim_v_returning_n33 || slim_v_failed_n144;
+if (slim_t_168) {
+slim_v_kind_n164 = INT64_C(-1);
+}
+else {
+slim_v_kind_n164 = slim_fn_control_95expression_95kind(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+}
+(void)slim_v_kind_n164;
+{
+bool slim_v_atomic_n191 = {0};
+slim_v_atomic_n191 = slim_v_kind_n164 == INT64_C(0);
+(void)slim_v_atomic_n191;
+{
+bool slim_v_ready_n201 = {0};
+bool slim_t_207 = {0};
+slim_t_207 = slim_v_failed_n144 || slim_v_atomic_n191;
+slim_v_ready_n201 = slim_v_returning_n33 || slim_t_207;
+(void)slim_v_ready_n201;
+{
+Slim_type_typing_95TypeRef slim_v_current_95result_n216 = {0};
+if (slim_v_failed_n144) {
+slim_v_current_95result_n216 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+}
+else {
+if (slim_v_atomic_n191) {
+{
+Slim_type_typing_95TypeRef slim_v_inferred_n238 = {0};
+slim_v_inferred_n238 = slim_fn_typing_95infer_95atom(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_parent_n21, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_inferred_n238;
+slim_v_current_95result_n216 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_v_inferred_n238, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+else {
+slim_v_current_95result_n216 = slim_v_result_n37;
+}
+}
+(void)slim_v_current_95result_n216;
+if (slim_v_ready_n201) {
+bool slim_t_279 = {0};
+slim_t_279 = slim_v_depth_n41 == INT64_C(0);
+if (slim_t_279) {
+slim_result = slim_v_current_95result_n216;
 }
 else {
 {
-bool slim_v_set_95form_n111 = {0};
-slim_v_set_95form_n111 = slim_fn_syntax_95ast_95expression_95is_95set(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_set_95form_n111;
-if (slim_v_set_95form_n111) {
-slim_result = slim_fn_typing_95infer_95set(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+int64_t slim_v_at_n293 = {0};
+slim_v_at_n293 = slim_i64_sub(slim_v_depth_n41, INT64_C(1));
+(void)slim_v_at_n293;
+{
+Slim_type_typing_95Pending slim_v_frame_n303 = {0};
+slim_v_frame_n303 = slim_v_top_n49;
+(void)slim_v_frame_n303;
+bool slim_t_308 = {0};
+int64_t slim_t_311 = {0};
+slim_t_311 = slim_v_frame_n303.slim_field_phase;
+slim_t_308 = slim_t_311 >= INT64_C(13);
+if (slim_t_308) {
+{
+bool slim_v_operand_95ok_n322 = {0};
+slim_v_operand_95ok_n322 = slim_fn_typing_95finish_95scalar_95operand((*slim_v_tokens_n6), slim_v_frame_n303, slim_v_current_95result_n216, slim_v_issues_n115, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_operand_95ok_n322;
+{
+bool slim_v_valid_n334 = {0};
+bool slim_t_339 = {0};
+slim_t_339 = slim_v_frame_n303.slim_field_valid;
+slim_v_valid_n334 = slim_t_339 && slim_v_operand_95ok_n322;
+(void)slim_v_valid_n334;
+bool slim_t_348 = {0};
+bool slim_t_351 = {0};
+int64_t slim_t_354 = {0};
+slim_t_354 = slim_v_frame_n303.slim_field_phase;
+slim_t_351 = slim_t_354 == INT64_C(14);
+bool slim_t_361 = {0};
+int64_t slim_t_364 = {0};
+slim_t_364 = slim_v_frame_n303.slim_field_phase;
+slim_t_361 = slim_t_364 == INT64_C(15);
+slim_t_348 = slim_t_351 || slim_t_361;
+if (slim_t_348) {
+{
+Slim_type_control_95Invocation slim_v_structure_n376 = {0};
+int64_t slim_t_381 = {0};
+slim_t_381 = slim_v_frame_n303.slim_field_expr;
+slim_v_structure_n376 = slim_fn_control_95invocation(slim_t_381, false, slim_allocation_region);
+(void)slim_v_structure_n376;
+{
+Slim_type_control_95Member slim_v_first_n390 = {0};
+int64_t slim_t_396 = {0};
+slim_t_396 = slim_v_structure_n376.slim_field_arguments;
+slim_v_first_n390 = slim_fn_control_95member((*slim_v_tokens_n6), slim_t_396, false, slim_allocation_region);
+(void)slim_v_first_n390;
+{
+int64_t slim_v_kind_n405 = {0};
+bool slim_t_409 = {0};
+int64_t slim_t_412 = {0};
+slim_t_412 = slim_v_frame_n303.slim_field_phase;
+slim_t_409 = slim_t_412 == INT64_C(15);
+if (slim_t_409) {
+slim_v_kind_n405 = INT64_C(3);
+}
+else {
+slim_v_kind_n405 = slim_v_frame_n303.slim_field_type;
+}
+(void)slim_v_kind_n405;
+{
+int64_t slim_v_phase_n434 = {0};
+bool slim_t_438 = {0};
+int64_t slim_t_441 = {0};
+slim_t_441 = slim_v_frame_n303.slim_field_phase;
+slim_t_438 = slim_t_441 == INT64_C(15);
+if (slim_t_438) {
+slim_v_phase_n434 = INT64_C(17);
+}
+else {
+slim_v_phase_n434 = INT64_C(16);
+}
+(void)slim_v_phase_n434;
+{
+Slim_type_typing_95Pending slim_v_next_95top_n459 = {0};
+{
+int64_t slim_t_464 = {0};
+slim_t_464 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_472 = {0};
+slim_t_472 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_480 = {0};
+slim_t_480 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_488 = {0};
+slim_t_488 = slim_v_phase_n434;
+bool slim_t_492 = {0};
+slim_t_492 = slim_v_valid_n334;
+int64_t slim_t_496 = {0};
+slim_t_496 = slim_v_kind_n405;
+int64_t slim_t_500 = {0};
+slim_t_500 = slim_v_frame_n303.slim_field_before;
+slim_v_next_95top_n459 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_464, .slim_field_expected = slim_t_472, .slim_field_parent = slim_t_480, .slim_field_phase = slim_t_488, .slim_field_valid = slim_t_492, .slim_field_type = slim_t_496, .slim_field_before = slim_t_500};
+}
+(void)slim_v_next_95top_n459;
+SlimBytes slim_t_511 = {0};
+slim_t_511 = slim_v_source_n2;
+int64_t slim_t_513 = {0};
+slim_t_513 = slim_v_first_n390.slim_field_next;
+int64_t slim_t_518 = {0};
+slim_t_518 = INT64_C(-1);
+int64_t slim_t_519 = {0};
+slim_t_519 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_524 = {0};
+slim_t_524 = slim_v_params_n25;
+int64_t slim_t_525 = {0};
+slim_t_525 = slim_v_return_95type_n29;
+bool slim_t_526 = {0};
+slim_t_526 = false;
+Slim_type_typing_95TypeRef slim_t_527 = {0};
+slim_t_527 = slim_v_current_95result_n216;
+int64_t slim_t_528 = {0};
+slim_t_528 = slim_v_depth_n41;
+int64_t slim_t_529 = {0};
+slim_t_529 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_530 = {0};
+slim_t_530 = slim_v_next_95top_n459;
+int64_t slim_t_531 = {0};
+slim_t_531 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_532 = {0};
+slim_t_532 = slim_v_branch_95top_n57;
+int64_t slim_t_533 = {0};
+slim_t_533 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_534 = {0};
+slim_t_534 = slim_v_argument_95top_n65;
+int64_t slim_t_535 = {0};
+slim_t_535 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_511;
+slim_v_expr_n13 = slim_t_513;
+slim_v_expected_n17 = slim_t_518;
+slim_v_parent_n21 = slim_t_519;
+slim_v_params_n25 = slim_t_524;
+slim_v_return_95type_n29 = slim_t_525;
+slim_v_returning_n33 = slim_t_526;
+slim_v_result_n37 = slim_t_527;
+slim_v_depth_n41 = slim_t_528;
+slim_v_limit_n45 = slim_t_529;
+slim_v_top_n49 = slim_t_530;
+slim_v_branch_95depth_n53 = slim_t_531;
+slim_v_branch_95top_n57 = slim_t_532;
+slim_v_argument_95depth_n61 = slim_t_533;
+slim_v_argument_95top_n65 = slim_t_534;
+slim_v_builtin_95depth_n69 = slim_t_535;
+goto slim_recur;
+}
+}
+}
+}
+}
 }
 else {
 {
-bool slim_v_call_95form_n146 = {0};
-slim_v_call_95form_n146 = slim_fn_syntax_95ast_95expression_95is_95call(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_call_95form_n146;
-if (slim_v_call_95form_n146) {
-slim_result = slim_fn_typing_95infer_95call(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+Slim_type_typing_95TypeRef slim_v_actual_n556 = {0};
+if (slim_v_valid_n334) {
+int64_t slim_t_566 = {0};
+slim_t_566 = slim_v_frame_n303.slim_field_before;
+int64_t slim_t_571 = {0};
+slim_t_571 = slim_v_frame_n303.slim_field_expr;
+slim_v_actual_n556 = slim_fn_typing_95scalar_95type(slim_t_566, slim_t_571, slim_allocation_region);
+}
+else {
+int64_t slim_t_583 = {0};
+slim_t_583 = slim_v_frame_n303.slim_field_expr;
+slim_v_actual_n556 = slim_fn_typing_95invalid_95type(slim_t_583, slim_allocation_region);
+}
+(void)slim_v_actual_n556;
+{
+Slim_type_typing_95TypeRef slim_v_finished_n593 = {0};
+int64_t slim_t_600 = {0};
+slim_t_600 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_605 = {0};
+slim_t_605 = slim_v_frame_n303.slim_field_expected;
+slim_v_finished_n593 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_600, slim_t_605, slim_v_actual_n556, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n593;
+bool slim_t_616 = {0};
+slim_t_616 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_616) {
+slim_result = slim_v_finished_n593;
 }
 else {
 {
-bool slim_v_make_95form_n181 = {0};
-slim_v_make_95form_n181 = slim_fn_syntax_95ast_95expression_95is_95make(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_make_95form_n181;
-if (slim_v_make_95form_n181) {
-slim_result = slim_fn_typing_95infer_95make(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+Slim_type_typing_95Pending slim_v_enclosing_n630 = {0};
+int64_t slim_t_636 = {0};
+slim_t_636 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n630 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_636)];
+(void)slim_v_enclosing_n630;
+SlimBytes slim_t_645 = {0};
+slim_t_645 = slim_v_source_n2;
+int64_t slim_t_647 = {0};
+slim_t_647 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_652 = {0};
+slim_t_652 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_657 = {0};
+slim_t_657 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_662 = {0};
+slim_t_662 = slim_v_params_n25;
+int64_t slim_t_663 = {0};
+slim_t_663 = slim_v_return_95type_n29;
+bool slim_t_664 = {0};
+slim_t_664 = true;
+Slim_type_typing_95TypeRef slim_t_665 = {0};
+slim_t_665 = slim_v_finished_n593;
+int64_t slim_t_666 = {0};
+slim_t_666 = slim_v_at_n293;
+int64_t slim_t_667 = {0};
+slim_t_667 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_668 = {0};
+slim_t_668 = slim_v_enclosing_n630;
+int64_t slim_t_669 = {0};
+slim_t_669 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_670 = {0};
+slim_t_670 = slim_v_branch_95top_n57;
+int64_t slim_t_671 = {0};
+slim_t_671 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_672 = {0};
+slim_t_672 = slim_v_argument_95top_n65;
+int64_t slim_t_673 = {0};
+slim_t_673 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_645;
+slim_v_expr_n13 = slim_t_647;
+slim_v_expected_n17 = slim_t_652;
+slim_v_parent_n21 = slim_t_657;
+slim_v_params_n25 = slim_t_662;
+slim_v_return_95type_n29 = slim_t_663;
+slim_v_returning_n33 = slim_t_664;
+slim_v_result_n37 = slim_t_665;
+slim_v_depth_n41 = slim_t_666;
+slim_v_limit_n45 = slim_t_667;
+slim_v_top_n49 = slim_t_668;
+slim_v_branch_95depth_n53 = slim_t_669;
+slim_v_branch_95top_n57 = slim_t_670;
+slim_v_argument_95depth_n61 = slim_t_671;
+slim_v_argument_95top_n65 = slim_t_672;
+slim_v_builtin_95depth_n69 = slim_t_673;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+bool slim_t_698 = {0};
+int64_t slim_t_701 = {0};
+slim_t_701 = slim_v_frame_n303.slim_field_phase;
+slim_t_698 = slim_t_701 == INT64_C(12);
+if (slim_t_698) {
+{
+Slim_type_typing_95BuiltinState slim_v_state_n712 = {0};
+int64_t slim_t_718 = {0};
+slim_t_718 = slim_v_frame_n303.slim_field_type;
+slim_v_state_n712 = ((Slim_type_typing_95BuiltinState *)((*slim_v_builtins_n73)).data)[slim_vec_check_index(&((*slim_v_builtins_n73)), slim_t_718)];
+(void)slim_v_state_n712;
+{
+Slim_type_typing_95BuiltinNext slim_v_request_n726 = {0};
+int64_t slim_t_733 = {0};
+slim_t_733 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_738 = {0};
+slim_t_738 = slim_v_frame_n303.slim_field_expected;
+slim_v_request_n726 = slim_fn_typing_95finish_95builtin(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_733, slim_t_738, slim_v_state_n712, slim_v_current_95result_n216, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n726;
+bool slim_t_752 = {0};
+slim_t_752 = slim_v_request_n726.slim_field_done;
+if (slim_t_752) {
+{
+Slim_type_typing_95TypeRef slim_v_finished_n761 = {0};
+int64_t slim_t_768 = {0};
+slim_t_768 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_773 = {0};
+slim_t_773 = slim_v_frame_n303.slim_field_expected;
+Slim_type_typing_95TypeRef slim_t_778 = {0};
+slim_t_778 = slim_v_request_n726.slim_field_result;
+slim_v_finished_n761 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_768, slim_t_773, slim_t_778, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n761;
+bool slim_t_788 = {0};
+slim_t_788 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_788) {
+slim_result = slim_v_finished_n761;
 }
 else {
 {
-bool slim_v_get_95form_n215 = {0};
-slim_v_get_95form_n215 = slim_fn_syntax_95ast_95expression_95is_95get(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_get_95form_n215;
-if (slim_v_get_95form_n215) {
-slim_result = slim_fn_typing_95infer_95get(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+Slim_type_typing_95Pending slim_v_enclosing_n802 = {0};
+int64_t slim_t_808 = {0};
+slim_t_808 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n802 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_808)];
+(void)slim_v_enclosing_n802;
+SlimBytes slim_t_817 = {0};
+slim_t_817 = slim_v_source_n2;
+int64_t slim_t_819 = {0};
+slim_t_819 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_824 = {0};
+slim_t_824 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_829 = {0};
+slim_t_829 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_834 = {0};
+slim_t_834 = slim_v_params_n25;
+int64_t slim_t_835 = {0};
+slim_t_835 = slim_v_return_95type_n29;
+bool slim_t_836 = {0};
+slim_t_836 = true;
+Slim_type_typing_95TypeRef slim_t_837 = {0};
+slim_t_837 = slim_v_finished_n761;
+int64_t slim_t_838 = {0};
+slim_t_838 = slim_v_at_n293;
+int64_t slim_t_839 = {0};
+slim_t_839 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_840 = {0};
+slim_t_840 = slim_v_enclosing_n802;
+int64_t slim_t_841 = {0};
+slim_t_841 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_842 = {0};
+slim_t_842 = slim_v_branch_95top_n57;
+int64_t slim_t_843 = {0};
+slim_t_843 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_844 = {0};
+slim_t_844 = slim_v_argument_95top_n65;
+int64_t slim_t_845 = {0};
+slim_t_845 = slim_i64_sub(slim_v_builtin_95depth_n69, INT64_C(1));
+slim_v_source_n2 = slim_t_817;
+slim_v_expr_n13 = slim_t_819;
+slim_v_expected_n17 = slim_t_824;
+slim_v_parent_n21 = slim_t_829;
+slim_v_params_n25 = slim_t_834;
+slim_v_return_95type_n29 = slim_t_835;
+slim_v_returning_n33 = slim_t_836;
+slim_v_result_n37 = slim_t_837;
+slim_v_depth_n41 = slim_t_838;
+slim_v_limit_n45 = slim_t_839;
+slim_v_top_n49 = slim_t_840;
+slim_v_branch_95depth_n53 = slim_t_841;
+slim_v_branch_95top_n57 = slim_t_842;
+slim_v_argument_95depth_n61 = slim_t_843;
+slim_v_argument_95top_n65 = slim_t_844;
+slim_v_builtin_95depth_n69 = slim_t_845;
+goto slim_recur;
+}
+}
+}
 }
 else {
 {
-bool slim_v_case_95form_n249 = {0};
-slim_v_case_95form_n249 = slim_fn_syntax_95ast_95expression_95is_95case(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_case_95form_n249;
-if (slim_v_case_95form_n249) {
-slim_result = slim_fn_typing_95infer_95case(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+SlimUnit slim_v__n870 = {0};
+int64_t slim_t_876 = {0};
+slim_t_876 = slim_v_frame_n303.slim_field_type;
+Slim_type_typing_95BuiltinState slim_t_881 = {0};
+slim_t_881 = slim_v_request_n726.slim_field_state;
+((Slim_type_typing_95BuiltinState *)((*slim_v_builtins_n73)).data)[slim_vec_check_index(&((*slim_v_builtins_n73)), slim_t_876)] = slim_t_881; slim_v__n870 = (SlimUnit){0};
+(void)slim_v__n870;
+SlimBytes slim_t_889 = {0};
+slim_t_889 = slim_v_source_n2;
+int64_t slim_t_891 = {0};
+Slim_type_typing_95BuiltinState slim_t_893 = {0};
+slim_t_893 = slim_v_request_n726.slim_field_state;
+slim_t_891 = slim_t_893.slim_field_argument;
+int64_t slim_t_900 = {0};
+slim_t_900 = slim_v_request_n726.slim_field_expected;
+int64_t slim_t_905 = {0};
+slim_t_905 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_910 = {0};
+slim_t_910 = slim_v_params_n25;
+int64_t slim_t_911 = {0};
+slim_t_911 = slim_v_return_95type_n29;
+bool slim_t_912 = {0};
+bool slim_t_915 = {0};
+Slim_type_typing_95BuiltinState slim_t_917 = {0};
+slim_t_917 = slim_v_request_n726.slim_field_state;
+slim_t_915 = slim_t_917.slim_field_allowed;
+slim_t_912 = !slim_t_915;
+Slim_type_typing_95TypeRef slim_t_925 = {0};
+slim_t_925 = slim_v_request_n726.slim_field_result;
+int64_t slim_t_930 = {0};
+slim_t_930 = slim_v_depth_n41;
+int64_t slim_t_931 = {0};
+slim_t_931 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_932 = {0};
+slim_t_932 = slim_v_top_n49;
+int64_t slim_t_933 = {0};
+slim_t_933 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_934 = {0};
+slim_t_934 = slim_v_branch_95top_n57;
+int64_t slim_t_935 = {0};
+slim_t_935 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_936 = {0};
+slim_t_936 = slim_v_argument_95top_n65;
+int64_t slim_t_937 = {0};
+slim_t_937 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_889;
+slim_v_expr_n13 = slim_t_891;
+slim_v_expected_n17 = slim_t_900;
+slim_v_parent_n21 = slim_t_905;
+slim_v_params_n25 = slim_t_910;
+slim_v_return_95type_n29 = slim_t_911;
+slim_v_returning_n33 = slim_t_912;
+slim_v_result_n37 = slim_t_925;
+slim_v_depth_n41 = slim_t_930;
+slim_v_limit_n45 = slim_t_931;
+slim_v_top_n49 = slim_t_932;
+slim_v_branch_95depth_n53 = slim_t_933;
+slim_v_branch_95top_n57 = slim_t_934;
+slim_v_argument_95depth_n61 = slim_t_935;
+slim_v_argument_95top_n65 = slim_t_936;
+slim_v_builtin_95depth_n69 = slim_t_937;
+goto slim_recur;
+}
+}
+}
+}
+}
+else {
+bool slim_t_958 = {0};
+bool slim_t_961 = {0};
+int64_t slim_t_964 = {0};
+slim_t_964 = slim_v_frame_n303.slim_field_phase;
+slim_t_961 = slim_t_964 == INT64_C(10);
+bool slim_t_971 = {0};
+int64_t slim_t_974 = {0};
+slim_t_974 = slim_v_frame_n303.slim_field_phase;
+slim_t_971 = slim_t_974 == INT64_C(11);
+slim_t_958 = slim_t_961 || slim_t_971;
+if (slim_t_958) {
+{
+bool slim_v_recursive_n986 = {0};
+int64_t slim_t_991 = {0};
+slim_t_991 = slim_v_frame_n303.slim_field_phase;
+slim_v_recursive_n986 = slim_t_991 == INT64_C(11);
+(void)slim_v_recursive_n986;
+{
+Slim_type_typing_95ArgumentState slim_v_state_n1000 = {0};
+slim_v_state_n1000 = slim_v_argument_95top_n65;
+(void)slim_v_state_n1000;
+{
+Slim_type_typing_95ArgumentState slim_v_advanced_n1005 = {0};
+int64_t slim_t_1012 = {0};
+slim_t_1012 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1019 = {0};
+slim_t_1019 = slim_v_frame_n303.slim_field_type;
+slim_v_advanced_n1005 = slim_fn_typing_95finish_95argument(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1012, slim_v_recursive_n986, slim_v_state_n1000, slim_t_1019, slim_v_current_95result_n216, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_advanced_n1005;
+{
+Slim_type_typing_95ArgumentNext slim_v_request_n1032 = {0};
+int64_t slim_t_1039 = {0};
+slim_t_1039 = slim_v_frame_n303.slim_field_expr;
+slim_v_request_n1032 = slim_fn_typing_95next_95argument(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1039, slim_v_recursive_n986, slim_v_return_95type_n29, slim_v_advanced_n1005, slim_v_bindings_n101, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n1032;
+bool slim_t_1052 = {0};
+slim_t_1052 = slim_v_request_n1032.slim_field_done;
+if (slim_t_1052) {
+{
+int64_t slim_v_kept_95depth_n1061 = {0};
+slim_v_kept_95depth_n1061 = slim_i64_sub(slim_v_argument_95depth_n61, INT64_C(1));
+(void)slim_v_kept_95depth_n1061;
+{
+Slim_type_typing_95ArgumentState slim_v_kept_95argument_n1071 = {0};
+bool slim_t_1075 = {0};
+slim_t_1075 = slim_v_kept_95depth_n1061 > INT64_C(0);
+if (slim_t_1075) {
+int64_t slim_t_1087 = {0};
+slim_t_1087 = slim_i64_sub(slim_v_kept_95depth_n1061, INT64_C(1));
+slim_v_kept_95argument_n1071 = ((Slim_type_typing_95ArgumentState *)((*slim_v_arguments_n80)).data)[slim_vec_check_index(&((*slim_v_arguments_n80)), slim_t_1087)];
+}
+else {
+slim_v_kept_95argument_n1071 = slim_v_request_n1032.slim_field_state;
+}
+(void)slim_v_kept_95argument_n1071;
+{
+Slim_type_typing_95TypeRef slim_v_finished_n1106 = {0};
+int64_t slim_t_1113 = {0};
+slim_t_1113 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1118 = {0};
+slim_t_1118 = slim_v_frame_n303.slim_field_expected;
+Slim_type_typing_95TypeRef slim_t_1123 = {0};
+slim_t_1123 = slim_v_request_n1032.slim_field_result;
+slim_v_finished_n1106 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1113, slim_t_1118, slim_t_1123, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n1106;
+bool slim_t_1133 = {0};
+slim_t_1133 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_1133) {
+slim_result = slim_v_finished_n1106;
 }
 else {
 {
-bool slim_v_match_95form_n283 = {0};
-slim_v_match_95form_n283 = slim_fn_syntax_95ast_95expression_95is_95match(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_match_95form_n283;
-if (slim_v_match_95form_n283) {
-slim_result = slim_fn_typing_95infer_95match_95ordered(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+Slim_type_typing_95Pending slim_v_enclosing_n1147 = {0};
+int64_t slim_t_1153 = {0};
+slim_t_1153 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n1147 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_1153)];
+(void)slim_v_enclosing_n1147;
+SlimBytes slim_t_1162 = {0};
+slim_t_1162 = slim_v_source_n2;
+int64_t slim_t_1164 = {0};
+slim_t_1164 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1169 = {0};
+slim_t_1169 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_1174 = {0};
+slim_t_1174 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1179 = {0};
+slim_t_1179 = slim_v_params_n25;
+int64_t slim_t_1180 = {0};
+slim_t_1180 = slim_v_return_95type_n29;
+bool slim_t_1181 = {0};
+slim_t_1181 = true;
+Slim_type_typing_95TypeRef slim_t_1182 = {0};
+slim_t_1182 = slim_v_finished_n1106;
+int64_t slim_t_1183 = {0};
+slim_t_1183 = slim_v_at_n293;
+int64_t slim_t_1184 = {0};
+slim_t_1184 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_1185 = {0};
+slim_t_1185 = slim_v_enclosing_n1147;
+int64_t slim_t_1186 = {0};
+slim_t_1186 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_1187 = {0};
+slim_t_1187 = slim_v_branch_95top_n57;
+int64_t slim_t_1188 = {0};
+slim_t_1188 = slim_v_kept_95depth_n1061;
+Slim_type_typing_95ArgumentState slim_t_1189 = {0};
+slim_t_1189 = slim_v_kept_95argument_n1071;
+int64_t slim_t_1190 = {0};
+slim_t_1190 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_1162;
+slim_v_expr_n13 = slim_t_1164;
+slim_v_expected_n17 = slim_t_1169;
+slim_v_parent_n21 = slim_t_1174;
+slim_v_params_n25 = slim_t_1179;
+slim_v_return_95type_n29 = slim_t_1180;
+slim_v_returning_n33 = slim_t_1181;
+slim_v_result_n37 = slim_t_1182;
+slim_v_depth_n41 = slim_t_1183;
+slim_v_limit_n45 = slim_t_1184;
+slim_v_top_n49 = slim_t_1185;
+slim_v_branch_95depth_n53 = slim_t_1186;
+slim_v_branch_95top_n57 = slim_t_1187;
+slim_v_argument_95depth_n61 = slim_t_1188;
+slim_v_argument_95top_n65 = slim_t_1189;
+slim_v_builtin_95depth_n69 = slim_t_1190;
+goto slim_recur;
+}
+}
+}
+}
+}
 }
 else {
 {
-bool slim_v_fork_95form_n318 = {0};
-slim_v_fork_95form_n318 = slim_fn_syntax_95ast_95expression_95is_95fork(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
-(void)slim_v_fork_95form_n318;
-if (slim_v_fork_95form_n318) {
-slim_result = slim_fn_typing_95infer_95fork(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+Slim_type_typing_95Pending slim_v_next_95top_n1212 = {0};
+{
+int64_t slim_t_1217 = {0};
+slim_t_1217 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1225 = {0};
+slim_t_1225 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_1233 = {0};
+slim_t_1233 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1241 = {0};
+slim_t_1241 = slim_v_frame_n303.slim_field_phase;
+bool slim_t_1249 = {0};
+slim_t_1249 = true;
+int64_t slim_t_1253 = {0};
+slim_t_1253 = slim_v_request_n1032.slim_field_expected;
+int64_t slim_t_1261 = {0};
+slim_t_1261 = INT64_C(0);
+slim_v_next_95top_n1212 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_1217, .slim_field_expected = slim_t_1225, .slim_field_parent = slim_t_1233, .slim_field_phase = slim_t_1241, .slim_field_valid = slim_t_1249, .slim_field_type = slim_t_1253, .slim_field_before = slim_t_1261};
+}
+(void)slim_v_next_95top_n1212;
+SlimBytes slim_t_1268 = {0};
+slim_t_1268 = slim_v_source_n2;
+int64_t slim_t_1270 = {0};
+Slim_type_typing_95ArgumentState slim_t_1272 = {0};
+slim_t_1272 = slim_v_request_n1032.slim_field_state;
+slim_t_1270 = slim_t_1272.slim_field_argument;
+int64_t slim_t_1279 = {0};
+slim_t_1279 = slim_v_request_n1032.slim_field_expected;
+int64_t slim_t_1284 = {0};
+slim_t_1284 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1289 = {0};
+slim_t_1289 = slim_v_params_n25;
+int64_t slim_t_1290 = {0};
+slim_t_1290 = slim_v_return_95type_n29;
+bool slim_t_1291 = {0};
+bool slim_t_1294 = {0};
+Slim_type_typing_95ArgumentState slim_t_1296 = {0};
+slim_t_1296 = slim_v_request_n1032.slim_field_state;
+slim_t_1294 = slim_t_1296.slim_field_allowed;
+slim_t_1291 = !slim_t_1294;
+Slim_type_typing_95TypeRef slim_t_1304 = {0};
+slim_t_1304 = slim_v_request_n1032.slim_field_result;
+int64_t slim_t_1309 = {0};
+slim_t_1309 = slim_v_depth_n41;
+int64_t slim_t_1310 = {0};
+slim_t_1310 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_1311 = {0};
+slim_t_1311 = slim_v_next_95top_n1212;
+int64_t slim_t_1312 = {0};
+slim_t_1312 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_1313 = {0};
+slim_t_1313 = slim_v_branch_95top_n57;
+int64_t slim_t_1314 = {0};
+slim_t_1314 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_1315 = {0};
+slim_t_1315 = slim_v_request_n1032.slim_field_state;
+int64_t slim_t_1320 = {0};
+slim_t_1320 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_1268;
+slim_v_expr_n13 = slim_t_1270;
+slim_v_expected_n17 = slim_t_1279;
+slim_v_parent_n21 = slim_t_1284;
+slim_v_params_n25 = slim_t_1289;
+slim_v_return_95type_n29 = slim_t_1290;
+slim_v_returning_n33 = slim_t_1291;
+slim_v_result_n37 = slim_t_1304;
+slim_v_depth_n41 = slim_t_1309;
+slim_v_limit_n45 = slim_t_1310;
+slim_v_top_n49 = slim_t_1311;
+slim_v_branch_95depth_n53 = slim_t_1312;
+slim_v_branch_95top_n57 = slim_t_1313;
+slim_v_argument_95depth_n61 = slim_t_1314;
+slim_v_argument_95top_n65 = slim_t_1315;
+slim_v_builtin_95depth_n69 = slim_t_1320;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+else {
+bool slim_t_1343 = {0};
+bool slim_t_1346 = {0};
+int64_t slim_t_1349 = {0};
+slim_t_1349 = slim_v_frame_n303.slim_field_phase;
+slim_t_1346 = slim_t_1349 == INT64_C(8);
+bool slim_t_1356 = {0};
+int64_t slim_t_1359 = {0};
+slim_t_1359 = slim_v_frame_n303.slim_field_phase;
+slim_t_1356 = slim_t_1359 == INT64_C(9);
+slim_t_1343 = slim_t_1346 || slim_t_1356;
+if (slim_t_1343) {
+{
+bool slim_v_record_n1371 = {0};
+int64_t slim_t_1376 = {0};
+slim_t_1376 = slim_v_frame_n303.slim_field_phase;
+slim_v_record_n1371 = slim_t_1376 == INT64_C(8);
+(void)slim_v_record_n1371;
+{
+Slim_type_control_95Member slim_v_provided_n1385 = {0};
+int64_t slim_t_1391 = {0};
+slim_t_1391 = slim_v_frame_n303.slim_field_type;
+slim_v_provided_n1385 = slim_fn_control_95member((*slim_v_tokens_n6), slim_t_1391, slim_v_record_n1371, slim_allocation_region);
+(void)slim_v_provided_n1385;
+{
+Slim_type_control_95Member slim_v_definition_n1400 = {0};
+int64_t slim_t_1406 = {0};
+slim_t_1406 = slim_v_frame_n303.slim_field_before;
+slim_v_definition_n1400 = slim_fn_control_95member((*slim_v_tokens_n6), slim_t_1406, slim_v_record_n1371, slim_allocation_region);
+(void)slim_v_definition_n1400;
+{
+bool slim_v_moved_n1415 = {0};
+int64_t slim_t_1422 = {0};
+slim_t_1422 = slim_v_provided_n1385.slim_field_value;
+int64_t slim_t_1427 = {0};
+slim_t_1427 = slim_v_definition_n1400.slim_field_value;
+slim_v_moved_n1415 = slim_fn_typing_95check_95storage_95move(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1422, slim_t_1427, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_moved_n1415;
+{
+Slim_type_typing_95Pending slim_v_advanced_n1439 = {0};
+{
+int64_t slim_t_1444 = {0};
+slim_t_1444 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1452 = {0};
+slim_t_1452 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_1460 = {0};
+slim_t_1460 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1468 = {0};
+slim_t_1468 = slim_v_frame_n303.slim_field_phase;
+bool slim_t_1476 = {0};
+slim_t_1476 = true;
+int64_t slim_t_1480 = {0};
+slim_t_1480 = slim_v_provided_n1385.slim_field_next;
+int64_t slim_t_1488 = {0};
+slim_t_1488 = slim_v_definition_n1400.slim_field_next;
+slim_v_advanced_n1439 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_1444, .slim_field_expected = slim_t_1452, .slim_field_parent = slim_t_1460, .slim_field_phase = slim_t_1468, .slim_field_valid = slim_t_1476, .slim_field_type = slim_t_1480, .slim_field_before = slim_t_1488};
+}
+(void)slim_v_advanced_n1439;
+{
+Slim_type_typing_95MemberNext slim_v_request_n1499 = {0};
+slim_v_request_n1499 = slim_fn_typing_95next_95member(slim_v_source_n2, slim_v_tokens_n6, slim_v_advanced_n1439, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n1499;
+bool slim_t_1511 = {0};
+slim_t_1511 = slim_v_request_n1499.slim_field_done;
+if (slim_t_1511) {
+{
+Slim_type_typing_95TypeRef slim_v_finished_n1520 = {0};
+int64_t slim_t_1527 = {0};
+slim_t_1527 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1532 = {0};
+slim_t_1532 = slim_v_frame_n303.slim_field_expected;
+Slim_type_typing_95TypeRef slim_t_1537 = {0};
+slim_t_1537 = slim_v_request_n1499.slim_field_result;
+slim_v_finished_n1520 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1527, slim_t_1532, slim_t_1537, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n1520;
+bool slim_t_1547 = {0};
+slim_t_1547 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_1547) {
+slim_result = slim_v_finished_n1520;
+}
+else {
+{
+Slim_type_typing_95Pending slim_v_enclosing_n1561 = {0};
+int64_t slim_t_1567 = {0};
+slim_t_1567 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n1561 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_1567)];
+(void)slim_v_enclosing_n1561;
+SlimBytes slim_t_1576 = {0};
+slim_t_1576 = slim_v_source_n2;
+int64_t slim_t_1578 = {0};
+slim_t_1578 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1583 = {0};
+slim_t_1583 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_1588 = {0};
+slim_t_1588 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1593 = {0};
+slim_t_1593 = slim_v_params_n25;
+int64_t slim_t_1594 = {0};
+slim_t_1594 = slim_v_return_95type_n29;
+bool slim_t_1595 = {0};
+slim_t_1595 = true;
+Slim_type_typing_95TypeRef slim_t_1596 = {0};
+slim_t_1596 = slim_v_finished_n1520;
+int64_t slim_t_1597 = {0};
+slim_t_1597 = slim_v_at_n293;
+int64_t slim_t_1598 = {0};
+slim_t_1598 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_1599 = {0};
+slim_t_1599 = slim_v_enclosing_n1561;
+int64_t slim_t_1600 = {0};
+slim_t_1600 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_1601 = {0};
+slim_t_1601 = slim_v_branch_95top_n57;
+int64_t slim_t_1602 = {0};
+slim_t_1602 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_1603 = {0};
+slim_t_1603 = slim_v_argument_95top_n65;
+int64_t slim_t_1604 = {0};
+slim_t_1604 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_1576;
+slim_v_expr_n13 = slim_t_1578;
+slim_v_expected_n17 = slim_t_1583;
+slim_v_parent_n21 = slim_t_1588;
+slim_v_params_n25 = slim_t_1593;
+slim_v_return_95type_n29 = slim_t_1594;
+slim_v_returning_n33 = slim_t_1595;
+slim_v_result_n37 = slim_t_1596;
+slim_v_depth_n41 = slim_t_1597;
+slim_v_limit_n45 = slim_t_1598;
+slim_v_top_n49 = slim_t_1599;
+slim_v_branch_95depth_n53 = slim_t_1600;
+slim_v_branch_95top_n57 = slim_t_1601;
+slim_v_argument_95depth_n61 = slim_t_1602;
+slim_v_argument_95top_n65 = slim_t_1603;
+slim_v_builtin_95depth_n69 = slim_t_1604;
+goto slim_recur;
+}
+}
+}
+}
+else {
+SlimBytes slim_t_1624 = {0};
+slim_t_1624 = slim_v_source_n2;
+int64_t slim_t_1626 = {0};
+slim_t_1626 = slim_v_request_n1499.slim_field_value;
+int64_t slim_t_1631 = {0};
+slim_t_1631 = slim_v_request_n1499.slim_field_expected;
+int64_t slim_t_1636 = {0};
+slim_t_1636 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1641 = {0};
+slim_t_1641 = slim_v_params_n25;
+int64_t slim_t_1642 = {0};
+slim_t_1642 = slim_v_return_95type_n29;
+bool slim_t_1643 = {0};
+slim_t_1643 = false;
+Slim_type_typing_95TypeRef slim_t_1644 = {0};
+slim_t_1644 = slim_v_request_n1499.slim_field_result;
+int64_t slim_t_1649 = {0};
+slim_t_1649 = slim_v_depth_n41;
+int64_t slim_t_1650 = {0};
+slim_t_1650 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_1651 = {0};
+slim_t_1651 = slim_v_advanced_n1439;
+int64_t slim_t_1652 = {0};
+slim_t_1652 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_1653 = {0};
+slim_t_1653 = slim_v_branch_95top_n57;
+int64_t slim_t_1654 = {0};
+slim_t_1654 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_1655 = {0};
+slim_t_1655 = slim_v_argument_95top_n65;
+int64_t slim_t_1656 = {0};
+slim_t_1656 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_1624;
+slim_v_expr_n13 = slim_t_1626;
+slim_v_expected_n17 = slim_t_1631;
+slim_v_parent_n21 = slim_t_1636;
+slim_v_params_n25 = slim_t_1641;
+slim_v_return_95type_n29 = slim_t_1642;
+slim_v_returning_n33 = slim_t_1643;
+slim_v_result_n37 = slim_t_1644;
+slim_v_depth_n41 = slim_t_1649;
+slim_v_limit_n45 = slim_t_1650;
+slim_v_top_n49 = slim_t_1651;
+slim_v_branch_95depth_n53 = slim_t_1652;
+slim_v_branch_95top_n57 = slim_t_1653;
+slim_v_argument_95depth_n61 = slim_t_1654;
+slim_v_argument_95top_n65 = slim_t_1655;
+slim_v_builtin_95depth_n69 = slim_t_1656;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+bool slim_t_1680 = {0};
+bool slim_t_1683 = {0};
+int64_t slim_t_1686 = {0};
+slim_t_1686 = slim_v_frame_n303.slim_field_phase;
+slim_t_1683 = slim_t_1686 == INT64_C(4);
+bool slim_t_1693 = {0};
+int64_t slim_t_1696 = {0};
+slim_t_1696 = slim_v_frame_n303.slim_field_phase;
+slim_t_1693 = slim_t_1696 == INT64_C(5);
+slim_t_1680 = slim_t_1683 || slim_t_1693;
+if (slim_t_1680) {
+{
+Slim_type_typing_95BranchState slim_v_state_n1708 = {0};
+bool slim_t_1712 = {0};
+int64_t slim_t_1715 = {0};
+slim_t_1715 = slim_v_frame_n303.slim_field_phase;
+slim_t_1712 = slim_t_1715 == INT64_C(4);
+if (slim_t_1712) {
+int64_t slim_t_1729 = {0};
+slim_t_1729 = slim_v_frame_n303.slim_field_expr;
+slim_v_state_n1708 = slim_fn_typing_95prepare_95branch(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1729, slim_v_current_95result_n216, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
-slim_result = slim_fn_typing_95infer_95recur(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+slim_v_state_n1708 = slim_fn_typing_95finish_95branch_95arm(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_frame_n303, slim_v_current_95result_n216, slim_v_branch_95top_n57, slim_v_issues_n115, slim_v_scopes_n122, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v_state_n1708;
+bool slim_t_1758 = {0};
+int64_t slim_t_1761 = {0};
+slim_t_1761 = slim_v_state_n1708.slim_field_variant;
+slim_t_1758 = slim_t_1761 >= INT64_C(-1);
+if (slim_t_1758) {
+{
+int64_t slim_v_next_95depth_n1772 = {0};
+bool slim_t_1776 = {0};
+int64_t slim_t_1779 = {0};
+slim_t_1779 = slim_v_frame_n303.slim_field_phase;
+slim_t_1776 = slim_t_1779 == INT64_C(4);
+if (slim_t_1776) {
+slim_v_next_95depth_n1772 = slim_fn_typing_95push_95branch(slim_v_branch_95top_n57, slim_v_branch_95depth_n53, slim_v_limit_n45, slim_v_branches_n87, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v_next_95depth_n1772 = slim_v_branch_95depth_n53;
+}
+(void)slim_v_next_95depth_n1772;
+{
+Slim_type_typing_95BranchNext slim_v_request_n1804 = {0};
+slim_v_request_n1804 = slim_fn_typing_95next_95branch_95arm(slim_v_source_n2, slim_v_tokens_n6, slim_v_frame_n303, slim_v_state_n1708, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n1804;
+bool slim_t_1819 = {0};
+slim_t_1819 = slim_v_request_n1804.slim_field_done;
+if (slim_t_1819) {
+{
+int64_t slim_v_kept_95depth_n1828 = {0};
+slim_v_kept_95depth_n1828 = slim_i64_sub(slim_v_next_95depth_n1772, INT64_C(1));
+(void)slim_v_kept_95depth_n1828;
+{
+Slim_type_typing_95BranchState slim_v_kept_95branch_n1838 = {0};
+bool slim_t_1842 = {0};
+slim_t_1842 = slim_v_kept_95depth_n1828 > INT64_C(0);
+if (slim_t_1842) {
+int64_t slim_t_1854 = {0};
+slim_t_1854 = slim_i64_sub(slim_v_kept_95depth_n1828, INT64_C(1));
+slim_v_kept_95branch_n1838 = ((Slim_type_typing_95BranchState *)((*slim_v_branches_n87)).data)[slim_vec_check_index(&((*slim_v_branches_n87)), slim_t_1854)];
+}
+else {
+slim_v_kept_95branch_n1838 = slim_v_request_n1804.slim_field_state;
+}
+(void)slim_v_kept_95branch_n1838;
+{
+Slim_type_typing_95TypeRef slim_v_finished_n1873 = {0};
+int64_t slim_t_1880 = {0};
+slim_t_1880 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1885 = {0};
+slim_t_1885 = slim_v_frame_n303.slim_field_expected;
+Slim_type_typing_95TypeRef slim_t_1890 = {0};
+slim_t_1890 = slim_v_request_n1804.slim_field_result;
+slim_v_finished_n1873 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_1880, slim_t_1885, slim_t_1890, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n1873;
+bool slim_t_1900 = {0};
+slim_t_1900 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_1900) {
+slim_result = slim_v_finished_n1873;
+}
+else {
+{
+Slim_type_typing_95Pending slim_v_enclosing_n1914 = {0};
+int64_t slim_t_1920 = {0};
+slim_t_1920 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n1914 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_1920)];
+(void)slim_v_enclosing_n1914;
+SlimBytes slim_t_1929 = {0};
+slim_t_1929 = slim_v_source_n2;
+int64_t slim_t_1931 = {0};
+slim_t_1931 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1936 = {0};
+slim_t_1936 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_1941 = {0};
+slim_t_1941 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_1946 = {0};
+slim_t_1946 = slim_v_params_n25;
+int64_t slim_t_1947 = {0};
+slim_t_1947 = slim_v_return_95type_n29;
+bool slim_t_1948 = {0};
+slim_t_1948 = true;
+Slim_type_typing_95TypeRef slim_t_1949 = {0};
+slim_t_1949 = slim_v_finished_n1873;
+int64_t slim_t_1950 = {0};
+slim_t_1950 = slim_v_at_n293;
+int64_t slim_t_1951 = {0};
+slim_t_1951 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_1952 = {0};
+slim_t_1952 = slim_v_enclosing_n1914;
+int64_t slim_t_1953 = {0};
+slim_t_1953 = slim_v_kept_95depth_n1828;
+Slim_type_typing_95BranchState slim_t_1954 = {0};
+slim_t_1954 = slim_v_kept_95branch_n1838;
+int64_t slim_t_1955 = {0};
+slim_t_1955 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_1956 = {0};
+slim_t_1956 = slim_v_argument_95top_n65;
+int64_t slim_t_1957 = {0};
+slim_t_1957 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_1929;
+slim_v_expr_n13 = slim_t_1931;
+slim_v_expected_n17 = slim_t_1936;
+slim_v_parent_n21 = slim_t_1941;
+slim_v_params_n25 = slim_t_1946;
+slim_v_return_95type_n29 = slim_t_1947;
+slim_v_returning_n33 = slim_t_1948;
+slim_v_result_n37 = slim_t_1949;
+slim_v_depth_n41 = slim_t_1950;
+slim_v_limit_n45 = slim_t_1951;
+slim_v_top_n49 = slim_t_1952;
+slim_v_branch_95depth_n53 = slim_t_1953;
+slim_v_branch_95top_n57 = slim_t_1954;
+slim_v_argument_95depth_n61 = slim_t_1955;
+slim_v_argument_95top_n65 = slim_t_1956;
+slim_v_builtin_95depth_n69 = slim_t_1957;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95Pending slim_v_next_95top_n1979 = {0};
+{
+int64_t slim_t_1984 = {0};
+slim_t_1984 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_1992 = {0};
+slim_t_1992 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2000 = {0};
+slim_t_2000 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_2008 = {0};
+slim_t_2008 = INT64_C(5);
+bool slim_t_2012 = {0};
+slim_t_2012 = true;
+int64_t slim_t_2016 = {0};
+slim_t_2016 = INT64_C(-1);
+int64_t slim_t_2020 = {0};
+slim_t_2020 = INT64_C(0);
+slim_v_next_95top_n1979 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_1984, .slim_field_expected = slim_t_1992, .slim_field_parent = slim_t_2000, .slim_field_phase = slim_t_2008, .slim_field_valid = slim_t_2012, .slim_field_type = slim_t_2016, .slim_field_before = slim_t_2020};
+}
+(void)slim_v_next_95top_n1979;
+SlimBytes slim_t_2027 = {0};
+slim_t_2027 = slim_v_source_n2;
+int64_t slim_t_2029 = {0};
+slim_t_2029 = slim_v_request_n1804.slim_field_body;
+int64_t slim_t_2034 = {0};
+slim_t_2034 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2039 = {0};
+slim_t_2039 = slim_v_request_n1804.slim_field_parent;
+int64_t slim_t_2044 = {0};
+slim_t_2044 = slim_v_params_n25;
+int64_t slim_t_2045 = {0};
+slim_t_2045 = slim_v_return_95type_n29;
+bool slim_t_2046 = {0};
+slim_t_2046 = false;
+Slim_type_typing_95TypeRef slim_t_2047 = {0};
+slim_t_2047 = slim_v_request_n1804.slim_field_result;
+int64_t slim_t_2052 = {0};
+slim_t_2052 = slim_v_depth_n41;
+int64_t slim_t_2053 = {0};
+slim_t_2053 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2054 = {0};
+slim_t_2054 = slim_v_next_95top_n1979;
+int64_t slim_t_2055 = {0};
+slim_t_2055 = slim_v_next_95depth_n1772;
+Slim_type_typing_95BranchState slim_t_2056 = {0};
+slim_t_2056 = slim_v_request_n1804.slim_field_state;
+int64_t slim_t_2061 = {0};
+slim_t_2061 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2062 = {0};
+slim_t_2062 = slim_v_argument_95top_n65;
+int64_t slim_t_2063 = {0};
+slim_t_2063 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2027;
+slim_v_expr_n13 = slim_t_2029;
+slim_v_expected_n17 = slim_t_2034;
+slim_v_parent_n21 = slim_t_2039;
+slim_v_params_n25 = slim_t_2044;
+slim_v_return_95type_n29 = slim_t_2045;
+slim_v_returning_n33 = slim_t_2046;
+slim_v_result_n37 = slim_t_2047;
+slim_v_depth_n41 = slim_t_2052;
+slim_v_limit_n45 = slim_t_2053;
+slim_v_top_n49 = slim_t_2054;
+slim_v_branch_95depth_n53 = slim_t_2055;
+slim_v_branch_95top_n57 = slim_t_2056;
+slim_v_argument_95depth_n61 = slim_t_2061;
+slim_v_argument_95top_n65 = slim_t_2062;
+slim_v_builtin_95depth_n69 = slim_t_2063;
+goto slim_recur;
+}
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95TypeRef slim_v_finished_n2084 = {0};
+int64_t slim_t_2091 = {0};
+slim_t_2091 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2096 = {0};
+slim_t_2096 = slim_v_frame_n303.slim_field_expected;
+Slim_type_typing_95TypeRef slim_t_2101 = {0};
+int64_t slim_t_2104 = {0};
+slim_t_2104 = slim_v_frame_n303.slim_field_expr;
+slim_t_2101 = slim_fn_typing_95invalid_95type(slim_t_2104, slim_allocation_region);
+slim_v_finished_n2084 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_2091, slim_t_2096, slim_t_2101, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n2084;
+bool slim_t_2115 = {0};
+slim_t_2115 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_2115) {
+slim_result = slim_v_finished_n2084;
+}
+else {
+{
+Slim_type_typing_95Pending slim_v_enclosing_n2129 = {0};
+int64_t slim_t_2135 = {0};
+slim_t_2135 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n2129 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_2135)];
+(void)slim_v_enclosing_n2129;
+SlimBytes slim_t_2144 = {0};
+slim_t_2144 = slim_v_source_n2;
+int64_t slim_t_2146 = {0};
+slim_t_2146 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2151 = {0};
+slim_t_2151 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2156 = {0};
+slim_t_2156 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_2161 = {0};
+slim_t_2161 = slim_v_params_n25;
+int64_t slim_t_2162 = {0};
+slim_t_2162 = slim_v_return_95type_n29;
+bool slim_t_2163 = {0};
+slim_t_2163 = true;
+Slim_type_typing_95TypeRef slim_t_2164 = {0};
+slim_t_2164 = slim_v_finished_n2084;
+int64_t slim_t_2165 = {0};
+slim_t_2165 = slim_v_at_n293;
+int64_t slim_t_2166 = {0};
+slim_t_2166 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2167 = {0};
+slim_t_2167 = slim_v_enclosing_n2129;
+int64_t slim_t_2168 = {0};
+slim_t_2168 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2169 = {0};
+slim_t_2169 = slim_v_branch_95top_n57;
+int64_t slim_t_2170 = {0};
+slim_t_2170 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2171 = {0};
+slim_t_2171 = slim_v_argument_95top_n65;
+int64_t slim_t_2172 = {0};
+slim_t_2172 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2144;
+slim_v_expr_n13 = slim_t_2146;
+slim_v_expected_n17 = slim_t_2151;
+slim_v_parent_n21 = slim_t_2156;
+slim_v_params_n25 = slim_t_2161;
+slim_v_return_95type_n29 = slim_t_2162;
+slim_v_returning_n33 = slim_t_2163;
+slim_v_result_n37 = slim_t_2164;
+slim_v_depth_n41 = slim_t_2165;
+slim_v_limit_n45 = slim_t_2166;
+slim_v_top_n49 = slim_t_2167;
+slim_v_branch_95depth_n53 = slim_t_2168;
+slim_v_branch_95top_n57 = slim_t_2169;
+slim_v_argument_95depth_n61 = slim_t_2170;
+slim_v_argument_95top_n65 = slim_t_2171;
+slim_v_builtin_95depth_n69 = slim_t_2172;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+else {
+bool slim_t_2195 = {0};
+int64_t slim_t_2198 = {0};
+slim_t_2198 = slim_v_frame_n303.slim_field_phase;
+slim_t_2195 = slim_t_2198 == INT64_C(0);
+if (slim_t_2195) {
+{
+Slim_type_typing_95BoundValue slim_v_bound_n2209 = {0};
+int64_t slim_t_2216 = {0};
+slim_t_2216 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2221 = {0};
+slim_t_2221 = slim_v_frame_n303.slim_field_parent;
+slim_v_bound_n2209 = slim_fn_typing_95bind_95value(slim_v_source_n2, slim_v_tokens_n6, slim_t_2216, slim_t_2221, slim_v_current_95result_n216, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_bound_n2209;
+{
+Slim_type_control_95Binding slim_v_structure_n2234 = {0};
+int64_t slim_t_2240 = {0};
+slim_t_2240 = slim_v_frame_n303.slim_field_expr;
+slim_v_structure_n2234 = slim_fn_control_95binding((*slim_v_tokens_n6), slim_t_2240, slim_allocation_region);
+(void)slim_v_structure_n2234;
+{
+Slim_type_typing_95Pending slim_v_next_95top_n2248 = {0};
+{
+int64_t slim_t_2253 = {0};
+slim_t_2253 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2261 = {0};
+slim_t_2261 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2269 = {0};
+slim_t_2269 = slim_v_bound_n2209.slim_field_parent;
+int64_t slim_t_2277 = {0};
+slim_t_2277 = INT64_C(1);
+bool slim_t_2281 = {0};
+slim_t_2281 = slim_v_bound_n2209.slim_field_valid;
+int64_t slim_t_2289 = {0};
+slim_t_2289 = INT64_C(-1);
+int64_t slim_t_2293 = {0};
+slim_t_2293 = INT64_C(0);
+slim_v_next_95top_n2248 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_2253, .slim_field_expected = slim_t_2261, .slim_field_parent = slim_t_2269, .slim_field_phase = slim_t_2277, .slim_field_valid = slim_t_2281, .slim_field_type = slim_t_2289, .slim_field_before = slim_t_2293};
+}
+(void)slim_v_next_95top_n2248;
+SlimBytes slim_t_2300 = {0};
+slim_t_2300 = slim_v_source_n2;
+int64_t slim_t_2302 = {0};
+slim_t_2302 = slim_v_structure_n2234.slim_field_body;
+int64_t slim_t_2307 = {0};
+slim_t_2307 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2312 = {0};
+slim_t_2312 = slim_v_bound_n2209.slim_field_parent;
+int64_t slim_t_2317 = {0};
+slim_t_2317 = slim_v_params_n25;
+int64_t slim_t_2318 = {0};
+slim_t_2318 = slim_v_return_95type_n29;
+bool slim_t_2319 = {0};
+slim_t_2319 = false;
+Slim_type_typing_95TypeRef slim_t_2320 = {0};
+slim_t_2320 = slim_v_current_95result_n216;
+int64_t slim_t_2321 = {0};
+slim_t_2321 = slim_v_depth_n41;
+int64_t slim_t_2322 = {0};
+slim_t_2322 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2323 = {0};
+slim_t_2323 = slim_v_next_95top_n2248;
+int64_t slim_t_2324 = {0};
+slim_t_2324 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2325 = {0};
+slim_t_2325 = slim_v_branch_95top_n57;
+int64_t slim_t_2326 = {0};
+slim_t_2326 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2327 = {0};
+slim_t_2327 = slim_v_argument_95top_n65;
+int64_t slim_t_2328 = {0};
+slim_t_2328 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2300;
+slim_v_expr_n13 = slim_t_2302;
+slim_v_expected_n17 = slim_t_2307;
+slim_v_parent_n21 = slim_t_2312;
+slim_v_params_n25 = slim_t_2317;
+slim_v_return_95type_n29 = slim_t_2318;
+slim_v_returning_n33 = slim_t_2319;
+slim_v_result_n37 = slim_t_2320;
+slim_v_depth_n41 = slim_t_2321;
+slim_v_limit_n45 = slim_t_2322;
+slim_v_top_n49 = slim_t_2323;
+slim_v_branch_95depth_n53 = slim_t_2324;
+slim_v_branch_95top_n57 = slim_t_2325;
+slim_v_argument_95depth_n61 = slim_t_2326;
+slim_v_argument_95top_n65 = slim_t_2327;
+slim_v_builtin_95depth_n69 = slim_t_2328;
+goto slim_recur;
+}
+}
+}
+}
+else {
+bool slim_t_2347 = {0};
+int64_t slim_t_2350 = {0};
+slim_t_2350 = slim_v_frame_n303.slim_field_phase;
+slim_t_2347 = slim_t_2350 == INT64_C(2);
+if (slim_t_2347) {
+{
+bool slim_v_valid_n2361 = {0};
+slim_v_valid_n2361 = slim_fn_typing_95assign_95value(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_frame_n303, slim_v_current_95result_n216, slim_v_bindings_n101, slim_v_issues_n115, slim_v_scopes_n122, slim_v_frames_n129, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_valid_n2361;
+{
+Slim_type_control_95Assignment slim_v_structure_n2377 = {0};
+int64_t slim_t_2383 = {0};
+slim_t_2383 = slim_v_frame_n303.slim_field_expr;
+slim_v_structure_n2377 = slim_fn_control_95assignment((*slim_v_tokens_n6), slim_t_2383, slim_allocation_region);
+(void)slim_v_structure_n2377;
+{
+Slim_type_typing_95Pending slim_v_next_95top_n2391 = {0};
+{
+int64_t slim_t_2396 = {0};
+slim_t_2396 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2404 = {0};
+slim_t_2404 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2412 = {0};
+slim_t_2412 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_2420 = {0};
+slim_t_2420 = INT64_C(3);
+bool slim_t_2424 = {0};
+slim_t_2424 = slim_v_valid_n2361;
+int64_t slim_t_2428 = {0};
+slim_t_2428 = INT64_C(-1);
+int64_t slim_t_2432 = {0};
+slim_t_2432 = INT64_C(0);
+slim_v_next_95top_n2391 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_2396, .slim_field_expected = slim_t_2404, .slim_field_parent = slim_t_2412, .slim_field_phase = slim_t_2420, .slim_field_valid = slim_t_2424, .slim_field_type = slim_t_2428, .slim_field_before = slim_t_2432};
+}
+(void)slim_v_next_95top_n2391;
+SlimBytes slim_t_2439 = {0};
+slim_t_2439 = slim_v_source_n2;
+int64_t slim_t_2441 = {0};
+slim_t_2441 = slim_v_structure_n2377.slim_field_body;
+int64_t slim_t_2446 = {0};
+slim_t_2446 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2451 = {0};
+slim_t_2451 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_2456 = {0};
+slim_t_2456 = slim_v_params_n25;
+int64_t slim_t_2457 = {0};
+slim_t_2457 = slim_v_return_95type_n29;
+bool slim_t_2458 = {0};
+slim_t_2458 = false;
+Slim_type_typing_95TypeRef slim_t_2459 = {0};
+slim_t_2459 = slim_v_current_95result_n216;
+int64_t slim_t_2460 = {0};
+slim_t_2460 = slim_v_depth_n41;
+int64_t slim_t_2461 = {0};
+slim_t_2461 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2462 = {0};
+slim_t_2462 = slim_v_next_95top_n2391;
+int64_t slim_t_2463 = {0};
+slim_t_2463 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2464 = {0};
+slim_t_2464 = slim_v_branch_95top_n57;
+int64_t slim_t_2465 = {0};
+slim_t_2465 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2466 = {0};
+slim_t_2466 = slim_v_argument_95top_n65;
+int64_t slim_t_2467 = {0};
+slim_t_2467 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2439;
+slim_v_expr_n13 = slim_t_2441;
+slim_v_expected_n17 = slim_t_2446;
+slim_v_parent_n21 = slim_t_2451;
+slim_v_params_n25 = slim_t_2456;
+slim_v_return_95type_n29 = slim_t_2457;
+slim_v_returning_n33 = slim_t_2458;
+slim_v_result_n37 = slim_t_2459;
+slim_v_depth_n41 = slim_t_2460;
+slim_v_limit_n45 = slim_t_2461;
+slim_v_top_n49 = slim_t_2462;
+slim_v_branch_95depth_n53 = slim_t_2463;
+slim_v_branch_95top_n57 = slim_t_2464;
+slim_v_argument_95depth_n61 = slim_t_2465;
+slim_v_argument_95top_n65 = slim_t_2466;
+slim_v_builtin_95depth_n69 = slim_t_2467;
+goto slim_recur;
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95TypeRef slim_v_completed_n2486 = {0};
+bool slim_t_2490 = {0};
+int64_t slim_t_2493 = {0};
+slim_t_2493 = slim_v_frame_n303.slim_field_phase;
+slim_t_2490 = slim_t_2493 == INT64_C(7);
+if (slim_t_2490) {
+int64_t slim_t_2507 = {0};
+slim_t_2507 = slim_v_frame_n303.slim_field_expr;
+slim_v_completed_n2486 = slim_fn_typing_95project_95value(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_2507, slim_v_current_95result_n216, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v_completed_n2486 = slim_v_current_95result_n216;
+}
+(void)slim_v_completed_n2486;
+{
+bool slim_v_passthrough_n2523 = {0};
+bool slim_t_2528 = {0};
+int64_t slim_t_2531 = {0};
+slim_t_2531 = slim_v_frame_n303.slim_field_phase;
+slim_t_2528 = slim_t_2531 == INT64_C(6);
+bool slim_t_2538 = {0};
+int64_t slim_t_2541 = {0};
+slim_t_2541 = slim_v_frame_n303.slim_field_phase;
+slim_t_2538 = slim_t_2541 == INT64_C(7);
+slim_v_passthrough_n2523 = slim_t_2528 || slim_t_2538;
+(void)slim_v_passthrough_n2523;
+{
+bool slim_v_valid_n2551 = {0};
+bool slim_t_2557 = {0};
+bool slim_t_2560 = {0};
+slim_t_2560 = slim_v_frame_n303.slim_field_valid;
+bool slim_t_2565 = {0};
+slim_t_2565 = slim_fn_typing_95type_95valid(slim_v_current_95result_n216, slim_allocation_region);
+slim_t_2557 = slim_t_2560 && slim_t_2565;
+slim_v_valid_n2551 = slim_v_passthrough_n2523 || slim_t_2557;
+(void)slim_v_valid_n2551;
+{
+Slim_type_typing_95TypeRef slim_v_actual_n2574 = {0};
+if (slim_v_valid_n2551) {
+slim_v_actual_n2574 = slim_v_completed_n2486;
+}
+else {
+int64_t slim_t_2588 = {0};
+slim_t_2588 = slim_v_frame_n303.slim_field_expr;
+slim_v_actual_n2574 = slim_fn_typing_95invalid_95type(slim_t_2588, slim_allocation_region);
+}
+(void)slim_v_actual_n2574;
+{
+Slim_type_typing_95TypeRef slim_v_finished_n2598 = {0};
+int64_t slim_t_2605 = {0};
+slim_t_2605 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2610 = {0};
+slim_t_2610 = slim_v_frame_n303.slim_field_expected;
+slim_v_finished_n2598 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_t_2605, slim_t_2610, slim_v_actual_n2574, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_finished_n2598;
+bool slim_t_2621 = {0};
+slim_t_2621 = slim_v_at_n293 == INT64_C(0);
+if (slim_t_2621) {
+slim_result = slim_v_finished_n2598;
+}
+else {
+{
+Slim_type_typing_95Pending slim_v_enclosing_n2635 = {0};
+int64_t slim_t_2641 = {0};
+slim_t_2641 = slim_i64_sub(slim_v_at_n293, INT64_C(1));
+slim_v_enclosing_n2635 = ((Slim_type_typing_95Pending *)((*slim_v_pending_n94)).data)[slim_vec_check_index(&((*slim_v_pending_n94)), slim_t_2641)];
+(void)slim_v_enclosing_n2635;
+SlimBytes slim_t_2650 = {0};
+slim_t_2650 = slim_v_source_n2;
+int64_t slim_t_2652 = {0};
+slim_t_2652 = slim_v_frame_n303.slim_field_expr;
+int64_t slim_t_2657 = {0};
+slim_t_2657 = slim_v_frame_n303.slim_field_expected;
+int64_t slim_t_2662 = {0};
+slim_t_2662 = slim_v_frame_n303.slim_field_parent;
+int64_t slim_t_2667 = {0};
+slim_t_2667 = slim_v_params_n25;
+int64_t slim_t_2668 = {0};
+slim_t_2668 = slim_v_return_95type_n29;
+bool slim_t_2669 = {0};
+slim_t_2669 = true;
+Slim_type_typing_95TypeRef slim_t_2670 = {0};
+slim_t_2670 = slim_v_finished_n2598;
+int64_t slim_t_2671 = {0};
+slim_t_2671 = slim_v_at_n293;
+int64_t slim_t_2672 = {0};
+slim_t_2672 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2673 = {0};
+slim_t_2673 = slim_v_enclosing_n2635;
+int64_t slim_t_2674 = {0};
+slim_t_2674 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2675 = {0};
+slim_t_2675 = slim_v_branch_95top_n57;
+int64_t slim_t_2676 = {0};
+slim_t_2676 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2677 = {0};
+slim_t_2677 = slim_v_argument_95top_n65;
+int64_t slim_t_2678 = {0};
+slim_t_2678 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2650;
+slim_v_expr_n13 = slim_t_2652;
+slim_v_expected_n17 = slim_t_2657;
+slim_v_parent_n21 = slim_t_2662;
+slim_v_params_n25 = slim_t_2667;
+slim_v_return_95type_n29 = slim_t_2668;
+slim_v_returning_n33 = slim_t_2669;
+slim_v_result_n37 = slim_t_2670;
+slim_v_depth_n41 = slim_t_2671;
+slim_v_limit_n45 = slim_t_2672;
+slim_v_top_n49 = slim_t_2673;
+slim_v_branch_95depth_n53 = slim_t_2674;
+slim_v_branch_95top_n57 = slim_t_2675;
+slim_v_argument_95depth_n61 = slim_t_2676;
+slim_v_argument_95top_n65 = slim_t_2677;
+slim_v_builtin_95depth_n69 = slim_t_2678;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+bool slim_t_2720 = {0};
+slim_t_2720 = slim_v_kind_n164 == INT64_C(1);
+if (slim_t_2720) {
+{
+Slim_type_control_95Binding slim_v_structure_n2730 = {0};
+slim_v_structure_n2730 = slim_fn_control_95binding((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n2730;
+{
+int64_t slim_v_value_95expected_n2740 = {0};
+bool slim_t_2744 = {0};
+slim_t_2744 = slim_fn_syntax_95ast_95expression_95is_95statement((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+if (slim_t_2744) {
+slim_v_value_95expected_n2740 = INT64_C(-1);
+}
+else {
+slim_v_value_95expected_n2740 = slim_v_structure_n2730.slim_field_type;
+}
+(void)slim_v_value_95expected_n2740;
+{
+Slim_type_typing_95Pending slim_v_frame_n2765 = {0};
+{
+int64_t slim_t_2770 = {0};
+slim_t_2770 = slim_v_expr_n13;
+int64_t slim_t_2774 = {0};
+slim_t_2774 = slim_v_expected_n17;
+int64_t slim_t_2778 = {0};
+slim_t_2778 = slim_v_parent_n21;
+int64_t slim_t_2782 = {0};
+slim_t_2782 = INT64_C(0);
+bool slim_t_2786 = {0};
+slim_t_2786 = true;
+int64_t slim_t_2790 = {0};
+slim_t_2790 = INT64_C(-1);
+int64_t slim_t_2794 = {0};
+slim_t_2794 = INT64_C(0);
+slim_v_frame_n2765 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_2770, .slim_field_expected = slim_t_2774, .slim_field_parent = slim_t_2778, .slim_field_phase = slim_t_2782, .slim_field_valid = slim_t_2786, .slim_field_type = slim_t_2790, .slim_field_before = slim_t_2794};
+}
+(void)slim_v_frame_n2765;
+{
+int64_t slim_v_next_n2801 = {0};
+slim_v_next_n2801 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n2801;
+SlimBytes slim_t_2813 = {0};
+slim_t_2813 = slim_v_source_n2;
+int64_t slim_t_2815 = {0};
+slim_t_2815 = slim_v_structure_n2730.slim_field_value;
+int64_t slim_t_2820 = {0};
+slim_t_2820 = slim_v_value_95expected_n2740;
+int64_t slim_t_2821 = {0};
+slim_t_2821 = slim_v_parent_n21;
+int64_t slim_t_2822 = {0};
+slim_t_2822 = slim_v_params_n25;
+int64_t slim_t_2823 = {0};
+slim_t_2823 = slim_v_return_95type_n29;
+bool slim_t_2824 = {0};
+slim_t_2824 = false;
+Slim_type_typing_95TypeRef slim_t_2825 = {0};
+slim_t_2825 = slim_v_current_95result_n216;
+int64_t slim_t_2826 = {0};
+slim_t_2826 = slim_v_next_n2801;
+int64_t slim_t_2827 = {0};
+slim_t_2827 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2828 = {0};
+slim_t_2828 = slim_v_frame_n2765;
+int64_t slim_t_2829 = {0};
+slim_t_2829 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2830 = {0};
+slim_t_2830 = slim_v_branch_95top_n57;
+int64_t slim_t_2831 = {0};
+slim_t_2831 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2832 = {0};
+slim_t_2832 = slim_v_argument_95top_n65;
+int64_t slim_t_2833 = {0};
+slim_t_2833 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2813;
+slim_v_expr_n13 = slim_t_2815;
+slim_v_expected_n17 = slim_t_2820;
+slim_v_parent_n21 = slim_t_2821;
+slim_v_params_n25 = slim_t_2822;
+slim_v_return_95type_n29 = slim_t_2823;
+slim_v_returning_n33 = slim_t_2824;
+slim_v_result_n37 = slim_t_2825;
+slim_v_depth_n41 = slim_t_2826;
+slim_v_limit_n45 = slim_t_2827;
+slim_v_top_n49 = slim_t_2828;
+slim_v_branch_95depth_n53 = slim_t_2829;
+slim_v_branch_95top_n57 = slim_t_2830;
+slim_v_argument_95depth_n61 = slim_t_2831;
+slim_v_argument_95top_n65 = slim_t_2832;
+slim_v_builtin_95depth_n69 = slim_t_2833;
+goto slim_recur;
+}
+}
+}
+}
+}
+else {
+bool slim_t_2853 = {0};
+slim_t_2853 = slim_v_kind_n164 == INT64_C(2);
+if (slim_t_2853) {
+{
+Slim_type_typing_95AssignmentTarget slim_v_target_n2863 = {0};
+slim_v_target_n2863 = slim_fn_typing_95prepare_95set(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_parent_n21, (*slim_v_bindings_n101), slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_target_n2863;
+bool slim_t_2877 = {0};
+int64_t slim_t_2880 = {0};
+slim_t_2880 = slim_v_target_n2863.slim_field_type;
+slim_t_2877 = slim_t_2880 >= INT64_C(0);
+if (slim_t_2877) {
+{
+Slim_type_control_95Assignment slim_v_structure_n2891 = {0};
+slim_v_structure_n2891 = slim_fn_control_95assignment((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n2891;
+{
+Slim_type_typing_95Pending slim_v_frame_n2901 = {0};
+{
+int64_t slim_t_2906 = {0};
+slim_t_2906 = slim_v_expr_n13;
+int64_t slim_t_2910 = {0};
+slim_t_2910 = slim_v_expected_n17;
+int64_t slim_t_2914 = {0};
+slim_t_2914 = slim_v_parent_n21;
+int64_t slim_t_2918 = {0};
+slim_t_2918 = INT64_C(2);
+bool slim_t_2922 = {0};
+slim_t_2922 = slim_v_target_n2863.slim_field_affine;
+int64_t slim_t_2930 = {0};
+slim_t_2930 = slim_v_target_n2863.slim_field_type;
+int64_t slim_t_2938 = {0};
+slim_t_2938 = ((*slim_v_issues_n115)).len;
+slim_v_frame_n2901 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_2906, .slim_field_expected = slim_t_2910, .slim_field_parent = slim_t_2914, .slim_field_phase = slim_t_2918, .slim_field_valid = slim_t_2922, .slim_field_type = slim_t_2930, .slim_field_before = slim_t_2938};
+}
+(void)slim_v_frame_n2901;
+{
+int64_t slim_v_next_n2949 = {0};
+slim_v_next_n2949 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n2949;
+SlimBytes slim_t_2961 = {0};
+slim_t_2961 = slim_v_source_n2;
+int64_t slim_t_2963 = {0};
+slim_t_2963 = slim_v_structure_n2891.slim_field_value;
+int64_t slim_t_2968 = {0};
+slim_t_2968 = slim_v_target_n2863.slim_field_type;
+int64_t slim_t_2973 = {0};
+slim_t_2973 = slim_v_parent_n21;
+int64_t slim_t_2974 = {0};
+slim_t_2974 = slim_v_params_n25;
+int64_t slim_t_2975 = {0};
+slim_t_2975 = slim_v_return_95type_n29;
+bool slim_t_2976 = {0};
+slim_t_2976 = false;
+Slim_type_typing_95TypeRef slim_t_2977 = {0};
+slim_t_2977 = slim_v_current_95result_n216;
+int64_t slim_t_2978 = {0};
+slim_t_2978 = slim_v_next_n2949;
+int64_t slim_t_2979 = {0};
+slim_t_2979 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_2980 = {0};
+slim_t_2980 = slim_v_frame_n2901;
+int64_t slim_t_2981 = {0};
+slim_t_2981 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_2982 = {0};
+slim_t_2982 = slim_v_branch_95top_n57;
+int64_t slim_t_2983 = {0};
+slim_t_2983 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_2984 = {0};
+slim_t_2984 = slim_v_argument_95top_n65;
+int64_t slim_t_2985 = {0};
+slim_t_2985 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_2961;
+slim_v_expr_n13 = slim_t_2963;
+slim_v_expected_n17 = slim_t_2968;
+slim_v_parent_n21 = slim_t_2973;
+slim_v_params_n25 = slim_t_2974;
+slim_v_return_95type_n29 = slim_t_2975;
+slim_v_returning_n33 = slim_t_2976;
+slim_v_result_n37 = slim_t_2977;
+slim_v_depth_n41 = slim_t_2978;
+slim_v_limit_n45 = slim_t_2979;
+slim_v_top_n49 = slim_t_2980;
+slim_v_branch_95depth_n53 = slim_t_2981;
+slim_v_branch_95top_n57 = slim_t_2982;
+slim_v_argument_95depth_n61 = slim_t_2983;
+slim_v_argument_95top_n65 = slim_t_2984;
+slim_v_builtin_95depth_n69 = slim_t_2985;
+goto slim_recur;
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n3004 = {0};
+Slim_type_typing_95TypeRef slim_t_3013 = {0};
+slim_t_3013 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_v_actual_n3004 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_t_3013, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n3004;
+SlimBytes slim_t_3023 = {0};
+slim_t_3023 = slim_v_source_n2;
+int64_t slim_t_3025 = {0};
+slim_t_3025 = slim_v_expr_n13;
+int64_t slim_t_3026 = {0};
+slim_t_3026 = slim_v_expected_n17;
+int64_t slim_t_3027 = {0};
+slim_t_3027 = slim_v_parent_n21;
+int64_t slim_t_3028 = {0};
+slim_t_3028 = slim_v_params_n25;
+int64_t slim_t_3029 = {0};
+slim_t_3029 = slim_v_return_95type_n29;
+bool slim_t_3030 = {0};
+slim_t_3030 = true;
+Slim_type_typing_95TypeRef slim_t_3031 = {0};
+slim_t_3031 = slim_v_actual_n3004;
+int64_t slim_t_3032 = {0};
+slim_t_3032 = slim_v_depth_n41;
+int64_t slim_t_3033 = {0};
+slim_t_3033 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3034 = {0};
+slim_t_3034 = slim_v_top_n49;
+int64_t slim_t_3035 = {0};
+slim_t_3035 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3036 = {0};
+slim_t_3036 = slim_v_branch_95top_n57;
+int64_t slim_t_3037 = {0};
+slim_t_3037 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3038 = {0};
+slim_t_3038 = slim_v_argument_95top_n65;
+int64_t slim_t_3039 = {0};
+slim_t_3039 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3023;
+slim_v_expr_n13 = slim_t_3025;
+slim_v_expected_n17 = slim_t_3026;
+slim_v_parent_n21 = slim_t_3027;
+slim_v_params_n25 = slim_t_3028;
+slim_v_return_95type_n29 = slim_t_3029;
+slim_v_returning_n33 = slim_t_3030;
+slim_v_result_n37 = slim_t_3031;
+slim_v_depth_n41 = slim_t_3032;
+slim_v_limit_n45 = slim_t_3033;
+slim_v_top_n49 = slim_t_3034;
+slim_v_branch_95depth_n53 = slim_t_3035;
+slim_v_branch_95top_n57 = slim_t_3036;
+slim_v_argument_95depth_n61 = slim_t_3037;
+slim_v_argument_95top_n65 = slim_t_3038;
+slim_v_builtin_95depth_n69 = slim_t_3039;
+goto slim_recur;
+}
+}
+}
+}
+else {
+bool slim_t_3059 = {0};
+slim_t_3059 = slim_v_kind_n164 == INT64_C(3);
+if (slim_t_3059) {
+{
+Slim_type_control_95Branch slim_v_structure_n3069 = {0};
+slim_v_structure_n3069 = slim_fn_control_95branch((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n3069;
+{
+Slim_type_typing_95Pending slim_v_frame_n3079 = {0};
+{
+int64_t slim_t_3084 = {0};
+slim_t_3084 = slim_v_expr_n13;
+int64_t slim_t_3088 = {0};
+slim_t_3088 = slim_v_expected_n17;
+int64_t slim_t_3092 = {0};
+slim_t_3092 = slim_v_parent_n21;
+int64_t slim_t_3096 = {0};
+slim_t_3096 = INT64_C(4);
+bool slim_t_3100 = {0};
+slim_t_3100 = true;
+int64_t slim_t_3104 = {0};
+slim_t_3104 = INT64_C(-1);
+int64_t slim_t_3108 = {0};
+slim_t_3108 = INT64_C(0);
+slim_v_frame_n3079 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_3084, .slim_field_expected = slim_t_3088, .slim_field_parent = slim_t_3092, .slim_field_phase = slim_t_3096, .slim_field_valid = slim_t_3100, .slim_field_type = slim_t_3104, .slim_field_before = slim_t_3108};
+}
+(void)slim_v_frame_n3079;
+{
+int64_t slim_v_next_n3115 = {0};
+slim_v_next_n3115 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n3115;
+SlimBytes slim_t_3127 = {0};
+slim_t_3127 = slim_v_source_n2;
+int64_t slim_t_3129 = {0};
+slim_t_3129 = slim_v_structure_n3069.slim_field_value;
+int64_t slim_t_3134 = {0};
+slim_t_3134 = INT64_C(-1);
+int64_t slim_t_3135 = {0};
+slim_t_3135 = slim_v_parent_n21;
+int64_t slim_t_3136 = {0};
+slim_t_3136 = slim_v_params_n25;
+int64_t slim_t_3137 = {0};
+slim_t_3137 = slim_v_return_95type_n29;
+bool slim_t_3138 = {0};
+slim_t_3138 = false;
+Slim_type_typing_95TypeRef slim_t_3139 = {0};
+slim_t_3139 = slim_v_current_95result_n216;
+int64_t slim_t_3140 = {0};
+slim_t_3140 = slim_v_next_n3115;
+int64_t slim_t_3141 = {0};
+slim_t_3141 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3142 = {0};
+slim_t_3142 = slim_v_frame_n3079;
+int64_t slim_t_3143 = {0};
+slim_t_3143 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3144 = {0};
+slim_t_3144 = slim_v_branch_95top_n57;
+int64_t slim_t_3145 = {0};
+slim_t_3145 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3146 = {0};
+slim_t_3146 = slim_v_argument_95top_n65;
+int64_t slim_t_3147 = {0};
+slim_t_3147 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3127;
+slim_v_expr_n13 = slim_t_3129;
+slim_v_expected_n17 = slim_t_3134;
+slim_v_parent_n21 = slim_t_3135;
+slim_v_params_n25 = slim_t_3136;
+slim_v_return_95type_n29 = slim_t_3137;
+slim_v_returning_n33 = slim_t_3138;
+slim_v_result_n37 = slim_t_3139;
+slim_v_depth_n41 = slim_t_3140;
+slim_v_limit_n45 = slim_t_3141;
+slim_v_top_n49 = slim_t_3142;
+slim_v_branch_95depth_n53 = slim_t_3143;
+slim_v_branch_95top_n57 = slim_t_3144;
+slim_v_argument_95depth_n61 = slim_t_3145;
+slim_v_argument_95top_n65 = slim_t_3146;
+slim_v_builtin_95depth_n69 = slim_t_3147;
+goto slim_recur;
+}
+}
+}
+}
+else {
+bool slim_t_3166 = {0};
+slim_t_3166 = slim_v_kind_n164 == INT64_C(4);
+if (slim_t_3166) {
+{
+Slim_type_control_95Projection slim_v_structure_n3176 = {0};
+slim_v_structure_n3176 = slim_fn_control_95projection((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n3176;
+{
+Slim_type_typing_95Pending slim_v_frame_n3186 = {0};
+{
+int64_t slim_t_3191 = {0};
+slim_t_3191 = slim_v_expr_n13;
+int64_t slim_t_3195 = {0};
+slim_t_3195 = slim_v_expected_n17;
+int64_t slim_t_3199 = {0};
+slim_t_3199 = slim_v_parent_n21;
+int64_t slim_t_3203 = {0};
+slim_t_3203 = INT64_C(7);
+bool slim_t_3207 = {0};
+slim_t_3207 = true;
+int64_t slim_t_3211 = {0};
+slim_t_3211 = INT64_C(-1);
+int64_t slim_t_3215 = {0};
+slim_t_3215 = INT64_C(0);
+slim_v_frame_n3186 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_3191, .slim_field_expected = slim_t_3195, .slim_field_parent = slim_t_3199, .slim_field_phase = slim_t_3203, .slim_field_valid = slim_t_3207, .slim_field_type = slim_t_3211, .slim_field_before = slim_t_3215};
+}
+(void)slim_v_frame_n3186;
+{
+int64_t slim_v_next_n3222 = {0};
+slim_v_next_n3222 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n3222;
+SlimBytes slim_t_3234 = {0};
+slim_t_3234 = slim_v_source_n2;
+int64_t slim_t_3236 = {0};
+slim_t_3236 = slim_v_structure_n3176.slim_field_value;
+int64_t slim_t_3241 = {0};
+slim_t_3241 = INT64_C(-1);
+int64_t slim_t_3242 = {0};
+slim_t_3242 = slim_v_parent_n21;
+int64_t slim_t_3243 = {0};
+slim_t_3243 = slim_v_params_n25;
+int64_t slim_t_3244 = {0};
+slim_t_3244 = slim_v_return_95type_n29;
+bool slim_t_3245 = {0};
+slim_t_3245 = false;
+Slim_type_typing_95TypeRef slim_t_3246 = {0};
+slim_t_3246 = slim_v_current_95result_n216;
+int64_t slim_t_3247 = {0};
+slim_t_3247 = slim_v_next_n3222;
+int64_t slim_t_3248 = {0};
+slim_t_3248 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3249 = {0};
+slim_t_3249 = slim_v_frame_n3186;
+int64_t slim_t_3250 = {0};
+slim_t_3250 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3251 = {0};
+slim_t_3251 = slim_v_branch_95top_n57;
+int64_t slim_t_3252 = {0};
+slim_t_3252 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3253 = {0};
+slim_t_3253 = slim_v_argument_95top_n65;
+int64_t slim_t_3254 = {0};
+slim_t_3254 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3234;
+slim_v_expr_n13 = slim_t_3236;
+slim_v_expected_n17 = slim_t_3241;
+slim_v_parent_n21 = slim_t_3242;
+slim_v_params_n25 = slim_t_3243;
+slim_v_return_95type_n29 = slim_t_3244;
+slim_v_returning_n33 = slim_t_3245;
+slim_v_result_n37 = slim_t_3246;
+slim_v_depth_n41 = slim_t_3247;
+slim_v_limit_n45 = slim_t_3248;
+slim_v_top_n49 = slim_t_3249;
+slim_v_branch_95depth_n53 = slim_t_3250;
+slim_v_branch_95top_n57 = slim_t_3251;
+slim_v_argument_95depth_n61 = slim_t_3252;
+slim_v_argument_95top_n65 = slim_t_3253;
+slim_v_builtin_95depth_n69 = slim_t_3254;
+goto slim_recur;
+}
+}
+}
+}
+else {
+bool slim_t_3273 = {0};
+slim_t_3273 = slim_v_kind_n164 == INT64_C(5);
+if (slim_t_3273) {
+{
+Slim_type_control_95Unary slim_v_structure_n3283 = {0};
+slim_v_structure_n3283 = slim_fn_control_95fork(slim_v_expr_n13, slim_allocation_region);
+(void)slim_v_structure_n3283;
+{
+bool slim_v_arity_n3292 = {0};
+int64_t slim_t_3298 = {0};
+slim_t_3298 = slim_v_structure_n3283.slim_field_value;
+int64_t slim_t_3304 = {0};
+slim_t_3304 = slim_fn_syntax_95ast_95expression_95marker(slim_v_expr_n13, slim_allocation_region);
+slim_v_arity_n3292 = slim_fn_typing_95expect_95arity((*slim_v_tokens_n6), slim_t_3298, INT64_C(1), slim_t_3304, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_arity_n3292;
+if (slim_v_arity_n3292) {
+{
+Slim_type_typing_95Pending slim_v_frame_n3318 = {0};
+{
+int64_t slim_t_3323 = {0};
+slim_t_3323 = slim_v_expr_n13;
+int64_t slim_t_3327 = {0};
+slim_t_3327 = slim_v_expected_n17;
+int64_t slim_t_3331 = {0};
+slim_t_3331 = slim_v_parent_n21;
+int64_t slim_t_3335 = {0};
+slim_t_3335 = INT64_C(6);
+bool slim_t_3339 = {0};
+slim_t_3339 = true;
+int64_t slim_t_3343 = {0};
+slim_t_3343 = INT64_C(-1);
+int64_t slim_t_3347 = {0};
+slim_t_3347 = INT64_C(0);
+slim_v_frame_n3318 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_3323, .slim_field_expected = slim_t_3327, .slim_field_parent = slim_t_3331, .slim_field_phase = slim_t_3335, .slim_field_valid = slim_t_3339, .slim_field_type = slim_t_3343, .slim_field_before = slim_t_3347};
+}
+(void)slim_v_frame_n3318;
+{
+int64_t slim_v_next_n3354 = {0};
+slim_v_next_n3354 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n3354;
+SlimBytes slim_t_3366 = {0};
+slim_t_3366 = slim_v_source_n2;
+int64_t slim_t_3368 = {0};
+slim_t_3368 = slim_v_structure_n3283.slim_field_value;
+int64_t slim_t_3373 = {0};
+slim_t_3373 = slim_v_expected_n17;
+int64_t slim_t_3374 = {0};
+slim_t_3374 = slim_v_parent_n21;
+int64_t slim_t_3375 = {0};
+slim_t_3375 = slim_v_params_n25;
+int64_t slim_t_3376 = {0};
+slim_t_3376 = slim_v_return_95type_n29;
+bool slim_t_3377 = {0};
+slim_t_3377 = false;
+Slim_type_typing_95TypeRef slim_t_3378 = {0};
+slim_t_3378 = slim_v_current_95result_n216;
+int64_t slim_t_3379 = {0};
+slim_t_3379 = slim_v_next_n3354;
+int64_t slim_t_3380 = {0};
+slim_t_3380 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3381 = {0};
+slim_t_3381 = slim_v_frame_n3318;
+int64_t slim_t_3382 = {0};
+slim_t_3382 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3383 = {0};
+slim_t_3383 = slim_v_branch_95top_n57;
+int64_t slim_t_3384 = {0};
+slim_t_3384 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3385 = {0};
+slim_t_3385 = slim_v_argument_95top_n65;
+int64_t slim_t_3386 = {0};
+slim_t_3386 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3366;
+slim_v_expr_n13 = slim_t_3368;
+slim_v_expected_n17 = slim_t_3373;
+slim_v_parent_n21 = slim_t_3374;
+slim_v_params_n25 = slim_t_3375;
+slim_v_return_95type_n29 = slim_t_3376;
+slim_v_returning_n33 = slim_t_3377;
+slim_v_result_n37 = slim_t_3378;
+slim_v_depth_n41 = slim_t_3379;
+slim_v_limit_n45 = slim_t_3380;
+slim_v_top_n49 = slim_t_3381;
+slim_v_branch_95depth_n53 = slim_t_3382;
+slim_v_branch_95top_n57 = slim_t_3383;
+slim_v_argument_95depth_n61 = slim_t_3384;
+slim_v_argument_95top_n65 = slim_t_3385;
+slim_v_builtin_95depth_n69 = slim_t_3386;
+goto slim_recur;
+}
+}
+}
+else {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n3404 = {0};
+Slim_type_typing_95TypeRef slim_t_3413 = {0};
+slim_t_3413 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+slim_v_actual_n3404 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_t_3413, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n3404;
+SlimBytes slim_t_3423 = {0};
+slim_t_3423 = slim_v_source_n2;
+int64_t slim_t_3425 = {0};
+slim_t_3425 = slim_v_expr_n13;
+int64_t slim_t_3426 = {0};
+slim_t_3426 = slim_v_expected_n17;
+int64_t slim_t_3427 = {0};
+slim_t_3427 = slim_v_parent_n21;
+int64_t slim_t_3428 = {0};
+slim_t_3428 = slim_v_params_n25;
+int64_t slim_t_3429 = {0};
+slim_t_3429 = slim_v_return_95type_n29;
+bool slim_t_3430 = {0};
+slim_t_3430 = true;
+Slim_type_typing_95TypeRef slim_t_3431 = {0};
+slim_t_3431 = slim_v_actual_n3404;
+int64_t slim_t_3432 = {0};
+slim_t_3432 = slim_v_depth_n41;
+int64_t slim_t_3433 = {0};
+slim_t_3433 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3434 = {0};
+slim_t_3434 = slim_v_top_n49;
+int64_t slim_t_3435 = {0};
+slim_t_3435 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3436 = {0};
+slim_t_3436 = slim_v_branch_95top_n57;
+int64_t slim_t_3437 = {0};
+slim_t_3437 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3438 = {0};
+slim_t_3438 = slim_v_argument_95top_n65;
+int64_t slim_t_3439 = {0};
+slim_t_3439 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3423;
+slim_v_expr_n13 = slim_t_3425;
+slim_v_expected_n17 = slim_t_3426;
+slim_v_parent_n21 = slim_t_3427;
+slim_v_params_n25 = slim_t_3428;
+slim_v_return_95type_n29 = slim_t_3429;
+slim_v_returning_n33 = slim_t_3430;
+slim_v_result_n37 = slim_t_3431;
+slim_v_depth_n41 = slim_t_3432;
+slim_v_limit_n45 = slim_t_3433;
+slim_v_top_n49 = slim_t_3434;
+slim_v_branch_95depth_n53 = slim_t_3435;
+slim_v_branch_95top_n57 = slim_t_3436;
+slim_v_argument_95depth_n61 = slim_t_3437;
+slim_v_argument_95top_n65 = slim_t_3438;
+slim_v_builtin_95depth_n69 = slim_t_3439;
+goto slim_recur;
+}
+}
+}
+}
+}
+else {
+{
+bool slim_v_record_n3460 = {0};
+slim_v_record_n3460 = slim_v_kind_n164 == INT64_C(6);
+(void)slim_v_record_n3460;
+{
+bool slim_v_variant_n3470 = {0};
+slim_v_variant_n3470 = slim_v_kind_n164 == INT64_C(7);
+(void)slim_v_variant_n3470;
+bool slim_t_3480 = {0};
+slim_t_3480 = slim_v_record_n3460 || slim_v_variant_n3470;
+if (slim_t_3480) {
+{
+Slim_type_typing_95Members slim_v_members_n3490 = {0};
+slim_v_members_n3490 = slim_fn_typing_95prepare_95members(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_record_n3460, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_members_n3490;
+{
+int64_t slim_v_phase_n3503 = {0};
+if (slim_v_record_n3460) {
+slim_v_phase_n3503 = INT64_C(8);
+}
+else {
+slim_v_phase_n3503 = INT64_C(9);
+}
+(void)slim_v_phase_n3503;
+{
+Slim_type_typing_95Pending slim_v_frame_n3519 = {0};
+{
+int64_t slim_t_3524 = {0};
+slim_t_3524 = slim_v_expr_n13;
+int64_t slim_t_3528 = {0};
+slim_t_3528 = slim_v_expected_n17;
+int64_t slim_t_3532 = {0};
+slim_t_3532 = slim_v_parent_n21;
+int64_t slim_t_3536 = {0};
+slim_t_3536 = slim_v_phase_n3503;
+bool slim_t_3540 = {0};
+slim_t_3540 = true;
+int64_t slim_t_3544 = {0};
+slim_t_3544 = slim_v_members_n3490.slim_field_cursor;
+int64_t slim_t_3552 = {0};
+slim_t_3552 = slim_v_members_n3490.slim_field_definition;
+slim_v_frame_n3519 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_3524, .slim_field_expected = slim_t_3528, .slim_field_parent = slim_t_3532, .slim_field_phase = slim_t_3536, .slim_field_valid = slim_t_3540, .slim_field_type = slim_t_3544, .slim_field_before = slim_t_3552};
+}
+(void)slim_v_frame_n3519;
+{
+Slim_type_typing_95MemberNext slim_v_request_n3563 = {0};
+slim_v_request_n3563 = slim_fn_typing_95next_95member(slim_v_source_n2, slim_v_tokens_n6, slim_v_frame_n3519, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n3563;
+bool slim_t_3575 = {0};
+slim_t_3575 = slim_v_request_n3563.slim_field_done;
+if (slim_t_3575) {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n3584 = {0};
+Slim_type_typing_95TypeRef slim_t_3593 = {0};
+slim_t_3593 = slim_v_request_n3563.slim_field_result;
+slim_v_actual_n3584 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_t_3593, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n3584;
+SlimBytes slim_t_3603 = {0};
+slim_t_3603 = slim_v_source_n2;
+int64_t slim_t_3605 = {0};
+slim_t_3605 = slim_v_expr_n13;
+int64_t slim_t_3606 = {0};
+slim_t_3606 = slim_v_expected_n17;
+int64_t slim_t_3607 = {0};
+slim_t_3607 = slim_v_parent_n21;
+int64_t slim_t_3608 = {0};
+slim_t_3608 = slim_v_params_n25;
+int64_t slim_t_3609 = {0};
+slim_t_3609 = slim_v_return_95type_n29;
+bool slim_t_3610 = {0};
+slim_t_3610 = true;
+Slim_type_typing_95TypeRef slim_t_3611 = {0};
+slim_t_3611 = slim_v_actual_n3584;
+int64_t slim_t_3612 = {0};
+slim_t_3612 = slim_v_depth_n41;
+int64_t slim_t_3613 = {0};
+slim_t_3613 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3614 = {0};
+slim_t_3614 = slim_v_top_n49;
+int64_t slim_t_3615 = {0};
+slim_t_3615 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3616 = {0};
+slim_t_3616 = slim_v_branch_95top_n57;
+int64_t slim_t_3617 = {0};
+slim_t_3617 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3618 = {0};
+slim_t_3618 = slim_v_argument_95top_n65;
+int64_t slim_t_3619 = {0};
+slim_t_3619 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3603;
+slim_v_expr_n13 = slim_t_3605;
+slim_v_expected_n17 = slim_t_3606;
+slim_v_parent_n21 = slim_t_3607;
+slim_v_params_n25 = slim_t_3608;
+slim_v_return_95type_n29 = slim_t_3609;
+slim_v_returning_n33 = slim_t_3610;
+slim_v_result_n37 = slim_t_3611;
+slim_v_depth_n41 = slim_t_3612;
+slim_v_limit_n45 = slim_t_3613;
+slim_v_top_n49 = slim_t_3614;
+slim_v_branch_95depth_n53 = slim_t_3615;
+slim_v_branch_95top_n57 = slim_t_3616;
+slim_v_argument_95depth_n61 = slim_t_3617;
+slim_v_argument_95top_n65 = slim_t_3618;
+slim_v_builtin_95depth_n69 = slim_t_3619;
+goto slim_recur;
+}
+}
+else {
+{
+int64_t slim_v_next_n3636 = {0};
+slim_v_next_n3636 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n3636;
+SlimBytes slim_t_3648 = {0};
+slim_t_3648 = slim_v_source_n2;
+int64_t slim_t_3650 = {0};
+slim_t_3650 = slim_v_request_n3563.slim_field_value;
+int64_t slim_t_3655 = {0};
+slim_t_3655 = slim_v_request_n3563.slim_field_expected;
+int64_t slim_t_3660 = {0};
+slim_t_3660 = slim_v_parent_n21;
+int64_t slim_t_3661 = {0};
+slim_t_3661 = slim_v_params_n25;
+int64_t slim_t_3662 = {0};
+slim_t_3662 = slim_v_return_95type_n29;
+bool slim_t_3663 = {0};
+slim_t_3663 = false;
+Slim_type_typing_95TypeRef slim_t_3664 = {0};
+slim_t_3664 = slim_v_current_95result_n216;
+int64_t slim_t_3665 = {0};
+slim_t_3665 = slim_v_next_n3636;
+int64_t slim_t_3666 = {0};
+slim_t_3666 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3667 = {0};
+slim_t_3667 = slim_v_frame_n3519;
+int64_t slim_t_3668 = {0};
+slim_t_3668 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3669 = {0};
+slim_t_3669 = slim_v_branch_95top_n57;
+int64_t slim_t_3670 = {0};
+slim_t_3670 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3671 = {0};
+slim_t_3671 = slim_v_argument_95top_n65;
+int64_t slim_t_3672 = {0};
+slim_t_3672 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3648;
+slim_v_expr_n13 = slim_t_3650;
+slim_v_expected_n17 = slim_t_3655;
+slim_v_parent_n21 = slim_t_3660;
+slim_v_params_n25 = slim_t_3661;
+slim_v_return_95type_n29 = slim_t_3662;
+slim_v_returning_n33 = slim_t_3663;
+slim_v_result_n37 = slim_t_3664;
+slim_v_depth_n41 = slim_t_3665;
+slim_v_limit_n45 = slim_t_3666;
+slim_v_top_n49 = slim_t_3667;
+slim_v_branch_95depth_n53 = slim_t_3668;
+slim_v_branch_95top_n57 = slim_t_3669;
+slim_v_argument_95depth_n61 = slim_t_3670;
+slim_v_argument_95top_n65 = slim_t_3671;
+slim_v_builtin_95depth_n69 = slim_t_3672;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+else {
+{
+bool slim_v_ordinary_95user_n3695 = {0};
+bool slim_t_3699 = {0};
+slim_t_3699 = slim_v_kind_n164 == INT64_C(8);
+if (slim_t_3699) {
+slim_v_ordinary_95user_n3695 = slim_fn_typing_95user_95call(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+}
+else {
+slim_v_ordinary_95user_n3695 = false;
+}
+(void)slim_v_ordinary_95user_n3695;
+bool slim_t_3722 = {0};
+bool slim_t_3725 = {0};
+slim_t_3725 = slim_v_kind_n164 == INT64_C(9);
+slim_t_3722 = slim_t_3725 || slim_v_ordinary_95user_n3695;
+if (slim_t_3722) {
+{
+bool slim_v_recursive_n3737 = {0};
+slim_v_recursive_n3737 = slim_v_kind_n164 == INT64_C(9);
+(void)slim_v_recursive_n3737;
+{
+Slim_type_typing_95ArgumentState slim_v_initial_n3747 = {0};
+slim_v_initial_n3747 = slim_fn_typing_95prepare_95arguments(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_recursive_n3737, slim_v_params_n25, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_initial_n3747;
+{
+Slim_type_typing_95ArgumentNext slim_v_request_n3761 = {0};
+slim_v_request_n3761 = slim_fn_typing_95next_95argument(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_recursive_n3737, slim_v_return_95type_n29, slim_v_initial_n3747, slim_v_bindings_n101, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n3761;
+bool slim_t_3777 = {0};
+slim_t_3777 = slim_v_request_n3761.slim_field_done;
+if (slim_t_3777) {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n3786 = {0};
+Slim_type_typing_95TypeRef slim_t_3795 = {0};
+slim_t_3795 = slim_v_request_n3761.slim_field_result;
+slim_v_actual_n3786 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_t_3795, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n3786;
+SlimBytes slim_t_3805 = {0};
+slim_t_3805 = slim_v_source_n2;
+int64_t slim_t_3807 = {0};
+slim_t_3807 = slim_v_expr_n13;
+int64_t slim_t_3808 = {0};
+slim_t_3808 = slim_v_expected_n17;
+int64_t slim_t_3809 = {0};
+slim_t_3809 = slim_v_parent_n21;
+int64_t slim_t_3810 = {0};
+slim_t_3810 = slim_v_params_n25;
+int64_t slim_t_3811 = {0};
+slim_t_3811 = slim_v_return_95type_n29;
+bool slim_t_3812 = {0};
+slim_t_3812 = true;
+Slim_type_typing_95TypeRef slim_t_3813 = {0};
+slim_t_3813 = slim_v_actual_n3786;
+int64_t slim_t_3814 = {0};
+slim_t_3814 = slim_v_depth_n41;
+int64_t slim_t_3815 = {0};
+slim_t_3815 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3816 = {0};
+slim_t_3816 = slim_v_top_n49;
+int64_t slim_t_3817 = {0};
+slim_t_3817 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3818 = {0};
+slim_t_3818 = slim_v_branch_95top_n57;
+int64_t slim_t_3819 = {0};
+slim_t_3819 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_3820 = {0};
+slim_t_3820 = slim_v_argument_95top_n65;
+int64_t slim_t_3821 = {0};
+slim_t_3821 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3805;
+slim_v_expr_n13 = slim_t_3807;
+slim_v_expected_n17 = slim_t_3808;
+slim_v_parent_n21 = slim_t_3809;
+slim_v_params_n25 = slim_t_3810;
+slim_v_return_95type_n29 = slim_t_3811;
+slim_v_returning_n33 = slim_t_3812;
+slim_v_result_n37 = slim_t_3813;
+slim_v_depth_n41 = slim_t_3814;
+slim_v_limit_n45 = slim_t_3815;
+slim_v_top_n49 = slim_t_3816;
+slim_v_branch_95depth_n53 = slim_t_3817;
+slim_v_branch_95top_n57 = slim_t_3818;
+slim_v_argument_95depth_n61 = slim_t_3819;
+slim_v_argument_95top_n65 = slim_t_3820;
+slim_v_builtin_95depth_n69 = slim_t_3821;
+goto slim_recur;
+}
+}
+else {
+{
+int64_t slim_v_phase_n3838 = {0};
+if (slim_v_recursive_n3737) {
+slim_v_phase_n3838 = INT64_C(11);
+}
+else {
+slim_v_phase_n3838 = INT64_C(10);
+}
+(void)slim_v_phase_n3838;
+{
+int64_t slim_v_next_95arguments_n3854 = {0};
+slim_v_next_95arguments_n3854 = slim_fn_typing_95push_95argument(slim_v_argument_95top_n65, slim_v_argument_95depth_n61, slim_v_limit_n45, slim_v_arguments_n80, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_95arguments_n3854;
+{
+Slim_type_typing_95Pending slim_v_frame_n3866 = {0};
+{
+int64_t slim_t_3871 = {0};
+slim_t_3871 = slim_v_expr_n13;
+int64_t slim_t_3875 = {0};
+slim_t_3875 = slim_v_expected_n17;
+int64_t slim_t_3879 = {0};
+slim_t_3879 = slim_v_parent_n21;
+int64_t slim_t_3883 = {0};
+slim_t_3883 = slim_v_phase_n3838;
+bool slim_t_3887 = {0};
+slim_t_3887 = true;
+int64_t slim_t_3891 = {0};
+slim_t_3891 = slim_v_request_n3761.slim_field_expected;
+int64_t slim_t_3899 = {0};
+slim_t_3899 = INT64_C(0);
+slim_v_frame_n3866 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_3871, .slim_field_expected = slim_t_3875, .slim_field_parent = slim_t_3879, .slim_field_phase = slim_t_3883, .slim_field_valid = slim_t_3887, .slim_field_type = slim_t_3891, .slim_field_before = slim_t_3899};
+}
+(void)slim_v_frame_n3866;
+{
+int64_t slim_v_next_n3906 = {0};
+slim_v_next_n3906 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n3906;
+SlimBytes slim_t_3918 = {0};
+slim_t_3918 = slim_v_source_n2;
+int64_t slim_t_3920 = {0};
+Slim_type_typing_95ArgumentState slim_t_3922 = {0};
+slim_t_3922 = slim_v_request_n3761.slim_field_state;
+slim_t_3920 = slim_t_3922.slim_field_argument;
+int64_t slim_t_3929 = {0};
+slim_t_3929 = slim_v_request_n3761.slim_field_expected;
+int64_t slim_t_3934 = {0};
+slim_t_3934 = slim_v_parent_n21;
+int64_t slim_t_3935 = {0};
+slim_t_3935 = slim_v_params_n25;
+int64_t slim_t_3936 = {0};
+slim_t_3936 = slim_v_return_95type_n29;
+bool slim_t_3937 = {0};
+bool slim_t_3940 = {0};
+Slim_type_typing_95ArgumentState slim_t_3942 = {0};
+slim_t_3942 = slim_v_request_n3761.slim_field_state;
+slim_t_3940 = slim_t_3942.slim_field_allowed;
+slim_t_3937 = !slim_t_3940;
+Slim_type_typing_95TypeRef slim_t_3950 = {0};
+slim_t_3950 = slim_v_request_n3761.slim_field_result;
+int64_t slim_t_3955 = {0};
+slim_t_3955 = slim_v_next_n3906;
+int64_t slim_t_3956 = {0};
+slim_t_3956 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_3957 = {0};
+slim_t_3957 = slim_v_frame_n3866;
+int64_t slim_t_3958 = {0};
+slim_t_3958 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_3959 = {0};
+slim_t_3959 = slim_v_branch_95top_n57;
+int64_t slim_t_3960 = {0};
+slim_t_3960 = slim_v_next_95arguments_n3854;
+Slim_type_typing_95ArgumentState slim_t_3961 = {0};
+slim_t_3961 = slim_v_request_n3761.slim_field_state;
+int64_t slim_t_3966 = {0};
+slim_t_3966 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_3918;
+slim_v_expr_n13 = slim_t_3920;
+slim_v_expected_n17 = slim_t_3929;
+slim_v_parent_n21 = slim_t_3934;
+slim_v_params_n25 = slim_t_3935;
+slim_v_return_95type_n29 = slim_t_3936;
+slim_v_returning_n33 = slim_t_3937;
+slim_v_result_n37 = slim_t_3950;
+slim_v_depth_n41 = slim_t_3955;
+slim_v_limit_n45 = slim_t_3956;
+slim_v_top_n49 = slim_t_3957;
+slim_v_branch_95depth_n53 = slim_t_3958;
+slim_v_branch_95top_n57 = slim_t_3959;
+slim_v_argument_95depth_n61 = slim_t_3960;
+slim_v_argument_95top_n65 = slim_t_3961;
+slim_v_builtin_95depth_n69 = slim_t_3966;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
+}
+}
+}
+else {
+{
+Slim_type_typing_95BuiltinNext slim_v_request_n3991 = {0};
+slim_v_request_n3991 = slim_fn_typing_95prepare_95builtin(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_v_bindings_n101, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_request_n3991;
+bool slim_t_4005 = {0};
+slim_t_4005 = slim_v_request_n3991.slim_field_done;
+if (slim_t_4005) {
+{
+Slim_type_typing_95TypeRef slim_v_actual_n4014 = {0};
+Slim_type_typing_95TypeRef slim_t_4023 = {0};
+slim_t_4023 = slim_v_request_n3991.slim_field_result;
+slim_v_actual_n4014 = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_t_4023, slim_v_facts_n108, slim_v_issues_n115, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n4014;
+SlimBytes slim_t_4033 = {0};
+slim_t_4033 = slim_v_source_n2;
+int64_t slim_t_4035 = {0};
+slim_t_4035 = slim_v_expr_n13;
+int64_t slim_t_4036 = {0};
+slim_t_4036 = slim_v_expected_n17;
+int64_t slim_t_4037 = {0};
+slim_t_4037 = slim_v_parent_n21;
+int64_t slim_t_4038 = {0};
+slim_t_4038 = slim_v_params_n25;
+int64_t slim_t_4039 = {0};
+slim_t_4039 = slim_v_return_95type_n29;
+bool slim_t_4040 = {0};
+slim_t_4040 = true;
+Slim_type_typing_95TypeRef slim_t_4041 = {0};
+slim_t_4041 = slim_v_actual_n4014;
+int64_t slim_t_4042 = {0};
+slim_t_4042 = slim_v_depth_n41;
+int64_t slim_t_4043 = {0};
+slim_t_4043 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_4044 = {0};
+slim_t_4044 = slim_v_top_n49;
+int64_t slim_t_4045 = {0};
+slim_t_4045 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_4046 = {0};
+slim_t_4046 = slim_v_branch_95top_n57;
+int64_t slim_t_4047 = {0};
+slim_t_4047 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_4048 = {0};
+slim_t_4048 = slim_v_argument_95top_n65;
+int64_t slim_t_4049 = {0};
+slim_t_4049 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_4033;
+slim_v_expr_n13 = slim_t_4035;
+slim_v_expected_n17 = slim_t_4036;
+slim_v_parent_n21 = slim_t_4037;
+slim_v_params_n25 = slim_t_4038;
+slim_v_return_95type_n29 = slim_t_4039;
+slim_v_returning_n33 = slim_t_4040;
+slim_v_result_n37 = slim_t_4041;
+slim_v_depth_n41 = slim_t_4042;
+slim_v_limit_n45 = slim_t_4043;
+slim_v_top_n49 = slim_t_4044;
+slim_v_branch_95depth_n53 = slim_t_4045;
+slim_v_branch_95top_n57 = slim_t_4046;
+slim_v_argument_95depth_n61 = slim_t_4047;
+slim_v_argument_95top_n65 = slim_t_4048;
+slim_v_builtin_95depth_n69 = slim_t_4049;
+goto slim_recur;
+}
+}
+else {
+bool slim_t_4066 = {0};
+int64_t slim_t_4069 = {0};
+Slim_type_typing_95BuiltinState slim_t_4071 = {0};
+slim_t_4071 = slim_v_request_n3991.slim_field_state;
+slim_t_4069 = slim_t_4071.slim_field_operation;
+slim_t_4066 = slim_t_4069 <= INT64_C(2);
+if (slim_t_4066) {
+{
+int64_t slim_v_phase_n4084 = {0};
+bool slim_t_4088 = {0};
+int64_t slim_t_4091 = {0};
+Slim_type_typing_95BuiltinState slim_t_4093 = {0};
+slim_t_4093 = slim_v_request_n3991.slim_field_state;
+slim_t_4091 = slim_t_4093.slim_field_count;
+slim_t_4088 = slim_t_4091 == INT64_C(1);
+if (slim_t_4088) {
+slim_v_phase_n4084 = INT64_C(13);
+}
+else {
+bool slim_t_4110 = {0};
+int64_t slim_t_4113 = {0};
+Slim_type_typing_95BuiltinState slim_t_4115 = {0};
+slim_t_4115 = slim_v_request_n3991.slim_field_state;
+slim_t_4113 = slim_t_4115.slim_field_operation;
+slim_t_4110 = slim_t_4113 == INT64_C(2);
+if (slim_t_4110) {
+slim_v_phase_n4084 = INT64_C(15);
+}
+else {
+slim_v_phase_n4084 = INT64_C(14);
+}
+}
+(void)slim_v_phase_n4084;
+{
+Slim_type_typing_95Pending slim_v_frame_n4137 = {0};
+{
+int64_t slim_t_4142 = {0};
+slim_t_4142 = slim_v_expr_n13;
+int64_t slim_t_4146 = {0};
+slim_t_4146 = slim_v_expected_n17;
+int64_t slim_t_4150 = {0};
+slim_t_4150 = slim_v_parent_n21;
+int64_t slim_t_4154 = {0};
+slim_t_4154 = slim_v_phase_n4084;
+bool slim_t_4158 = {0};
+Slim_type_typing_95BuiltinState slim_t_4162 = {0};
+slim_t_4162 = slim_v_request_n3991.slim_field_state;
+slim_t_4158 = slim_t_4162.slim_field_modes_95valid;
+int64_t slim_t_4170 = {0};
+Slim_type_typing_95BuiltinState slim_t_4174 = {0};
+slim_t_4174 = slim_v_request_n3991.slim_field_state;
+slim_t_4170 = slim_t_4174.slim_field_kind;
+int64_t slim_t_4182 = {0};
+Slim_type_typing_95BuiltinState slim_t_4186 = {0};
+slim_t_4186 = slim_v_request_n3991.slim_field_state;
+slim_t_4182 = slim_t_4186.slim_field_result_95kind;
+slim_v_frame_n4137 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_4142, .slim_field_expected = slim_t_4146, .slim_field_parent = slim_t_4150, .slim_field_phase = slim_t_4154, .slim_field_valid = slim_t_4158, .slim_field_type = slim_t_4170, .slim_field_before = slim_t_4182};
+}
+(void)slim_v_frame_n4137;
+{
+int64_t slim_v_next_n4197 = {0};
+slim_v_next_n4197 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n4197;
+SlimBytes slim_t_4209 = {0};
+slim_t_4209 = slim_v_source_n2;
+int64_t slim_t_4211 = {0};
+Slim_type_typing_95BuiltinState slim_t_4213 = {0};
+slim_t_4213 = slim_v_request_n3991.slim_field_state;
+slim_t_4211 = slim_t_4213.slim_field_argument;
+int64_t slim_t_4220 = {0};
+slim_t_4220 = INT64_C(-1);
+int64_t slim_t_4221 = {0};
+slim_t_4221 = slim_v_parent_n21;
+int64_t slim_t_4222 = {0};
+slim_t_4222 = slim_v_params_n25;
+int64_t slim_t_4223 = {0};
+slim_t_4223 = slim_v_return_95type_n29;
+bool slim_t_4224 = {0};
+slim_t_4224 = false;
+Slim_type_typing_95TypeRef slim_t_4225 = {0};
+slim_t_4225 = slim_v_request_n3991.slim_field_result;
+int64_t slim_t_4230 = {0};
+slim_t_4230 = slim_v_next_n4197;
+int64_t slim_t_4231 = {0};
+slim_t_4231 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_4232 = {0};
+slim_t_4232 = slim_v_frame_n4137;
+int64_t slim_t_4233 = {0};
+slim_t_4233 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_4234 = {0};
+slim_t_4234 = slim_v_branch_95top_n57;
+int64_t slim_t_4235 = {0};
+slim_t_4235 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_4236 = {0};
+slim_t_4236 = slim_v_argument_95top_n65;
+int64_t slim_t_4237 = {0};
+slim_t_4237 = slim_v_builtin_95depth_n69;
+slim_v_source_n2 = slim_t_4209;
+slim_v_expr_n13 = slim_t_4211;
+slim_v_expected_n17 = slim_t_4220;
+slim_v_parent_n21 = slim_t_4221;
+slim_v_params_n25 = slim_t_4222;
+slim_v_return_95type_n29 = slim_t_4223;
+slim_v_returning_n33 = slim_t_4224;
+slim_v_result_n37 = slim_t_4225;
+slim_v_depth_n41 = slim_t_4230;
+slim_v_limit_n45 = slim_t_4231;
+slim_v_top_n49 = slim_t_4232;
+slim_v_branch_95depth_n53 = slim_t_4233;
+slim_v_branch_95top_n57 = slim_t_4234;
+slim_v_argument_95depth_n61 = slim_t_4235;
+slim_v_argument_95top_n65 = slim_t_4236;
+slim_v_builtin_95depth_n69 = slim_t_4237;
+goto slim_recur;
+}
+}
+}
+}
+else {
+{
+int64_t slim_v_index_n4256 = {0};
+Slim_type_typing_95BuiltinState slim_t_4261 = {0};
+slim_t_4261 = slim_v_request_n3991.slim_field_state;
+slim_v_index_n4256 = slim_fn_typing_95push_95builtin(slim_t_4261, slim_v_builtin_95depth_n69, slim_v_limit_n45, slim_v_builtins_n73, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_index_n4256;
+{
+Slim_type_typing_95Pending slim_v_frame_n4272 = {0};
+{
+int64_t slim_t_4277 = {0};
+slim_t_4277 = slim_v_expr_n13;
+int64_t slim_t_4281 = {0};
+slim_t_4281 = slim_v_expected_n17;
+int64_t slim_t_4285 = {0};
+slim_t_4285 = slim_v_parent_n21;
+int64_t slim_t_4289 = {0};
+slim_t_4289 = INT64_C(12);
+bool slim_t_4293 = {0};
+slim_t_4293 = true;
+int64_t slim_t_4297 = {0};
+slim_t_4297 = slim_v_index_n4256;
+int64_t slim_t_4301 = {0};
+slim_t_4301 = INT64_C(0);
+slim_v_frame_n4272 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_4277, .slim_field_expected = slim_t_4281, .slim_field_parent = slim_t_4285, .slim_field_phase = slim_t_4289, .slim_field_valid = slim_t_4293, .slim_field_type = slim_t_4297, .slim_field_before = slim_t_4301};
+}
+(void)slim_v_frame_n4272;
+{
+int64_t slim_v_next_n4308 = {0};
+slim_v_next_n4308 = slim_fn_typing_95push_95pending(slim_v_top_n49, slim_v_depth_n41, slim_v_limit_n45, slim_v_pending_n94, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_next_n4308;
+SlimBytes slim_t_4320 = {0};
+slim_t_4320 = slim_v_source_n2;
+int64_t slim_t_4322 = {0};
+Slim_type_typing_95BuiltinState slim_t_4324 = {0};
+slim_t_4324 = slim_v_request_n3991.slim_field_state;
+slim_t_4322 = slim_t_4324.slim_field_argument;
+int64_t slim_t_4331 = {0};
+slim_t_4331 = slim_v_request_n3991.slim_field_expected;
+int64_t slim_t_4336 = {0};
+slim_t_4336 = slim_v_parent_n21;
+int64_t slim_t_4337 = {0};
+slim_t_4337 = slim_v_params_n25;
+int64_t slim_t_4338 = {0};
+slim_t_4338 = slim_v_return_95type_n29;
+bool slim_t_4339 = {0};
+bool slim_t_4342 = {0};
+Slim_type_typing_95BuiltinState slim_t_4344 = {0};
+slim_t_4344 = slim_v_request_n3991.slim_field_state;
+slim_t_4342 = slim_t_4344.slim_field_allowed;
+slim_t_4339 = !slim_t_4342;
+Slim_type_typing_95TypeRef slim_t_4352 = {0};
+slim_t_4352 = slim_v_request_n3991.slim_field_result;
+int64_t slim_t_4357 = {0};
+slim_t_4357 = slim_v_next_n4308;
+int64_t slim_t_4358 = {0};
+slim_t_4358 = slim_v_limit_n45;
+Slim_type_typing_95Pending slim_t_4359 = {0};
+slim_t_4359 = slim_v_frame_n4272;
+int64_t slim_t_4360 = {0};
+slim_t_4360 = slim_v_branch_95depth_n53;
+Slim_type_typing_95BranchState slim_t_4361 = {0};
+slim_t_4361 = slim_v_branch_95top_n57;
+int64_t slim_t_4362 = {0};
+slim_t_4362 = slim_v_argument_95depth_n61;
+Slim_type_typing_95ArgumentState slim_t_4363 = {0};
+slim_t_4363 = slim_v_argument_95top_n65;
+int64_t slim_t_4364 = {0};
+slim_t_4364 = slim_i64_add(slim_v_builtin_95depth_n69, INT64_C(1));
+slim_v_source_n2 = slim_t_4320;
+slim_v_expr_n13 = slim_t_4322;
+slim_v_expected_n17 = slim_t_4331;
+slim_v_parent_n21 = slim_t_4336;
+slim_v_params_n25 = slim_t_4337;
+slim_v_return_95type_n29 = slim_t_4338;
+slim_v_returning_n33 = slim_t_4339;
+slim_v_result_n37 = slim_t_4352;
+slim_v_depth_n41 = slim_t_4357;
+slim_v_limit_n45 = slim_t_4358;
+slim_v_top_n49 = slim_t_4359;
+slim_v_branch_95depth_n53 = slim_t_4360;
+slim_v_branch_95top_n57 = slim_t_4361;
+slim_v_argument_95depth_n61 = slim_t_4362;
+slim_v_argument_95top_n65 = slim_t_4363;
+slim_v_builtin_95depth_n69 = slim_t_4364;
+goto slim_recur;
+}
+}
+}
+}
+}
+}
 }
 }
 }
@@ -106620,19 +110116,73 @@ slim_v_kind_n98 = slim_fn_syntax_95ast_95node_95kind((*slim_v_tokens_n6), slim_v
 bool slim_v_form_n108 = {0};
 slim_v_form_n108 = slim_v_kind_n98 == INT64_C(0);
 (void)slim_v_form_n108;
-{
-Slim_type_typing_95TypeRef slim_v_actual_n118 = {0};
 if (slim_v_form_n108) {
-slim_v_actual_n118 = slim_fn_typing_95infer_95form(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+{
+SlimVec slim_v_pending_n123 = {0};
+slim_v_pending_n123 = slim_vec_new(sizeof(Slim_type_typing_95Pending), slim_allocation_region);
+(void)slim_v_pending_n123;
+{
+SlimVec slim_v_branches_n134 = {0};
+slim_v_branches_n134 = slim_vec_new(sizeof(Slim_type_typing_95BranchState), slim_allocation_region);
+(void)slim_v_branches_n134;
+{
+SlimVec slim_v_arguments_n145 = {0};
+slim_v_arguments_n145 = slim_vec_new(sizeof(Slim_type_typing_95ArgumentState), slim_allocation_region);
+(void)slim_v_arguments_n145;
+{
+SlimVec slim_v_builtins_n156 = {0};
+slim_v_builtins_n156 = slim_vec_new(sizeof(Slim_type_typing_95BuiltinState), slim_allocation_region);
+(void)slim_v_builtins_n156;
+{
+int64_t slim_v_limit_n167 = {0};
+int64_t slim_t_172 = {0};
+slim_t_172 = slim_fn_syntax_95ast_95next((*slim_v_tokens_n6), slim_v_expr_n13, slim_allocation_region);
+slim_v_limit_n167 = slim_i64_sub(slim_t_172, slim_v_expr_n13);
+(void)slim_v_limit_n167;
+{
+Slim_type_typing_95Pending slim_v_top_n182 = {0};
+{
+int64_t slim_t_187 = {0};
+slim_t_187 = slim_v_expr_n13;
+int64_t slim_t_191 = {0};
+slim_t_191 = slim_v_expected_n17;
+int64_t slim_t_195 = {0};
+slim_t_195 = slim_v_parent_n21;
+int64_t slim_t_199 = {0};
+slim_t_199 = INT64_C(0);
+bool slim_t_203 = {0};
+slim_t_203 = true;
+int64_t slim_t_207 = {0};
+slim_t_207 = INT64_C(-1);
+int64_t slim_t_211 = {0};
+slim_t_211 = INT64_C(0);
+slim_v_top_n182 = (Slim_type_typing_95Pending){.slim_field_expr = slim_t_187, .slim_field_expected = slim_t_191, .slim_field_parent = slim_t_195, .slim_field_phase = slim_t_199, .slim_field_valid = slim_t_203, .slim_field_type = slim_t_207, .slim_field_before = slim_t_211};
+}
+(void)slim_v_top_n182;
+Slim_type_typing_95TypeRef slim_t_227 = {0};
+slim_t_227 = slim_fn_typing_95invalid_95type(slim_v_expr_n13, slim_allocation_region);
+Slim_type_typing_95BranchState slim_t_236 = {0};
+slim_t_236 = slim_fn_typing_95empty_95branch(slim_v_expr_n13, slim_allocation_region);
+Slim_type_typing_95ArgumentState slim_t_242 = {0};
+slim_t_242 = slim_fn_typing_95argument_95state(INT64_C(-1), INT64_C(-1), false, false, slim_allocation_region);
+slim_result = slim_fn_typing_95infer_95control_95walk(slim_v_source_n2, slim_v_tokens_n6, slim_v_expr_n13, slim_v_expected_n17, slim_v_parent_n21, slim_v_params_n25, slim_v_return_95type_n29, false, slim_t_227, INT64_C(0), slim_v_limit_n167, slim_v_top_n182, INT64_C(0), slim_t_236, INT64_C(0), slim_t_242, INT64_C(0), &slim_v_builtins_n156, &slim_v_arguments_n145, &slim_v_branches_n134, &slim_v_pending_n123, slim_v_bindings_n33, slim_v_facts_n40, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+}
+}
+}
+}
+}
 }
 else {
-slim_v_actual_n118 = slim_fn_typing_95infer_95atom(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_parent_n21, slim_v_bindings_n33, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+{
+Slim_type_typing_95TypeRef slim_v_actual_n272 = {0};
+slim_v_actual_n272 = slim_fn_typing_95infer_95atom(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_parent_n21, slim_v_bindings_n33, slim_v_issues_n47, slim_v_scopes_n54, slim_v_frames_n61, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+(void)slim_v_actual_n272;
+slim_result = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_v_actual_n272, slim_v_facts_n40, slim_v_issues_n47, slim_allocation_region);
 if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
-(void)slim_v_actual_n118;
-slim_result = slim_fn_typing_95finish_95type(slim_v_source_n2, (*slim_v_tokens_n6), slim_v_expr_n13, slim_v_expected_n17, slim_v_actual_n118, slim_v_facts_n40, slim_v_issues_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 }

@@ -1139,7 +1139,7 @@ fn check_host_boundary(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut V
     for (path, required) in [
         (
             "selfhost/typing.slim",
-            "(call infer_zero_scalar_builtin tokens expr arguments 3 issues)",
+            "builtin_state(100, argument, -1, 3, 0, modes)",
         ),
         (
             "selfhost/effects.slim",
@@ -1151,7 +1151,16 @@ fn check_host_boundary(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &mut V
             "runtime/slim_rt.c",
             "static _Thread_local int64_t slim_last_monotonic_ms = 0;",
         ),
-        ("selfhost/typing.slim", "(fn infer_tcp_exchange "),
+        // RFC-0141 replaces the recursive host helpers with operand
+        // continuations. Retain exact clock/TCP shape and reservation anchors;
+        // runtime/effect/conformance gates below still apply independently.
+        (
+            "selfhost/typing.slim",
+            "builtin_state(11, argument, 4, 1, 6, modes)",
+        ),
+        ("selfhost/typing.slim", "fn finish_scalar_builtin("),
+        ("selfhost/typing.slim", "fn reserve_builtin_operand("),
+        ("selfhost/typing.slim", "fn finish_byte_vector("),
         ("selfhost/effects.slim", "\"io.tcp_exchange\""),
         ("selfhost/codegen.slim", "(fn emit_tcp_exchange_call "),
         ("runtime/slim_rt.h", "bool slim_tcp_exchange("),

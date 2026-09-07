@@ -2279,12 +2279,16 @@ fn virtual_token_equal(tag: I64, text: Bytes) -> Bool effects[partial]:
                                     false
 
 fn token_equal(source: Bytes, tokens: Vec[Token], index: I64, text: Bytes) -> Bool effects[partial]:
-  let tag: I64 = token_tag(tokens, index)
-  let virtual: Bool = virtual_token_equal(tag, text)
-  let start: I64 = token_start(tokens, index)
-  let end: I64 = token_end(tokens, index)
-  let exact: Bool = span_equal(source, start, end, text)
-  virtual || exact
+  # All three accessors read this same immutable token. Preserve both eager
+  # comparisons, including span traps when a virtual spelling already matches.
+  if token_index_valid(tokens, index):
+    let token: Token = vec.get(tokens, index)
+    let virtual: Bool = virtual_token_equal(token.tag % 1000, text)
+    let exact: Bool = span_equal(source, token.start, token.end, text)
+    virtual || exact
+  else:
+    # Invalid accessors produce tag -1 and the empty [0, 0) source span.
+    span_equal(source, 0, 0, text)
 
 fn skip_nested(tokens: Vec[Token], index: I64, depth: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(tokens)

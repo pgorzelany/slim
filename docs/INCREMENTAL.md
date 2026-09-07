@@ -13,6 +13,14 @@ still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
 
 The retained entry point calls the same isolated SLIM function checker on misses.
+[RFC-0141](../design/rfcs/0141-structured-checking-continuations.md) runs every
+expression family through explicit continuations over shared canonical control
+and lexical-scope descriptions. The optional flow graph consumes those same
+descriptions; the normal checker remains the sole semantic authority. This
+removes recursive expression inference while preserving checked facts, diagnostic
+order and loan transitions. The separate name-resolution prepass retains its
+recorded sanitizer depth limit.
+
 [RFC-0131](../design/rfcs/0131-compact-retained-storage.md) stores one typed
 revision/declaration owner per row and compact owner-scoped type/link words.
 It reconstructs nominal type, binding and node references against the original
@@ -25,7 +33,7 @@ stale revisions cannot replace it. The caller selects a token limit in
 1..1,000,000; invalid limits or larger inputs execute ordinary checking and report
 a capacity miss. This does not bound source
 bytes or peak process memory. This internal typing layer does not complete M1's persistent service lifecycle,
-flow-based ownership orchestration, global analysis retention or native backend caching.
+global analysis retention or native backend caching.
 
 [RFC-0132](../design/rfcs/0132-retained-project-preparation.md) connects retained
 typing to shared project preparation. The attempt returns the complete prepared

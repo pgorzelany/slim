@@ -1,0 +1,93 @@
+module zzprobe
+
+# A measurement-only complete checked-state dump. It is compiled once with each
+# source checkpoint; neither dump is an input to the production checker.
+fn number(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, " ")
+  text.append_i64(value, @output)
+
+fn flag(value: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value:
+    number(1, @output)
+  else:
+    number(0, @output)
+
+fn tokens(values: Vec[syntax.Token], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at < vec.len(values):
+    let value: syntax.Token = vec.get(values, at)
+    text.append_text(@output, "token")
+    number(at, @output)
+    number(value.kind, @output)
+    number(value.tag, @output)
+    number(value.start, @output)
+    number(value.end, @output)
+    number(value.next, @output)
+    number(value.link, @output)
+    text.append_text(@output, "\n")
+    recur(values, at + 1, @output)
+  else:
+    void
+
+fn facts(values: Vec[typing.Fact], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at < vec.len(values):
+    let value: typing.Fact = vec.get(values, at)
+    text.append_text(@output, "fact")
+    number(at, @output)
+    number(value.tag, @output)
+    number(value.form, @output)
+    text.append_text(@output, "\n")
+    recur(values, at + 1, @output)
+  else:
+    void
+
+fn issues(kind: Bytes, values: Vec[typing.Issue], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at < vec.len(values):
+    let value: typing.Issue = vec.get(values, at)
+    text.append_text(@output, kind)
+    number(at, @output)
+    text.append_text(@output, " ")
+    text.append_text(@output, value.code)
+    number(value.start, @output)
+    number(value.end, @output)
+    flag(value.blocks_inference, @output)
+    text.append_text(@output, "\n")
+    recur(kind, values, at + 1, @output)
+  else:
+    void
+
+fn layouts(values: Vec[I64], at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at < vec.len(values):
+    text.append_text(@output, "layout")
+    number(at, @output)
+    number(vec.get(values, at), @output)
+    text.append_text(@output, "\n")
+    recur(values, at + 1, @output)
+  else:
+    void
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(vec.get(args, 1), @input)
+  if read:
+    let source: Bytes = bytes.freeze(^input)
+    let nodes: Vec[syntax.Token] = vec.new()
+    let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @nodes)
+    if parsed.valid:
+      let checked: typing.Checked = check.check_source_deferred(source, @nodes)
+      let output: Vec[U8] = vec.new()
+      text.append_text(@output, "checking-state 1\nstatus")
+      number(checked.status, @output)
+      text.append_text(@output, "\n")
+      tokens(nodes, 0, @output)
+      facts(checked.view.facts, 0, @output)
+      issues("view-issue", checked.view.issues, 0, @output)
+      issues("issue", checked.issues, 0, @output)
+      layouts(checked.view.layouts, 0, @output)
+      text.append_text(@output, "complete\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+    else:
+      io.println("checking-state 1\nparse-invalid\ncomplete")
+      0
+  else:
+    66

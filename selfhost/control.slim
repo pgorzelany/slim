@@ -1,0 +1,142 @@
+module control
+
+# These descriptors borrow only the current canonical token storage. They do
+# not carry accepted semantic facts or cross-revision identity. Retained/graph
+# boundaries must validate their identity.View before creating typed handles.
+struct Binding:
+  name: I64
+  type: I64
+  value: I64
+  body: I64
+
+fn binding(tokens: Vec[syntax.Token], node: I64) -> Binding effects[partial]:
+  let value: I64 = syntax.ast_let_value(tokens, node)
+  Binding(name: syntax.ast_let_name(node), type: syntax.ast_let_type(node), value: value, body: syntax.ast_next(tokens, value))
+
+struct Assignment:
+  name: I64
+  value: I64
+  body: I64
+
+fn assignment(tokens: Vec[syntax.Token], node: I64) -> Assignment effects[partial]:
+  let value: I64 = syntax.ast_set_value(node)
+  Assignment(name: syntax.ast_set_name(node), value: value, body: syntax.ast_next(tokens, value))
+
+struct Branch:
+  value: I64
+  arms: I64
+
+struct Arm:
+  pattern: I64
+  body: I64
+  next: I64
+
+fn branch(tokens: Vec[syntax.Token], node: I64) -> Branch effects[partial]:
+  Branch(value: syntax.ast_match_value(node), arms: syntax.ast_match_arms(tokens, node))
+
+fn arm(tokens: Vec[syntax.Token], node: I64) -> Arm effects[partial]:
+  Arm(pattern: syntax.ast_arm_pattern(node), body: syntax.ast_arm_body(tokens, node), next: syntax.ast_next(tokens, node))
+
+fn arm_count(tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    count
+  else:
+    recur(tokens, syntax.ast_next(tokens, cursor), count + 1)
+
+struct Projection:
+  value: I64
+  field: I64
+
+struct Unary:
+  value: I64
+
+fn projection(tokens: Vec[syntax.Token], node: I64) -> Projection effects[partial]:
+  Projection(value: syntax.ast_get_value(node), field: syntax.ast_get_field(tokens, node))
+
+fn fork(node: I64) -> Unary:
+  Unary(value: syntax.ast_fork_body(node))
+
+struct Construction:
+  type: I64
+  name: I64
+  members: I64
+
+struct Member:
+  name: I64
+  value: I64
+  next: I64
+
+fn construction(tokens: Vec[syntax.Token], node: I64, record: Bool) -> Construction effects[partial]:
+  if record:
+    let type: I64 = syntax.ast_make_type(node)
+    Construction(type: type, name: type, members: syntax.ast_make_fields(node))
+  else:
+    Construction(type: syntax.ast_case_type(node), name: syntax.ast_case_name(tokens, node), members: syntax.ast_case_payload(tokens, node))
+
+fn member(tokens: Vec[syntax.Token], node: I64, record: Bool) -> Member effects[partial]:
+  if record:
+    Member(name: syntax.ast_member_name(node), value: syntax.ast_member_value(node), next: syntax.ast_next(tokens, node))
+  else:
+    Member(name: node, value: node, next: syntax.ast_next(tokens, node))
+
+struct Invocation:
+  callee: I64
+  arguments: I64
+
+fn invocation(node: I64, recursive: Bool) -> Invocation:
+  if recursive:
+    Invocation(callee: syntax.ast_expression_marker(node), arguments: syntax.ast_recur_arguments(node))
+  else:
+    Invocation(callee: syntax.ast_call_callee(node), arguments: syntax.ast_call_arguments(node))
+
+# One structural classification per visit: 0 atom, 1 binding, 2 assignment,
+# 3 branch, 4 projection, 5 parallel, 6 record, 7 variant, 8 call, 9 recur.
+# Kind 10 is an unknown form; the ordinary shape checker rejects it before
+# inference. Classification uses the canonical syntax predicates, not a second
+# tag vocabulary or an independently accepted representation.
+fn expression_kind(source: Bytes, tokens: Vec[syntax.Token], node: I64) -> I64 effects[partial]:
+  if !(syntax.ast_node_kind(tokens, node) == 0):
+    0
+  else:
+    if syntax.ast_expression_is_let(source, tokens, node):
+      1
+    else:
+      if syntax.ast_expression_is_set(source, tokens, node):
+        2
+      else:
+        if syntax.ast_expression_is_match(source, tokens, node):
+          3
+        else:
+          if syntax.ast_expression_is_get(source, tokens, node):
+            4
+          else:
+            if syntax.ast_expression_is_fork(source, tokens, node):
+              5
+            else:
+              if syntax.ast_expression_is_make(source, tokens, node):
+                6
+              else:
+                if syntax.ast_expression_is_case(source, tokens, node):
+                  7
+                else:
+                  if syntax.ast_expression_is_call(source, tokens, node):
+                    8
+                  else:
+                    if syntax.ast_expression_is_recur(source, tokens, node):
+                      9
+                    else:
+                      10
+
+# Local canonical half-open lifetime. This is not a retained identity: callers
+# must validate an identity.View before converting either boundary to a handle.
+# Calls/recur, local bindings and payload arms use this same lexical boundary;
+# nested child visits do not expire their enclosing reservation.
+struct Scope:
+  first: I64
+  end: I64
+
+fn scope(tokens: Vec[syntax.Token], node: I64) -> Scope effects[partial]:
+  Scope(first: node, end: syntax.ast_next(tokens, node))
+
+fn scope_contains(scope: Scope, node: I64) -> Bool:
+  (scope.first <= node) && (node < scope.end)

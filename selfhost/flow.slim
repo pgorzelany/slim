@@ -94,6 +94,23 @@ fn block(owner: identity.View, node: I64, operation: Operation, mode: I64, budge
       vec.push(@blocks, Block(operation: operation, node: source_node, mode: mode))
       ordinal
 
+# Scope enter/exit blocks identify the whole same canonical lexical extent
+# used by normal loan checking. Validate its end against this graph's owner,
+# preserving the optional graph budget and existing block/source identities.
+fn scoped_block(tokens: Vec[syntax.Token], owner: identity.View, node: I64, operation: Operation, budget: I64, blocks: @Vec[Block]) -> I64 effects[alloc, partial]:
+  if vec.len(blocks) >= budget:
+    -1
+  else:
+    if (node < owner.first) || ((node - owner.first) >= owner.count):
+      -2
+    else:
+      let scope: control.Scope = control.scope(tokens, node)
+      let remaining: I64 = owner.count - (scope.first - owner.first)
+      if (scope.end <= scope.first) || ((scope.end - scope.first) > remaining):
+        -2
+      else:
+        block(owner, scope.first, operation, 0, budget, @blocks)
+
 fn edge(owner: identity.View, from: I64, to: I64, kind: EdgeKind, budget: I64, edges: @Vec[Edge]) -> Bool effects[alloc]:
   if ((from < 0) || (to < 0)) || (vec.len(edges) >= budget):
     false
@@ -124,60 +141,62 @@ fn value_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth
     else:
       -1
   else:
-    let value: I64 = if task.kind == 2:
-      syntax.ast_member_value(task.node)
-    else:
-      task.node
+    let structure: control.Member = control.member(tokens, task.node, task.kind == 2)
+    let value: I64 = structure.value
     let argument: I64 = block(owner, value, Operation::Argument(), syntax.ast_argument_mode(tokens, value), budget, @blocks)
-    let remaining: I64 = push(task.kind, syntax.ast_next(tokens, task.node), argument, task.to, depth, budget, @tasks)
+    let remaining: I64 = push(task.kind, structure.next, argument, task.to, depth, budget, @tasks)
     push(0, value, task.from, argument, remaining, budget, @tasks)
 
 fn arm_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
   if syntax.ast_list_done(tokens, task.node):
     depth
   else:
-    let enter: I64 = block(owner, task.node, Operation::ArmEnter(), 0, budget, @blocks)
-    let leave: I64 = block(owner, task.node, Operation::ArmExit(), 0, budget, @blocks)
+    let structure: control.Arm = control.arm(tokens, task.node)
+    let enter: I64 = scoped_block(tokens, owner, task.node, Operation::ArmEnter(), budget, @blocks)
+    let leave: I64 = scoped_block(tokens, owner, task.node, Operation::ArmExit(), budget, @blocks)
     let entered: Bool = edge(owner, task.from, enter, EdgeKind::Alternative(), budget, @edges)
     let joined: Bool = edge(owner, leave, task.to, EdgeKind::Join(), budget, @edges)
     if entered && joined:
-      let remaining: I64 = push(3, syntax.ast_next(tokens, task.node), task.from, task.to, depth, budget, @tasks)
-      push(0, syntax.ast_arm_body(tokens, task.node), enter, leave, remaining, budget, @tasks)
+      let remaining: I64 = push(3, structure.next, task.from, task.to, depth, budget, @tasks)
+      push(0, structure.body, enter, leave, remaining, budget, @tasks)
     else:
       -1
 
 fn binding_task(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
-  let name: I64 = syntax.ast_let_name(task.node)
+  let structure: control.Binding = control.binding(tokens, task.node)
+  let name: I64 = structure.name
   let kind: Operation = if syntax.ast_expression_is_statement(tokens, task.node):
     Operation::Statement()
   else:
     Operation::Bind()
   let fact: typing.Fact = vec.get(facts, name)
   let bind: I64 = block(owner, name, kind, typing.fact_borrow_mode(fact), budget, @blocks)
-  let leave: I64 = block(owner, task.node, Operation::ScopeExit(), 0, budget, @blocks)
+  let leave: I64 = scoped_block(tokens, owner, task.node, Operation::ScopeExit(), budget, @blocks)
   if edge(owner, leave, task.to, EdgeKind::Next(), budget, @edges):
-    let body: I64 = push(0, syntax.ast_let_body(tokens, task.node), bind, leave, depth, budget, @tasks)
-    push(0, syntax.ast_let_value(tokens, task.node), task.from, bind, body, budget, @tasks)
+    let body: I64 = push(0, structure.body, bind, leave, depth, budget, @tasks)
+    push(0, structure.value, task.from, bind, body, budget, @tasks)
   else:
     -1
 
 fn branch_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
+  let structure: control.Branch = control.branch(tokens, task.node)
   let branch: I64 = block(owner, task.node, Operation::Branch(), 0, budget, @blocks)
   let join: I64 = block(owner, task.node, Operation::Join(), 0, budget, @blocks)
   if edge(owner, join, task.to, EdgeKind::Next(), budget, @edges):
-    let arms: I64 = push(3, syntax.ast_match_arms(tokens, task.node), branch, join, depth, budget, @tasks)
-    push(0, syntax.ast_match_value(task.node), task.from, branch, arms, budget, @tasks)
+    let arms: I64 = push(3, structure.arms, branch, join, depth, budget, @tasks)
+    push(0, structure.value, task.from, branch, arms, budget, @tasks)
   else:
     -1
 
 fn call_task(tokens: Vec[syntax.Token], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
-  let call: I64 = block(owner, task.node, Operation::Call(), 0, budget, @blocks)
-  let leave: I64 = block(owner, task.node, Operation::CallExit(), 0, budget, @blocks)
+  let call: I64 = scoped_block(tokens, owner, task.node, Operation::Call(), budget, @blocks)
+  let leave: I64 = scoped_block(tokens, owner, task.node, Operation::CallExit(), budget, @blocks)
   let called: Bool = edge(owner, call, leave, EdgeKind::Next(), budget, @edges)
   let returned: Bool = edge(owner, leave, task.to, EdgeKind::Next(), budget, @edges)
   let abrupt: Bool = edge(owner, call, 2, EdgeKind::PotentialAbrupt(), budget, @edges)
   if (called && returned) && abrupt:
-    push(1, syntax.ast_call_arguments(task.node), task.from, call, depth, budget, @tasks)
+    let structure: control.Invocation = control.invocation(task.node, false)
+    push(1, structure.arguments, task.from, call, depth, budget, @tasks)
   else:
     -1
 
@@ -197,9 +216,10 @@ fn aggregate_task(owner: identity.View, task: Task, values: I64, kind: I64, oper
 
 fn expression_task(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], owner: identity.View, task: Task, depth: I64, budget: I64, blocks: @Vec[Block], edges: @Vec[Edge], tasks: @Vec[Task]) -> I64 effects[alloc, partial]:
   let node: I64 = task.node
-  let kind: I64 = syntax.ast_node_kind(tokens, node)
-  if !(kind == 0):
-    if (kind == 2) || (kind == 3):
+  let kind: I64 = control.expression_kind(source, tokens, node)
+  if kind == 0:
+    let atom: I64 = syntax.ast_node_kind(tokens, node)
+    if (atom == 2) || (atom == 3):
       let value: I64 = block(owner, node, Operation::Eval(), syntax.ast_argument_mode(tokens, node), budget, @blocks)
       let before: Bool = edge(owner, task.from, value, EdgeKind::Next(), budget, @edges)
       let after: Bool = edge(owner, value, task.to, EdgeKind::Next(), budget, @edges)
@@ -210,43 +230,49 @@ fn expression_task(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.F
     else:
       -2
   else:
-    if syntax.ast_expression_is_let(source, tokens, node):
+    if kind == 1:
       binding_task(source, tokens, facts, owner, task, depth, budget, @blocks, @edges, @tasks)
     else:
-      if syntax.ast_expression_is_set(source, tokens, node):
+      if kind == 2:
+        let structure: control.Assignment = control.assignment(tokens, node)
         let assigned: I64 = block(owner, node, Operation::Assign(), 0, budget, @blocks)
-        let body: I64 = push(0, syntax.ast_set_body(tokens, node), assigned, task.to, depth, budget, @tasks)
-        push(0, syntax.ast_set_value(node), task.from, assigned, body, budget, @tasks)
+        let body: I64 = push(0, structure.body, assigned, task.to, depth, budget, @tasks)
+        push(0, structure.value, task.from, assigned, body, budget, @tasks)
       else:
-        if syntax.ast_expression_is_match(source, tokens, node):
+        if kind == 3:
           branch_task(tokens, owner, task, depth, budget, @blocks, @edges, @tasks)
         else:
-          if syntax.ast_expression_is_call(source, tokens, node):
+          if kind == 8:
             call_task(tokens, owner, task, depth, budget, @blocks, @edges, @tasks)
           else:
-            if syntax.ast_expression_is_get(source, tokens, node):
-              unary_task(owner, task, syntax.ast_get_value(node), Operation::Project(), depth, budget, @blocks, @edges, @tasks)
+            if kind == 4:
+              let structure: control.Projection = control.projection(tokens, node)
+              unary_task(owner, task, structure.value, Operation::Project(), depth, budget, @blocks, @edges, @tasks)
             else:
-              if syntax.ast_expression_is_make(source, tokens, node):
-                aggregate_task(owner, task, syntax.ast_make_fields(node), 2, Operation::Make(), depth, budget, @blocks, @edges, @tasks)
+              if kind == 6:
+                let structure: control.Construction = control.construction(tokens, node, true)
+                aggregate_task(owner, task, structure.members, 2, Operation::Make(), depth, budget, @blocks, @edges, @tasks)
               else:
-                if syntax.ast_expression_is_case(source, tokens, node):
-                  aggregate_task(owner, task, syntax.ast_case_payload(tokens, node), 1, Operation::Case(), depth, budget, @blocks, @edges, @tasks)
+                if kind == 7:
+                  let structure: control.Construction = control.construction(tokens, node, false)
+                  aggregate_task(owner, task, structure.members, 1, Operation::Case(), depth, budget, @blocks, @edges, @tasks)
                 else:
-                  if syntax.ast_expression_is_recur(source, tokens, node):
-                    let transfer: I64 = block(owner, node, Operation::Recur(), 0, budget, @blocks)
+                  if kind == 9:
+                    let transfer: I64 = scoped_block(tokens, owner, node, Operation::Recur(), budget, @blocks)
                     if edge(owner, transfer, 0, EdgeKind::Recur(), budget, @edges):
-                      push(1, syntax.ast_recur_arguments(node), task.from, transfer, depth, budget, @tasks)
+                      let structure: control.Invocation = control.invocation(node, true)
+                      push(1, structure.arguments, task.from, transfer, depth, budget, @tasks)
                     else:
                       -1
                   else:
-                    if syntax.ast_expression_is_fork(source, tokens, node):
+                    if kind == 5:
+                      let structure: control.Unary = control.fork(node)
                       let enter: I64 = block(owner, node, Operation::ForkEnter(), 0, budget, @blocks)
                       let join: I64 = block(owner, node, Operation::ForkJoin(), 0, budget, @blocks)
                       let entered: Bool = edge(owner, task.from, enter, EdgeKind::Next(), budget, @edges)
                       let joined: Bool = edge(owner, join, task.to, EdgeKind::Next(), budget, @edges)
                       if entered && joined:
-                        push(0, syntax.ast_fork_body(node), enter, join, depth, budget, @tasks)
+                        push(0, structure.value, enter, join, depth, budget, @tasks)
                       else:
                         -1
                     else:

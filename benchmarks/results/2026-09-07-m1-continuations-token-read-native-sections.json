@@ -1,0 +1,146 @@
+[
+  {
+    "application": "binary_search",
+    "sections": {
+      "__TEXT/__text": [
+        5332,
+        "8affac9d51a8e22e54dade1fa896de31661e6e11bdfe17b5f5f984adf1af2173"
+      ],
+      "__TEXT/__stubs": [
+        384,
+        "341e0d63b796beae6a377131ae54ffc56990e653907615b8210ff7e4caa4f8e6"
+      ],
+      "__TEXT/__cstring": [
+        620,
+        "104e41e46d5a77a3b3a06b0e22b851768c95b09606c9b538bcbf256fbccace57"
+      ],
+      "__TEXT/__unwind_info": [
+        168,
+        "7056dee2bb7589c3e4b650e839f83df5e0dbd5006bfceb20d883445bd87d2bd4"
+      ],
+      "__DATA_CONST/__got": [
+        288,
+        "281c97a358aeb2c503d878a3585a3a9878bd64a7574fb7bc2226e84f3bcb852c"
+      ],
+      "__DATA/__thread_vars": [
+        72,
+        "d8710c6236e9025bb9fffeeb33a43ff410390659246e422286f24c9a9ad8a1fc"
+      ],
+      "__DATA/__thread_bss": [
+        24,
+        "zero-fill"
+      ]
+    },
+    "exact": true
+  },
+  {
+    "application": "edit_distance",
+    "sections": {
+      "__TEXT/__text": [
+        5872,
+        "58c574bbc15dce1d63cc58468096c6a468b875c7ef97e3671dfc9004f6763812"
+      ],
+      "__TEXT/__stubs": [
+        384,
+        "341e0d63b796beae6a377131ae54ffc56990e653907615b8210ff7e4caa4f8e6"
+      ],
+      "__TEXT/__const": [
+        16,
+        "9d34149fbd1fe777eb238799054c8cbfbce372255f219f8740838def9bfd02db"
+      ],
+      "__TEXT/__cstring": [
+        768,
+        "9a7eeb07d43bc99e9ac886036e1eb980d2972e3fdb7284a3c91b4546e5923d8d"
+      ],
+      "__TEXT/__unwind_info": [
+        168,
+        "e8827c48cbf8a3a26edb9780c04687a3b04ca42c8d16ad7fae46486c3d14a904"
+      ],
+      "__DATA_CONST/__got": [
+        288,
+        "281c97a358aeb2c503d878a3585a3a9878bd64a7574fb7bc2226e84f3bcb852c"
+      ],
+      "__DATA/__thread_vars": [
+        72,
+        "d8710c6236e9025bb9fffeeb33a43ff410390659246e422286f24c9a9ad8a1fc"
+      ],
+      "__DATA/__thread_bss": [
+        24,
+        "zero-fill"
+      ]
+    },
+    "exact": true
+  },
+  {
+    "application": "sieve",
+    "sections": {
+      "__TEXT/__text": [
+        5376,
+        "eefe1f24416fea47c410ca8002397f5c2c59a31cbefb36ccb03e936fc5a7e7ef"
+      ],
+      "__TEXT/__stubs": [
+        384,
+        "341e0d63b796beae6a377131ae54ffc56990e653907615b8210ff7e4caa4f8e6"
+      ],
+      "__TEXT/__cstring": [
+        601,
+        "337ee95cad12a4097d4c402f39c598e683bb72972a73fe0489effa83f1e97948"
+      ],
+      "__TEXT/__unwind_info": [
+        168,
+        "3cc3f82d8c0dc88f869d2b23724a38cac821c2fbb1319284a6968313e47acd1d"
+      ],
+      "__DATA_CONST/__got": [
+        288,
+        "281c97a358aeb2c503d878a3585a3a9878bd64a7574fb7bc2226e84f3bcb852c"
+      ],
+      "__DATA/__thread_vars": [
+        72,
+        "d8710c6236e9025bb9fffeeb33a43ff410390659246e422286f24c9a9ad8a1fc"
+      ],
+      "__DATA/__thread_bss": [
+        24,
+        "zero-fill"
+      ]
+    },
+    "exact": true
+  },
+  {
+    "application": "state_machine",
+    "sections": {
+      "__TEXT/__text": [
+        6192,
+        "508f024c410263551dfe2a800830e2937a74cfccc24935a7d9e6ec2eea01c03c"
+      ],
+      "__TEXT/__stubs": [
+        408,
+        "5bc25f7397aa8f69460e0491f310a8b8345895dd7d0f8997d24dfb1e44ba8c6a"
+      ],
+      "__TEXT/__cstring": [
+        733,
+        "6152587b02466873cca1d52e124841359a5077cdad678c94783750dc46aabe2c"
+      ],
+      "__TEXT/__unwind_info": [
+        176,
+        "0a86f9d741623c98e7ef3441f4045b8425d3ae636d819408a694326fddb0c3f2"
+      ],
+      "__DATA_CONST/__got": [
+        304,
+        "3cd4c31f8267eed8445fa9ad10779e15ecfc5c1e616121f23dd37ff868550776"
+      ],
+      "__DATA/__thread_vars": [
+        96,
+        "2cde4601a40fb2fa78da9600cab27eab1331800afefbd5bc9cee509cd1b19dc6"
+      ],
+      "__DATA/__thread_bss": [
+        32,
+        "zero-fill"
+      ],
+      "__DATA/__bss": [
+        33,
+        "zero-fill"
+      ]
+    },
+    "exact": true
+  }
+]

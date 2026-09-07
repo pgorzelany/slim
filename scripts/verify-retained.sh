@@ -42,7 +42,13 @@ awk -F '\t' 'NR == 1 { if ($0 != "slim-retained\t1\texact\t1000000000") exit 1 }
 retained_failed=0
 retained_succeeded=0
 retained_at=1
-while test "$retained_at" -le 512; do
+# Keep every original fault position and cover completion of the current
+# retained pipeline. The pre-continuation 49ea4a0 probe already takes 569
+# allocations on this fixture (the continuation candidate takes 572), so the
+# former 512-position campaign no longer reached a successful ordinal.
+# This is a fixed fault-coverage domain; allocation/performance budgets remain
+# independently checked by the work and resource gates.
+while test "$retained_at" -le 1024; do
   retained_status=0
   SLIM_ALLOC_FAIL_AT="$retained_at" "$retained_dir/ordinary" examples/hello.slim examples/hello.slim \
     > "$retained_dir/ordinary.out" 2> "$retained_dir/ordinary.err" || retained_status=$?

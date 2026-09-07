@@ -1,7 +1,7 @@
 # RFC-0141: Structured checking continuations
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -256,9 +256,89 @@ external review, completed implementation or permission to relax hard gates.
 
 ## Implementation
 
-Pending. The baseline is `49ea4a0`, with the closure ledger at `17373e5`.
-No expression family has migrated under this RFC yet. Shared source descriptions,
-all continuation phases, ownership/loan integration and full validation remain.
+Complete on the validated 4,432,372-byte compiler fixed point
+`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`,
+built from baseline `49ea4a0`. The [checkpoint report](../../benchmarks/results/2026-09-05-slim-next-progress.md)
+records costs, rejected experiments, verification repairs and bounded domains.
+The working implementation shares binding, assignment, branch/arm, projection,
+construction/member, invocation and parallel-body descriptions between `control`,
+`typing` and `flow`. Phase 0 awaits a binding initializer, 1 its body, 2 an
+assignment value, 3 its body, 4 a branch scrutinee, 5 an arm, 6 a parallel body,
+7 a projection owner, 8 a record field, 9 a variant payload,
+10 a user-call argument, 11 a recurrence argument and 12 a built-in operand.
+Phases 13–17 handle unary and binary scalar operands directly in the compact
+pending frame, retaining operand/result kinds and completed prefix validity.
+The active branch and user-call argument records are scalar machine parameters;
+only suspended ancestors enter their reused vectors. Argument continuations retain
+the parameter type resolved before child checking; sibling advance replaces it
+with that sibling's type. Built-in mode validation derives from the decoded
+operation while preserving diagnostic ordering. The built-in scratch pool
+retains collection, I/O and replacement contexts and reuses released slots.
+Completed outermost forms return their finished type directly; only nested
+completions restore and resume a suspended parent. Semantic predicates and
+move/loan/restore points remain in the
+normal checker. Built-in subphases preserve eager scalar operand checking,
+collection reservations and replacement-root reservation before its new value.
+
+`control.Scope` supplies the shared canonical half-open lifetime for loan
+membership and graph scope events. Graph scope blocks validate the same extent
+against their revision-owned function view without changing block identities or
+optional budgets. `control.expression_kind` selects the structural family once
+per visit. The machine resumes an atom or blocked child in
+the same machine iteration after its existing entry/finish rules; native
+observation distinguishes requested entry from readiness to resume a parent.
+
+The complete checked-state differential caught an incorrect initial arm-result
+combination on `duplicate_variant_arm.slim`. Baseline emitted C shows that the
+old arm/member/argument loops' `recur` is a terminal jump: source expressions
+following it do not execute. The continuations preserve the observed first-arm
+result and list-end completion, together with every earlier ordered issue. They
+do not introduce an accumulated prefix-validity override for those loops. This
+is a compatibility observation about the existing compiler; it is not a new
+source feature or permission to publish rejected candidates.
+
+The Core 1I governance source anchors follow the migrated clock/TCP operand
+shapes and scalar/reservation/output helpers. The former recursive
+`infer_tcp_exchange` name is removed with its implementation. Runtime, effect,
+conformance and host-execution gates remain independently required; no source
+anchor serves as evidence that the host operation is safe or complete.
+
+The token-comparison refinement reads one immutable token instead of repeating
+its tag/start/end accessors. Both virtual and source comparisons remain eager;
+invalid indices retain their empty-span behavior. An independent finite oracle
+checks 116,952 results and two eager traps on ordinary and sanitized probes.
+The existing work observer counts function-root entry plus actual continuation
+child requests in the same expression-entry metric, excluding parent resumes
+and the already-counted root. Its schema, caps and exact geometric expectations
+are preserved.
+
+[Checkpoint validation](../../benchmarks/results/2026-09-07-m1-continuations-token-read-checkpoint-gates.tsv)
+passes all required commands and applicable gates. Complete state/graph and
+C/analysis comparisons remain exact over their named baseline domains. The
+continuation gate covers all 18 phases, 16,038 independent ownership cases,
+293 ordinary/sanitized states, 1,024 allocation-fault positions and 1,601
+malformed-input comparisons. Eight geometric families pass ordinary and
+ASan/UBSan checks through depth 512, with native expression-machine depth one.
+The remaining 4,000-binding sanitizer limit is in the unchanged
+`check.find_unknown_expr` prepass; no whole-compiler stack-independence claim is
+made.
+
+Full internal session validation passes 6,144 fault positions. Retained typing
+passes its extended 1,024-position campaign; the old 512-position window was
+already shorter than the baseline probe's 569 allocations. The candidate uses
+572. Every original fault position and the failure/success assertions remain,
+and separate work/resource/performance budgets are unchanged. Retained-project,
+place, parsing, integer and runtime gates also pass. The complete verification
+record combines the successful prefix, independently corrected measurement/test
+gates and the remaining suffix; the stopped whole-script invocation is retained
+as such. M1 release closure still requires the complete `verify-0.9.sh` run.
+
+Focused, geometric, retained-session, allocation/RSS, backend and runtime costs
+are recorded, including all initial outliers and their longer controls. No
+performance exception or general speedup is claimed. All 20 native applications
+retain exact C and output. Public host-bound sessions, retained global analyses,
+native backend caching and the separate baseline literal-Bytes emission repair
+remain parent M1 work.
 
 ## Removal and supersession
 

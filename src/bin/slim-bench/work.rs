@@ -308,6 +308,13 @@ fn hook_amount(hook: &Hook, signature: &str) -> Result<String, String> {
         .unwrap()
         .strip_suffix(".len")
         .unwrap();
+    Ok(format!(
+        "(uint64_t){}.len",
+        hook_formal(hook.metric, base, signature)?
+    ))
+}
+
+fn hook_formal(metric: &str, base: &str, signature: &str) -> Result<String, String> {
     let candidates: Vec<_> = signature
         .split(|c: char| !c.is_ascii_alphanumeric() && c != '_')
         .filter(|token| {
@@ -322,11 +329,11 @@ fn hook_amount(hook: &Hook, signature: &str) -> Result<String, String> {
     if candidates.len() != 1 {
         return Err(format!(
             "{} formal anchor count is {}, expected one",
-            hook.metric,
+            metric,
             candidates.len()
         ));
     }
-    Ok(format!("(uint64_t){}.len", candidates[0]))
+    Ok(candidates[0].to_owned())
 }
 
 fn instrument(seed: &str) -> Result<String, String> {
@@ -334,9 +341,24 @@ fn instrument(seed: &str) -> Result<String, String> {
     let mut result = String::from("#include \"work_probe.h\"\n");
     let mut hits = vec![0; HOOKS.len()];
     let mut active = Vec::new();
+    let expression_index = HOOKS
+        .iter()
+        .position(|hook| hook.metric == "expression_check_calls")
+        .expect("fixed expression metric");
+    let mut child_entry = None;
+    let mut child_headers = 0;
     for line in lines {
         if line.starts_with("static SLIM_UNUSED_FUNCTION ") && line.trim_end().ends_with(" {") {
             active.clear();
+            child_entry = None;
+            if line.contains(" slim_fn_typing_95infer_95control_95walk(") {
+                let returning = hook_formal("expression_check_calls", "slim_v_returning", line)?;
+                let depth = hook_formal("expression_check_calls", "slim_v_depth", line)?;
+                // RFC-0141 keeps the function-root entry above, then checks
+                // children in the loop. Parent resumes and declined arguments
+                // are not new expression entries; depth zero is already counted.
+                child_entry = Some(format!("(uint64_t)(!{returning} && {depth} > 0)"));
+            }
             for (index, hook) in HOOKS.iter().enumerate() {
                 let encoded = hook.function.replace('.', "_").replace('_', "_95");
                 if line.contains(&format!(" slim_fn_{encoded}(")) {
@@ -356,6 +378,10 @@ fn instrument(seed: &str) -> Result<String, String> {
         } else {
             result.push_str(line);
             if line == "slim_recur: ;\n" {
+                if let Some(amount) = &child_entry {
+                    child_headers += 1;
+                    result.push_str(&format!("slim_work_add({expression_index}, {amount});\n"));
+                }
                 for &index in &active {
                     if matches!(HOOKS[index].point, Point::Header) {
                         hits[index] += 1;
@@ -367,6 +393,11 @@ fn instrument(seed: &str) -> Result<String, String> {
                 }
             }
         }
+    }
+    if child_headers != 1 {
+        return Err(format!(
+            "expression child observation anchor count is {child_headers}, expected one"
+        ));
     }
     for (hook, count) in HOOKS.iter().zip(hits) {
         if count != 1 {
