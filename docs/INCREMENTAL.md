@@ -76,6 +76,13 @@ imports, passes, scans and scratch initialization/reset work. Costs, limits and
 complete differential evidence are in the
 [progress report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 
+[RFC-0139](../design/rfcs/0139-stable-declaration-local-c-identifiers.md) gives
+C locals and temporaries parameter-list-relative node ordinals. Private parallel
+helpers also include their escaped qualified owner function name. Unrelated
+preceding edits and module relocation therefore preserve unchanged function
+fragments when all checked lowering inputs remain equal. The emitter still runs
+on changed-source updates; fragment dependency tracking and storage remain M1 work.
+
 ## What the current session command measures
 
 `selfhost/session.slim` loads the initial and updated projects and builds

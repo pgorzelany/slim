@@ -2448,3 +2448,111 @@ flow-based availability/loans, public host-bound sessions and lifecycle, retaine
 parallel/global analysis, stable C fragments/backend artifacts, and complete
 locality/differential/release closure. The known recursive-checker sanitizer stack
 limitation remains open.
+
+### M1 stable declaration-local C identifiers (RFC-0139, 2026-09-07)
+
+Starting from d157792, the sole SLIM emitter now names source bindings and
+expression temporaries relative to the owning function's parameter-list node.
+Checked binding links still distinguish shadowed names. Prototypes, definitions,
+exclusive references, match payloads, replacement places, recurrence updates and
+parallel captures all receive that same origin. Private parallel contexts and
+runners also contain the escaped qualified owner function name and a reserved
+`_s` separator. At most 64 executable-site owner scans use checked declaration
+extents; a missing or non-function owner takes the existing internal-trap path.
+No global owner vector, source feature, runtime primitive or second emitter was
+added. Unchanged lowering inputs produce unchanged fragments after relocation;
+changed range, plan or parallel facts may legitimately change them.
+
+The previous seed regenerates a strict fixed point at **4,090,266 C bytes**, SHA-256
+`323f36cd855a58204aee41cf1615aaa58ec0cefc76ca5e572ffaf5407872b76b`.
+This is 338,575 fewer bytes than the preceding seed, principally from shorter
+private identifiers. `generation-1.c` and the new fixed point compile the same
+updated SLIM sources with the preceding and current naming schemes: their full
+C token streams differ in 103,340 consistent private identifier occurrences and
+no other tokens. This comparison treats strings, character literals and comments
+as opaque; it does not rewrite production C.
+
+The permanent `generated_private_identifiers_survive_unrelated_relocation` test
+runs `scripts/verify-codegen-identities.py`. Across **96 accepted programs** (75
+conformance inputs, all 20 native applications and one dedicated fixture), each
+original fragment survives preceding insertion, preceding body growth, moving
+that declaration to the end and deleting it. A qualified module file relocation
+with preceding module insertion and a complete declaration reversal are tested
+separately. Coverage includes shadowing, shared/exclusive/owned parameters,
+computed matches, replacement, counted recurrence, automatic and explicit
+parallel execution, similar escaped helper names and generated-looking text inside
+string literals. A changed body must change its emitted fragment. Native checks
+exercise serial lowering, POSIX workers, injected spawn fallback and an observed
+successful join through its injected failure hook.
+
+The [complete identifier comparison](2026-09-07-m1-stable-c-identities.tsv) records
+every changed native and conformance C row. In this input domain only consistent,
+injective private identifier renaming is allowed, independently per C function
+scope and across the translation unit for helper names. Complete analysis reports
+remain exact. All 197 rejection fixtures preserve status, stdout and stderr.
+These are bounded regression domains, not a proof over every accepted program.
+
+Validation passed bootstrap, governance, Rust formatting, Clippy, 10 unit tests,
+72 integration tests, 338 conformance cases and 2,000 deterministic malformed
+mutations. Nine separate benchmark gates passed: performance quick, reduction
+quick, parallelism, compare quick, agent, resources, parallel-runtime quick,
+incremental quick and work quick. The native compare aggregate was 1.086 versus C
+and 0.986 versus Rust; the generated parallel/serial ratios were 0.870 for
+`state_machine` and 0.571 for `signal_network`. No gate was removed or relaxed.
+The SLIM formatter remained deterministic and idempotent.
+
+[Ordinary O1 versus ASan/UBSan O1](2026-09-07-m1-stable-c-sanitizers.tsv) produces
+exact status/stdout/stderr for all 96 accepted inputs. Two
+[2,048-ordinal allocation-fault campaigns](2026-09-07-m1-stable-c-faults.tsv)
+compare the same three channels exactly: `hello` has 116 status-71 failures and
+1,932 successes; the mixed naming/ownership/parallel fixture has 345 failures and
+1,703 successes. Eight independent process-pair workers report in ordinal order.
+An earlier interrupted run is retained in the ignored work directory; the dated
+artifact records the complete replacement campaign. This does not close the
+separate known recursive-checker sanitizer stack limitation.
+
+The [first frontend samples](2026-09-07-m1-stable-c-frontend.tsv),
+[external backend samples](2026-09-07-m1-stable-c-backend.tsv),
+[native execution samples](2026-09-07-m1-stable-c-runtime.tsv) and
+[per-application output/binary sizes](2026-09-07-m1-stable-c-native.tsv) keep the
+cost categories separate. `scripts/measure-codegen-identities.py` preserves the
+geometric input generator and measurement protocol: complete O2 frontend process
+time, then external O2 C compilation/link, then native execution with exact output
+agreement. Warmups and alternating repetitions are recorded in each artifact.
+
+The first 500-helper frontend median was 2.1% higher; `merge_sort` and
+`state_machine` native medians were 13.8% and 6.0% higher. These observations are
+retained, not discarded. [31-pair controls](2026-09-07-m1-stable-c-confirmation.tsv)
+did not reproduce the native increases; the next frontend comparison still had
+cohort drift. A final [66-group frontend control](2026-09-07-m1-stable-c-frontend-control.tsv)
+rotates all six permutations of two identical baseline runs and one candidate
+inside each group. Its 500-helper baseline/candidate medians are 9.952/9.974 ms;
+control ratio IQR is 0.9773–1.0345 and candidate ratio IQR is 0.9710–1.0187.
+The measured change falls within the observed noise. Other sizes likewise show
+no repeatable increase outside their interleaved controls:
+
+| Helpers | Baseline frontend ms | Candidate frontend ms |
+|---:|---:|---:|
+| 125 | 4.895 | 4.756 |
+| 250 | 6.663 | 6.510 |
+| 500 | 9.952 | 9.974 |
+| 1,000 | 16.345 | 16.129 |
+| 2,000 | 29.412 | 29.092 |
+
+At 2,000 helpers, emitted C decreases from 1,233,074 to 1,172,186 bytes. Five
+alternating [peak-memory samples](2026-09-07-m1-stable-c-memory.tsv), using Darwin
+`wait4` process RSS in bytes, have medians 64,094,208/63,078,400 at that size.
+The 125-helper medians are both 5,931,008 bytes; 500-helper medians are
+17,514,496/17,498,112. No portable absolute memory or latency budget is inferred.
+
+All 20 native programs preserve exact output and their measured
+[Mach-O machine-code text sections](2026-09-07-m1-stable-c-machine-text.tsv) are
+byte-identical on this host. External backend median ratios range from 0.963 to
+1.015. The repeated native checks and unchanged machine text give no evidence of
+a native execution regression; they are not a cross-target equivalence proof.
+No frontend or native speedup claim is needed for the naming contract.
+
+M1 remains **in progress**. Actual flow availability/loans, public host-bound
+sessions and lifecycle, retained parallel/global analysis, C-fragment and native
+backend artifact retention, and complete locality/differential/release closure
+remain. This naming prerequisite does not itself retain function fragments.

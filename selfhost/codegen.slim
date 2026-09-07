@@ -5,7 +5,7 @@ fn emit_value_address(source: Bytes, tokens: Vec[syntax.Token], params: I64, val
   let form: Bool = kind == 0
   if form:
     text.append_text(@output, "&")
-    emit_temp_name(value, @output)
+    emit_temp_name(params, value, @output)
   else:
     let true_value: Bool = syntax.ast_node_text_is(source, tokens, value, "true")
     let false_value: Bool = syntax.ast_node_text_is(source, tokens, value, "false")
@@ -72,7 +72,7 @@ fn emit_vec_set_call(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing
     text.append_text(@output, "] = ")
     emit_value(source, tokens, params, value, @output)
     text.append_text(@output, "; ")
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = (SlimUnit){0};\n")
     true
   else:
@@ -82,7 +82,7 @@ fn emit_arena_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, callee
   let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.new")
   if new_call:
     let inner_type: I64 = syntax.ast_type_argument(destination_type)
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = slim_vec_new(sizeof(")
     emit_type(source, tokens, inner_type, @output)
     text.append_text(@output, "), slim_allocation_region);\n")
@@ -91,20 +91,20 @@ fn emit_arena_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, callee
     let add_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.add")
     if add_call:
       let value: I64 = syntax.ast_next(tokens, arguments)
-      emit_destination(source, tokens, destination, result, @output)
+      emit_destination(source, tokens, params, destination, result, @output)
       text.append_text(@output, " = 0;\nif (!slim_arena_add(")
       emit_binding_address(source, tokens, params, arguments, @output)
       text.append_text(@output, ", ")
       emit_value_address(source, tokens, params, value, @output)
       text.append_text(@output, ", &")
-      emit_destination(source, tokens, destination, result, @output)
+      emit_destination(source, tokens, params, destination, result, @output)
       text.append_text(@output, ")) goto slim_allocation_failed;\n")
       true
     else:
       let get_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "arena.get")
       if get_call:
         let identity: I64 = syntax.ast_next(tokens, arguments)
-        emit_destination(source, tokens, destination, result, @output)
+        emit_destination(source, tokens, params, destination, result, @output)
         text.append_text(@output, " = ((")
         emit_type(source, tokens, destination_type, @output)
         text.append_text(@output, " *)(")
@@ -127,7 +127,7 @@ fn emit_vec_push_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, cal
     text.append_text(@output, ", ")
     emit_value_address(source, tokens, params, value, @output)
     text.append_text(@output, ")) goto slim_allocation_failed; ")
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = (SlimUnit){0};\n")
     true
   else:
@@ -156,11 +156,11 @@ fn emit_let_full(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fac
   text.append_text(@output, "{\n")
   emit_type(source, tokens, type_index, @output)
   text.append_text(@output, " ")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, " = {0};\n")
   emit_expr_full(source, tokens, facts, allocations, module_items, params, value, name, false, type_index, @output, range_facts)
   text.append_text(@output, "(void)")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, ";\n")
   emit_expr_full(source, tokens, facts, allocations, module_items, params, body, destination, result, destination_type, @output, range_facts)
   text.append_text(@output, "}\n")
@@ -172,7 +172,7 @@ fn emit_match_value_binding(source: Bytes, tokens: Vec[syntax.Token], facts: Vec
     let type_index: I64 = fact_type_index(facts, value)
     emit_type(source, tokens, type_index, @output)
     text.append_text(@output, " ")
-    emit_temp_name(value, @output)
+    emit_temp_name(params, value, @output)
     text.append_text(@output, " = {0};\n")
     let temporary: I64 = 0 - value
     emit_expr_full(source, tokens, facts, allocations, module_items, params, value, temporary, false, type_index, @output, range_facts)
@@ -276,7 +276,7 @@ fn emit_mangled_token(source: Bytes, tokens: Vec[syntax.Token], index: I64, outp
   let end: I64 = syntax.ast_node_end(tokens, index)
   emit_mangled_span(source, start, end, @output)
 
-fn emit_source_name(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_source_name(source: Bytes, tokens: Vec[syntax.Token], params: I64, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_v_")
   emit_mangled_token(source, tokens, index, @output)
   let linked: I64 = typing.linked_binding_declaration(tokens, index)
@@ -285,7 +285,7 @@ fn emit_source_name(source: Bytes, tokens: Vec[syntax.Token], index: I64, output
   else:
     index
   text.append_text(@output, "_n")
-  text.append_nonnegative_i64(declaration, @output)
+  text.append_nonnegative_i64(declaration - params, @output)
 
 fn emit_function_name(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_fn_")
@@ -525,18 +525,18 @@ fn emit_binding_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, nam
   let borrowed: Bool = typing.linked_binding_is_exclusive(tokens, name)
   if borrowed:
     text.append_text(@output, "(*")
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
     text.append_text(@output, ")")
   else:
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
 
 fn emit_binding_address(source: Bytes, tokens: Vec[syntax.Token], params: I64, name: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let borrowed: Bool = typing.linked_binding_is_exclusive(tokens, name)
   if borrowed:
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
   else:
     text.append_text(@output, "&")
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
 
 fn emit_call_argument_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, argument: I64, callee_param: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, argument)
@@ -550,7 +550,7 @@ fn emit_call_argument_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: 
     if form:
       emit_type(source, tokens, type_index, @output)
       text.append_text(@output, " ")
-      emit_temp_name(argument, @output)
+      emit_temp_name(params, argument, @output)
       text.append_text(@output, " = {0};\n")
       let destination: I64 = 0 - argument
       emit_expr_full(source, tokens, facts, allocations, module_items, params, argument, destination, false, type_index, @output, range_facts)
@@ -598,7 +598,7 @@ fn emit_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64,
   let kind: I64 = syntax.ast_node_kind(tokens, value)
   let form: Bool = kind == 0
   if form:
-    emit_temp_name(value, @output)
+    emit_temp_name(params, value, @output)
   else:
     let string_value: Bool = kind == 3
     if string_value:
@@ -746,7 +746,7 @@ fn emit_user_arguments(source: Bytes, tokens: Vec[syntax.Token], current_params:
       let next_argument: I64 = syntax.ast_next(tokens, argument)
       recur(source, tokens, current_params, next_argument, next_param, false, @output)
 
-fn emit_parameters(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parameters(source: Bytes, tokens: Vec[syntax.Token], params: I64, cursor: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -770,9 +770,9 @@ fn emit_parameters(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, first:
     else:
       void
     text.append_text(@output, " ")
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, false, @output)
+    recur(source, tokens, params, next, false, @output)
 
 fn emit_prototype(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let name: I64 = syntax.ast_item_name(item)
@@ -784,7 +784,7 @@ fn emit_prototype(source: Bytes, tokens: Vec[syntax.Token], item: I64, output: @
   emit_function_name(source, tokens, name, @output)
   text.append_text(@output, "(")
   let first_param: I64 = syntax.ast_parameters_first(params)
-  emit_parameters(source, tokens, first_param, true, @output)
+  emit_parameters(source, tokens, params, first_param, true, @output)
   text.append_text(@output, ");\n")
 
 fn emit_prototypes(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
@@ -801,7 +801,7 @@ fn emit_prototypes(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, next, @output)
 
-fn emit_parameter_voids(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parameter_voids(source: Bytes, tokens: Vec[syntax.Token], params: I64, cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -811,25 +811,25 @@ fn emit_parameter_voids(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, o
     let borrowed: Bool = syntax.ast_binding_is_exclusive(source, tokens, cursor)
     let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
     text.append_text(@output, "(void)")
-    emit_source_name(source, tokens, name, @output)
+    emit_source_name(source, tokens, params, name, @output)
     text.append_text(@output, ";\n")
     let next: I64 = syntax.ast_next(tokens, cursor)
-    recur(source, tokens, next, @output)
+    recur(source, tokens, params, next, @output)
 
-fn emit_temp_name(index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_temp_name(params: I64, index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_t_")
-  text.append_nonnegative_i64(index, @output)
+  text.append_nonnegative_i64(index - params, @output)
 
-fn emit_destination(source: Bytes, tokens: Vec[syntax.Token], destination: I64, result: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_destination(source: Bytes, tokens: Vec[syntax.Token], params: I64, destination: I64, result: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if result:
     text.append_text(@output, "slim_result")
   else:
     let temporary: Bool = destination < 0
     if temporary:
       let index: I64 = 0 - destination
-      emit_temp_name(index, @output)
+      emit_temp_name(params, index, @output)
     else:
-      emit_binding_value(source, tokens, 0, destination, @output)
+      emit_binding_value(source, tokens, params, destination, @output)
 
 fn emit_recur_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, param: I64, argument: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, param)
@@ -845,7 +845,7 @@ fn emit_recur_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typi
       let type_index: I64 = fact_type_index(facts, argument)
       emit_type(source, tokens, type_index, @output)
       text.append_text(@output, " ")
-      emit_temp_name(argument, @output)
+      emit_temp_name(params, argument, @output)
       text.append_text(@output, " = {0};\n")
       let destination: I64 = 0 - argument
       emit_expr_full(source, tokens, facts, allocations, module_items, params, argument, destination, false, type_index, @output, range_facts)
@@ -865,9 +865,9 @@ fn emit_recur_updates(source: Bytes, tokens: Vec[syntax.Token], params: I64, par
     if borrowed:
       void
     else:
-      emit_source_name(source, tokens, name, @output)
+      emit_source_name(source, tokens, params, name, @output)
       text.append_text(@output, " = ")
-      emit_temp_name(argument, @output)
+      emit_temp_name(params, argument, @output)
       text.append_text(@output, ";\n")
     let next_param: I64 = syntax.ast_next(tokens, param)
     let next_argument: I64 = syntax.ast_next(tokens, argument)
@@ -878,7 +878,7 @@ fn emit_recur_assignments(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[t
   emit_recur_updates(source, tokens, params, param, argument, @output)
 
 fn emit_runtime_assignment(source: Bytes, tokens: Vec[syntax.Token], params: I64, arguments: I64, destination: I64, result: Bool, runtime: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = ")
   text.append_text(@output, runtime)
   text.append_text(@output, "(")
@@ -887,7 +887,7 @@ fn emit_runtime_assignment(source: Bytes, tokens: Vec[syntax.Token], params: I64
 
 fn emit_binary_operator(source: Bytes, tokens: Vec[syntax.Token], params: I64, arguments: I64, destination: I64, result: Bool, operator: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let right: I64 = syntax.ast_next(tokens, arguments)
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = ")
   emit_value(source, tokens, params, arguments, @output)
   text.append_text(@output, operator)
@@ -935,7 +935,7 @@ fn emit_boolean_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, call
     else:
       let not_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "bool.not")
       if not_call:
-        emit_destination(source, tokens, destination, result, @output)
+        emit_destination(source, tokens, params, destination, result, @output)
         text.append_text(@output, " = !")
         emit_value(source, tokens, params, arguments, @output)
         text.append_text(@output, ";\n")
@@ -946,7 +946,7 @@ fn emit_boolean_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, call
 fn emit_u8_conversion(source: Bytes, tokens: Vec[syntax.Token], params: I64, callee: I64, arguments: I64, destination: I64, result: Bool, output: @Vec[U8]) -> Bool effects[alloc, partial]:
   let conversion: Bool = syntax.ast_node_text_is(source, tokens, callee, "u8.to_i64")
   if conversion:
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = (int64_t)")
     emit_value(source, tokens, params, arguments, @output)
     text.append_text(@output, ";\n")
@@ -958,7 +958,7 @@ fn emit_vector_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, calle
   let new_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.new")
   if new_call:
     let inner_type: I64 = syntax.ast_type_argument(destination_type)
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = slim_vec_new(sizeof(")
     emit_type(source, tokens, inner_type, @output)
     text.append_text(@output, "), slim_allocation_region);\n")
@@ -966,7 +966,7 @@ fn emit_vector_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, calle
   else:
     let len_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.len")
     if len_call:
-      emit_destination(source, tokens, destination, result, @output)
+      emit_destination(source, tokens, params, destination, result, @output)
       text.append_text(@output, " = (")
       emit_value(source, tokens, params, arguments, @output)
       text.append_text(@output, ").len;\n")
@@ -975,7 +975,7 @@ fn emit_vector_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, calle
       let get_call: Bool = syntax.ast_node_text_is(source, tokens, callee, "vec.get")
       if get_call:
         let index: I64 = syntax.ast_next(tokens, arguments)
-        emit_destination(source, tokens, destination, result, @output)
+        emit_destination(source, tokens, params, destination, result, @output)
         text.append_text(@output, " = ((")
         emit_type(source, tokens, destination_type, @output)
         text.append_text(@output, " *)(")
@@ -1000,7 +1000,7 @@ fn emit_vector_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, calle
             text.append_text(@output, "})) goto slim_allocation_failed; ")
           else:
             text.append_text(@output, "))) goto slim_allocation_failed; ")
-          emit_destination(source, tokens, destination, result, @output)
+          emit_destination(source, tokens, params, destination, result, @output)
           text.append_text(@output, " = (SlimUnit){0};\n")
           true
         else:
@@ -1008,7 +1008,7 @@ fn emit_vector_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, calle
 
 fn emit_user_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, callee: I64, arguments: I64, callee_params: I64, allocation_effect: Bool, destination: I64, result: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let first_callee_param: I64 = syntax.ast_parameters_first(callee_params)
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = ")
   emit_function_name(source, tokens, callee, @output)
   text.append_text(@output, "(")
@@ -1050,12 +1050,12 @@ fn emit_proven_math(source: Bytes, tokens: Vec[syntax.Token], range_facts: Vec[r
   else:
     false
 
-fn emit_replacement_place(source: Bytes, tokens: Vec[syntax.Token], place: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_replacement_place(source: Bytes, tokens: Vec[syntax.Token], params: I64, place: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if syntax.ast_node_kind(tokens, place) == 2:
-    emit_binding_value(source, tokens, 0, place, @output)
+    emit_binding_value(source, tokens, params, place, @output)
   else:
     text.append_text(@output, "(")
-    emit_replacement_place(source, tokens, syntax.ast_get_value(place), @output)
+    emit_replacement_place(source, tokens, params, syntax.ast_get_value(place), @output)
     text.append_text(@output, ").")
     emit_field_name(source, tokens, syntax.ast_get_field(tokens, place), @output)
 
@@ -1072,11 +1072,11 @@ fn emit_replace(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact
   text.append_text(@output, ";\n")
   emit_type(source, tokens, type, @output)
   text.append_text(@output, " slim_replaced = ")
-  emit_replacement_place(source, tokens, place, @output)
+  emit_replacement_place(source, tokens, params, place, @output)
   text.append_text(@output, ";\n")
-  emit_replacement_place(source, tokens, place, @output)
+  emit_replacement_place(source, tokens, params, place, @output)
   text.append_text(@output, " = slim_replacement;\n")
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = slim_replaced;\n}\n")
 
 fn emit_call(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, call_form: I64, destination: I64, result: Bool, destination_type: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
@@ -1163,7 +1163,7 @@ fn emit_make_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typin
     let type_index: I64 = fact_type_index(facts, value)
     emit_type(source, tokens, type_index, @output)
     text.append_text(@output, " ")
-    emit_temp_name(cursor, @output)
+    emit_temp_name(params, cursor, @output)
     text.append_text(@output, " = {0};\n")
     let destination: I64 = 0 - cursor
     emit_expr_full(source, tokens, facts, allocations, module_items, params, value, destination, false, type_index, @output, range_facts)
@@ -1184,7 +1184,7 @@ fn emit_make_fields(source: Bytes, tokens: Vec[syntax.Token], params: I64, curso
     text.append_text(@output, ".")
     emit_field_name(source, tokens, field, @output)
     text.append_text(@output, " = ")
-    emit_temp_name(cursor, @output)
+    emit_temp_name(params, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
     recur(source, tokens, params, next, false, @output)
 
@@ -1196,7 +1196,7 @@ fn emit_make(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], 
   let definition: I64 = syntax.ast_data_members_first(item)
   text.append_text(@output, "{\n")
   emit_make_bindings(source, tokens, facts, allocations, module_items, params, definition, first_field, @output, range_facts)
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = (")
   emit_named_type_name(source, tokens, record, @output)
   text.append_text(@output, "){")
@@ -1215,11 +1215,11 @@ fn emit_get(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], a
     let value_type: I64 = fact_type_index(facts, value)
     emit_type(source, tokens, value_type, @output)
     text.append_text(@output, " ")
-    emit_temp_name(value, @output)
+    emit_temp_name(params, value, @output)
     text.append_text(@output, " = {0};\n")
     let value_destination: I64 = 0 - value
     emit_expr_full(source, tokens, facts, allocations, module_items, params, value, value_destination, false, value_type, @output, range_facts)
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = ")
   emit_value(source, tokens, params, value, @output)
   text.append_text(@output, ".")
@@ -1235,7 +1235,7 @@ fn emit_case_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typin
     let type_index: I64 = fact_type_index(facts, cursor)
     emit_type(source, tokens, type_index, @output)
     text.append_text(@output, " ")
-    emit_temp_name(cursor, @output)
+    emit_temp_name(params, cursor, @output)
     text.append_text(@output, " = {0};\n")
     let destination: I64 = 0 - cursor
     emit_expr_full(source, tokens, facts, allocations, module_items, params, cursor, destination, false, type_index, @output, range_facts)
@@ -1257,7 +1257,7 @@ fn emit_case_payload(source: Bytes, tokens: Vec[syntax.Token], params: I64, curs
     text.append_text(@output, ".slim_")
     text.append_nonnegative_i64(field, @output)
     text.append_text(@output, " = ")
-    emit_temp_name(cursor, @output)
+    emit_temp_name(params, cursor, @output)
     let next: I64 = syntax.ast_next(tokens, cursor)
     let next_field: I64 = field + 1
     recur(source, tokens, params, next, next_field, @output)
@@ -1285,7 +1285,7 @@ fn emit_case_value(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.F
   let empty: Bool = payload_kind == 1
   text.append_text(@output, "{\n")
   emit_case_bindings(source, tokens, facts, allocations, module_items, params, payload, payload_type, @output, range_facts)
-  emit_destination(source, tokens, destination, result, @output)
+  emit_destination(source, tokens, params, destination, result, @output)
   text.append_text(@output, " = (")
   emit_named_type_name(source, tokens, variant, @output)
   text.append_text(@output, "){.tag = ")
@@ -1301,27 +1301,27 @@ fn emit_case_value(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.F
   text.append_text(@output, "};\n")
   text.append_text(@output, "}\n")
 
-fn emit_variant_bindings(source: Bytes, tokens: Vec[syntax.Token], value: I64, case_name: I64, binding: I64, payload_type: I64, field: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_variant_bindings(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64, case_name: I64, binding: I64, payload_type: I64, field: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, binding)
   if done:
     void
   else:
     emit_type(source, tokens, payload_type, @output)
     text.append_text(@output, " ")
-    emit_source_name(source, tokens, binding, @output)
+    emit_source_name(source, tokens, params, binding, @output)
     text.append_text(@output, " = ")
-    emit_value(source, tokens, 0, value, @output)
+    emit_value(source, tokens, params, value, @output)
     text.append_text(@output, ".data.")
     emit_case_name(source, tokens, case_name, @output)
     text.append_text(@output, ".slim_")
     text.append_nonnegative_i64(field, @output)
     text.append_text(@output, ";\n(void)")
-    emit_source_name(source, tokens, binding, @output)
+    emit_source_name(source, tokens, params, binding, @output)
     text.append_text(@output, ";\n")
     let next_binding: I64 = syntax.ast_next(tokens, binding)
     let next_type: I64 = syntax.ast_next(tokens, payload_type)
     let next_field: I64 = field + 1
-    recur(source, tokens, value, case_name, next_binding, next_type, next_field, @output)
+    recur(source, tokens, params, value, case_name, next_binding, next_type, next_field, @output)
 
 fn emit_variant_arms(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], allocations: Vec[memory.AllocationPlan], module_items: I64, params: I64, value: I64, variant_name: I64, variant_cases: I64, cursor: I64, destination: I64, result: Bool, destination_type: I64, output: @Vec[U8], range_facts: Vec[ranges.Fact]) -> Void effects[alloc, partial]:
   let done: Bool = syntax.ast_list_done(tokens, cursor)
@@ -1346,7 +1346,7 @@ fn emit_variant_arms(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing
     if empty:
       void
     else:
-      emit_variant_bindings(source, tokens, value, case_name, syntax.ast_list_first(bindings), payload_type, 0, @output)
+      emit_variant_bindings(source, tokens, params, value, case_name, syntax.ast_list_first(bindings), payload_type, 0, @output)
     emit_expr_full(source, tokens, facts, allocations, module_items, params, body, destination, result, destination_type, @output, range_facts)
     text.append_text(@output, "break;\n}\n")
     let next: I64 = syntax.ast_next(tokens, cursor)
@@ -1396,7 +1396,7 @@ fn emit_atom_assignment(source: Bytes, tokens: Vec[syntax.Token], params: I64, v
   if same:
     text.append_text(@output, "(void)0;\n")
   else:
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = ")
     emit_value(source, tokens, params, value, @output)
     text.append_text(@output, ";\n")
@@ -1429,15 +1429,21 @@ fn find_executable_site(sites: Vec[parallel.Site], expr: I64, index: I64) -> I64
       let next: I64 = index + 1
       recur(sites, expr, next)
 
-fn emit_parallel_context_name(site: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parallel_context_name(source: Bytes, tokens: Vec[syntax.Token], params: I64, site: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "SlimParallel_")
-  text.append_nonnegative_i64(site, @output)
+  let name: I64 = params - 1
+  emit_mangled_token(source, tokens, name, @output)
+  text.append_text(@output, "_s")
+  text.append_nonnegative_i64(site - params, @output)
   text.append_text(@output, "_")
   text.append_nonnegative_i64(task, @output)
 
-fn emit_parallel_runner_name(site: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parallel_runner_name(source: Bytes, tokens: Vec[syntax.Token], params: I64, site: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   text.append_text(@output, "slim_parallel_run_")
-  text.append_nonnegative_i64(site, @output)
+  let name: I64 = params - 1
+  emit_mangled_token(source, tokens, name, @output)
+  text.append_text(@output, "_s")
+  text.append_nonnegative_i64(site - params, @output)
   text.append_text(@output, "_")
   text.append_nonnegative_i64(task, @output)
 
@@ -1473,7 +1479,7 @@ fn emit_parallel_runner_arguments(tokens: Vec[syntax.Token], cursor: I64, field:
     let next_field: I64 = field + 1
     recur(tokens, next, next_field, @output)
 
-fn emit_parallel_call_wrapper(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], site: I64, expr: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+fn emit_parallel_call_wrapper(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], params: I64, site: I64, expr: I64, task: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let callee: I64 = syntax.ast_call_callee(expr)
   let arguments: I64 = syntax.ast_call_arguments(expr)
   let return_type: I64 = fact_type_index(facts, expr)
@@ -1482,20 +1488,36 @@ fn emit_parallel_call_wrapper(source: Bytes, tokens: Vec[syntax.Token], facts: V
   text.append_text(@output, "SlimRegion *slim_region;\n")
   emit_type(source, tokens, return_type, @output)
   text.append_text(@output, " slim_result;\n} ")
-  emit_parallel_context_name(site, task, @output)
+  emit_parallel_context_name(source, tokens, params, site, task, @output)
   text.append_text(@output, ";\nstatic void ")
-  emit_parallel_runner_name(site, task, @output)
+  emit_parallel_runner_name(source, tokens, params, site, task, @output)
   text.append_text(@output, "(void *slim_opaque) {\n")
-  emit_parallel_context_name(site, task, @output)
+  emit_parallel_context_name(source, tokens, params, site, task, @output)
   text.append_text(@output, " *slim_context = slim_opaque;\nslim_context->slim_result = ")
   emit_function_name(source, tokens, callee, @output)
   text.append_text(@output, "(")
   emit_parallel_runner_arguments(tokens, arguments, 0, @output)
   text.append_text(@output, ");\n}\n\n")
 
-fn emit_parallel_wrapper(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], site: parallel.Site, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  emit_parallel_call_wrapper(source, tokens, facts, site.site, site.first, 0, @output)
-  emit_parallel_call_wrapper(source, tokens, facts, site.site, site.second, 1, @output)
+fn emit_parallel_wrapper(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], params: I64, site: parallel.Site, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  emit_parallel_call_wrapper(source, tokens, facts, params, site.site, site.first, 0, @output)
+  emit_parallel_call_wrapper(source, tokens, facts, params, site.site, site.second, 1, @output)
+
+fn parallel_owner_parameters(source: Bytes, tokens: Vec[syntax.Token], site: I64, item: I64) -> I64 effects[partial]:
+  let done: Bool = syntax.ast_list_done(tokens, item)
+  if done:
+    item / 0
+  else:
+    let next: I64 = syntax.ast_next(tokens, item)
+    let inside: Bool = site >= item && site < next
+    if inside:
+      let function_item: Bool = syntax.ast_item_is_function(source, tokens, item)
+      if function_item:
+        syntax.ast_function_parameters(item)
+      else:
+        item / 0
+    else:
+      recur(source, tokens, site, next)
 
 fn emit_parallel_wrappers(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], sites: Vec[parallel.Site], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let count: I64 = vec.len(sites)
@@ -1505,7 +1527,8 @@ fn emit_parallel_wrappers(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[t
   else:
     let site: parallel.Site = vec.get(sites, index)
     if site.executable:
-      emit_parallel_wrapper(source, tokens, facts, site, @output)
+      let params: I64 = parallel_owner_parameters(source, tokens, site.site, syntax.ast_module_items(0))
+      emit_parallel_wrapper(source, tokens, facts, params, site, @output)
     else:
       void
     let next: I64 = index + 1
@@ -1534,11 +1557,11 @@ fn emit_parallel_let(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing
   text.append_text(@output, "{\n")
   emit_type(source, tokens, type_index, @output)
   text.append_text(@output, " ")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, " = {0};\n")
   emit_expr_full(source, tokens, facts, allocations, module_items, params, value, name, false, type_index, @output, range_facts)
   text.append_text(@output, "(void)")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, ";\n")
   emit_parallel_body(source, tokens, facts, allocations, sites, module_items, params, body, destination, result, destination_type, @output, range_facts)
   text.append_text(@output, "}\n")
@@ -1591,36 +1614,36 @@ fn emit_parallel_site(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typin
   text.append_text(@output, "{\n")
   emit_type(source, tokens, first_type, @output)
   text.append_text(@output, " ")
-  emit_source_name(source, tokens, first_name, @output)
+  emit_source_name(source, tokens, params, first_name, @output)
   text.append_text(@output, " = {0};\n{\n")
   emit_type(source, tokens, second_type, @output)
   text.append_text(@output, " ")
-  emit_source_name(source, tokens, second_name, @output)
+  emit_source_name(source, tokens, params, second_name, @output)
   text.append_text(@output, " = {0};\n")
   emit_parallel_region_declarations(site, @output)
-  emit_parallel_context_name(site.site, 0, @output)
+  emit_parallel_context_name(source, tokens, params, site.site, 0, @output)
   text.append_text(@output, " slim_parallel_first = {\n")
   emit_parallel_capture_fields(source, tokens, params, first_arguments, 0, @output)
   emit_parallel_context_region(site, 0, @output)
-  emit_parallel_context_name(site.site, 1, @output)
+  emit_parallel_context_name(source, tokens, params, site.site, 1, @output)
   text.append_text(@output, " slim_parallel_second = {\n")
   emit_parallel_capture_fields(source, tokens, params, second_arguments, 0, @output)
   emit_parallel_context_region(site, 1, @output)
   text.append_text(@output, "SlimTask slim_parallel_task;\nbool slim_parallel_spawned = slim_task_spawn(&slim_parallel_task, ")
-  emit_parallel_runner_name(site.site, 0, @output)
+  emit_parallel_runner_name(source, tokens, params, site.site, 0, @output)
   text.append_text(@output, ", &slim_parallel_first);\nslim_task_run_inline(")
-  emit_parallel_runner_name(site.site, 1, @output)
+  emit_parallel_runner_name(source, tokens, params, site.site, 1, @output)
   text.append_text(@output, ", &slim_parallel_second);\nif (slim_parallel_spawned) {\nslim_task_join(&slim_parallel_task);\n} else {\nslim_task_run_inline(")
-  emit_parallel_runner_name(site.site, 0, @output)
+  emit_parallel_runner_name(source, tokens, params, site.site, 0, @output)
   text.append_text(@output, ", &slim_parallel_first);\n}\n")
   emit_parallel_region_adoption(site, @output)
-  emit_source_name(source, tokens, first_name, @output)
+  emit_source_name(source, tokens, params, first_name, @output)
   text.append_text(@output, " = slim_parallel_first.slim_result;\n")
-  emit_source_name(source, tokens, second_name, @output)
+  emit_source_name(source, tokens, params, second_name, @output)
   text.append_text(@output, " = slim_parallel_second.slim_result;\n(void)")
-  emit_source_name(source, tokens, first_name, @output)
+  emit_source_name(source, tokens, params, first_name, @output)
   text.append_text(@output, ";\n(void)")
-  emit_source_name(source, tokens, second_name, @output)
+  emit_source_name(source, tokens, params, second_name, @output)
   text.append_text(@output, ";\n")
   emit_parallel_body(source, tokens, facts, allocations, sites, module_items, params, continuation, destination, result, destination_type, @output, range_facts)
   text.append_text(@output, "}\n}\n")
@@ -1677,7 +1700,7 @@ fn emit_counted_recur_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: 
       let type_index: I64 = fact_type_index(facts, argument)
       emit_type(source, tokens, type_index, @output)
       text.append_text(@output, " ")
-      emit_temp_name(argument, @output)
+      emit_temp_name(params, argument, @output)
       text.append_text(@output, " = {0};\n")
       let destination: I64 = 0 - argument
       emit_expr_full(source, tokens, facts, allocations, module_items, params, argument, destination, false, type_index, @output, range_facts)
@@ -1699,9 +1722,9 @@ fn emit_counted_recur_updates(source: Bytes, tokens: Vec[syntax.Token], params: 
     let changed: Bool = (!borrowed) && (!unchanged)
     if changed:
       let name: I64 = syntax.ast_binding_name(source, tokens, param)
-      emit_source_name(source, tokens, name, @output)
+      emit_source_name(source, tokens, params, name, @output)
       text.append_text(@output, " = ")
-      emit_temp_name(argument, @output)
+      emit_temp_name(params, argument, @output)
       text.append_text(@output, ";\n")
     else:
       void
@@ -1723,11 +1746,11 @@ fn emit_counted_let(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.
   text.append_text(@output, "{\n")
   emit_type(source, tokens, type_index, @output)
   text.append_text(@output, " ")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, " = {0};\n")
   emit_expr_full(source, tokens, facts, allocations, module_items, params, value, name, false, type_index, @output, range_facts)
   text.append_text(@output, "(void)")
-  emit_source_name(source, tokens, name, @output)
+  emit_source_name(source, tokens, params, name, @output)
   text.append_text(@output, ";\n")
   emit_counted_expr(source, tokens, facts, allocations, module_items, params, body, destination, result, destination_type, @output, range_facts)
   text.append_text(@output, "}\n")
@@ -1819,7 +1842,7 @@ fn emit_counted_stages(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typi
     void
   else:
     text.append_text(@output, "if (")
-    emit_source_name(source, tokens, fact.controller, @output)
+    emit_source_name(source, tokens, params, fact.controller, @output)
     text.append_text(@output, " < INT64_C(")
     text.append_nonnegative_i64(fact.bound, @output)
     text.append_text(@output, ")) do {\n")
@@ -1846,9 +1869,9 @@ fn emit_function(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fac
   emit_function_name(source, tokens, name, @output)
   text.append_text(@output, "(")
   let first_param: I64 = syntax.ast_parameters_first(params)
-  emit_parameters(source, tokens, first_param, true, @output)
+  emit_parameters(source, tokens, params, first_param, true, @output)
   text.append_text(@output, ") {\n")
-  emit_parameter_voids(source, tokens, first_param, @output)
+  emit_parameter_voids(source, tokens, params, first_param, @output)
   let planned_function: I64 = function_plan.function
   let plan_aligned: Bool = planned_function == item
   let allocations: Vec[memory.AllocationPlan] = function_plan.allocations
@@ -1945,7 +1968,7 @@ fn emit_tcp_exchange_call(source: Bytes, tokens: Vec[syntax.Token], params: I64,
     let fourth: I64 = syntax.ast_next(tokens, third)
     let fifth: I64 = syntax.ast_next(tokens, fourth)
     let sixth: I64 = syntax.ast_next(tokens, fifth)
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = slim_tcp_exchange(")
     emit_value(source, tokens, params, arguments, @output)
     text.append_text(@output, ", ")
@@ -1967,7 +1990,7 @@ fn emit_read_file_call(source: Bytes, tokens: Vec[syntax.Token], params: I64, ca
   let read_file: Bool = syntax.ast_node_text_is(source, tokens, callee, "io.read_file")
   if read_file:
     let output_argument: I64 = syntax.ast_next(tokens, arguments)
-    emit_destination(source, tokens, destination, result, @output)
+    emit_destination(source, tokens, params, destination, result, @output)
     text.append_text(@output, " = slim_read_file(")
     emit_value(source, tokens, params, arguments, @output)
     text.append_text(@output, ", ")

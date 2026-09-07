@@ -1,0 +1,58 @@
+module stable_codegen
+
+enum Choice:
+  Some(I64)
+
+fn literal() -> Bytes:
+  "} slim_v_value_n42 slim_t_123 SlimParallel_42_0 slim_parallel_run_42_0 /*"
+
+fn read(value: Vec[I64]) -> I64 effects[partial]:
+  vec.get(value, 0)
+
+fn mutate(value: @Vec[I64]) -> Void effects[alloc, partial]:
+  vec.push(@value, 21)
+
+fn consume(value: ^Vec[I64]) -> I64 effects[partial]:
+  vec.get(value, 0)
+
+fn payload(value: Choice) -> I64 effects[partial]:
+  match value:
+    Some(value):
+      let value: I64 = value + 1
+      value
+
+fn count(value: I64, index: I64) -> I64 effects[partial]:
+  if index == 3:
+    value
+  else:
+    recur(value + 1, index + 1)
+
+fn observed(value: I64) -> I64 effects[io]:
+  let tick: I64 = io.monotonic_ms()
+  value
+
+fn exercise_s42(first: I64, second: I64) -> I64 effects[io, partial]:
+  parallel:
+    let first: I64 = observed(first)
+    let second: I64 = observed(second)
+    first + second
+
+fn exercise_s420(first: I64, second: I64) -> I64 effects[io, partial]:
+  parallel:
+    let first: I64 = observed(first)
+    let second: I64 = observed(second)
+    first + second
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let value: Vec[I64] = vec.new()
+  mutate(@value)
+  let shared: I64 = read(value)
+  let owned: I64 = consume(^value)
+  let matched: I64 = payload(Choice::Some(41))
+  let counted: I64 = count(39, 0)
+  let first: I64 = exercise_s42(shared, owned)
+  let second: I64 = exercise_s420(shared, owned)
+  if (matched == 42) && ((counted == 42) && ((first == 42) && (second == 42))):
+    0
+  else:
+    1

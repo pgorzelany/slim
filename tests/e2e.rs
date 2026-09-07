@@ -5091,3 +5091,20 @@ fn decimal_i64_literals_preserve_values_and_reject_outside_range() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn generated_private_identifiers_survive_unrelated_relocation() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("python3")
+        .arg(root.join("scripts/verify-codegen-identities.py"))
+        .arg(root.join("build/toolchain/slimc"))
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "codegen identity verification failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}
