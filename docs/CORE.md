@@ -18,7 +18,9 @@ pre-0.9 spellings.
   indentation.
 - Identifiers match `[A-Za-z_][A-Za-z0-9_]*`. A qualified module reference is
   a dot-separated sequence of identifiers. `::` is reserved for enum cases.
-- Integers are base-10 `I64` literals with an optional leading `-`.
+- Integers are base-10 `I64` literals with an optional leading `-`. Leading
+  zeros preserve decimal meaning. Values range from -9223372036854775808 through
+  9223372036854775807; literals outside this range receive E0361.
 - Byte strings use double quotes and the escapes `\\`, `\"`, `\n`, `\r`,
   `\t`, and `\xNN`.
 - Parenthesized and bracketed lists require commas between elements. Missing,

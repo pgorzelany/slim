@@ -5073,3 +5073,21 @@ fn retained_parsing_matches_canonical_tokens_and_observed_grammar_work() {
         String::from_utf8_lossy(&output.stderr)
     );
 }
+
+#[test]
+fn decimal_i64_literals_preserve_values_and_reject_outside_range() {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    let output = Command::new("sh")
+        .arg(root.join("scripts/verify-integers.sh"))
+        .arg(root.join("build/toolchain/slimc"))
+        .arg("quick")
+        .current_dir(&root)
+        .output()
+        .unwrap();
+    assert!(
+        output.status.success(),
+        "decimal integer verification failed: {}\n{}",
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+}

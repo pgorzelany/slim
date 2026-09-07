@@ -1,0 +1,32 @@
+module decimal_literals
+
+struct Pair:
+  low: I64
+  high: I64
+
+enum Number:
+  Value(I64)
+
+fn minimum() -> I64:
+  -9223372036854775808
+
+fn unwrap(value: Number) -> I64:
+  match value:
+    Value(number):
+      number
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let pair: Pair = Pair(low: minimum(), high: 0009223372036854775807)
+  io.print_i64(pair.low)
+  io.println("")
+  io.print_i64(pair.high)
+  io.println("")
+  io.print_i64(unwrap(Number::Value(-0009223372036854775808)))
+  io.println("")
+  io.print_i64(0010)
+  io.println("")
+  io.print_i64(-0009)
+  io.println("")
+  io.print_i64(-000)
+  io.println("")
+  0

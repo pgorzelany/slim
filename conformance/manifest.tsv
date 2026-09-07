@@ -294,3 +294,8 @@ shadowed-moved	check-fail	conformance/fail/shadowed_moved.slim	parity	E0315@194:
 shadowed-type	check-fail	conformance/fail/shadowed_type.slim	parity	E0344@98:103	backend:lexical-binding-identity,ownership:checked-initializer
 inline-forward-layouts	run	conformance/pass/inline_forward_layouts.slim	parity	exit=0;stdout=42\n;stderr=	backend:checked-layout-order,backend:aggregate-links,type:acyclic-inline-layout
 unused-enum-payload	run	conformance/pass/unused_enum_payload.slim	parity	exit=0;stdout=;stderr=	backend:unused-enum-payload
+decimal-literals	run	conformance/pass/decimal_literals.slim	parity	exit=0;stdout=-9223372036854775808\n9223372036854775807\n-9223372036854775808\n10\n-9\n0\n;stderr=	type:I64,codegen:decimal-literals
+integer-outside-positive	check-fail	conformance/fail/integer_outside_positive.slim	parity	E0361@52:71	diagnostic:E0361,type:I64
+integer-outside-negative	check-fail	conformance/fail/integer_outside_negative.slim	parity	E0361@52:72	diagnostic:E0361,type:I64
+integer-outside-leading	check-fail	conformance/fail/integer_outside_leading.slim	parity	E0361@52:74	diagnostic:E0361,type:I64
+integer-outside-width	check-fail	conformance/fail/integer_outside_width.slim	parity	E0361@52:72	diagnostic:E0361,type:I64

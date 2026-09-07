@@ -1,0 +1,94 @@
+# date=2026-09-07; baseline=ab7758c; candidate_seed_sha256=c3c8af2d0cc1c3164b068d1fbc1f0d651bdadfcb2eca94fd31915d53e29262a7; ordinary compiler and ASan/UBSan compiler agree; runtime O0/O2 and ASan/UBSan match independent decimal expectations
+integer-values	456	exact-decimal-output
+integer-reject	0	0	19	E0361
+integer-reject	0	64	83	E0361
+integer-reject	1	0	20	E0361
+integer-reject	1	64	84	E0361
+integer-reject	2	0	19	E0361
+integer-reject	2	64	83	E0361
+integer-reject	3	0	20	E0361
+integer-reject	3	64	84	E0361
+integer-reject	4	0	20	E0361
+integer-reject	4	64	84	E0361
+integer-reject	5	0	21	E0361
+integer-reject	5	64	85	E0361
+integer-reject	6	0	65536	E0361
+integer-reject	6	64	65600	E0361
+integer-reject	7	0	65537	E0361
+integer-reject	7	64	65601	E0361
+integer-fault-summary	116	396
+# Prior accepted conformance source compatibility
+conformance/pass/branch_moves.slim	identical-check-and-C
+conformance/pass/computed_variant_match.slim	identical-check-and-C
+conformance/pass/conditional_result_moves.slim	identical-check-and-C
+conformance/pass/data.slim	identical-check-and-C
+conformance/pass/enum_collection_scope.slim	identical-check-and-C
+conformance/pass/enum_copyable_repeated.slim	identical-check-and-C
+conformance/pass/enum_empty_case.slim	identical-check-and-C
+conformance/pass/enum_multiple_payloads.slim	identical-check-and-C
+conformance/pass/enum_owned_branches.slim	identical-check-and-C
+conformance/pass/enum_owned_multiple.slim	identical-check-and-C
+conformance/pass/enum_owned_transfer.slim	identical-check-and-C
+conformance/pass/enum_scalar_case.slim	identical-check-and-C
+conformance/pass/enum_scope_exit.slim	identical-check-and-C
+conformance/pass/enum_unknown_shared.slim	identical-check-and-C
+conformance/pass/exclusive_assignment.slim	identical-check-and-C
+conformance/pass/exclusive_assignment_counted.slim	identical-check-and-C
+conformance/pass/familiar_syntax.slim	identical-check-and-C
+conformance/pass/field_fresh_owner_shared.slim	identical-check-and-C
+conformance/pass/file_input.slim	identical-check-and-C
+conformance/pass/inline_forward_layouts.slim	identical-check-and-C
+conformance/pass/inout.slim	identical-check-and-C
+conformance/pass/lifetimes.slim	identical-check-and-C
+conformance/pass/loan_ends_at_call.slim	identical-check-and-C
+conformance/pass/loan_independent_owner.slim	identical-check-and-C
+conformance/pass/loan_mutation_before_borrow.slim	identical-check-and-C
+conformance/pass/loan_scalar_before_mutation.slim	identical-check-and-C
+conformance/pass/loan_scalar_field_before_mutation.slim	identical-check-and-C
+conformance/pass/loan_shared_nesting.slim	identical-check-and-C
+conformance/pass/loan_unknown_nested_shared.slim	identical-check-and-C
+conformance/pass/local_loan_collection_scope.slim	identical-check-and-C
+conformance/pass/local_loan_independent.slim	identical-check-and-C
+conformance/pass/local_loan_initializer.slim	identical-check-and-C
+conformance/pass/local_loan_scalar.slim	identical-check-and-C
+conformance/pass/local_loan_scope_exit.slim	identical-check-and-C
+conformance/pass/local_loan_shared.slim	identical-check-and-C
+conformance/pass/local_loan_sibling_scopes.slim	identical-check-and-C
+conformance/pass/local_loan_unknown_shared.slim	identical-check-and-C
+conformance/pass/monotonic_clock.slim	identical-check-and-C
+conformance/pass/multiline_call_arguments.slim	identical-check-and-C
+conformance/pass/nested_calls.slim	identical-check-and-C
+conformance/pass/ownership_modes.slim	identical-check-and-C
+conformance/pass/parallel_owned_result.slim	identical-check-and-C
+conformance/pass/planned_allocation_calls.slim	identical-check-and-C
+conformance/pass/record_wide.slim	identical-check-and-C
+conformance/pass/recur.slim	identical-check-and-C
+conformance/pass/recursive_collection_layout.slim	identical-check-and-C
+conformance/pass/reduction.slim	identical-check-and-C
+conformance/pass/reduction_preserve.slim	identical-check-and-C
+conformance/pass/reinit_branches.slim	identical-check-and-C
+conformance/pass/reinit_enum.slim	identical-check-and-C
+conformance/pass/reinit_results.slim	identical-check-and-C
+conformance/pass/reinit_transfer.slim	identical-check-and-C
+conformance/pass/replacement_counted.slim	identical-check-and-C
+conformance/pass/replacement_fields.slim	identical-check-and-C
+conformance/pass/replacement_nested_calls.slim	identical-check-and-C
+conformance/pass/replacement_order.slim	identical-check-and-C
+conformance/pass/replacement_result_alias.slim	identical-check-and-C
+conformance/pass/replacement_scope.slim	identical-check-and-C
+conformance/pass/replacement_types.slim	identical-check-and-C
+conformance/pass/scalars.slim	identical-check-and-C
+conformance/pass/shadowed_bindings.slim	identical-check-and-C
+conformance/pass/shadowed_parallel.slim	identical-check-and-C
+conformance/pass/shared_borrows.slim	identical-check-and-C
+conformance/pass/storage.slim	identical-check-and-C
+conformance/pass/structured_parallel.slim	identical-check-and-C
+conformance/pass/tcp_exchange.slim	identical-check-and-C
+conformance/pass/termination_declared.slim	identical-check-and-C
+conformance/pass/termination_declared_run.slim	identical-check-and-C
+conformance/pass/termination_proven.slim	identical-check-and-C
+conformance/pass/typed_temporaries.slim	identical-check-and-C
+conformance/pass/unused_enum_payload.slim	identical-check-and-C
+conformance/pass/unused_function.slim	identical-check-and-C
+conformance/pass/variant_local_match.slim	identical-check-and-C
+conformance/pass/variant_wide.slim	identical-check-and-C

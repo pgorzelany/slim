@@ -578,6 +578,22 @@ fn emit_call_bindings(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typin
     -1
   emit_call_argument_bindings(source, tokens, facts, allocations, module_items, params, arguments, first_param, @output, range_facts)
 
+fn emit_integer(source: Bytes, tokens: Vec[syntax.Token], value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let start: I64 = syntax.integer_digits_start(source, tokens, value)
+  let end: I64 = syntax.ast_node_end(tokens, value)
+  let negative: Bool = u8.to_i64(bytes.get(source, syntax.ast_node_start(tokens, value))) == 45
+  let minimum: Bool = negative && syntax.span_equal(source, start, end, "9223372036854775808")
+  if minimum:
+    text.append_text(@output, "(-INT64_C(9223372036854775807) - INT64_C(1))")
+  else:
+    text.append_text(@output, "INT64_C(")
+    if negative:
+      text.append_text(@output, "-")
+    else:
+      void
+    text.append_span(source, start, end, @output)
+    text.append_text(@output, ")")
+
 fn emit_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, value)
   let form: Bool = kind == 0
@@ -606,9 +622,7 @@ fn emit_value(source: Bytes, tokens: Vec[syntax.Token], params: I64, value: I64,
           else:
             let number: Bool = syntax.first_byte_is_number(source, tokens, value)
             if number:
-              text.append_text(@output, "INT64_C(")
-              text.append_token(source, tokens, value, @output)
-              text.append_text(@output, ")")
+              emit_integer(source, tokens, value, @output)
             else:
               emit_binding_value(source, tokens, params, value, @output)
 

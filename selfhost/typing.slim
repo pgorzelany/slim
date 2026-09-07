@@ -1135,6 +1135,30 @@ fn find_named_form(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: 
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name)
 
+fn integer_digits_at_most(source: Bytes, start: I64, bound: Bytes, at: I64) -> Bool effects[partial]:
+  if at == 19:
+    true
+  else:
+    let digit: I64 = u8.to_i64(bytes.get(source, start + at))
+    let limit: I64 = u8.to_i64(bytes.get(bound, at))
+    if digit == limit:
+      recur(source, start, bound, at + 1)
+    else:
+      digit < limit
+
+fn integer_in_i64_range(source: Bytes, tokens: Vec[syntax.Token], expr: I64) -> Bool effects[partial]:
+  let start: I64 = syntax.integer_digits_start(source, tokens, expr)
+  let length: I64 = syntax.ast_node_end(tokens, expr) - start
+  if length == 19:
+    let negative: Bool = u8.to_i64(bytes.get(source, syntax.ast_node_start(tokens, expr))) == 45
+    let bound: Bytes = if negative:
+      "9223372036854775808"
+    else:
+      "9223372036854775807"
+    integer_digits_at_most(source, start, bound, 0)
+  else:
+    length < 19
+
 fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, bindings: @Vec[Binding], issues: @Vec[Issue], scopes: @Vec[ownership.Scope], frames: @Vec[ownership.Frame]) -> TypeRef effects[alloc, partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, expr)
   let string_value: Bool = kind == 3
@@ -1153,6 +1177,10 @@ fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, 
       else:
         let number: Bool = syntax.first_byte_is_number(source, tokens, expr)
         if number:
+          if integer_in_i64_range(source, tokens, expr):
+            void
+          else:
+            record_issue("E0361", expr, @issues)
           scalar_type(3, expr)
         else:
           let type: I64 = find_binding_type(source, tokens, bindings, parent, expr)

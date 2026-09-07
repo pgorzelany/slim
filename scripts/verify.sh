@@ -162,6 +162,7 @@ echo "verification: flow faults $flow_failed, failures after task walking $flow_
 sh scripts/verify-session.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-places.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-parsing.sh "$verify_dir/slimc-seed-sanitized"
+sh scripts/verify-integers.sh build/toolchain/slimc full
 
 "$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"

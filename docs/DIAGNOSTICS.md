@@ -31,7 +31,7 @@ are retained within documented analyzer bounds. Project diagnostics use the
 manifest module identity as their source identity. A consumer must treat an
 unknown schema as unsupported rather than inferring a layout.
 
-The canonical parser reserves these stable conditions:
+The compiler reserves these stable conditions:
 
 - `E0102`: malformed source structure or block
 - `E0103`: tab indentation
@@ -44,6 +44,7 @@ The canonical parser reserves these stable conditions:
 - `E0357`: discarded non-Void result
 - `E0358`: Void used in a storable position
 - `E0359`: assignment to an immutable binding
+- `E0361`: integer literal outside the signed I64 range
 
 Each points at the offending byte interval, or the zero-width location where
 required structure is missing.

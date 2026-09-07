@@ -387,6 +387,11 @@ cost and global analysis and whole-C emission still run. Flow-based ownership/lo
 orchestration, public host identity and lifecycle integration, retained global
 analysis/C fragments/backend artifacts, and complete M1 closure remain required.
 
+RFC-0136 repairs the recorded minimum-I64 emission blocker and decimal leading-zero
+lowering, and rejects out-of-domain integer literals through E0361 under its
+explicit compatibility contract. This supplies correct literal artifacts for
+subsequent retained emission; it does not complete retained analysis or generation.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale

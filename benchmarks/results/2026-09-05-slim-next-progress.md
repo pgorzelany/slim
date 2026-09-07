@@ -2034,3 +2034,67 @@ retained global analysis/C fragments/backend artifacts, complete locality and
 differential evidence, and full release closure remain required. The minimum-I64
 C literal emission bug and recursive-checker sanitizer stack limitation remain
 open. This checkpoint completes RFC-0135, not the parent milestone.
+
+## M1 checkpoint: portable decimal I64 literals (2026-09-07)
+
+RFC-0136 repairs the minimum-I64 C emission bug recorded during source-identity
+work. It also repairs decimal leading-zero lowering: the prior compiler copies
+source digits into C, so `0010` becomes octal eight and `0009` fails compilation.
+The production checker now rejects literals outside signed I64 with E0361; before
+this change `9223372036854775808` passes SLIM checking and fails strict native C.
+The RFC records this correction of erroneous checker acceptance explicitly.
+Representable decimal source keeps its documented meaning and original spans.
+
+The shared source-span helper skips optional sign/leading zeros without changing
+canonical source. The normal checker uses digit count and at most 19 significant
+digit comparisons against the signed bounds, never overflowing an accumulator.
+Minimum I64 emits a parenthesized expression whose constants and intermediate
+values are all representable. Ordinary non-minimum, unpadded literals retain their
+C output. No runtime ABI, dependency, retained table, parsed representation or
+source primitive is added. The range analyzer's proof domain is unchanged.
+
+The fixed point is **4,153,396 C bytes**, SHA-256
+`c3c8af2d0cc1c3164b068d1fbc1f0d651bdadfcb2eca94fd31915d53e29262a7`.
+This is 11,164 bytes (0.27%) above ab7758c. Logs and timing recipes are under
+`build/slim-next-m1/integer-emission/`.
+
+[The literal matrix](2026-09-07-m1-integer-matrix.tsv) checks 456 spellings against
+independent expected decimal values through strict C11 at O0/O2 and ASan/UBSan.
+It includes signed boundaries, adjacent values, deterministic random values,
+negative zero and 65,536 leading zeros. Sixteen out-of-domain cases, including
+very long magnitudes, compare exact compiler diagnostics and public JSON spans.
+[The 512-ordinal fault campaign](2026-09-07-m1-integer-faults.tsv) gives 116 failures
+with status 71 and no partial C, plus 396 successes; ordinary and sanitized status,
+stdout and stderr agree. These are named finite test domains, not exhaustive I64
+execution. Range correctness additionally follows from the lexicographic bound
+comparison on validated decimal digits and its fixed 19-digit comparison bound.
+
+[The complete session matrix](2026-09-07-m1-integer-session.tsv) covers 95 accepted
+fixtures and includes valid minimum/leading-zero body edits, out-of-range rejection,
+and last-good recovery. All prepared fields and generated C match fresh compilation.
+[Its 2,048 fault ordinals](2026-09-07-m1-integer-session-faults.tsv) retain the
+471 failures / 1,577 successes with exact ordinary/ASan/UBSan agreement. Geometric
+body updates still execute two declaration grammars and one function check through
+4,000 helpers; this repair does not claim additional incremental reuse.
+
+The previous 74 accepted conformance sources retain identical checking and C.
+The 193 previous rejected fixtures preserve exact status and diagnostics.
+[All 20 native applications](2026-09-07-m1-integer-native.tsv) retain byte-identical
+C and complete analysis. Bootstrap, governance, 10 unit and 71 integration tests,
+338 conformance fixtures and 2,000 deterministic malformed mutations pass.
+Required performance/reduction/parallelism/comparison/agent checks, resources,
+parallel-runtime, incremental, ordinary-work, formatting and Clippy pass. No gate
+or performance budget is relaxed.
+
+[Paired default checks](2026-09-07-m1-integer-latency.tsv) and
+[paired C emission](2026-09-07-m1-integer-emission-latency.tsv) use two warmup pairs
+and 11 alternating measured pairs against ab7758c, after other validation finishes.
+At 4,000 helpers, baseline/current check medians are 20.178/20.239 ms; emission
+medians are 37.877/37.574 ms. These complete process timings include I/O and are
+not a speedup claim or a portable absolute budget.
+
+M1 remains **in progress**. Actual flow-based availability/loan orchestration,
+public session transport with actual host fingerprints/lifecycle, retained global
+analysis and stable C fragments/backend artifacts, complete locality/differential
+validation and full release closure are still required. The minimum-I64 emitter
+blocker is resolved; the recursive-checker sanitizer stack limitation remains open.

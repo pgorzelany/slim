@@ -107,6 +107,17 @@ for name, new_main, new_helper in [
     run(pair, changed)
     if name == "insertion":
         run(changed, pair)
+# The literal domain is checked on changed declarations before snapshot publication.
+for name, literal in [("minimum", "-9223372036854775808"), ("decimal", "0009"),
+                      ("padded-minimum", "-0009223372036854775808")]:
+    changed = project("literal-" + name, main, manifest,
+                      **{"data.slim": helper.replace("value + 1", literal)})
+    run(pair, changed)
+    for outside in ["9223372036854775808", "-0009223372036854775809"]:
+        rejected_literal = project("literal-outside-" + name + str(len(outside)), main, manifest,
+                                   **{"data.slim": helper.replace("value + 1", outside)})
+        run(changed, rejected_literal, "recover")
+
 invalid_argument = project("invalid-argument", main.replace("helper(1)", "helper(false)"), manifest, **{"data.slim": helper})
 run(pair, invalid_argument, "recover")
 for mode in ["history-token-fit", "history-token-under"]:
