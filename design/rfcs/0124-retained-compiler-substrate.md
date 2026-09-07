@@ -353,20 +353,20 @@ optional graph retains its own reporting budgets.
 RFC-0130/0131/0132 implement compact retained typing and integrate it with project
 preparation. RFC-0133 supplies captured inputs, transactional successful snapshots,
 bounded cumulative epoch accounting, failed-update recovery and whole-C integrity
-checks. RFC-0135 retains eligible declaration parsing. Configuration fingerprints
-remain caller-attested in the internal API; the public session still reports
-estimates. Actual host identity binding, transport, lifecycle/reset and external
-publication remain required.
+checks. RFC-0135 retains eligible declaration parsing. Internal API fingerprints
+remain caller-attested; RFC-0143 binds the public retained session to the actual
+loaded compiler/runtime/target/options context. Its edit, limit, allocation-fault,
+physical cleanup, transport and build-identity checks pass. Native object/link
+publication remains required.
 
 RFC-0136 repairs minimum-I64 and decimal-literal lowering. RFC-0137/0138 retain
 function memory plans and range queries with complete consumed inputs and bounded,
-validated rows. Current global parameter scans, termination validation and parallel
-analysis still execute. Retaining eligible global analysis requires its complete
+validated rows. Termination validation and parallel analysis still execute. Retaining eligible global analysis requires its complete
 body, call-site, ordering and budget dependencies; no fabricated universal
 dependency or unobserved cache-hit claim discharges that work.
-RFC-0142 defines complete ordered parameter-input queries as the next retained
-analysis contract. Its implementation remains pending; it supplies no current
-scan-reuse claim or waiver of the remaining global/parallel work.
+RFC-0142 retains complete ordered parameter-input queries with validated caller
+contributions and actual-work observation. This does not waive the remaining
+global/parallel work.
 
 RFC-0139 stabilizes declaration-local C names. RFC-0140 retains function prototypes,
 bodies and private wrappers against complete checked and consumed lowering inputs,
@@ -378,12 +378,12 @@ session. The checkpoint measures frontend/backend/runtime/resource costs separat
 including initial regressions and final noise controls, without a general speedup
 claim or relaxed budget.
 
-The literal-Bytes storage-address repair passes the complete checkpoint gate;
-the separate fixed-width hexadecimal-escape defect is recorded in the progress
-report. The remaining public host-bound service, retained global analysis, native backend
-caching, hexadecimal-escape repair and integrated
-differential/locality/release obligations must all pass before this parent is
-complete. M0 remains the historical comparison baseline, not a claim that the
+The literal-Bytes storage-address and hexadecimal/trigraph-escape repairs pass
+their identified checkpoint and composite extended verification. The
+[progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md) records
+precise evidence domains. Retained global analysis, native backend caching and
+integrated differential/locality/release obligations must all pass before this
+parent is complete. M0 remains the historical comparison baseline, not a claim that the
 current seed is unchanged.
 
 ## Removal and supersession

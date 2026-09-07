@@ -5,6 +5,7 @@ This measures frontend transport, not external C compilation or agent success.
 """
 import argparse
 import hashlib
+import math
 from pathlib import Path
 import runpy
 import statistics
@@ -21,6 +22,12 @@ parser.add_argument('--samples', type=int, default=9)
 options = parser.parse_args()
 assert 3 <= options.samples <= 31
 command = [options.host] if options.host else ['./slimc', 'session']
+budgets = {}
+for line in Path('benchmarks/performance-budgets.tsv').read_text().splitlines():
+    if line and not line.startswith('#'):
+        metric, workload, limit, unit, decision = line.split('\t')
+        budgets[(metric, workload)] = float(limit)
+medians = {}
 print('scenario\tdeclarations\tsample\tnanoseconds\tc_bytes', flush=True)
 with tempfile.TemporaryDirectory(prefix='slim-host-timing-') as temporary:
     directory = Path(temporary)
@@ -68,5 +75,15 @@ with tempfile.TemporaryDirectory(prefix='slim-host-timing-') as temporary:
                     series[label].append(value)
                     print(label, size, sample, value, len(expectations[after][1]), sep='\t', flush=True)
         median = {label: statistics.median(values) for label, values in series.items()}
+        medians[size] = median
         print('# median_ns', size, median, 'unchanged/cold', median['unchanged'] / median['cold'],
               'body/one-shot', median['body'] / median['one-shot'], flush=True)
+for kind in ['cold', 'unchanged', 'body']:
+    exponent = math.log(medians[4000][kind] / medians[125][kind]) / math.log(4000 / 125)
+    limit = budgets[('public-session-exponent', f'{kind}-generated-helpers')]
+    print('# gate', kind, 'exponent', exponent, 'limit', limit, flush=True)
+    assert exponent <= limit, (kind, exponent, limit)
+ratio = medians[4000]['unchanged'] / medians[4000]['cold']
+limit = budgets[('public-session-warm-ratio', 'generated-4000-helpers')]
+print('# gate unchanged/cold', ratio, 'limit', limit, flush=True)
+assert ratio <= limit, (ratio, limit)

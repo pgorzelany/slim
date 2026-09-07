@@ -252,8 +252,8 @@ SLIM 0.9 has affine ownership, shared affine parameters by default, explicit
 algebraic data types, explicit effects, deterministic projects, whole-project
 artifact caching, machine-readable diagnostics, a retained typed compiler view,
 bounded analysis, direct-source reduction, and guarded automatic parallel execution.
-A framed retained compiler session is being integrated under RFC-0143; full M1
-closure remains pending. See [the implementation status](docs/INCREMENTAL.md).
+A framed retained compiler session is available under RFC-0143; its public
+acceptance checks pass, while full M1 closure remains pending. See [the implementation status](docs/INCREMENTAL.md).
 Core 1I adds one effect-gated monotonic clock and one bounded whole TCP
 exchange, then closes without source handles. Core 1J adds one structured form
 for demonstrated effectful overlap. Core 1K adds exact finite byte

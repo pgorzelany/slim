@@ -2,10 +2,12 @@
 
 The working implementation of `slimc session` now exposes retained parsing,
 checking and C generation through the framed host protocol in
-[RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md). That child remains
-pending: complete identity/limit/cost evidence and release closure are unfinished.
-The former estimate driver now lives in a measurement fixture; its gates are
-preserved and are being revalidated against the updated seed. Ordinary `check`, `emit-c` and `build` remain
+[RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md). The
+[public acceptance campaign](../benchmarks/results/2026-09-08-m1-host-closure.md)
+covers real build identities, edits, default limits, allocation failures, physical
+cleanup and durable latency gates. Full M1 global-analysis retention, native
+backend caching and release closure remain unfinished. The former estimate driver
+now lives in a measurement fixture; its existing gates remain passing. Ordinary `check`, `emit-c` and `build` remain
 one-shot operations. The retained engine uses the function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
@@ -56,8 +58,9 @@ rejected updates that previously could reuse incomplete source keys.
 [RFC-0133](../design/rfcs/0133-transactional-project-snapshots.md) adds internal
 transactional successful snapshots and bounded epoch accounting. Unchanged complete
 inputs reuse a successful snapshot, including its checked state and C. Failed
-updates preserve the last-good snapshot. Host-bound transport and actual
-compiler/runtime/target/options identity binding are still required M1 work.
+updates preserve the last-good snapshot. RFC-0143 supplies host-bound transport and actual
+compiler/runtime/target/options identity binding. Explicit reset physically frees
+the epoch; source admission budgets do not bound peak process memory.
 
 [RFC-0135](../design/rfcs/0135-retained-declaration-parsing.md) retains declaration
 parsing for original modules and flattened source. Exact source keys include the

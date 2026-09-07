@@ -69,6 +69,10 @@ class Client:
 
     def update(self, path, fragmented=False):
         tag, payload = self.request(b'U', os.fsencode(path), fragmented)
+        return self.decode_update(tag, payload)
+
+    @staticmethod
+    def decode_update(tag, payload):
         assert tag == b'S', (tag, payload)
         assert len(payload) >= 87
         words = struct.unpack('>8q', payload[:64])
@@ -135,6 +139,127 @@ def project(directory, source):
     return manifest
 
 
+def partial_output(command, compiler):
+    basic = Path('conformance/projects/basic/slim.project')
+    with tempfile.TemporaryDirectory(prefix='slim-host-partial-') as temporary:
+        source = 'module partial_output\n\nfn main(args: Vec[Bytes]) -> I64:\n  let value: Bytes = "' + 'a' * 1048576 + '"\n  0\n'
+        large = project(Path(temporary) / 'large', source)
+        client = Client(command)
+        compare(client.update(basic), clean(compiler, basic))
+        payload = os.fsencode(large)
+        client.write(b'U' + struct.pack('>I', len(payload)) + payload)
+        header = client.read(5)
+        size, = struct.unpack('>I', header[1:])
+        assert header[:1] == b'S' and size > 1048576
+        partial = client.read(128)
+        assert struct.unpack('>q', partial[32:40])[0] == 0
+        try:
+            client.decode_update(b'S', partial)
+        except AssertionError:
+            pass
+        else:
+            raise AssertionError('client accepted an incomplete artifact frame')
+        client.process.stdout.close()
+        client.process.stdin.close()
+        assert client.process.wait(timeout=10) == 65
+        assert client.process.stderr.read() == b''
+        client.process.stderr.close()
+    print('session-host-partial-output\texact\tincomplete second response rejected; writer exits and frees epoch', flush=True)
+
+
+def edit_matrix(command, compiler):
+    from session_host_cases import edit_cases
+    with tempfile.TemporaryDirectory(prefix='slim-host-edits-') as temporary:
+        directory = Path(temporary)
+        live = directory / 'live'
+        relocated = directory / 'relocated'
+        live.mkdir()
+        relocated.mkdir()
+        client = Client(command)
+        count = 0
+        for label, before, after, accepted in edit_cases():
+            last_good = None
+            for serial, contents in enumerate([before, after, after, before], 2):
+                # Replace in place: path equality must never authorize source reuse.
+                for path in live.iterdir():
+                    path.unlink()
+                for name, source in contents.items():
+                    (live / name).write_bytes(source.encode())
+                manifest = live / 'slim.project'
+                expected = clean(compiler, manifest)
+                assert (expected[0] == 0) == (serial in (2, 5) or accepted), (label, serial, expected)
+                result = client.update(manifest)
+                compare(result, expected)
+                assert result['attempt'] == (client.epoch, serial), (label, result)
+                if result['status']:
+                    assert result['published'] == last_good, (label, result)
+                else:
+                    last_good = result['published']
+                    if serial == 4:
+                        assert result['snapshot'] == result['code_reused'] == 1
+                    if serial == 5 and not accepted:
+                        assert result['snapshot'] == result['code_reused'] == 1
+            # Relocate complete unchanged contents after returning to the baseline.
+            for path in relocated.iterdir():
+                path.unlink()
+            for name, source in before.items():
+                (relocated / name).write_bytes(source.encode())
+            result = client.update(relocated / 'slim.project')
+            compare(result, clean(compiler, relocated / 'slim.project'))
+            assert result['published'] == last_good
+            assert result['snapshot'] == result['code_reused'] == 1
+            client.reset()
+            count += 1
+            print('session-host-edit', label, 'accepted' if accepted else 'rejected', 'in-place/repeat/reverse/relocation', sep='\t', flush=True)
+        client.quit()
+        print('session-host-edit-matrix', count, 'pairs', sep='\t', flush=True)
+
+
+def history_faults(command, compiler):
+    with tempfile.TemporaryDirectory(prefix='slim-host-history-fault-') as temporary:
+        directory = Path(temporary)
+        source = 'module tiny\n\nfn helper() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  helper()\n'
+        before = project(directory / 'before', source)
+        after = project(directory / 'after', source.replace('  0', '  1'))
+        invalid = project(directory / 'invalid', source.replace('  0', '  true'))
+        paths = [before, after, invalid, after, before]
+        expectations = [clean(compiler, path) for path in paths]
+        assert [status for status, _ in expectations] == [0, 0, 1, 0, 0]
+        failures = [0] * len(paths)
+        successes = 0
+        for ordinal in range(1, 1025):
+            client = Client(command, {'SLIM_ALLOC_FAIL_AT': str(ordinal)})
+            last_good = (0, 0)
+            for phase, (path, expected) in enumerate(zip(paths, expectations)):
+                payload = os.fsencode(path)
+                try:
+                    client.write(b'U' + struct.pack('>I', len(payload)) + payload)
+                except BrokenPipeError:
+                    pass  # Allocation of the initial state can fail before input.
+                tag, payload = client.receive()
+                if tag == b'E':
+                    assert payload == b'H0006', (ordinal, phase, payload)
+                    error = client.finish(71, stderr=None)
+                    assert error == f'SLIM allocation failure: exhausted at allocation {ordinal}\n'.encode()
+                    failures[phase] += 1
+                    break
+                result = client.decode_update(tag, payload)
+                compare(result, expected)
+                assert result['attempt'] == (1, phase + 2)
+                if result['status']:
+                    assert result['published'] == last_good
+                else:
+                    last_good = result['published']
+                if phase == 3:
+                    assert result['snapshot'] == result['code_reused'] == 1
+            else:
+                client.quit()
+                successes += 1
+        assert all(failures), ('fault domain missed a request phase', failures)
+        assert successes > 0, ('fault domain failed to cross the full history', failures)
+        print('session-host-history-faults', 'cold/change/rejection/recovery/reverse', *failures, 'complete', successes, sep='\t', flush=True)
+
+
 def run(command, compiler, full):
     basic = Path('conformance/projects/basic/slim.project')
     bad = Path('conformance/projects/type-error/slim.project')
@@ -189,6 +314,7 @@ def run(command, compiler, full):
     assert client.process.stderr.read() == b''
     client.process.stderr.close()
     print('session-host\tmalformed-eof-cli-broken-output\texact', flush=True)
+    partial_output(command, compiler)
 
     with tempfile.TemporaryDirectory(prefix='slim-host-') as temporary:
         directory = Path(temporary)
@@ -251,6 +377,9 @@ def run(command, compiler, full):
     client = Client(command, {'SLIM_HOST_ALLOC_FAIL_AT': '2'})
     compare(client.update(bad), clean(compiler, bad))
     client.quit()
+    if full:
+        edit_matrix(command, compiler)
+        history_faults(command, compiler)
     failures = successes = 0
     # A tiny project crosses the entire cold/update allocation domain cheaply.
     with tempfile.TemporaryDirectory(prefix='slim-host-fault-') as temporary:
@@ -277,6 +406,47 @@ def run(command, compiler, full):
         if full:
             assert successes > 0, 'fault domain did not cross all cold allocations'
     print(f'session-host\tallocation-faults\t{failures} failed; {successes} completed', flush=True)
+
+
+def observe_resources(command, compiler, report):
+    with tempfile.TemporaryDirectory(prefix='slim-host-resources-') as temporary:
+        directory = Path(temporary)
+        for size in [125, 1000, 4000]:
+            source = 'module app\n\n' + ''.join(f'fn value_{i}() -> I64:\n  {i}\n\n' for i in range(size))
+            source += 'fn main(args: Vec[Bytes]) -> I64:\n  value_0()\n'
+            before = project(directory / f'before-{size}', source)
+            after = project(directory / f'after-{size}', source.replace('fn value_0() -> I64:\n  0', 'fn value_0() -> I64:\n  1'))
+            invalid = project(directory / f'invalid-{size}', source.replace('fn value_0() -> I64:\n  0', 'fn value_0() -> I64:\n  true'))
+            paths = [before, before, after, invalid, after]
+            expected = [clean(compiler, path) for path in paths]
+            previous = None
+            for sample in range(3):
+                output = f'{report}-{size}-{sample}'
+                client = Client(command, {'SLIM_HOST_RESOURCE_REPORT': output})
+                for path, oracle in zip(paths, expected):
+                    compare(client.update(path), oracle)
+                client.reset()
+                compare(client.update(after), expected[-1])
+                client.quit()
+                lines = Path(output).read_text().splitlines()
+                assert lines[0] == 'slim-host-resources\t1\texact\t256'
+                assert len(lines) == 10, lines[:2]
+                rows = [list(map(int, row.split('\t'))) for row in lines[2:]]
+                assert [row[:3] for row in rows] == [[0, 1, i] for i in range(2, 7)] + [[1, 1, 0], [0, 2, 2], [2, 2, 0]]
+                for row in rows:
+                    assert len(row) == 14 and min(row) >= 0
+                    assert row[5] <= row[6] and row[5] <= row[7] <= row[8]
+                    assert row[6] <= row[8] and row[12] <= row[13]
+                    if row[0] != 0:
+                        assert row[5] == row[6] == row[12] == 0, row
+                assert rows[1][3] > rows[0][3], 'unchanged capture allocations hidden'
+                assert rows[3][12] == rows[4][12] == 256, 'diagnostic allocation not observed'
+                if previous is not None:
+                    assert previous == rows, ('nondeterministic resource counters', size)
+                previous = rows
+                for row in rows:
+                    print('session-host-resources', size, sample, *row, sep='\t', flush=True)
+        print('session-host-resources-exact', 'three geometries x three repeats; zero live payload/header/host storage after reset and exit', sep='\t', flush=True)
 
 
 def observe_work(command, compiler, report):
@@ -308,10 +478,23 @@ if __name__ == '__main__':
     parser.add_argument('--host', help='direct adapter executable; default uses ./slimc session')
     parser.add_argument('--compiler', default='build/toolchain/slimc')
     parser.add_argument('--quick', action='store_true')
-    parser.add_argument('--work-report', help='run only the instrumented query/cleanup oracle')
+    modes = parser.add_mutually_exclusive_group()
+    modes.add_argument('--partial-only', action='store_true')
+    modes.add_argument('--matrix-only', action='store_true')
+    modes.add_argument('--history-faults-only', action='store_true')
+    modes.add_argument('--resource-report', help='run only the instrumented allocation/cleanup oracle')
+    modes.add_argument('--work-report', help='run only the instrumented query/cleanup oracle')
     options = parser.parse_args()
     command = [options.host] if options.host else ['./slimc', 'session']
-    if options.work_report:
+    if options.partial_only:
+        partial_output(command, options.compiler)
+    elif options.matrix_only:
+        edit_matrix(command, options.compiler)
+    elif options.history_faults_only:
+        history_faults(command, options.compiler)
+    elif options.resource_report:
+        observe_resources(command, options.compiler, options.resource_report)
+    elif options.work_report:
         observe_work(command, options.compiler, options.work_report)
     else:
         run(command, options.compiler, not options.quick)

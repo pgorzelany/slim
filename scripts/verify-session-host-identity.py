@@ -4,6 +4,7 @@ import os
 from pathlib import Path
 import runpy
 import shutil
+import shlex
 import subprocess
 import sys
 import tempfile
@@ -46,10 +47,12 @@ with tempfile.TemporaryDirectory(prefix='slim-host-identity-') as temporary:
         destination.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(root / name, destination)
 
-    def build(label, sanitized=False):
+    def build(label, sanitized=False, compiler_override=None, expected_target=target):
         output = clone / label
         env = os.environ.copy()
         env['SLIM_SESSION_SANITIZE'] = '1' if sanitized else '0'
+        if compiler_override is not None:
+            env['CC'] = str(compiler_override)
         result = subprocess.run(['sh', str(clone / 'scripts/build-session-host.sh'), str(output)],
                                 capture_output=True, env=env, timeout=180)
         assert result.returncode == 0, (label, result.stdout, result.stderr)
@@ -62,7 +65,7 @@ with tempfile.TemporaryDirectory(prefix='slim-host-identity-') as temporary:
             assert fields[field] == hashlib.sha256((clone / name).read_bytes()).hexdigest()
         assert fields['runtime'] == client.identity['runtime']
         assert fields['options'] == client.identity['options']
-        assert fields['target'] == client.identity['target'] == target
+        assert fields['target'] == client.identity['target'] == expected_target
         compare(client.update(root / 'conformance/projects/basic/slim.project'), expected)
         return client
 
@@ -87,6 +90,24 @@ with tempfile.TemporaryDirectory(prefix='slim-host-identity-') as temporary:
     assert changed_options.identity['runtime'] == changed_runtime.identity['runtime']
     assert changed_options.identity['compiler'] != changed_runtime.identity['compiler']
     changed_options.quit()
+    if sys.platform == 'darwin' and target.startswith('arm64-apple-'):
+        # This forwards every invocation to the real compiler with a real, runnable
+        # deployment target. It does not spoof -dumpmachine or skip compilation.
+        native_cc = shutil.which(cc)
+        assert native_cc
+        target_cc = clone / 'target-cc'
+        target_cc.write_text('#!/bin/sh\nexec ' + shlex.quote(native_cc) + ' -target arm64-apple-macos15.0 "$@"\n')
+        target_cc.chmod(0o755)
+        target_value = subprocess.run([str(target_cc), '-dumpmachine'], capture_output=True, check=True).stdout.decode().strip()
+        assert target_value != target
+        changed_target = build('target', compiler_override=target_cc, expected_target=target_value)
+        assert changed_target.identity['target'] != identity['target']
+        assert changed_target.identity['compiler'] != changed_runtime.identity['compiler']
+        assert changed_target.identity['runtime'] == changed_runtime.identity['runtime']
+        changed_target.quit()
+        print('session-host-target\texact\t' + target + '\t' + target_value, flush=True)
+    else:
+        print('session-host-target-variation\tunknown\tno configured second runnable native target on this host', flush=True)
     # A running process keeps its compiled identity and retained state after edits on disk.
     reused = loaded.update(root / 'conformance/projects/basic/slim.project')
     compare(reused, expected)

@@ -165,6 +165,7 @@ sh scripts/verify-inputs.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session-analysis.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session-host.sh build/toolchain/slim-session "$verify_dir/slimc-seed-sanitized"
 python3 -B scripts/verify-session-host-identity.py
+python3 -B scripts/measure-session-host.py
 ./scripts/verify-retained-project.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-places.sh "$verify_dir/slimc-seed-sanitized"

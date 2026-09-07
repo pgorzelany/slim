@@ -1,7 +1,7 @@
 # RFC-0143: Host-bound compiler sessions
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -212,7 +212,16 @@ response copying and external backend work are reported separately. No-change
 updates must execute zero parsing/checking/generation producers while still
 reporting real capture/comparison/output costs. Measure source/seed/host growth,
 allocations, live memory, cleanup and quiet same-host cold/warm edit latency.
-No performance improvement is assumed by accepting the contract.
+The public generated-helper fixture uses 125, 250, 500, 1,000, 2,000 and
+4,000 helpers, nine measured samples after warmup, complete response comparison
+and separate startup/reset/one-shot timings. Preserve all samples. New durable
+budgets, owned by RFC-0030’s durable performance contract, are a maximum 1.25 endpoint geometric exponent for cold, unchanged and
+body-edit request medians, and a maximum 0.25 unchanged/cold same-host ratio at
+4,000 helpers. These use the existing approximately-linear exponent convention;
+the initial unchanged ratio is about 0.075, leaving explicit transport/noise
+headroom. They do not assert faster body edits than clean compilation or agent
+success. Existing gates remain unchanged. No performance improvement is assumed
+outside the measured domain.
 
 ## Alternatives and drawbacks
 
@@ -254,12 +263,16 @@ host-architecture decision, not a new source primitive or external review.
 
 ## Implementation
 
-Pending closure. The working public adapter, source admission entry and
-legacy-driver migration are implemented. Baseline is checkpoint 7ce3fdf.
-The [checkpoint report](../../benchmarks/results/2026-09-08-m1-host-session.md)
-records the current verification domain and measured costs, including slower
-large body edits and the remaining acceptance work. Global analysis retention, native artifact caching and full
-M1 release closure remain required even after this child is implemented.
+Implemented and verified from baseline checkpoint 7ce3fdf. The public adapter,
+source admission entry and legacy-driver migration pass the
+[initial checkpoint](../../benchmarks/results/2026-09-08-m1-host-session.md) and
+[public acceptance campaign](../../benchmarks/results/2026-09-08-m1-host-closure.md):
+edit/identity/default-limit/transport differentials, source and host allocation
+faults, physical resource accounting and durable public latency gates. The
+unchanged production implementation passed clean installation at `2ffc37b`.
+Measured large body edits remain slower than fresh compilation. Global analysis
+retention, native object/link caching and full M1 release closure remain required;
+this child completion does not close its parent milestone.
 
 ## Removal and supersession
 

@@ -64,3 +64,7 @@ native-runtime-geomean	expanded-all	1.40	slim-over-c	RFC-0087
 native-runtime-geomean	expanded-serial	1.50	slim-over-c	RFC-0087
 check-exponent	generated-common-prefix-declarations	1.25	exponent	RFC-0113
 check-exponent	generated-branch-moves	1.25	exponent	RFC-0113
+public-session-exponent	cold-generated-helpers	1.25	exponent	RFC-0030
+public-session-exponent	unchanged-generated-helpers	1.25	exponent	RFC-0030
+public-session-exponent	body-generated-helpers	1.25	exponent	RFC-0030
+public-session-warm-ratio	generated-4000-helpers	0.25	ratio	RFC-0030

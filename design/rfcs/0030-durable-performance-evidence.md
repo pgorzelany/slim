@@ -93,6 +93,26 @@ conformance corpus, malformed-input campaign, sanitizer and allocation-failure
 tests, deterministic generated C, and byte-identical self-host fixed point
 remain mandatory.
 
+## Public session measurements
+
+RFC-0143 exposes the retained production engine. Extend this RFC's durable
+incremental wall-time contract with four additive public-session gates:
+`public-session-exponent` for cold, unchanged and body-edited generated helpers
+is at most 1.25; `public-session-warm-ratio` for unchanged/cold at 4,000 helpers
+is at most 0.25. The series has 125, 250, 500, 1,000, 2,000 and 4,000 helpers,
+nine measured samples after warmup, and complete clean-C comparison. Endpoint
+exponents use request medians. Startup, reset and direct one-shot medians are
+reported separately; response transfer remains inside the request measurement.
+
+These initial gates extend this accepted performance contract under RFC-0112's
+implementation delegation. They replace no existing metric and relax no limit.
+The [dated acceptance evidence](../../benchmarks/results/2026-09-08-m1-host-closure.md)
+records exponents 0.912/0.829/0.968 and unchanged/cold 0.076. The remaining
+body-edit cost is explicit: this gate does not claim edits beat fresh compilation
+or establish agent productivity. RFC-0143 defines the host mechanism; this RFC
+owns the performance rows. Its existing ratings and governance threshold are
+unchanged.
+
 ## Removal
 
 Remove a metric that cannot be reproduced or does not protect a design goal;
