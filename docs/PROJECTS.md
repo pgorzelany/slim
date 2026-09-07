@@ -131,9 +131,10 @@ there is no permissive reader for unknown fields.
 
 ## Incremental cache
 
-The internal session command computes declaration invalidation estimates. It
-does not retain and reuse parsed declarations, checked bodies, or generated
-fragments. See [incremental compilation status](INCREMENTAL.md) for the current
+The working `slimc session` protocol reuses accepted parsed declarations, checked
+bodies and C fragments across framed updates. RFC-0143 integration and full M1
+closure remain pending. Historical invalidation estimates have moved to a
+measurement fixture compiled by the production compiler. See [incremental compilation status](INCREMENTAL.md) for the current
 measurement boundary and the SLIM Next implementation requirements.
 
 The internal `cache PROJECT CACHE_FILE` command in `selfhost/cache.slim`

@@ -1855,7 +1855,6 @@ static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95evidence(SlimVec sl
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95compile_95command_95path(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimBytes slim_v_path_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95compile(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimBytes slim_v_path_n13, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95cache(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimRegion *slim_region);
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95session(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95transform(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, bool slim_v_analysis_95mode_n13, SlimBytes slim_v_usage_n17, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run(SlimVec slim_v_args_n2, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_control_95Binding slim_fn_control_95binding(SlimVec slim_v_tokens_n2, int64_t slim_v_node_n9, SlimRegion *slim_region);
@@ -2657,6 +2656,7 @@ static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95reuse_9
 static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95prepare_95update(Slim_type_session_95State * slim_v_state_n2, Slim_type_project_95ProjectInput slim_v_input_n6, Slim_type_session_95Config slim_v_config_n10, bool slim_v_eligible_n14, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95publish_95update(Slim_type_session_95State * slim_v_state_n2, Slim_type_project_95ProjectInput slim_v_input_n6, Slim_type_session_95Config slim_v_config_n10, Slim_type_project_95ProjectAttempt slim_v_attempt_n14, Slim_type_syntax_95ParseCache slim_v_parsing_n18, Slim_type_project_95ModuleParses slim_v_module_95parsing_n22, bool slim_v_eligible_n26, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95update(Slim_type_session_95State * slim_v_state_n2, Slim_type_project_95ProjectInput slim_v_input_n6, Slim_type_session_95Config slim_v_config_n10, SlimRegion *slim_region);
+static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95update_95path(Slim_type_session_95State * slim_v_state_n2, SlimBytes slim_v_path_n6, Slim_type_session_95Config slim_v_config_n10, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_query_95State slim_fn_session_95invalid_95state(SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION Slim_type_query_95State slim_fn_session_95state_95for_95path(SlimBytes slim_v_path_n2, bool slim_v_with_95dependencies_n6, Slim_type_identity_95Revision slim_v_revision_n10, SlimRegion *slim_region);
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_session_95report_95update(Slim_type_query_95State * slim_v_previous_95state_n2, Slim_type_query_95State slim_v_current_95state_n6, SlimRegion *slim_region);
@@ -23700,64 +23700,6 @@ slim_region_destroy(&slim_function_region);
 return slim_result;
 }
 
-static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95session(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, SlimRegion *slim_region) {
-(void)slim_v_args_n2;
-(void)slim_v_arg_95count_n9;
-(void)slim_region;
-SlimRegion slim_function_region;
-slim_region_init(&slim_function_region, slim_region);
-SlimRegion *slim_allocation_region = &slim_function_region;
-(void)slim_allocation_region;
-int64_t slim_result = {0};
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-{
-bool slim_v_has_95paths_n22 = {0};
-slim_v_has_95paths_n22 = slim_v_arg_95count_n9 >= INT64_C(4);
-(void)slim_v_has_95paths_n22;
-if (slim_v_has_95paths_n22) {
-{
-SlimBytes slim_v_initial_95path_n37 = {0};
-slim_v_initial_95path_n37 = ((SlimBytes *)(slim_v_args_n2).data)[((slim_v_args_n2).len > INT64_C(2) ? INT64_C(2) : slim_vec_check_index(&(slim_v_args_n2), INT64_C(2)))];
-(void)slim_v_initial_95path_n37;
-{
-SlimBytes slim_v_updated_95path_n47 = {0};
-slim_v_updated_95path_n47 = ((SlimBytes *)(slim_v_args_n2).data)[((slim_v_args_n2).len > INT64_C(3) ? INT64_C(3) : slim_vec_check_index(&(slim_v_args_n2), INT64_C(3)))];
-(void)slim_v_updated_95path_n47;
-{
-bool slim_v_recovering_n57 = {0};
-slim_v_recovering_n57 = slim_v_arg_95count_n9 >= INT64_C(5);
-(void)slim_v_recovering_n57;
-if (slim_v_recovering_n57) {
-{
-SlimBytes slim_v_recovered_95path_n72 = {0};
-slim_v_recovered_95path_n72 = ((SlimBytes *)(slim_v_args_n2).data)[((slim_v_args_n2).len > INT64_C(4) ? INT64_C(4) : slim_vec_check_index(&(slim_v_args_n2), INT64_C(4)))];
-(void)slim_v_recovered_95path_n72;
-slim_result = slim_fn_session_95run_95recovery(slim_v_initial_95path_n37, slim_v_updated_95path_n47, slim_v_recovered_95path_n72, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-}
-else {
-slim_result = slim_fn_session_95run(slim_v_initial_95path_n37, slim_v_updated_95path_n47, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
-}
-}
-}
-}
-}
-else {
-{
-SlimUnit slim_v__n107 = {0};
-slim_v__n107 = slim_println(slim_bytes_static((const uint8_t *)"usage: slimc session INITIAL UPDATED [RECOVERED]", (int64_t)(sizeof("usage: slimc session INITIAL UPDATED [RECOVERED]") - 1)));
-(void)slim_v__n107;
-slim_result = INT64_C(64);
-}
-}
-}
-slim_allocation_failed: ;
-slim_region_destroy(&slim_function_region);
-return slim_result;
-}
-
 static SLIM_UNUSED_FUNCTION int64_t slim_fn_compiler_95run_95transform(SlimVec slim_v_args_n2, int64_t slim_v_arg_95count_n9, bool slim_v_analysis_95mode_n13, SlimBytes slim_v_usage_n17, SlimRegion *slim_region) {
 (void)slim_v_args_n2;
 (void)slim_v_arg_95count_n9;
@@ -23942,8 +23884,12 @@ bool slim_v_session_95command_n347 = {0};
 slim_v_session_95command_n347 = slim_fn_syntax_95span_95equal(slim_v_command_n42, INT64_C(0), slim_v_command_95length_n52, slim_bytes_static((const uint8_t *)"session", (int64_t)(sizeof("session") - 1)), slim_allocation_region);
 (void)slim_v_session_95command_n347;
 if (slim_v_session_95command_n347) {
-slim_result = slim_fn_compiler_95run_95session(slim_v_args_n2, slim_v_arg_95count_n18, slim_allocation_region);
-if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+SlimUnit slim_v__n364 = {0};
+slim_v__n364 = slim_println(slim_bytes_static((const uint8_t *)"session transport is provided by the public slimc launcher", (int64_t)(sizeof("session transport is provided by the public slimc launcher") - 1)));
+(void)slim_v__n364;
+slim_result = INT64_C(64);
+}
 }
 else {
 slim_result = slim_fn_compiler_95run_95compile(slim_v_args_n2, slim_v_arg_95count_n18, slim_v_command_n42, slim_allocation_region);
@@ -23967,9 +23913,9 @@ if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 else {
 {
-SlimUnit slim_v__n406 = {0};
-slim_v__n406 = slim_println(slim_bytes_static((const uint8_t *)"usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE", (int64_t)(sizeof("usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE") - 1)));
-(void)slim_v__n406;
+SlimUnit slim_v__n411 = {0};
+slim_v__n411 = slim_println(slim_bytes_static((const uint8_t *)"usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE", (int64_t)(sizeof("usage: slimc SOURCE | slimc check SOURCE | slimc fmt SOURCE | slimc reduce SOURCE | slimc analyze SOURCE") - 1)));
+(void)slim_v__n411;
 slim_result = INT64_C(64);
 }
 }
@@ -90465,6 +90411,46 @@ default: slim_rt_trap("invalid variant tag");
 }
 }
 }
+}
+}
+slim_allocation_failed: ;
+return slim_result;
+}
+
+static SLIM_UNUSED_FUNCTION Slim_type_session_95Report slim_fn_session_95update_95path(Slim_type_session_95State * slim_v_state_n2, SlimBytes slim_v_path_n6, Slim_type_session_95Config slim_v_config_n10, SlimRegion *slim_region) {
+(void)slim_v_state_n2;
+(void)slim_v_path_n6;
+(void)slim_v_config_n10;
+(void)slim_region;
+SlimRegion *slim_allocation_region = slim_region;
+(void)slim_allocation_region;
+Slim_type_session_95Report slim_result = {0};
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+{
+Slim_type_session_95Usage slim_v_current_n23 = {0};
+slim_v_current_n23 = slim_fn_session_95usage((*slim_v_state_n2), slim_allocation_region);
+(void)slim_v_current_n23;
+{
+Slim_type_project_95ProjectInput slim_v_input_n32 = {0};
+bool slim_t_36 = {0};
+int64_t slim_t_39 = {0};
+slim_t_39 = slim_v_current_n23.slim_field_attempts;
+int64_t slim_t_44 = {0};
+Slim_type_session_95Limits slim_t_46 = {0};
+slim_t_46 = (*slim_v_state_n2).slim_field_limits;
+slim_t_44 = slim_t_46.slim_field_attempts;
+slim_t_36 = slim_t_39 < slim_t_44;
+if (slim_t_36) {
+slim_v_input_n32 = slim_fn_project_95capture_95project_95input(slim_v_path_n6, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+else {
+slim_v_input_n32 = slim_fn_project_95empty_95project_95input(slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
+}
+(void)slim_v_input_n32;
+slim_result = slim_fn_session_95update(slim_v_state_n2, slim_v_input_n32, slim_v_config_n10, slim_allocation_region);
+if (slim_region_failed(slim_allocation_region)) goto slim_allocation_failed;
 }
 }
 slim_allocation_failed: ;

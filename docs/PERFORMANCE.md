@@ -186,8 +186,8 @@ historical numbers.
 
 ### Retained function typing
 
-RFC-0130's internal entry point has native-observed inference reuse; the public
-session remains an estimate command. Its geometric family executes zero function
+RFC-0130's internal entry point has native-observed inference reuse. RFC-0143
+now exposes that engine through a public framed session; closure remains pending. Its geometric family executes zero function
 checks for unchanged updates and one for a single helper-body edit. Parsing,
 linking, global checks and generation still run. Native counts and repeated
 clean-equivalence checks are in the [current work table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-work.tsv.gz).
@@ -227,4 +227,5 @@ separate ordinary before/after preparation from two-clean-versus-retained runs.
 The latter still favors clean preparation in this family and is not isolated
 warm-query latency. [Project fault observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-faults.tsv.gz)
 cover 2,048 ordinals of the complete differential probe. Native phase returns
-remain distinct from publication. Public session commands still report estimates.
+remain distinct from publication. Historical estimates now use a measurement
+fixture, and public-session measurements are recorded independently.

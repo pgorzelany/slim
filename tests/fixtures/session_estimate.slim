@@ -1,0 +1,18 @@
+module driver
+
+# Historical invalidation estimates. Compiled only for verification/measurement.
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let arg_count: I64 = vec.len(args)
+  let has_paths: Bool = arg_count >= 4
+  if has_paths:
+    let initial_path: Bytes = vec.get(args, 2)
+    let updated_path: Bytes = vec.get(args, 3)
+    let recovering: Bool = arg_count >= 5
+    if recovering:
+      let recovered_path: Bytes = vec.get(args, 4)
+      session.run_recovery(initial_path, updated_path, recovered_path)
+    else:
+      session.run(initial_path, updated_path)
+  else:
+    io.println("measurement fixture: estimate INITIAL UPDATED [RECOVERED]")
+    64

@@ -163,18 +163,21 @@ echo "verification: flow faults $flow_failed, failures after task walking $flow_
 ./scripts/verify-retained.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-inputs.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session-analysis.sh "$verify_dir/slimc-seed-sanitized"
+sh scripts/verify-session-host.sh build/toolchain/slim-session "$verify_dir/slimc-seed-sanitized"
+python3 -B scripts/verify-session-host-identity.py
 ./scripts/verify-retained-project.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-places.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-parsing.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-integers.sh build/toolchain/slimc full
 
-"$verify_dir/slimc-seed-sanitized" session conformance/projects/basic/slim.project \
+sh scripts/build-session-estimate.sh "$verify_dir/slimc-seed-sanitized" "$verify_dir/estimate" sanitize
+"$verify_dir/estimate/estimate" session conformance/projects/basic/slim.project \
   conformance/projects/basic/slim.project > "$verify_dir/identity-session.out"
 identity_fault_at=1
 identity_faults=0
 while test "$identity_fault_at" -le 128; do
-  if SLIM_ALLOC_FAIL_AT="$identity_fault_at" "$verify_dir/slimc-seed-sanitized" \
+  if SLIM_ALLOC_FAIL_AT="$identity_fault_at" "$verify_dir/estimate/estimate" \
     session conformance/projects/basic/slim.project conformance/projects/basic/slim.project \
     > "$verify_dir/identity-fault.out" 2> "$verify_dir/identity-fault.err"; then
     # Ordinals beyond this input's allocations must preserve ordinary output.

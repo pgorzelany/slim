@@ -4,3 +4,4 @@ src/bin/slim-bench.rs	infrastructure	-
 src/bin/slim-bench/work.rs	infrastructure	-
 src/bin/slim-conform.rs	infrastructure	-
 src/bin/slim-govern.rs	infrastructure	-
+src/session_estimate.rs	infrastructure	-

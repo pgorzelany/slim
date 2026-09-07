@@ -11,6 +11,7 @@ not certify the current working tree.
 | Validated literal-storage checkpoint `0f19fbc` | [Scope, costs and verification](2026-09-07-m1-literal-storage.md) |
 | Validated byte-literal checkpoint (composite verification) | [Scope, costs and pending checks](2026-09-07-m1-byte-literals.md) |
 | Validated RFC-0142 input-query checkpoint | [Verified domains, costs and remaining M1 work](2026-09-07-m1-input-queries.md) |
+| Working RFC-0143 public-session checkpoint (closure pending) | [Protocol, verified domains, costs and remaining work](2026-09-08-m1-host-session.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 
 ## Archived evidence

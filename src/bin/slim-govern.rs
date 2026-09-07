@@ -337,6 +337,7 @@ fn check_core_1l_contracts(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &m
         "bootstrap",
         "bootstrap.sh",
         "conformance",
+        "compiler", // RFC-0143 host adapter; the inventory remains exact.
         "design",
         "docs",
         "examples",

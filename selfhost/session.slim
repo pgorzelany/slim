@@ -333,6 +333,14 @@ fn update(state: @State, input: ^project.ProjectInput, config: Config) -> Report
                 else:
                   prepare_update(@state, ^input, config, eligible)
 
+fn update_path(state: @State, path: Bytes, config: Config) -> Report effects[alloc, io, partial]:
+  let current: Usage = usage(state)
+  let input: project.ProjectInput = if current.attempts < state.limits.attempts:
+    project.capture_project_input(path)
+  else:
+    project.empty_project_input()
+  update(@state, ^input, config)
+
 fn invalid_state() -> query.State effects[alloc]:
   let snapshots: Vec[query.Snapshot] = vec.new()
   let dependencies: Vec[query.Dependency] = vec.new()

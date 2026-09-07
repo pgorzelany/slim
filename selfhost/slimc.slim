@@ -360,21 +360,6 @@ fn run_cache(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial
     io.println("usage: slimc cache MANIFEST CACHE")
     64
 
-fn run_session(args: Vec[Bytes], arg_count: I64) -> I64 effects[alloc, io, partial]:
-  let has_paths: Bool = arg_count >= 4
-  if has_paths:
-    let initial_path: Bytes = vec.get(args, 2)
-    let updated_path: Bytes = vec.get(args, 3)
-    let recovering: Bool = arg_count >= 5
-    if recovering:
-      let recovered_path: Bytes = vec.get(args, 4)
-      session.run_recovery(initial_path, updated_path, recovered_path)
-    else:
-      session.run(initial_path, updated_path)
-  else:
-    io.println("usage: slimc session INITIAL UPDATED [RECOVERED]")
-    64
-
 fn run_transform(args: Vec[Bytes], arg_count: I64, analysis_mode: Bool, usage: Bytes) -> I64 effects[alloc, io, partial]:
   let has_source: Bool = arg_count >= 3
   if has_source:
@@ -434,7 +419,8 @@ fn run(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
               else:
                 let session_command: Bool = syntax.span_equal(command, 0, command_length, "session")
                 if session_command:
-                  run_session(args, arg_count)
+                  io.println("session transport is provided by the public slimc launcher")
+                  64
                 else:
                   run_compile(args, arg_count, command)
   else:

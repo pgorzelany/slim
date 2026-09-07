@@ -10,4 +10,6 @@ void slim_session_probe_import(int64_t start, int64_t end);
 void slim_session_probe_end(void);
 void slim_session_probe_epoch_begin(SlimRegion *parent);
 void slim_session_probe_epoch_end(SlimRegion *parent, SlimRegion *child);
+void slim_session_probe_host_begin(SlimRegion *root);
+void slim_session_probe_host_end(SlimRegion *root);
 #endif

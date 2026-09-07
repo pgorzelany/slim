@@ -65,6 +65,7 @@ mv -f "$slim_output/slimc.next" "$slim_output/slimc"
 cp "$slim_work/generation-2.c" "$slim_output/slimc.c"
 cp "$slim_runtime_c" "$slim_output/slim_rt.c"
 cp "$slim_runtime_h" "$slim_output/slim_rt.h"
+sh "$slim_root/scripts/build-session-host.sh" "$slim_output"
 
 slim_size=$(wc -c < "$slim_work/generation-2.c" | tr -d ' ')
 echo "bootstrap: fixed point verified at $slim_size C bytes"

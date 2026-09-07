@@ -51,6 +51,7 @@ test ! -e "$slim_install/target"
 
     test "$(./slimc --version)" = "slimc $slim_version (self-hosted)"
     ./bootstrap.sh
+    python3 -B scripts/verify-session-host.py --quick
     ./slimc check examples/hello.slim
     test "$(./slimc run examples/hello.slim)" = "hello from SLIM"
     test "$(./slimc run examples/bytes.slim)" = "Hi"

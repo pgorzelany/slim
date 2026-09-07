@@ -29,6 +29,7 @@ slim_usage() {
     echo "  slimc [--message-format=human|json] edit SOURCE PATCH"
     echo "  slimc fmt SOURCE [--check]"
     echo "  slimc interfaces PROJECT [--jobs N] -o DIRECTORY"
+    echo "  slimc session (framed protocol on stdin/stdout)"
     echo "  slimc runtime DIRECTORY"
     echo "  slimc builtins"
     echo "  slimc --version"
@@ -356,7 +357,14 @@ case "$slim_command" in
             "$slim_tmp/program" "$@"
         fi
         ;;
-    cache|session)
+    session)
+        test "$#" -eq 0 || { echo 'usage: slimc session (framed protocol on stdin/stdout)' >&2; exit 64; }
+        if ! test -x "$slim_root/build/toolchain/slim-session"; then
+            sh "$slim_root/scripts/build-session-host.sh" >&2
+        fi
+        "$slim_root/build/toolchain/slim-session"
+        ;;
+    cache)
         "$slim_compiler" "$slim_command" "$@"
         ;;
     *)

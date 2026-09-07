@@ -1,3 +1,5 @@
+# host=1 observes the public root owner; the SLIM fixture owner stays required by default.
+BEGIN { if (host != 0 && host != 1) exit 1 }
 /^static .*\) \{$/ { proof = 0; assembled = 0 }
 # Fixed generated-C anchors. Counts production phase entry, never estimates.
 /^static .*slim_fn_session_95update\(.*\) \{$/ {
@@ -119,7 +121,7 @@ epoch && /^return slim_result;$/ { cleanups++; print "slim_session_probe_epoch_e
 }
 { print }
 END {
-    if (input_transfers != 1 || assemblies != 1 || assembly_returns != 1 || proof_functions != 1 || proof_returns != 1 || counted_lookups != 1 || prototypes != 1 || bodies != 1 || wrappers != 1 || fragments != 1 || fact_initializations != 1 || fact_resets != 1 || range_analyzes != 1 || range_queries != 1 || range_functions != 1 || range_imports != 1 || ordinary_passes != 1 || retained_passes != 1 || parameter_scans != 1 || parallel_analyzes != 1 || plans != 1 || plan_imports != 1 || grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != 1 || cleanups != 1) exit 1
+    if (input_transfers != 1 || assemblies != 1 || assembly_returns != 1 || proof_functions != 1 || proof_returns != 1 || counted_lookups != 1 || prototypes != 1 || bodies != 1 || wrappers != 1 || fragments != 1 || fact_initializations != 1 || fact_resets != 1 || range_analyzes != 1 || range_queries != 1 || range_functions != 1 || range_imports != 1 || ordinary_passes != 1 || retained_passes != 1 || parameter_scans != 1 || parallel_analyzes != 1 || plans != 1 || plan_imports != 1 || grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != (host ? 0 : 1) || cleanups != (host ? 0 : 1)) exit 1
     print "_Static_assert(sizeof(Slim_type_retained_95Saved) <= 64, \"retained saved-row storage budget\");"
     print "_Static_assert(sizeof(Slim_type_retained_95StoredLink) <= 8, \"retained temporary-link storage budget\");"
 }

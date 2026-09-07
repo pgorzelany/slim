@@ -1,3 +1,6 @@
+#[path = "../session_estimate.rs"]
+mod session_estimate;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::fs;
 use std::hint::black_box;
@@ -943,8 +946,9 @@ fn run_incremental() {
     let quick = has_quick_flag();
     let sizes: &[usize] = if quick { &[4, 8, 16] } else { &[8, 16, 32, 64] };
     let samples = if quick { 3 } else { 5 };
-    let compiler = selfhost_compiler();
-    println!("graph\tmodules\tscenario\tsession_us\twork");
+    let directory = TemporaryDirectory::new("session-estimate");
+    let compiler = session_estimate::build(&selfhost_compiler(), &directory.path).unwrap();
+    println!("graph\tmodules\tscenario\testimate_us\testimated_work");
     for graph in [ProjectGraph::Wide, ProjectGraph::Deep] {
         let mut series = BTreeMap::new();
         for modules in sizes {
@@ -962,7 +966,7 @@ fn run_incremental() {
                             .arg("session")
                             .arg(pair.initial_manifest())
                             .arg(pair.updated_manifest()),
-                        "SLIM incremental session",
+                        "SLIM invalidation-estimate fixture",
                     );
                     if !output.status.success()
                         || !output.stderr.is_empty()

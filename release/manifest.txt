@@ -9,6 +9,7 @@ benchmarks
 bootstrap
 bootstrap.sh
 conformance
+compiler
 design
 docs
 examples

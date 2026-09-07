@@ -1,0 +1,19 @@
+stage	exit	command
+bootstrap-admission	0	./bootstrap.sh
+governance-fixed	0	cargo run --bin slim-govern -- check
+cargo-test-fixed	0	cargo test
+performance	0	cargo run --release --bin slim-bench -- performance --quick
+reduction	0	cargo run --release --bin slim-bench -- reduction --quick
+parallelism	0	cargo run --release --bin slim-bench -- parallelism
+compare	0	cargo run --release --bin slim-bench -- compare --quick
+agent	0	cargo run --release --bin slim-bench -- agent
+verified-admission-fixed	0	sh scripts/verify-session-host.sh
+identity	0	python3 -B scripts/verify-session-host-identity.py
+work-current	0	cargo run --release --bin slim-bench -- work --quick
+incremental-current	0	cargo run --release --bin slim-bench -- incremental --quick
+conformance	0	cargo run --bin slim-conform -- check
+public-final-quick	0	python3 -B scripts/verify-session-host.py --quick
+host-latency-current	0	python3 -B scripts/measure-session-host.py
+identity-publication	0	python3 -B scripts/verify-session-host-identity.py
+concurrent-publication	0	python3 -B scripts/verify-session-host-identity.py --publication-only
+publication-quick	0	python3 -B scripts/verify-session-host.py --quick

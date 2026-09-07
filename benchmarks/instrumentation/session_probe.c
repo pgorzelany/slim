@@ -57,6 +57,18 @@ void slim_session_probe_epoch_end(SlimRegion *parent, SlimRegion *child) {
     if (epochs == SESSION_PHASES) bounded = 1;
     else ++epochs;
 }
+/* The public adapter physically owns a root, rather than a SLIM child region. */
+void slim_session_probe_host_begin(SlimRegion *root) {
+    if (epoch_active || root == NULL || root->parent != NULL || root->newest != NULL) abort();
+    epoch_active = 1;
+    epoch_parent = root;
+}
+void slim_session_probe_host_end(SlimRegion *root) {
+    if (!epoch_active || root != epoch_parent || root->parent != NULL || root->newest != NULL) abort();
+    epoch_active = 0;
+    if (epochs == SESSION_PHASES) bounded = 1;
+    else ++epochs;
+}
 /* Test-only fault: replace a file after its first complete capture. */
 void slim_session_probe_captured(void) {
     static unsigned captures;

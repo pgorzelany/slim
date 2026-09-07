@@ -1,3 +1,6 @@
+#[path = "../src/session_estimate.rs"]
+mod session_estimate;
+
 use std::fs;
 use std::io::{ErrorKind, Read, Write};
 use std::net::TcpListener;
@@ -3880,6 +3883,7 @@ fn production_session_rejects_partial_indexes_and_preserves_source_comparisons()
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     let compiler = root.join("build/toolchain/slimc");
     let directory = temporary_directory("session-source-index");
+    let compiler = session_estimate::build(&compiler, &directory.join("estimate")).unwrap();
     let initial = directory.join("initial");
     let updated = directory.join("relocated");
     for folder in [&initial, &updated] {

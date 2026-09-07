@@ -1,3 +1,6 @@
+#[path = "../session_estimate.rs"]
+mod session_estimate;
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::env;
 use std::ffi::OsString;
@@ -972,6 +975,7 @@ fn read_cache_u64(bytes: &[u8], offset: usize) -> Result<usize, String> {
 
 fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Result<(), String> {
     let directory = temporary_directory("selfhost-project-incremental")?;
+    let estimate = session_estimate::build(compiler, &directory.join("estimate"))?;
     let initial_directory = directory.join("initial");
     let updated_directory = directory.join("updated");
     let source_directory = fixture
@@ -988,7 +992,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     let updated_manifest = updated_directory.join(manifest_name);
     require_selfhost_session_work(
         fixture,
-        compiler,
+        &estimate,
         &initial_manifest,
         &initial_manifest,
         b"0 0 0 0\n",
@@ -1007,7 +1011,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
 
     require_selfhost_session_work(
         fixture,
-        compiler,
+        &estimate,
         &initial_manifest,
         &updated_manifest,
         b"1 1 1 1\n",
@@ -1029,7 +1033,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     fs::write(&invalid_module, after).map_err(|error| error.to_string())?;
     require_selfhost_recovery(
         fixture,
-        compiler,
+        &estimate,
         &initial_manifest,
         &invalid_manifest,
         &updated_manifest,
@@ -1064,7 +1068,7 @@ fn run_selfhost_incremental_fixture(fixture: &Fixture, compiler: &Path) -> Resul
     fs::write(&updated_module, after).map_err(|error| error.to_string())?;
     require_selfhost_session_work(
         fixture,
-        compiler,
+        &estimate,
         &initial_manifest,
         &updated_manifest,
         b"1 1 2 2\n",

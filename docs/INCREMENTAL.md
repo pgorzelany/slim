@@ -1,15 +1,19 @@
 # Incremental compilation status
 
-The public compiler commands do **not yet provide retained incremental parsing,
-checking or C generation**. The production compiler now has an internal retained
-function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
+The working implementation of `slimc session` now exposes retained parsing,
+checking and C generation through the framed host protocol in
+[RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md). That child remains
+pending: complete identity/limit/cost evidence and release closure are unfinished.
+The former estimate driver now lives in a measurement fixture; its gates are
+preserved and are being revalidated against the updated seed. Ordinary `check`, `emit-c` and `build` remain
+one-shot operations. The retained engine uses the function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
 parsing, function memory plans, range queries and C function fragments as described
 below. Manifest/import validation, declaration/layout checks, termination validation,
 parallel analysis and complete C assembly remain current-revision
-work. Termination and emission consume the current retained range view. The public `session` command
-still reports estimates. The former Rust `IncrementalSession` API is not part of
+work. Termination and emission consume the current retained range view. The former
+Rust `IncrementalSession` API is not part of
 the production compiler.
 
 The retained entry point calls the same isolated SLIM function checker on misses.
@@ -41,7 +45,7 @@ project, eligible typing history and actual inference work. Both preparation mod
 run current manifest/module/import/export validation and retain current diagnostic
 origins. An unchanged flattened body cannot bypass a removed import or export.
 This entry point originally repeated module parsing; RFC-0135 now retains eligible
-declaration parses within it. Flattening and global checks still run; RFC-0140 adds retained function emission. The public session protocol remains estimate-only.
+declaration parses within it. Flattening and global checks still run; RFC-0140 adds retained function emission. The host adapter now calls this retained entry point.
 
 Retained typing and source snapshot maps now use complete declaration source keys,
 excluding trailing separator whitespace. A synthetic closing node is not a source
@@ -52,7 +56,7 @@ rejected updates that previously could reuse incomplete source keys.
 [RFC-0133](../design/rfcs/0133-transactional-project-snapshots.md) adds internal
 transactional successful snapshots and bounded epoch accounting. Unchanged complete
 inputs reuse a successful snapshot, including its checked state and C. Failed
-updates preserve the last-good snapshot. Public host-bound transport and actual
+updates preserve the last-good snapshot. Host-bound transport and actual
 compiler/runtime/target/options identity binding are still required M1 work.
 
 [RFC-0135](../design/rfcs/0135-retained-declaration-parsing.md) retains declaration
@@ -115,7 +119,7 @@ observation schema 6 retains all earlier counters and adds prototype/body/wrappe
 producer entries, fragment imports, copied bytes and counted-record lookups.
 RFC-0142 advances this to schema 7 by appending actual input-transfer
 entries; the old scan counter continues to count actual ordinary scan calls.
-Public host-bound sessions, retained global analyses and native backend artifacts
+Public session closure, retained global analyses and native backend artifacts
 remain M1 work.
 
 [RFC-0142](../design/rfcs/0142-retained-parameter-input-queries.md) implements
@@ -129,10 +133,38 @@ is initialized only when fallback needs it. Verified domains, allocation-fault
 campaigns and contrary measurements are recorded in the
 [checkpoint report](../benchmarks/results/2026-09-07-m1-input-queries.md).
 
-## What the current session command measures
+## Public framed session (implementation in progress)
 
-`selfhost/session.slim` loads the initial and updated projects and builds
-source snapshots. `selfhost/query.slim` compares declarations, identifies
+Start `./slimc session` with no arguments. Bootstrap builds its host adapter from
+verified seed bytes and the ordinary runtime. The initial `H` frame identifies
+the loaded compiler/runtime/target/options; requests cannot supply identities or
+cached facts. Send `U` with a project-manifest path, `R` to physically release the
+owning epoch and restart cold, or `Q` to close. EOF between frames also closes.
+Every frame has a tag, a four-byte big-endian payload length and that exact payload.
+The complete binary layout and bounded errors are specified in RFC-0143.
+
+Successful `S` responses carry actual work aggregates and the current deterministic
+C artifact. Failed source updates carry diagnostics and the last-good revision,
+with no C payload. Accept only complete responses. There is no native compilation
+or file publication in this operation. Source capture and response transmission
+remain real work even when all compiler queries are reused.
+
+`python3 -B scripts/verify-session-host.py` drives the public launcher and compares
+96 source fixtures and 30 project paths with clean production results. It also
+checks recovery, physical reset, fragmented/malformed requests, unusual paths,
+broken output, the 64-attempt limit and allocation failures.
+`sh scripts/verify-session-host.sh` repeats these checks under ASan/UBSan and
+observes actual producer entries and root cleanup. The basic unchanged update
+executes zero of all 23 observed producers/imports; a body edit checks one of two
+functions. These are fixture-specific observations, not an agent success rate.
+`python3 -B scripts/measure-session-host.py` records quiet raw frontend timings
+separately from external native compilation.
+
+## Historical invalidation-estimate driver
+
+`tests/fixtures/session_estimate.slim` calls the historical snapshot-comparison
+operations in `selfhost/session.slim`. It loads the initial and updated projects
+and builds source snapshots. `selfhost/query.slim` compares declarations, identifies
 changed bodies and interfaces, and propagates dependency invalidation. The
 identity is `(module, declaration kind, declared name)`.
 
@@ -141,8 +173,7 @@ identity is `(module, declaration kind, declared name)`.
 handles, checked spans, and exact-content maps to new source positions. Aligned
 keys compare directly; reordered lookup builds one lazy index and retains it in
 that source state. Current source links reject duplicate names. This source-index
-foundation is implemented; integrating retained checking and emitted C into the
-public session remains M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
+foundation is implemented. Completing the public lifecycle remains M1 work. [Measured work and costs](../benchmarks/results/2026-09-05-slim-next-progress.md)
 are recorded separately from the historical estimates.
 
 [RFC-0127](../design/rfcs/0127-isolated-function-checking.md) makes the existing
@@ -167,20 +198,21 @@ views cannot resolve blocks as complete. The existing checker still supplies all
 semantic acceptance, and ownership orchestration has not yet migrated to this
 view. Default checking does not build an unused graph.
 
-The four integers printed by the internal `session` command retain historical
+The four integers printed by the measurement fixture retain historical
 field names `parsed lowered checked generated`. They are **invalidation
 estimates**, not counters of operations performed. In `query.measure_update`,
 `parsed` counts classified changes, `lowered` copies that count, `checked`
 counts invalidation flags, and `generated` copies the invalidated count.
-No retained typed bodies or generated fragments are reused by this command.
+No retained typed bodies or generated fragments are reused by this fixture.
 A zero estimate on an unchanged project does not mean zero frontend work.
 
 ## Observed execution
 
 `cargo run --release --bin slim-bench -- work --quick` now observes actual
 native compiler entry points and loop headers. It builds an instrumented copy
-of the reproduced portable seed, compares each operation with the ordinary
-compiler, and repeats the observation to require identical counters and output.
+of the reproduced portable seed and, for legacy estimates, the SLIM measurement
+fixture generated by that compiler. It compares each operation with its ordinary
+executable and repeats observations to require identical counters and output.
 It never installs that copy or adds counters to normal builds. Add `--sanitize`
 to run the observed compiler under ASan/UBSan. Without `--quick`, the declaration
 series extends through 8,000 declarations.

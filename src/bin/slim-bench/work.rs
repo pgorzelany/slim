@@ -500,6 +500,8 @@ impl Observation {
 struct Runner {
     ordinary: PathBuf,
     observed: PathBuf,
+    estimate: PathBuf,
+    observed_estimate: PathBuf,
     directory: PathBuf,
     sequence: usize,
 }
@@ -510,7 +512,12 @@ impl Runner {
         let report = self.directory.join(format!("work-{}.tsv", self.sequence));
         assert!(!report.exists(), "stale observation report");
         let mut outputs = Vec::new();
-        for compiler in [&self.ordinary, &self.observed] {
+        let (ordinary, observed) = if arguments.first().is_some_and(|arg| arg == "session") {
+            (&self.estimate, &self.observed_estimate)
+        } else {
+            (&self.ordinary, &self.observed)
+        };
+        for compiler in [ordinary, observed] {
             let mut command = Command::new(compiler);
             command
                 .args(arguments)
@@ -543,7 +550,7 @@ impl Runner {
             read_report(&report, CAP).unwrap_or_else(|reason| panic!("{case}: {reason}"));
         let repeated_report = report.with_extension("repeat.tsv");
         assert!(!repeated_report.exists());
-        let mut repeated = Command::new(&self.observed);
+        let mut repeated = Command::new(observed);
         repeated
             .args(arguments)
             .env("SLIM_WORK_REPORT", &repeated_report)
@@ -627,7 +634,12 @@ fn args(parts: &[&Path]) -> Vec<OsString> {
         .collect()
 }
 
-fn build_observed(ordinary: &Path, directory: &Path, sanitize: bool) -> PathBuf {
+fn build_observed(
+    ordinary: &Path,
+    directory: &Path,
+    sanitize: bool,
+    fixture: Option<&Path>,
+) -> PathBuf {
     let root = repository_root();
     let seed = fs::read(root.join("bootstrap/slimc-seed.c")).unwrap();
     let generated = Command::new(ordinary)
@@ -642,7 +654,20 @@ fn build_observed(ordinary: &Path, directory: &Path, sanitize: bool) -> PathBuf 
         generated.stdout, seed,
         "production compiler does not reproduce the current seed"
     );
-    let source = instrument(std::str::from_utf8(&seed).unwrap()).expect("instrument verified seed");
+    let input = fixture
+        .map(|path| fs::read(path).unwrap())
+        .unwrap_or_else(|| seed.clone());
+    println!(
+        "# observation_input={}; input_fnv1a64={:016x}",
+        if fixture.is_some() {
+            "production-generated-estimate-fixture"
+        } else {
+            "verified-seed"
+        },
+        identity(&input)
+    );
+    let source =
+        instrument(std::str::from_utf8(&input).unwrap()).expect("instrument generated source");
     let runtime = fs::read_to_string(root.join("runtime/slim_rt.c")).unwrap();
     let runtime = instrument_runtime(&runtime).expect("instrument actual file reads");
     write_support(directory, CAP);
@@ -769,10 +794,25 @@ pub(super) fn run() {
     })
     .collect();
     let directory = TemporaryDirectory::new("observed-work");
-    let observed = build_observed(&ordinary, &directory.path, sanitize);
+    let observed = build_observed(&ordinary, &directory.path, sanitize, None);
+    let estimate_dir = directory.path.join("estimate");
+    let estimate = super::session_estimate::build(&ordinary, &estimate_dir).unwrap();
+    let observed_estimate = build_observed(
+        &ordinary,
+        &estimate_dir,
+        sanitize,
+        Some(&estimate_dir.join("estimate.c")),
+    );
+    println!(
+        "# estimate_fixture_fnv1a64={:016x}; estimate_binary_fnv1a64={:016x}; extra_setup_cc_calls=2; legacy estimate gates preserved",
+        identity(&fs::read(estimate_dir.join("estimate.c")).unwrap()),
+        identity(&fs::read(&estimate).unwrap())
+    );
     let mut runner = Runner {
         ordinary,
         observed,
+        estimate,
+        observed_estimate,
         directory: directory.path.clone(),
         sequence: 0,
     };
