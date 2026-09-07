@@ -86,6 +86,7 @@ struct Cache:
   index: Index
   nodes: Vec[Saved]
   planning: PlanCache
+  range_history: Vec[RangeHistory]
 
 struct PlanEntry:
   owner: identity.DeclarationId
@@ -124,6 +125,63 @@ struct PlanBudget:
   allocations: I64
   destructions: I64
 
+struct RangeValue:
+  flags: I64
+  lower: I64
+  upper: I64
+
+struct RangeKey:
+  node: I64
+  parameter: RangeValue
+  entry: RangeValue
+
+struct RangeFact:
+  node: I64
+  value: RangeValue
+
+struct RangeRefinement:
+  node: I64
+  value: RangeValue
+  parent: I64
+
+struct RangeEntry:
+  owner: identity.DeclarationId
+  nodes: I64
+  source_bytes: I64
+  prefix: I64
+  key_start: I64
+  key_count: I64
+  fact_start: I64
+  fact_count: I64
+  refinement_start: I64
+  refinement_count: I64
+  recurrence_start: I64
+  recurrence_count: I64
+  counted_start: I64
+  counted_count: I64
+  next: I64
+
+struct RangeHistory:
+  heads: Vec[I64]
+  entries: Vec[RangeEntry]
+  keys: Vec[RangeKey]
+  facts: Vec[RangeFact]
+  refinements: Vec[RangeRefinement]
+  recurrences: Vec[ranges.Recurrence]
+  counted: Vec[ranges.Counted]
+
+struct RangeBudget:
+  eligible: Bool
+  remaining: I64
+
+struct RangeComplete:
+  view: ranges.View
+  budget: RangeBudget
+
+struct Ranged:
+  view: ranges.View
+  history: RangeHistory
+
 struct Work:
   executed: I64
   reused: I64
@@ -135,6 +193,8 @@ struct Analyzed:
   cache: Cache
   work: Work
   plan: memory.Plan
+  range_ready: Bool
+  range_view: ranges.View
 
 struct Edge:
   consumer: I64
@@ -160,7 +220,8 @@ fn empty_cache() -> Cache effects[alloc]:
   let index: Index = empty_index()
   let nodes: Vec[Saved] = vec.new()
   let planning: PlanCache = empty_plan_cache()
-  Cache(valid: false, index: index, nodes: nodes, planning: planning)
+  let range_history: Vec[RangeHistory] = vec.new()
+  Cache(valid: false, index: index, nodes: nodes, planning: planning, range_history: range_history)
 
 fn empty_plan_cache() -> PlanCache effects[alloc]:
   let entries: Vec[PlanEntry] = vec.new()
@@ -916,6 +977,526 @@ fn plan_checked(source: Bytes, tokens: Vec[syntax.Token], old: Cache, current: I
     empty_plan_cache()
   Planned(plan: memory.Plan(functions: functions), cache: cache)
 
+fn empty_range_history() -> RangeHistory effects[alloc]:
+  let heads: Vec[I64] = vec.new()
+  let entries: Vec[RangeEntry] = vec.new()
+  let keys: Vec[RangeKey] = vec.new()
+  let facts: Vec[RangeFact] = vec.new()
+  let refinements: Vec[RangeRefinement] = vec.new()
+  let recurrences: Vec[ranges.Recurrence] = vec.new()
+  let counted: Vec[ranges.Counted] = vec.new()
+  RangeHistory(heads: heads, entries: entries, keys: keys, facts: facts, refinements: refinements, recurrences: recurrences, counted: counted)
+
+fn range_pack(fact: ranges.Fact) -> RangeValue:
+  let analyzed: I64 = if fact.analyzed:
+    1
+  else:
+    0
+  let lower: I64 = if fact.lower_known:
+    2
+  else:
+    0
+  let upper: I64 = if fact.upper_known:
+    4
+  else:
+    0
+  let total: I64 = if fact.total:
+    8
+  else:
+    0
+  RangeValue(flags: analyzed + lower + upper + total, lower: fact.lower, upper: fact.upper)
+
+fn range_unpack(value: RangeValue) -> ranges.Fact effects[partial]:
+  ranges.Fact(analyzed: (value.flags % 2) == 1, lower_known: ((value.flags / 2) % 2) == 1, lower: value.lower, upper_known: ((value.flags / 4) % 2) == 1, upper: value.upper, total: ((value.flags / 8) % 2) == 1)
+
+fn range_value_valid(value: RangeValue) -> Bool:
+  ((value.flags >= 0) && (value.flags < 16)) && (((value.lower >= -1000000000) && (value.lower <= 1000000000)) && ((value.upper >= -1000000000) && (value.upper <= 1000000000)))
+
+fn range_value_equal(left: RangeValue, right: RangeValue) -> Bool:
+  (left.flags == right.flags) && ((left.lower == right.lower) && (left.upper == right.upper))
+
+fn range_nondefault(value: RangeValue) -> Bool:
+  !((value.flags == 0) && ((value.lower == 0) && (value.upper == 0)))
+
+fn range_frame(history: RangeHistory, at: I64, keys: I64, facts: I64, refinements: I64, recurrences: I64, counted: I64) -> Bool effects[partial]:
+  if at >= vec.len(history.entries):
+    (keys == vec.len(history.keys)) && ((facts == vec.len(history.facts)) && ((refinements == vec.len(history.refinements)) && ((recurrences == vec.len(history.recurrences)) && (counted == vec.len(history.counted)))))
+  else:
+    let entry: RangeEntry = vec.get(history.entries, at)
+    let starts: Bool = (keys == entry.key_start) && ((facts == entry.fact_start) && ((refinements == entry.refinement_start) && ((recurrences == entry.recurrence_start) && (counted == entry.counted_start))))
+    let slices: Bool = plan_slice_valid(keys, entry.key_count, vec.len(history.keys)) && (plan_slice_valid(facts, entry.fact_count, vec.len(history.facts)) && (plan_slice_valid(refinements, entry.refinement_count, vec.len(history.refinements)) && (plan_slice_valid(recurrences, entry.recurrence_count, vec.len(history.recurrences)) && plan_slice_valid(counted, entry.counted_count, vec.len(history.counted)))))
+    if starts && slices:
+      recur(history, at + 1, keys + entry.key_count, facts + entry.fact_count, refinements + entry.refinement_count, recurrences + entry.recurrence_count, counted + entry.counted_count)
+    else:
+      false
+
+fn range_history_valid(history: RangeHistory, declarations: I64) -> Bool effects[partial]:
+  let entries: I64 = vec.len(history.entries)
+  let keys: I64 = vec.len(history.keys)
+  let facts: I64 = vec.len(history.facts)
+  let refinements: I64 = vec.len(history.refinements)
+  let recurrences: I64 = vec.len(history.recurrences)
+  let counted: I64 = vec.len(history.counted)
+  let bounds: Bool = (entries <= 1000000) && ((keys <= 1000000) && ((facts <= 1000000) && ((refinements <= 1000000) && ((recurrences <= 1000000) && (counted <= 1000000)))))
+  if (vec.len(history.heads) == declarations) && bounds:
+    if entries + keys + facts + refinements + recurrences + counted <= 1000000:
+      range_frame(history, 0, 0, 0, 0, 0, 0)
+    else:
+      false
+  else:
+    false
+
+fn range_keys_match(source: Bytes, tokens: Vec[syntax.Token], history: RangeHistory, entry: RangeEntry, owner: identity.View, parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact], cursor: I64, at: I64) -> Bool effects[partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
+    at == entry.key_count
+  else:
+    if at >= entry.key_count:
+      false
+    else:
+      let saved: RangeKey = vec.get(history.keys, entry.key_start + at)
+      let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
+      let position: Bool = saved.node == name - owner.first
+      let parameter: RangeValue = range_pack(vec.get(parameter_facts, name))
+      let initial: RangeValue = range_pack(vec.get(entry_facts, name))
+      let equal: Bool = range_value_equal(saved.parameter, parameter) && range_value_equal(saved.entry, initial)
+      let valid: Bool = range_value_valid(saved.parameter) && range_value_valid(saved.entry)
+      if position && (equal && valid):
+        recur(source, tokens, history, entry, owner, parameter_facts, entry_facts, syntax.ast_next(tokens, cursor), at + 1)
+      else:
+        false
+
+fn range_facts_valid(history: RangeHistory, entry: RangeEntry, at: I64, previous: I64) -> Bool effects[partial]:
+  if at >= entry.fact_count:
+    true
+  else:
+    let fact: RangeFact = vec.get(history.facts, entry.fact_start + at)
+    if (plan_node_valid(fact.node, entry.nodes) && (fact.node > previous)) && (range_value_valid(fact.value) && range_nondefault(fact.value)):
+      recur(history, entry, at + 1, fact.node)
+    else:
+      false
+
+fn range_refinements_valid(history: RangeHistory, entry: RangeEntry, at: I64) -> Bool effects[partial]:
+  if at >= entry.refinement_count:
+    true
+  else:
+    let fact: RangeRefinement = vec.get(history.refinements, entry.refinement_start + at)
+    let parent: Bool = (fact.parent == -1) || ((fact.parent >= 0) && (fact.parent < at))
+    if parent && (plan_node_valid(fact.node, entry.nodes) && range_value_valid(fact.value)):
+      recur(history, entry, at + 1)
+    else:
+      false
+
+fn range_recurrences_valid(history: RangeHistory, entry: RangeEntry, at: I64) -> Bool effects[partial]:
+  if at >= entry.recurrence_count:
+    true
+  else:
+    let fact: ranges.Recurrence = vec.get(history.recurrences, entry.recurrence_start + at)
+    let position: Bool = (fact.item == 0) && ((fact.position >= 0) && (fact.position < entry.key_count))
+    let bounds: Bool = ((fact.bound >= -1000000000) && (fact.bound <= 1000000000)) && ((fact.step > 0) && (fact.step <= 1000000000))
+    if position && bounds:
+      recur(history, entry, at + 1)
+    else:
+      false
+
+fn range_counted_valid(history: RangeHistory, entry: RangeEntry, at: I64) -> Bool effects[partial]:
+  if at >= entry.counted_count:
+    true
+  else:
+    let fact: ranges.Counted = vec.get(history.counted, entry.counted_start + at)
+    let nodes: Bool = (fact.item == 0) && (plan_node_valid(fact.controller, entry.nodes) && (plan_node_valid(fact.base, entry.nodes) && plan_node_valid(fact.body, entry.nodes)))
+    let bounds: Bool = ((fact.start >= 0) && (fact.start <= fact.bound)) && ((fact.bound <= 1000000000) && ((fact.step == 1) && ((fact.iterations >= 0) && (fact.iterations <= 16))))
+    if nodes && bounds:
+      if fact.iterations == fact.bound - fact.start:
+        recur(history, entry, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn range_result_valid(history: RangeHistory, entry: RangeEntry) -> Bool effects[partial]:
+  let prefix: Bool = (entry.prefix >= 0) && (entry.prefix <= 64)
+  if prefix && ((entry.recurrence_count <= 1) && (entry.counted_count <= 1)):
+    if entry.refinement_count <= 64 - entry.prefix:
+      range_facts_valid(history, entry, 0, -1) && (range_refinements_valid(history, entry, 0) && (range_recurrences_valid(history, entry, 0) && range_counted_valid(history, entry, 0)))
+    else:
+      false
+  else:
+    false
+
+fn range_find(source: Bytes, tokens: Vec[syntax.Token], history: RangeHistory, prior: identity.DeclarationId, owner: identity.View, source_bytes: I64, prefix: I64, parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact], at: I64, remaining: I64, found: I64) -> I64 effects[partial]:
+  if at == -1:
+    found
+  else:
+    if (remaining > 0) && ((at >= 0) && (at < vec.len(history.entries))):
+      let entry: RangeEntry = vec.get(history.entries, at)
+      let next: Bool = (entry.next == -1) || ((entry.next >= 0) && (entry.next < at))
+      let owned: Bool = identity.same_declaration(entry.owner, prior) && ((entry.nodes == owner.count) && (entry.source_bytes == source_bytes))
+      if next && owned:
+        let selected: I64 = if (found < 0) && (entry.prefix == prefix):
+          let params: I64 = syntax.ast_parameters_first(syntax.ast_function_parameters(owner.first))
+          if range_keys_match(source, tokens, history, entry, owner, parameter_facts, entry_facts, params, 0):
+            if range_result_valid(history, entry):
+              at
+            else:
+              -1
+          else:
+            -1
+        else:
+          found
+        recur(source, tokens, history, prior, owner, source_bytes, prefix, parameter_facts, entry_facts, entry.next, remaining - 1, selected)
+      else:
+        -1
+    else:
+      -1
+
+fn range_import_facts(history: RangeHistory, entry: RangeEntry, first: I64, at: I64, facts: @Vec[ranges.Fact]) -> Void effects[partial]:
+  if at >= entry.fact_count:
+    void
+  else:
+    let saved: RangeFact = vec.get(history.facts, entry.fact_start + at)
+    vec.set(@facts, first + saved.node, range_unpack(saved.value))
+    recur(history, entry, first, at + 1, @facts)
+
+fn range_import_refinements(history: RangeHistory, entry: RangeEntry, first: I64, at: I64, refinements: @Vec[ranges.Refinement]) -> Void effects[alloc, partial]:
+  if at >= entry.refinement_count:
+    void
+  else:
+    let saved: RangeRefinement = vec.get(history.refinements, entry.refinement_start + at)
+    let parent: I64 = if saved.parent >= 0:
+      entry.prefix + saved.parent
+    else:
+      -1
+    vec.push(@refinements, ranges.Refinement(declaration: first + saved.node, fact: range_unpack(saved.value), parent: parent))
+    recur(history, entry, first, at + 1, @refinements)
+
+fn range_import_recurrences(history: RangeHistory, entry: RangeEntry, first: I64, at: I64, recurrences: @Vec[ranges.Recurrence]) -> Void effects[alloc, partial]:
+  if at >= entry.recurrence_count:
+    void
+  else:
+    let saved: ranges.Recurrence = vec.get(history.recurrences, entry.recurrence_start + at)
+    vec.push(@recurrences, ranges.Recurrence(item: first, position: saved.position, bound: saved.bound, step: saved.step))
+    recur(history, entry, first, at + 1, @recurrences)
+
+fn range_import_counted(history: RangeHistory, entry: RangeEntry, first: I64, at: I64, counted: @Vec[ranges.Counted]) -> Void effects[alloc, partial]:
+  if at >= entry.counted_count:
+    void
+  else:
+    let saved: ranges.Counted = vec.get(history.counted, entry.counted_start + at)
+    vec.push(@counted, ranges.Counted(item: first, controller: first + saved.controller, start: saved.start, bound: saved.bound, step: saved.step, iterations: saved.iterations, base: first + saved.base, body: first + saved.body))
+    recur(history, entry, first, at + 1, @counted)
+
+fn range_import(history: RangeHistory, entry: RangeEntry, owner: identity.View, facts: @Vec[ranges.Fact], refinements: @Vec[ranges.Refinement], recurrences: @Vec[ranges.Recurrence], counted: @Vec[ranges.Counted]) -> Void effects[alloc, partial]:
+  range_import_facts(history, entry, owner.first, 0, @facts)
+  range_import_refinements(history, entry, owner.first, 0, @refinements)
+  range_import_recurrences(history, entry, owner.first, 0, @recurrences)
+  range_import_counted(history, entry, owner.first, 0, @counted)
+
+fn range_parameter_count(tokens: Vec[syntax.Token], cursor: I64, count: I64) -> I64 effects[partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
+    count
+  else:
+    recur(tokens, syntax.ast_next(tokens, cursor), count + 1)
+
+fn range_fact_present(fact: ranges.Fact) -> Bool:
+  fact.analyzed || (fact.lower_known || (fact.upper_known || (fact.total || (!(fact.lower == 0) || !(fact.upper == 0)))))
+
+fn range_save_keys(source: Bytes, tokens: Vec[syntax.Token], parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact], first: I64, cursor: I64, keys: @Vec[RangeKey]) -> Void effects[alloc, partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
+    void
+  else:
+    let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
+    let parameter: RangeValue = range_pack(vec.get(parameter_facts, name))
+    let initial: RangeValue = range_pack(vec.get(entry_facts, name))
+    vec.push(@keys, RangeKey(node: name - first, parameter: parameter, entry: initial))
+    recur(source, tokens, parameter_facts, entry_facts, first, syntax.ast_next(tokens, cursor), @keys)
+
+fn range_save_facts(facts: Vec[ranges.Fact], first: I64, at: I64, end: I64, remaining: I64, output: @Vec[RangeFact]) -> RangeBudget effects[alloc, partial]:
+  if at >= end:
+    RangeBudget(eligible: true, remaining: remaining)
+  else:
+    let fact: ranges.Fact = vec.get(facts, at)
+    if range_fact_present(fact):
+      if remaining > 0:
+        vec.push(@output, RangeFact(node: at - first, value: range_pack(fact)))
+        recur(facts, first, at + 1, end, remaining - 1, @output)
+      else:
+        RangeBudget(eligible: false, remaining: 0)
+    else:
+      recur(facts, first, at + 1, end, remaining, @output)
+
+fn range_save_refinements(refinements: Vec[ranges.Refinement], first: I64, prefix: I64, at: I64, output: @Vec[RangeRefinement]) -> Void effects[alloc, partial]:
+  if at >= vec.len(refinements):
+    void
+  else:
+    let row: ranges.Refinement = vec.get(refinements, at)
+    let parent: I64 = if row.parent >= 0:
+      row.parent - prefix
+    else:
+      -1
+    vec.push(@output, RangeRefinement(node: row.declaration - first, value: range_pack(row.fact), parent: parent))
+    recur(refinements, first, prefix, at + 1, @output)
+
+fn range_save_recurrences(recurrences: Vec[ranges.Recurrence], first: I64, at: I64, output: @Vec[ranges.Recurrence]) -> Void effects[alloc, partial]:
+  if at >= vec.len(recurrences):
+    void
+  else:
+    let row: ranges.Recurrence = vec.get(recurrences, at)
+    vec.push(@output, ranges.Recurrence(item: row.item - first, position: row.position, bound: row.bound, step: row.step))
+    recur(recurrences, first, at + 1, @output)
+
+fn range_save_counted(counted: Vec[ranges.Counted], first: I64, at: I64, output: @Vec[ranges.Counted]) -> Void effects[alloc, partial]:
+  if at >= vec.len(counted):
+    void
+  else:
+    let row: ranges.Counted = vec.get(counted, at)
+    vec.push(@output, ranges.Counted(item: row.item - first, controller: row.controller - first, start: row.start, bound: row.bound, step: row.step, iterations: row.iterations, base: row.base - first, body: row.body - first))
+    recur(counted, first, at + 1, @output)
+
+fn range_save(source: Bytes, tokens: Vec[syntax.Token], declaration: Declaration, at: I64, parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact], facts: Vec[ranges.Fact], refinements: Vec[ranges.Refinement], recurrences: Vec[ranges.Recurrence], counted: Vec[ranges.Counted], prefix: I64, recurrence_start: I64, counted_start: I64, budget: RangeBudget, history: @RangeHistory) -> RangeBudget effects[alloc, partial]:
+  if !budget.eligible:
+    budget
+  else:
+    let first: I64 = declaration.owner.first
+    let end: I64 = first + declaration.owner.count
+    let params: I64 = syntax.ast_parameters_first(syntax.ast_function_parameters(first))
+    let key_count: I64 = range_parameter_count(tokens, params, 0)
+    let refinement_count: I64 = vec.len(refinements) - prefix
+    let recurrence_count: I64 = vec.len(recurrences) - recurrence_start
+    let counted_count: I64 = vec.len(counted) - counted_start
+    let cost: I64 = 1 + key_count + refinement_count + recurrence_count + counted_count
+    if cost <= budget.remaining:
+      let fact_start: I64 = vec.len(history.facts)
+      let rows: Vec[RangeFact] = mem.replace(@history.facts, vec.new())
+      let saved: RangeBudget = range_save_facts(facts, first, first, end, budget.remaining - cost, @rows)
+      let fact_count: I64 = vec.len(rows) - fact_start
+      let removed: Vec[RangeFact] = mem.replace(@history.facts, rows)
+      if saved.eligible:
+        let entry: RangeEntry = RangeEntry(owner: declaration.owner.declaration, nodes: declaration.owner.count, source_bytes: bytes.len(declaration.body), prefix: prefix, key_start: vec.len(history.keys), key_count: key_count, fact_start: fact_start, fact_count: fact_count, refinement_start: vec.len(history.refinements), refinement_count: refinement_count, recurrence_start: vec.len(history.recurrences), recurrence_count: recurrence_count, counted_start: vec.len(history.counted), counted_count: counted_count, next: vec.get(history.heads, at))
+        let slot: I64 = vec.len(history.entries)
+        let rows: Vec[RangeKey] = mem.replace(@history.keys, vec.new())
+        range_save_keys(source, tokens, parameter_facts, entry_facts, first, params, @rows)
+        let removed: Vec[RangeKey] = mem.replace(@history.keys, rows)
+        let rows: Vec[RangeRefinement] = mem.replace(@history.refinements, vec.new())
+        range_save_refinements(refinements, first, prefix, prefix, @rows)
+        let removed: Vec[RangeRefinement] = mem.replace(@history.refinements, rows)
+        let rows: Vec[ranges.Recurrence] = mem.replace(@history.recurrences, vec.new())
+        range_save_recurrences(recurrences, first, recurrence_start, @rows)
+        let removed: Vec[ranges.Recurrence] = mem.replace(@history.recurrences, rows)
+        let rows: Vec[ranges.Counted] = mem.replace(@history.counted, vec.new())
+        range_save_counted(counted, first, counted_start, @rows)
+        let removed: Vec[ranges.Counted] = mem.replace(@history.counted, rows)
+        let rows: Vec[RangeEntry] = mem.replace(@history.entries, vec.new())
+        vec.push(@rows, entry)
+        let removed: Vec[RangeEntry] = mem.replace(@history.entries, rows)
+        let rows: Vec[I64] = mem.replace(@history.heads, vec.new())
+        vec.set(@rows, at, slot)
+        let removed: Vec[I64] = mem.replace(@history.heads, rows)
+        saved
+      else:
+        saved
+    else:
+      RangeBudget(eligible: false, remaining: 0)
+
+fn range_copy_keys(rows: Vec[RangeKey], start: I64, count: I64, at: I64, output: @Vec[RangeKey]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, vec.get(rows, start + at))
+    recur(rows, start, count, at + 1, @output)
+
+fn range_copy_facts(rows: Vec[RangeFact], start: I64, count: I64, at: I64, output: @Vec[RangeFact]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, vec.get(rows, start + at))
+    recur(rows, start, count, at + 1, @output)
+
+fn range_copy_refinements(rows: Vec[RangeRefinement], start: I64, count: I64, at: I64, output: @Vec[RangeRefinement]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, vec.get(rows, start + at))
+    recur(rows, start, count, at + 1, @output)
+
+fn range_copy_recurrences(rows: Vec[ranges.Recurrence], start: I64, count: I64, at: I64, output: @Vec[ranges.Recurrence]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, vec.get(rows, start + at))
+    recur(rows, start, count, at + 1, @output)
+
+fn range_copy_counted(rows: Vec[ranges.Counted], start: I64, count: I64, at: I64, output: @Vec[ranges.Counted]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, vec.get(rows, start + at))
+    recur(rows, start, count, at + 1, @output)
+
+fn range_copy(old: RangeHistory, prior: RangeEntry, declaration: Declaration, at: I64, budget: RangeBudget, history: @RangeHistory) -> RangeBudget effects[alloc, partial]:
+  let cost: I64 = 1 + prior.key_count + prior.fact_count + prior.refinement_count + prior.recurrence_count + prior.counted_count
+  if budget.eligible && (cost <= budget.remaining):
+    let entry: RangeEntry = RangeEntry(owner: declaration.owner.declaration, nodes: declaration.owner.count, source_bytes: bytes.len(declaration.body), prefix: prior.prefix, key_start: vec.len(history.keys), key_count: prior.key_count, fact_start: vec.len(history.facts), fact_count: prior.fact_count, refinement_start: vec.len(history.refinements), refinement_count: prior.refinement_count, recurrence_start: vec.len(history.recurrences), recurrence_count: prior.recurrence_count, counted_start: vec.len(history.counted), counted_count: prior.counted_count, next: vec.get(history.heads, at))
+    let slot: I64 = vec.len(history.entries)
+    let rows: Vec[RangeKey] = mem.replace(@history.keys, vec.new())
+    range_copy_keys(old.keys, prior.key_start, prior.key_count, 0, @rows)
+    let removed: Vec[RangeKey] = mem.replace(@history.keys, rows)
+    let rows: Vec[RangeFact] = mem.replace(@history.facts, vec.new())
+    range_copy_facts(old.facts, prior.fact_start, prior.fact_count, 0, @rows)
+    let removed: Vec[RangeFact] = mem.replace(@history.facts, rows)
+    let rows: Vec[RangeRefinement] = mem.replace(@history.refinements, vec.new())
+    range_copy_refinements(old.refinements, prior.refinement_start, prior.refinement_count, 0, @rows)
+    let removed: Vec[RangeRefinement] = mem.replace(@history.refinements, rows)
+    let rows: Vec[ranges.Recurrence] = mem.replace(@history.recurrences, vec.new())
+    range_copy_recurrences(old.recurrences, prior.recurrence_start, prior.recurrence_count, 0, @rows)
+    let removed: Vec[ranges.Recurrence] = mem.replace(@history.recurrences, rows)
+    let rows: Vec[ranges.Counted] = mem.replace(@history.counted, vec.new())
+    range_copy_counted(old.counted, prior.counted_start, prior.counted_count, 0, @rows)
+    let removed: Vec[ranges.Counted] = mem.replace(@history.counted, rows)
+    let rows: Vec[RangeEntry] = mem.replace(@history.entries, vec.new())
+    vec.push(@rows, entry)
+    let removed: Vec[RangeEntry] = mem.replace(@history.entries, rows)
+    let rows: Vec[I64] = mem.replace(@history.heads, vec.new())
+    vec.set(@rows, at, slot)
+    let removed: Vec[I64] = mem.replace(@history.heads, rows)
+    RangeBudget(eligible: true, remaining: budget.remaining - cost)
+  else:
+    RangeBudget(eligible: false, remaining: 0)
+
+fn range_heads(count: I64, at: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    vec.push(@output, -1)
+    recur(count, at + 1, @output)
+
+fn range_previous(source: Bytes, tokens: Vec[syntax.Token], old_declarations: Vec[Declaration], old_history: RangeHistory, current: Index, mapping: Update, at: I64, framed: Bool, prefix: I64, parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact]) -> I64 effects[partial]:
+  if framed && (!vec.get(mapping.bodies, at)):
+    let previous: I64 = vec.get(mapping.before, at)
+    if (previous >= 0) && (previous < vec.len(old_declarations)):
+      let declaration: Declaration = vec.get(current.declarations, at)
+      let prior: Declaration = vec.get(old_declarations, previous)
+      let head: I64 = vec.get(old_history.heads, previous)
+      range_find(source, tokens, old_history, prior.owner.declaration, declaration.owner, bytes.len(declaration.body), prefix, parameter_facts, entry_facts, head, 5, -1)
+    else:
+      -1
+  else:
+    -1
+
+fn range_functions(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], old_declarations: Vec[Declaration], old_history: RangeHistory, current: Index, mapping: Update, framed: Bool, at: I64, parameter_facts: Vec[ranges.Fact], entry_facts: Vec[ranges.Fact], facts: @Vec[ranges.Fact], refinements: @Vec[ranges.Refinement], recurrences: @Vec[ranges.Recurrence], counted: @Vec[ranges.Counted], budget: RangeBudget, history: @RangeHistory) -> RangeBudget effects[alloc, partial]:
+  if at >= vec.len(current.declarations):
+    budget
+  else:
+    let declaration: Declaration = vec.get(current.declarations, at)
+    let next_budget: RangeBudget = if declaration.kind == 0:
+      let prefix: I64 = vec.len(refinements)
+      let recurrence_start: I64 = vec.len(recurrences)
+      let counted_start: I64 = vec.len(counted)
+      let head: I64 = vec.get(history.heads, at)
+      let same: I64 = range_find(source, tokens, history, declaration.owner.declaration, declaration.owner, bytes.len(declaration.body), prefix, parameter_facts, entry_facts, head, 5, -1)
+      if same >= 0:
+        let entry: RangeEntry = vec.get(history.entries, same)
+        range_import(history, entry, declaration.owner, @facts, @refinements, @recurrences, @counted)
+        budget
+      else:
+        let previous: I64 = range_previous(source, tokens, old_declarations, old_history, current, mapping, at, framed, prefix, parameter_facts, entry_facts)
+        if previous >= 0:
+          let entry: RangeEntry = vec.get(old_history.entries, previous)
+          range_import(old_history, entry, declaration.owner, @facts, @refinements, @recurrences, @counted)
+          range_copy(old_history, entry, declaration, at, budget, @history)
+        else:
+          ranges.analyze_function(source, tokens, typed_facts, declaration.owner.first, @facts, @refinements, @recurrences, @counted, parameter_facts, entry_facts)
+          range_save(source, tokens, declaration, at, parameter_facts, entry_facts, facts, refinements, recurrences, counted, prefix, recurrence_start, counted_start, budget, @history)
+    else:
+      budget
+    recur(source, tokens, typed_facts, old_declarations, old_history, current, mapping, framed, at + 1, parameter_facts, entry_facts, @facts, @refinements, @recurrences, @counted, next_budget, @history)
+
+fn range_default() -> ranges.Fact:
+  ranges.Fact(analyzed: false, lower_known: false, lower: 0, upper_known: false, upper: 0, total: false)
+
+fn range_clear_facts(facts: @Vec[ranges.Fact], at: I64) -> Void effects[partial]:
+  if at >= vec.len(facts):
+    void
+  else:
+    vec.set(@facts, at, range_default())
+    recur(@facts, at + 1)
+
+fn range_clear_bindings(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, parameters: @Vec[ranges.Fact], entries: @Vec[ranges.Fact]) -> Void effects[partial]:
+  if syntax.ast_node_kind(tokens, cursor) == 1:
+    void
+  else:
+    let name: I64 = syntax.ast_binding_name(source, tokens, cursor)
+    vec.set(@parameters, name, range_default())
+    vec.set(@entries, name, range_default())
+    recur(source, tokens, syntax.ast_next(tokens, cursor), @parameters, @entries)
+
+fn range_clear_parameters(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[Declaration], at: I64, parameters: @Vec[ranges.Fact], entries: @Vec[ranges.Fact]) -> Void effects[partial]:
+  if at >= vec.len(declarations):
+    void
+  else:
+    let declaration: Declaration = vec.get(declarations, at)
+    if declaration.kind == 0:
+      let params: I64 = syntax.ast_parameters_first(syntax.ast_function_parameters(declaration.owner.first))
+      range_clear_bindings(source, tokens, params, @parameters, @entries)
+    else:
+      void
+    recur(source, tokens, declarations, at + 1, @parameters, @entries)
+
+fn range_pass(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], old_declarations: Vec[Declaration], old_history: RangeHistory, current: Index, mapping: Update, framed: Bool, invariants: Vec[Bool], entry_invariants: Vec[Bool], parameter_facts: @Vec[ranges.Fact], entry_facts: @Vec[ranges.Fact], facts: @Vec[ranges.Fact], pass: I64, budget: RangeBudget, history: @RangeHistory) -> RangeComplete effects[alloc, partial]:
+  let refinements: Vec[ranges.Refinement] = vec.new()
+  let recurrences: Vec[ranges.Recurrence] = vec.new()
+  let counted: Vec[ranges.Counted] = vec.new()
+  let next_budget: RangeBudget = range_functions(source, tokens, typed_facts, old_declarations, old_history, current, mapping, framed, 0, parameter_facts, entry_facts, @facts, @refinements, @recurrences, @counted, budget, @history)
+  if pass >= 4:
+    let count: I64 = vec.len(refinements)
+    let finished: Vec[ranges.Fact] = mem.replace(@facts, vec.new())
+    let view: ranges.View = ranges.View(facts: finished, refinements: count, refinements_truncated: count >= 64, recurrences: recurrences, counted: counted)
+    RangeComplete(view: view, budget: next_budget)
+  else:
+    range_clear_parameters(source, tokens, current.declarations, 0, @parameter_facts, @entry_facts)
+    ranges.scan_parameter_calls(source, tokens, facts, invariants, 0, vec.len(tokens), @parameter_facts)
+    ranges.scan_parameter_calls(source, tokens, facts, entry_invariants, 0, vec.len(tokens), @entry_facts)
+    range_clear_facts(@facts, 0)
+    recur(source, tokens, typed_facts, old_declarations, old_history, current, mapping, framed, invariants, entry_invariants, @parameter_facts, @entry_facts, @facts, pass + 1, next_budget, @history)
+
+fn range_start(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], old_declarations: Vec[Declaration], old_history: RangeHistory, current: Index, mapping: Update, limit: I64) -> Ranged effects[alloc, partial]:
+  if (limit < 1) || ((limit > 1000000) || (vec.len(tokens) > 1000000)):
+    let view: ranges.View = ranges.analyze(source, tokens, typed_facts)
+    Ranged(view: view, history: empty_range_history())
+  else:
+    let history: RangeHistory = empty_range_history()
+    let heads: Vec[I64] = vec.new()
+    range_heads(vec.len(current.declarations), 0, @heads)
+    let removed: Vec[I64] = mem.replace(@history.heads, heads)
+    let length: I64 = vec.len(tokens)
+    let invariants: Vec[Bool] = vec.new()
+    ranges.initialize_booleans(length, 0, false, @invariants)
+    ranges.collect_parameter_invariants(source, tokens, 3, @invariants)
+    let entry_invariants: Vec[Bool] = vec.new()
+    ranges.initialize_booleans(length, 0, true, @entry_invariants)
+    let facts: Vec[ranges.Fact] = vec.new()
+    ranges.initialize_facts(length, 0, @facts)
+    let parameter_facts: Vec[ranges.Fact] = vec.new()
+    let entry_facts: Vec[ranges.Fact] = vec.new()
+    ranges.initialize_facts(length, 0, @parameter_facts)
+    ranges.initialize_facts(length, 0, @entry_facts)
+    let framed: Bool = range_history_valid(old_history, vec.len(old_declarations))
+    let budget: RangeBudget = RangeBudget(eligible: true, remaining: limit)
+    let complete: RangeComplete = range_pass(source, tokens, typed_facts, old_declarations, old_history, current, mapping, framed, invariants, entry_invariants, @parameter_facts, @entry_facts, @facts, 0, budget, @history)
+    let kept: RangeHistory = if complete.budget.eligible:
+      history
+    else:
+      empty_range_history()
+    let view: ranges.View = mem.replace(@complete.view, ranges.empty_view())
+    Ranged(view: view, history: kept)
+
+fn range_checked(source: Bytes, tokens: Vec[syntax.Token], typed_facts: Vec[typing.Fact], old: Cache, current: Index, mapping: Update, limit: I64) -> Ranged effects[alloc, partial]:
+  if vec.len(old.range_history) == 1:
+    let history: RangeHistory = vec.get(old.range_history, 0)
+    range_start(source, tokens, typed_facts, old.index.declarations, history, current, mapping, limit)
+  else:
+    let history: RangeHistory = empty_range_history()
+    range_start(source, tokens, typed_facts, old.index.declarations, history, current, mapping, limit)
+
 fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], old: Cache, revision: identity.Revision, token_limit: I64) -> Analyzed effects[alloc, partial]:
   let valid_limit: Bool = (token_limit >= 1) && (token_limit <= 1000000)
   if (!valid_limit) || (vec.len(tokens) > token_limit):
@@ -926,7 +1507,12 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
       memory.analyze(source, tokens, declarations)
     else:
       memory.empty_plan()
-    Analyzed(view: view, cache: cache, work: work, plan: plan)
+    let range_ready: Bool = vec.len(view.issues) == 0
+    let range_view: ranges.View = if range_ready:
+      ranges.analyze(source, tokens, view.facts)
+    else:
+      ranges.empty_view()
+    Analyzed(view: view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
   else:
     let view: typing.View = typing.prepare(source, @tokens, declarations)
     let index: Index = build_index(source, tokens, declarations, revision)
@@ -945,9 +1531,21 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
       Planned(plan: memory.empty_plan(), cache: empty_plan_cache())
     let planning: PlanCache = mem.replace(@planned.cache, empty_plan_cache())
     let plan: memory.Plan = mem.replace(@planned.plan, memory.empty_plan())
-    let cache: Cache = Cache(valid: false, index: index, nodes: nodes, planning: planning)
+    let range_ready: Bool = vec.len(issues) == 0
+    let ranged: Ranged = if range_ready:
+      range_checked(source, tokens, facts, old, index, mapping, token_limit)
+    else:
+      Ranged(view: ranges.empty_view(), history: empty_range_history())
+    let range_history: Vec[RangeHistory] = vec.new()
+    if vec.len(ranged.history.entries) > 0:
+      let history: RangeHistory = mem.replace(@ranged.history, empty_range_history())
+      vec.push(@range_history, history)
+    else:
+      void
+    let range_view: ranges.View = mem.replace(@ranged.view, ranges.empty_view())
+    let cache: Cache = Cache(valid: false, index: index, nodes: nodes, planning: planning, range_history: range_history)
     let checked_view: typing.View = typing.View(facts: facts, issues: issues, layouts: layouts)
-    Analyzed(view: checked_view, cache: cache, work: work, plan: plan)
+    Analyzed(view: checked_view, cache: cache, work: work, plan: plan, range_ready: range_ready, range_view: range_view)
 
 fn place_node_position(cache: Cache, node: identity.NodeId) -> I64 effects[partial]:
   let total: I64 = vec.len(cache.nodes)

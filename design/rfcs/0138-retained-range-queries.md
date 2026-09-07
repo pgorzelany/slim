@@ -1,7 +1,7 @@
 # RFC-0138: Retained range queries
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -89,6 +89,17 @@ order and all ordinary parameter-invariant and call-argument scans. Each next pa
 uses the actual previous pass's reconstructed fact vector. Do not replace those
 scans with an assumed call graph, converge early, or change precision limits.
 
+The candidate may reuse three scratch fact vectors across these passes instead
+of allocating fifteen full vectors. Initialize output, parameter and entry facts
+once to the exact default fact. After a pass, clear every declared parameter
+binding in both input vectors before the two ordinary input scans; non-parameter
+slots remain default because those scans never write them. The scans read the
+complete just-finished output vector. Only after both scans finish, reset every
+output slot to default before the next function pass. No fact or alias from that
+scratch state may escape between passes; saved rows are owned copies. Move the
+final complete output vector into the published view. This changes scratch
+storage work, not the five-pass schedule, global scan order or producer inputs.
+
 A query does not depend on pass number. Within a candidate, an identical key can
 reuse a result produced in an earlier pass. Save at most five distinct keys per
 function: there are exactly five invocations in the fixed pass schedule. Use a
@@ -96,6 +107,12 @@ direct per-declaration head map and bounded lists, never an all-function search.
 Search current-candidate results first, then matching prior-owner history. Import
 an old result into candidate-owned storage once; later equal queries reuse it.
 This avoids five unconditional saved copies for functions with unchanged inputs.
+After complete old-entry validation and exact key/owner matching, its already
+normalized rows may be copied directly into candidate-owned pools. Replace the
+entry owner, pool starts and next link with their current values; preserve local
+node ordinals, parameter ordinals and numeric proof values. Preflight its complete
+known record cost before copying. Do not rescan or repack the reconstructed whole
+function merely to save the same sparse result again.
 
 Caller-body changes reach consumers through the recomputed global input-fact
 vectors, even when the callee body and declared interface are unchanged. Lexical
@@ -137,9 +154,21 @@ program and are never interpreted as a negative quality score.
 Use the caller's existing optional retained-node limit in 1..1,000,000 as a shared
 admission bound for the sum of saved query entries, key rows, non-default output
 facts, refinements, recurrence records and counted records. Check remaining capacity
-before appending any slice. Direct declaration head maps remain independently
+before appending any row. A sparse fact slice may be admitted during its one
+source-order scan: reserve the known entry/key/proof costs first, then consume
+one remaining record for each non-default fact. If that scan runs out of capacity,
+the unfinished slice has no published entry and the entire optional candidate
+history is declined. Earlier complete entries remain readable only inside that
+candidate. Never publish the unframed trailing rows. Direct declaration head maps remain independently
 bounded by the checked canonical declaration count. At most five entries belong
 to one function. No unbounded variant list or cross-revision chain is retained.
+
+The containing typing cache stores zero or one range-history object in an ordinary
+owned vector. Zero means missing optional history; any other length than one is a
+miss. This keeps the cache header small: the current generated C passes borrowed
+aggregate headers by value. Avoid enlarging every existing cache argument with all
+range-pool headers. The one-object container does not share mutable ownership or
+change the runtime ABI; its fixed allocation cost must be measured.
 
 An admission failure declines the complete optional new range history while
 preserving the complete current ordinary range result and source acceptance.
@@ -238,10 +267,31 @@ completed implementation, changed precision or relaxed performance requirements.
 
 ## Implementation
 
-Pending. The producer read/call audit starts at validated checkpoint 6c39e40.
-M1 remains open for this integration, parallel/global analysis retention, actual
-flow ownership/loans, public host-bound sessions, stable C fragments/backend
-artifacts and complete locality/differential/release closure.
+Complete in the production SLIM compiler and portable C seed. The producer
+read/call audit starts at validated checkpoint 6c39e40. The final seed is
+4,428,841 C bytes, SHA-256
+`ab37ad428815071d092729612bb29317da654a50ec0a3033de0f8213e1365124`.
+
+[The progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md)
+records the complete ordinary/ASan/UBSan range/prepared/C differential across 95
+accepted fixtures and scalar/dense geometry, boundary and malformed metadata
+cases, both 2,048-ordinal allocation-failure campaigns, strict bootstrap and all
+required checkpoint gates. Schema 5 observes three initial full-vector fills,
+four output resets, five passes and eight parameter scans per retained query;
+unchanged snapshots observe zero work. Exact diagnostics and complete native
+analysis/generated C are preserved.
+
+Earlier storage variants had a measured scalar regression and were not accepted.
+Three reused scratch vectors remove it without changing producer inputs. In the
+final quiet 11-pair run, prior/current medians are 46.332/41.404 ms for scalar
+cold-plus-unchanged, 94.417/84.443 ms for scalar cold-plus-body, and
+323.942/278.361 ms for dense bodies. First-run and contrary measurements remain
+recorded separately, as do physical memory and ordinary default-path costs.
+No performance exception, new proof rule, runtime ABI or dependency is introduced.
+
+M1 remains open for parallel/global analysis retention, actual flow ownership/loans,
+public host-bound sessions, stable C fragments/backend artifacts and complete
+locality/differential/release closure.
 
 ## Removal and supersession
 

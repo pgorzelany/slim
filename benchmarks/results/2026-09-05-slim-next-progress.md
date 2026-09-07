@@ -2231,3 +2231,220 @@ actual flow-based availability/loans, public host-bound sessions and lifecycle,
 retained global analyses, stable C fragments/backend artifacts, and complete
 locality/differential/release closure remain required. The known recursive-checker
 sanitizer stack limitation is still open.
+
+## M1 retained range queries — validated scratch storage
+
+Accepted [RFC-0138](../../design/rfcs/0138-retained-range-queries.md) starts from
+validated planning checkpoint `6c39e40`; its accepted contract is committed at
+`ae86ddf`. The implementation below is complete for this child. M1 remains
+active and incomplete. Earlier storage variants have a measured scalar-session regression; the final
+scratch-reuse implementation passes the complete child validation. No performance gate or
+noise band has been relaxed.
+
+The candidate keeps `ranges.analyze_function` as the sole function producer.
+Its key combines the existing complete declaration/body/interface/prior-link
+invalidation with every parameter and entry fact field and the incoming global
+refinement count. Five ordinary passes and eight global parameter scans remain.
+Results use snapshot-wide sparse pools, typed declaration owners and local node
+ordinals. Prior history receives complete framing, owner, key and result-domain
+validation before any import. Missing or malformed optional metadata causes a
+miss. The present range view feeds ordinary termination validation and the sole
+C emitter. Parallel analysis remains current and uncached.
+
+The directly copied saved-row variant stores zero or one owned history object in a vector, reducing
+the containing Cache header from the first prototype's 776 bytes to 536. On the current 64-bit host, History
+is 280 bytes, an entry 144, key 56, saved fact 32 and saved refinement 40, excluding
+vector buffers. Analyzed is 872 bytes and Snapshot 1,640. Sparse admission scans
+newly produced facts once, checking remaining record capacity before each append;
+an unfinished slice never acquires a published entry, and capacity failure drops
+the entire optional candidate history. On a validated prior hit, normalized rows
+are copied directly into new pools with a current owner and new slice starts,
+without rescanning the reconstructed function to save it again.
+
+That reproducible experimental compiler is **4,421,267 C bytes**, SHA-256
+`85a6beed8e26ccb8b01bbf6452c5c41cdf5280e8ed1e9d61b477da9e546b4b0d`.
+It reproduces its own C exactly. At this earlier stage, the checked-in portable seed and official build
+remained the validated `6c39e40` baseline; it was not a bootstrap or release claim.
+[All 197 rejected fixtures and 20 native applications](2026-09-07-m1-range-copy-native.tsv)
+retain exact diagnostics, complete analysis and byte-identical C. Governance and
+patch whitespace checks pass. Formatting is deterministic and idempotent on the
+changed SLIM sources, fixture and manifest; original comments and source layout
+have not been replaced by formatter output.
+
+### Preserved cost experiments
+
+Each cell below is prior/current median milliseconds. Scalar workloads contain
+4,000 helpers; dense workloads contain 512 helpers with 64 planned values each.
+Measurements use O2, two warmup pairs and 11 alternating pairs with other
+validation finished. They include process startup, source capture, checking,
+analysis, generation and artifact integrity. Earlier variants are preserved as
+contrary evidence, not treated as current implementations or gate passes.
+
+| Variant | Cold + unchanged | Cold + body edit | Dense cold + body edit |
+|---|---:|---:|---:|
+| Initial full validation | 46.685 / 48.171 | 94.222 / 97.402 | 323.111 / 321.182 |
+| Once-per-candidate validation, reverted | 46.691 / 47.957 | 94.312 / 96.897 | 322.049 / 319.431 |
+| Current-only lookup, reverted | 47.368 / 48.838 | 95.977 / 98.841 | 324.486 / 322.812 |
+| Small cache header | 46.277 / 46.998 | 95.800 / 98.488 | 327.672 / 324.674 |
+| One sparse admission scan | 47.223 / 48.154 | 94.704 / 96.661 | 322.335 / 319.336 |
+| Validation at admission, reverted | 46.302 / 47.299 | 94.644 / 98.150 | 323.644 / 321.129 |
+| Current direct saved-row copy | 46.767 / 47.671 | 95.777 / 97.466 | 323.976 / 320.966 |
+
+Raw paired session measurements are retained for the
+[initial](2026-09-07-m1-range-initial-session-latency.tsv),
+[once-validated](2026-09-07-m1-range-validated-session-latency.tsv),
+[current-only](2026-09-07-m1-range-current-fast-session-latency.tsv),
+[small-header](2026-09-07-m1-range-header-session-latency.tsv),
+[single-scan](2026-09-07-m1-range-stream-session-latency.tsv),
+[admission-validation](2026-09-07-m1-range-admission-session-latency.tsv), and
+[current copy](2026-09-07-m1-range-copy-session-latency.tsv) variants. Corresponding
+`dense-latency.tsv` files retain the independent dense dimension; dated default
+check measurements remain separate. The current separate two-clean comparison
+still favors clean preparations: 65.065 versus 97.056 ms for the scalar body
+workload and 305.289 versus 318.701 ms for dense bodies. Neither retained-query
+counts nor dense improvements establish a universal latency improvement.
+
+[A 31-pair repeat with an identical-binary control](2026-09-07-m1-range-copy-session-repeat.tsv)
+confirms the unresolved scalar cost. Cold-plus-unchanged medians are
+46.158/47.427 ms; the mean paired difference is +2.58%, with 29/31 candidate runs
+slower. Cold-plus-body medians are 94.255/96.197 ms; the mean paired difference is
++2.03%, with 30/31 slower. The respective baseline-against-itself interquartile
+ranges are -0.50%..+1.31% and -0.64%..+1.25%, centered near zero. This is a real
+penalty, not a passed noise check. Further optimization and a fresh paired run
+are required before a production checkpoint can be committed.
+
+[Three peak-memory observations per workload](2026-09-07-m1-range-copy-memory.tsv)
+use Darwin `wait4` resident bytes separately from latency. Scalar body workloads
+have prior/current median peaks of 170,016,768/173,490,176 bytes; dense bodies have
+543,473,664/555,286,528 bytes. These absolute host observations include runtime
+regions and buffers; the one-million-record admission bound is not a physical RSS
+or epoch-reclamation guarantee.
+
+The initial, now superseded implementation passed complete prepared/range/C
+comparison on 95 accepted corpus fixtures, scalar geometry through 4,000 helpers,
+dense geometry through 512 helpers and two bounded ordinary/ASan/UBSan campaigns
+at allocation ordinals 1..2,048. The unchanged campaign gave 581 status-71 failures
+and 1,467 successes; the body-update campaign gave 1,094 failures and 954 successes.
+Those results do not validate later storage changes. The expanded current run
+adds every pool, extreme slice metadata, key/value domains, sparse order, parent
+references, recurrence/counting metadata, source relocation, exact/one-under
+admission, integer-domain edges, propagation-depth boundaries, synthetic incoming
+refinement prefixes 63/64 and a valid five-entry versus invalid six-entry prior
+history. Its completion is recorded separately below.
+
+
+### Saved-row copy validation completed; scratch reuse under evaluation
+
+[The completed saved-row-copy matrix](2026-09-07-m1-range-copy-matrix.tsv) passes
+under ordinary O1 and ASan/UBSan O1: complete range/prepared/C equality for all
+95 accepted fixtures, scalar geometry through 4,000 helpers and dense geometry
+through 512 helpers. Every unchanged snapshot has zero observed work; canonical
+trivia updates across the complete corpus execute zero range function producers.
+The expanded metadata, integer-domain, recurrence/counting, propagation, incoming
+refinement-prefix and bounded-history tests pass. A test-mode naming collision
+initially stopped the full harness before fault injection; distinct slice-start
+and counted-start mode names correct the test, and the repeated full run passes.
+
+[Both allocation-fault campaigns](2026-09-07-m1-range-copy-faults.tsv) cover ordinals
+1..2,048 with exact status/stdout/stderr agreement. Unchanged input gives 582
+status-71 failures and 1,466 successes; the body update gives 1,096 failures and
+952 successes. Successful body updates retain the required plan import. No compiler
+failure is suppressed, and these remain bounded tested domains.
+
+The subsequent scratch variant reuses three scratch fact vectors across the same
+five passes. It clears every parameter binding in both input vectors before each
+pair of ordinary scans, then clears every output fact only after both scans have
+consumed the previous pass. Non-parameter input slots stay exactly default. The
+last output vector moves into the current view. Saved history remains an owned
+copy. This follows the producer input audit and preserves all five passes, eight
+scans, proof limits and import validation.
+
+An exploratory clock profile identified repeated full-vector initialization as
+the dominant range-analysis cost. The scratch variant produces **4,428,841 C
+bytes**, SHA-256
+`ab37ad428815071d092729612bb29317da654a50ec0a3033de0f8213e1365124`,
+and reproduces that C exactly. It passes the expanded quick differential matrix.
+Full scratch-variant sanitizer/fault checks are still pending here;
+saved-row-copy results above do not substitute for them. Measurement schema 5
+adds actual full-vector initialization and reset counts, requiring three initial
+fills and four complete output resets per retained query. This is a permanent
+work gate for the proposed storage improvement.
+
+
+The [first scratch-reuse session timings](2026-09-07-m1-range-scratch-session-latency.tsv)
+give prior/current medians of 46.720/41.745 ms for 4,000-helper cold-plus-unchanged
+and 95.538/85.082 ms for cold-plus-body. [Dense body timings](2026-09-07-m1-range-scratch-dense-latency.tsv)
+at 512 helpers give 322.085/278.912 ms. Thus the observed scalar penalty is removed
+in this run. The separate two-clean comparison remains 66.642/84.671 ms for scalar
+bodies and improves to 314.166/279.248 ms for dense bodies. [Default checks](2026-09-07-m1-range-scratch-latency.tsv)
+give 22.026/20.664 ms at 4,000 helpers; the ordinary path is unchanged, so that
+single-run difference is not presented as a general default-path speedup.
+All these timings use O2, two warmups and 11 alternating pairs after other running
+validation had finished. Final confirmation is still required after the gates.
+
+[Scratch-reuse peak memory](2026-09-07-m1-range-scratch-memory.tsv), measured
+separately with three observations, has prior/current medians of
+170,688,512/114,196,480 bytes for scalar bodies and
+543,801,344/358,858,752 bytes for dense bodies. These remain absolute Darwin
+observations rather than portable RSS gates.
+
+Seed refresh from the preceding portable seed and the strict bootstrap now pass
+at the scratch-reuse SHA above. The tracked seed and digest and `build/toolchain`
+contain that candidate. Governance, Rust formatting and Clippy pass.
+[Native and diagnostic comparisons](2026-09-07-m1-range-scratch-native.tsv) preserve
+all 197 rejection diagnostics and the complete analysis and C of all 20 native
+applications. The complete scratch corpus and geometric sanitizer matrix has
+passed; its allocation-fault campaigns and the remaining required checks are
+running. Implementation remains pending until all those results are checked.
+
+
+### Scratch-reuse correctness and work gates completed
+
+[The complete scratch matrix](2026-09-07-m1-range-scratch-matrix.tsv) passes under
+ordinary O1 and ASan/UBSan O1, including all expanded boundary tests, 95 accepted
+fixtures, 4,000-helper scalar geometry and 512-helper dense geometry. Each completed
+retained query observes exactly three full-vector initializations, four complete
+output resets, five function passes and eight parameter scans. Unchanged snapshots
+observe zero work. For every corpus fixture, a canonical-trivia update performs
+zero range-function production and imports each function result in all five passes.
+
+[Both scratch allocation-failure campaigns](2026-09-07-m1-range-scratch-faults.tsv)
+pass at all ordinals 1..2,048 with exact ordinary/sanitized status, stdout and stderr.
+The unchanged campaign yields 546 status-71 failures and 1,502 successes; the
+body-update campaign yields 1,000 failures and 1,048 successes. The changed campaign
+requires a retained memory-plan import on every successful update. These results
+apply to the named bounded fixtures and fault ordinals, not arbitrary programs.
+
+All required checkpoint gates pass: bootstrap; governance; 10 unit and 71 integration
+tests; 338 conformance fixtures and 2,000 malformed mutations; quick performance,
+reduction, comparison and agent checks; parallelism; resources; parallel-runtime;
+incremental; ordinary-work; Rust formatting and Clippy. Exact diagnostic and native
+baselines remain as recorded above. The final independent quiet timing confirmation
+is running before checkpoint acceptance. M1 itself remains open.
+
+
+### Final confirmation and checkpoint scope
+
+The [final quiet session run](2026-09-07-m1-range-scratch-final-session-latency.tsv)
+confirms prior/current medians of 46.332/41.404 ms for 4,000-helper cold-plus-unchanged
+and 94.417/84.443 ms for cold-plus-body, approximately 10.6% lower in both cases.
+[Final dense body measurements](2026-09-07-m1-range-scratch-final-dense-latency.tsv)
+give 323.942/278.361 ms at 512 helpers, about 14.1% lower. These reproduce the
+improvement in the independent first scratch run. Both use O2, two warmups and
+11 alternating pairs; all other validation had completed before timing.
+
+The final separate two-clean comparison is 66.003/84.641 ms for scalar bodies and
+313.289/279.337 ms for dense bodies. Retention therefore remains slower than two
+ordinary clean preparations for the scalar workload; query reuse is not a general
+latency claim. [Final default checks](2026-09-07-m1-range-scratch-final-latency.tsv)
+give 21.383/20.519 ms at 4,000 helpers without a default-path algorithm change.
+No default-path speedup or portable absolute timing budget is inferred.
+
+RFC-0138 implementation is complete. The checkpoint retains range function queries,
+reconstructs exact current facts and proof records, shares the current view with
+termination and emission, and preserves the initialization-work gate alongside
+all previous tests and performance gates. M1 remains **in progress** for actual
+flow-based availability/loans, public host-bound sessions and lifecycle, retained
+parallel/global analysis, stable C fragments/backend artifacts, and complete
+locality/differential/release closure. The known recursive-checker sanitizer stack
+limitation remains open.

@@ -1,14 +1,17 @@
 /* Measurement only. No observed value participates in compiler acceptance.
- * Schema 3: program lexings, function checks, C generations, declaration grammar
+ * Schema 5: program lexings, function checks, C generations, declaration grammar
  * executions, parsed canonical-node imports, memory-plan constructions and
- * memory-plan imports, in that order. */
+ * memory-plan imports, then fresh range analyses, retained range queries, range
+ * function production, range imports, range passes, parameter scans and parallel
+ * analyses, full fact-vector initializations and complete output-vector resets,
+ * in that order. */
 #include "session_probe.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define SESSION_PHASES 256
 #define SESSION_CAP UINT64_C(1000000000)
-static uint64_t counts[SESSION_PHASES][7];
+static uint64_t counts[SESSION_PHASES][16];
 static unsigned phases, epochs;
 static int active, bounded, epoch_active;
 static SlimRegion *epoch_parent;
@@ -19,7 +22,7 @@ void slim_session_probe_begin(void) {
     if (phases >= SESSION_PHASES) bounded = 1;
 }
 void slim_session_probe_count(unsigned kind) {
-    if (kind >= 7) abort();
+    if (kind >= 16) abort();
     if (!active || phases >= SESSION_PHASES) return;
     if (counts[phases][kind] == SESSION_CAP) bounded = 1;
     else ++counts[phases][kind];
@@ -69,9 +72,13 @@ static void report(void) {
     if (path == NULL) return;
     FILE *output = fopen(path, "wb");
     if (output == NULL) return;
-    fprintf(output, "slim-session\t3\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
-    for (unsigned i = 0; i < phases; ++i)
-        fprintf(output, "%u\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\t%" PRIu64 "\n", i, counts[i][0], counts[i][1], counts[i][2], counts[i][3], counts[i][4], counts[i][5], counts[i][6]);
+    fprintf(output, "slim-session\t5\t%s\t%" PRIu64 "\t%u\n", bounded || active || epoch_active ? "bounded" : "exact", SESSION_CAP, epochs);
+    for (unsigned i = 0; i < phases; ++i) {
+        fprintf(output, "%u", i);
+        for (unsigned j = 0; j < 16; ++j)
+            fprintf(output, "\t%" PRIu64, counts[i][j]);
+        fputc('\n', output);
+    }
     int error = ferror(output);
     if (fclose(output) != 0) error = 1;
     if (error) remove(path);

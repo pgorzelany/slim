@@ -80,6 +80,12 @@ struct ResourceScan:
   unknown_sites: I64
   maximum: I64
 
+fn empty_view() -> View effects[alloc]:
+  let facts: Vec[Fact] = vec.new()
+  let recurrences: Vec[Recurrence] = vec.new()
+  let counted: Vec[Counted] = vec.new()
+  View(facts: facts, refinements: 0, refinements_truncated: false, recurrences: recurrences, counted: counted)
+
 fn unknown(analyzed: Bool, total: Bool) -> Fact:
   Fact(analyzed: analyzed, lower_known: false, lower: 0, upper_known: false, upper: 0, total: total)
 

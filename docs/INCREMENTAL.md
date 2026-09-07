@@ -5,9 +5,10 @@ checking or C generation**. The production compiler now has an internal retained
 function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
-parsing and function memory plans as described below. Manifest/import validation,
-declaration/layout checks, termination, global analysis and changed-source C
-generation remain current-revision work. The public `session` command
+parsing, function memory plans and range queries as described below. Manifest/import
+validation, declaration/layout checks, termination validation, global parameter
+scans, parallel analysis and changed-source C generation remain current-revision
+work. Termination and emission consume the current retained range view. The public `session` command
 still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
 
@@ -60,8 +61,19 @@ owners. Import validates and relocates both local token ordinals and byte ends,
 including the legacy 64-value liveness boundary. Missing or damaged metadata runs
 the ordinary planner. Independent optional history bounds preserve complete current
 plans on a capacity miss. Native observation counts actual plan construction and
-import; it does not infer reuse from source equality. Global range/parallel analysis
-and changed-source C emission still run. Costs and differential evidence are in the
+import; it does not infer reuse from source equality.
+
+[RFC-0138](../design/rfcs/0138-retained-range-queries.md) retains the sole range
+producer's function results within the ordinary five passes and across successful
+revisions. Keys include complete checked declaration dependencies, both input facts
+for each parameter and the incoming global refinement count. Sparse saved facts
+and recurrence records validate and relocate against current canonical nodes;
+invalid optional history causes a miss. Three reusable scratch vectors preserve
+all five passes and eight global input scans. The resulting complete view feeds
+ordinary termination validation and the sole C emitter. Parallel analysis and
+changed-source C emission still run. Native observation separates range production,
+imports, passes, scans and scratch initialization/reset work. Costs, limits and
+complete differential evidence are in the
 [progress report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 
 ## What the current session command measures

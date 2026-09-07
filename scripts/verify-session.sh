@@ -9,9 +9,9 @@ mkdir "$session_dir/probe"
 cp selfhost/*.slim "$session_dir/probe/"
 cp tests/fixtures/transactional_session.slim "$session_dir/probe/zzprobe.slim"
 # Expose budget helpers only inside this test project's module boundary.
-sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports PlanEntry /(exports PlanBudget Planned Update update plan_checked plan_fits PlanEntry /;$s/)$//' selfhost/slim.project > "$session_dir/probe/slim.project"
+sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports RangeValue /(exports range_save range_heads range_find range_import Ranged RangeBudget RangeComplete PlanBudget Planned Update update range_checked plan_checked plan_fits RangeValue /;$s/)$//' selfhost/slim.project > "$session_dir/probe/slim.project"
 cat >> "$session_dir/probe/slim.project" <<'MANIFEST'
-  (module zzprobe "zzprobe.slim" (imports identity memory project retained session syntax typing) (exports)))
+  (module zzprobe "zzprobe.slim" (imports identity memory project ranges retained session syntax typing) (exports)))
 MANIFEST
 if ! "$session_compiler" "$session_dir/probe/slim.project" > "$session_dir/probe.c"; then
   cat "$session_dir/probe.c" >&2

@@ -4,16 +4,19 @@ struct Attempt:
   checked: typing.Checked
   cache: retained.Cache
   work: retained.Work
+  range_ready: Bool
+  range_view: ranges.View
 
-fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: retained.Work, previous: identity.Revision) -> Attempt effects[alloc]:
+fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: retained.Work, previous: identity.Revision, range_ready: Bool, range_view: ^ranges.View) -> Attempt effects[alloc]:
   let current: identity.Revision = candidate.index.revision
   let newer: Bool = (current.epoch > previous.epoch) || ((current.epoch == previous.epoch) && (current.serial > previous.serial))
   let eligible: Bool = (checked.status == 0) && (newer && identity.same_revision(current, current))
   let index: retained.Index = mem.replace(@candidate.index, retained.empty_index())
   let nodes: Vec[retained.Saved] = mem.replace(@candidate.nodes, vec.new())
   let planning: retained.PlanCache = mem.replace(@candidate.planning, retained.empty_plan_cache())
-  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning)
-  Attempt(checked: checked, cache: cache, work: work)
+  let range_history: Vec[retained.RangeHistory] = mem.replace(@candidate.range_history, vec.new())
+  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning, range_history: range_history)
+  Attempt(checked: checked, cache: cache, work: work, range_ready: range_ready, range_view: range_view)
 
 fn empty_checked() -> typing.Checked effects[alloc]:
   let view: typing.View = typing.empty_view()
@@ -24,7 +27,7 @@ fn empty_checked() -> typing.Checked effects[alloc]:
 fn uncached_attempt(checked: ^typing.Checked) -> Attempt effects[alloc]:
   let cache: retained.Cache = retained.empty_cache()
   let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-  Attempt(checked: checked, cache: cache, work: work)
+  Attempt(checked: checked, cache: cache, work: work, range_ready: false, range_view: ranges.empty_view())
 
 struct Diagnostic:
   code: Bytes
@@ -212,10 +215,12 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
         let ordinary: typing.View = typing.analyze(input, @tokens, declarations)
         let cache: retained.Cache = retained.empty_cache()
         let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-        retained.Analyzed(view: ordinary, cache: cache, work: work, plan: memory.empty_plan())
+        retained.Analyzed(view: ordinary, cache: cache, work: work, plan: memory.empty_plan(), range_ready: false, range_view: ranges.empty_view())
       let view: typing.View = mem.replace(@analyzed.view, typing.empty_view())
       let cache: retained.Cache = mem.replace(@analyzed.cache, retained.empty_cache())
       let work: retained.Work = analyzed.work
+      let range_ready: Bool = analyzed.range_ready
+      let range_view: ranges.View = mem.replace(@analyzed.range_view, ranges.empty_view())
       let issues: Vec[typing.Issue] = mem.replace(@view.issues, vec.new())
       let issue_count: I64 = vec.len(issues)
       let typed_error: Bool = issue_count > 0
@@ -236,7 +241,10 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
         if ordinary > 0:
           ordinary
         else:
-          check_termination(input, tokens, declarations, view.facts, @issues)
+          if range_ready:
+            check_termination_view(input, tokens, declarations, range_view.facts, @issues)
+          else:
+            check_termination(input, tokens, declarations, view.facts, @issues)
       let prior_error: Bool = checked > 0
       let status: I64 = if prior_error:
         let recovered: I64 = if typed_error:
@@ -252,7 +260,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
       else:
         0
       let checked: typing.Checked = typing.Checked(status: status, view: view, issues: issues, plan: plan)
-      finish_attempt(^checked, ^cache, work, previous.index.revision)
+      finish_attempt(^checked, ^cache, work, previous.index.revision, range_ready, ^range_view)
   else:
     let declarations: Vec[ir.Declaration] = vec.new()
     let status: I64 = check_path(input, tokens, declarations)
@@ -945,6 +953,13 @@ fn check_termination(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec
     termination_recur_items(source, tokens, declarations, 0, view.facts, true)
   else:
     -1
+  finish_termination(source, tokens, declarations, missing, @issues)
+
+fn check_termination_view(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], facts: Vec[ranges.Fact], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+  let missing: I64 = termination_recur_items(source, tokens, declarations, 0, facts, true)
+  finish_termination(source, tokens, declarations, missing, @issues)
+
+fn finish_termination(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], missing: I64, issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   if missing >= 0:
     append_form_issue("E0343", missing, tokens, @issues)
   else:

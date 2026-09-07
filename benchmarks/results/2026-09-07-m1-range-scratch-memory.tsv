@@ -1,0 +1,14 @@
+# date=2026-09-07; candidate_seed_sha256=ab37ad428815071d092729612bb29317da654a50ec0a3033de0f8213e1365124; baseline=6c39e40; O2; cold plus body update; Darwin wait4 ru_maxrss in bytes; absolute tracking only; buffers and runtime regions included; measured separately from latency
+fixture	variant	trial	peak_rss_bytes
+scalar4000	baseline	0	172294144
+scalar4000	baseline	1	170688512
+scalar4000	baseline	2	168869888
+scalar4000	scratch	0	114753536
+scalar4000	scratch	1	114196480
+scalar4000	scratch	2	112885760
+dense512	baseline	0	544899072
+dense512	baseline	1	543801344
+dense512	baseline	2	543571968
+dense512	scratch	0	358940672
+dense512	scratch	1	357777408
+dense512	scratch	2	358858752

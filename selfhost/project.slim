@@ -136,6 +136,8 @@ struct PreparedProject:
   layouts: Vec[I64]
   issues: Vec[typing.Issue]
   plan: memory.Plan
+  range_ready: Bool
+  range_view: ranges.View
 
 struct ModuleInput:
   read: Bool
@@ -260,7 +262,10 @@ fn generate_prepared_project(prepared: PreparedProject) -> Bytes effects[alloc, 
   let layouts: Vec[I64] = prepared.layouts
   let plan: memory.Plan = prepared.plan
   let output: Vec[U8] = vec.new()
-  codegen.emit_program(source, tokens, facts, plan, layouts, @output)
+  if prepared.range_ready:
+    codegen.emit_program_view(source, tokens, facts, plan, layouts, prepared.range_view, @output)
+  else:
+    codegen.emit_program(source, tokens, facts, plan, layouts, @output)
   bytes.freeze(^output)
 
 fn compile_project_path_jobs(path: Bytes, jobs: I64) -> I64 effects[alloc, io, partial]:
@@ -426,7 +431,7 @@ fn invalid_prepared_project(status: I64) -> PreparedProject effects[alloc]:
   let layouts: Vec[I64] = vec.new()
   let issues: Vec[typing.Issue] = vec.new()
   let plan: memory.Plan = memory.empty_plan()
-  PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
+  PreparedProject(status: status, source: "", tokens: tokens, origins: origins, manifest_source: "", manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan, range_ready: false, range_view: ranges.empty_view())
 
 fn invalid_project_attempt(status: I64) -> ProjectAttempt effects[alloc]:
   let prepared: PreparedProject = invalid_prepared_project(status)
@@ -485,7 +490,8 @@ fn check_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Tok
   let plan: memory.Plan = mem.replace(@attempt.checked.plan, memory.empty_plan())
   let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
   let canonical_nodes: I64 = vec.len(tokens)
-  let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan)
+  let range_view: ranges.View = mem.replace(@attempt.range_view, ranges.empty_view())
+  let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan, range_ready: attempt.range_ready, range_view: range_view)
   let cache: retained.Cache = mem.replace(@attempt.cache, retained.empty_cache())
   ProjectAttempt(canonical_nodes: canonical_nodes, prepared: prepared, cache: cache, work: attempt.work)
 

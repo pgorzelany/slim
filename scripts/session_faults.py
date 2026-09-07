@@ -24,14 +24,14 @@ def run_faults(root, before, after, label, require_import=False):
             succeeded += 1
         lines = report_path.read_text().splitlines()
         assert 1 <= len(lines) <= 3, (label, ordinal)
-        assert lines[0].split("\t")[:2] == ["slim-session", "3"], (label, ordinal)
+        assert lines[0].split("\t")[:2] == ["slim-session", "5"], (label, ordinal)
         rows = []
         for i, line in enumerate(lines[1:]):
             row = list(map(int, line.split("\t")))
-            assert len(row) == 8 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), (label, ordinal)
+            assert len(row) == 17 and row[0] == i and all(0 <= n <= 1000000000 for n in row[1:]), (label, ordinal)
             rows.append(row)
         if require_import and plain.returncode == 0:
-            assert len(rows) == 2 and rows[1][6:] == [1, 1], (label, ordinal, rows)
+            assert len(rows) == 2 and rows[1][6:8] == [1, 1], (label, ordinal, rows)
             imported += 1
         print("session-" + label, ordinal, plain.returncode, len(rows), sep="\t", flush=True)
     assert failed > 0 and succeeded > 0, (label, failed, succeeded)

@@ -1915,6 +1915,9 @@ fn emit_functions(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fa
 
 fn emit_program(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], output: @Vec[U8]) -> Void effects[alloc, partial]:
   let range_view: ranges.View = ranges.analyze(source, tokens, facts)
+  emit_program_view(source, tokens, facts, plan, layouts, range_view, @output)
+
+fn emit_program_view(source: Bytes, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], plan: memory.Plan, layouts: Vec[I64], range_view: ranges.View, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let range_facts: Vec[ranges.Fact] = range_view.facts
   let parallel_view: parallel.View = parallel.analyze(source, tokens, facts, range_view)
   let sites: Vec[parallel.Site] = parallel_view.sites

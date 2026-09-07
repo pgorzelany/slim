@@ -35,9 +35,14 @@ def run(before, after, mode="work", expected=None, epochs=1):
     assert plain.returncode == native.returncode == 0, (mode, plain.returncode, native.returncode, plain.stdout[:400], native.stderr[:400])
     assert plain.stdout == native.stdout and plain.stderr == native.stderr, mode
     lines = report_path.read_text().splitlines()
-    assert lines[0] == f"slim-session\t3\texact\t1000000000\t{epochs}", lines[0]
+    assert lines[0] == f"slim-session\t5\texact\t1000000000\t{epochs}", lines[0]
     rows = [list(map(int, line.split("\t"))) for line in lines[1:]]
-    assert all(row[0] == i and len(row) == 8 for i, row in enumerate(rows)), rows
+    assert all(row[0] == i and len(row) == 17 for i, row in enumerate(rows)), rows
+    for row in rows:
+        if row[9] > 0:
+            assert row[8:10] == [0, 1] and row[12:14] == [5, 8] and row[15:17] == [3, 4], (mode, rows)
+            assert row[10] + row[11] == 5 * (row[6] + row[7]), (mode, rows)
+
     if expected is not None:
         assert [row[1:4] for row in rows] == expected, (mode, rows, expected)
     reports = [line.split() for line in native.stdout.decode().splitlines() if re.match(r"^\d+ \d+ \d+ \d+ ", line)]
@@ -89,7 +94,7 @@ env = dict(os.environ, SLIM_SESSION_REPORT=str(report_path),
 p = subprocess.run([str(observed), str(captured), str(initial), "captured"], env=env, capture_output=True)
 assert p.returncode == 0 and not p.stderr, (p.returncode, p.stdout[:400], p.stderr[:400])
 assert replacement.read_text() == (rejected.parent / "program.slim").read_text()
-assert report_path.read_text().splitlines()[1:] == ["0\t2\t1\t1\t2\t0\t1\t0", "1\t0\t0\t0\t0\t0\t0\t0"]
+assert [list(map(int, line.split("\t"))) for line in report_path.read_text().splitlines()[1:]] == [[0, 2, 1, 1, 2, 0, 1, 0, 0, 1, 1, 4, 5, 8, 1, 3, 4], [1] + [0] * 16]
 print("session-captured-input\texact\tfile-replaced-before-preparation", flush=True)
 
 # Global interface and body-derived facts always compare against a clean preparation.
@@ -122,7 +127,82 @@ for name, literal in [("minimum", "-9223372036854775808"), ("decimal", "0009"),
 plan_changed = project("plan-main-edit", main.replace("helper(1)", "helper(2)"), manifest, **{"data.slim": helper})
 for mode in ["plan-entries", "plan-slots", "plan-values", "plan-tag", "plan-node", "plan-byte", "plan-owner", "plan-source", "plan-count", "plan-start", "plan-allocation-start", "plan-destruction-count"]:
     rows, _ = run(pair, plan_changed, mode)
-    assert rows[1][2] == 1 and rows[1][6:] == [2, 0], (mode, rows)
+    assert rows[1][2] == 1 and rows[1][6:8] == [2, 0], (mode, rows)
+# A main argument edit changes the helper's later-pass input key even with the
+# same helper source. Damaged early-pass history adds a third producer execution.
+rows, _ = run(pair, plan_changed)
+assert rows[1][10:12] == [2, 8], rows
+for mode in ["range-wrapper", "range-history", "range-heads", "range-head", "range-entries", "range-keys", "range-key", "range-facts", "range-tag", "range-node", "range-owner", "range-source", "range-prefix", "range-slice", "range-next", 'range-key-start', 'range-key-count', 'range-fact-start', 'range-recurrence-start', 'range-recurrence-count', 'range-counted-slice-start', 'range-counted-count', 'range-key-node', 'range-key-entry', 'range-key-lower', 'range-key-upper', 'range-fact-lower', 'range-fact-upper', 'range-fact-order']:
+    rows, _ = run(pair, plan_changed, mode)
+    assert rows[1][10:12] == [3, 7], (mode, rows)
+run(pair, pair, "range-budget")
+guarded_helper = "module data\n\nfn helper(value: I64) -> I64:\n  if value <= 0:\n    0\n  else:\n    value + 1\n"
+guarded = project("range-guarded", main, manifest, **{"data.slim": guarded_helper})
+guarded_changed = project("range-guarded-changed", main.replace("helper(1)", "helper(2)"), manifest, **{"data.slim": guarded_helper})
+for mode in ["range-refinements", "range-parent", "range-refinement-node", "range-refinement-value"]:
+    rows, _ = run(guarded, guarded_changed, mode)
+    assert rows[1][10:12] == [3, 7], (mode, rows)
+run(guarded, guarded, "range-budget")
+run(guarded, guarded, "range-storage")
+for mode in ["range-refinement-start", "range-refinement-count"]:
+    rows, _ = run(guarded, guarded_changed, mode)
+    assert rows[1][10:12] == [3, 7], (mode, rows)
+
+# Proof records carry both local nodes and numeric fields. A source-preserving
+# helper query must miss when a saved proof domain or pool is damaged.
+recurrence_helper = "module data\n\nfn helper(value: I64) -> I64 effects[partial]:\n  if value <= 0:\n    0\n  else:\n    recur(value - 1)\n"
+counted_helper = "module data\n\nfn helper(value: I64) -> I64 effects[partial]:\n  if value == 3:\n    0\n  else:\n    recur(value + 1)\n"
+proof_main = main.replace("-> I64:", "-> I64 effects[partial]:").replace("helper(1)", "helper(0)")
+proof = project("range-recurrence", proof_main, manifest, **{"data.slim": recurrence_helper})
+proof_changed = project("range-recurrence-changed", proof_main.replace("helper(0)", "helper(0) + 0"), manifest, **{"data.slim": recurrence_helper})
+clean_rows, _ = run(proof, proof_changed)
+for mode in ['range-recurrences', 'range-recurrence-item', 'range-recurrence-position', 'range-recurrence-bound', 'range-recurrence-step']:
+    rows, _ = run(proof, proof_changed, mode)
+    assert rows[1][10] > clean_rows[1][10], (mode, clean_rows, rows)
+run(proof, proof, "range-budget")
+# Insertion and reordering relocate proof node fields while preserving scalars.
+shifted = project("range-recurrence-shift", proof_main, manifest, **{"data.slim": recurrence_helper.replace("fn helper", "fn earlier() -> I64:\n  7\n\nfn helper")})
+run(proof, shifted)
+run(shifted, proof)
+proof = project("range-counted", proof_main, manifest, **{"data.slim": counted_helper})
+proof_changed = project("range-counted-changed", proof_main.replace("helper(0)", "helper(0) + 0"), manifest, **{"data.slim": counted_helper})
+clean_rows, _ = run(proof, proof_changed)
+for mode in ['range-counted', 'range-counted-item', 'range-counted-controller', 'range-counted-base', 'range-counted-body', 'range-counted-start', 'range-counted-bound', 'range-counted-step', 'range-counted-iterations']:
+    rows, _ = run(proof, proof_changed, mode)
+    assert rows[1][10] > clean_rows[1][10], (mode, clean_rows, rows)
+run(proof, proof, "range-budget")
+# Insertion and reordering relocate proof node fields while preserving scalars.
+shifted = project("range-counted-shift", proof_main, manifest, **{"data.slim": counted_helper.replace("fn helper", "fn earlier() -> I64:\n  7\n\nfn helper")})
+run(proof, shifted)
+run(shifted, proof)
+for bound in [0, 1, 15, 16, 17]:
+    helper_source = counted_helper.replace("value == 3", f"value == {bound}")
+    proof = project(f"range-counted-bound-{bound}", proof_main, manifest, **{"data.slim": helper_source})
+    changed = project(f"range-counted-bound-{bound}-changed", proof_main.replace("helper(0)", "helper(0) + 0"), manifest, **{"data.slim": helper_source})
+    run(proof, changed, "range-counted-positive" if bound <= 16 else "range-counted-unknown")
+
+for literal in [-1000000001, -1000000000, -999999999, 999999999, 1000000000, 1000000001]:
+    before = project(f"range-domain-{literal}", main.replace("helper(1)", f"helper({literal})"), manifest, **{"data.slim": helper})
+    run(pair, before)
+    run(before, pair)
+
+for depth in [3, 4, 5, 6]:
+    chain = "module data\n\nfn f_0(x: I64) -> I64:\n  x + 1\n\n" + "".join(f"fn f_{i}(x: I64) -> I64:\n  f_{i - 1}(x + 1)\n\n" for i in range(1, depth + 1))
+    app = main.replace("helper(1)", f"f_{depth}(1)")
+    layout = manifest.replace("exports helper", f"exports f_{depth}")
+    before = project(f"range-depth-{depth}", app, layout, **{"data.slim": chain})
+    after = project(f"range-depth-{depth}-changed", app.replace(f"f_{depth}(1)", f"f_{depth}(2)"), layout, **{"data.slim": chain})
+    run(before, after, "range-depth-known" if depth == 3 else "range-depth-unknown")
+for count in [31, 32, 33]:
+    functions = "".join(f"fn f_{i}(x: I64) -> I64:\n  if x <= 0:\n    0\n  else:\n    x + 1\n\n" for i in range(count))
+    app = main.replace("helper(1)", "f_0(1)")
+    layout = manifest.replace("exports helper", "exports f_0")
+    before = project(f"range-refinements-{count}", app, layout, **{"data.slim": "module data\n\n" + functions})
+    inserted = "fn inserted(x: I64) -> I64:\n  if x <= 0:\n    0\n  else:\n    x + 1\n\n"
+    after = project(f"range-refinements-{count}-insert", app, layout, **{"data.slim": "module data\n\n" + inserted + functions})
+    rows, _ = run(before, after, "range-refinement-boundary")
+    assert rows[1][10] == 34, (count, rows)
+
 for values in [63, 64, 65]:
     locals_source = "".join(f"  let v{i}: I64 = {i}\n" for i in range(values - 1))
     wide_helper = "module data\n\nfn helper(value: I64) -> I64:\n" + locals_source + "  value\n"
@@ -131,15 +211,15 @@ for values in [63, 64, 65]:
     shifted_helper = wide_helper.replace("fn helper", prefix + "fn helper")
     shifted = project(f"plan-values-{values}-shift", main, manifest, **{"data.slim": shifted_helper})
     rows, _ = run(before, shifted)
-    assert rows[1][6:] == [1, 2], (values, rows)
+    assert rows[1][6:8] == [1, 2], (values, rows)
     reversed_helper = wide_helper + "\n" + prefix
     reordered = project(f"plan-values-{values}-reorder", main, manifest, **{"data.slim": reversed_helper})
     rows, _ = run(shifted, reordered)
-    assert rows[1][6:] == [0, 3], (values, rows)
+    assert rows[1][6:8] == [0, 3], (values, rows)
     if values == 65:
         changed = project("plan-tail-tag-edit", main.replace("helper(1)", "helper(2)"), manifest, **{"data.slim": wide_helper})
         rows, _ = run(before, changed, "plan-tail-tag")
-        assert rows[1][6:] == [2, 0], rows
+        assert rows[1][6:8] == [2, 0], rows
 
 invalid_argument = project("invalid-argument", main.replace("helper(1)", "helper(false)"), manifest, **{"data.slim": helper})
 run(pair, invalid_argument, "recover")
@@ -151,17 +231,17 @@ run(allocation_pair, allocation_pair, "plan-budget")
 allocation_changed = project("allocation-plan-edited", allocation_main.replace("helper(1)", "helper(2)"), manifest, **{"data.slim": allocation_helper})
 for mode in ["plan-allocations", "plan-destructions", "plan-allocation-node", "plan-destruction-node"]:
     rows, _ = run(allocation_pair, allocation_changed, mode)
-    assert rows[1][6:] == [2, 0], (mode, rows)
+    assert rows[1][6:8] == [2, 0], (mode, rows)
 
 layout_manifest = manifest.replace("exports helper", "exports Leaf Node helper")
 layout_source = "module data\n\nstruct Leaf:\n  value: I64\n\nstruct Node:\n  leaf: Leaf\n\nfn helper(value: Node) -> I64:\n  0\n"
 layout_before = project("plan-layout-before", source, layout_manifest, **{"data.slim": layout_source})
 layout_after = project("plan-layout-after", source, layout_manifest, **{"data.slim": layout_source.replace("value: I64", "value: Vec[I64]")})
 rows, _ = run(layout_before, layout_after)
-assert rows[1][6:] == [1, 1], rows
+assert rows[1][6:8] == [1, 1], rows
 mode_after = project("plan-mode-after", source, layout_manifest, **{"data.slim": layout_source.replace("value: I64", "value: Vec[I64]").replace("helper(value: Node)", "helper(value: @Node)")})
 rows, _ = run(layout_after, mode_after)
-assert rows[1][6:] == [1, 1], rows
+assert rows[1][6:8] == [1, 1], rows
 
 for mode in ["history-token-fit", "history-token-under"]:
     run(pair, pair, mode, expected=[[3, 2, 1], [0, 0, 0]])
@@ -228,13 +308,15 @@ fixtures = sorted(Path("conformance/pass").glob("*.slim")) + sorted(Path("benchm
 if not full:
     fixtures = [Path("examples/hello.slim")]
 for fixture in fixtures:
+    print("session-corpus", fixture, sep="\t", flush=True)
     wrapped = project("wrapped", fixture.read_text())
     rows, reports = run(wrapped, wrapped)
-    assert rows[1][1:] == [0, 0, 0, 0, 0, 0, 0], fixture
+    assert rows[1][1:] == [0] * 16, fixture
     assert reports[1][2:4] == reports[0][2:4], fixture
     shifted = project("wrapped-trivia", "# force preparation of unchanged canonical source\n" + fixture.read_text())
     rows, _ = run(wrapped, shifted)
-    assert rows[1][6:] == [0, rows[0][6]], (fixture, rows)
+    assert rows[1][6:8] == [0, rows[0][6]], (fixture, rows)
+    assert rows[1][10] == 0 and rows[1][11] == 5 * rows[0][6], (fixture, rows)
 print(f"session-differential\t{len(fixtures)}\tcomplete-prepared-fields-and-C", flush=True)
 
 for size in ([1, 2, 125, 250, 500, 1000, 2000, 4000] if full else [1, 2]):
@@ -246,12 +328,14 @@ for size in ([1, 2, 125, 250, 500, 1000, 2000, 4000] if full else [1, 2]):
     for kind, updated in [("unchanged", before), ("body", after)]:
         expected = [[3, size + 1, 1], [0, 0, 0] if kind == "unchanged" else [3, 1, 1]]
         rows, reports = run(before, updated, expected=expected)
-        assert rows[0][4:] == [2 * (size + 1), 0, size + 1, 0], (size, rows)
+        assert rows[0][4:8] == [2 * (size + 1), 0, size + 1, 0], (size, rows)
+        assert rows[0][10:12] == [size + 2, 4 * size + 3], (size, rows)
         if kind == "unchanged":
-            assert rows[1][4:] == [0, 0, 0, 0], (size, rows)
+            assert rows[1][4:8] == [0, 0, 0, 0], (size, rows)
         else:
             assert rows[1][4] == 2 and rows[1][5] > 0, (size, rows)
-            assert rows[1][6:] == [1, size], (size, rows)
+            assert rows[1][6:8] == [1, size], (size, rows)
+            assert rows[1][10:12] == [2, 5 * (size + 1) - 2], (size, rows)
         imports = 0 if kind == "unchanged" else 15 * size + 7
         assert int(reports[1][7]) == imports, (size, kind, reports)
         print("session-geometric", size, kind, reports[1][5], reports[1][6], imports, rows[1][4], rows[1][5], rows[1][6], rows[1][7], sep="\t", flush=True)
@@ -270,7 +354,7 @@ for size in ([32, 128, 512] if full else [2]):
     before = project(f"dense-{size}-before", app, layout, **{"data.slim": data})
     after = project(f"dense-{size}-after", app, layout, **{"data.slim": data.replace("  x\n", "  42\n", 1)})
     rows, _ = run(before, after, expected=[[3, size + 1, 1], [3, 1, 1]])
-    assert rows[0][6:] == [size + 1, 0] and rows[1][6:] == [1, size], (size, rows)
+    assert rows[0][6:8] == [size + 1, 0] and rows[1][6:8] == [1, size], (size, rows)
     print("session-dense", size, 64, rows[1][6], rows[1][7], sep="\t", flush=True)
 
 if full:
