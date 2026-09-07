@@ -11,7 +11,8 @@ fn finish_attempt(checked: ^typing.Checked, candidate: ^retained.Cache, work: re
   let eligible: Bool = (checked.status == 0) && (newer && identity.same_revision(current, current))
   let index: retained.Index = mem.replace(@candidate.index, retained.empty_index())
   let nodes: Vec[retained.Saved] = mem.replace(@candidate.nodes, vec.new())
-  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes)
+  let planning: retained.PlanCache = mem.replace(@candidate.planning, retained.empty_plan_cache())
+  let cache: retained.Cache = retained.Cache(valid: eligible, index: index, nodes: nodes, planning: planning)
   Attempt(checked: checked, cache: cache, work: work)
 
 fn empty_checked() -> typing.Checked effects[alloc]:
@@ -211,7 +212,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
         let ordinary: typing.View = typing.analyze(input, @tokens, declarations)
         let cache: retained.Cache = retained.empty_cache()
         let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: false)
-        retained.Analyzed(view: ordinary, cache: cache, work: work)
+        retained.Analyzed(view: ordinary, cache: cache, work: work, plan: memory.empty_plan())
       let view: typing.View = mem.replace(@analyzed.view, typing.empty_view())
       let cache: retained.Cache = mem.replace(@analyzed.cache, retained.empty_cache())
       let work: retained.Work = analyzed.work
@@ -221,7 +222,10 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
       let plan: memory.Plan = if typed_error:
         memory.empty_plan()
       else:
-        memory.analyze(input, tokens, declarations)
+        if retain:
+          mem.replace(@analyzed.plan, memory.empty_plan())
+        else:
+          memory.analyze(input, tokens, declarations)
       let checked: I64 = if typed_error:
         if render_typed:
           report_issues(tokens, issues, 0, 0)

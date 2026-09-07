@@ -1,7 +1,7 @@
 # RFC-0137: Retained function memory plans
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -105,6 +105,16 @@ storage admission failure while preserving ordinary planning and accepted source
 The containing service's existing explicit candidate resource limits still apply.
 These bounds describe retained records, not peak RSS or physical epoch reclamation.
 
+Saved rows use snapshot-owned flat value, allocation and destruction pools.
+Copyable function entries contain scalar facts and a start/count pair for each
+pool; each saved value carries its explicit last-use discriminant. This avoids
+separate saved vector allocations for every function. Validate pool lengths and
+complete contiguous slice framing once per query, using subtraction before range
+addition, then validate the owner's individual rows before any import. Invalid
+framing declines all old planning history. The current working plan continues to
+own its ordinary per-function vectors. Saving appends normalized rows directly;
+import reconstructs current vectors without sharing storage across snapshots.
+
 Missing history, invalid owner/range/position tags, stale epochs or compiler
 configuration, unavailable mappings and incomplete dependencies are misses. The
 ordinary planner runs for the affected function. Optional plan misses do not
@@ -192,7 +202,29 @@ implementation or permission to relax compatibility/performance gates.
 
 ## Implementation
 
-Pending. The current producer and dependency reads have been inspected at 1fca486.
+Implemented in production SLIM with snapshot-wide saved pools, direct declaration
+slot lookup, complete pool framing and owner/local-position validation. The
+reproducible seed is 4,233,117 C bytes, SHA-256
+`d4e6b04ffcaee43b6384c3055e3f516e0ee7b7a7910dd978ee0be85571dfff06`.
+The first nested-vector prototype's cold cost blocked its commit; pooling reduced
+each saved function entry from 256 to 112 bytes and removed that larger penalty.
+The measured small cold/default differences remain within the observed paired
+variation; there is no claim of zero overhead or a universal speedup.
+
+The production session probe compares complete plans, prepared fields and C with
+fresh preparation for 95 accepted fixtures, source/metadata/storage boundaries,
+4,000-helper scalar geometry and 512-helper dense geometry at 64 planned values.
+Native schema 3 observes actual construction/import. Body edits construct one plan
+and import all unaffected plans; no-change snapshots perform neither operation.
+Two 2,048-ordinal ordinary/ASan/UBSan fault campaigns cover unchanged source and a
+body edit with plan import. Bootstrap, governance, 10 unit and 71 integration tests,
+338 conformance fixtures and 2,000 mutations, every required compiler benchmark,
+resources/parallel-runtime/incremental/work, formatting and Clippy pass. All 197
+prior rejected fixtures retain diagnostics and 20 native applications retain their
+complete analysis and byte-identical C.
+
+[The progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md)
+retains both layouts' evidence, paired latency, fault outcomes and limitations.
 The parent M1 goal remains incomplete for flow ownership/loans, public sessions,
 retained global analyses/C fragments/backend artifacts and complete release closure.
 

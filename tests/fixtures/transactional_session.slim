@@ -246,7 +246,110 @@ fn print_report(report: session.Report) -> Void effects[io]:
   io.print_bytes(" ")
   io.println(report.reason)
 
+fn damaged_plan(entry: retained.PlanEntry, mode: Bytes) -> retained.PlanEntry effects[partial]:
+  let owner: identity.DeclarationId = if equal(mode, "plan-owner"):
+    identity.DeclarationId(file: entry.owner.file, slot: entry.owner.slot + 1)
+  else:
+    entry.owner
+  let size: I64 = if equal(mode, "plan-source"):
+    entry.source_bytes + 1
+  else:
+    entry.source_bytes
+  let count: I64 = if equal(mode, "plan-count"):
+    entry.value_count + 1
+  else:
+    entry.value_count
+  let start: I64 = if equal(mode, "plan-start"):
+    9223372036854775807
+  else:
+    entry.value_start
+  let allocation_start: I64 = if equal(mode, "plan-allocation-start"):
+    -1
+  else:
+    entry.allocation_start
+  let destruction_count: I64 = if equal(mode, "plan-destruction-count"):
+    9223372036854775807
+  else:
+    entry.destruction_count
+  retained.PlanEntry(owner: owner, source_bytes: size, return_storage: entry.return_storage, local_region: entry.local_region, recursive: entry.recursive, liveness_precise: entry.liveness_precise, escaping_values: entry.escaping_values, value_start: start, value_count: count, allocation_start: allocation_start, allocation_count: entry.allocation_count, destruction_start: entry.destruction_start, destruction_count: destruction_count)
+
+fn damage_plan_values(values: @Vec[retained.PlanValue], mode: Bytes) -> Void effects[partial]:
+  let at: I64 = if equal(mode, "plan-tail-tag"):
+    64
+  else:
+    0
+  if at < vec.len(values):
+    let saved: retained.PlanValue = vec.get(values, at)
+    let value: memory.ValuePlan = saved.local
+    let name: I64 = if equal(mode, "plan-node"):
+      -1
+    else:
+      value.name
+    let last: I64 = if equal(mode, "plan-byte"):
+      9223372036854775807
+    else:
+      value.last_use
+    let tag: Bool = if equal(mode, "plan-tag") || equal(mode, "plan-tail-tag"):
+      !saved.last_bytes
+    else:
+      saved.last_bytes
+    let local: memory.ValuePlan = memory.ValuePlan(name: name, type_index: value.type_index, storage: value.storage, borrowed: value.borrowed, declared: value.declared, last_use: last, escape: value.escape)
+    vec.set(@values, at, retained.PlanValue(local: local, last_bytes: tag))
+  else:
+    void
+
+fn damage_plan_pools(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  let entries: Vec[retained.PlanEntry] = mem.replace(@state.good.typing.planning.entries, vec.new())
+  if vec.len(entries) > 0:
+    let entry: retained.PlanEntry = damaged_plan(vec.get(entries, 0), mode)
+    vec.set(@entries, 0, entry)
+  else:
+    void
+  let removed_entries: Vec[retained.PlanEntry] = mem.replace(@state.good.typing.planning.entries, entries)
+  let values: Vec[retained.PlanValue] = mem.replace(@state.good.typing.planning.values, vec.new())
+  damage_plan_values(@values, mode)
+  if !equal(mode, "plan-values"):
+    let removed: Vec[retained.PlanValue] = mem.replace(@state.good.typing.planning.values, values)
+    void
+  else:
+    void
+  let allocations: Vec[memory.AllocationPlan] = mem.replace(@state.good.typing.planning.allocations, vec.new())
+  if equal(mode, "plan-allocation-node") && (vec.len(allocations) > 0):
+    let row: memory.AllocationPlan = vec.get(allocations, 0)
+    vec.set(@allocations, 0, memory.AllocationPlan(site: -1, region: row.region))
+  else:
+    void
+  if !equal(mode, "plan-allocations"):
+    let removed: Vec[memory.AllocationPlan] = mem.replace(@state.good.typing.planning.allocations, allocations)
+    void
+  else:
+    void
+  let destructions: Vec[memory.DestructionPlan] = mem.replace(@state.good.typing.planning.destructions, vec.new())
+  if equal(mode, "plan-destruction-node") && (vec.len(destructions) > 0):
+    let row: memory.DestructionPlan = vec.get(destructions, 0)
+    vec.set(@destructions, 0, memory.DestructionPlan(region: row.region, end: -1, reverse: row.reverse))
+  else:
+    void
+  if !equal(mode, "plan-destructions"):
+    let removed: Vec[memory.DestructionPlan] = mem.replace(@state.good.typing.planning.destructions, destructions)
+    void
+  else:
+    void
+
 fn damage(state: @session.State, mode: Bytes) -> Void effects[alloc, partial]:
+  if equal(mode, "plan-entries"):
+    let removed: Vec[retained.PlanEntry] = mem.replace(@state.good.typing.planning.entries, vec.new())
+    void
+  else:
+    if equal(mode, "plan-slots"):
+      let removed: Vec[I64] = mem.replace(@state.good.typing.planning.slots, vec.new())
+      void
+    else:
+      let changing: Bool = equal(mode, "plan-values") || equal(mode, "plan-tag") || equal(mode, "plan-tail-tag") || equal(mode, "plan-node") || equal(mode, "plan-byte") || equal(mode, "plan-owner") || equal(mode, "plan-source") || equal(mode, "plan-count") || equal(mode, "plan-start") || equal(mode, "plan-allocation-start") || equal(mode, "plan-destruction-count") || equal(mode, "plan-allocations") || equal(mode, "plan-destructions") || equal(mode, "plan-allocation-node") || equal(mode, "plan-destruction-node")
+      if changing:
+        damage_plan_pools(@state, mode)
+      else:
+        void
   if equal(mode, "parse-modules"):
     let previous: Vec[syntax.ParseCache] = mem.replace(@state.good.module_parsing.caches, vec.new())
     void
@@ -392,6 +495,53 @@ fn exhaust_attempts(state: @session.State, path: Bytes, remaining: I64) -> Void 
     else:
       void
 
+fn plan_totals(plans: Vec[memory.FunctionPlan], at: I64, values: I64, allocations: I64, destructions: I64) -> retained.PlanBudget effects[partial]:
+  if at >= vec.len(plans):
+    retained.PlanBudget(eligible: true, functions: at, values: values, allocations: allocations, destructions: destructions)
+  else:
+    let plan: memory.FunctionPlan = vec.get(plans, at)
+    recur(plans, at + 1, values + vec.len(plan.values), allocations + vec.len(plan.allocations), destructions + vec.len(plan.destructions))
+
+fn maximum(left: I64, right: I64) -> I64:
+  if left > right:
+    left
+  else:
+    right
+
+fn copy_prior(nodes: Vec[retained.Saved], at: I64, output: @Vec[retained.StoredLink]) -> Void effects[alloc, partial]:
+  if at >= vec.len(nodes):
+    void
+  else:
+    let node: retained.Saved = vec.get(nodes, at)
+    vec.push(@output, node.prior)
+    recur(nodes, at + 1, @output)
+
+fn check_plan_budget_fields(plan: memory.FunctionPlan) -> Bool effects[partial]:
+  let values: I64 = vec.len(plan.values)
+  let allocations: I64 = vec.len(plan.allocations)
+  let destructions: I64 = vec.len(plan.destructions)
+  let exact: retained.PlanBudget = retained.PlanBudget(eligible: true, functions: 1, values: values, allocations: allocations, destructions: destructions)
+  let functions: retained.PlanBudget = retained.PlanBudget(eligible: true, functions: 0, values: values, allocations: allocations, destructions: destructions)
+  let under_values: retained.PlanBudget = retained.PlanBudget(eligible: true, functions: 1, values: values - 1, allocations: allocations, destructions: destructions)
+  let under_allocations: retained.PlanBudget = retained.PlanBudget(eligible: true, functions: 1, values: values, allocations: allocations - 1, destructions: destructions)
+  let under_destructions: retained.PlanBudget = retained.PlanBudget(eligible: true, functions: 1, values: values, allocations: allocations, destructions: destructions - 1)
+  retained.plan_fits(plan, exact) && ((!retained.plan_fits(plan, functions)) && ((!retained.plan_fits(plan, under_values)) && ((!retained.plan_fits(plan, under_allocations)) && (!retained.plan_fits(plan, under_destructions)))))
+
+fn check_plan_budgets(snapshot: session.Snapshot) -> Bool effects[alloc, partial]:
+  let totals: retained.PlanBudget = plan_totals(snapshot.prepared.plan.functions, 0, 0, 0, 0)
+  let limit: I64 = maximum(maximum(totals.functions, totals.values), maximum(totals.allocations, totals.destructions))
+  let empty: retained.Cache = retained.empty_cache()
+  let prior: Vec[retained.StoredLink] = vec.new()
+  copy_prior(snapshot.typing.nodes, 0, @prior)
+  let mapping: retained.Update = retained.update(empty, snapshot.typing.index, prior)
+  let exact: retained.Planned = retained.plan_checked(snapshot.prepared.source, snapshot.prepared.tokens, empty, snapshot.typing.index, mapping, limit)
+  let under: retained.Planned = retained.plan_checked(snapshot.prepared.source, snapshot.prepared.tokens, empty, snapshot.typing.index, mapping, limit - 1)
+  let kept: Bool = (vec.len(exact.cache.entries) == totals.functions) && ((vec.len(exact.cache.values) == totals.values) && ((vec.len(exact.cache.allocations) == totals.allocations) && (vec.len(exact.cache.destructions) == totals.destructions)))
+  let declined: Bool = ((vec.len(under.cache.entries) == 0) && (vec.len(under.cache.slots) == 0)) && ((vec.len(under.cache.values) == 0) && ((vec.len(under.cache.allocations) == 0) && (vec.len(under.cache.destructions) == 0)))
+  let same: Bool = same_plans(exact.plan.functions, snapshot.prepared.plan.functions, 0) && same_plans(under.plan.functions, snapshot.prepared.plan.functions, 0)
+  let first: memory.FunctionPlan = vec.get(snapshot.prepared.plan.functions, 0)
+  (kept && declined) && (same && check_plan_budget_fields(first))
+
 fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effects[alloc, io, partial]:
   let initial_input: project.ProjectInput = project.capture_project_input(before)
   let limits: session.Limits = limits_for(before, mode, initial_input)
@@ -415,7 +565,11 @@ fn run_epoch(before: Bytes, after: Bytes, mode: Bytes, epoch: I64) -> I64 effect
         vec.len(state.good.module_parsing.caches) == vec.len(state.good.input.modules)
       else:
         true
-    let first_same: I64 = if history_bound:
+    let plan_bounds: Bool = if equal(mode, "plan-budget"):
+      check_plan_budgets(state.good)
+    else:
+      true
+    let first_same: I64 = if history_bound && plan_bounds:
       compare(reference, state.good)
     else:
       27

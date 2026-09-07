@@ -2098,3 +2098,136 @@ public session transport with actual host fingerprints/lifecycle, retained globa
 analysis and stable C fragments/backend artifacts, complete locality/differential
 validation and full release closure are still required. The minimum-I64 emitter
 blocker is resolved; the recursive-checker sanitizer stack limitation remains open.
+
+## M1 checkpoint: retained memory plans (2026-09-07)
+
+RFC-0137 is accepted and **implemented**. The production query now reuses the sole memory planner's function results after the
+existing exact body/interface dependency checks. Plans carry typed declaration
+owners and validated local token/byte positions. The 64-value boundary's legacy
+byte-end versus token-end representation is explicit. Candidate publication moves
+planning history with typing history, and missing plan metadata recomputes planning
+without discarding otherwise reusable typing. The ordinary path still runs the
+same planner. This is real retained planning, not estimated invalidation work.
+
+The first implementation uses nested per-function saved vectors. Its reproducible
+working seed is **4,219,674 C bytes**, SHA-256
+`72097f2d90cad0b383bb231bd4b2a98bec89e01311e1baef2c6db7f88bd6fccb`.
+This is 66,278 bytes (1.60%) above the validated literal-repair seed at 1fca486.
+That prototype was withheld from commit pending storage/cost work and review.
+
+[The nested-vector matrix](2026-09-07-m1-planning-nested-matrix.tsv) compares every
+memory-plan and prepared-state field and complete C with fresh preparation. All
+95 accepted corpus fixtures additionally force preparation after a trivia change
+and import all function plans. Tests cover transitive storage-layout and explicit
+ownership-mode changes, source/node relocation at 63/64/65 planned values, missing
+entries/slot maps/value rows, invalid owner/count/source length/node/byte/tag data,
+and history capacity at and below the required size. Independent function/value/
+allocation/destruction budget checks preserve the ordinary plan on a history miss.
+Native observation schema 3 counts actual plan construction and imports separately.
+Through 4,000 helpers, a body edit builds one memory plan and imports 4,000; an
+unchanged snapshot performs neither operation. Global scans and C emission remain.
+
+[All 2,048 fault ordinals](2026-09-07-m1-planning-nested-faults.tsv) agree between
+ordinary and ASan/UBSan execution: 476 status-71 failures and 1,572 successes.
+Bootstrap, governance, 10 unit and 71 integration tests, 338 conformance fixtures,
+2,000 malformed mutations, required benchmark gates, resources, parallel-runtime,
+incremental, ordinary-work, formatting and Clippy pass. The 197 existing rejected
+fixtures retain exact diagnostics. [All 20 native applications](2026-09-07-m1-planning-nested-native.tsv)
+retain complete analysis and byte-identical C. The first full harness run stopped
+at a stale schema-2 assertion before fault injection; the corrected schema-3 run
+above completes. No production failure was hidden or performance budget relaxed.
+
+Measured fixed sizes are 256 bytes per PlanEntry, 80 for PlanCache, 376 for Cache,
+568 for Analyzed and 1,336 for Snapshot. Saved typing rows remain 64 bytes.
+FunctionPlan is 152 bytes and each value row 56 bytes, excluding vector buffers.
+The nested representation adds several saved vector allocations per function.
+
+[Default check timings](2026-09-07-m1-planning-nested-latency.tsv) at 4,000 helpers
+give 20.639/20.471 ms for baseline/candidate. [Session workload timings](2026-09-07-m1-planning-nested-session-latency.tsv)
+give 46.170/49.266 ms for cold-plus-unchanged and 94.394/96.205 ms for
+cold-plus-body-update. In the separate two-clean comparison, the retained body
+workload takes 95.884 ms versus 64.458 ms. [Denser functions](2026-09-07-m1-planning-nested-dense-latency.tsv)
+with 64 planned values each improve the prior/candidate cold-plus-body workload
+from 359.729 to 328.184 ms at 512 helpers; two clean current preparations take
+309.432 ms versus 328.489 ms retained in that separate comparison. All measurements
+use O2, two warmup and 11 alternating pairs after other validation, and include
+process startup, capture, checking, analysis and C generation. These are independent
+observations, not a universal speedup score or a warm-query-only measurement.
+
+The approximately 7% cold-plus-unchanged penalty blocked committing this prototype.
+Its measurements are preserved as contrary cost evidence. The subsequent pooled
+implementation below addresses that cost without relaxing a gate.
+
+### Validated pooled planning
+
+The candidate saves normalized value, allocation and destruction rows in three
+snapshot-wide pools. A copyable function entry contains scalar facts, an exact
+owner and three checked slice ranges. Complete contiguous framing is validated
+once before reuse; each imported function additionally validates every local node,
+byte end and last-use discriminant. Range validation subtracts before adding, so
+extreme malformed counts and starts cannot overflow. Current working plans retain
+the ordinary per-function vectors and sole producer. Independent record budgets
+and transactional publication are unchanged.
+
+The reproducible candidate seed is **4,233,117 C bytes**, SHA-256
+`d4e6b04ffcaee43b6384c3055e3f516e0ee7b7a7910dd978ee0be85571dfff06`.
+Saved PlanEntry size falls from 256 to 112 bytes; PlanCache is 200, Cache 496,
+Analyzed 688 and Snapshot 1,456 bytes. These are fixed record sizes excluding
+buffers. Saved typing rows remain 64 bytes, ordinary ValuePlan 56 and FunctionPlan
+152. Pool storage eliminates the per-function saved vector allocations.
+
+[The pooled matrix](2026-09-07-m1-planning-matrix.tsv) compares complete plans,
+prepared state and C with fresh preparation for all 95 accepted corpus fixtures.
+It covers node/byte relocation at 63/64/65 values, transitive layouts and ownership
+modes, damaged pool metadata and optional capacity boundaries. Geometric scalar
+projects through 4,000 helpers and dense projects through 512 helpers with 64
+planned values observe one plan construction and all unaffected plan imports on
+a body edit. No-change snapshots perform zero observed planning operations.
+
+[Two bounded fault campaigns](2026-09-07-m1-planning-faults.tsv) each inject ordinals
+1..2,048 and compare exact status/stdout/stderr under ordinary O1 and ASan/UBSan O1.
+Unchanged source gives 475 status-71 failures and 1,573 successes. A two-module body
+edit gives 948 failures and 1,100 successes; every successful update observes one
+plan construction and one import. Completed-phase counts omit unfinished work.
+The complete corpus/geometry sanitizer run and the added changed-project fault
+campaign use the same compiled production probe. The host fault loop is shared by
+the full verification command; a subsequent quick run validates its integration.
+These are bounded tested domains, not proof about arbitrary programs or faults.
+
+Bootstrap, governance, 10 unit and 71 integration tests, 338 conformance fixtures,
+2,000 malformed mutations, required performance/reduction/parallelism/comparison/
+agent checks, resources, parallel-runtime, incremental, ordinary-work, formatting
+and Clippy pass. The 197 existing rejected fixtures retain exact diagnostics.
+[All 20 native applications](2026-09-07-m1-planning-native.tsv) retain complete
+analysis and byte-identical C. No performance budget is relaxed.
+
+[Final default checks](2026-09-07-m1-planning-latency.tsv) at 4,000 helpers give
+20.705/21.273 ms baseline/current medians. That noisy 2.7% difference prompted
+[a 31-pair repeat with an identical-binary control](2026-09-07-m1-planning-default-repeat.tsv):
+prior/current medians are 21.084/21.400 ms, and the mean paired difference is +0.70%.
+The baseline-against-itself paired interquartile range is -2.50% to +2.30%.
+The observed small difference is within this variation, not evidence of zero cost.
+Both measurement sets remain recorded.
+
+[Final session timings](2026-09-07-m1-planning-session-latency.tsv) at 4,000 helpers
+give 46.278/46.776 ms for prior/current cold-plus-unchanged and 96.168/95.981 ms for
+cold-plus-body. The [first pooled run](2026-09-07-m1-planning-pooled-initial-session-latency.tsv)
+gave 45.360/45.543 and 92.160/92.525 ms respectively. Individual cold/unchanged pairs
+straddle equality in both runs; the earlier nested-vector penalty is reduced to
+small differences within observed variation. In the final separate two-clean
+comparison, the retained body workload still takes 97.029 ms versus 65.580 ms.
+
+[Dense final timings](2026-09-07-m1-planning-dense-latency.tsv) at 512 helpers give
+359.836/327.927 ms for prior/current cold-plus-body, about 9% improvement. The
+[first pooled dense run](2026-09-07-m1-planning-pooled-initial-dense-latency.tsv)
+gave 354.683/321.806 ms. The final separate two-clean comparison gives 309.962 ms
+versus 328.217 ms retained. Except the explicit 31-pair default repeat, timings use
+two warmup and 11 alternating pairs at O2 with other validation finished. They
+include process startup, source capture, checking, global analysis and C generation;
+no general speedup or portable absolute latency budget is inferred.
+
+The checkpoint implements function memory-plan reuse. M1 remains **in progress**:
+actual flow-based availability/loans, public host-bound sessions and lifecycle,
+retained global analyses, stable C fragments/backend artifacts, and complete
+locality/differential/release closure remain required. The known recursive-checker
+sanitizer stack limitation is still open.

@@ -23,6 +23,12 @@
 /^static .*slim_fn_syntax_95import_95parse_95tokens\(.*\) \{$/ {
     phase = 0; epoch = 0; capture = 0; importing = 1; imports++; print; next
 }
+/^static .*slim_fn_memory_95build_95function_95plan\(.*\) \{$/ {
+    phase = 0; epoch = 0; capture = 0; importing = 0; plans++; print; print "slim_session_probe_count(5);"; next
+}
+/^static .*slim_fn_retained_95import_95plan\(.*\) \{$/ {
+    phase = 0; epoch = 0; capture = 0; importing = 0; plan_imports++; print; print "slim_session_probe_count(6);"; next
+}
 /^static .*\) \{$/ { phase = 0; epoch = 0; capture = 0; importing = 0 }
 importing && / = slim_fn_syntax_95push_95tagged_95token\(/ { copies++; print "slim_session_probe_count(4);" }
 capture && /^return slim_result;$/ { captured++; print "slim_session_probe_captured();" }
@@ -33,7 +39,7 @@ epoch && /^return slim_result;$/ { cleanups++; print "slim_session_probe_epoch_e
 }
 { print }
 END {
-    if (grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != 1 || cleanups != 1) exit 1
+    if (plans != 1 || plan_imports != 1 || grammars != 1 || imports != 1 || copies != 1 || captures != 1 || captured != 1 || begins != 1 || parses != 1 || checks != 1 || generates != 1 || ends != 1 || mains != 1 || owners != 1 || cleanups != 1) exit 1
     print "_Static_assert(sizeof(Slim_type_retained_95Saved) <= 64, \"retained saved-row storage budget\");"
     print "_Static_assert(sizeof(Slim_type_retained_95StoredLink) <= 8, \"retained temporary-link storage budget\");"
 }

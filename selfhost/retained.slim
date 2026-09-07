@@ -85,6 +85,44 @@ struct Cache:
   valid: Bool
   index: Index
   nodes: Vec[Saved]
+  planning: PlanCache
+
+struct PlanEntry:
+  owner: identity.DeclarationId
+  source_bytes: I64
+  return_storage: I64
+  local_region: Bool
+  recursive: Bool
+  liveness_precise: Bool
+  escaping_values: I64
+  value_start: I64
+  value_count: I64
+  allocation_start: I64
+  allocation_count: I64
+  destruction_start: I64
+  destruction_count: I64
+
+struct PlanValue:
+  local: memory.ValuePlan
+  last_bytes: Bool
+
+struct PlanCache:
+  entries: Vec[PlanEntry]
+  slots: Vec[I64]
+  values: Vec[PlanValue]
+  allocations: Vec[memory.AllocationPlan]
+  destructions: Vec[memory.DestructionPlan]
+
+struct Planned:
+  plan: memory.Plan
+  cache: PlanCache
+
+struct PlanBudget:
+  eligible: Bool
+  functions: I64
+  values: I64
+  allocations: I64
+  destructions: I64
 
 struct Work:
   executed: I64
@@ -96,6 +134,7 @@ struct Analyzed:
   view: typing.View
   cache: Cache
   work: Work
+  plan: memory.Plan
 
 struct Edge:
   consumer: I64
@@ -120,7 +159,16 @@ fn empty_index() -> Index effects[alloc]:
 fn empty_cache() -> Cache effects[alloc]:
   let index: Index = empty_index()
   let nodes: Vec[Saved] = vec.new()
-  Cache(valid: false, index: index, nodes: nodes)
+  let planning: PlanCache = empty_plan_cache()
+  Cache(valid: false, index: index, nodes: nodes, planning: planning)
+
+fn empty_plan_cache() -> PlanCache effects[alloc]:
+  let entries: Vec[PlanEntry] = vec.new()
+  let slots: Vec[I64] = vec.new()
+  let values: Vec[PlanValue] = vec.new()
+  let allocations: Vec[memory.AllocationPlan] = vec.new()
+  let destructions: Vec[memory.DestructionPlan] = vec.new()
+  PlanCache(entries: entries, slots: slots, values: values, allocations: allocations, destructions: destructions)
 
 fn copy(source: Bytes, start: I64, end: I64) -> Bytes effects[alloc, partial]:
   let output: Vec[U8] = vec.new()
@@ -667,13 +715,218 @@ fn save_nodes(index: Index, tokens: Vec[syntax.Token], facts: Vec[typing.Fact], 
     vec.push(@output, Saved(owner: declaration, tag: fact.tag, type: StoredType(position: fact.form), link: StoredLink(value: raw), prior: vec.get(prior, at)))
     recur(index, tokens, facts, prior, at + 1, @output)
 
+# Saved pool rows contain owner-local ordinals and byte ends, never current nodes.
+fn plan_node_valid(node: I64, count: I64) -> Bool:
+  (node >= 0) && (node < count)
+
+fn plan_slice_valid(start: I64, count: I64, total: I64) -> Bool:
+  if ((start >= 0) && (start <= total)) && ((total >= 0) && (total <= 1000000)):
+    (count >= 0) && (count <= total - start)
+  else:
+    false
+
+fn plan_frames_valid(cache: PlanCache, at: I64, values: I64, allocations: I64, destructions: I64) -> Bool effects[partial]:
+  if at >= vec.len(cache.entries):
+    (values == vec.len(cache.values)) && ((allocations == vec.len(cache.allocations)) && (destructions == vec.len(cache.destructions)))
+  else:
+    let entry: PlanEntry = vec.get(cache.entries, at)
+    let starts: Bool = (entry.value_start == values) && ((entry.allocation_start == allocations) && (entry.destruction_start == destructions))
+    let slices: Bool = plan_slice_valid(values, entry.value_count, vec.len(cache.values)) && (plan_slice_valid(allocations, entry.allocation_count, vec.len(cache.allocations)) && plan_slice_valid(destructions, entry.destruction_count, vec.len(cache.destructions)))
+    if starts && slices:
+      recur(cache, at + 1, values + entry.value_count, allocations + entry.allocation_count, destructions + entry.destruction_count)
+    else:
+      false
+
+fn plan_values_valid(cache: PlanCache, entry: PlanEntry, count: I64, at: I64) -> Bool effects[partial]:
+  if at >= entry.value_count:
+    true
+  else:
+    let saved: PlanValue = vec.get(cache.values, entry.value_start + at)
+    let value: memory.ValuePlan = saved.local
+    let nodes: Bool = plan_node_valid(value.name, count) && (plan_node_valid(value.type_index, count) && plan_node_valid(value.declared, count))
+    let last: Bool = if saved.last_bytes:
+      (value.last_use >= 0) && (value.last_use <= entry.source_bytes)
+    else:
+      plan_node_valid(value.last_use, count)
+    let facts: Bool = ((value.storage >= 0) && (value.storage <= 2)) && ((value.escape >= 0) && (value.escape <= 3))
+    let tag_valid: Bool = if saved.last_bytes:
+      at < 64
+    else:
+      at >= 64
+    if (tag_valid && nodes) && (last && facts):
+      recur(cache, entry, count, at + 1)
+    else:
+      false
+
+fn plan_allocations_valid(plans: Vec[memory.AllocationPlan], start: I64, length: I64, count: I64, at: I64) -> Bool effects[partial]:
+  if at >= length:
+    true
+  else:
+    let plan: memory.AllocationPlan = vec.get(plans, start + at)
+    if plan_node_valid(plan.site, count) && ((plan.region >= 0) && (plan.region <= 1)):
+      recur(plans, start, length, count, at + 1)
+    else:
+      false
+
+fn plan_destructions_valid(plans: Vec[memory.DestructionPlan], start: I64, length: I64, count: I64, at: I64) -> Bool effects[partial]:
+  if at >= length:
+    true
+  else:
+    let plan: memory.DestructionPlan = vec.get(plans, start + at)
+    if plan_node_valid(plan.end, count) && ((plan.region >= 0) && (plan.region <= 1)):
+      recur(plans, start, length, count, at + 1)
+    else:
+      false
+
+fn plan_entry_valid(cache: PlanCache, entry: PlanEntry, owner: identity.View, source_bytes: I64) -> Bool effects[partial]:
+  let origin: Bool = identity.same_declaration(entry.owner, owner.declaration) && ((entry.source_bytes == source_bytes) && (source_bytes >= 0))
+  let scalar: Bool = ((entry.return_storage >= 0) && (entry.return_storage <= 2)) && ((entry.escaping_values >= 0) && (entry.escaping_values <= entry.value_count))
+  let precise: Bool = if entry.liveness_precise:
+    entry.value_count <= 64
+  else:
+    entry.value_count > 64
+  if origin && (scalar && precise):
+    plan_values_valid(cache, entry, owner.count, 0) && (plan_allocations_valid(cache.allocations, entry.allocation_start, entry.allocation_count, owner.count, 0) && plan_destructions_valid(cache.destructions, entry.destruction_start, entry.destruction_count, owner.count, 0))
+  else:
+    false
+
+fn shifted_value(value: memory.ValuePlan, token_delta: I64, byte_delta: I64, last_bytes: Bool) -> memory.ValuePlan effects[partial]:
+  let last: I64 = if last_bytes:
+    value.last_use + byte_delta
+  else:
+    value.last_use + token_delta
+  memory.ValuePlan(name: value.name + token_delta, type_index: value.type_index + token_delta, storage: value.storage, borrowed: value.borrowed, declared: value.declared + token_delta, last_use: last, escape: value.escape)
+
+fn save_plan_values(values: Vec[memory.ValuePlan], token_delta: I64, byte_delta: I64, at: I64, output: @Vec[PlanValue]) -> Void effects[alloc, partial]:
+  if at >= vec.len(values):
+    void
+  else:
+    let value: memory.ValuePlan = shifted_value(vec.get(values, at), token_delta, byte_delta, at < 64)
+    vec.push(@output, PlanValue(local: value, last_bytes: at < 64))
+    recur(values, token_delta, byte_delta, at + 1, @output)
+
+fn import_plan_values(cache: PlanCache, entry: PlanEntry, token_delta: I64, byte_delta: I64, at: I64, output: @Vec[memory.ValuePlan]) -> Void effects[alloc, partial]:
+  if at >= entry.value_count:
+    void
+  else:
+    let value: PlanValue = vec.get(cache.values, entry.value_start + at)
+    vec.push(@output, shifted_value(value.local, token_delta, byte_delta, value.last_bytes))
+    recur(cache, entry, token_delta, byte_delta, at + 1, @output)
+
+fn translate_plan_allocations(plans: Vec[memory.AllocationPlan], start: I64, count: I64, delta: I64, at: I64, output: @Vec[memory.AllocationPlan]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    let plan: memory.AllocationPlan = vec.get(plans, start + at)
+    vec.push(@output, memory.AllocationPlan(site: plan.site + delta, region: plan.region))
+    recur(plans, start, count, delta, at + 1, @output)
+
+fn translate_plan_destructions(plans: Vec[memory.DestructionPlan], start: I64, count: I64, delta: I64, at: I64, output: @Vec[memory.DestructionPlan]) -> Void effects[alloc, partial]:
+  if at >= count:
+    void
+  else:
+    let plan: memory.DestructionPlan = vec.get(plans, start + at)
+    vec.push(@output, memory.DestructionPlan(region: plan.region, end: plan.end + delta, reverse: plan.reverse))
+    recur(plans, start, count, delta, at + 1, @output)
+
+fn save_plan(plan: memory.FunctionPlan, declaration: Declaration, origin: I64, values: @Vec[PlanValue], allocations: @Vec[memory.AllocationPlan], destructions: @Vec[memory.DestructionPlan]) -> PlanEntry effects[alloc, partial]:
+  let entry: PlanEntry = PlanEntry(owner: declaration.owner.declaration, source_bytes: bytes.len(declaration.body), return_storage: plan.return_storage, local_region: plan.local_region, recursive: plan.recursive, liveness_precise: plan.liveness_precise, escaping_values: plan.escaping_values, value_start: vec.len(values), value_count: vec.len(plan.values), allocation_start: vec.len(allocations), allocation_count: vec.len(plan.allocations), destruction_start: vec.len(destructions), destruction_count: vec.len(plan.destructions))
+  let delta: I64 = 0 - declaration.owner.first
+  save_plan_values(plan.values, delta, 0 - origin, 0, @values)
+  translate_plan_allocations(plan.allocations, 0, entry.allocation_count, delta, 0, @allocations)
+  translate_plan_destructions(plan.destructions, 0, entry.destruction_count, delta, 0, @destructions)
+  entry
+
+fn import_plan(cache: PlanCache, entry: PlanEntry, declaration: Declaration, origin: I64) -> memory.FunctionPlan effects[alloc, partial]:
+  let values: Vec[memory.ValuePlan] = vec.new()
+  let allocations: Vec[memory.AllocationPlan] = vec.new()
+  let destructions: Vec[memory.DestructionPlan] = vec.new()
+  let delta: I64 = declaration.owner.first
+  import_plan_values(cache, entry, delta, origin, 0, @values)
+  translate_plan_allocations(cache.allocations, entry.allocation_start, entry.allocation_count, delta, 0, @allocations)
+  translate_plan_destructions(cache.destructions, entry.destruction_start, entry.destruction_count, delta, 0, @destructions)
+  memory.FunctionPlan(function: delta, return_storage: entry.return_storage, local_region: entry.local_region, recursive: entry.recursive, liveness_precise: entry.liveness_precise, values: values, allocations: allocations, destructions: destructions, escaping_values: entry.escaping_values)
+
+fn prior_plan(old: Cache, current: Index, mapping: Update, at: I64, framed: Bool) -> I64 effects[partial]:
+  if (!vec.get(mapping.bodies, at)) && framed:
+    let previous: I64 = vec.get(mapping.before, at)
+    if (previous >= 0) && (previous < vec.len(old.index.declarations)):
+      let slot: I64 = vec.get(old.planning.slots, previous)
+      if (slot >= 0) && (slot < vec.len(old.planning.entries)):
+        let entry: PlanEntry = vec.get(old.planning.entries, slot)
+        let before: Declaration = vec.get(old.index.declarations, previous)
+        let after: Declaration = vec.get(current.declarations, at)
+        if plan_entry_valid(old.planning, entry, before.owner, bytes.len(after.body)):
+          slot
+        else:
+          -1
+      else:
+        -1
+    else:
+      -1
+  else:
+    -1
+
+fn plan_fits(plan: memory.FunctionPlan, budget: PlanBudget) -> Bool effects[partial]:
+  budget.eligible && ((budget.functions > 0) && ((vec.len(plan.values) <= budget.values) && ((vec.len(plan.allocations) <= budget.allocations) && (vec.len(plan.destructions) <= budget.destructions))))
+
+fn plan_functions(source: Bytes, tokens: Vec[syntax.Token], old: Cache, current: Index, mapping: Update, at: I64, framed: Bool, budget: PlanBudget, functions: @Vec[memory.FunctionPlan], entries: @Vec[PlanEntry], slots: @Vec[I64], values: @Vec[PlanValue], allocations: @Vec[memory.AllocationPlan], destructions: @Vec[memory.DestructionPlan]) -> Bool effects[alloc, partial]:
+  if at >= vec.len(current.declarations):
+    budget.eligible
+  else:
+    let declaration: Declaration = vec.get(current.declarations, at)
+    if declaration.kind == 0:
+      let origin: I64 = syntax.ast_node_start(tokens, declaration.owner.first)
+      let previous: I64 = prior_plan(old, current, mapping, at, framed)
+      let plan: memory.FunctionPlan = if previous >= 0:
+        let entry: PlanEntry = vec.get(old.planning.entries, previous)
+        import_plan(old.planning, entry, declaration, origin)
+      else:
+        memory.build_function_plan(source, tokens, declaration.owner.first)
+      let next: PlanBudget = if plan_fits(plan, budget):
+        let entry: PlanEntry = save_plan(plan, declaration, origin, @values, @allocations, @destructions)
+        vec.push(@slots, vec.len(entries))
+        vec.push(@entries, entry)
+        PlanBudget(eligible: true, functions: budget.functions - 1, values: budget.values - vec.len(plan.values), allocations: budget.allocations - vec.len(plan.allocations), destructions: budget.destructions - vec.len(plan.destructions))
+      else:
+        vec.push(@slots, -1)
+        PlanBudget(eligible: false, functions: 0, values: 0, allocations: 0, destructions: 0)
+      vec.push(@functions, plan)
+      recur(source, tokens, old, current, mapping, at + 1, framed, next, @functions, @entries, @slots, @values, @allocations, @destructions)
+    else:
+      vec.push(@slots, -1)
+      recur(source, tokens, old, current, mapping, at + 1, framed, budget, @functions, @entries, @slots, @values, @allocations, @destructions)
+
+fn plan_checked(source: Bytes, tokens: Vec[syntax.Token], old: Cache, current: Index, mapping: Update, limit: I64) -> Planned effects[alloc, partial]:
+  let functions: Vec[memory.FunctionPlan] = vec.new()
+  let entries: Vec[PlanEntry] = vec.new()
+  let slots: Vec[I64] = vec.new()
+  let values: Vec[PlanValue] = vec.new()
+  let allocations: Vec[memory.AllocationPlan] = vec.new()
+  let destructions: Vec[memory.DestructionPlan] = vec.new()
+  let framed: Bool = if (vec.len(old.planning.entries) <= 1000000) && (vec.len(old.planning.slots) == vec.len(old.index.declarations)):
+    plan_frames_valid(old.planning, 0, 0, 0, 0)
+  else:
+    false
+  let budget: PlanBudget = PlanBudget(eligible: (limit >= 1) && (limit <= 1000000), functions: limit, values: limit, allocations: limit, destructions: limit)
+  let kept: Bool = plan_functions(source, tokens, old, current, mapping, 0, framed, budget, @functions, @entries, @slots, @values, @allocations, @destructions)
+  let cache: PlanCache = if kept:
+    PlanCache(entries: entries, slots: slots, values: values, allocations: allocations, destructions: destructions)
+  else:
+    empty_plan_cache()
+  Planned(plan: memory.Plan(functions: functions), cache: cache)
+
 fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Declaration], old: Cache, revision: identity.Revision, token_limit: I64) -> Analyzed effects[alloc, partial]:
   let valid_limit: Bool = (token_limit >= 1) && (token_limit <= 1000000)
   if (!valid_limit) || (vec.len(tokens) > token_limit):
     let view: typing.View = typing.analyze(source, @tokens, declarations)
     let cache: Cache = empty_cache()
     let work: Work = Work(executed: -1, reused: 0, imported: 0, capacity: true)
-    Analyzed(view: view, cache: cache, work: work)
+    let plan: memory.Plan = if vec.len(view.issues) == 0:
+      memory.analyze(source, tokens, declarations)
+    else:
+      memory.empty_plan()
+    Analyzed(view: view, cache: cache, work: work, plan: plan)
   else:
     let view: typing.View = typing.prepare(source, @tokens, declarations)
     let index: Index = build_index(source, tokens, declarations, revision)
@@ -686,9 +939,15 @@ fn analyze(source: Bytes, tokens: @Vec[syntax.Token], declarations: Vec[ir.Decla
     let work: Work = check_functions(source, @tokens, old, index, mapping, 0, @facts, @issues, 0, 0, 0)
     let nodes: Vec[Saved] = vec.new()
     save_nodes(index, tokens, facts, prior, 0, @nodes)
-    let cache: Cache = Cache(valid: false, index: index, nodes: nodes)
+    let planned: Planned = if vec.len(issues) == 0:
+      plan_checked(source, tokens, old, index, mapping, token_limit)
+    else:
+      Planned(plan: memory.empty_plan(), cache: empty_plan_cache())
+    let planning: PlanCache = mem.replace(@planned.cache, empty_plan_cache())
+    let plan: memory.Plan = mem.replace(@planned.plan, memory.empty_plan())
+    let cache: Cache = Cache(valid: false, index: index, nodes: nodes, planning: planning)
     let checked_view: typing.View = typing.View(facts: facts, issues: issues, layouts: layouts)
-    Analyzed(view: checked_view, cache: cache, work: work)
+    Analyzed(view: checked_view, cache: cache, work: work, plan: plan)
 
 fn place_node_position(cache: Cache, node: identity.NodeId) -> I64 effects[partial]:
   let total: I64 = vec.len(cache.nodes)

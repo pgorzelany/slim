@@ -4,8 +4,10 @@ The public compiler commands do **not yet provide retained incremental parsing,
 checking or C generation**. The production compiler now has an internal retained
 function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
-complete interface dependency invalidation. Parsing, linking, declaration/layout checks, termination, memory,
-analysis and generation remain current-revision work. The public `session` command
+complete interface dependency invalidation. Internal snapshots also retain declaration
+parsing and function memory plans as described below. Manifest/import validation,
+declaration/layout checks, termination, global analysis and changed-source C
+generation remain current-revision work. The public `session` command
 still reports estimates. The former Rust `IncrementalSession` API is not part of
 the production compiler.
 
@@ -29,14 +31,38 @@ typing to shared project preparation. The attempt returns the complete prepared
 project, eligible typing history and actual inference work. Both preparation modes
 run current manifest/module/import/export validation and retain current diagnostic
 origins. An unchanged flattened body cannot bypass a removed import or export.
-Module parsing, flattening, global checks and C generation still run. The public
-session protocol is unchanged and remains estimate-only.
+This entry point originally repeated module parsing; RFC-0135 now retains eligible
+declaration parses within it. Flattening, global checks and changed-source C
+generation still run. The public session protocol remains estimate-only.
 
 Retained typing and source snapshot maps now use complete declaration source keys,
 excluding trailing separator whitespace. A synthetic closing node is not a source
 extent: its position can end at a callee before nested arguments. Literal, string,
 operator and member changes are covered by permanent regressions, including
 rejected updates that previously could reuse incomplete source keys.
+
+[RFC-0133](../design/rfcs/0133-transactional-project-snapshots.md) adds internal
+transactional successful snapshots and bounded epoch accounting. Unchanged complete
+inputs reuse a successful snapshot, including its checked state and C. Failed
+updates preserve the last-good snapshot. Public host-bound transport and actual
+compiler/runtime/target/options identity binding are still required M1 work.
+
+[RFC-0135](../design/rfcs/0135-retained-declaration-parsing.md) retains declaration
+parsing for original modules and flattened source. Exact source keys include the
+lexical and lookahead dependencies required by the sole parser; imported canonical
+nodes have checked owners and current positions. Native work observation separates
+lexing, declaration grammar executions and parsed-node imports.
+
+[RFC-0137](../design/rfcs/0137-retained-function-memory-plans.md) retains the sole
+planner's results after complete body/interface dependency validation. Saved rows
+occupy snapshot-wide pools with checked contiguous slices and typed declaration
+owners. Import validates and relocates both local token ordinals and byte ends,
+including the legacy 64-value liveness boundary. Missing or damaged metadata runs
+the ordinary planner. Independent optional history bounds preserve complete current
+plans on a capacity miss. Native observation counts actual plan construction and
+import; it does not infer reuse from source equality. Global range/parallel analysis
+and changed-source C emission still run. Costs and differential evidence are in the
+[progress report](../benchmarks/results/2026-09-05-slim-next-progress.md).
 
 ## What the current session command measures
 

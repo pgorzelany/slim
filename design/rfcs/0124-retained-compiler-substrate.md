@@ -392,6 +392,16 @@ lowering, and rejects out-of-domain integer literals through E0361 under its
 explicit compatibility contract. This supplies correct literal artifacts for
 subsequent retained emission; it does not complete retained analysis or generation.
 
+RFC-0137 implements retained function memory plans with typed owners, local
+node/byte relocation, pooled saved rows, checked framing and independent record
+budgets. Native session schema 3 separates actual plan construction from imports.
+Full current plans and C match clean preparation across the corpus, relocation,
+metadata/capacity cases and scalar/dense geometry; two bounded fault campaigns
+cover unchanged and changed snapshots. The nested prototype's cold penalty and
+pooled candidate's cost evidence are preserved. This completes function memory
+planning reuse, not range/parallel analysis, flow ownership, public host-bound
+sessions, stable C fragments/backend artifacts or the full M1 exit criteria.
+
 ## Removal and supersession
 
 Superseding implementations must preserve canonical-source authority, all stale
