@@ -17,6 +17,7 @@ not certify the current working tree.
 | RFC-0145 validated native query foundation | [Byte preservation, work, costs and remaining integration](2026-09-08-m1-native-query.md) |
 | RFC-0146 default native integration (release closure pending) | [Public build costs, startup optimization and verification](2026-09-08-m1-native-session.md) |
 | Concurrent host publication repair | [Failure found by the clean gate and verified repair scope](2026-09-08-m1-host-publication.md) |
+| M1 release candidate | [Repository/package results, website repair and current native costs](2026-09-08-m1-release-candidate.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 
 ## Archived evidence
