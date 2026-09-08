@@ -28,10 +28,17 @@ pre-commit commands then passed sequentially: bootstrap, governance, Cargo tests
 performance, reduction, parallelism, compare and agent. Every captured source
 hash remained unchanged throughout. The [pre-commit receipt](archive/2026-09-08-m2-prerequisite-gates.json.gz)
 preserves exact commands, logs, source identities and exits; these checks do not
-constitute the complete `scripts/verify-0.9.sh` milestone invocation. Clean
-package/install verification remains pending until this preparation is committed.
+constitute the complete `scripts/verify-0.9.sh` milestone invocation.
+
+Clean preparation checkpoint `450156c944024289a539c7a63dbcc7078e758531` then
+passed `scripts/verify-release.sh`: byte-identical packages, source hashes,
+fresh bootstrap, installed frontend/native sessions and examples, and the repaired
+ABI rejection test. Both archives have SHA-256
+`55375f64adbe439e37c457786ac6c669a0206e8e01d7ab13bfc0e5fd2222d72b`.
+The [release receipt](archive/2026-09-08-m2-prerequisite-release.json.gz) identifies
+that clean invocation separately from these later evidence-only additions.
 No compiler/runtime behavior, performance budget or verification obligation
-changed. This evidence does not replace M1's identified closure run.
+changed. This evidence does not replace M1's identified closure run or complete M2.
 
 Next: resolve the explicit policy decision, review the coupled ownership/slice
 drafts, specify the concrete provider and allocation API, and freeze application
