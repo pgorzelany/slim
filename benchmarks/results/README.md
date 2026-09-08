@@ -15,6 +15,7 @@ not certify the current working tree.
 | RFC-0143 public acceptance | [Edit, capacity, fault, resource and latency evidence](2026-09-08-m1-host-closure.md) |
 | RFC-0144 retained bounded parallel analysis | [Complete-result reuse, costs and verification](2026-09-08-m1-parallel-query.md) |
 | RFC-0145 validated native query foundation | [Byte preservation, work, costs and remaining integration](2026-09-08-m1-native-query.md) |
+| RFC-0146 default native integration (release closure pending) | [Public build costs, startup optimization and verification](2026-09-08-m1-native-session.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 
 ## Archived evidence

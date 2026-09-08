@@ -15,6 +15,7 @@
   (module identity "identity.slim" (imports) (exports DeclarationId FileId Index NextRevision NodeId Revision Span View reset resolve_node resolve_span same_declaration same_file same_revision successor valid_view))
   (module ir "ir.slim" (imports) (exports Declaration DeclarationKind))
   (module memory "memory.slim" (imports effects ir syntax) (exports AllocationPlan DestructionPlan FunctionPlan Plan ValuePlan allocation_site_region analyze build_function_plan empty_plan function_plan_allocates type_storage_kind))
+  (module nativebuild "nativebuild.slim" (imports identity session) (exports Selection select))
   (module nativecache "nativecache.slim" (imports cache retained) (exports Entry Header Key Probe State Stored start lookup publish))
   (module ownership "ownership.slim" (imports) (exports Frame Scope advance begin current end set_moved))
   (module parallel "parallel.slim" (imports effects ranges syntax text typing) (exports Blockers FunctionFact Schedule Site View analyze edge_complete emit_module_facts))

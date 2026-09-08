@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+#define _DARWIN_C_SOURCE 1
 /* Compiler transport only. Source acceptance and retained state stay in SLIM. */
 #include "session-identity.h"
 #define main slim_seed_main
@@ -144,6 +146,8 @@ static int host_response(Slim_type_session_95Report report, SlimBytes code) {
     return 0;
 }
 
+#include "native.c"
+
 int main(int argc, char **argv) {
     (void)argv;
     if (argc != 1) {
@@ -160,6 +164,13 @@ int main(int argc, char **argv) {
         unsigned long long value = strtoull(failure, &end, 10);
         if (*failure >= '1' && *failure <= '9' && !errno && end != failure && !*end && value > 0)
             host_fail_at = (uint64_t)value;
+    }
+    const char *native_failure = getenv("SLIM_NATIVE_ALLOC_FAIL_AT");
+    if (native_failure && *native_failure >= '1' && *native_failure <= '9') {
+        char *end = NULL;
+        errno = 0;
+        unsigned long long value = strtoull(native_failure, &end, 10);
+        if (!errno && end != native_failure && !*end && value > 0) native_fail_at = (uint64_t)value;
     }
     const char greeting[] = "slim-session\t1\ncompiler\t" SLIM_SESSION_COMPILER_ID
         "\nruntime\t" SLIM_SESSION_RUNTIME_ID "\ntarget\t" SLIM_SESSION_TARGET
@@ -195,10 +206,12 @@ int main(int argc, char **argv) {
         if (tag == 'R' || tag == 'Q') {
             if (size != 0) { result = host_error("H0001", 65); break; }
             if (tag == 'Q') {
+                if (!native_cleanup()) { result = host_error("H0007", 65); break; }
                 if (!host_frame('Q', NULL, 0)) result = 65;
                 break;
             }
             if (epoch == INT64_MAX) { result = host_error("H0003", 65); break; }
+            native_reset();
             slim_rt_shutdown();
             host_clear_capture();
             slim_alloc_status_init(&allocation);
@@ -208,6 +221,13 @@ int main(int argc, char **argv) {
             unsigned char value[8];
             host_u64(value, (uint64_t)epoch);
             if (!host_frame('A', value, sizeof(value))) { result = 65; break; }
+            continue;
+        }
+        if (tag == 'B') {
+            unsigned char payload[17];
+            if (size != sizeof(payload) || !host_read(payload, sizeof(payload))) { result = host_error("H0001", 65); break; }
+            result = native_request(state, payload, &root);
+            if (result != 0) break;
             continue;
         }
         if (tag != 'U') { result = host_error("H0001", 65); break; }
@@ -233,6 +253,7 @@ int main(int argc, char **argv) {
         result = host_response(report, code);
         if (result != 0) break;
     }
+    if (!native_cleanup() && result == 0) result = host_error("H0007", 65);
     slim_rt_shutdown();
     host_clear_capture();
     return result;

@@ -6,7 +6,8 @@ checking and C generation through the framed host protocol in
 [public acceptance campaign](../benchmarks/results/2026-09-08-m1-host-closure.md)
 covers real build identities, edits, default limits, allocation failures, physical
 cleanup and durable latency gates. RFC-0144 also retains bounded parallel analysis.
-Native backend caching and full M1 release closure remain unfinished. The former
+RFC-0146 now connects native object/runtime/link retention to the default host;
+its integrated cost and full M1 release closure remain under verification. The former
 estimate driver
 now lives in a measurement fixture; its existing gates remain passing. Ordinary `check`, `emit-c` and `build` remain
 one-shot operations. The retained engine uses the function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
@@ -124,8 +125,8 @@ observation schema 6 retains all earlier counters and adds prototype/body/wrappe
 producer entries, fragment imports, copied bytes and counted-record lookups.
 RFC-0142 advances this to schema 7 by appending actual input-transfer
 entries; the old scan counter continues to count actual ordinary scan calls.
-Public session closure, retained global analyses and native backend artifacts
-remain M1 work.
+RFC-0143/0144/0146 expose these operations and retained parallel/native results
+through the public session. Full M1 release closure remains pending.
 
 [RFC-0142](../design/rfcs/0142-retained-parameter-input-queries.md) implements
 parameter-input retention. It validates complete ordered
@@ -138,7 +139,7 @@ is initialized only when fallback needs it. Verified domains, allocation-fault
 campaigns and contrary measurements are recorded in the
 [checkpoint report](../benchmarks/results/2026-09-07-m1-input-queries.md).
 
-## Public framed session (implementation in progress)
+## Public framed session
 
 Start `./slimc session` with no arguments. Bootstrap builds its host adapter from
 verified seed bytes and the ordinary runtime. The initial `H` frame identifies
@@ -146,12 +147,14 @@ the loaded compiler/runtime/target/options; requests cannot supply identities or
 cached facts. Send `U` with a project-manifest path, `R` to physically release the
 owning epoch and restart cold, or `Q` to close. EOF between frames also closes.
 Every frame has a tag, a four-byte big-endian payload length and that exact payload.
-The complete binary layout and bounded errors are specified in RFC-0143.
+The complete frontend binary layout and bounded errors are specified in RFC-0143.
+RFC-0146 adds `B` for a native build of an exact checked epoch/revision and `N` for
+its result. Native tool capture survives `R`; native query records do not.
 
 Successful `S` responses carry actual work aggregates and the current deterministic
 C artifact. Failed source updates carry diagnostics and the last-good revision,
-with no C payload. Accept only complete responses. There is no native compilation
-or file publication in this operation. Source capture and response transmission
+with no C payload. Accept only complete responses. `U` performs source checking and
+C generation; `B` requests native compilation separately. Source capture and response transmission
 remain real work even when all compiler queries are reused.
 
 `python3 -B scripts/verify-session-host.py` drives the public launcher and compares
@@ -282,8 +285,20 @@ fast compilation cycle. See [the SLIM Next implementation report](../benchmarks/
 
 RFC-0145 adds a private production SLIM query for native object, runtime and link
 artifacts. Exact keys and cloned storage pass ordinary, sanitizer, corruption,
-capacity and real native-byte round-trip tests. This library is not connected to
-public builds yet. Context capture, source-revision authorization, actual native
-execution and atomic publication remain required M1 work. The
+capacity and real native-byte round-trip tests. RFC-0146 now connects this library
+to the public session through a checked-source `B` request and a complete framed
+`N` artifact response. The reference provider captures Apple clang 21 on Darwin/arm64,
+its dependencies, SDK inputs and the paired runtime into immutable connection-owned
+storage. Unsupported contexts return an explicit unavailable result. Clients publish
+complete executable bytes to a fresh inode and rename it atomically. Reset clears
+retained query history while preserving the captured tools; a new connection refreshes
+them. Ordinary `build` remains a one-shot operation.
+
+The complete default native campaign passes, including clean/edit/revert builds,
+independently observed backend starts, all 20 native applications, input isolation,
+allocation and I/O failures, corruption, actual capacity, concurrency and physical
+cleanup. [Initial public costs](../benchmarks/results/2026-09-08-m1-native-session.md)
+show faster edited builds and an expensive setup cost; startup improvements and
+the full release gate remain under verification. The
 [query report](../benchmarks/results/2026-09-08-m1-native-query.md) records measured
 copy/validation costs and the remaining checks.

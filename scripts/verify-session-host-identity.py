@@ -13,7 +13,8 @@ api = runpy.run_path(str(Path(__file__).with_name('verify-session-host.py')))
 Client, compare, clean = (api[name] for name in ['Client', 'compare', 'clean'])
 root = Path.cwd()
 files = ['bootstrap/slimc-seed.c', 'bootstrap/slimc-seed.sha256',
-         'compiler/session.c', 'runtime/slim_rt.c', 'runtime/slim_rt.h',
+         'compiler/session.c', 'compiler/native.c', 'compiler/native-context.sh', 'compiler/native-copy.c',
+         'scripts/embed-native-inputs.sh', 'runtime/slim_rt.c', 'runtime/slim_rt.h',
          'scripts/build-session-host.sh']
 base = Client(['./slimc', 'session'])
 identity = base.identity
@@ -61,7 +62,9 @@ with tempfile.TemporaryDirectory(prefix='slim-host-identity-') as temporary:
         assert hashlib.sha256(manifest).hexdigest() == client.identity['compiler']
         fields = dict(line.split('\t') for line in manifest.decode().splitlines())
         for field, name in [('seed', 'bootstrap/slimc-seed.c'), ('adapter', 'compiler/session.c'),
-                            ('recipe', 'scripts/build-session-host.sh')]:
+                            ('recipe', 'scripts/build-session-host.sh'), ('native-adapter','compiler/native.c'),
+                            ('native-copy-source','compiler/native-copy.c'), ('native-recipe','compiler/native-context.sh'),
+                            ('native-embedding','scripts/embed-native-inputs.sh')]:
             assert fields[field] == hashlib.sha256((clone / name).read_bytes()).hexdigest()
         assert fields['runtime'] == client.identity['runtime']
         assert fields['options'] == client.identity['options']

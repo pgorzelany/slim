@@ -17,7 +17,7 @@ import time
 class Client:
     def __init__(self, command, environment=None):
         env = os.environ.copy()
-        for name in ['SLIM_ALLOC_FAIL_AT', 'SLIM_HOST_ALLOC_FAIL_AT']:
+        for name in ['SLIM_ALLOC_FAIL_AT', 'SLIM_HOST_ALLOC_FAIL_AT', 'SLIM_NATIVE_ALLOC_FAIL_AT']:
             env.pop(name, None)
         env.update(environment or {})
         self.process = subprocess.Popen(command, stdin=subprocess.PIPE,

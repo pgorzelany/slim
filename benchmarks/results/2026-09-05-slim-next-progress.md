@@ -14,7 +14,7 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | The current byte-literal checkpoint includes validated internal retained parsing, typing, memory plans, range queries, C fragments, shared checking continuations and the literal-Bytes address repair. RFC-0142 parameter-input retention now passes its complete query, cost, analysis and fault checks. Hexadecimal/trigraph byte literals pass the recorded composite verification and same-host controls. Public host-bound sessions now pass their edit/identity/limit/fault/resource campaign. RFC-0144 now retains bounded parallel analysis with complete-result, corruption, fault, public-session and cost verification. Native backend caching and full closure remain. |
+| M1: compiler substrate | in progress | Retained parsing, typing, memory/range/input/parallel analysis and C fragments pass their recorded query and public-session campaigns. RFC-0146 native object/runtime/link retention now passes the default host's complete native campaign. Edited native builds are faster in paired measurements, with substantial connection setup cost. A measured startup optimization and full integrated/release closure are under verification. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -24,11 +24,11 @@ portable C seed.
 
 ## Current M1 closure ledger
 
-This ledger includes the validated input-query fixed point
-`64107135f2677bcada015bfe5cd292bb1c3a8f41216fe2c92ebf7793c9df5f61`
-following checkpoint `6705582`; the [evidence index](README.md) preserves dated
-costs and checkpoint-specific results. An implemented internal query
-is not evidence that the public session already provides that query.
+The current default seed is
+`b418ef1cd9983e82bac293ffb50d76e144a765c319fe201d23b025340e93d2d0`.
+The [evidence index](README.md) and dated reports preserve costs and exact
+checkpoint identities. The initial native aggregate passed before the subsequent
+capture-validation optimization; final integrated verification is in progress.
 
 | Obligation | Current result | Remaining closure work |
 | --- | --- | --- |
@@ -38,7 +38,7 @@ is not evidence that the public session already provides that query.
 | Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 retains complete parameter-input queries with validated caller contributions. RFC-0144 retains the complete bounded parallel result when its selected checked/range/work inputs agree. | Preserve complete blockers, ordering, budget dependencies and independently observed producer/import work through native-cache integration. |
 | Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. Literal Bytes have valid vector/arena insertion addresses and preserve hexadecimal/trigraph boundaries; the existing 96-fixture differential remains raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs and last-good snapshots; RFC-0140 tests damaged fragments. RFC-0143 now exposes framed host-bound updates, physical reset, source admission and atomic executable publication. | The public edit/limit/fault/resource matrix passes; clean installation passed at `2ffc37b`. Preserve these and existing internal corruption oracles through full M1 release closure. |
-| Native artifact cache | RFC-0145 now has a production SLIM native query library with passing private byte/ownership/corruption/capacity tests and measured costs; required checkpoint checks pass. Public builds do not yet use it. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
+| Native artifact cache | RFC-0145's production SLIM query is connected through RFC-0146 public B/N frames. Default ordinary/sanitized campaigns pass complete input capture, actual backend reuse, all 20 applications, corruption, failures, byte/record capacity, concurrency and physical cleanup. | Revalidate the capture-validation optimization, final public costs and installed native behavior in the complete release gate. |
 | Differential, locality and release evidence | The current seed passes all required checkpoint commands, 1,024 retained and 6,144 session fault ordinals, complete parallel-view/report comparisons and quiet timing controls. The prior byte-literal extended verification remains identified separately. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
 
 RFC-0143 exposes the public framed session. The 96-source/30-project corpus and
@@ -107,9 +107,99 @@ The [RFC-0145 native query checkpoint](2026-09-08-m1-native-query.md) now
 passes private artifact, corruption, ownership and geometric work tests. All
 required checkpoint checks pass; no public native reuse is claimed.
 
-Next: finish and integrate native object/link artifact caching, then integrated locality,
-performance and release closure. Profile the observed
-body-edit copying/global costs and preserve the full acceptance matrix. M2-M7 remain outside this goal.
+RFC-0146's uncommitted host integration now passes native frame and full
+20-application corpus campaigns through private candidate host
+`e4c06b7abb687d09944dcd13ebb3b50579d8207d8100e3486e84b8f6f94d07be`.
+Ordinary and ASan/UBSan hosts each pass 80 application/tier/epoch results against
+ordinary serial/POSIX builds, with exact repeat/reset executable bytes. The
+instrumented host independently observes every backend start; unchanged results
+start none. The two parallel applications also match both argument branches.
+Basic edit/revert/rejection/last-good transitions continue to pass. A sanitized
+host fixture checks exact captured-file membership, required link inputs, report
+framing and fixed manifest/report limits without allocation. Two initial corpus
+harness failures and the passing campaign are preserved in the
+[compressed evidence](archive/2026-09-08-m1-native-host-corpus.json.gz), with source
+hashes and the candidate's build identity. These are correctness/work observations,
+not matched latency measurements or a demonstrated agent-productivity gain.
+The default bootstrap/installed host has not been refreshed for this integration.
+Full context/fault/cleanup/resource verification and paired native costs remain
+pending; this does not close native integration or M1. Captured native inputs are immutable
+for the connection; reset physically clears query storage, and a new connection
+refreshes tools. This separates expensive setup from repeated source epochs.
+
+The subsequent lifecycle candidate
+`c7909ce99db526ff010b432f4fce991d2592223c577ca566b9f4cf896ed212b6`
+passes the same corpus, plus tool-group termination before leader reaping,
+actual file/diagnostic limits, process-query 512/513 bounds, malformed and
+interrupted frames, and six cold-path native allocation failures with observed
+context cleanup. Ordinary and ASan/UBSan tests pass; deadline tests explicitly
+advance a verification clock rather than measure a 180-second wait. The
+[compressed lifecycle evidence](archive/2026-09-08-m1-native-host-lifetime.json.gz)
+retains the failed attempts, passing campaigns, source and host identities.
+This remains an uncommitted candidate with the integration and cost work above open.
+
+The input-isolation candidate
+`ef953b79eee5a2235b047d4b4e6eb0b1217855dae523de89e8b558b202d1175f`
+passes the complete ordinary/sanitizer host campaign, with all 80 corpus rows
+equal across hosts. Its 63 driver/dependency cases validate captured jobs and
+header inputs, disable default driver configuration, and reject unrecorded input
+shapes. Copy-helper tests cross file/byte capacities and detect changed copies.
+Removing every private original compiler/SDK path preserves five fresh build and
+execution configurations. Five additional public I/O/compiler/linker/cleanup
+failure cases pass under ASan/UBSan: failures return no executable, and retries
+reuse valid objects and reproduce the expected bytes. The
+[compressed input-isolation evidence](archive/2026-09-08-m1-native-host-inputs.json.gz)
+records failed attempts, passing runs, exact input identities and test limits.
+The aggregate passed before the two new independence/recovery constituents were
+added; those constituents passed separately. The extended aggregate still needs
+its release run. Default/installed integration, remaining fault/resource cases,
+matched costs and M1 closure remain open. These results do not establish a
+significant editing-cycle or agent-productivity improvement.
+
+Ten additional public state/terminal campaigns pass under ASan/UBSan on the same
+candidate through a verification-only observer. Metadata and per-role artifact
+corruption cause conservative rebuilds; reset restores reuse. Both worker profiles
+fill the real 256-record limit within 64 source updates, after which valid entries
+remain reusable. A reduced-byte-limit fixture separately checks capacity fallback.
+Process-query failure and SLIM allocation failure while retaining each native role
+produce exact terminal errors and physical teardown. The first record fixture hit
+the independent source-attempt gate; it was corrected without changing either
+production limit. The [compressed state evidence](archive/2026-09-08-m1-native-host-state.json.gz)
+preserves that failed attempt and the passing prefix/suffix campaigns. Production
+sources and candidate identity are unchanged; physical resource and integrated
+performance/release closure remain open.
+
+The [public resource evidence](archive/2026-09-08-m1-native-host-resources.json.gz)
+now crosses the real 64MiB native-byte limit in optimized and sanitized observers.
+Seven distinct 2MiB-payload builds reach refusal with 63,464,207 charged bytes and
+125,988,576 native-region allocation bytes; valid artifacts still execute. Repeated
+builds clone no native-query bytes, and reset frees every owned native allocation
+while preserving captured files. The optimized campaign peaks at 209,371,136 bytes
+of RSS; sanitizer overhead is reported separately. One connection captures
+224,339,295 input bytes (214 files including paired runtime); all context files
+total 226,380,462 logical bytes. Block accounting is not unique physical storage
+because captures can clone extents. Concurrent captures/edits and independent
+reset/quit pass, as does reset recovery after a declined provider. No production
+logic or performance budget changed. Default integration, paired latency and
+complete release verification remain open.
+
+Default integration now reproduces the candidate's exact seed and host, and the
+entire expanded native aggregate passes against the default binary. The
+[initial public timing report](2026-09-08-m1-native-session.md) records five paired
+samples across ten cases: edited builds improve about 22–52%, and build-plus-run
+improves about 13–32%, with stable executable identities on both sides. Median
+context setup is 10.84 seconds, requiring an estimated 113–179 edited builds to
+recover in these workloads. Short sessions can still lose overall. Main/release
+verification wiring is present; remaining checkpoint/release gates are not complete.
+Subsequent exact manifest batching reduces standalone capture from 10.80 to 8.77
+seconds (three samples per version); all 77 driver/input cases pass. The measured
+lookup cost falls from 2.24 seconds to 57 ms without changing capture limits.
+The current integrated verification includes a new public timing run.
+
+Next: complete integrated locality/performance verification, make a validated
+checkpoint, and pass the full release gate. Frontend copying/global costs and
+native setup remain visible limitations. Preserve the full acceptance matrix;
+M2-M7 remain outside this goal.
 
 ## Historical checkpoints
 

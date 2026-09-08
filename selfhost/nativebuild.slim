@@ -1,0 +1,50 @@
+module nativebuild
+
+struct Selection:
+  ready: Bool
+  reason: Bytes
+  code: Bytes
+  workers: I64
+
+fn rejected(reason: Bytes) -> Selection:
+  Selection(ready: false, reason: reason, code: "", workers: -1)
+
+fn has_prefix(code: Bytes, prefix: Bytes, at: I64) -> Bool effects[partial]:
+  if at >= bytes.len(prefix):
+    true
+  else:
+    if at >= bytes.len(code):
+      false
+    else:
+      if u8.to_i64(bytes.get(code, at)) == u8.to_i64(bytes.get(prefix, at)):
+        recur(code, prefix, at + 1)
+      else:
+        false
+
+fn select(state: session.State, epoch: I64, serial: I64, workers: I64) -> Selection effects[partial]:
+  if (epoch < 1) || (serial < 1):
+    rejected("invalid-revision")
+  else:
+    if (workers < 0) || (workers > 1):
+      rejected("invalid-workers")
+    else:
+      if !state.good.valid:
+        rejected("missing-successful-revision")
+      else:
+        let revision: identity.Revision = identity.Revision(epoch: epoch, serial: serial)
+        if !identity.same_revision(revision, state.good.revision):
+          rejected("stale-revision")
+        else:
+          if !session.snapshot_ready(state.good):
+            rejected("corrupt-source-snapshot")
+          else:
+            if !session.code_valid(state.good):
+              rejected("corrupt-source-artifact")
+            else:
+              let artifact: session.Artifact = session.artifact(state.good)
+              let parallel: Bool = has_prefix(artifact.code, "#define SLIM_PARALLEL 1\n", 0)
+              let profile: I64 = if parallel:
+                workers + 1
+              else:
+                0
+              Selection(ready: true, reason: "", code: artifact.code, workers: profile)

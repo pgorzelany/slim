@@ -9,6 +9,7 @@ trap 'rm -rf "$host_dir"' EXIT HUP INT TERM
 # Identity is deliberately copied from the compared ordinary host: this binary
 # is a test observer of that build, never a distributable compiler artifact.
 cp "$(dirname -- "$host_binary")/session-identity.h" "$host_dir/session-identity.h"
+cp "$(dirname -- "$host_binary")/native.c" "$(dirname -- "$host_binary")/native-inputs.h" "$host_dir/"
 awk -v host=1 -f scripts/instrument-session-probe.awk bootstrap/slimc-seed.c > "$host_dir/slimc-seed.c"
 python3 - "$host_dir/session.c" <<'PY'
 from pathlib import Path

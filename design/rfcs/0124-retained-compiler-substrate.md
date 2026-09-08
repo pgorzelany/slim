@@ -336,9 +336,9 @@ implementation, or authorization to relax performance or compatibility policy.
 
 ## Implementation
 
-In progress through the validated RFC-0141 fixed point
-`59d895508fa9011dea2d833738e4ea6a7da72829412130de48d790685b001706`,
-built on checkpoint `49ea4a0`. The complete parent contract remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
+In progress through RFC-0146 public native integration, with default seed
+`b418ef1cd9983e82bac293ffb50d76e144a765c319fe201d23b025340e93d2d0`.
+The complete parent contract remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
 separates implemented internal operations from public-service and release work;
 the dated checkpoint sections preserve earlier measurements and limitations.
 
@@ -356,33 +356,35 @@ bounded cumulative epoch accounting, failed-update recovery and whole-C integrit
 checks. RFC-0135 retains eligible declaration parsing. Internal API fingerprints
 remain caller-attested; RFC-0143 binds the public retained session to the actual
 loaded compiler/runtime/target/options context. Its edit, limit, allocation-fault,
-physical cleanup, transport and build-identity checks pass. Native object/link
-publication remains required.
+physical cleanup, transport and build-identity checks pass. RFC-0146 adds native
+object/link execution and framed artifact publication under checked source handles.
 
 RFC-0136 repairs minimum-I64 and decimal-literal lowering. RFC-0137/0138 retain
 function memory plans and range queries with complete consumed inputs and bounded,
-validated rows. Termination validation and parallel analysis still execute. Retaining eligible global analysis requires its complete
-body, call-site, ordering and budget dependencies; no fabricated universal
-dependency or unobserved cache-hit claim discharges that work.
+validated rows. Termination validation consumes the current retained range view.
+Retaining eligible global analysis requires its complete body, call-site, ordering
+and budget dependencies; no fabricated universal dependency or unobserved cache-hit
+claim discharges that work.
 RFC-0142 retains complete ordered parameter-input queries with validated caller
-contributions and actual-work observation. This does not waive the remaining
-global/parallel work.
+contributions and actual-work observation. RFC-0144 retains the complete bounded
+parallel result with checked inputs, corruption tests and independent producer/import
+observation. These results do not waive the full integrated verification.
 
 RFC-0139 stabilizes declaration-local C names. RFC-0140 retains function prototypes,
 bodies and private wrappers against complete checked and consumed lowering inputs,
 using spans of the existing C artifact. Changed callers regenerate when consumed
 callee work or selected sites change. Source-equal whole artifacts retain their
 validated reuse path; bad optional metadata or bytes cause misses. C assembly and
-copying remain actual work, and native backend artifacts are not retained by this
-session. The checkpoint measures frontend/backend/runtime/resource costs separately,
+copying remain actual work. RFC-0145/0146 retain exact native object/runtime/link
+bytes against a complete captured input context. The checkpoints measure frontend/backend/runtime/resource costs separately,
 including initial regressions and final noise controls, without a general speedup
 claim or relaxed budget.
 
 The literal-Bytes storage-address and hexadecimal/trigraph-escape repairs pass
 their identified checkpoint and composite extended verification. The
 [progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md) records
-precise evidence domains. Retained global analysis, native backend caching and
-integrated differential/locality/release obligations must all pass before this
+precise evidence domains. Final integrated differential/locality/release obligations
+must all pass before this
 parent is complete. M0 remains the historical comparison baseline, not a claim that the
 current seed is unchanged.
 
