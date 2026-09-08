@@ -1,6 +1,6 @@
 # Measurement and verification evidence
 
-[Current M0/M1 status and remaining work](2026-09-05-slim-next-progress.md)
+[Current milestone status and measured limits](2026-09-05-slim-next-progress.md)
 is the authoritative status summary. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
@@ -17,6 +17,7 @@ not certify the current working tree.
 | RFC-0145 validated native query foundation | [Byte preservation, work, costs and remaining integration](2026-09-08-m1-native-query.md) |
 | RFC-0146 default native integration (release closure pending) | [Public build costs, startup optimization and verification](2026-09-08-m1-native-session.md) |
 | Concurrent host publication repair | [Failure found by the clean gate and verified repair scope](2026-09-08-m1-host-publication.md) |
+| M1 complete at `4bdb675` | [Exit criteria, complete release evidence, costs and limits](2026-09-08-m1-closure.md) |
 | M1 release candidate | [Release results, startup failure and measured native costs](2026-09-08-m1-release-candidate.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 

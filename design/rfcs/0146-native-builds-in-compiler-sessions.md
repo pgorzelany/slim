@@ -1,7 +1,7 @@
 # RFC-0146: Native builds in compiler sessions
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -319,7 +319,9 @@ its platform capture glue, and preserves the full original M1 exit criteria.
 
 ## Implementation
 
-Pending. Implementation tests pass selection and public cold/unchanged/
+Complete at clean release checkpoint `4bdb6750656eeeac48b0d68cffc3423600434168`;
+[the closure report](../../benchmarks/results/2026-09-08-m1-closure.md) records
+full verification and current public costs. Tests pass selection and public cold/unchanged/
 edit/revert/reject/reset artifact round trips. All 20 native applications pass
 ordinary and ASan/UBSan corpus checks with independent backend-start observation.
 The process wrapper now retains its leader until group quiescence and reaping;
@@ -360,9 +362,9 @@ about 16 seconds, and batch capture observations still cost about 9 seconds.
 This measured cost led to separating connection-owned immutable tool inputs from
 resettable query storage before acceptance closure. No performance gate is relaxed,
 no query result crosses a reset, and refreshing tools requires an explicit new
-connection. Remaining context/failure/resource tests,
-integrated costs and release verification remain pending. Record public behavior, complete identities, measurements, failure/recovery
-and release evidence before declaring this contract or M1 complete.
+connection. The complete context/failure/resource campaigns, integrated costs
+and release verification passed. The closure report and immutable archive retain
+public behavior, complete identities, measurements and failure/recovery evidence.
 
 ## Removal and supersession
 

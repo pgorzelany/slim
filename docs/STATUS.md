@@ -19,6 +19,6 @@ public 1.0 freeze. The conditions for a future compatibility freeze are in
 SLIM Next M0 (current-contract repairs and truthful evidence) is complete. Its
 [repair and verification record](../benchmarks/results/2026-09-05-slim-next-progress.md)
 identifies the compiler, regressions, measured costs, and passing full release
-gate. M1 implements retained checking and native sessions; its final release
-closure remains pending. M2-M7 and measured agent effectiveness remain pending.
+gate. M1 retained checking and native sessions pass the full release gate.
+M2-M7 and measured agent effectiveness remain pending.
 The 0.9 language version is unchanged.

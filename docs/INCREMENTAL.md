@@ -2,7 +2,7 @@
 
 `slimc session` exposes retained production parsing, checking, analysis, C emission
 and native artifacts. Ordinary `check`, `emit-c` and `build` remain one-shot
-operations. M1 release closure is pending; see the
+operations. M1 release verification is complete; see the
 [implementation report](../benchmarks/results/2026-09-05-slim-next-progress.md)
 for current verification, costs and limits.
 

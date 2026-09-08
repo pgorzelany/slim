@@ -58,7 +58,7 @@ checks, and sanitized compiler and native execution tests. It also runs every
 conformance fixture through the production SLIM compiler, checks reduction
 idempotence and behavior preservation, and checks both snapshot invalidation
 estimates and observed compiler work. Public retained checking and native builds
-are implemented; M1 release closure remains pending. See
+and M1 release verification are complete. See
 [the measured status](docs/INCREMENTAL.md).
 
 The full release and website gate is `./scripts/verify-0.9.sh`.

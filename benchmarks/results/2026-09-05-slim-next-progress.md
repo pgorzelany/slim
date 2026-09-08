@@ -1,20 +1,20 @@
 # SLIM Next implementation and evaluation
 
-Status: M0 complete; M1 in progress; M2-M7 pending
+Status: M0 and M1 complete; M2-M7 pending
 Decision: RFC-0112 accepted by the maintainer on 2026-09-05
 Baseline source: 97412bf
 M1 starting checkpoint: 0265c6d
 
 The accepted roadmap covers M0-M7. Production semantics remain in SLIM and the
-portable C seed. Approval and implementation do not establish milestone closure;
-M1 still requires a complete passing release invocation on its final checkpoint.
+portable C seed. M1 passed the complete clean release gate at
+`4bdb6750656eeeac48b0d68cffc3423600434168`; closure reporting preserves that identity.
 
 ## Milestone status
 
 | Milestone | Status | Current evidence or remaining scope |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters and RFC-0123 boundaries passed repository, release, installation, ABI and website checks. |
-| M1: compiler substrate | in progress | Retained compiler queries and public frontend/native sessions are implemented. Latest clean release run failed on application startup; C-only controls reproduce startup delays. Closure remains pending. |
+| M1: compiler substrate | complete | Typed identities, bounded control/ownership, retained compiler queries and public frontend/native sessions pass the full repository, release, installed-tool and website gate. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation and generics. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger. |
 | M4: component laboratory | pending | Deterministic providers and replay. |
@@ -28,8 +28,8 @@ The current seed is
 `b418ef1cd9983e82bac293ffb50d76e144a765c319fe201d23b025340e93d2d0`;
 the host identity is
 `749c2213fa11cb06d4a81fd6a1af539326c88e37307c0d96d5aff81806800447`.
-The [release-candidate report](2026-09-08-m1-release-candidate.md) identifies
-completed stages, remaining obligations, raw evidence and exact measurements.
+The [closure report](2026-09-08-m1-closure.md) maps exit criteria to the complete
+passing invocation, raw evidence, exact measurements and remaining limitations.
 
 | Obligation | Implemented contract and current verification |
 | --- | --- |
@@ -39,26 +39,26 @@ completed stages, remaining obligations, raw evidence and exact measurements.
 | Analysis dependencies | RFC-0137/0138/0142/0144 retain memory, range, caller-input and complete parallel results, including body-derived facts and ordering/budget inputs. Full-field and independent producer/import comparisons pass. |
 | Deterministic C | RFC-0139/0140 retain stable prototypes, bodies and wrappers against consumed lowering inputs. Corrupt metadata misses; clean/retained C equality and caller invalidation tests pass. |
 | Transactional sessions | RFC-0133/0143 bind complete loaded identities, publish successful snapshots, preserve explicit last-good artifacts after rejection and physically reset owned storage. Public ordinary/sanitized edit, transport, identity, limit, fault and resource matrices pass. |
-| Native artifacts | RFC-0145/0146 retain exact program/runtime/link bytes under captured inputs. Both 20-application corpora, exec observation, corruption, failure, capacity and cleanup checks pass. Selection passes inside the latest main verifier; its capacity stage later timed out. |
-| Release closure | At `b9dc756`, the full repository and reproducible package/installed behavior passed; website generation failed its prose-size limit. The shortened guide passes the unchanged limit and all website tests. The subsequent clean `70ebe8f` run failed on native application startup; isolated C-only controls also stalled before main. Full closure remains required. |
+| Native artifacts | RFC-0145/0146 retain exact program/runtime/link bytes under captured inputs. Both 20-application corpora, exec observation, corruption, failure, capacity and cleanup checks pass. Ordinary/sanitized selection and the full record/byte-capacity campaigns pass inside the complete release invocation. |
+| Release closure | Clean `4bdb675` passes the complete `scripts/verify-0.9.sh`: repository checks, two byte-identical archives, source hashes, clean installation/frontend/native behavior, ABI rejection and all 18 website tests. Earlier failed attempts remain identified in the candidate report. |
 
 ## Measured benefits and costs
 
-The identified `b9dc756` same-host public measurements show edited native builds taking
-25.53–53.88% less time and build-plus-run taking 16.84–31.91% less time than paired
-ordinary builds across ten cases. Unchanged build medians are 0.784–5.387 ms.
-Median setup is 5.290 seconds, requiring an estimated 63–89 edited builds to recover
+The identified `4bdb675` same-host public measurements show edited native builds taking
+22.79–51.58% less time and build-plus-run taking 8.24–31.42% less time than paired
+ordinary builds across ten cases. Unchanged build medians are 0.813–7.008 ms.
+Median setup is 6.402 seconds, requiring an estimated 61–96 edited builds to recover
 in these workloads, excluding reset cost. Short sessions can lose overall.
 
-Frontend-only body updates at 4,000 helpers remain 20.66% slower than one-shot
-compilation. Unchanged updates take 2.027 ms versus 26.169 ms cold. All three
+Frontend-only body updates at 4,000 helpers remain 17.74% slower than one-shot
+compilation. Unchanged updates take 2.104 ms versus 26.300 ms cold. All three
 geometric latency exponents and the warm/cold ratio pass their unchanged gates.
 Input admission, metadata translation, complete C assembly/copying and whole-C
 backend compilation remain visible work. The separate name-resolution prepass
 retains its documented sanitizer depth limit.
 
 The native byte-boundary campaign observes 63,464,207 charged bytes, 125,988,576
-allocated bytes including headers, and 209,354,752 bytes optimized peak RSS.
+allocated bytes including headers, and 209,371,136 bytes optimized peak RSS.
 Sanitizer overhead is separate. Reset frees all owned native-query storage while
 preserving captured tool inputs. File block counts can include shared clone
 extents and are not unique physical disk storage.

@@ -1,7 +1,7 @@
 # RFC-0124: Retained compiler substrate
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, implementing the approved SLIM Next M1 goal
@@ -336,11 +336,11 @@ implementation, or authorization to relax performance or compatibility policy.
 
 ## Implementation
 
-In progress through RFC-0146 public native integration, with default seed
+Complete through RFC-0146 public native integration. The full clean release
+gate passed at `4bdb6750656eeeac48b0d68cffc3423600434168`, using seed
 `b418ef1cd9983e82bac293ffb50d76e144a765c319fe201d23b025340e93d2d0`.
-The complete parent contract remains pending. The [current M1 closure ledger](../../benchmarks/results/2026-09-05-slim-next-progress.md#current-m1-closure-ledger)
-separates implemented internal operations from public-service and release work;
-the dated checkpoint sections preserve earlier measurements and limitations.
+The [M1 closure report](../../benchmarks/results/2026-09-08-m1-closure.md)
+maps every exit requirement to current verification and records costs and limits.
 
 RFC-0125/0126 provide revision-owned source identities, exact maps and indexed
 lookup. RFC-0127 isolates the sole function checker, and RFC-0128 retains checked
@@ -383,10 +383,9 @@ claim or relaxed budget.
 The literal-Bytes storage-address and hexadecimal/trigraph-escape repairs pass
 their identified checkpoint and composite extended verification. The
 [progress report](../../benchmarks/results/2026-09-05-slim-next-progress.md) records
-precise evidence domains. Final integrated differential/locality/release obligations
-must all pass before this
-parent is complete. M0 remains the historical comparison baseline, not a claim that the
-current seed is unchanged.
+precise evidence domains. Final integrated differential, locality and complete
+release checks passed. M0 remains the historical comparison baseline, not a claim
+that the current seed is unchanged.
 
 ## Removal and supersession
 
