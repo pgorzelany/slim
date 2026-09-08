@@ -114,3 +114,29 @@ fn native_pool_matches_the_independent_model_and_sanitizer_witnesses() {
     assert!(String::from_utf8_lossy(&output.stdout).contains("\"result\": \"passed\""));
     std::fs::remove_dir_all(directory).unwrap();
 }
+
+#[test]
+fn native_reserved_buffers_return_after_structured_join() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let directory =
+        std::env::temp_dir().join(format!("slim-pool-workers-{}-{nonce}", std::process::id()));
+    let output = Command::new("python3")
+        .arg(root.join("scripts/verify-pool-workers.py"))
+        .args(["--check", "--output"])
+        .arg(&directory)
+        .output()
+        .expect("execute native pool/task witness");
+    assert!(
+        output.status.success(),
+        "native worker receipt: {}\n{}\n{}",
+        directory.display(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("\"result\": \"passed\""));
+    std::fs::remove_dir_all(directory).unwrap();
+}

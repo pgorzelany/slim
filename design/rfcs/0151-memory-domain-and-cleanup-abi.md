@@ -25,7 +25,8 @@ and recoverable exhaustion. The source-language parts require the accepted
 ownership/byte children and a separate concrete allocation-API child; this runtime
 RFC cannot admit source types or operations by avoiding language-feature review.
 The concrete RFC-0152 provider and RFC-0153 source API are now drafted.
-Their worker/host integration and native adoption evidence remain prerequisites.
+RFC-0155/0156 now propose host integration and reserved-buffer structured tasks;
+their acceptance and native/source adoption evidence remain prerequisites.
 No ABI or production memory behavior changes under this draft.
 
 ## Motivation
@@ -74,12 +75,14 @@ the authority's permission separately from ordinary mutable-data aliasing in
 that language child. Do not smuggle interior mutation through a normal shared
 reference rule.
 
-A domain is confined to its execution scope. Workers use separate child domains
-under the existing structured-worker rules. A parent may adopt completed child
-storage only after the child has joined; no concurrent linked-list mutation or
-allocator sharing is introduced. A declined spawn executes the identical task
-and ownership transitions inline. New borrowed-capture or execution shapes still
-need their own measured parallelism decision.
+A domain is confined to its execution scope. RFC-0156 proposes migrating the
+existing host tasks to moved buffers reserved before launch: workers neither
+allocate nor release, and return each origin before the parent resumes domain
+mutation after join. This replaces the draft's earlier child-pool assumption;
+it does not authorize that unimplemented shape. Native/source checking and both
+maintained host-application measurements remain required. A declined spawn runs
+the identical task and ownership transitions inline. Any future allocating
+worker needs a separate explicit domain/partition/adoption decision.
 
 ### ABI contract
 

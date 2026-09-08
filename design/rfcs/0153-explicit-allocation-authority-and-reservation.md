@@ -46,9 +46,11 @@ result enum. It also exposes growth separately from moving a value.
 ## Guide-level explanation
 
 The hosted entry may request one `Allocator['host]` parameter; a zero-parameter
-entry requests no authority and constructs no pool. These are distinct resource
-requirements, not two spellings of allocation. `'host` is a reserved lifetime
-introduced only by the hosted boundary. Helpers name a bound domain lifetime
+entry requests no authority and constructs no pool. RFC-0155 proposes the third
+required entry shape: allocator plus borrowed host-lifetime argument slices, with
+explicit startup descriptor storage. These are distinct resource requirements,
+not two spellings of allocation. `'host` is a reserved lifetime introduced only
+by the hosted boundary. Helpers name a bound domain lifetime
 and receive its capability explicitly.
 
 `Allocator['d]` is an opaque copyable capability, not a reference to ordinary
@@ -133,16 +135,19 @@ and output-capacity failure need explicit bounded contracts. Preserve each exist
 host failure-state test; do not turn a partial native write into a successful
 source append or lose the unconsumed source value.
 
-A separate hosted-adapter child must enumerate those signatures, buffer bounds,
-result enums and native calls before this package is accepted. In particular,
+RFC-0155 now proposes those signatures, buffer bounds, ordinary source wrapper
+results and native calls; its target audits and boundary evidence remain required
+before this package is accepted. In particular,
 removing allocation from a function declaration is invalid if fopen/stdio or
 scratch-buffer code still allocates behind it. Neither this proposal nor the
 pool model proves a no-allocation or no-block property for existing host code.
 
-Allocator capabilities and domain-bound owners are not implicitly Send. Existing
-structured worker behavior needs the RFC-0152 partition/adoption decision; unknown
-capture work or unsupported loans remain conservative. Preserve valid current
-execution shapes and their regression ratios through an explicit migration.
+Allocator capabilities and domain-bound owners are not implicitly Send.
+RFC-0156 proposes explicit parent reservation and moved-buffer task results
+without worker allocation or cleanup, replacing the unimplemented child-pool
+assumption. It requires complete source-origin/cleanup checks and native evidence;
+unknown capture work or unsupported loans remain conservative. Preserve valid
+current execution shapes and their regression ratios through an explicit migration.
 
 ## Compiler and runtime design
 

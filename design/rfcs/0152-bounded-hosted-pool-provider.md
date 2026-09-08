@@ -129,13 +129,15 @@ ownership trace.
 
 ### Scope, workers and abnormal exit
 
-Allocator capability copying does not permit concurrent pool mutation. Each
-structured task needs a disjoint child domain and budget, including inline
-fallback. The child reservation schedule, quota accounting and post-join owner
-adoption must be identical for spawned and declined tasks. Do not share this
-pool through a lock or silently turn all verified parallel sites into serial
-ones. Fix the child partition/adoption protocol before acceptance; it is not
-proved by the single-domain model. Preserve both existing parallel-runtime gates.
+Allocator capability copying does not permit concurrent pool mutation.
+RFC-0156 proposes moving explicitly reserved byte buffers into the existing
+structured host tasks, with no worker allocation/release and each owner returned
+exactly once before parent provider access resumes. This replaces the earlier
+unimplemented child-pool requirement. Source-origin/cleanup checking and native
+quiescence evidence must establish this protocol before acceptance; the single-
+domain model does not. Do not share this pool through a lock or silently turn
+verified sites serial. Future allocating tasks still require a separate explicit
+partition/adoption decision. Preserve all existing parallel-runtime gates.
 
 Normal physical teardown requires no live owners/borrows and quiescent workers.
 At a program trap, report the trap and terminate the process without walking and
@@ -203,7 +205,7 @@ transitions through depth four, deduplicating equivalent states. Hard limits are
 1–6 and lower budgets. Exceeding any limit fails with unknown. Separate arithmetic
 cases cover capacity/header boundaries and mathematical I64/U64 extremes.
 
-Before acceptance, complete the worker partition/adoption contract and source
+Before acceptance, complete the RFC-0156 worker ownership contract and source
 API package. Before adoption, compare the C provider with the oracle, exercise
 alignment and both actual header layouts under ASan/UBSan, inject startup and
 allocation failures, prove release has no host/allocator calls, measure all named

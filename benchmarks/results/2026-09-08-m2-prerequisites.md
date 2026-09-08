@@ -11,10 +11,12 @@ files individually, before subsequent reporting additions.
 | [RFC-0148](../../design/rfcs/0148-staged-successor-compatibility.md) | Proposed prerelease sequence, source/schema/ABI cutovers, production bootstrap bridge and behavior-preserving migration obligations. No version or runtime change. |
 | [RFC-0149](../../design/rfcs/0149-uniform-moves-and-lexical-references.md) | Proposed transfer/reference grammar, lexical loan and initialization rules, mandatory checker limits and a 576-cell ownership test specification. Bounds are uncalibrated; no test pass is inferred. |
 | [RFC-0150](../../design/rfcs/0150-checked-slices-and-owned-bytes.md) | Proposed checked view operations, owned Bytes, invalidation and freeze/replacement contracts, with named bounds matrices. |
-| [RFC-0151](../../design/rfcs/0151-memory-domain-and-cleanup-abi.md) | Proposed domain ABI, failure-atomic growth and bounded-stack cleanup. Provider/API children are drafted below; worker-domain and host-adapter decisions remain required before acceptance. |
-| [RFC-0152](../../design/rfcs/0152-bounded-hosted-pool-provider.md) | Proposed fixed buddy pool: frozen capacity/header/index limits, bounded split/coalesce/index work and an independent small-pool oracle. The RFC-0154 native block component is verified separately; source/provider adoption and worker partitioning remain pending. |
+| [RFC-0151](../../design/rfcs/0151-memory-domain-and-cleanup-abi.md) | Proposed domain ABI, failure-atomic growth and bounded-stack cleanup. Provider/API/worker/host children are drafted below; their coupled acceptance and evidence remain required. |
+| [RFC-0152](../../design/rfcs/0152-bounded-hosted-pool-provider.md) | Proposed fixed buddy pool: frozen capacity/header/index limits, bounded split/coalesce/index work and an independent small-pool oracle. The RFC-0154 native block component is verified separately; source/provider and RFC-0156 task adoption remain pending. |
 | [RFC-0153](../../design/rfcs/0153-explicit-allocation-authority-and-reservation.md) | Proposed opaque allocator capability and explicit reserve/nonallocating insertion. Ordinary concrete source wrappers return the unconsumed value; no magic generic Result is required. Host-adapter contracts and wrapper inventory remain pending. |
 | [RFC-0154](../../design/rfcs/0154-native-pool-component.md) | Accepted native block component, tested against the independent oracle in ordinary/sanitized builds. [Costs and scope](2026-09-08-m2-native-pool.md) remain separate from provider/source adoption. |
+| [RFC-0155](../../design/rfcs/0155-bounded-host-adapter-storage.md) | Proposed charged argv descriptors, borrowed host inputs and bounded nonallocating I/O into reserved buffers. [Boundary matrix](2026-09-08-m2-host-contract.md) frozen; native adapters and source migration remain pending. |
+| [RFC-0156](../../design/rfcs/0156-reserved-buffer-structured-tasks.md) | Proposed parent reservation and whole-buffer move/return tasks, replacing unimplemented child-pool machinery. Native pool/task witness passes 192 bounded cases; source eligibility, trap and application evidence remain pending. |
 | Existing release ABI gate | Removed literal ABI 1→2 assumption. Compile a matching-header control; validate and mutate exactly one current ABI definition; require the actual mismatch diagnostic after rejection. |
 
 The gate repair passed exact assertions within ten header cases: ABI 1, 2 and
@@ -43,7 +45,7 @@ that clean invocation separately from these later evidence-only additions.
 That preparation checkpoint changed no compiler/runtime behavior, performance
 budget or verification obligation. This evidence does not replace M1's identified closure run or complete M2.
 
-Next: complete worker-domain and hosted-adapter contracts, review the coupled
+Next: verify the proposed host and task contracts, review/test the coupled
 ownership/slice/API package, and freeze application oracles under [slice 00](2026-09-08-m2-plan.md). No prototype or favorable rating
 substitutes for those prerequisites.
 

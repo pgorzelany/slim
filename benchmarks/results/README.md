@@ -21,6 +21,7 @@ not certify the current working tree.
 | M2 dependency plan | [Dependency slices, child RFC prerequisites and unchanged gates](2026-09-08-m2-plan.md) |
 | M2 prerequisite preparation | [Approved experiment policy, remaining proposals and verification](2026-09-08-m2-prerequisites.md) |
 | M2 native block component | [Native oracle, sanitizer checks, measured costs and remaining integration](2026-09-08-m2-native-pool.md) |
+| M2 host and worker contracts | [Frozen host boundaries, argv storage and native reserved-buffer task evidence](2026-09-08-m2-host-contract.md) |
 | M1 release candidate | [Release results, startup failure and measured native costs](2026-09-08-m1-release-candidate.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 
