@@ -168,6 +168,7 @@ python3 -B scripts/verify-session-host-identity.py
 python3 -B scripts/measure-session-host.py
 ./scripts/verify-retained-project.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-session.sh "$verify_dir/slimc-seed-sanitized"
+sh scripts/verify-parallel-query.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-places.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-parsing.sh "$verify_dir/slimc-seed-sanitized"
 sh scripts/verify-integers.sh build/toolchain/slimc full

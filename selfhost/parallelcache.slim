@@ -1,0 +1,350 @@
+module parallelcache
+
+struct Cache:
+  revision: identity.Revision
+  views: Vec[parallel.View]
+  seal: I64
+
+fn empty_cache() -> Cache effects[alloc]:
+  let views: Vec[parallel.View] = vec.new()
+  Cache(revision: identity.Revision(epoch: 0, serial: 0), views: views, seal: -1)
+
+fn word(sum: I64, value: I64) -> I64 effects[partial]:
+  ((sum * 97) + ((value % 1000000007) + 1000000007)) % 1000000007
+
+fn flag(sum: I64, value: Bool) -> I64 effects[partial]:
+  let number: I64 = if value:
+    1
+  else:
+    0
+  word(sum, number)
+
+fn seal_blockers(sum: I64, value: parallel.Blockers) -> I64 effects[partial]:
+  let sum_0: I64 = flag(sum, value.declared_effects)
+  let sum_1: I64 = flag(sum_0, value.exclusive_borrow)
+  let sum_2: I64 = flag(sum_1, value.mutation)
+  let sum_3: I64 = flag(sum_2, value.checked_trap)
+  let sum_4: I64 = flag(sum_3, value.allocation_or_io)
+  let sum_5: I64 = flag(sum_4, value.recurrence)
+  let sum_6: I64 = flag(sum_5, value.callee_not_safe)
+  let sum_7: I64 = flag(sum_6, value.call_cycle)
+  let sum_8: I64 = flag(sum_7, value.function_limit)
+  let sum_9: I64 = flag(sum_8, value.edge_limit)
+  let sum_10: I64 = flag(sum_9, value.missing_typed_fact)
+  sum_10
+
+fn seal_fact(sum: I64, value: parallel.FunctionFact) -> I64 effects[partial]:
+  let sum_0: I64 = word(sum, value.item)
+  let sum_1: I64 = word(sum_0, value.name)
+  let sum_2: I64 = word(sum_1, value.status)
+  let sum_3: I64 = word(sum_2, value.reason)
+  let sum_4: I64 = word(sum_3, value.first_edge)
+  let sum_5: I64 = word(sum_4, value.edge_count)
+  let sum_6: I64 = word(sum_5, value.body)
+  let sum_7: I64 = word(sum_6, value.body_tokens)
+  seal_blockers(sum_7, value.blockers)
+
+fn seal_site(sum: I64, value: parallel.Site) -> I64 effects[partial]:
+  let sum_0: I64 = word(sum, value.site)
+  let sum_1: I64 = word(sum_0, value.first)
+  let sum_2: I64 = word(sum_1, value.second)
+  let sum_3: I64 = word(sum_2, value.join)
+  let sum_4: I64 = word(sum_3, value.first_work)
+  let sum_5: I64 = word(sum_4, value.second_work)
+  let sum_6: I64 = flag(sum_5, value.allocates)
+  let sum_7: I64 = flag(sum_6, value.explicit)
+  let sum_8: I64 = flag(sum_7, value.executable)
+  sum_8
+
+fn seal_schedule(sum: I64, value: parallel.Schedule) -> I64 effects[partial]:
+  let sum_0: I64 = word(sum, value.candidates)
+  let sum_1: I64 = word(sum_0, value.selected)
+  let sum_2: I64 = word(sum_1, value.reported)
+  let sum_3: I64 = word(sum_2, value.executable)
+  let sum_4: I64 = word(sum_3, value.executed)
+  let sum_5: I64 = word(sum_4, value.selected_until)
+  sum_5
+
+fn seal_facts(values: Vec[parallel.FunctionFact], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(values):
+    sum
+  else:
+    recur(values, at + 1, seal_fact(sum, vec.get(values, at)))
+
+fn seal_sites(values: Vec[parallel.Site], at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(values):
+    sum
+  else:
+    recur(values, at + 1, seal_site(sum, vec.get(values, at)))
+
+fn metadata_seal(revision: identity.Revision, view: parallel.View) -> I64 effects[partial]:
+  let owner: I64 = word(word(144, revision.epoch), revision.serial)
+  let header: I64 = flag(word(word(word(owner, view.functions), vec.len(view.facts)), vec.len(view.sites)), view.exact)
+  seal_schedule(seal_sites(view.sites, 0, seal_facts(view.facts, 0, header)), view.schedule)
+
+fn save(revision: identity.Revision, view: ^parallel.View) -> Cache effects[alloc, partial]:
+  let seal: I64 = metadata_seal(revision, view)
+  let views: Vec[parallel.View] = vec.new()
+  vec.push(@views, view)
+  Cache(revision: revision, views: views, seal: seal)
+
+fn prepared_ready(prepared: project.PreparedProject, checked: retained.Cache) -> Bool effects[partial]:
+  let count: I64 = vec.len(checked.nodes)
+  let sizes: Bool = (vec.len(prepared.tokens) == count) && ((vec.len(prepared.facts) == count) && (vec.len(prepared.range_view.facts) == count))
+  ((prepared.status == 0) && prepared.range_ready) && (checked.valid && (((count > 0) && (count <= 1000000)) && (sizes && retained.equal(prepared.source, checked.index.source))))
+
+fn prefix_count(total: I64) -> I64:
+  if total < 64:
+    total
+  else:
+    64
+
+struct Selection:
+  slots: Vec[I64]
+  functions: I64
+
+fn select_rows(declarations: Vec[retained.Declaration], at: I64, total: I64, slots: @Vec[I64]) -> I64 effects[alloc, partial]:
+  if at >= vec.len(declarations):
+    total
+  else:
+    let declaration: retained.Declaration = vec.get(declarations, at)
+    if declaration.kind == 0:
+      if vec.len(slots) < 64:
+        vec.push(@slots, at)
+      else:
+        void
+      recur(declarations, at + 1, total + 1, @slots)
+    else:
+      recur(declarations, at + 1, total, @slots)
+
+fn select(index: retained.Index) -> Selection effects[alloc, partial]:
+  let slots: Vec[I64] = vec.new()
+  let functions: I64 = select_rows(index.declarations, 0, 0, @slots)
+  Selection(slots: slots, functions: functions)
+
+fn fact_frames(view: parallel.View, prepared: project.PreparedProject, checked: retained.Cache, slots: Vec[I64], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(view.facts):
+    true
+  else:
+    let fact: parallel.FunctionFact = vec.get(view.facts, at)
+    let slot: I64 = vec.get(slots, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, slot)
+    let owner: identity.View = declaration.owner
+    let effects_form: I64 = syntax.ast_function_effects(prepared.tokens, owner.first)
+    let body: I64 = syntax.ast_next(prepared.tokens, effects_form)
+    let shape: Bool = ((fact.item == owner.first) && (fact.name == syntax.ast_item_name(owner.first))) && ((fact.body == body) && (fact.body_tokens == (syntax.ast_next(prepared.tokens, body) - body)))
+    let edges: Bool = if (fact.first_edge >= 0) && (fact.first_edge <= 4096):
+      (fact.edge_count >= 0) && (fact.edge_count <= (4096 - fact.first_edge))
+    else:
+      false
+    let status: Bool = ((fact.status >= 0) && (fact.status <= 2)) && ((fact.reason >= 0) && (fact.reason <= 11))
+    if (declaration.kind == 0) && (shape && (edges && status)):
+      recur(view, prepared, checked, slots, at + 1)
+    else:
+      false
+
+fn selected_owner(view: parallel.View, node: I64, at: I64) -> I64 effects[partial]:
+  if at >= vec.len(view.facts):
+    -1
+  else:
+    let fact: parallel.FunctionFact = vec.get(view.facts, at)
+    if (node >= fact.body) && (node < (fact.body + fact.body_tokens)):
+      at
+    else:
+      recur(view, node, at + 1)
+
+fn site_frames(view: parallel.View, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(view.sites):
+    true
+  else:
+    let site: parallel.Site = vec.get(view.sites, at)
+    let selected: I64 = selected_owner(view, site.site, 0)
+    if selected >= 0:
+      if (selected_owner(view, site.first, 0) == selected) && ((selected_owner(view, site.second, 0) == selected) && (selected_owner(view, site.join, 0) == selected)):
+        recur(view, at + 1)
+      else:
+        false
+    else:
+      false
+
+fn valid(history: Cache, prepared: project.PreparedProject, checked: retained.Cache, selected: Selection) -> Bool effects[partial]:
+  if (vec.len(history.views) == 1) && identity.same_revision(history.revision, checked.index.revision):
+    let view: parallel.View = vec.get(history.views, 0)
+    let count: I64 = selected.functions
+    let sizes: Bool = (view.functions == count) && ((vec.len(view.facts) == prefix_count(count)) && (vec.len(view.sites) <= 64))
+    let schedule: parallel.Schedule = view.schedule
+    let counts: Bool = ((schedule.candidates >= 0) && (schedule.candidates <= vec.len(prepared.tokens))) && ((schedule.selected >= 0) && (schedule.selected <= schedule.candidates))
+    let selected_counts: Bool = ((schedule.reported == vec.len(view.sites)) && (schedule.reported <= schedule.selected)) && ((schedule.executable >= 0) && (schedule.executable <= schedule.selected))
+    let executed: Bool = (schedule.executed >= 0) && ((schedule.executed <= schedule.executable) && (schedule.executed <= schedule.reported))
+    if sizes && (counts && (selected_counts && executed)):
+      if metadata_seal(history.revision, view) == history.seal:
+        if fact_frames(view, prepared, checked, selected.slots, 0):
+          if site_frames(view, 0):
+            (schedule.selected_until == -1) || (selected_owner(view, schedule.selected_until, 0) >= 0)
+          else:
+            false
+        else:
+          false
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn same_bool(left: Bool, right: Bool) -> Bool:
+  if left:
+    right
+  else:
+    !right
+
+fn same_ranges(old: Vec[ranges.Fact], current: Vec[ranges.Fact], before: identity.View, owner: identity.View, at: I64) -> Bool effects[partial]:
+  if at >= owner.count:
+    true
+  else:
+    let left: ranges.Fact = vec.get(old, before.first + at)
+    let right: ranges.Fact = vec.get(current, owner.first + at)
+    let flags: Bool = same_bool(left.analyzed, right.analyzed) && (same_bool(left.total, right.total) && (same_bool(left.lower_known, right.lower_known) && same_bool(left.upper_known, right.upper_known)))
+    if flags && ((left.lower == right.lower) && (left.upper == right.upper)):
+      recur(old, current, before, owner, at + 1)
+    else:
+      false
+
+# Checked profiles are in canonical function order. Only prefix functions are
+# queried, so at most 65 rows are visited, even in a much larger program.
+fn profile_at(profiles: Vec[ranges.Recurrence], item: I64, at: I64) -> I64 effects[partial]:
+  if at >= vec.len(profiles):
+    -1
+  else:
+    let profile: ranges.Recurrence = vec.get(profiles, at)
+    if profile.item == item:
+      at
+    else:
+      if profile.item > item:
+        -1
+      else:
+        recur(profiles, item, at + 1)
+
+fn same_profile(old: Vec[ranges.Recurrence], current: Vec[ranges.Recurrence], before: I64, item: I64) -> Bool effects[partial]:
+  let left: I64 = profile_at(old, before, 0)
+  let right: I64 = profile_at(current, item, 0)
+  if left == -1:
+    right == -1
+  else:
+    if right >= 0:
+      let prior: ranges.Recurrence = vec.get(old, left)
+      let next: ranges.Recurrence = vec.get(current, right)
+      (prior.position == next.position) && ((prior.bound == next.bound) && (prior.step == next.step))
+    else:
+      false
+
+fn same_inputs(previous: project.PreparedProject, before: retained.Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, previous_slots: Vec[I64], slots: Vec[I64], at: I64, count: I64) -> Bool effects[partial]:
+  if at >= count:
+    true
+  else:
+    let prior: I64 = vec.get(previous_slots, at)
+    let slot: I64 = vec.get(slots, at)
+    if (vec.get(mapping.before, slot) == prior) && retained.same_checked_function(before, checked, mapping, slot):
+      let old: retained.Declaration = vec.get(before.index.declarations, prior)
+      let next: retained.Declaration = vec.get(checked.index.declarations, slot)
+      if same_ranges(previous.range_view.facts, current.range_view.facts, old.owner, next.owner, 0):
+        if same_profile(previous.range_view.recurrences, current.range_view.recurrences, old.owner.first, next.owner.first):
+          recur(previous, before, current, checked, mapping, previous_slots, slots, at + 1, count)
+        else:
+          false
+      else:
+        false
+    else:
+      false
+
+fn import_node(previous: parallel.View, checked: retained.Cache, slots: Vec[I64], node: I64) -> I64 effects[partial]:
+  if node == -1:
+    -1
+  else:
+    let at: I64 = selected_owner(previous, node, 0)
+    let prior: parallel.FunctionFact = vec.get(previous.facts, at)
+    let slot: I64 = vec.get(slots, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, slot)
+    declaration.owner.first + (node - prior.item)
+
+fn import_facts(old: Vec[parallel.FunctionFact], checked: retained.Cache, slots: Vec[I64], at: I64, output: @Vec[parallel.FunctionFact]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    let fact: parallel.FunctionFact = vec.get(old, at)
+    let slot: I64 = vec.get(slots, at)
+    let declaration: retained.Declaration = vec.get(checked.index.declarations, slot)
+    let item: I64 = declaration.owner.first
+    let next: parallel.FunctionFact = parallel.FunctionFact(item: item, name: item + (fact.name - fact.item), status: fact.status, reason: fact.reason, blockers: fact.blockers, first_edge: fact.first_edge, edge_count: fact.edge_count, body: item + (fact.body - fact.item), body_tokens: fact.body_tokens)
+    vec.push(@output, next)
+    recur(old, checked, slots, at + 1, @output)
+
+fn import_sites(old: parallel.View, checked: retained.Cache, slots: Vec[I64], at: I64, output: @Vec[parallel.Site]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old.sites):
+    void
+  else:
+    let site: parallel.Site = vec.get(old.sites, at)
+    let next: parallel.Site = parallel.Site(site: import_node(old, checked, slots, site.site), first: import_node(old, checked, slots, site.first), second: import_node(old, checked, slots, site.second), join: import_node(old, checked, slots, site.join), first_work: site.first_work, second_work: site.second_work, allocates: site.allocates, explicit: site.explicit, executable: site.executable)
+    vec.push(@output, next)
+    recur(old, checked, slots, at + 1, @output)
+
+fn import_view(old: parallel.View, checked: retained.Cache, selected: Selection) -> parallel.View effects[alloc, partial]:
+  let facts: Vec[parallel.FunctionFact] = vec.new()
+  let sites: Vec[parallel.Site] = vec.new()
+  import_facts(old.facts, checked, selected.slots, 0, @facts)
+  import_sites(old, checked, selected.slots, 0, @sites)
+  let prior: parallel.Schedule = old.schedule
+  let schedule: parallel.Schedule = parallel.Schedule(candidates: prior.candidates, selected: prior.selected, reported: prior.reported, executable: prior.executable, executed: prior.executed, selected_until: import_node(old, checked, selected.slots, prior.selected_until))
+  let count: I64 = selected.functions
+  let exact: Bool = (count <= 64) && parallel.edge_complete(facts, 0)
+  parallel.View(facts: facts, sites: sites, functions: count, exact: exact, schedule: schedule)
+
+fn compute(current: project.PreparedProject, checked: retained.Cache) -> Cache effects[alloc, partial]:
+  let view: parallel.View = parallel.analyze(current.source, current.tokens, current.facts, current.range_view)
+  save(checked.index.revision, ^view)
+
+fn analyze(previous: project.PreparedProject, before: retained.Cache, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, eligible: Bool) -> Cache effects[alloc, partial]:
+  if eligible && (prepared_ready(previous, before) && prepared_ready(current, checked)):
+    if retained.transition_ready(before, checked, mapping):
+      let prior: Selection = select(before.index)
+      let selected: Selection = select(checked.index)
+      let reuse: Bool = if (vec.len(prior.slots) == vec.len(selected.slots)) && valid(history, previous, before, prior):
+        same_inputs(previous, before, current, checked, mapping, prior.slots, selected.slots, 0, vec.len(selected.slots))
+      else:
+        false
+      if reuse:
+        let view: parallel.View = import_view(vec.get(history.views, 0), checked, selected)
+        save(checked.index.revision, ^view)
+      else:
+        compute(current, checked)
+    else:
+      compute(current, checked)
+  else:
+    compute(current, checked)
+
+fn copy_site_rows(rows: Vec[parallel.Site], at: I64, output: @Vec[parallel.Site]) -> Void effects[alloc, partial]:
+  if at >= vec.len(rows):
+    void
+  else:
+    vec.push(@output, vec.get(rows, at))
+    recur(rows, at + 1, @output)
+
+fn copy_sites(history: Cache, output: @Vec[parallel.Site]) -> Void effects[alloc, partial]:
+  let view: parallel.View = vec.get(history.views, 0)
+  copy_site_rows(view.sites, 0, @output)
+
+# Caller has established identical checked source, canonical positions and context.
+fn rebase(history: Cache, previous: project.PreparedProject, before: retained.Cache, current: project.PreparedProject, checked: retained.Cache) -> Cache effects[alloc, partial]:
+  if prepared_ready(previous, before) && prepared_ready(current, checked):
+    let prior: Selection = select(before.index)
+    let selected: Selection = select(checked.index)
+    if valid(history, previous, before, prior) && retained.equal(previous.source, current.source):
+      if prior.functions == selected.functions:
+        let view: parallel.View = import_view(vec.get(history.views, 0), checked, selected)
+        save(checked.index.revision, ^view)
+      else:
+        empty_cache()
+    else:
+      empty_cache()
+  else:
+    empty_cache()

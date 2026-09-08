@@ -32,6 +32,7 @@ struct Cache:
   seal: I64
 
 struct Generated:
+  analysis: parallelcache.Cache
   code: Bytes
   history: Cache
   checksum: I64
@@ -514,7 +515,7 @@ fn checksum_wrappers(code: Bytes, wrappers: @Vec[Wrapper], at: I64) -> Void effe
     vec.set(@wrappers, at, Wrapper(declaration: wrapper.declaration, site: wrapper.site, task: wrapper.task, span: span))
     recur(code, @wrappers, at + 1)
 
-fn assemble(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, sites: ^Vec[parallel.Site], eligible: Bool) -> Generated effects[alloc, partial]:
+fn assemble(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, sites: ^Vec[parallel.Site], analysis: ^parallelcache.Cache, eligible: Bool) -> Generated effects[alloc, partial]:
   let entries: Vec[Entry] = vec.new()
   let slots: Vec[I64] = vec.new()
   let reused: Vec[I64] = vec.new()
@@ -543,13 +544,14 @@ fn assemble(previous: project.PreparedProject, before: retained.Cache, old_code:
     assembly_checksum(code, next)
   else:
     -1
-  Generated(code: code, history: next, checksum: checksum)
+  Generated(analysis: analysis, code: code, history: next, checksum: checksum)
 
-fn generate(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, eligible: Bool, limit: I64) -> Generated effects[alloc, partial]:
+fn generate(previous: project.PreparedProject, before: retained.Cache, old_code: Bytes, history: Cache, analysis_history: parallelcache.Cache, current: project.PreparedProject, checked: retained.Cache, mapping: retained.Update, eligible: Bool, limit: I64) -> Generated effects[alloc, partial]:
   let ready: Bool = prepared_ready(current, checked) && ((limit >= 1) && (limit <= 1000000))
   if ready:
-    let analysis: parallel.View = parallel.analyze(current.source, current.tokens, current.facts, current.range_view)
-    let sites: Vec[parallel.Site] = mem.replace(@analysis.sites, vec.new())
+    let analysis: parallelcache.Cache = parallelcache.analyze(previous, before, analysis_history, current, checked, mapping, eligible)
+    let sites: Vec[parallel.Site] = vec.new()
+    parallelcache.copy_sites(analysis, @sites)
     let records: I64 = (vec.len(checked.index.declarations) + vec.len(current.plan.functions)) + (3 * vec.len(sites))
     if (records <= limit) && (vec.len(sites) <= 64):
       let reuse: Bool = if eligible && retained.transition_ready(before, checked, mapping):
@@ -559,13 +561,13 @@ fn generate(previous: project.PreparedProject, before: retained.Cache, old_code:
           false
       else:
         false
-      assemble(previous, before, old_code, history, current, checked, mapping, ^sites, reuse)
+      assemble(previous, before, old_code, history, current, checked, mapping, ^sites, ^analysis, reuse)
     else:
       let output: Vec[U8] = vec.new()
       codegen.emit_program_sites(current.source, current.tokens, current.facts, current.plan, current.layouts, current.range_view, sites, @output)
-      Generated(code: bytes.freeze(^output), history: empty_cache(), checksum: -1)
+      Generated(analysis: analysis, code: bytes.freeze(^output), history: empty_cache(), checksum: -1)
   else:
-    Generated(code: project.generate_prepared_project(current), history: empty_cache(), checksum: -1)
+    Generated(analysis: parallelcache.empty_cache(), code: project.generate_prepared_project(current), history: empty_cache(), checksum: -1)
 
 fn seal_cache(history: ^Cache) -> Cache effects[alloc, partial]:
   let seal: I64 = metadata_seal(history)

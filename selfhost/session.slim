@@ -17,6 +17,7 @@ struct Artifact:
   checksum: I64
 
 struct Snapshot:
+  analysis: parallelcache.Cache
   emission: fragments.Cache
   valid: Bool
   revision: identity.Revision
@@ -63,7 +64,7 @@ fn empty_snapshot() -> Snapshot effects[alloc]:
   let artifacts: Vec[Artifact] = vec.new()
   let parsing: syntax.ParseCache = syntax.empty_parse_cache()
   let module_parsing: project.ModuleParses = project.empty_module_parses()
-  Snapshot(emission: fragments.empty_cache(), valid: false, revision: identity.Revision(epoch: 0, serial: 0), config: empty_config(), input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: 0, layout_count: 0, canonical_nodes: 0, artifacts: artifacts)
+  Snapshot(analysis: parallelcache.empty_cache(), emission: fragments.empty_cache(), valid: false, revision: identity.Revision(epoch: 0, serial: 0), config: empty_config(), input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: 0, layout_count: 0, canonical_nodes: 0, artifacts: artifacts)
 
 fn start(epoch: I64, limits: Limits) -> State effects[alloc, partial]:
   let good: Snapshot = empty_snapshot()
@@ -253,9 +254,10 @@ fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, a
     let emitted: fragments.Generated = if reuse:
       let history: fragments.Cache = fragments.rebase(state.good.emission, old_code, state.good.prepared, state.good.typing, attempt.prepared, attempt.cache)
       let stored: Artifact = artifact(state.good)
-      fragments.Generated(code: old_code, history: history, checksum: stored.checksum)
+      let analysis: parallelcache.Cache = parallelcache.rebase(state.good.analysis, state.good.prepared, state.good.typing, attempt.prepared, attempt.cache)
+      fragments.Generated(analysis: analysis, code: old_code, history: history, checksum: stored.checksum)
     else:
-      fragments.generate(state.good.prepared, state.good.typing, old_code, state.good.emission, attempt.prepared, attempt.cache, attempt.transition, eligible, state.limits.canonical_nodes)
+      fragments.generate(state.good.prepared, state.good.typing, old_code, state.good.emission, state.good.analysis, attempt.prepared, attempt.cache, attempt.transition, eligible, state.limits.canonical_nodes)
     let code: Bytes = emitted.code
     let size: I64 = bytes.len(code)
     let generated: I64 = if reuse:
@@ -279,7 +281,8 @@ fn publish_update(state: @State, input: ^project.ProjectInput, config: Config, a
       let artifacts: Vec[Artifact] = vec.new()
       vec.push(@artifacts, Artifact(code: code, checksum: checksum))
       let emission: fragments.Cache = mem.replace(@emitted.history, fragments.empty_cache())
-      let snapshot: Snapshot = Snapshot(emission: emission, valid: true, revision: current.counter, config: config, input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: functions, layout_count: layouts, canonical_nodes: attempt.canonical_nodes, artifacts: artifacts)
+      let analysis: parallelcache.Cache = mem.replace(@emitted.analysis, parallelcache.empty_cache())
+      let snapshot: Snapshot = Snapshot(analysis: analysis, emission: emission, valid: true, revision: current.counter, config: config, input: input, prepared: prepared, typing: typing, parsing: parsing, module_parsing: module_parsing, functions: functions, layout_count: layouts, canonical_nodes: attempt.canonical_nodes, artifacts: artifacts)
       if !reuse:
         let next_code_used: I64 = current.code_used + size
         charge(@state, current.counter, current.attempts, current.input_used, current.nodes_used, next_code_used)

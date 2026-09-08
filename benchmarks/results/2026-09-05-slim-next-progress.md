@@ -14,7 +14,7 @@ portable C seed.
 | Milestone | Status | Current evidence |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters, claim audit, and RFC-0123 decision boundaries are validated. The complete repository, reproducible release, clean-install, ABI, and website gates pass. |
-| M1: compiler substrate | in progress | The current byte-literal checkpoint includes validated internal retained parsing, typing, memory plans, range queries, C fragments, shared checking continuations and the literal-Bytes address repair. RFC-0142 parameter-input retention now passes its complete query, cost, analysis and fault checks. Hexadecimal/trigraph byte literals pass the recorded composite verification and same-host controls. Public host-bound sessions now pass their edit/identity/limit/fault/resource campaign. Retained global analyses, native backend caching and full closure remain. |
+| M1: compiler substrate | in progress | The current byte-literal checkpoint includes validated internal retained parsing, typing, memory plans, range queries, C fragments, shared checking continuations and the literal-Bytes address repair. RFC-0142 parameter-input retention now passes its complete query, cost, analysis and fault checks. Hexadecimal/trigraph byte literals pass the recorded composite verification and same-host controls. Public host-bound sessions now pass their edit/identity/limit/fault/resource campaign. RFC-0144 now retains bounded parallel analysis with complete-result, corruption, fault, public-session and cost verification. Native backend caching and full closure remain. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation, and generics not implemented. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger not implemented. |
 | M4: component laboratory | pending | Deterministic providers and replay not implemented. |
@@ -35,7 +35,7 @@ is not evidence that the public session already provides that query.
 | Revision-owned source, declaration, node and span identities | RFC-0125/0126 implement checked ownership, exact revision maps and source relocation; RFC-0134 adds retained typed place identities. | Preserve these contracts through the public session lifecycle and all configuration changes. |
 | Branch/recurrence ownership foundation | RFC-0129/0141 share canonical form and lexical-scope descriptions between the optional graph and explicit checking continuations. The normal checker remains the sole producer of move, availability and loan decisions; all expression families are migrated. | Preserve the validated transitions and source-relative bounds through public session integration. The separate recursive name-resolution prepass retains its documented sanitizer depth limit. |
 | Reusable declaration queries | RFC-0130/0131/0132/0135 retain typing and parsing with validated dependencies and current source links. | Exercise the same production queries through real public updates and preserve locality through the remaining analysis integration. |
-| Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 retains complete parameter-input queries with validated caller contributions. Global parallel analysis still executes. | Retain eligible global results with all body/call-site, ordering and budget dependencies; observe real producers and imports separately. |
+| Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 retains complete parameter-input queries with validated caller contributions. RFC-0144 retains the complete bounded parallel result when its selected checked/range/work inputs agree. | Preserve complete blockers, ordering, budget dependencies and independently observed producer/import work through native-cache integration. |
 | Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. Literal Bytes have valid vector/arena insertion addresses and preserve hexadecimal/trigraph boundaries; the existing 96-fixture differential remains raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs and last-good snapshots; RFC-0140 tests damaged fragments. RFC-0143 now exposes framed host-bound updates, physical reset, source admission and atomic executable publication. | The public edit/limit/fault/resource matrix passes; clean installation passed at `2ffc37b`. Preserve these and existing internal corruption oracles through full M1 release closure. |
 | Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
@@ -93,8 +93,18 @@ source identities and verification logs are preserved in the
 [checkpoint report](2026-09-07-m1-input-queries.md) and compressed evidence.
 No significant latency or agent-productivity improvement is inferred.
 
-Next: complete global analysis retention and native object/link artifact caching,
-then integrated locality, performance and release closure. Profile the observed
+RFC-0144's verified parallel-query seed is
+`9959671c67bdce89f1826230aa90827a722319dbf5fb787bb7ad2a23180df963`.
+Its 323 complete-result comparisons, corruption and allocation-fault cases,
+public-session matrix, native analysis/resource baselines and required checkpoint
+commands pass. Matched call-heavy outside-prefix edits measure about 10.8% to
+1.4% faster across 125-4,000 helpers; simple edits show little benefit and some
+small overhead. The generated seed grows 1.96%. Large body edits still take
+longer than fresh frontend compilation; no agent-productivity gain is claimed.
+See the [checkpoint report](2026-09-08-m1-parallel-query.md).
+
+Next: implement native object/link artifact caching, then integrated locality,
+performance and release closure. Profile the observed
 body-edit copying/global costs and preserve the full acceptance matrix. M2-M7 remain outside this goal.
 
 ## Historical checkpoints

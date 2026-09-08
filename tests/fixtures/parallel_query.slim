@@ -1,0 +1,137 @@
+module zzprobe
+
+fn same_bool(left: Bool, right: Bool) -> Bool:
+  if left:
+    right
+  else:
+    !right
+
+fn same_Blockers(left: parallel.Blockers, right: parallel.Blockers) -> Bool:
+  same_bool(left.declared_effects, right.declared_effects) && (same_bool(left.exclusive_borrow, right.exclusive_borrow) && (same_bool(left.mutation, right.mutation) && (same_bool(left.checked_trap, right.checked_trap) && (same_bool(left.allocation_or_io, right.allocation_or_io) && (same_bool(left.recurrence, right.recurrence) && (same_bool(left.callee_not_safe, right.callee_not_safe) && (same_bool(left.call_cycle, right.call_cycle) && (same_bool(left.function_limit, right.function_limit) && (same_bool(left.edge_limit, right.edge_limit) && (same_bool(left.missing_typed_fact, right.missing_typed_fact)))))))))))
+
+fn same_FunctionFact(left: parallel.FunctionFact, right: parallel.FunctionFact) -> Bool:
+  (left.item == right.item) && ((left.name == right.name) && ((left.status == right.status) && ((left.reason == right.reason) && (same_Blockers(left.blockers, right.blockers) && ((left.first_edge == right.first_edge) && ((left.edge_count == right.edge_count) && ((left.body == right.body) && ((left.body_tokens == right.body_tokens)))))))))
+
+fn same_Site(left: parallel.Site, right: parallel.Site) -> Bool:
+  (left.site == right.site) && ((left.first == right.first) && ((left.second == right.second) && ((left.join == right.join) && ((left.first_work == right.first_work) && ((left.second_work == right.second_work) && (same_bool(left.allocates, right.allocates) && (same_bool(left.explicit, right.explicit) && (same_bool(left.executable, right.executable)))))))))
+
+fn same_Schedule(left: parallel.Schedule, right: parallel.Schedule) -> Bool:
+  (left.candidates == right.candidates) && ((left.selected == right.selected) && ((left.reported == right.reported) && ((left.executable == right.executable) && ((left.executed == right.executed) && ((left.selected_until == right.selected_until))))))
+
+fn same_FunctionFact_rows(left: Vec[parallel.FunctionFact], right: Vec[parallel.FunctionFact], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    true
+  else:
+    if same_FunctionFact(vec.get(left, at), vec.get(right, at)):
+      recur(left, right, at + 1)
+    else:
+      false
+
+fn same_Site_rows(left: Vec[parallel.Site], right: Vec[parallel.Site], at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left):
+    true
+  else:
+    if same_Site(vec.get(left, at), vec.get(right, at)):
+      recur(left, right, at + 1)
+    else:
+      false
+
+fn same_view(left: parallel.View, right: parallel.View) -> Bool effects[partial]:
+  let sizes: Bool = (vec.len(left.facts) == vec.len(right.facts)) && (vec.len(left.sites) == vec.len(right.sites))
+  if sizes && ((left.functions == right.functions) && same_bool(left.exact, right.exact)):
+    same_Schedule(left.schedule, right.schedule) && (same_FunctionFact_rows(left.facts, right.facts, 0) && same_Site_rows(left.sites, right.sites, 0))
+  else:
+    false
+
+fn damage_word(mode: Bytes, key: Bytes, value: I64) -> I64 effects[partial]:
+  if retained.equal(mode, key):
+    -9223372036854775808
+  else:
+    value
+
+fn damage_flag(mode: Bytes, key: Bytes, value: Bool) -> Bool effects[partial]:
+  if retained.equal(mode, key):
+    !value
+  else:
+    value
+
+fn damage_Blockers(mode: Bytes, value: parallel.Blockers) -> parallel.Blockers effects[partial]:
+  parallel.Blockers(declared_effects: damage_flag(mode, "blocker-declared_effects", value.declared_effects), exclusive_borrow: damage_flag(mode, "blocker-exclusive_borrow", value.exclusive_borrow), mutation: damage_flag(mode, "blocker-mutation", value.mutation), checked_trap: damage_flag(mode, "blocker-checked_trap", value.checked_trap), allocation_or_io: damage_flag(mode, "blocker-allocation_or_io", value.allocation_or_io), recurrence: damage_flag(mode, "blocker-recurrence", value.recurrence), callee_not_safe: damage_flag(mode, "blocker-callee_not_safe", value.callee_not_safe), call_cycle: damage_flag(mode, "blocker-call_cycle", value.call_cycle), function_limit: damage_flag(mode, "blocker-function_limit", value.function_limit), edge_limit: damage_flag(mode, "blocker-edge_limit", value.edge_limit), missing_typed_fact: damage_flag(mode, "blocker-missing_typed_fact", value.missing_typed_fact))
+
+fn damage_FunctionFact(mode: Bytes, value: parallel.FunctionFact) -> parallel.FunctionFact effects[partial]:
+  parallel.FunctionFact(item: damage_word(mode, "fact-item", value.item), name: damage_word(mode, "fact-name", value.name), status: damage_word(mode, "fact-status", value.status), reason: damage_word(mode, "fact-reason", value.reason), blockers: damage_Blockers(mode, value.blockers), first_edge: damage_word(mode, "fact-first_edge", value.first_edge), edge_count: damage_word(mode, "fact-edge_count", value.edge_count), body: damage_word(mode, "fact-body", value.body), body_tokens: damage_word(mode, "fact-body_tokens", value.body_tokens))
+
+fn damage_Site(mode: Bytes, value: parallel.Site) -> parallel.Site effects[partial]:
+  parallel.Site(site: damage_word(mode, "site-site", value.site), first: damage_word(mode, "site-first", value.first), second: damage_word(mode, "site-second", value.second), join: damage_word(mode, "site-join", value.join), first_work: damage_word(mode, "site-first_work", value.first_work), second_work: damage_word(mode, "site-second_work", value.second_work), allocates: damage_flag(mode, "site-allocates", value.allocates), explicit: damage_flag(mode, "site-explicit", value.explicit), executable: damage_flag(mode, "site-executable", value.executable))
+
+fn damage_Schedule(mode: Bytes, value: parallel.Schedule) -> parallel.Schedule effects[partial]:
+  parallel.Schedule(candidates: damage_word(mode, "schedule-candidates", value.candidates), selected: damage_word(mode, "schedule-selected", value.selected), reported: damage_word(mode, "schedule-reported", value.reported), executable: damage_word(mode, "schedule-executable", value.executable), executed: damage_word(mode, "schedule-executed", value.executed), selected_until: damage_word(mode, "schedule-selected_until", value.selected_until))
+
+fn damage_FunctionFact_rows(mode: Bytes, old: Vec[parallel.FunctionFact], at: I64, output: @Vec[parallel.FunctionFact]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, damage_FunctionFact(mode, vec.get(old, at)))
+    recur(mode, old, at + 1, @output)
+
+fn damage_Site_rows(mode: Bytes, old: Vec[parallel.Site], at: I64, output: @Vec[parallel.Site]) -> Void effects[alloc, partial]:
+  if at >= vec.len(old):
+    void
+  else:
+    vec.push(@output, damage_Site(mode, vec.get(old, at)))
+    recur(mode, old, at + 1, @output)
+
+fn damage(history: parallelcache.Cache, mode: Bytes, reseal: Bool) -> parallelcache.Cache effects[alloc, partial]:
+  let old: parallel.View = vec.get(history.views, 0)
+  let facts: Vec[parallel.FunctionFact] = vec.new()
+  let sites: Vec[parallel.Site] = vec.new()
+  if !retained.equal(mode, "facts-remove"):
+    damage_FunctionFact_rows(mode, old.facts, 0, @facts)
+  else:
+    void
+  if !retained.equal(mode, "sites-remove"):
+    damage_Site_rows(mode, old.sites, 0, @sites)
+  else:
+    void
+  let schedule: parallel.Schedule = damage_Schedule(mode, old.schedule)
+  let view: parallel.View = parallel.View(facts: facts, sites: sites, functions: damage_word(mode, "functions", old.functions), exact: damage_flag(mode, "exact", old.exact), schedule: schedule)
+  let revision: identity.Revision = identity.Revision(epoch: damage_word(mode, "epoch", history.revision.epoch), serial: damage_word(mode, "serial", history.revision.serial))
+  let seal: I64 = if reseal:
+    parallelcache.metadata_seal(revision, view)
+  else:
+    damage_word(mode, "seal", history.seal)
+  let views: Vec[parallel.View] = vec.new()
+  if !retained.equal(mode, "views-remove"):
+    vec.push(@views, view)
+  else:
+    void
+  parallelcache.Cache(revision: revision, views: views, seal: seal)
+
+fn initial_cache(first: project.ProjectAttempt, empty: retained.Cache, missing: parallelcache.Cache, args: Vec[Bytes]) -> parallelcache.Cache effects[alloc, partial]:
+  let initial: parallelcache.Cache = parallelcache.analyze(first.prepared, empty, missing, first.prepared, first.cache, first.transition, false)
+  if vec.len(args) > 3:
+    damage(initial, vec.get(args, 3), vec.len(args) == 5)
+  else:
+    initial
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if (vec.len(args) >= 3) && (vec.len(args) <= 5):
+    let empty: retained.Cache = retained.empty_cache()
+    let missing: parallelcache.Cache = parallelcache.empty_cache()
+    let first: project.ProjectAttempt = project.prepare_project_retained(vec.get(args, 1), empty, identity.Revision(epoch: 1, serial: 2), 1000000)
+    let next: project.ProjectAttempt = project.prepare_project_retained(vec.get(args, 2), first.cache, identity.Revision(epoch: 1, serial: 3), 1000000)
+    if (first.prepared.status == 0) && (next.prepared.status == 0):
+      let previous: parallelcache.Cache = initial_cache(first, empty, missing, args)
+      let actual: parallelcache.Cache = parallelcache.analyze(first.prepared, first.cache, previous, next.prepared, next.cache, next.transition, true)
+      let expected: parallel.View = parallel.analyze(next.prepared.source, next.prepared.tokens, next.prepared.facts, next.prepared.range_view)
+      if same_view(vec.get(actual.views, 0), expected):
+        io.println("ok complete parallel query")
+        0
+      else:
+        io.println("different parallel view")
+        1
+    else:
+      io.println("invalid query fixture")
+      2
+  else:
+    64

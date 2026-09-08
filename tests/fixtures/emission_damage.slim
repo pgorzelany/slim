@@ -183,7 +183,7 @@ fn budget_case(snapshot: session.Snapshot, limit: I64, admitted: Bool) -> Bool e
   let missing: project.PreparedProject = project.invalid_prepared_project(1)
   let history: fragments.Cache = fragments.empty_cache()
   let mapping: retained.Update = retained.empty_update()
-  let actual: fragments.Generated = fragments.generate(missing, empty, "", history, snapshot.prepared, snapshot.typing, mapping, false, limit)
+  let actual: fragments.Generated = fragments.generate(missing, empty, "", history, snapshot.analysis, snapshot.prepared, snapshot.typing, mapping, false, limit)
   let artifact: session.Artifact = vec.get(snapshot.artifacts, 0)
   let cached: Bool = if admitted:
     vec.len(actual.history.entries) == snapshot.functions
@@ -294,8 +294,8 @@ fn check_transition(before: Bytes, after: Bytes) -> Bool effects[alloc, io, part
   collect_keys(first.cache, next.cache, next.transition, 0, @compared)
   let ready: Bool = retained.transition_ready(first.cache, next.cache, next.transition)
   let history: fragments.Cache = fragments.empty_cache()
-  let first_code: fragments.Generated = fragments.generate(first.prepared, empty, "", history, first.prepared, first.cache, first.transition, false, 1000000)
+  let first_code: fragments.Generated = fragments.generate(first.prepared, empty, "", history, parallelcache.empty_cache(), first.prepared, first.cache, first.transition, false, 1000000)
   let discarded: Vec[Bool] = mem.replace(@next.transition.checked_imports, vec.new())
   let incomplete: Bool = !retained.transition_ready(first.cache, next.cache, next.transition)
-  let actual: fragments.Generated = fragments.generate(first.prepared, first.cache, first_code.code, first_code.history, next.prepared, next.cache, next.transition, true, 1000000)
+  let actual: fragments.Generated = fragments.generate(first.prepared, first.cache, first_code.code, first_code.history, first_code.analysis, next.prepared, next.cache, next.transition, true, 1000000)
   ready && (incomplete && (equal_keys(witnessed, compared, 0, 0) && retained.equal(actual.code, project.generate_prepared_project(next.prepared))))
