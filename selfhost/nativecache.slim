@@ -1,0 +1,285 @@
+module nativecache
+
+struct Key:
+  epoch: I64
+  context: Bytes
+  role: I64
+  workers: I64
+  first: Bytes
+  second: Bytes
+
+struct Entry:
+  key: Key
+  fingerprint: I64
+  artifact: Bytes
+  seal: I64
+
+struct Header:
+  used: I64
+  disabled: Bool
+  seal: I64
+
+struct State:
+  epoch: I64
+  context: Bytes
+  records_limit: I64
+  bytes_limit: I64
+  headers: Vec[Header]
+  entries: Vec[Entry]
+
+struct Probe:
+  hit: Bool
+  reason: Bytes
+  artifact: Bytes
+
+struct Stored:
+  accepted: Bool
+  reason: Bytes
+
+fn word(sum: I64, value: I64) -> I64 effects[partial]:
+  ((sum * 97) + ((value % 1000000007) + 1000000007)) % 1000000007
+
+fn byte_seal(sum: I64, value: Bytes) -> I64 effects[partial]:
+  word(word(sum, bytes.len(value)), cache.weighted_checksum(value, 0, bytes.len(value), 0))
+
+fn clone_rows(source: Bytes, at: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if at >= bytes.len(source):
+    void
+  else:
+    vec.push(@output, bytes.get(source, at))
+    recur(source, at + 1, @output)
+
+fn clone_bytes(source: Bytes) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  clone_rows(source, 0, @output)
+  bytes.freeze(^output)
+
+fn valid_context(context: Bytes) -> Bool:
+  (bytes.len(context) > 0) && (bytes.len(context) <= 1024)
+
+fn valid_key(key: Key) -> Bool effects[partial]:
+  let fields: Bool = (key.epoch >= 1) && (valid_context(key.context) && (((key.role >= 0) && (key.role <= 2)) && ((key.workers >= 0) && (key.workers <= 2))))
+  let first: I64 = bytes.len(key.first)
+  let second: I64 = bytes.len(key.second)
+  if fields && (((first > 0) && (first <= 67108864)) && ((second >= 0) && (second <= 67108864))):
+    let shape: Bool = if key.role == 0:
+      second == 0
+    else:
+      second > 0
+    shape && (second <= (67108864 - first))
+  else:
+    false
+
+fn key_bytes(key: Key) -> I64 effects[partial]:
+  bytes.len(key.first) + bytes.len(key.second)
+
+fn key_fingerprint(key: Key) -> I64 effects[partial]:
+  let scalar: I64 = word(word(word(145, key.epoch), key.role), key.workers)
+  byte_seal(byte_seal(byte_seal(scalar, key.context), key.first), key.second)
+
+fn entry_seal(fingerprint: I64, artifact: Bytes) -> I64 effects[partial]:
+  byte_seal(word(145, fingerprint), artifact)
+
+fn entry_frame(state: State, entry: Entry) -> Bool effects[partial]:
+  if valid_key(entry.key) && (((entry.fingerprint >= 0) && (entry.fingerprint < 1000000007)) && ((entry.seal >= 0) && (entry.seal < 1000000007))):
+    let size: I64 = bytes.len(entry.artifact)
+    if (size > 0) && (size <= 67108864):
+      let owned: Bool = (entry.key.epoch == state.epoch) && retained.equal(entry.key.context, state.context)
+      owned && (key_bytes(entry.key) <= (67108864 - size))
+    else:
+      false
+  else:
+    false
+
+fn entry_bytes(entry: Entry) -> I64 effects[partial]:
+  key_bytes(entry.key) + bytes.len(entry.artifact)
+
+fn frame_rows(state: State, at: I64, total: I64) -> I64 effects[partial]:
+  if at >= vec.len(state.entries):
+    total
+  else:
+    let entry: Entry = vec.get(state.entries, at)
+    if entry_frame(state, entry):
+      let charge: I64 = entry_bytes(entry)
+      if charge <= (state.bytes_limit - total):
+        recur(state, at + 1, total + charge)
+      else:
+        -1
+    else:
+      -1
+
+fn metadata_rows(state: State, at: I64, sum: I64) -> I64 effects[partial]:
+  if at >= vec.len(state.entries):
+    sum
+  else:
+    let entry: Entry = vec.get(state.entries, at)
+    let key: Key = entry.key
+    let owner: I64 = byte_seal(word(sum, key.epoch), key.context)
+    let mode: I64 = word(word(owner, key.role), key.workers)
+    let sizes: I64 = word(word(word(mode, bytes.len(key.first)), bytes.len(key.second)), bytes.len(entry.artifact))
+    recur(state, at + 1, word(word(sizes, entry.fingerprint), entry.seal))
+
+fn metadata_seal(state: State) -> I64 effects[partial]:
+  let header: Header = vec.get(state.headers, 0)
+  let owner: I64 = byte_seal(word(145, state.epoch), state.context)
+  let limits: I64 = word(word(owner, state.records_limit), state.bytes_limit)
+  let counts: I64 = word(word(limits, vec.len(state.entries)), header.used)
+  metadata_rows(state, 0, counts)
+
+fn set_header(state: @State, header: Header) -> Void effects[alloc, partial]:
+  let headers: Vec[Header] = mem.replace(@state.headers, vec.new())
+  if vec.len(headers) == 1:
+    vec.set(@headers, 0, header)
+    let prior: Vec[Header] = mem.replace(@state.headers, headers)
+    void
+  else:
+    let next: Vec[Header] = vec.new()
+    vec.push(@next, header)
+    let prior: Vec[Header] = mem.replace(@state.headers, next)
+    void
+
+fn start(epoch: I64, context: Bytes, records_limit: I64, bytes_limit: I64) -> State effects[alloc, partial]:
+  let valid: Bool = (epoch >= 1) && (valid_context(context) && (((records_limit >= 1) && (records_limit <= 256)) && ((bytes_limit >= 1) && (bytes_limit <= 67108864))))
+  let owned_context: Bytes = if valid:
+    clone_bytes(context)
+  else:
+    ""
+  let headers: Vec[Header] = vec.new()
+  vec.push(@headers, Header(used: 0, disabled: !valid, seal: -1))
+  let entries: Vec[Entry] = vec.new()
+  let state: State = State(epoch: epoch, context: owned_context, records_limit: records_limit, bytes_limit: bytes_limit, headers: headers, entries: entries)
+  if valid:
+    let seal: I64 = metadata_seal(state)
+    set_header(@state, Header(used: 0, disabled: false, seal: seal))
+  else:
+    void
+  state
+
+fn frame_ready(state: State) -> Bool effects[partial]:
+  let fields: Bool = (state.epoch >= 1) && (valid_context(state.context) && (((state.records_limit >= 1) && (state.records_limit <= 256)) && ((state.bytes_limit >= 1) && (state.bytes_limit <= 67108864))))
+  if fields && ((vec.len(state.headers) == 1) && (vec.len(state.entries) <= state.records_limit)):
+    let header: Header = vec.get(state.headers, 0)
+    if (header.used >= 0) && (header.used <= state.bytes_limit):
+      let total: I64 = frame_rows(state, 0, 0)
+      if total >= 0:
+        (total == header.used) && (metadata_seal(state) == header.seal)
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn disable(state: @State) -> Void effects[alloc, partial]:
+  # Never reset charged storage inside an unreclaimed epoch, even when the
+  # previous charge itself is damaged. A disabled table cannot admit entries.
+  set_header(@state, Header(used: 67108864, disabled: true, seal: -1))
+
+fn miss(reason: Bytes) -> Probe:
+  Probe(hit: false, reason: reason, artifact: "")
+
+fn same_inputs(left: Key, right: Key) -> Bool effects[partial]:
+  if (left.epoch == right.epoch) && ((left.role == right.role) && (left.workers == right.workers)):
+    if retained.equal(left.context, right.context):
+      if retained.equal(left.first, right.first):
+        retained.equal(left.second, right.second)
+      else:
+        false
+    else:
+      false
+  else:
+    false
+
+fn find(state: @State, key: Key, fingerprint: I64, at: I64) -> Probe effects[alloc, partial]:
+  if at >= vec.len(state.entries):
+    miss("missing")
+  else:
+    let entry: Entry = vec.get(state.entries, at)
+    if entry.fingerprint == fingerprint:
+      if same_inputs(entry.key, key):
+        if entry_seal(fingerprint, entry.artifact) == entry.seal:
+          Probe(hit: true, reason: "", artifact: entry.artifact)
+        else:
+          disable(@state)
+          miss("corrupt-entry")
+      else:
+        if key_fingerprint(entry.key) == entry.fingerprint:
+          recur(@state, key, fingerprint, at + 1)
+        else:
+          disable(@state)
+          miss("corrupt-entry")
+    else:
+      recur(@state, key, fingerprint, at + 1)
+
+fn lookup(state: @State, key: Key) -> Probe effects[alloc, partial]:
+  if vec.len(state.headers) == 1:
+    let header: Header = vec.get(state.headers, 0)
+    if header.disabled:
+      miss("disabled-history")
+    else:
+      if frame_ready(state):
+        if valid_key(key):
+          if key.epoch == state.epoch:
+            if retained.equal(key.context, state.context):
+              find(@state, key, key_fingerprint(key), 0)
+            else:
+              miss("context-mismatch")
+          else:
+            miss("epoch-mismatch")
+        else:
+          miss("invalid-key")
+      else:
+        disable(@state)
+        miss("corrupt-history")
+  else:
+    disable(@state)
+    miss("corrupt-history")
+
+fn publish_valid(state: @State, key: Key, artifact: Bytes) -> Stored effects[alloc, partial]:
+  let prior: Probe = lookup(@state, key)
+  let header: Header = vec.get(state.headers, 0)
+  if header.disabled:
+    Stored(accepted: false, reason: prior.reason)
+  else:
+    if prior.hit:
+      if retained.equal(prior.artifact, artifact):
+        Stored(accepted: true, reason: "already-present")
+      else:
+        disable(@state)
+        Stored(accepted: false, reason: "conflicting-result")
+    else:
+      if valid_key(key) && ((key.epoch == state.epoch) && retained.equal(key.context, state.context)):
+        let size: I64 = bytes.len(artifact)
+        if (size > 0) && (size <= 67108864):
+          let inputs: I64 = key_bytes(key)
+          if inputs <= (67108864 - size):
+            let charge: I64 = inputs + size
+            if (vec.len(state.entries) < state.records_limit) && (charge <= (state.bytes_limit - header.used)):
+              let first: Bytes = clone_bytes(key.first)
+              let second: Bytes = clone_bytes(key.second)
+              let owned_artifact: Bytes = clone_bytes(artifact)
+              let owned_key: Key = Key(epoch: state.epoch, context: state.context, role: key.role, workers: key.workers, first: first, second: second)
+              let fingerprint: I64 = key_fingerprint(owned_key)
+              let entry: Entry = Entry(key: owned_key, fingerprint: fingerprint, artifact: owned_artifact, seal: entry_seal(fingerprint, owned_artifact))
+              let entries: Vec[Entry] = mem.replace(@state.entries, vec.new())
+              vec.push(@entries, entry)
+              let old: Vec[Entry] = mem.replace(@state.entries, entries)
+              let used: I64 = header.used + charge
+              set_header(@state, Header(used: used, disabled: false, seal: -1))
+              let seal: I64 = metadata_seal(state)
+              set_header(@state, Header(used: used, disabled: false, seal: seal))
+              Stored(accepted: true, reason: "")
+            else:
+              Stored(accepted: false, reason: "capacity")
+          else:
+            Stored(accepted: false, reason: "capacity")
+        else:
+          Stored(accepted: false, reason: "invalid-artifact")
+      else:
+        Stored(accepted: false, reason: prior.reason)
+
+fn publish(state: @State, key: Key, artifact: Bytes) -> Stored effects[alloc, partial]:
+  if (bytes.len(artifact) > 0) && (bytes.len(artifact) <= 67108864):
+    publish_valid(@state, key, artifact)
+  else:
+    Stored(accepted: false, reason: "invalid-artifact")

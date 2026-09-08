@@ -5,16 +5,18 @@ checking and C generation through the framed host protocol in
 [RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md). The
 [public acceptance campaign](../benchmarks/results/2026-09-08-m1-host-closure.md)
 covers real build identities, edits, default limits, allocation failures, physical
-cleanup and durable latency gates. Full M1 global-analysis retention, native
-backend caching and release closure remain unfinished. The former estimate driver
+cleanup and durable latency gates. RFC-0144 also retains bounded parallel analysis.
+Native backend caching and full M1 release closure remain unfinished. The former
+estimate driver
 now lives in a measurement fixture; its existing gates remain passing. Ordinary `check`, `emit-c` and `build` remain
 one-shot operations. The retained engine uses the function-typing entry point under [RFC-0130](../design/rfcs/0130-retained-function-typing.md),
 which reuses successful function inference through checked revision maps and
 complete interface dependency invalidation. Internal snapshots also retain declaration
 parsing, function memory plans, range queries and C function fragments as described
-below. Manifest/import validation, declaration/layout checks, termination validation,
-parallel analysis and complete C assembly remain current-revision
-work. Termination and emission consume the current retained range view. The former
+below. Manifest/import validation, declaration/layout checks, termination validation
+and complete C assembly remain current-revision work. Parallel analysis retains
+complete bounded results through RFC-0144 when their checked dependencies agree.
+Termination and emission consume the current retained range view. The former
 Rust `IncrementalSession` API is not part of
 the production compiler.
 
@@ -275,3 +277,13 @@ Source indexing, metadata updates, output assembly, external C compilation,
 and queueing must remain visible as separate costs. A fast invalidation model
 is useful infrastructure; only a measured working compiler can establish a
 fast compilation cycle. See [the SLIM Next implementation report](../benchmarks/results/2026-09-05-slim-next-progress.md).
+
+## Native artifact query foundation
+
+RFC-0145 adds a private production SLIM query for native object, runtime and link
+artifacts. Exact keys and cloned storage pass ordinary, sanitizer, corruption,
+capacity and real native-byte round-trip tests. This library is not connected to
+public builds yet. Context capture, source-revision authorization, actual native
+execution and atomic publication remain required M1 work. The
+[query report](../benchmarks/results/2026-09-08-m1-native-query.md) records measured
+copy/validation costs and the remaining checks.

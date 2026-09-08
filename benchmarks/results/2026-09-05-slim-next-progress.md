@@ -38,7 +38,7 @@ is not evidence that the public session already provides that query.
 | Analysis dependencies | RFC-0137/0138 retain memory plans and range queries. RFC-0142 retains complete parameter-input queries with validated caller contributions. RFC-0144 retains the complete bounded parallel result when its selected checked/range/work inputs agree. | Preserve complete blockers, ordering, budget dependencies and independently observed producer/import work through native-cache integration. |
 | Deterministic C emission | RFC-0139 stabilizes private identities; RFC-0140 retains prototypes, bodies and wrappers. Literal Bytes have valid vector/arena insertion addresses and preserve hexadecimal/trigraph boundaries; the existing 96-fixture differential remains raw-C exact. | Keep output assembly/copying and external backend work visible when exposed publicly. |
 | Transactional session and corruption recovery | RFC-0133 implements bounded internal epochs and last-good snapshots; RFC-0140 tests damaged fragments. RFC-0143 now exposes framed host-bound updates, physical reset, source admission and atomic executable publication. | The public edit/limit/fault/resource matrix passes; clean installation passed at `2ffc37b`. Preserve these and existing internal corruption oracles through full M1 release closure. |
-| Native artifact cache | Existing public cache retains whole generated C; the new internal session does not retain native backend artifacts. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
+| Native artifact cache | RFC-0145 now has a production SLIM native query library with passing private byte/ownership/corruption/capacity tests and measured costs; required checkpoint checks pass. Public builds do not yet use it. | Validate complete generated C, runtime, backend, target, flags and link inputs; publish native results transactionally and treat invalid artifacts as misses. |
 | Differential, locality and release evidence | The current seed passes all required checkpoint commands, 1,024 retained and 6,144 session fault ordinals, complete parallel-view/report comparisons and quiet timing controls. The prior byte-literal extended verification remains identified separately. | Run the integrated public-service matrix, geometric locality/latency and full `scripts/verify-0.9.sh` release closure on the final identified checkpoint. |
 
 RFC-0143 exposes the public framed session. The 96-source/30-project corpus and
@@ -103,7 +103,11 @@ small overhead. The generated seed grows 1.96%. Large body edits still take
 longer than fresh frontend compilation; no agent-productivity gain is claimed.
 See the [checkpoint report](2026-09-08-m1-parallel-query.md).
 
-Next: implement native object/link artifact caching, then integrated locality,
+The [RFC-0145 native query checkpoint](2026-09-08-m1-native-query.md) now
+passes private artifact, corruption, ownership and geometric work tests. All
+required checkpoint checks pass; no public native reuse is claimed.
+
+Next: finish and integrate native object/link artifact caching, then integrated locality,
 performance and release closure. Profile the observed
 body-edit copying/global costs and preserve the full acceptance matrix. M2-M7 remain outside this goal.
 

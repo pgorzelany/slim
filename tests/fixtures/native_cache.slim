@@ -1,0 +1,288 @@
+module zzprobe
+
+fn key(epoch: I64, context: Bytes, role: I64, workers: I64, first: Bytes, second: Bytes) -> nativecache.Key:
+  nativecache.Key(epoch: epoch, context: context, role: role, workers: workers, first: first, second: second)
+
+fn matches(probe: nativecache.Probe, artifact: Bytes) -> Bool effects[partial]:
+  probe.hit && retained.equal(probe.artifact, artifact)
+
+fn absent(probe: nativecache.Probe) -> Bool:
+  (!probe.hit) && (bytes.len(probe.artifact) == 0)
+
+fn basic() -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 256, 67108864)
+  let request: nativecache.Key = key(1, "context", 0, 0, "source", "")
+  let empty: nativecache.Probe = nativecache.lookup(@state, request)
+  let first: nativecache.Stored = nativecache.publish(@state, request, "object")
+  let found: nativecache.Probe = nativecache.lookup(@state, request)
+  let duplicate: nativecache.Stored = nativecache.publish(@state, request, "object")
+  let invalid: nativecache.Stored = nativecache.publish(@state, request, "")
+  let preserved: nativecache.Probe = nativecache.lookup(@state, request)
+  let conflict: nativecache.Stored = nativecache.publish(@state, request, "different")
+  let disabled: nativecache.Probe = nativecache.lookup(@state, request)
+  let blocked: nativecache.Stored = nativecache.publish(@state, request, "object")
+  let before: Bool = absent(empty) && (first.accepted && (matches(found, "object") && duplicate.accepted))
+  let retained: Bool = (!invalid.accepted) && matches(preserved, "object")
+  let after: Bool = (!conflict.accepted) && (retained.equal(conflict.reason, "conflicting-result") && (absent(disabled) && (!blocked.accepted)))
+  before && (retained && after)
+
+fn miss_rows(state: @nativecache.State, requests: Vec[nativecache.Key], at: I64) -> Bool effects[alloc, partial]:
+  if at >= vec.len(requests):
+    true
+  else:
+    let probe: nativecache.Probe = nativecache.lookup(@state, vec.get(requests, at))
+    let reason: Bytes = if at == 0:
+      "epoch-mismatch"
+    else:
+      if at == 1:
+        "context-mismatch"
+      else:
+        if at < 8:
+          "missing"
+        else:
+          "invalid-key"
+    if absent(probe) && retained.equal(probe.reason, reason):
+      recur(@state, requests, at + 1)
+    else:
+      false
+
+fn keys() -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 256, 67108864)
+  let original: nativecache.Key = key(1, "context", 2, 2, "object-a", "object-b")
+  let saved: nativecache.Stored = nativecache.publish(@state, original, "native-image")
+  let requests: Vec[nativecache.Key] = vec.new()
+  vec.push(@requests, key(2, "context", 2, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "changed", 2, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 1, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 1, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 0, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 2, "object-b", "object-a"))
+  vec.push(@requests, key(1, "context", 2, 2, "Object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 2, "object-a", "Object-b"))
+  vec.push(@requests, key(0, "context", 2, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "", 2, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", -1, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 3, 2, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, -1, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 3, "object-a", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 2, "", "object-b"))
+  vec.push(@requests, key(1, "context", 2, 2, "object-a", ""))
+  vec.push(@requests, key(1, "context", 0, 2, "object-a", "object-b"))
+  let missed: Bool = miss_rows(@state, requests, 0)
+  let found: nativecache.Probe = nativecache.lookup(@state, original)
+  saved.accepted && (missed && matches(found, "native-image"))
+
+fn collisions() -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 256, 67108864)
+  let first: nativecache.Key = key(1, "context", 0, 0, "ab", "")
+  let second: nativecache.Key = key(1, "context", 0, 0, "ca", "")
+  let same: Bool = nativecache.key_fingerprint(first) == nativecache.key_fingerprint(second)
+  let saved: nativecache.Stored = nativecache.publish(@state, first, "first-object")
+  let missed: nativecache.Probe = nativecache.lookup(@state, second)
+  let added: nativecache.Stored = nativecache.publish(@state, second, "second-object")
+  let left: nativecache.Probe = nativecache.lookup(@state, first)
+  let right: nativecache.Probe = nativecache.lookup(@state, second)
+  same && (saved.accepted && (absent(missed) && (added.accepted && (matches(left, "first-object") && matches(right, "second-object")))))
+
+fn capacity() -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 1, 8)
+  let request: nativecache.Key = key(1, "context", 0, 0, "ab", "")
+  let saved: nativecache.Stored = nativecache.publish(@state, request, "object")
+  let other: nativecache.Key = key(1, "context", 0, 0, "cd", "")
+  let rejected: nativecache.Stored = nativecache.publish(@state, other, "object")
+  let found: nativecache.Probe = nativecache.lookup(@state, request)
+  let small: nativecache.State = nativecache.start(1, "context", 256, 7)
+  let above: nativecache.Stored = nativecache.publish(@small, request, "object")
+  let missing: nativecache.Probe = nativecache.lookup(@small, request)
+  saved.accepted && ((!rejected.accepted) && (matches(found, "object") && ((!above.accepted) && absent(missing))))
+
+fn numbered(index: I64) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  text.append_i64(index, @output)
+  bytes.freeze(^output)
+
+fn fill(state: @nativecache.State, at: I64) -> Bool effects[alloc, partial]:
+  if at >= 256:
+    true
+  else:
+    let request: nativecache.Key = key(1, "context", 0, 0, numbered(at), "")
+    let saved: nativecache.Stored = nativecache.publish(@state, request, "object")
+    if saved.accepted:
+      recur(@state, at + 1)
+    else:
+      false
+
+fn record_boundary() -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 256, 67108864)
+  let filled: Bool = fill(@state, 0)
+  let extra: nativecache.Stored = nativecache.publish(@state, key(1, "context", 0, 0, "256", ""), "object")
+  let first: nativecache.Probe = nativecache.lookup(@state, key(1, "context", 0, 0, "0", ""))
+  let last: nativecache.Probe = nativecache.lookup(@state, key(1, "context", 0, 0, "255", ""))
+  filled && ((!extra.accepted) && (matches(first, "object") && matches(last, "object")))
+
+fn invalid_start(epoch: I64, context: Bytes, records: I64, size: I64) -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(epoch, context, records, size)
+  let request: nativecache.Key = key(1, "context", 0, 0, "source", "")
+  let probe: nativecache.Probe = nativecache.lookup(@state, request)
+  let saved: nativecache.Stored = nativecache.publish(@state, request, "object")
+  absent(probe) && (!saved.accepted)
+
+fn limits() -> Bool effects[alloc, partial]:
+  let epochs: Bool = invalid_start(0, "context", 256, 67108864) && invalid_start(-9223372036854775808, "context", 256, 67108864)
+  let contexts: Bool = invalid_start(1, "", 256, 67108864)
+  let records: Bool = invalid_start(1, "context", 0, 67108864) && invalid_start(1, "context", 257, 67108864)
+  let sizes: Bool = invalid_start(1, "context", 256, 0) && invalid_start(1, "context", 256, 67108865)
+  epochs && (contexts && (records && sizes))
+
+fn borrowed(context: Bytes, first: Bytes, artifact: Bytes) -> nativecache.State effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, context, 256, 67108864)
+  let saved: nativecache.Stored = nativecache.publish(@state, key(1, context, 0, 0, first, ""), artifact)
+  state
+
+fn borrowed_probe(state: @nativecache.State) -> Bool effects[alloc, partial]:
+  let probe: nativecache.Probe = nativecache.lookup(@state, key(1, "context", 0, 0, "source", ""))
+  matches(probe, "object")
+
+fn repeat_byte(count: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if count <= 0:
+    void
+  else:
+    vec.push(@output, i64.to_u8(120))
+    recur(count - 1, @output)
+
+fn context_boundary() -> Bool effects[alloc, partial]:
+  let buffer: Vec[U8] = vec.new()
+  repeat_byte(1024, @buffer)
+  let context: Bytes = bytes.freeze(^buffer)
+  let state: nativecache.State = nativecache.start(9223372036854775807, context, 1, 2)
+  let request: nativecache.Key = key(9223372036854775807, context, 0, 0, "x", "")
+  let saved: nativecache.Stored = nativecache.publish(@state, request, "y")
+  let probe: nativecache.Probe = nativecache.lookup(@state, request)
+  let beyond: Vec[U8] = vec.new()
+  repeat_byte(1025, @beyond)
+  let rejected: Bool = invalid_start(1, bytes.freeze(^beyond), 1, 2)
+  saved.accepted && (matches(probe, "y") && rejected)
+
+fn roundtrip(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let first: Vec[U8] = vec.new()
+  let second: Vec[U8] = vec.new()
+  let artifact: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(vec.get(args, 2), @first) && (io.read_file(vec.get(args, 3), @second) && io.read_file(vec.get(args, 4), @artifact))
+  if read:
+    let role: I64 = if retained.equal(vec.get(args, 1), "object"):
+      0
+    else:
+      if retained.equal(vec.get(args, 1), "runtime"):
+        1
+      else:
+        2
+    let workers: I64 = if vec.len(args) == 6:
+      if retained.equal(vec.get(args, 5), "posix"):
+        2
+      else:
+        1
+    else:
+      0
+    let state: nativecache.State = nativecache.start(1, "native-produced-fixture", 256, 67108864)
+    let request: nativecache.Key = key(1, "native-produced-fixture", role, workers, bytes.freeze(^first), bytes.freeze(^second))
+    let expected: Bytes = bytes.freeze(^artifact)
+    let saved: nativecache.Stored = nativecache.publish(@state, request, expected)
+    let probe: nativecache.Probe = nativecache.lookup(@state, request)
+    if saved.accepted && matches(probe, expected):
+      io.print_bytes(probe.artifact)
+      0
+    else:
+      2
+  else:
+    3
+
+fn choose_number(mode: Bytes, field: Bytes, value: I64) -> I64 effects[partial]:
+  if retained.equal(mode, field):
+    -9223372036854775808
+  else:
+    value
+
+fn choose_bytes(mode: Bytes, field: Bytes, value: Bytes, changed: Bytes) -> Bytes effects[partial]:
+  if retained.equal(mode, field):
+    changed
+  else:
+    value
+
+fn damage(state: @nativecache.State, mode: Bytes, reseal: Bool) -> Void effects[alloc, partial]:
+  let headers: Vec[nativecache.Header] = mem.replace(@state.headers, vec.new())
+  let entries: Vec[nativecache.Entry] = mem.replace(@state.entries, vec.new())
+  let header: nativecache.Header = vec.get(headers, 0)
+  let entry: nativecache.Entry = vec.get(entries, 0)
+  let prior: nativecache.Key = entry.key
+  let changed_key: nativecache.Key = nativecache.Key(epoch: choose_number(mode, "key-epoch", prior.epoch), context: choose_bytes(mode, "key-context", prior.context, "changed"), role: choose_number(mode, "key-role", prior.role), workers: choose_number(mode, "key-workers", prior.workers), first: choose_bytes(mode, "key-first", prior.first, "objeCt-a"), second: choose_bytes(mode, "key-second", prior.second, "objeCt-b"))
+  let changed_entry: nativecache.Entry = nativecache.Entry(key: changed_key, fingerprint: choose_number(mode, "entry-fingerprint", entry.fingerprint), artifact: choose_bytes(mode, "entry-artifact", entry.artifact, "native-imAge"), seal: choose_number(mode, "entry-seal", entry.seal))
+  let changed_header: nativecache.Header = nativecache.Header(used: choose_number(mode, "header-used", header.used), disabled: retained.equal(mode, "header-disabled"), seal: choose_number(mode, "header-seal", header.seal))
+  let next_headers: Vec[nativecache.Header] = vec.new()
+  if !retained.equal(mode, "headers-remove"):
+    vec.push(@next_headers, changed_header)
+    if retained.equal(mode, "headers-extra"):
+      vec.push(@next_headers, changed_header)
+    else:
+      void
+  else:
+    void
+  let next_entries: Vec[nativecache.Entry] = vec.new()
+  if !retained.equal(mode, "entries-remove"):
+    vec.push(@next_entries, changed_entry)
+    if retained.equal(mode, "entries-extra"):
+      vec.push(@next_entries, changed_entry)
+    else:
+      void
+  else:
+    void
+  let next: nativecache.State = nativecache.State(epoch: choose_number(mode, "state-epoch", state.epoch), context: choose_bytes(mode, "state-context", state.context, "changed"), records_limit: choose_number(mode, "state-records", state.records_limit), bytes_limit: choose_number(mode, "state-bytes", state.bytes_limit), headers: next_headers, entries: next_entries)
+  let old: nativecache.State = mem.replace(@state, next)
+  if reseal && (vec.len(state.headers) == 1):
+    let current: nativecache.Header = vec.get(state.headers, 0)
+    let seal: I64 = nativecache.metadata_seal(state)
+    let next: nativecache.Header = nativecache.Header(used: current.used, disabled: current.disabled, seal: seal)
+    nativecache.set_header(@state, next)
+  else:
+    void
+
+fn damaged(mode: Bytes, reseal: Bool) -> Bool effects[alloc, partial]:
+  let state: nativecache.State = nativecache.start(1, "context", 256, 67108864)
+  let request: nativecache.Key = key(1, "context", 2, 2, "object-a", "object-b")
+  let initial: nativecache.Stored = nativecache.publish(@state, request, "native-image")
+  damage(@state, mode, reseal)
+  let probe: nativecache.Probe = nativecache.lookup(@state, request)
+  let after: nativecache.Stored = nativecache.publish(@state, request, "native-image")
+  let header: nativecache.Header = vec.get(state.headers, 0)
+  let reason: Bytes = if retained.equal(mode, "header-disabled"):
+    "disabled-history"
+  else:
+    if retained.equal(mode, "key-first") || (retained.equal(mode, "key-second") || retained.equal(mode, "entry-artifact")):
+      "corrupt-entry"
+    else:
+      "corrupt-history"
+  initial.accepted && (absent(probe) && (retained.equal(probe.reason, reason) && ((!after.accepted) && (header.used >= 28))))
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if (vec.len(args) == 5) || (vec.len(args) == 6):
+    roundtrip(args)
+  else:
+    let mode: Bytes = if vec.len(args) >= 2:
+      vec.get(args, 1)
+    else:
+      "normal"
+    let reseal: Bool = if vec.len(args) == 3:
+      retained.equal(vec.get(args, 2), "reseal")
+    else:
+      false
+    let correct: Bool = if retained.equal(mode, "fault"):
+      basic()
+    else:
+      if retained.equal(mode, "normal"):
+        basic() && (keys() && (collisions() && (capacity() && (record_boundary() && (limits() && context_boundary())))))
+      else:
+        damaged(mode, reseal)
+    if correct:
+      io.println("ok native query")
+      0
+    else:
+      1
