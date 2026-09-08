@@ -14,7 +14,7 @@ M1 still requires a complete passing release invocation on its final checkpoint.
 | Milestone | Status | Current evidence or remaining scope |
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters and RFC-0123 boundaries passed repository, release, installation, ABI and website checks. |
-| M1: compiler substrate | in progress | Retained compiler queries and public frontend/native sessions are implemented. Repository and package checks pass; final documentation/test wiring is ready for a complete clean release run. |
+| M1: compiler substrate | in progress | Retained compiler queries and public frontend/native sessions are implemented. Latest clean release run failed on application startup; C-only controls reproduce startup delays. Closure remains pending. |
 | M2: expressive safe core | pending | Successor ownership, borrowing, allocation and generics. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger. |
 | M4: component laboratory | pending | Deterministic providers and replay. |
@@ -39,12 +39,12 @@ completed stages, remaining obligations, raw evidence and exact measurements.
 | Analysis dependencies | RFC-0137/0138/0142/0144 retain memory, range, caller-input and complete parallel results, including body-derived facts and ordering/budget inputs. Full-field and independent producer/import comparisons pass. |
 | Deterministic C | RFC-0139/0140 retain stable prototypes, bodies and wrappers against consumed lowering inputs. Corrupt metadata misses; clean/retained C equality and caller invalidation tests pass. |
 | Transactional sessions | RFC-0133/0143 bind complete loaded identities, publish successful snapshots, preserve explicit last-good artifacts after rejection and physically reset owned storage. Public ordinary/sanitized edit, transport, identity, limit, fault and resource matrices pass. |
-| Native artifacts | RFC-0145/0146 retain exact program/runtime/link bytes under captured inputs. Both 20-application corpora, exec observation, corruption, failure, capacity and cleanup checks pass. The standalone selection oracle passes and is now wired into the main verifier. |
-| Release closure | At `b9dc756`, the full repository and reproducible package/installed behavior passed; website generation failed its prose-size limit. The shortened guide passes the unchanged limit and all website tests. A complete clean release invocation including the documentation and test-wiring repairs remains required. |
+| Native artifacts | RFC-0145/0146 retain exact program/runtime/link bytes under captured inputs. Both 20-application corpora, exec observation, corruption, failure, capacity and cleanup checks pass. Selection passes inside the latest main verifier; its capacity stage later timed out. |
+| Release closure | At `b9dc756`, the full repository and reproducible package/installed behavior passed; website generation failed its prose-size limit. The shortened guide passes the unchanged limit and all website tests. The subsequent clean `70ebe8f` run failed on native application startup; isolated C-only controls also stalled before main. Full closure remains required. |
 
 ## Measured benefits and costs
 
-Current same-host public measurements show edited native builds taking
+The identified `b9dc756` same-host public measurements show edited native builds taking
 25.53–53.88% less time and build-plus-run taking 16.84–31.91% less time than paired
 ordinary builds across ten cases. Unchanged build medians are 0.784–5.387 ms.
 Median setup is 5.290 seconds, requiring an estimated 63–89 edited builds to recover

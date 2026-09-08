@@ -85,3 +85,35 @@ full failed invocation, successful targeted repairs, original guide/status text,
 raw timing summaries, source identities and requirement audit. These bounded
 verification domains and same-host timings do not prove universal safety or a
 controlled improvement in agent productivity. M2-M7 remain outside M1.
+
+## Subsequent clean run: startup timeout
+
+The complete invocation at clean `70ebe8fddaaa4b8bd53fc369b36e060f2ad7c309`
+exited 1. It passed the repository prefix, frontend sessions, internal fault
+campaigns, integrated ordinary/sanitized native selection, both native corpora,
+and native failure/recovery checks. At source revision 64 in record-capacity,
+the serial generated application exceeded the existing 120-second execution
+limit. Native resource/timing and release/website suffixes were not reached.
+The native cost table above remains the identified earlier `b9dc756` measurement.
+Run3 frontend body/one-shot was 1.191985, unchanged/cold 0.077300; geometric
+cold/unchanged/body exponents were 0.909538/0.850511/0.967872, within existing gates.
+
+An isolated unchanged capacity case with a fresh current instrumented host also
+failed, waiting for its first native response. The host stack showed polling for
+capture; its input-copy helper had zero recorded CPU and a 96 KB footprint,
+with every sampled stack at `_dyld_start + 0`. An earlier generated application
+sample during run3 had the same startup location, but was a different launch
+from the final timed-out application.
+
+A separate C-only control compiled `int main(void) { return 0; }`. Both the
+original executable and its byte-identical copy exceeded a 10-second diagnostic
+limit; two-second samples again showed only `_dyld_start + 0` and 96 KB.
+The diagnostic harness exited 0 because it recorded these outcomes; neither
+control execution passed. This reproduces a startup delay independently of SLIM;
+the underlying platform cause remains unknown. No timeout, performance gate,
+production code or OS configuration was changed. M1 remains incomplete.
+
+[Failure and diagnostic evidence](archive/2026-09-08-m1-release-startup-failure.json.gz)
+contains the complete failed release log, isolated reproduction, C-only source,
+binary hashes, process samples and exact command outcomes. Establish successful
+startup with a small control before attempting another complete release run.
