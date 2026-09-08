@@ -196,6 +196,12 @@ seconds (three samples per version); all 77 driver/input cases pass. The measure
 lookup cost falls from 2.24 seconds to 57 ms without changing capture limits.
 The current integrated verification includes a new public timing run.
 
+The clean gate at checkpoint `6f50b8b` subsequently found a concurrent auxiliary-file
+publication race. The [publication repair](2026-09-08-m1-host-publication.md) stages
+all files privately before atomic per-file publication, with the executable last.
+Its complete identity suite and strengthened simultaneous-build check pass;
+checkpoint and full clean release verification are being repeated for the repair.
+
 Next: complete integrated locality/performance verification, make a validated
 checkpoint, and pass the full release gate. Frontend copying/global costs and
 native setup remain visible limitations. Preserve the full acceptance matrix;

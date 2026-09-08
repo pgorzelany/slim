@@ -30,13 +30,16 @@ with tempfile.TemporaryDirectory(prefix='slim-host-publication-') as temporary:
     env['SLIM_SESSION_SANITIZE'] = '0'
     builders = [subprocess.Popen(['sh', str(root / 'scripts/build-session-host.sh'), str(output)],
                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env) for _ in range(2)]
-    for builder in builders:
-        stdout, stderr = builder.communicate(timeout=180)
+    # Reap both builds before reporting an ordinary failure or removing output.
+    results = [builder.communicate(timeout=180) for builder in builders]
+    for builder, (stdout, stderr) in zip(builders, results):
         assert builder.returncode == 0, (stdout, stderr)
     concurrent = Client([str(output / 'slim-session')])
     assert concurrent.identity == identity
     compare(concurrent.update(root / 'conformance/projects/basic/slim.project'), expected)
     concurrent.quit()
+    for name in ['session-identity.h','session-build-identity.tsv','native.c','native-inputs.h']:
+        assert (output/name).read_bytes() == (root/'build/toolchain'/name).read_bytes(), name
     assert not list(output.glob('.slim-session.*')), 'publication left temporary files'
 print('session-host-publication\texact\ttwo simultaneous builds publish one complete executable', flush=True)
 if '--publication-only' in sys.argv:
@@ -118,6 +121,33 @@ with tempfile.TemporaryDirectory(prefix='slim-host-identity-') as temporary:
     loaded.quit()
     executable = clone / 'first/slim-session'
     prior = executable.read_bytes()
+    prior_files = {name:(executable.parent/name).read_bytes() for name in
+                   ['session-identity.h','session-build-identity.tsv','native.c','native-inputs.h']}
+    # A verification-only cp wrapper fails while preparing auxiliary inputs.
+    # None of the existing publication may change before all copies succeed.
+    wrappers = clone/'publication-fault-tools'; wrappers.mkdir()
+    real_cp = shutil.which('cp'); assert real_cp
+    (wrappers/'cp').write_text('#!/bin/sh\npublication_dir=' + shlex.quote(str(executable.parent)) + '''
+for argument; do destination=$argument; done
+case "$destination" in "$publication_dir"|"$publication_dir"/*)
+    for argument; do
+        case "$argument" in */native-inputs.h)
+            echo 'test: publication copy failure' >&2
+            exit 73 ;;
+        esac
+    done ;;
+esac
+exec ''' + shlex.quote(real_cp) + ' "$@"\n')
+    (wrappers/'cp').chmod(0o755)
+    environment = os.environ.copy()
+    environment['PATH'] = str(wrappers) + os.pathsep + environment.get('PATH', '/usr/bin:/bin')
+    failed_copy = subprocess.run(['sh',str(clone/'scripts/build-session-host.sh'),str(executable.parent)],
+                                 env=environment,capture_output=True,timeout=180)
+    assert failed_copy.returncode == 73 and b'test: publication copy failure' in failed_copy.stderr, failed_copy
+    assert executable.read_bytes() == prior, 'failed publication changed existing executable'
+    assert all((executable.parent/name).read_bytes() == data for name,data in prior_files.items())
+    assert not list(executable.parent.glob('.slim-session.*')), 'failed publication left temporary files'
+    print('session-host-publication-fault\texact\tfailed preparation preserves executable and every auxiliary file',flush=True)
     with (clone / 'bootstrap/slimc-seed.c').open('a') as output:
         output.write('\n')
     rejected = subprocess.run(['sh', str(clone / 'scripts/build-session-host.sh'), str(executable.parent)],

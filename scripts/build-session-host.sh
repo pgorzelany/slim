@@ -9,7 +9,7 @@ host_publication=
 host_cleanup() {
     rm -rf "$host_work"
     if test -n "$host_publication"; then
-        rm -f "$host_publication"
+        rm -rf "$host_publication"
     fi
 }
 trap host_cleanup EXIT HUP INT TERM
@@ -84,12 +84,17 @@ host_compiler=$(host_digest "$host_work/build-identity")
 "$host_cc" "$@" -I "$host_work" \
     "$host_work/session.c" "$host_work/runtime.o" -o "$host_work/slim-session"
 mkdir -p "$host_output"
-host_publication=$(mktemp "$host_output/.slim-session.XXXXXX")
-cp "$host_work/slim-session" "$host_publication"
-chmod 755 "$host_publication"
-mv -f "$host_publication" "$host_output/slim-session"
+host_publication=$(mktemp -d "$host_output/.slim-session.XXXXXX")
+# Copies belong to one builder. Concurrent cp can race even for identical input;
+# publish each complete file by rename, with the executable visible last.
+cp "$host_work/slim-session" "$host_work/session-identity.h" "$host_work/native.c" \
+    "$host_work/native-inputs.h" "$host_work/build-identity" "$host_publication/"
+chmod 755 "$host_publication/slim-session"
+for host_sidecar in session-identity.h native.c native-inputs.h; do
+    mv -f "$host_publication/$host_sidecar" "$host_output/$host_sidecar"
+done
+mv -f "$host_publication/build-identity" "$host_output/session-build-identity.tsv"
+mv -f "$host_publication/slim-session" "$host_output/slim-session"
+rmdir "$host_publication"
 host_publication=
-cp "$host_work/session-identity.h" "$host_output/session-identity.h"
-cp "$host_work/native.c" "$host_work/native-inputs.h" "$host_output/"
-cp "$host_work/build-identity" "$host_output/session-build-identity.tsv"
 printf 'session host: %s (%s)\n' "$host_output/slim-session" "$host_compiler"
