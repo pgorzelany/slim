@@ -25,8 +25,9 @@ pool, reserved at the hosted authority boundary, with checked allocation and
 infallible nonblocking release inside the pool. Freeze capacities and algorithmic
 limits before native measurements. A bounded independent model tests allocation,
 coalescing, failure and reuse; it does not establish a production allocator or
-source lifetime checker. This proposal remains pending the coupled API and
-worker integration decisions and native evidence.
+source lifetime checker. The separately accepted RFC-0154 native block component supplies bounded C
+evidence. This provider-adoption proposal remains pending the coupled source API,
+worker integration and complete migration/application evidence.
 
 ## Motivation
 
@@ -120,7 +121,8 @@ The safe checker, rather than a raw address lookup, prevents stale-owner reuse.
 
 The split/merge bounds follow strictly changing order. Headers and offset checks
 must establish alignment, extent and free-list/index membership before access.
-Neither the small model nor wall-clock samples establish this native invariant.
+Neither the small model nor wall-clock samples alone establish this invariant;
+RFC-0154 adds native checks within an explicitly recorded domain.
 A type-specific RFC-0151 cleanup driver destroys initialized members before
 releasing their backing block; allocator release is not a substitute for that
 ownership trace.
@@ -222,8 +224,9 @@ acceptance blockers. No source syntax, runtime ABI or production behavior change
 
 ## Implementation
 
-Verification model only; native provider pending. The model is a development
-oracle, not a conformance implementation or completed M2 deliverable.
+The model and the RFC-0154 native block component are implemented and tested
+separately. Source/provider integration remains pending. Neither is a source
+conformance implementation or completed M2 deliverable.
 
 ## Removal and supersession
 

@@ -18,8 +18,9 @@ not certify the current working tree.
 | RFC-0146 default native integration (release closure pending) | [Public build costs, startup optimization and verification](2026-09-08-m1-native-session.md) |
 | Concurrent host publication repair | [Failure found by the clean gate and verified repair scope](2026-09-08-m1-host-publication.md) |
 | M1 complete at `4bdb675` | [Exit criteria, complete release evidence, costs and limits](2026-09-08-m1-closure.md) |
-| M2 planning only | [Dependency slices, child RFC prerequisites and unchanged gates](2026-09-08-m2-plan.md) |
+| M2 dependency plan | [Dependency slices, child RFC prerequisites and unchanged gates](2026-09-08-m2-plan.md) |
 | M2 prerequisite preparation | [Approved experiment policy, remaining proposals and verification](2026-09-08-m2-prerequisites.md) |
+| M2 native block component | [Native oracle, sanitizer checks, measured costs and remaining integration](2026-09-08-m2-native-pool.md) |
 | M1 release candidate | [Release results, startup failure and measured native costs](2026-09-08-m1-release-candidate.md) |
 | Every archived measurement file | [Manifest: original filename, SHA-256, bytes, lines and compressed size](archive/manifest.tsv) |
 

@@ -88,3 +88,29 @@ fn pool_model_requires_explicit_checked_search_and_valid_limits() {
     assert_eq!(output.status.code(), Some(2));
     assert!(String::from_utf8_lossy(&output.stderr).contains("assertions must remain enabled"));
 }
+
+#[test]
+fn native_pool_matches_the_independent_model_and_sanitizer_witnesses() {
+    let root = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let directory =
+        std::env::temp_dir().join(format!("slim-native-pool-{}-{nonce}", std::process::id()));
+    let output = Command::new("python3")
+        .arg(root.join("scripts/verify-pool.py"))
+        .args(["--check", "--sanitize", "--output"])
+        .arg(&directory)
+        .output()
+        .expect("execute native allocator comparisons");
+    assert!(
+        output.status.success(),
+        "native pool receipt: {}\n{}\n{}",
+        directory.display(),
+        String::from_utf8_lossy(&output.stdout),
+        String::from_utf8_lossy(&output.stderr)
+    );
+    assert!(String::from_utf8_lossy(&output.stdout).contains("\"result\": \"passed\""));
+    std::fs::remove_dir_all(directory).unwrap();
+}
