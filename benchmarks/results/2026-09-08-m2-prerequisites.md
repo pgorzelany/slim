@@ -11,7 +11,9 @@ files individually, before subsequent reporting additions.
 | [RFC-0148](../../design/rfcs/0148-staged-successor-compatibility.md) | Proposed prerelease sequence, source/schema/ABI cutovers, production bootstrap bridge and behavior-preserving migration obligations. No version or runtime change. |
 | [RFC-0149](../../design/rfcs/0149-uniform-moves-and-lexical-references.md) | Proposed transfer/reference grammar, lexical loan and initialization rules, mandatory checker limits and a 576-cell ownership test specification. Bounds are uncalibrated; no test pass is inferred. |
 | [RFC-0150](../../design/rfcs/0150-checked-slices-and-owned-bytes.md) | Proposed checked view operations, owned Bytes, invalidation and freeze/replacement contracts, with named bounds matrices. |
-| [RFC-0151](../../design/rfcs/0151-memory-domain-and-cleanup-abi.md) | Proposed domain ABI, failure-atomic growth and bounded-stack cleanup. Concrete provider and source allocation-API decisions remain required before acceptance. |
+| [RFC-0151](../../design/rfcs/0151-memory-domain-and-cleanup-abi.md) | Proposed domain ABI, failure-atomic growth and bounded-stack cleanup. Provider/API children are drafted below; worker-domain and host-adapter decisions remain required before acceptance. |
+| [RFC-0152](../../design/rfcs/0152-bounded-hosted-pool-provider.md) | Proposed fixed buddy pool: frozen capacity/header/index limits, bounded split/coalesce/index work and an independent small-pool oracle. Native implementation and worker partition/adoption remain pending. |
+| [RFC-0153](../../design/rfcs/0153-explicit-allocation-authority-and-reservation.md) | Proposed opaque allocator capability and explicit reserve/nonallocating insertion. Ordinary concrete source wrappers return the unconsumed value; no magic generic Result is required. Host-adapter contracts and wrapper inventory remain pending. |
 | Existing release ABI gate | Removed literal ABI 1→2 assumption. Compile a matching-header control; validate and mutate exactly one current ABI definition; require the actual mismatch diagnostic after rejection. |
 
 The gate repair passed exact assertions within ten header cases: ABI 1, 2 and
@@ -40,8 +42,8 @@ that clean invocation separately from these later evidence-only additions.
 That preparation checkpoint changed no compiler/runtime behavior, performance
 budget or verification obligation. This evidence does not replace M1's identified closure run or complete M2.
 
-Next: review the coupled ownership/slice drafts, specify the concrete provider and allocation API, and freeze application
-oracles under [slice 00](2026-09-08-m2-plan.md). No prototype or favorable rating
+Next: complete worker-domain and hosted-adapter contracts, review the coupled
+ownership/slice/API package, and freeze application oracles under [slice 00](2026-09-08-m2-plan.md). No prototype or favorable rating
 substitutes for those prerequisites.
 
 ## Approved experiment policy
@@ -60,3 +62,28 @@ errors; the rerun passed all 75 with socket access. Both attempts, source hashes
 exact commands and logs are preserved in the [policy receipt](archive/2026-09-08-m2-policy-gates.json.gz).
 This is pre-commit verification, not a full milestone/release invocation.
 The status corrections and this evidence paragraph are later reporting additions.
+
+## Provider-model prerequisite
+
+RFC-0112's first implementation sequence requires the ownership/lifetime/allocator
+contract to be specified and tested before source-syntax changes, including Unit.
+The provider model now compares 1,015 transitions across 104 reachable states
+through depth four with an independent occupied-cell oracle. Each state uses an
+eight-quantum pool and fixed request/failure/release actions. It also checks 281
+arithmetic cases and 268 free-index operations at bitmap hierarchy boundaries.
+Maximum observed per-index-operation work is four hierarchy-word visits.
+
+These are bounded model results, not native allocator, lifetime-checker or M2
+completion evidence. The native index metadata bound is 4,261,024 bytes at a
+1 GiB pool, separate from pool payload; the candidate default is 256 MiB, frozen
+before native measurements. Three Cargo tests retain oracle agreement, exact
+model-budget boundaries, invalid-limit rejection and rejection with disabled
+assertions. Worker adoption, hosted adapters, native sanitizer/accounting results
+and source wrapper failure oracles remain required.
+
+All eight required pre-commit commands passed with unchanged captured source,
+including all 75 production integration tests and the three new model tests.
+The [provider-model receipt](archive/2026-09-08-m2-pool-prerequisites.json.gz)
+retains the exact commands, source identities, model result and logs. This
+checks preparation tooling; it is not native-provider adoption or the full
+milestone release gate. The receipt link and this paragraph are reporting additions.

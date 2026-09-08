@@ -24,7 +24,8 @@ Propose the runtime contract for explicit allocation domains, per-owner cleanup
 and recoverable exhaustion. The source-language parts require the accepted
 ownership/byte children and a separate concrete allocation-API child; this runtime
 RFC cannot admit source types or operations by avoiding language-feature review.
-Provider choice and numeric capacity calibration are explicit acceptance blockers.
+The concrete RFC-0152 provider and RFC-0153 source API are now drafted.
+Their worker/host integration and native adoption evidence remain prerequisites.
 No ABI or production memory behavior changes under this draft.
 
 ## Motivation
@@ -179,10 +180,10 @@ provider overhead and process RSS separately; logical release is not a claim
 that the OS RSS immediately falls.
 
 A provider needing locks, I/O, blocking close or allocation during source cleanup
-does not meet this proposal without a separate explicit decision. The initial
-candidate to evaluate is a thread-confined domain-local pool with allocation-time
-metadata and allocation-free release; pool admission/growth limits and measured
-fragmentation remain to be fixed before implementation. Do not select a default
+does not meet this proposal without a separate explicit decision. RFC-0152 now specifies a fixed thread-confined buddy-pool candidate with startup
+index metadata, explicit capacity limits and allocation-free release. Its bounded
+model is not native evidence. Worker-domain integration and measured fragmentation
+remain required before this package can be adopted. Do not select a default
 capacity from a successful candidate after seeing its results.
 
 On a defined program trap, normal cleanup is not promised. Hosted termination
