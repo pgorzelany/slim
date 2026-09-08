@@ -15,7 +15,7 @@ portable C seed. M1 passed the complete clean release gate at
 | --- | --- | --- |
 | M0: repair and establish truth | complete | Current-contract repairs, permanent regressions, actual-work counters and RFC-0123 boundaries passed repository, release, installation, ABI and website checks. |
 | M1: compiler substrate | complete | Typed identities, bounded control/ownership, retained compiler queries and public frontend/native sessions pass the full repository, release, installed-tool and website gate. |
-| M2: expressive safe core | pending | Successor ownership, borrowing, allocation and generics. |
+| M2: expressive safe core | pending | [Dependency slices](2026-09-08-m2-plan.md) and [proposed prerequisite decisions](2026-09-08-m2-prerequisites.md); language implementation has not started. |
 | M3: agent and debugger interface | pending | Semantic service and source debugger. |
 | M4: component laboratory | pending | Deterministic providers and replay. |
 | M5: systems contracts | pending | Resource capabilities and successor resource contracts. |

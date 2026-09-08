@@ -66,13 +66,31 @@ test ! -e "$slim_install/target"
     test "$(./slimc builtins | sed -n '1p')" = "u8.to_i64"
 
     ./slimc emit-c examples/hello.slim -o "$slim_work/hello.c"
-    sed 's/#define SLIM_RUNTIME_ABI_VERSION 1/#define SLIM_RUNTIME_ABI_VERSION 2/' \
-        runtime/slim_rt.h > "$slim_work/slim_rt.h"
+    "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -I runtime \
+        -c "$slim_work/hello.c" -o "$slim_work/matched.o"
+    awk '
+        $1 == "#define" && $2 == "SLIM_RUNTIME_ABI_VERSION" {
+            count++
+            if (NF != 3 || $3 !~ /^[0-9]+$/ || $3 < 1 || $3 > 2147483646) {
+                invalid = 1
+                exit 1
+            }
+            print "#define SLIM_RUNTIME_ABI_VERSION " sprintf("%.0f", $3 + 1)
+            next
+        }
+        { print }
+        END { if (invalid || count != 1) exit 1 }
+    ' runtime/slim_rt.h > "$slim_work/slim_rt.h"
     if "${CC:-cc}" -std=c11 -Wall -Wextra -Werror -I "$slim_work" \
         -c "$slim_work/hello.c" -o "$slim_work/mismatch.o" \
         > "$slim_work/mismatch.out" 2> "$slim_work/mismatch.err"
     then
         echo "release verification: mismatched runtime ABI compiled" >&2
+        exit 1
+    fi
+    if ! grep -q 'SLIM runtime ABI mismatch' "$slim_work/mismatch.err"; then
+        echo "release verification: compilation failed without an ABI mismatch diagnostic" >&2
+        cat "$slim_work/mismatch.err" >&2
         exit 1
     fi
 )
