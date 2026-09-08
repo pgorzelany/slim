@@ -98,6 +98,8 @@ struct Rfc {
     audience: String,
     kind: String,
     primitive: String,
+    evaluation: Option<String>,
+    evaluation_rfc: Option<String>,
     ratings: [i32; 6],
     score: i32,
 }
@@ -2675,6 +2677,8 @@ fn load_rfcs(dir: &Path, errors: &mut Vec<String>) -> BTreeMap<String, Rfc> {
                     audience,
                     kind,
                     primitive,
+                    evaluation: fields.get("Evaluation").cloned(),
+                    evaluation_rfc: fields.get("EvaluationRFC").cloned(),
                     ratings,
                     score,
                 },
@@ -2711,7 +2715,11 @@ fn check_rfcs(rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
     let mut primitives = BTreeSet::new();
     let mut legacy_accepted = 0;
     let mut legacy_rejected = 0;
+    let m2_policy_accepted = rfcs.get("RFC-0147").is_some_and(|policy| {
+        policy.status == "accepted" && policy.kind == "process" && policy.process == "1"
+    });
     for rfc in rfcs.values() {
+        let m2_experiment = check_m2_evaluation(rfc, m2_policy_accepted, errors);
         if !matches!(
             rfc.status.as_str(),
             "proposed" | "accepted" | "rejected" | "withdrawn" | "superseded"
@@ -2783,16 +2791,18 @@ fn check_rfcs(rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
             ));
         }
         if rfc.status == "accepted" && rfc.kind == "language" {
-            if rfc.score < 40 {
+            if !m2_experiment && rfc.score < 40 {
                 errors.push(format!("{} accepted language score is below 40", rfc.id));
             }
-            if rfc.ratings[..4].iter().any(|rating| *rating < 0) {
+            if m2_experiment && rfc.ratings[0] < 0 {
+                errors.push(format!("{} has a negative safety rating", rfc.id));
+            } else if !m2_experiment && rfc.ratings[..4].iter().any(|rating| *rating < 0) {
                 errors.push(format!(
                     "{} has a negative hard-gate rating in safety/compile/runtime/minimal",
                     rfc.id
                 ));
             }
-            if !rfc.ratings.contains(&2) {
+            if !m2_experiment && !rfc.ratings.contains(&2) {
                 errors.push(format!("{} has no primary +2 benefit", rfc.id));
             }
         }
@@ -2811,6 +2821,35 @@ fn check_rfcs(rfcs: &BTreeMap<String, Rfc>, errors: &mut Vec<String>) {
             "legacy RFC disposition drift: expected 98 accepted and 8 rejected, found {legacy_accepted} accepted and {legacy_rejected} rejected"
         ));
     }
+}
+
+fn check_m2_evaluation(rfc: &Rfc, policy_accepted: bool, errors: &mut Vec<String>) -> bool {
+    match (rfc.evaluation.as_deref(), rfc.evaluation_rfc.as_deref()) {
+        (None, None) => return false,
+        (Some("m2-experiment"), Some("RFC-0147")) => {}
+        _ => {
+            errors.push(format!(
+                "{} invalid evaluation marker: require both Evaluation: m2-experiment and EvaluationRFC: RFC-0147",
+                rfc.id
+            ));
+            return false;
+        }
+    }
+    if rfc.process != "1" || rfc.kind != "language" || rfc.id.as_str() <= "RFC-0147" {
+        errors.push(format!(
+            "{} M2 evaluation requires a current-process language child after RFC-0147",
+            rfc.id
+        ));
+        return false;
+    }
+    if !policy_accepted {
+        errors.push(format!(
+            "{} M2 evaluation requires accepted process RFC-0147",
+            rfc.id
+        ));
+        return false;
+    }
+    true
 }
 
 fn contains_legacy_rfc_id(text: &str) -> bool {
@@ -4253,6 +4292,211 @@ fn visit_files(dir: &Path, action: &mut impl FnMut(&Path)) {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn m2_fixture(marked: bool) -> BTreeMap<String, Rfc> {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let mut errors = Vec::new();
+        let mut rfcs = load_rfcs(&root.join("design/rfcs"), &mut errors);
+        assert!(errors.is_empty(), "{errors:?}");
+        let child = rfcs.get_mut("RFC-0149").unwrap();
+        child.status = "accepted".into();
+        child.implementation = "pending".into();
+        child.ratings = [0; 6];
+        child.score = 0;
+        child.evaluation = marked.then(|| "m2-experiment".into());
+        child.evaluation_rfc = marked.then(|| "RFC-0147".into());
+        rfcs
+    }
+
+    fn rfc_errors(rfcs: &BTreeMap<String, Rfc>) -> Vec<String> {
+        let mut errors = Vec::new();
+        check_rfcs(rfcs, &mut errors);
+        errors
+    }
+
+    #[test]
+    fn m2_rating_exception_preserves_ordinary_language_gates() {
+        for (ratings, score, expected) in [
+            ([0; 6], 0, "score is below 40"),
+            ([2, -1, 2, 2, 2, 2], 70, "negative hard-gate rating"),
+            ([1; 6], 50, "no primary +2 benefit"),
+        ] {
+            let mut rfcs = m2_fixture(false);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.ratings = ratings;
+            child.score = score;
+            assert!(rfc_errors(&rfcs).iter().any(|e| e.contains(expected)));
+        }
+        for (ratings, score) in [([0; 6], 0), ([0, -2, -2, -2, 0, 0], -60)] {
+            let mut rfcs = m2_fixture(true);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.ratings = ratings;
+            child.score = score;
+            assert!(rfc_errors(&rfcs).is_empty());
+        }
+    }
+
+    #[test]
+    fn m2_marker_rejects_partial_unknown_and_ineligible_records() {
+        for (evaluation, policy) in [
+            (Some("m2-experiment"), None),
+            (None, Some("RFC-0147")),
+            (Some("m2-experiments"), Some("RFC-0147")),
+            (Some("m2-experiment"), Some("RFC-0148")),
+            (Some(""), Some("")),
+        ] {
+            let mut rfcs = m2_fixture(true);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.evaluation = evaluation.map(str::to_owned);
+            child.evaluation_rfc = policy.map(str::to_owned);
+            let errors = rfc_errors(&rfcs);
+            assert!(
+                errors
+                    .iter()
+                    .any(|e| e.contains("invalid evaluation marker"))
+            );
+            assert!(errors.iter().any(|e| e.contains("score is below 40")));
+        }
+        for (kind, process, id) in [
+            ("runtime", "1", "RFC-0149"),
+            ("architecture", "1", "RFC-0149"),
+            ("language", "legacy", "RFC-0149"),
+            ("language", "1", "RFC-0147"),
+            ("language", "1", "RFC-0109"),
+        ] {
+            let mut rfcs = m2_fixture(true);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.kind = kind.into();
+            child.process = process.into();
+            child.id = id.into();
+            assert!(rfc_errors(&rfcs).iter().any(|e| {
+                e.contains("requires a current-process language child after RFC-0147")
+            }));
+        }
+    }
+
+    #[test]
+    fn m2_marker_requires_the_accepted_process_policy() {
+        for change in ["missing", "proposed", "wrong-kind", "legacy"] {
+            let mut rfcs = m2_fixture(true);
+            if change == "missing" {
+                rfcs.remove("RFC-0147");
+            } else {
+                let policy = rfcs.get_mut("RFC-0147").unwrap();
+                match change {
+                    "proposed" => policy.status = "proposed".into(),
+                    "wrong-kind" => policy.kind = "architecture".into(),
+                    "legacy" => policy.process = "legacy".into(),
+                    _ => unreachable!(),
+                }
+            }
+            let errors = rfc_errors(&rfcs);
+            assert!(
+                errors
+                    .iter()
+                    .any(|e| e.contains("requires accepted process RFC-0147"))
+            );
+            assert!(errors.iter().any(|e| e.contains("score is below 40")));
+        }
+    }
+
+    #[test]
+    fn m2_marker_preserves_safety_arithmetic_disposition_and_unique_primitives() {
+        for (ratings, score, expected) in [
+            ([-1, 0, 0, 0, 0, 0], -10, "negative safety rating"),
+            ([0; 6], 1, "calculated score is 0"),
+            ([0, 0, 0, 0, 1, 0], 7, "score is fractional"),
+        ] {
+            let mut rfcs = m2_fixture(true);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.ratings = ratings;
+            child.score = score;
+            assert!(rfc_errors(&rfcs).iter().any(|e| e.contains(expected)));
+        }
+        let mut rfcs = m2_fixture(true);
+        let existing = rfcs
+            .values()
+            .find(|r| r.status == "accepted" && r.primitive != "none")
+            .unwrap()
+            .primitive
+            .clone();
+        rfcs.get_mut("RFC-0149").unwrap().primitive = existing;
+        assert!(
+            rfc_errors(&rfcs)
+                .iter()
+                .any(|e| e.contains("duplicates accepted primitive"))
+        );
+        let mut rfcs = m2_fixture(true);
+        rfcs.get_mut("RFC-0149").unwrap().status = "proposed".into();
+        rfcs.get_mut("RFC-0149").unwrap().implementation = "complete".into();
+        assert!(
+            rfc_errors(&rfcs)
+                .iter()
+                .any(|e| e.contains("incompatible with implementation"))
+        );
+    }
+
+    #[test]
+    fn m2_metadata_is_loaded_and_rating_ranges_remain_checked() {
+        let root = env::temp_dir().join(format!("slim-govern-m2-metadata-{}", std::process::id()));
+        fs::create_dir_all(&root).unwrap();
+        let source = fs::read_to_string(
+            Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join("design/rfcs/0149-uniform-moves-and-lexical-references.md"),
+        )
+        .unwrap();
+        fs::write(
+            root.join("0149-test.md"),
+            format!(
+                "{}\nEvaluation: m2-experiment\nEvaluationRFC: RFC-0147\n",
+                source.replace("Safety: 0", "Safety: 3")
+            ),
+        )
+        .unwrap();
+        let mut errors = Vec::new();
+        let rfcs = load_rfcs(&root, &mut errors);
+        assert_eq!(
+            rfcs["RFC-0149"].evaluation.as_deref(),
+            Some("m2-experiment")
+        );
+        assert_eq!(rfcs["RFC-0149"].evaluation_rfc.as_deref(), Some("RFC-0147"));
+        assert!(
+            errors
+                .iter()
+                .any(|e| e.contains("Safety rating must be between -2 and 2"))
+        );
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn m2_marker_does_not_activate_unimplemented_surface() {
+        let root = env::temp_dir().join(format!("slim-govern-m2-surface-{}", std::process::id()));
+        fs::create_dir_all(root.join("design")).unwrap();
+        fs::create_dir_all(root.join("selfhost")).unwrap();
+        for name in ["check.slim", "codegen.slim", "memory.slim"] {
+            fs::write(root.join("selfhost").join(name), "").unwrap();
+        }
+        let path = root.join("design/surface.tsv");
+        fs::write(&path, "type\texperiment\texperiment-role\tRFC-0149\n").unwrap();
+        for (status, implementation, active) in [
+            ("accepted", "pending", false),
+            ("proposed", "pending", false),
+            ("accepted", "complete", true),
+        ] {
+            let mut rfcs = m2_fixture(true);
+            let child = rfcs.get_mut("RFC-0149").unwrap();
+            child.status = status.into();
+            child.implementation = implementation.into();
+            let mut errors = Vec::new();
+            check_surface(&path, &rfcs, &mut errors);
+            if active {
+                assert!(errors.is_empty(), "{errors:?}");
+            } else {
+                assert_eq!(errors, ["surface type:experiment cites inactive RFC-0149"]);
+            }
+        }
+        fs::remove_dir_all(root).unwrap();
+    }
 
     #[test]
     fn repository_passes_governance() {

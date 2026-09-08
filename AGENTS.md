@@ -13,8 +13,12 @@ These rules apply to every change in this repository.
 ## Language constraints
 
 - There is one canonical source form for each semantic operation.
-- Do not add aliases, syntactic sugar, implicit conversions, hidden control
-  flow, hidden allocation, hidden copying, or hidden synchronization.
+- Do not add aliases, implicit conversions, hidden allocation, hidden copying,
+  or hidden synchronization. Outside an explicitly accepted RFC-0147 M2
+  experiment, do not add syntactic sugar or hidden control flow. Within that
+  scope, elaboration must have one specified canonical semantic operation,
+  explicit evaluation and exit rules, source-mapped diagnostics, bounded
+  checking, and measured costs; it may not conceal runtime resource work.
 - Prefer ordinary library composition. Add a compiler primitive only when a
   required safety, analysis, or performance property cannot be preserved by a
   library implementation.

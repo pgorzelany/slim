@@ -24,8 +24,8 @@ Replace RFC-0110's call-only modes with uniform explicit ownership transfer and
 lexically checked reference values. Specify one checker result for initialization,
 loans and cleanup obligations, consumed by code generation and retained queries.
 This proposed contract depends on RFC-0148 and the complete RFC-0150/0151 memory
-package. It does not authorize implementation or use the unaccepted RFC-0147
-rating exception.
+package. It does not authorize implementation. RFC-0147 is accepted, but this
+draft remains unmarked pending a qualifying child evaluation decision.
 
 ## Motivation
 
@@ -268,13 +268,13 @@ claim extends beyond the named checked model and tested domains.
 Ratings and score are zero, with benefit/cost unknown pending implementation.
 Current mode asymmetry, lexical control descriptors and memory-planner fallback
 are exact source observations. The proposed cross-product and limits are fixed
-test specifications, not completed evidence. RFC-0147 approval and a qualifying
-child evaluation decision are required before experimental acceptance.
+test specifications, not completed evidence. The approved RFC-0147 policy still
+requires a qualifying child evaluation decision before experimental acceptance.
 
 ## Decision
 
-Proposed; not accepted. Await the policy decision, the complete memory contract
-package and preimplementation workload/cost evidence. No production change is
+Proposed; not accepted. Await the complete memory contract package and
+preimplementation workload/cost evidence. No production change is
 authorized by this document's existence.
 
 ## Implementation

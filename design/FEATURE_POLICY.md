@@ -8,7 +8,8 @@ not valuable merely because it is convenient or familiar.
 A feature is rejected if it:
 
 - duplicates an existing semantic operation;
-- introduces syntactic sugar or a permanent alias;
+- introduces a permanent alias, or introduces syntactic elaboration outside
+  the explicitly accepted RFC-0147 M2 experiment boundary;
 - weakens memory, type, effect, or concurrency safety;
 - adds hidden allocation, copying, synchronization, or nondeterminism;
 - can be an ordinary library function without losing a required guarantee;
@@ -31,6 +32,18 @@ Every durable proposal rates each dimension from -2 to +2.
 The normalized score is `sum(rating * weight) / 2`, in the range -100 to 100.
 An accepted language primitive must score at least +40, have a +2 in one
 dimension, and have no negative safety, compile, runtime, or minimality rating.
+
+A current-process language RFC explicitly marked `Evaluation: m2-experiment`
+and `EvaluationRFC: RFC-0147` may be accepted for a named RFC-0112 M2 scope
+without the +40, primary +2, or nonnegative compile/runtime/minimality rating
+requirements. A negative safety rating remains disqualifying. Arithmetic,
+rating ranges, explicit acceptance, unique operations, library-first design,
+semantic safety, measured performance budgets and all verification gates
+remain mandatory. Unknown benefits and costs must be named as unknown;
+metadata zero is neutral and is not evidence of no cost. Each experiment
+specifies fixed implementation bounds, predeclared adoption evidence and
+removal conditions. Unmarked RFCs retain the existing rules. This exception
+cannot authorize any performance-budget relaxation.
 
 ## When an RFC is required
 

@@ -1,12 +1,12 @@
 # RFC-0147: Scoped M2 feature experiments
 
-Status: proposed
-Implementation: pending
+Status: accepted
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, pursuing the SLIM Next M3 goal through its M2 prerequisite
 Created: 2026-09-08
-DecisionDate: pending
+DecisionDate: 2026-09-08
 Approver: project-maintainer
 Kind: process
 Primitive: none
@@ -20,22 +20,22 @@ Score: 0
 
 ## Summary
 
-Propose the narrow policy change required to evaluate RFC-0112 M2. Permit
+Adopt the narrow policy change required to evaluate RFC-0112 M2. Permit
 explicitly specified elaboration and evidence-backed feature tradeoffs for named
 M2 experiments, while preserving semantic safety, canonical operations, measured
 performance budgets and every verification command. This is an explicit change
 to feature admission, not a claim that the current hard gates already allow it.
 
-No policy file or governance behavior changes while this RFC is proposed.
-The maintainer must approve the concrete exception before dependent acceptance.
+The maintainer approved this concrete policy exception on 2026-09-08.
+Dependent language decisions still require their own acceptance and evidence.
 
 ## Motivation
 
 RFC-0112 requires a process decision before successor elaboration and changed
-rating rules. RFC-0123 deliberately supplied neither. AGENTS.md still forbids
-sugar, and FEATURE_POLICY rejects negative compile/runtime/minimality ratings
+rating rules. RFC-0123 deliberately supplied neither. Before this decision, AGENTS.md forbade
+sugar, and FEATURE_POLICY rejected negative compile/runtime/minimality ratings
 even where an experiment would remain within all measured budgets. Governance
-applies its +40/no-negative/+2 rule to every accepted language RFC, including
+applied its +40/no-negative/+2 rule to every accepted language RFC, including
 ones marked primitive-free. Calling a language feature an architecture change
 or inventing favorable ratings would bypass that rule.
 
@@ -59,7 +59,7 @@ Rust semantics. All affected programs pass the sole production SLIM checker.
 
 ## Reference-level specification
 
-### Exact policy changes proposed
+### Exact approved policy changes
 
 In AGENTS.md, replace only this language-constraint bullet:
 
@@ -97,7 +97,7 @@ After the existing weighted-score threshold paragraph, add:
 > removal conditions. Unmarked RFCs retain the existing rules. This exception
 > cannot authorize any performance-budget relaxation.
 
-These are the only proposed edits to the rules. The +60 performance exception
+These are the only approved edits to the rules. The +60 performance exception
 rule, including measured cause, quantified impact and compensation, is unchanged.
 An unfavorable measured result stays recorded even if it is within a budget.
 
@@ -193,18 +193,23 @@ rule text and `check_rfcs` implementation. Experiment benefits are unknown.
 
 ## Decision
 
-Proposed for explicit maintainer approval because it changes the current
-sugar and feature-rating admission gates. RFC-0112 authorizes preparing this
-decision; it is not treated as silently overriding the current task's rules.
+Accepted by the project maintainer on 2026-09-08 with “I approve”, following
+the concrete policy preview and change summary. Approval covers this scoped
+process change; it does not accept the pending language/runtime children or
+establish M2 or M3 completion.
 
 ## Implementation
 
-Pending. This document is the complete policy-change preview. AGENTS.md,
-FEATURE_POLICY.md, governance implementation, source and runtime are unchanged.
+Implemented in AGENTS.md, FEATURE_POLICY.md and `src/bin/slim-govern.rs`.
+Six focused governance tests cover eligibility, malformed metadata, retained
+rating/safety/arithmetic/disposition rules, and surface activation. The eight
+AGENTS.md pre-commit commands passed; the [prerequisite ledger](../../benchmarks/results/2026-09-08-m2-prerequisites.md)
+identifies the source, failed sandbox attempt and complete rerun. No compiler or
+runtime semantics change in this process implementation.
 
 ## Removal and supersession
 
-If accepted, this narrowly amends FEATURE_POLICY and RFC-0108's rating enforcement
+This narrowly amends FEATURE_POLICY and RFC-0108's rating enforcement
 for tagged M2 experiments only. It supersedes no language feature or historical
-rejection. Withdraw it if the maintainer keeps the current admission rules; record
-the resulting RFC-0112 scope conflict instead of claiming M2 complete.
+rejection. A later process decision may withdraw new experimental admissions;
+retain historical evidence and record any resulting RFC-0112 scope conflict.
