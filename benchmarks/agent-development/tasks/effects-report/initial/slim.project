@@ -1,0 +1,6 @@
+(project 1
+  (entry app)
+  (module app "app.slim" (imports report) (exports))
+  (module metrics "metrics.slim" (imports) (exports Summary summarize))
+  (module render "render.slim" (imports metrics) (exports render))
+  (module report "report.slim" (imports metrics render) (exports send)))

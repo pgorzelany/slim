@@ -1,0 +1,20 @@
+module storage
+
+struct Buffer:
+  values: Vec[I64]
+
+fn make(first: I64, second: I64) -> Buffer effects[alloc]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, first)
+  vec.push(@values, second)
+  Buffer(values: values)
+
+fn append(buffer: @Buffer, value: I64) -> I64 effects[alloc]:
+  let values: Vec[I64] = mem.replace(@buffer.values, vec.new())
+  vec.push(@values, value)
+  let length: I64 = vec.len(values)
+  let empty: Vec[I64] = mem.replace(@buffer.values, values)
+  length
+
+fn drain(buffer: @Buffer) -> Vec[I64] effects[alloc]:
+  vec.new()

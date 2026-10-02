@@ -1,0 +1,78 @@
+{
+  "schema": 1,
+  "protocol": "rfc-0159-cold-context-v1",
+  "compiler_flags": ["-std=c11", "-O2", "-DNDEBUG", "-Wall", "-Wextra", "-Werror"],
+  "timing": {
+    "warmups_per_command_and_compiler": 1,
+    "ordinary_pairs": 7,
+    "ordinary_orders": ["AB", "BA"],
+    "context_samples": 7,
+    "context_check_orders": ["check/context", "context/check"],
+    "preflight": "Normal output parity and two context determinism calls precede the one declared warmup; preflight costs are not timing samples.",
+    "timeout_seconds": 60,
+    "metric": "native-process-wall-seconds-including-startup-capture-checking-and-output",
+    "absolute_timing_gate": null,
+    "cross_host_timing_comparison": "unsupported"
+  },
+  "limits": {
+    "input_bytes": 16777216,
+    "modules": 128,
+    "canonical_nodes": 1000000,
+    "selected_source_bytes": 65536,
+    "providers": 64,
+    "facts": 512,
+    "references": 512,
+    "type_bytes": 4096,
+    "type_nodes": 128,
+    "signature_bytes": 8192,
+    "report_bytes": 1048576,
+    "operand_bytes": 4096
+  },
+  "metrics": {
+    "inspected_nodes": "Reported selected lexical scan only; excludes selector search, checker work, form_span descendant visits, provider and type work.",
+    "fact_rows": "Reported emitted selected checked facts, capped at 512; omitted row totals remain unknown.",
+    "reference_rows": "Reported emitted lexical reference occurrences, capped at 512; duplicates are retained.",
+    "provider_rows": "Reported emitted distinct direct providers, capped at 64; provider bodies are not traversed.",
+    "source_bytes_copied": "Reported original source octets copied into report strings; distinct from encoded report bytes.",
+    "report_bytes": "Exact successful stdout byte length including the final newline.",
+    "fact_span_bytes_sum": "Independent sum of valid reported fact source-span lengths. This overlapping source-byte metric is not a canonical-node work counter.",
+    "nested_suffix_items": "Generator structural proxy n(n+1)/2 for nested continuation/expression suffixes; not observed compiler work.",
+    "native_process_seconds": "Uninstrumented process wall time. The context command includes normal admission/checking/construction/output and is not retained query latency."
+  },
+  "phase_isolation": {
+    "ordinary_check": "Separate measured command, never subtracted to invent context construction time.",
+    "ordinary_emit": "Separate measured command including checking and generated C emission.",
+    "cold_context": "Separate measured command including admission, checking, construction and output.",
+    "admission_seconds": "unknown: no independent phase instrumentation",
+    "context_construction_seconds": "unknown: no independent phase instrumentation",
+    "output_seconds": "unknown: no independent phase instrumentation",
+    "total_context_node_work": "unknown: inspected_nodes omits repeated form_span and provider/type work",
+    "peak_memory_bytes": "unknown: no peak-memory observer"
+  },
+  "ordinary": [
+    {"id": "helper_chain", "generator": "helper_chain", "sizes": [125, 250, 500, 1000]},
+    {"id": "http", "project": "library/http.project"},
+    {"id": "selfhost", "project": "selfhost/slim.project"}
+  ],
+  "context": [
+    {"id": "repeated_calls", "generator": "repeated_calls", "sizes": [32, 64, 128, 256, 512, 1024], "selector": "probe.selected", "outcome": "accepted", "reference_count": "size", "provider_count": 1},
+    {"id": "let_continuations", "generator": "let_continuations", "sizes": [16, 32, 64, 128, 256, 512, 1024], "selector": "probe.selected", "outcome": "accepted", "reference_count": 0, "provider_count": 0, "nested_suffix_items": true},
+    {"id": "nested_expressions", "generator": "nested_expressions", "sizes": [16, 32, 64, 128, 256, 512, 1024], "selector": "probe.selected", "outcome": "accepted", "reference_count": "size", "provider_count": 1, "nested_suffix_items": true},
+    {"id": "nested_let_if", "generator": "nested_let_if", "sizes": [8, 16, 32, 64], "selector": "probe.selected", "outcome": "accepted", "reference_count": 0, "provider_count": 0, "nested_suffix_items": true, "source_geometry": "Quadratic indentation bytes; report actual bytes separately from depth."},
+    {"id": "nested_if_continuations", "generator": "nested_if_continuations", "sizes": [16, 32, 64, 128], "selector": "probe.selected", "outcome": "accepted", "reference_count": 0, "provider_count": 0, "nested_suffix_items": true, "source_geometry": "Quadratic indentation bytes; report actual bytes separately from depth."},
+    {"id": "http", "project": "library/http.project", "selector": "http_parser.parse", "outcome": "accepted"},
+    {"id": "selfhost", "project": "selfhost/slim.project", "selector": "context.run", "outcome": "accepted"},
+    {"id": "selected_source_reject", "generator": "selected_source_reject", "sizes": [65537], "selector": "selected_limit.selected", "outcome": "rejected", "diagnostic": "E0451", "rejection_reason": "selected-source-limit"},
+    {"id": "report_reject", "generator": "report_reject", "sizes": [64], "selector": "report_limit.selected", "outcome": "rejected", "diagnostic": "E0451", "rejection_reason": "report-limit", "source_geometry": "64 direct providers with 7900-byte parameter names; selected source remains below 65536 bytes."}
+  ],
+  "deterministic_assertions": [
+    "Freeze generator, manifest, source snapshots, compiler C inputs, executable and runtime hashes before invoking any compiler.",
+    "Baseline/candidate runtime C and header bytes must match exactly; compiler flags are a declared build provenance requirement, not inferred from a binary.",
+    "Normal check and generated C outputs must agree byte for byte for both compilers on every fixed source.",
+    "Every sampled output must equal its preflight output; successful context output must repeat byte for byte.",
+    "Validate fixed schema limits, complete original selected source spans, row accounting and exact/bounded section evidence.",
+    "For geometric generated accepted context sources, selected lexical inspected_nodes must grow at most 2x plus 64 when size doubles; this asserts no bound on omitted descendant, checking, provider or type work.",
+    "Keep expected rejections as measured rows with diagnostics and no partial JSON, rather than filtering them out.",
+    "Verify all frozen input, generator, compiler and runtime identities before and after the run; keep failures and interruptions in the report."
+  ]
+}

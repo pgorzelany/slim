@@ -1,0 +1,5 @@
+module report
+
+fn send(values: Vec[I64]) -> Void effects[io, partial]:
+  let total: I64 = metrics.summarize(values)
+  render.render(total)

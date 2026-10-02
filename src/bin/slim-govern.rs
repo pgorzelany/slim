@@ -298,6 +298,7 @@ fn check_core_1l_contracts(root: &Path, rfcs: &BTreeMap<String, Rfc>, errors: &m
         "reduction-proof\t2\tversioned-tooling\tdocs/REDUCTION.md",
         "reduction-verification\t1\tversioned-tooling\tdocs/REDUCTION.md",
         "structural-edit\t1\tversioned-tooling\tdocs/QUALITY.md",
+        "semantic-context\t1\tversioned-tooling\tdocs/CONTEXT.md",
         "runtime-abi\t1\texact-match\truntime/slim_rt.h",
         "c-backend\t1\tpre-1.0-minor\tdocs/CORE.md",
     ];

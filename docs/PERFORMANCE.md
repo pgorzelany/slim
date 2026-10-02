@@ -2,67 +2,59 @@
 
 Status: SLIM 0.9 permanent regression contract
 
-Performance fixtures and budgets are durable product infrastructure. A dated
-result never replaces an executable gate, and safety rules are never weakened
-to improve a measurement. RFC-0030 owns the architecture.
+Fixtures/budgets are permanent (RFC-0030). Dated results never replace gates;
+never weaken safety for measurements.
 
 ## Evidence layers
 
-The repository maintains three independent layers:
+Independent layers:
 
-1. **Deterministic work gates** check output, repeated byte identity,
-   observed compiler work, invalidation estimates, cache behavior, and bootstrap
-   fixed points. Invalidation estimates are not executed incremental work.
-2. **Portable regression gates** use geometric scaling exponents and same-host
-   ratios, avoiding comparisons between unlike machines.
-3. **Dated measurements** record medians, source/output sizes, toolchains,
-   hosts, and reproduction commands.
+1. **Deterministic work:** output/repeated byte identity, observed work,
+   invalidation estimates (not executed incremental work), cache behavior and
+   bootstrap fixed points.
+2. **Portable regression:** geometric exponents and same-host ratios, never
+   unlike-machine timings.
+3. **Dated measurements:** medians, source/output sizes, toolchains, hosts,
+   reproduction commands.
 
-`benchmarks/performance-budgets.tsv` is the canonical machine-readable budget
-ledger. A budget may tighten directly. Relaxing one requires an accepted RFC
-scoring at least +60, measured impact, and containment or compensation.
+Authoritative ledger: `benchmarks/performance-budgets.tsv`. Tightening is direct;
+relaxation requires an accepted RFC scoring ≥ +60, measured impact and
+containment/compensation.
 
 ## Independent dimensions
 
-The suite reports compiler startup and input, checking, deterministic C
-emission, incremental invalidation, external C compilation, generated runtime,
-binary size, compiler memory where stable, source and lexical size, diagnostic
-size, edit span, and correctness separately. No aggregate score hides a
-regression. Native runtime is not compiler speed, and token proxies are not an
-LLM success rate.
+Separate compiler startup/input, checking, deterministic C emission, incremental
+invalidation, external C compilation, generated runtime, binary size, compiler
+memory where stable, source/lexical size, diagnostic size, edit span and correctness.
+Never aggregate away regressions or equate runtime with compiler speed or token
+proxies with LLM success.
 
-The separator-dense frontend series records source bytes, neutral lexemes,
-comma lexemes, canonical AST nodes, and parse/check medians. Commas remain
-temporary tokens and add zero canonical AST nodes.
+Separator-dense metrics: source bytes, neutral/comma lexemes, canonical AST nodes,
+parse/check medians. Temporary commas add zero AST nodes.
 
 ## Scaling and runtime gates
 
-Quick geometric compiler series use 250, 500, 1,000, and 2,000 declarations;
-full series extend through 8,000. Ordinary checking, emission, reduction,
-analysis, and proof remain within their recorded approximately-linear exponent
-budgets. Separate shapes cover nested bindings, named type references, owned
-transfers, aggregate temporaries, planned allocation calls, and shared reads.
+Geometric declarations: quick 250, 500, 1,000, 2,000; full through 8,000.
+Checking/emission/reduction/analysis/proof obey recorded approximately-linear
+exponents. Shapes: nested bindings, named type references, owned transfers,
+aggregate temporaries, planned allocation calls, shared reads.
 
-The twenty comparative challenges must match their C and Rust oracles before
-runtime ratios are measured. Per-program budgets remain authoritative because
-checked arithmetic, bounds, storage, and recurrence costs differ by algorithm.
-Host and parallel gates compare the same operation or generated program on the
-same warmed host.
+Twenty comparative challenges must match C/Rust oracles before runtime ratios.
+Per-program budgets govern algorithm-specific checked arithmetic/bounds/storage/
+recurrence costs. Host/parallel comparisons use identical operations/generated
+programs on one warmed host.
 
-The source-library corpus adds ten real multi-module projects. Its application
-gate alternates checking and C emission, requires byte-identical repeated C,
-reports source and generated sizes independently, and limits each same-host
-emit/check ratio. This supplements geometric generated-source series with
-records, variants, ownership, parsing, recursion, binary output, and bounded
-host-I/O shapes exercised by maintained programs.
+Ten maintained multi-module source-library projects add records/variants/ownership/
+parsing/recursion/binary output/bounded host I/O to generated series. Their gate:
+alternating check/emission, repeated byte-identical C, separate source/generated
+sizes, each same-host emit/check ratio limited.
 
-Checked operations remain checked unless a positive fact for the exact node
-justifies direct lowering. The canonical native build uses portable `-O3`
-without LTO, profiles, or target-specific flags.
+Direct lowering requires a positive fact for that exact checked node. Native builds:
+portable `-O3`, no LTO/profiles/target-specific flags.
 
 ## Running the contract
 
-The complete gate is `./scripts/verify.sh`. Focused commands are:
+Complete gate: `./scripts/verify.sh`. Focused commands:
 
 ```text
 cargo run --release --bin slim-bench -- performance --quick
@@ -77,155 +69,122 @@ cargo run --release --bin slim-bench -- agent
 
 ## Observed compiler work
 
-`slim-bench work` instruments an opt-in copy of the reproduced production C
-compiler. The normal compiler, SLIM semantics, seed, runtime ABI, and generated
-application code remain unchanged. Rust only constructs and checks observations;
-it supplies no compiler semantics. Every measured operation must match ordinary
-compiler stdout, stderr, and exit status, and two observed executions must have
-identical counts and output. The full verification command includes the quick
-campaign. `work --quick --sanitize` additionally checks the observed compiler
-under ASan/UBSan.
+Opt-in `slim-bench work` instruments a reproduced production C compiler copy;
+normal compiler/semantics/seed/runtime ABI/generated applications unchanged. Rust constructs/
+checks observations, never semantics. Require ordinary stdout/stderr/exit-status
+equality, two observed runs' identical counts/output. Verification includes quick;
+`work --quick --sanitize` adds ASan/UBSan.
 
-The versioned hook table is in `src/bin/slim-bench/work.rs`. Its records identify
-the actual source function and whether they count native entries, loop-header
-visits, or input bytes. Input-byte counters measure bytes offered to that parser
-entry, not bytes successfully parsed before an error. Header visits include the
-terminal test; a tail `recur`
-is a new header visit, not a new native function entry. Calls count attempts at
-that entry point, not successfully checked declarations or all semantic work.
+Versioned `src/bin/slim-bench/work.rs` hooks identify source functions/count units:
+native entries, loop headers or input bytes. Bytes are offered parser input, not
+parsed bytes; headers include terminal tests. Tail `recur` adds a header, not
+native entry. Calls count attempts, not successful declarations/all semantic work.
 
 | Counter group | Observed operations |
 | --- | --- |
 | Parsing | Program-parser entries/input bytes, source lexer headers, data-lexer entries/input bytes, declaration-index entries/headers, name-trie insertion/lookup/edge headers |
-| Checking | Checker and typer entries, typed-declaration headers, expression-check entries, ownership find entries/frame closures, memory-plan and range-analysis entries |
-| Generation | C-program, C-function, and full-expression emitter entries |
+| Checking | Checker/typer entries, typed-declaration headers, expression-check entries, ownership-find entries/frame closures, memory-plan/range-analysis entries |
+| Generation | C-program/C-function/full-expression emitter entries |
 | Cache | Requests, key builds, probes, hit/miss handlers, checksum headers |
 | Snapshot model | Snapshot-builder and invalidation-estimate entries |
-| File input | Actual runtime read calls and bytes delivered by `fread`, including metadata/artifacts and repeated reads |
-| External backend | Harness-observed C compilation calls, separate elapsed time, and native fixture exit status |
+| File input | Runtime read calls/`fread`-delivered bytes, including metadata/artifacts/repeated reads |
+| External backend | Harness-observed C compilation calls, separate elapsed time, native fixture exit status |
 
-The 32 native counters use a fixed 1,000,000,000 cap and arithmetic that checks
-remaining capacity before addition. A counter that exceeds the cap reports
-`bounded`; unsaturated counts report `exact` for that observed process. A count
-exactly equal to the cap remains exact until another increment exceeds it.
-Missing, malformed, or incomplete exit reports are unknown and fail the
-campaign. Signals and report I/O failures must never appear as zero work.
-Small-cap native tests exercise saturation with `UINT64_MAX` under UBSan.
+32 native counters check remaining capacity before adding; cap 1,000,000,000.
+Unsaturated counts/cap equality: `exact` for the observed process; excess: `bounded`.
+Missing/malformed/incomplete exits: unknown/fail. Signals/report I/O failures never
+mean zero. Small-cap UBSan saturation: `UINT64_MAX`.
 
-The observer reports to its own temporary file, outside compiler output and
-diagnostics. Its reporting I/O is excluded from compiler read counters. The
-observed binary is serial, built without worker macros. Setup compilation,
-seed reproduction, application C compilation, and native frontend work have
-separate records. Instrumented timings are not production compiler latency;
-the ordinary performance and paired-latency commands remain independent.
+Reports: separate temporary file outside compiler output/diagnostics; reporting I/O
+excluded from read counters. Serial, no worker macros. Separate setup compilation/
+seed reproduction/application C compilation/native frontend records. Instrumented
+timings are not production latency; ordinary performance/paired-latency remain
+independent.
 
-The campaign records seed/compiler/instrumented-source/runtime/probe/harness
-identities, host, C toolchain, flags, input bundles, and output identities.
-FNV fingerprints are identity aids, not authentication or proof of semantic
-equivalence. Seed reproduction and byte-by-byte output comparisons supply
-the relevant equality checks. Missing or duplicated observation anchors fail
-instead of silently recording zero.
+Record seed/compiler/instrumented-source/runtime/probe/harness identities,
+host/toolchain/flags/input bundles/output identities. FNV aids identity, never
+authentication/semantic equivalence; seed reproduction/byte comparisons establish
+equality. Missing/duplicate anchors fail, never zero.
 
-Geometric declaration fixtures gate actual parser/checker/generator visits and
-name-trie work. A separate many-owner reinitialization series gates frame
-closures and union-find calls rather than inferring them from source size.
-For the fixed N-declaration fixture, declaration-index and type-declaration
-headers each visit N+2 times, expression checking enters 2N+3 times, and C
-function emission enters N+1 times. Lexer headers are capped at twice input
-bytes plus one; name-edge headers at 64 times (input bytes plus one). For N owners
-reset in both arms, the tracker closes 3N frames and performs at most 16N+32
-union-find calls. These are permanent work gates for these named fixtures,
-not a claim that their formulas apply to every program.
-RFC-0127 additionally observes each function-body check and each binding-fact
-materialization loop header. The generated N-function family plus main checks
-exactly N+1 bodies and visits 2(N+1) materialization headers. Allocation attempts
-are counted at the runtime's existing attempt increment, including an injected
-failure but excluding calls declined after failure. Cumulative requested payload
-bytes count the size passed at that same point, before zero-size normalization;
-they exclude runtime headers/system allocator overhead and are not peak memory.
-Both counters use the existing fixed cap. The generated check/emission family
-allows at most 16N+128 attempts. The 128-ordinal ownership fixture must reach a
-function check before at least one failure and must also reach successful
-ordinals beyond its allocations. Failed attempts equal the injected ordinal and
-produce no partial standard output.
-RFC-0128's geometric shared-layout family contains four aggregate declarations
-per group. It requires exactly 5N inline-type visits, 4N emitted definitions for
-emission (zero for checking), and at most 16N+128 allocation attempts. Shared leaf
-dependencies are completed once by the existing checker. A 256-ordinal campaign
-must cross failures after layout traversal starts, failures after aggregate
-emission starts, and successful ordinals beyond all fixture allocations; failures
-must preserve exact attempt counts and produce no partial C output.
-RFC-0129 bounds optional flow construction independently by task steps, blocks,
-edges and pending tasks, with a caller budget in 1..1,000,000. The retained
-geometric binding-chain fixture has exactly 3N+4 blocks, 3N+2 edges and 2N+1
-processed tasks. Native probe observation separately counts derive/walk entries,
-walk headers and returned task steps; successful runs require headers = steps +
-walk entries, repeatable counters, and ordinary/sanitized output equality.
-The measurement-only observer saturates at 1,000,000,000 and never enters the
-installed compiler/runtime. Its 512 allocation-fault ordinals require failures
-after task walking begins, no successful partial graph output, and later success.
-This does not make the preceding recursive checker iterative. The dated flow
-report records its pre-existing stack limit under sanitizer instrumentation.
-The two-module edit/cache campaign distinguishes the three parses of a clean
-build from zero program parses on a hit and four parses for an unchanged
-snapshot comparison. All 20 native challenges are emitted by both compilers
-and compared byte for byte. Bounded compiler allocation-fault ordinals verify
-partial-work reports without changing failure diagnostics. No result establishes
-M1 retained incremental queries or an LLM effectiveness rate.
+Permanent geometric fixtures observe parser/checker/generator/name-trie work;
+many-owner reinitialization observes frame closures/union-find. Fixture-only formulas:
 
-A performance-directed compiler or runtime change records baseline and
-candidate measurements on the same host after warmup. Full release evidence
-runs the non-quick commands and preserves its dated report.
+- N declarations: declaration-index/type-declaration headers N+2 each,
+  expression-check entries 2N+3, C-function entries N+1; lexer headers ≤ twice
+  input bytes + one, name-edge headers ≤ 64 × (input bytes + one).
+- N owners reset in both arms: 3N frame closures, ≤ 16N+32 union-find calls.
+- RFC-0127 N functions plus main: exactly N+1 body checks and 2(N+1)
+  binding-fact materialization headers; check/emission ≤ 16N+128 allocation attempts.
+  Attempts count at the runtime increment, including injected failure/excluding
+  later declined calls. Cumulative requested payload bytes use its size before
+  zero-size normalization, excluding runtime headers/system allocator overhead, not
+  peak memory. Both counters retain the cap. The 128-ordinal ownership campaign
+  requires at least one failure after function checking starts and success beyond
+  allocations. Failed
+  attempts equal injected ordinals; no partial stdout.
+- RFC-0128: four aggregate declarations/group, exactly 5N inline-type visits, 4N emitted
+  definitions (zero for checking), ≤ 16N+128 allocation attempts; shared leaves complete
+  once by the existing checker. The 256 fault ordinals cross layout-started/emission-started failures and
+  success beyond allocations. Failures preserve exact attempts; no partial C.
+- RFC-0129 optional flow: independent task-step/block/edge/pending-task bounds,
+  caller budget 1..1,000,000. Binding chains: exactly 3N+4 blocks, 3N+2 edges,
+  2N+1 processed tasks. Native probes separately count derive/walk entries,
+  walk headers/returned steps. Success: headers = steps + walk entries,
+  repeatable counts, ordinary/sanitized output equality. Measurement-only observer:
+  cap 1,000,000,000, absent from installed compiler/runtime. 512 fault ordinals:
+  post-walk-start failures, no successful partial graph, later success. Preceding
+  checker stays recursive; dated report records its pre-existing sanitizer stack
+  limit.
+
+Two-module edit/cache parses: clean three, hit zero program parses, unchanged
+snapshot four. Both compilers emit 20 native challenges for byte comparison.
+Bounded allocation faults verify partial work/preserve diagnostics, establishing
+neither M1 retained queries nor LLM effectiveness.
+
+Performance-directed compiler/runtime changes record warmed same-host
+baseline/candidate measurements. Full releases run non-quick commands and retain
+dated reports.
 
 ## Historical evidence
 
-Optimization rationale, acceptance ratios, and milestone-specific measurements
-remain in their numbered RFCs and `benchmarks/results/`. The current contract
-contains only the durable measurement rules; Development evidence provides the
-historical numbers.
+RFCs/`benchmarks/results/` preserve rationale, acceptance ratios and milestone
+measurements; Development evidence supplies numbers, this contract durable rules.
 
 ### Retained function typing
 
-RFC-0130's internal entry point has native-observed inference reuse. RFC-0143
-now exposes that engine through a public framed session; closure remains pending. Its geometric family executes zero function
-checks for unchanged updates and one for a single helper-body edit. Parsing,
-linking, global checks and generation still run. Native counts and repeated
-clean-equivalence checks are in the [current work table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-work.tsv.gz).
-The [current latency table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-latency.tsv.gz)
-separates ordinary checks, old/new retained storage and two-clean-check comparisons.
-RFC-0131 reduces retained setup/update overhead, but constructing a retained snapshot
-plus one update is still slower than two clean checks in this measured workload.
-Those totals are not isolated warm-query latency. Snapshot construction, copying
-and public service integration remain M1 work. No existing gate is relaxed.
+RFC-0130 inference reuse is native-observed; RFC-0143 public framing has pending
+closure. Geometric unchanged/helper-body edits execute zero/one function checks; parsing/
+linking/globals/generation persist. The [current work table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-work.tsv.gz)
+records counts/repeated clean equivalence; the [current latency table](../benchmarks/results/archive/2026-09-06-m1-compact-retained-latency.tsv.gz)
+separates ordinary checks, old/new retained storage and two-clean comparisons.
+RFC-0131 lowers setup/update overhead; snapshot-plus-update still exceeds two clean
+checks here, not isolated warm-query latency. Snapshot creation/copying/public
+integration remain M1 work; gates unchanged.
 
-RFC-0131 reduces the saved node record from 264 to 64 bytes and the temporary
-pre-inference link from 104 to eight bytes on the measured host. Native probe
-compilation gates these fixed-payload ceilings. These are not peak RSS measurements;
-index storage, vector capacity slack and copied source spans are additional. The API's configurable token limit
-is 1..1,000,000, not a byte or RSS cap. Over-limit or invalid configurations execute
-ordinary checking and report capacity misses. Nonnegative Work counters are exact
-within this token domain. `executed = -1` means work was not counted by the retained
-loop: capacity misses use the ordinary checker; early rejected inputs do not enter
-typing. Missing counters are never treated as zero work. The separate native
-observer has 64 phases and checked saturation at 1,000,000,000 calls; phase returns
-do not certify successful publication. [Current fault observations](../benchmarks/results/archive/2026-09-06-m1-compact-retained-faults.tsv.gz)
-cover 512 allocation ordinals through the full differential probe.
-
+RFC-0131 measured-host node records: 264→64 bytes; temporary pre-inference links: 104→eight bytes.
+Native probe compilation gates payload ceilings, not peak RSS; additional indexes/
+capacity slack/copied source spans. Configurable token limit: 1..1,000,000, not bytes/RSS.
+Invalid/over-limit configurations: ordinary checks/capacity misses. Nonnegative Work
+counters are exact within this token domain; `executed = -1`: retained-loop work
+uncounted (capacity misses check ordinarily; early rejection skips typing).
+Missing counters never mean zero. Separate observer: 64 phases, checked saturation at
+1,000,000,000 calls; returns cannot certify publication.
+[Current fault observations](../benchmarks/results/archive/2026-09-06-m1-compact-retained-faults.tsv.gz)
+cover 512 full differential-probe allocation ordinals.
 
 ### Retained project preparation
 
-RFC-0132 connects the same retained checker to current project validation and
-source-mapped preparation. [Project work observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-work.tsv.gz)
-count actual function-check calls within retained project attempts: zero on
-unchanged input and one on the maintained helper-body edit, through 4,000 helpers
-in two modules. Full prepared fields, memory plans and C match clean preparation.
-The permanent family imports 15N+22 or 15N+7 canonical nodes respectively.
-Module parsing, flattening/reparse, global checking and generation remain work.
+RFC-0132 connects the same checker to project validation/source-mapped preparation.
+[Project work observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-work.tsv.gz):
+zero/one function-check calls for unchanged/helper-body edits through 4,000 helpers/two modules.
+Complete fields/memory plans/C match clean preparation; permanent family imports:
+15N+22/15N+7 canonical nodes respectively. Module parsing/flattening/reparse/globals/
+generation remain work.
 
 [Project timings](../benchmarks/results/archive/2026-09-07-m1-retained-project-latency.tsv.gz)
-separate ordinary before/after preparation from two-clean-versus-retained runs.
-The latter still favors clean preparation in this family and is not isolated
-warm-query latency. [Project fault observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-faults.tsv.gz)
-cover 2,048 ordinals of the complete differential probe. Native phase returns
-remain distinct from publication. Historical estimates now use a measurement
-fixture, and public-session measurements are recorded independently.
+separate ordinary before/after preparation from two-clean-versus-retained runs;
+the latter favors clean preparation, not isolated warm-query latency.
+[Project fault observations](../benchmarks/results/archive/2026-09-07-m1-retained-project-faults.tsv.gz)
+cover 2,048 complete differential-probe ordinals. Phase returns are not publication;
+historical estimates use a measurement fixture, public-session measurements remain
+independent.

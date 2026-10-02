@@ -11,5 +11,6 @@ equivalence	2	versioned-tooling	docs/QUALITY.md
 reduction-proof	2	versioned-tooling	docs/REDUCTION.md
 reduction-verification	1	versioned-tooling	docs/REDUCTION.md
 structural-edit	1	versioned-tooling	docs/QUALITY.md
+semantic-context	1	versioned-tooling	docs/CONTEXT.md
 runtime-abi	1	exact-match	runtime/slim_rt.h
 c-backend	1	pre-1.0-minor	docs/CORE.md

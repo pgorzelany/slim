@@ -1,0 +1,19 @@
+module rules
+
+enum Decision:
+  Below
+  Inside(I64)
+  Above
+
+struct Limits:
+  lower: I64
+  upper: I64
+
+fn classify(value: I64, limits: Limits) -> Decision:
+  if value < limits.lower:
+    Decision::Below()
+  else:
+    if value > limits.upper:
+      Decision::Above()
+    else:
+      Decision::Inside(value)

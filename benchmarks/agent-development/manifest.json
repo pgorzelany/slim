@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "protocol": "semantic-context-feasibility-1",
+  "model": "gpt-6.1-sol",
+  "reasoning_effort": "xhigh",
+  "elapsed_budget_seconds": 900,
+  "compiler_operation_budget": 24,
+  "command_timeout_seconds": 30,
+  "tasks": [
+    {"id": "effects-report", "initial_check": "accepted", "files": ["app.slim", "metrics.slim", "render.slim", "report.slim", "slim.project"]},
+    {"id": "buffer-drain", "initial_check": "accepted", "files": ["app.slim", "archive.slim", "pipeline.slim", "storage.slim", "slim.project"]},
+    {"id": "range-api", "initial_check": "accepted", "files": ["app.slim", "gateway.slim", "rules.slim", "stats.slim", "slim.project"]}
+  ],
+  "trials": [
+    {"id": "01-effects-baseline", "task": "effects-report", "condition": "baseline"},
+    {"id": "02-effects-context", "task": "effects-report", "condition": "context"},
+    {"id": "03-buffer-context", "task": "buffer-drain", "condition": "context"},
+    {"id": "04-buffer-baseline", "task": "buffer-drain", "condition": "baseline"},
+    {"id": "05-range-baseline", "task": "range-api", "condition": "baseline"},
+    {"id": "06-range-context", "task": "range-api", "condition": "context"}
+  ]
+}

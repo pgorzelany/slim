@@ -1,0 +1,11 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let buffer: storage.Buffer = storage.make(5, 7)
+  let first: Vec[I64] = pipeline.round(@buffer, 3)
+  io.print_i64(archive.checksum(^first))
+  io.println("")
+  let second: Vec[I64] = pipeline.round(@buffer, -1)
+  io.print_i64(archive.checksum(^second))
+  io.println("")
+  0

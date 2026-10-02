@@ -1,95 +1,83 @@
 # Incremental compilation status
 
-`slimc session` exposes retained production parsing, checking, analysis, C emission
-and native artifacts. Ordinary `check`, `emit-c` and `build` remain one-shot
-operations. M1 release verification is complete; see the
-[implementation report](../benchmarks/results/2026-09-05-slim-next-progress.md)
-for current verification, costs and limits.
+`slimc session` retains production parsing/checking/analysis/C emission/native
+artifacts; `check`/`emit-c`/`build` are one-shot. M1 release verification is complete;
+[implementation report](../benchmarks/results/2026-09-05-slim-next-progress.md):
+verification/costs/limits.
 
 ## Public framed session
 
-Start `./slimc session` without arguments. Bootstrap builds the adapter from the
-verified portable seed and paired runtime. Each frame contains a tag, a four-byte
-big-endian payload length and exactly that payload. Accept only complete responses.
-[RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md) specifies frontend
-layouts, admission limits and errors;
-[RFC-0146](../design/rfcs/0146-native-builds-in-compiler-sessions.md) specifies native
-requests and results.
+Argument-free `./slimc session` bootstraps the adapter from verified portable
+seed/paired runtime. Frame = tag + four-byte big-endian payload length + exact
+payload; accept complete responses only. [RFC-0143](../design/rfcs/0143-host-bound-compiler-sessions.md):
+frontend layouts/admission limits/errors; [RFC-0146](../design/rfcs/0146-native-builds-in-compiler-sessions.md):
+native requests/results.
 
 | Frame | Operation |
 | --- | --- |
-| `H` | Identifies the loaded compiler, runtime, target and options. Clients cannot supply identities or cached facts. |
-| `U` / `S` | Updates a manifest path; returns actual work and deterministic C on success, or diagnostics and the last-good revision without C on rejection. |
-| `B` / `N` | Builds the exact selected successful epoch/revision; returns complete executable bytes or an explicit failure. |
-| `R` | Physically releases frontend/native query storage and starts a cold epoch; captured native tools remain. |
-| `Q` | Closes the connection. EOF between frames also closes. |
+| `H` | Identifies loaded compiler/runtime/target/options; no client identities/cached facts. |
+| `U` / `S` | Manifest-path update: success → actual work/deterministic C; rejection → diagnostics/last-good revision without C. |
+| `B` / `N` | Exact selected successful epoch/revision: complete executable bytes or explicit failure. |
+| `R` | Physically releases frontend/native query storage; cold epoch, captured native tools retained. |
+| `Q` | Connection closes; inter-frame EOF also closes. |
 
-Only a fully checked candidate replaces the successful snapshot. A rejected update
-preserves explicitly selectable last-good artifacts. Exhausted identities never
-wrap. Clients publish executable responses through a fresh staging inode and atomic
-rename. Source capture, response transmission and output assembly remain work.
+Fully checked replacement only; rejection preserves selectable last-good artifacts.
+Identities never wrap. Publish via fresh staging inode/atomic rename. Source
+capture/response transmission/output assembly remain work.
 
 ## Retained compiler substrate
 
-[RFC-0124](../design/rfcs/0124-retained-compiler-substrate.md) defines the substrate
-and links its child contracts. Canonical SLIM and the normal checker remain the
-sole semantic authority; cache damage or missing evidence cannot approve source.
+[RFC-0124](../design/rfcs/0124-retained-compiler-substrate.md): substrate/child
+contracts. Source approval requires canonical SLIM/normal checking, never damaged
+caches/missing evidence.
 
-- Typed revision/file/declaration/node/span identities validate ownership and exact
-  content before translating source positions. Complete declaration keys preserve
-  relocation and ordering changes without resurrecting deleted handles.
-- Retained declaration parsing validates lexical/lookahead dependencies. Function
-  checking reuses successful facts through checked maps and complete interface
-  dependencies; misses invoke the same isolated checker. Shared canonical control
-  descriptions support explicit checking continuations and an optional bounded
-  flow view. The separate name-resolution prepass retains its documented sanitizer
-  depth limit.
-- Memory plans, range facts, ordered caller-input contributions and complete bounded
-  parallel results validate their consumed dependencies. Callers invalidate when
-  body-derived recurrence, work or selection facts change. Missing or bounded-away
-  history runs the ordinary producer.
-- Declaration-local C identities permit retained prototypes, bodies and parallel
-  wrappers. Imports validate owners, framing, checksums and complete checked,
-  memory, range and selected-site inputs. Checksums detect accidental corruption;
-  they do not authenticate arbitrary imported C.
+- Typed revision/file/declaration/node/span identities validate owners/exact content
+  before position translation. Complete declaration keys preserve relocation/
+  reordering, never resurrect deleted handles.
+- Declaration parsing validates lexical/lookahead dependencies. Checked maps/complete interface
+  dependencies permit successful function-fact reuse; misses use the same isolated
+  checker. Shared canonical control descriptions support explicit checking continuations/
+  optional bounded flow; separate name-resolution prepass retains documented sanitizer
+  depth limits.
+- Memory plans/range facts/ordered caller-input contributions/complete bounded parallel
+  results validate dependencies. Changed body-derived recurrence/work/selection facts
+  invalidates callers; missing/bounded-away history uses ordinary producers.
+- Declaration-local C identities retain prototypes/bodies/parallel wrappers. Imports
+  validate owners/framing/checksums/complete checked/memory/range/selected-site
+  inputs. Checksums detect accidental corruption, cannot authenticate arbitrary C.
 
-Manifest/import/export validation, flattening, layout/global checks, termination
-validation and complete C assembly remain current-revision work. Optional history
-capacity misses preserve ordinary checking. Admission limits do not bound peak RSS.
-The former Rust incremental API supplies no production semantics.
+Current-revision work: manifest/import/export validation, flattening, layout/global
+checks, termination validation, complete C assembly. History-capacity misses check
+ordinarily; admission limits cannot bound peak RSS. Former Rust incremental APIs
+supply no production semantics.
 
 ## Native artifact query foundation
 
-[RFC-0145](../design/rfcs/0145-retained-native-artifact-queries.md) defines complete
-native keys and owned storage. RFC-0146 connects these queries to checked-source
-selection. The reference provider captures Apple clang 21 on Darwin/arm64, its
-required dependencies, SDK inputs and paired runtime into connection-owned storage.
-Unsupported contexts explicitly decline native session builds. Restart to refresh
-tools; reset only clears query history. Body edits still compile the whole generated
-C translation unit while eligible runtime objects remain reusable.
+[RFC-0145](../design/rfcs/0145-retained-native-artifact-queries.md): complete native
+keys/owned storage; RFC-0146: checked-source selection. Reference connection-owned
+captures: Darwin/arm64 Apple clang 21/required dependencies/SDK inputs/paired runtime.
+Unsupported contexts explicitly decline native session builds. Restart refreshes
+tools; reset clears only history. Body edits compile whole generated C units;
+eligible runtime objects remain reusable.
 
 ## Observed execution
 
-`sh scripts/verify-session-host.sh` compares full clean/retained results and observes
-actual work under ordinary and sanitizer builds. Its corpus, edit/recovery matrix,
-identity, corruption, resource and fault checks are complemented by native
-application and selection checks. `scripts/measure-session-host.py` measures frontend
-latency; `scripts/measure-native-session.py` measures public native workflows.
+`sh scripts/verify-session-host.sh`: complete clean/retained comparisons, ordinary/
+sanitized actual work, corpus/edits/recovery/identities/corruption/resources/faults/
+native applications/selections. Measurements: `scripts/measure-session-host.py`
+(frontend latency), `scripts/measure-native-session.py` (public native workflows).
 
-No-change updates can execute zero producer/import entries while still reading,
-validating and copying data. Instrumented work, ordinary latency, external backend
-starts, memory and artifact bytes remain independent evidence. See
-[the measurement contract](PERFORMANCE.md#observed-compiler-work) and dated reports.
-Faster builds do not establish an agent-task success rate.
+Zero-producer/import no-change updates still read/validate/copy. Independent evidence:
+instrumented work/ordinary latency/external backend starts/memory/artifact bytes;
+[measurement contract](PERFORMANCE.md#observed-compiler-work), dated reports.
+Speed proves no agent-task success rate.
 
 ## Historical invalidation-estimate driver
 
-`tests/fixtures/session_estimate.slim` retains the old snapshot-comparison model.
-Its `parsed lowered checked generated` fields estimate classified changes and
-invalidated declarations; they count no executed compiler operations. An unchanged
-comparison still parses both input projects. Recovery performs clean checks rather
-than retaining checked state. The `slim-bench incremental` and `slim-bench work`
-model gates remain regression infrastructure, separately identified from public
-sessions. Historical operation-labelled columns must not be cited as production
-query reuse. Full observation boundaries and formulas remain in
-[RFC-0121](../design/rfcs/0121-observed-compiler-work.md) and the performance contract.
+`tests/fixtures/session_estimate.slim`: snapshot comparison;
+`parsed lowered checked generated` estimate classified changes/invalidated
+declarations, never executed operations. Unchanged: both projects parsed; recovery:
+clean checks, no retained checked state. `slim-bench incremental`/`slim-bench work` model gates
+remain separate regression infrastructure from public sessions. Historical operation-labelled columns
+cannot establish production reuse; [RFC-0121](../design/rfcs/0121-observed-compiler-work.md)/performance
+contract preserve observation boundaries/formulas.

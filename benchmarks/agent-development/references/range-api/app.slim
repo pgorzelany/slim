@@ -1,0 +1,12 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, -4)
+  vec.push(@values, 0)
+  vec.push(@values, 5)
+  vec.push(@values, 11)
+  let limits: rules.Limits = rules.Limits(lower: 0, upper: 5)
+  io.print_i64(gateway.score(values, limits))
+  io.println("")
+  0

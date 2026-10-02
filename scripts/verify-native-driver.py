@@ -79,7 +79,7 @@ def verify(context):
         inputs('manifest-whole-record',[ordered[0]+'\textra'],'headers',False,captured=synthetic,
                reason='unrecorded-captured-input')
 
-        def check(name, data, accepted, role='program', profile=0):
+        def check(name, data, accepted, role='program', profile=0, *, reason=None):
             nonlocal count
             report = root / 'job.txt'
             report.write_bytes(data)
@@ -87,6 +87,10 @@ def verify(context):
                                  capture_output=True, timeout=10)
             assert run.returncode == (0 if accepted else 2), (name, run.returncode, run.stdout, run.stderr)
             assert not run.stdout, (name, run.stdout)
+            if accepted:
+                assert not run.stderr, (name, run.stderr)
+            if reason is not None:
+                assert run.stderr == (reason + '\n').encode(), (name, run.stderr)
             count += 1
             print(f'native-driver\t{name}\t' + ('accepted' if accepted else 'rejected'), flush=True)
 
@@ -102,6 +106,34 @@ def verify(context):
 
         def job(values):
             return ('\n'.join(lines[:4]) + '\n ' + ' '.join('"' + value + '"' for value in values) + '\n').encode()
+
+        settings_option = '-fdepfile-entry=' + str(context / 'sdk/SDKSettings.json')
+        without_settings = [value for value in args if not value.startswith('-fdepfile-entry=')]
+        with_settings = without_settings[:-1] + [settings_option] + without_settings[-1:]
+        manifest = context / 'captured-sha256.tsv'
+        recorded = manifest.read_bytes()
+        assert any(row.split(b'\t')[1] == b'sdk/SDKSettings.json' for row in recorded.splitlines()), recorded
+        check('captured-sdk-settings', job(with_settings), True)
+        check('sdk-settings-optional', job(without_settings), True)
+        for name, path in [
+            ('outside-sdk-settings', '/original-sdk/SDKSettings.json'),
+            ('sibling-sdk-settings', str(context) + '-other/sdk/SDKSettings.json'),
+            ('sdk-settings-traversal', str(context) + '/sdk/../sdk/SDKSettings.json'),
+            ('other-sdk-settings-file', str(context / 'sdk/SDKSettings.plist'))]:
+            values = without_settings[:-1] + ['-fdepfile-entry=' + path] + without_settings[-1:]
+            check(name, job(values), False, reason='unsupported-driver-job')
+        check('duplicate-sdk-settings', job(with_settings[:-1] + [settings_option] + with_settings[-1:]), False,
+              reason='unsupported-driver-job')
+        try:
+            manifest.write_bytes(b''.join(row + b'\n' for row in recorded.splitlines()
+                                         if row.split(b'\t')[1] != b'sdk/SDKSettings.json'))
+            check('unrecorded-sdk-settings', job(with_settings), False, reason='unsupported-driver-job')
+            check('no-sdk-settings-without-record', job(without_settings), True)
+            manifest.write_bytes(b'')
+            check('empty-manifest-sdk-settings', job(with_settings), False, reason='unsupported-driver-job')
+            check('empty-manifest-without-sdk-settings', job(without_settings), True)
+        finally:
+            manifest.write_bytes(recorded)
 
         def replace(name, old, new):
             changed = args.copy()

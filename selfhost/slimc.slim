@@ -371,6 +371,18 @@ fn run_transform(args: Vec[Bytes], arg_count: I64, analysis_mode: Bool, usage: B
 
 fn run(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
   let arg_count: I64 = vec.len(args)
+  let contextual: Bool = if arg_count >= 2:
+    let command: Bytes = vec.get(args, 1)
+    syntax.span_equal(command, 0, bytes.len(command), "context")
+  else:
+    false
+  if contextual:
+    context.run(args)
+  else:
+    run_ordinary(args)
+
+fn run_ordinary(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let arg_count: I64 = vec.len(args)
   let enough: Bool = arg_count >= 2
   if enough:
     let command: Bytes = vec.get(args, 1)

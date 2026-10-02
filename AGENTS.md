@@ -10,6 +10,26 @@ These rules apply to every change in this repository.
    compiler architecture, dependencies, or compatibility require an accepted
    RFC in `design/rfcs/`.
 
+## Task timing and progress
+
+- Read `design/task-times.jsonl` with `python3 scripts/task-time.py status`
+  before estimating task duration or remaining time. Use comparable completed
+  runs; identify their scope, sample count and uncertainty. With no comparable
+  history, report the estimate as unknown.
+- Record substantial implementation, delegation, review and verification work.
+  Use `python3 scripts/task-time.py run LABEL -- COMMAND ...` for commands and
+  `start`/`end` for coordination. Record failed attempts and retries separately.
+- Preserve evidence for historical entries. Missing times remain unknown;
+  inferred file timestamps are not measured durations. Keep operator elapsed
+  time distinct from native performance metrics and model active time.
+- Progress updates state elapsed time, the current stage and unfinished
+  acceptance gates. A deliverable percentage needs an explicit basis and must
+  not imply a remaining-time estimate. Do not add overlapping task durations to
+  claim total wall time.
+- Run inexpensive applicable checks before long validation. Reuse a completed
+  check only when its source and artifact identities remain unchanged, and
+  disclose that scope; never turn a failed invocation into a successful one.
+
 ## Language constraints
 
 - There is one canonical source form for each semantic operation.

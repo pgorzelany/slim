@@ -1,0 +1,4 @@
+module gateway
+
+fn score(values: Vec[I64], limits: rules.Limits) -> I64 effects[partial]:
+  stats.summarize(values, limits)

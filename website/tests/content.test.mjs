@@ -87,7 +87,13 @@ test("every Markdown source is published once or explicitly excluded", async () 
   assert.deepEqual(generated.coverage.excluded, [{
     sourcePath: "AGENTS.md",
     reason: "Internal operational policy for repository agents.",
-  }]);
+  }, {
+    sourcePath: "benchmarks/agent-development/PROTOCOL.md",
+    reason: "Internal preregistered pilot protocol; participant and oracle material are kept separate.",
+  }, ...["buffer-drain", "effects-report", "range-api"].map((task) => ({
+    sourcePath: `benchmarks/agent-development/tasks/${task}/TASK.md`,
+    reason: "Internal frozen pilot participant task; excluded from public task discovery.",
+  }))]);
   assert.equal(generated.stats.publishedMarkdown, published.length);
   assert.equal(generated.stats.excludedMarkdown, excluded.length);
 });
@@ -292,7 +298,7 @@ test("search keeps current, development, RFC, and evidence scopes distinct", asy
   );
   assert.deepEqual(counts, {
     current: 38,
-    development: 21,
+    development: 22,
     rfc: (await readdir(path.join(repositoryRoot, "design/rfcs"))).filter((name) => name.endsWith(".md")).length,
     evidence: (await readdir(path.join(repositoryRoot, "benchmarks/results"))).filter((name) => name.endsWith(".md")).length,
   });

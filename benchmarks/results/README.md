@@ -1,12 +1,14 @@
 # Measurement and verification evidence
 
-[Current milestone status and measured limits](2026-09-05-slim-next-progress.md)
-is the authoritative status summary. Dated results apply only to their named
+[Current milestone status](../../docs/STATUS.md) is the authoritative status
+summary. The [earlier progress ledger](2026-09-05-slim-next-progress.md) retains
+its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
 | Checkpoint | Record |
 | --- | --- |
+| Bounded early agent loop, 2026-10-02 | [Self-hosted context, native costs, six frozen trials and release closure](2026-10-02-agent-development-loop.md) |
 | M0 repairs and M1 development through 2026-09-07 | [Complete development history](archive/2026-09-07-slim-next-development-history.md.gz) |
 | Validated literal-storage checkpoint `0f19fbc` | [Scope, costs and verification](2026-09-07-m1-literal-storage.md) |
 | Validated byte-literal checkpoint (composite verification) | [Scope, costs and pending checks](2026-09-07-m1-byte-literals.md) |

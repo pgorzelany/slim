@@ -51,6 +51,33 @@ test ! -e "$slim_install/target"
 
     test "$(./slimc --version)" = "slimc $slim_version (self-hosted)"
     ./bootstrap.sh
+    ./slimc context examples/hello.slim examples/hello.slim hello.main > "$slim_work/context.json"
+    python3 -B - "$slim_work" "$slim_install" <<'PY'
+import json
+from pathlib import Path
+import subprocess
+import sys
+
+work, install = map(Path, sys.argv[1:])
+raw = (work/'context.json').read_bytes()
+report = json.loads(raw)
+assert report['schema'] == 1 and report['encoding'] == 'json-byte-escapes-v1'
+assert (report['selected']['module'], report['selected']['name']) == ('hello', 'main')
+assert report['work']['report_bytes'] == len(raw)
+source = (install/'examples/hello.slim').read_bytes()
+span = report['selected']['span']
+assert span['file'] == 0
+assert report['selected']['source'].encode('latin1') == source[span['start']:span['end']]
+current, expected = work/'hello-current.slim', work/'hello-expected.slim'
+expected.write_bytes(source)
+assert b'hello from SLIM' in source
+current.write_bytes(source.replace(b'hello from SLIM', b'Hello from SLIM'))
+assert current.stat().st_size == expected.stat().st_size
+rejected = subprocess.run([str(install/'build/toolchain/slimc'), 'context',
+                           str(current), str(expected), 'hello.main'],
+                          cwd=install, capture_output=True, timeout=30)
+assert (rejected.returncode, rejected.stdout, rejected.stderr) == (1, b'E0450@0:0\n', b'')
+PY
     python3 -B scripts/verify-session-host.py --quick
     sh scripts/verify-native-platform.sh build/toolchain/slim-session build/toolchain/slimc smoke
     ./slimc check examples/hello.slim

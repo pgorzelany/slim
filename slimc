@@ -23,6 +23,7 @@ slim_usage() {
     echo "  slimc [--message-format=human|json] run SOURCE [--jobs N] [-- ARGS...]"
     echo "  slimc [--message-format=human|json] reduce SOURCE"
     echo "  slimc [--message-format=human|json] analyze SOURCE"
+    echo "  slimc [--message-format=human|json] context SOURCE EXPECTED_SOURCE MODULE.DECLARATION"
     echo "  slimc [--message-format=human|json] prove-reduction SOURCE"
     echo "  slimc [--message-format=human|json] verify-reduction ORIGINAL REDUCED"
     echo "  slimc [--message-format=human|json] equivalent LEFT RIGHT"
@@ -195,6 +196,16 @@ case "$slim_command" in
         fi
         slim_render_diagnostics "$slim_tmp/diagnostics" "$slim_source"
         exit "$slim_status"
+        ;;
+    context)
+        slim_source=${1:--}
+        if "$slim_compiler" context "$@" > "$slim_tmp/context"; then
+            cat "$slim_tmp/context"
+        else
+            slim_status=$?
+            slim_render_diagnostics "$slim_tmp/context" "$slim_source"
+            exit "$slim_status"
+        fi
         ;;
     reduce|analyze)
         test "$#" -eq 1 || { slim_usage >&2; exit 64; }

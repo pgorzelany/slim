@@ -1,0 +1,6 @@
+module pipeline
+
+fn round(buffer: @storage.Buffer, value: I64) -> Vec[I64] effects[alloc, partial]:
+  let previous: I64 = vec.len(buffer.values)
+  let count: I64 = storage.append(@buffer, previous + value)
+  storage.drain(@buffer)

@@ -1,0 +1,14 @@
+module metrics
+
+struct Summary:
+  count: I64
+  total: I64
+
+fn sum(values: Vec[I64], index: I64, total: I64) -> I64 effects[partial]:
+  if index >= vec.len(values):
+    total
+  else:
+    recur(values, index + 1, total + vec.get(values, index))
+
+fn summarize(values: Vec[I64]) -> I64 effects[partial]:
+  sum(values, 0, 0)

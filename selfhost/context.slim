@@ -1,0 +1,1187 @@
+module context
+
+struct Writer:
+  data: Vec[U8]
+  state: Vec[I64]
+
+struct File:
+  name: Bytes
+  path: Bytes
+  source: Bytes
+
+struct View:
+  source: Bytes
+  tokens: Vec[syntax.Token]
+  origins: Vec[project.Origin]
+  facts: Vec[typing.Fact]
+  files: Vec[File]
+  manifest: Bytes
+  project: Bool
+
+struct Span:
+  file: I64
+  start: I64
+  end: I64
+
+struct Reference:
+  node: I64
+  name: I64
+  role: I64
+  target: I64
+  builtin: Bool
+
+struct Rows:
+  facts: Vec[I64]
+  references: Vec[Reference]
+  providers: Vec[I64]
+  bounded: Vec[Bool]
+
+fn writer() -> Writer effects[alloc]:
+  let state: Vec[I64] = vec.new()
+  vec.push(@state, 0)
+  vec.push(@state, 0)
+  Writer(data: vec.new(), state: state)
+
+fn fail(output: @Writer) -> Void effects[alloc, partial]:
+  let state: Vec[I64] = mem.replace(@output.state, vec.new())
+  vec.set(@state, 0, 1)
+  let previous: Vec[I64] = mem.replace(@output.state, state)
+  void
+
+fn put(output: @Writer, value: Bytes) -> Void effects[alloc, partial]:
+  let remaining: I64 = 1048576 - vec.len(output.data)
+  if (vec.get(output.state, 0) == 0) && (bytes.len(value) <= remaining):
+    let data: Vec[U8] = mem.replace(@output.data, vec.new())
+    text.append_text(@data, value)
+    let previous: Vec[U8] = mem.replace(@output.data, data)
+    void
+  else:
+    fail(@output)
+
+fn put_byte(output: @Writer, value: U8) -> Void effects[alloc, partial]:
+  if (vec.get(output.state, 0) == 0) && (vec.len(output.data) < 1048576):
+    let data: Vec[U8] = mem.replace(@output.data, vec.new())
+    vec.push(@data, value)
+    let previous: Vec[U8] = mem.replace(@output.data, data)
+    void
+  else:
+    fail(@output)
+
+fn number(output: @Writer, value: I64) -> Void effects[alloc, partial]:
+  let data: Vec[U8] = vec.new()
+  text.append_i64(value, @data)
+  put(@output, bytes.freeze(^data))
+
+fn boolean(output: @Writer, value: Bool) -> Void effects[alloc, partial]:
+  if value:
+    put(@output, "true")
+  else:
+    put(@output, "false")
+
+fn json_chars(output: @Writer, value: Bytes, at: I64, end: I64, source: Bool) -> Void effects[alloc, partial]:
+  if (at >= end) || (!(vec.get(output.state, 0) == 0)):
+    void
+  else:
+    let byte: U8 = bytes.get(value, at)
+    let code: I64 = u8.to_i64(byte)
+    if (code < 32) || (code >= 127):
+      put(@output, "\\u00")
+      let digits: Bytes = "0123456789abcdef"
+      put_byte(@output, bytes.get(digits, code / 16))
+      put_byte(@output, bytes.get(digits, code % 16))
+    else:
+      if (code == 34) || (code == 92):
+        put(@output, "\\")
+      else:
+        void
+      put_byte(@output, byte)
+    if source && (vec.get(output.state, 0) == 0):
+      let count: I64 = vec.get(output.state, 1)
+      let state: Vec[I64] = mem.replace(@output.state, vec.new())
+      vec.set(@state, 1, count + 1)
+      let previous: Vec[I64] = mem.replace(@output.state, state)
+      void
+    else:
+      void
+    recur(@output, value, at + 1, end, source)
+
+fn json_span(output: @Writer, value: Bytes, start: I64, end: I64, source: Bool) -> Void effects[alloc, partial]:
+  if (start >= 0) && ((end >= start) && (end <= bytes.len(value))):
+    put(@output, "\"")
+    json_chars(@output, value, start, end, source)
+    put(@output, "\"")
+  else:
+    fail(@output)
+
+fn json(output: @Writer, value: Bytes) -> Void effects[alloc, partial]:
+  json_span(@output, value, 0, bytes.len(value), false)
+
+fn diagnostic(code: Bytes, status: I64) -> I64 effects[io]:
+  io.println(code)
+  status
+
+fn origin(view: View, node: I64) -> Span effects[partial]:
+  if (node >= 0) && (node < vec.len(view.origins)):
+    let value: project.Origin = vec.get(view.origins, node)
+    if (value.module >= 0) && (value.module < vec.len(view.files)):
+      let file: File = vec.get(view.files, value.module)
+      if (value.start >= 0) && ((value.end >= value.start) && (value.end <= bytes.len(file.source))):
+        Span(file: value.module, start: value.start, end: value.end)
+      else:
+        Span(file: -1, start: 0, end: 0)
+    else:
+      Span(file: -1, start: 0, end: 0)
+  else:
+    Span(file: -1, start: 0, end: 0)
+
+fn extend_span(view: View, at: I64, after: I64, value: Span) -> Span effects[partial]:
+  if at >= after:
+    value
+  else:
+    let next: Span = origin(view, at)
+    if (value.file < 0) || (!(next.file == value.file)):
+      Span(file: -1, start: 0, end: 0)
+    else:
+      let end: I64 = if next.end > value.end:
+        next.end
+      else:
+        value.end
+      recur(view, at + 1, after, Span(file: value.file, start: value.start, end: end))
+
+fn form_span(view: View, node: I64) -> Span effects[partial]:
+  let first: Span = origin(view, node)
+  let after: I64 = syntax.ast_next(view.tokens, node)
+  extend_span(view, node + 1, after, first)
+
+fn trim_end(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if end <= start:
+    end
+  else:
+    let code: I64 = u8.to_i64(bytes.get(source, end - 1))
+    if ((code == 32) || (code == 9)) || ((code == 10) || (code == 13)):
+      recur(source, start, end - 1)
+    else:
+      end
+
+fn declaration_span(view: View, node: I64) -> Span effects[partial]:
+  let raw: Span = form_span(view, node)
+  if raw.file < 0:
+    raw
+  else:
+    let file: File = vec.get(view.files, raw.file)
+    let end: I64 = if view.project:
+      let next: I64 = syntax.ast_next(view.tokens, node)
+      let following: Span = origin(view, next)
+      let boundary: I64 = if following.file == raw.file:
+        following.start
+      else:
+        bytes.len(file.source)
+      trim_end(file.source, raw.start, boundary)
+    else:
+      syntax.ast_declaration_end(view.source, view.tokens, node)
+    Span(file: raw.file, start: raw.start, end: end)
+
+fn header_end(source: Bytes, at: I64, end: I64, colon: I64, comment: Bool) -> I64 effects[partial]:
+  if at >= end:
+    colon
+  else:
+    let code: I64 = u8.to_i64(bytes.get(source, at))
+    if code == 10:
+      recur(source, at + 1, end, colon, false)
+    else:
+      let next: I64 = if (code == 58) && (!comment):
+        at + 1
+      else:
+        colon
+      recur(source, at + 1, end, next, comment || (code == 35))
+
+fn signature_span(view: View, node: I64) -> Span effects[partial]:
+  let complete: Span = declaration_span(view, node)
+  if (complete.file >= 0) && syntax.ast_item_is_function(view.source, view.tokens, node):
+    let file: File = vec.get(view.files, complete.file)
+    let body: Span = origin(view, syntax.ast_function_body(view.tokens, node))
+    let end: I64 = header_end(file.source, complete.start, body.start, complete.start, false)
+    Span(file: complete.file, start: complete.start, end: end)
+  else:
+    complete
+
+fn emit_span(output: @Writer, value: Span) -> Void effects[alloc, partial]:
+  if value.file < 0:
+    put(@output, "null")
+  else:
+    put(@output, "{\"file\":")
+    number(@output, value.file)
+    put(@output, ",\"start\":")
+    number(@output, value.start)
+    put(@output, ",\"end\":")
+    number(@output, value.end)
+    put(@output, "}")
+
+fn emit_original(output: @Writer, view: View, value: Span) -> Void effects[alloc, partial]:
+  if value.file >= 0:
+    let file: File = vec.get(view.files, value.file)
+    json_span(@output, file.source, value.start, value.end, true)
+  else:
+    put(@output, "null")
+
+fn scalar_name(kind: I64) -> Bytes:
+  if kind == 0:
+    "Void"
+  else:
+    if kind == 1:
+      "Bool"
+    else:
+      if kind == 2:
+        "U8"
+      else:
+        if kind == 3:
+          "I64"
+        else:
+          "Bytes"
+
+fn builtin_name(view: View, node: I64) -> Bytes effects[alloc, partial]:
+  # These are the existing checked virtual-token spellings, not new resolution.
+  # Synthetic operator token bytes may span an expression in flattened source.
+  let tag: I64 = syntax.ast_node_tag(view.tokens, node)
+  if tag == 31:
+    "i64.add"
+  else:
+    if tag == 32:
+      "i64.sub"
+    else:
+      if tag == 33:
+        "i64.mul"
+      else:
+        if tag == 34:
+          "i64.div"
+        else:
+          if tag == 35:
+            "i64.rem"
+          else:
+            if tag == 36:
+              "i64.eq"
+            else:
+              if tag == 37:
+                "i64.lt"
+              else:
+                if tag == 38:
+                  "i64.le"
+                else:
+                  if tag == 39:
+                    "i64.gt"
+                  else:
+                    if tag == 40:
+                      "i64.ge"
+                    else:
+                      if tag == 41:
+                        "bool.not"
+                      else:
+                        if tag == 42:
+                          "bool.and"
+                        else:
+                          if tag == 43:
+                            "bool.or"
+                          else:
+                            copy_token(view.source, view.tokens, node)
+
+fn type_depth(source: Bytes, tokens: Vec[syntax.Token], node: I64, depth: I64) -> I64 effects[partial]:
+  if depth >= 128:
+    129
+  else:
+    let composite: Bool = syntax.ast_type_is_vec(source, tokens, node) || (syntax.ast_type_is_arena(source, tokens, node) || syntax.ast_type_is_id(source, tokens, node))
+    if composite:
+      recur(source, tokens, syntax.ast_type_argument(node), depth + 1)
+    else:
+      depth + 1
+
+fn emit_type(output: @Writer, view: View, type: typing.TypeRef, declared: Bool) -> Void effects[alloc, partial]:
+  let known: Bool = type.kind >= -1
+  let scalar: Bool = type.kind >= 0
+  let span: Span = if known && ((!scalar) || declared):
+    form_span(view, type.form)
+  else:
+    Span(file: -1, start: 0, end: 0)
+  let bounded: Bool = if known && (!scalar):
+    (type_depth(view.source, view.tokens, type.form, 0) <= 128) && ((span.file >= 0) && (span.end - span.start <= 4096))
+  else:
+    known
+  let supported: Bool = scalar || ((span.file >= 0) && bounded)
+  put(@output, "{\"evidence\":")
+  let evidence: Bytes = if known && supported:
+    "exact"
+  else:
+    "unknown"
+  json(@output, evidence)
+  put(@output, ",\"kind\":")
+  let kind: Bytes = if scalar:
+    "scalar"
+  else:
+    if known:
+      "source-form"
+    else:
+      "unknown"
+  json(@output, kind)
+  put(@output, ",\"text\":")
+  if scalar:
+    json(@output, scalar_name(type.kind))
+  else:
+    if known && supported:
+      emit_original(@output, view, span)
+    else:
+      put(@output, "null")
+  put(@output, ",\"span\":")
+  emit_span(@output, span)
+  put(@output, ",\"reason\":")
+  let reason: Bytes = if !known:
+    "missing-checked-fact"
+  else:
+    if supported:
+      ""
+    else:
+      if span.file < 0:
+        "unsupported-source-span"
+      else:
+        "type-budget"
+  json(@output, reason)
+  put(@output, "}")
+
+fn source_type(view: View, node: I64) -> typing.TypeRef effects[partial]:
+  typing.TypeRef(kind: syntax.scalar_type_kind(view.source, view.tokens, node), form: node)
+
+fn borrow_name(mode: I64) -> Bytes:
+  if mode == 2:
+    "exclusive"
+  else:
+    if mode == 1:
+      "shared"
+    else:
+      "value"
+
+fn declared_name(mode: I64) -> Bytes:
+  if mode == 2:
+    "owned"
+  else:
+    if mode == 1:
+      "exclusive"
+    else:
+      "ordinary"
+
+fn emit_parameters(output: @Writer, view: View, at: I64, first: Bool) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    if !first:
+      put(@output, ",")
+    else:
+      void
+    let name: I64 = syntax.ast_binding_name(view.source, view.tokens, at)
+    let type: I64 = syntax.ast_binding_type(view.source, view.tokens, at)
+    put(@output, "{\"node\":")
+    number(@output, at)
+    put(@output, ",\"name\":")
+    emit_original(@output, view, origin(view, name))
+    put(@output, ",\"name_span\":")
+    emit_span(@output, origin(view, name))
+    put(@output, ",\"type\":")
+    emit_type(@output, view, source_type(view, type), true)
+    put(@output, ",\"declared_mode\":")
+    json(@output, declared_name(syntax.ast_binding_mode(view.source, view.tokens, at)))
+    put(@output, ",\"mutable\":")
+    boolean(@output, syntax.ast_binding_is_mutable(view.source, view.tokens, at))
+    put(@output, ",\"borrow_mode\":")
+    let fact: typing.Fact = vec.get(view.facts, name)
+    json(@output, borrow_name(typing.fact_borrow_mode(fact)))
+    put(@output, ",\"evidence\":\"exact\"}")
+    recur(@output, view, syntax.ast_next(view.tokens, at), false)
+
+fn emit_fields(output: @Writer, view: View, at: I64, first: Bool) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    if !first:
+      put(@output, ",")
+    else:
+      void
+    let name: I64 = syntax.ast_member_name(at)
+    put(@output, "{\"node\":")
+    number(@output, at)
+    put(@output, ",\"name\":")
+    emit_original(@output, view, origin(view, name))
+    put(@output, ",\"name_span\":")
+    emit_span(@output, origin(view, name))
+    put(@output, ",\"type\":")
+    emit_type(@output, view, source_type(view, syntax.ast_member_value(at)), true)
+    put(@output, ",\"evidence\":\"exact\"}")
+    recur(@output, view, syntax.ast_next(view.tokens, at), false)
+
+fn emit_payload(output: @Writer, view: View, at: I64, first: Bool) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    if !first:
+      put(@output, ",")
+    else:
+      void
+    emit_type(@output, view, source_type(view, at), true)
+    recur(@output, view, syntax.ast_next(view.tokens, at), false)
+
+fn emit_cases(output: @Writer, view: View, at: I64, first: Bool) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    if !first:
+      put(@output, ",")
+    else:
+      void
+    let name: I64 = syntax.ast_member_name(at)
+    put(@output, "{\"node\":")
+    number(@output, at)
+    put(@output, ",\"name\":")
+    emit_original(@output, view, origin(view, name))
+    put(@output, ",\"name_span\":")
+    emit_span(@output, origin(view, name))
+    put(@output, ",\"payload\":[")
+    let payload: I64 = syntax.ast_member_value(at)
+    emit_payload(@output, view, payload, true)
+    put(@output, "],\"evidence\":\"exact\"}")
+    recur(@output, view, syntax.ast_next(view.tokens, at), false)
+
+fn emit_effects(output: @Writer, view: View, at: I64, first: Bool) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    if !first:
+      put(@output, ",")
+    else:
+      void
+    emit_original(@output, view, origin(view, at))
+    recur(@output, view, syntax.ast_next(view.tokens, at), false)
+
+fn emit_declaration(output: @Writer, view: View, node: I64, selected: Bool) -> Void effects[alloc, partial]:
+  let name: I64 = syntax.ast_item_name(node)
+  let named: Span = origin(view, name)
+  let complete: Span = declaration_span(view, node)
+  let signature: Span = signature_span(view, node)
+  let file: File = vec.get(view.files, named.file)
+  let function: Bool = syntax.ast_item_is_function(view.source, view.tokens, node)
+  let record: Bool = syntax.ast_item_is_record(view.source, view.tokens, node)
+  put(@output, "{\"evidence\":\"exact\",\"provenance\":\"checked-declaration\",\"node\":")
+  number(@output, node)
+  put(@output, ",\"module\":")
+  json(@output, file.name)
+  put(@output, ",\"name\":")
+  emit_original(@output, view, named)
+  put(@output, ",\"kind\":")
+  let kind: Bytes = if function:
+    "function"
+  else:
+    if record:
+      "struct"
+    else:
+      "enum"
+  json(@output, kind)
+  put(@output, ",\"name_span\":")
+  emit_span(@output, named)
+  put(@output, ",\"span\":")
+  emit_span(@output, complete)
+  put(@output, ",\"source\":")
+  if selected:
+    emit_original(@output, view, complete)
+  else:
+    put(@output, "null")
+  put(@output, ",\"signature_span\":")
+  emit_span(@output, signature)
+  put(@output, ",\"signature\":")
+  let signature_ready: Bool = signature.end - signature.start <= 8192
+  if signature_ready:
+    emit_original(@output, view, signature)
+  else:
+    put(@output, "null")
+  put(@output, ",\"signature_evidence\":")
+  let signature_evidence: Bytes = if signature_ready:
+    "exact"
+  else:
+    "unknown"
+  json(@output, signature_evidence)
+  put(@output, ",\"signature_reason\":")
+  let signature_reason: Bytes = if signature_ready:
+    ""
+  else:
+    "signature-budget"
+  json(@output, signature_reason)
+  put(@output, ",\"parameters\":[")
+  if function:
+    emit_parameters(@output, view, syntax.ast_parameters_first(syntax.ast_function_parameters(node)), true)
+  else:
+    void
+  put(@output, "],\"return_type\":")
+  if function:
+    emit_type(@output, view, source_type(view, syntax.ast_function_return_type(view.tokens, node)), true)
+  else:
+    put(@output, "null")
+  put(@output, ",\"effect_ceiling\":[")
+  if function:
+    emit_effects(@output, view, syntax.ast_effects_first(syntax.ast_function_effects(view.tokens, node)), true)
+  else:
+    void
+  put(@output, "],\"effect_evidence\":\"declared-ceiling\",\"fields\":[")
+  if record:
+    emit_fields(@output, view, syntax.ast_data_members_first(node), true)
+  else:
+    void
+  put(@output, "],\"cases\":[")
+  if (!function) && (!record):
+    emit_cases(@output, view, syntax.ast_data_members_first(node), true)
+  else:
+    void
+  put(@output, "]}")
+
+fn copy_token(source: Bytes, tokens: Vec[syntax.Token], node: I64) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  text.append_token(source, tokens, node, @output)
+  bytes.freeze(^output)
+
+fn module_files(input: project.ProjectInput, path: Bytes, cursor: I64, at: I64, files: @Vec[File]) -> Void effects[alloc, partial]:
+  if at >= vec.len(input.modules):
+    void
+  else:
+    let module: project.ModuleInput = vec.get(input.modules, at)
+    let name: Bytes = copy_token(input.manifest_source, input.manifest_tokens, cursor + 2)
+    let module_path: Bytes = project.project_module_path(path, input.manifest_source, input.manifest_tokens, cursor + 3)
+    vec.push(@files, File(name: name, path: module_path, source: module.source))
+    recur(input, path, syntax.ast_next(input.manifest_tokens, cursor), at + 1, @files)
+
+fn same_modules(left: project.ProjectInput, right: project.ProjectInput, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(left.modules):
+    at == vec.len(right.modules)
+  else:
+    if at >= vec.len(right.modules):
+      false
+    else:
+      let first: project.ModuleInput = vec.get(left.modules, at)
+      let second: project.ModuleInput = vec.get(right.modules, at)
+      if first.read && (second.read && retained.equal(first.source, second.source)):
+        recur(left, right, at + 1)
+      else:
+        false
+
+fn capture_reads(input: project.ProjectInput, cursor: I64, at: I64) -> I64 effects[alloc, io, partial]:
+  if at >= vec.len(input.modules):
+    0
+  else:
+    let module: project.ModuleInput = vec.get(input.modules, at)
+    if module.read:
+      recur(input, syntax.ast_next(input.manifest_tokens, cursor), at + 1)
+    else:
+      let output: Vec[U8] = vec.new()
+      text.append_text(@output, "E0409@")
+      text.append_token(input.manifest_source, input.manifest_tokens, cursor + 2, @output)
+      text.append_text(@output, "@")
+      text.append_i64(syntax.ast_node_start(input.manifest_tokens, cursor + 3), @output)
+      text.append_text(@output, ":")
+      text.append_i64(syntax.ast_node_end(input.manifest_tokens, cursor + 3), @output)
+      text.append_text(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+      1
+
+fn admitted_modules(input: project.ProjectInput, at: I64, remaining: I64) -> Bool effects[partial]:
+  if at >= vec.len(input.modules):
+    true
+  else:
+    let module: project.ModuleInput = vec.get(input.modules, at)
+    let size: I64 = bytes.len(module.source)
+    if size <= remaining:
+      recur(input, at + 1, remaining - size)
+    else:
+      false
+
+fn admitted_project(input: project.ProjectInput) -> Bool effects[partial]:
+  let size: I64 = bytes.len(input.manifest_source)
+  if (size <= 16777216) && (vec.len(input.modules) <= 128):
+    admitted_modules(input, 0, 16777216 - size)
+  else:
+    false
+
+fn standalone_origins(tokens: Vec[syntax.Token], at: I64, origins: @Vec[project.Origin]) -> Void effects[alloc, partial]:
+  if at >= vec.len(tokens):
+    void
+  else:
+    vec.push(@origins, project.Origin(module: 0, start: syntax.ast_node_start(tokens, at), end: syntax.ast_node_end(tokens, at)))
+    recur(tokens, at + 1, @origins)
+
+fn selected_node(view: View, selector: Bytes, at: I64) -> I64 effects[alloc, partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    -1
+  else:
+    let name: Span = origin(view, syntax.ast_item_name(at))
+    let matched: Bool = if name.file >= 0:
+      let file: File = vec.get(view.files, name.file)
+      let prefix: I64 = bytes.len(file.name)
+      let requested: I64 = bytes.len(selector)
+      if prefix >= requested:
+        false
+      else:
+        let remaining: I64 = requested - prefix - 1
+        if !(name.end - name.start == remaining):
+          false
+        else:
+          # Every allocated qualified candidate is at most the fixed operand cap.
+          # A source-sized module name cannot be copied for every declaration.
+          let candidate: Vec[U8] = vec.new()
+          text.append_text(@candidate, file.name)
+          text.append_text(@candidate, ".")
+          text.append_span(file.source, name.start, name.end, @candidate)
+          retained.equal(bytes.freeze(^candidate), selector)
+    else:
+      false
+    if matched:
+      at
+    else:
+      recur(view, selector, syntax.ast_next(view.tokens, at))
+
+fn emit_files(output: @Writer, view: View, at: I64) -> Void effects[alloc, partial]:
+  if at >= vec.len(view.files):
+    void
+  else:
+    if at > 0:
+      put(@output, ",")
+    else:
+      void
+    let file: File = vec.get(view.files, at)
+    let size: I64 = bytes.len(file.source)
+    put(@output, "{\"slot\":")
+    number(@output, at)
+    put(@output, ",\"module\":")
+    json(@output, file.name)
+    put(@output, ",\"path\":")
+    json(@output, file.path)
+    put(@output, ",\"bytes\":")
+    number(@output, size)
+    put(@output, ",\"weighted_checksum\":")
+    number(@output, cache.weighted_checksum(file.source, 0, size, 0))
+    put(@output, "}")
+    recur(@output, view, at + 1)
+
+fn decimal_width(value: I64, count: I64) -> I64 effects[partial]:
+  if value >= 10:
+    recur(value / 10, count + 1)
+  else:
+    count + 1
+
+fn report_size(prefix: I64, previous: I64, steps: I64) -> I64 effects[partial]:
+  let size: I64 = prefix + decimal_width(previous, 0) + 3
+  if (size == previous) || (steps >= 8):
+    size
+  else:
+    recur(prefix, size, steps + 1)
+
+fn emit_report(view: View, selector: Bytes, node: I64) -> I64 effects[alloc, io, partial]:
+  let collected: Rows = rows(view, node)
+  let output: Writer = writer()
+  put(@output, "{\"schema\":1,\"encoding\":\"json-byte-escapes-v1\",\"identity_evidence\":\"exact-expected-input-bytes\",\"selector\":")
+  json(@output, selector)
+  put(@output, ",\"input\":{\"kind\":")
+  let input_kind: Bytes = if view.project:
+    "project"
+  else:
+    "module"
+  json(@output, input_kind)
+  put(@output, ",\"manifest\":")
+  if view.project:
+    put(@output, "{\"bytes\":")
+    number(@output, bytes.len(view.manifest))
+    put(@output, ",\"weighted_checksum\":")
+    number(@output, cache.weighted_checksum(view.manifest, 0, bytes.len(view.manifest), 0))
+    put(@output, "}")
+  else:
+    put(@output, "null")
+  put(@output, ",\"files\":[")
+  emit_files(@output, view, 0)
+  put(@output, "]},\"limits\":{\"input_bytes\":16777216,\"modules\":128,\"canonical_nodes\":1000000,\"selected_source_bytes\":65536,\"providers\":64,\"facts\":512,\"references\":512,\"type_bytes\":4096,\"type_nodes\":128,\"signature_bytes\":8192,\"report_bytes\":1048576,\"operand_bytes\":4096},\"selected\":")
+  emit_declaration(@output, view, node, true)
+  put(@output, ",\"providers\":")
+  section(@output, vec.get(collected.bounded, 0), 64)
+  emit_providers(@output, view, collected.providers, 0)
+  put(@output, "]},\"facts\":")
+  section(@output, vec.get(collected.bounded, 1), 512)
+  emit_facts(@output, view, collected.facts, 0)
+  put(@output, "]},\"references\":")
+  section(@output, vec.get(collected.bounded, 2), 512)
+  emit_references(@output, view, collected.references, 0)
+  put(@output, "]},\"work\":{\"inspected_nodes\":")
+  number(@output, syntax.ast_next(view.tokens, node) - node)
+  put(@output, ",\"fact_rows\":")
+  number(@output, vec.len(collected.facts))
+  put(@output, ",\"reference_rows\":")
+  number(@output, vec.len(collected.references))
+  put(@output, ",\"provider_rows\":")
+  number(@output, vec.len(collected.providers))
+  put(@output, ",\"source_bytes_copied\":")
+  let copied: I64 = vec.get(output.state, 1)
+  number(@output, copied)
+  put(@output, ",\"report_bytes\":")
+  let size: I64 = report_size(vec.len(output.data), vec.len(output.data), 0)
+  number(@output, size)
+  put(@output, "}}\n")
+  if (vec.get(output.state, 0) == 0) && (vec.len(output.data) == size):
+    let data: Vec[U8] = mem.replace(@output.data, vec.new())
+    io.print_bytes(bytes.freeze(^data))
+    0
+  else:
+    diagnostic("E0451@0:0", 1)
+
+fn select_report(view: View, selector: Bytes) -> I64 effects[alloc, io, partial]:
+  let node: I64 = selected_node(view, selector, syntax.ast_module_items(0))
+  if node < 0:
+    diagnostic("E0452@0:0", 1)
+  else:
+    let span: Span = declaration_span(view, node)
+    if (span.file < 0) || (span.end - span.start > 65536):
+      diagnostic("E0451@0:0", 1)
+    else:
+      emit_report(view, selector, node)
+
+fn module_context(path: Bytes, expected_path: Bytes, selector: Bytes) -> I64 effects[alloc, io, partial]:
+  let current_bytes: Vec[U8] = vec.new()
+  let expected_bytes: Vec[U8] = vec.new()
+  let read: Bool = io.read_file(path, @current_bytes)
+  let expected_read: Bool = io.read_file(expected_path, @expected_bytes)
+  if read && expected_read:
+    let current: Bytes = bytes.freeze(^current_bytes)
+    let expected: Bytes = bytes.freeze(^expected_bytes)
+    if (bytes.len(current) > 16777216) || (bytes.len(expected) > 16777216):
+      diagnostic("E0451@0:0", 1)
+    else:
+      if !retained.equal(current, expected):
+        diagnostic("E0450@0:0", 1)
+      else:
+        let tokens: Vec[syntax.Token] = vec.new()
+        let parsed: syntax.ProgramParse = syntax.parse_program_result(current, @tokens)
+        if !parsed.valid:
+          check.report_program_parse(parsed)
+        else:
+          if vec.len(tokens) > 1000000:
+            diagnostic("E0451@0:0", 1)
+          else:
+            let checked: typing.Checked = check.check_source(current, @tokens)
+            if checked.status > 0:
+              checked.status
+            else:
+              let facts: Vec[typing.Fact] = mem.replace(@checked.view.facts, vec.new())
+              let origins: Vec[project.Origin] = vec.new()
+              standalone_origins(tokens, 0, @origins)
+              let files: Vec[File] = vec.new()
+              vec.push(@files, File(name: copy_token(current, tokens, syntax.ast_module_name(0)), path: path, source: current))
+              let view: View = View(source: current, tokens: tokens, origins: origins, facts: facts, files: files, manifest: "", project: false)
+              select_report(view, selector)
+  else:
+    diagnostic("E0409@0:0", 1)
+
+fn project_context(path: Bytes, expected_path: Bytes, selector: Bytes) -> I64 effects[alloc, io, partial]:
+  let current: project.ProjectInput = project.capture_project_input(path)
+  if current.status > 0:
+    current.status
+  else:
+    if !admitted_project(current):
+      diagnostic("E0451@0:0", 1)
+    else:
+      let current_read: I64 = capture_reads(current, syntax.ast_next(current.manifest_tokens, 3), 0)
+      if current_read > 0:
+        current_read
+      else:
+        project_context_expected(current, path, expected_path, selector)
+
+fn project_context_expected(current: project.ProjectInput, path: Bytes, expected_path: Bytes, selector: Bytes) -> I64 effects[alloc, io, partial]:
+  let expected: project.ProjectInput = project.capture_project_input(expected_path)
+  if expected.status > 0:
+    expected.status
+  else:
+    if !admitted_project(expected):
+      diagnostic("E0451@0:0", 1)
+    else:
+      let expected_read: I64 = capture_reads(expected, syntax.ast_next(expected.manifest_tokens, 3), 0)
+      if expected_read > 0:
+        expected_read
+      else:
+        project_context_checked(current, expected, path, selector)
+
+fn project_context_checked(current: project.ProjectInput, expected: project.ProjectInput, path: Bytes, selector: Bytes) -> I64 effects[alloc, io, partial]:
+  if (!retained.equal(current.manifest_source, expected.manifest_source)) || (!same_modules(current, expected, 0)):
+    diagnostic("E0450@0:0", 1)
+  else:
+    let files: Vec[File] = vec.new()
+    module_files(current, path, syntax.ast_next(current.manifest_tokens, 3), 0, @files)
+    let parsed: project.ParsedProject = project.prepare_project_input(current, retained.empty_cache(), syntax.empty_parse_cache(), project.empty_module_parses(), identity.Revision(epoch: 1, serial: 1), 1000000, "semantic-context-v1")
+    let status: I64 = parsed.attempt.prepared.status
+    if status > 0:
+      if parsed.attempt.work.capacity:
+        diagnostic("E0451@0:0", 1)
+      else:
+        status
+    else:
+      let source: Bytes = parsed.attempt.prepared.source
+      let tokens: Vec[syntax.Token] = mem.replace(@parsed.attempt.prepared.tokens, vec.new())
+      let origins: Vec[project.Origin] = mem.replace(@parsed.attempt.prepared.origins, vec.new())
+      let facts: Vec[typing.Fact] = mem.replace(@parsed.attempt.prepared.facts, vec.new())
+      let view: View = View(source: source, tokens: tokens, origins: origins, facts: facts, files: files, manifest: current.manifest_source, project: true)
+      select_report(view, selector)
+
+fn run(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if !(vec.len(args) == 5):
+    diagnostic("E0453@0:0", 64)
+  else:
+    let path: Bytes = vec.get(args, 2)
+    let expected: Bytes = vec.get(args, 3)
+    let selector: Bytes = vec.get(args, 4)
+    let empty: Bool = (bytes.len(path) == 0) || ((bytes.len(expected) == 0) || (bytes.len(selector) == 0))
+    if empty || ((bytes.len(path) > 4096) || ((bytes.len(expected) > 4096) || (bytes.len(selector) > 4096))):
+      diagnostic("E0453@0:0", 64)
+    else:
+      let current_project: Bool = project.path_is_project(path)
+      let expected_project: Bool = project.path_is_project(expected)
+      if (current_project && (!expected_project)) || ((!current_project) && expected_project):
+        diagnostic("E0453@0:0", 64)
+      else:
+        if current_project:
+          project_context(path, expected, selector)
+        else:
+          module_context(path, expected, selector)
+
+fn initialize_roles(count: I64, roles: @Vec[I64]) -> Void effects[alloc, partial]:
+  if vec.len(roles) >= count:
+    void
+  else:
+    vec.push(@roles, 0)
+    recur(count, @roles)
+
+fn mark_type(view: View, node: I64, first: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  let composite: Bool = syntax.ast_type_is_vec(view.source, view.tokens, node) || (syntax.ast_type_is_arena(view.source, view.tokens, node) || syntax.ast_type_is_id(view.source, view.tokens, node))
+  if composite:
+    recur(view, syntax.ast_type_argument(node), first, @roles)
+  else:
+    if syntax.scalar_type_kind(view.source, view.tokens, node) < 0:
+      let slot: I64 = node - first
+      if (slot >= 0) && (slot < vec.len(roles)):
+        vec.set(@roles, slot, 1)
+      else:
+        void
+    else:
+      void
+
+fn mark_parameters(view: View, at: I64, first: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    mark_type(view, syntax.ast_binding_type(view.source, view.tokens, at), first, @roles)
+    recur(view, syntax.ast_next(view.tokens, at), first, @roles)
+
+fn mark_payload(view: View, at: I64, first: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    mark_type(view, at, first, @roles)
+    recur(view, syntax.ast_next(view.tokens, at), first, @roles)
+
+fn mark_members(view: View, at: I64, first: I64, variant: Bool, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(view.tokens, at):
+    void
+  else:
+    let value: I64 = syntax.ast_member_value(at)
+    if variant:
+      mark_payload(view, value, first, @roles)
+    else:
+      mark_type(view, value, first, @roles)
+    recur(view, syntax.ast_next(view.tokens, at), first, variant, @roles)
+
+fn mark_local_types(view: View, at: I64, after: I64, first: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if at >= after:
+    void
+  else:
+    if syntax.ast_expression_is_let(view.source, view.tokens, at):
+      mark_type(view, syntax.ast_let_type(at), first, @roles)
+    else:
+      void
+    recur(view, at + 1, after, first, @roles)
+
+fn selected_roles(view: View, node: I64, after: I64) -> Vec[I64] effects[alloc, partial]:
+  let roles: Vec[I64] = vec.new()
+  initialize_roles(after - node, @roles)
+  if syntax.ast_item_is_function(view.source, view.tokens, node):
+    mark_parameters(view, syntax.ast_parameters_first(syntax.ast_function_parameters(node)), node, @roles)
+    mark_type(view, syntax.ast_function_return_type(view.tokens, node), node, @roles)
+    mark_local_types(view, syntax.ast_function_body(view.tokens, node), after, node, @roles)
+  else:
+    let variant: Bool = syntax.ast_item_is_variant(view.source, view.tokens, node)
+    mark_members(view, syntax.ast_data_members_first(node), node, variant, @roles)
+  roles
+
+fn contains(values: Vec[I64], value: I64, at: I64) -> Bool effects[partial]:
+  if at >= vec.len(values):
+    false
+  else:
+    if vec.get(values, at) == value:
+      true
+    else:
+      recur(values, value, at + 1)
+
+fn source_target(view: View, name: I64) -> I64 effects[partial]:
+  let target: I64 = syntax.ast_node_link(view.tokens, name)
+  if (target >= 0) && (target < vec.len(view.tokens)):
+    let declaration: Bool = syntax.ast_item_is_function(view.source, view.tokens, target) || (syntax.ast_item_is_record(view.source, view.tokens, target) || syntax.ast_item_is_variant(view.source, view.tokens, target))
+    let named: Span = if declaration:
+      origin(view, syntax.ast_item_name(target))
+    else:
+      Span(file: -1, start: 0, end: 0)
+    if declaration && (named.file >= 0):
+      target
+    else:
+      -1
+  else:
+    -1
+
+fn reference_at(view: View, at: I64, selected: I64, roles: Vec[I64]) -> Reference effects[partial]:
+  let call: Bool = syntax.ast_expression_is_call(view.source, view.tokens, at)
+  let make: Bool = syntax.ast_expression_is_make(view.source, view.tokens, at)
+  let variant: Bool = syntax.ast_expression_is_case(view.source, view.tokens, at)
+  let recurrence: Bool = syntax.ast_expression_is_recur(view.source, view.tokens, at)
+  let type: Bool = vec.get(roles, at - selected) == 1
+  let name: I64 = if call:
+    syntax.ast_call_callee(at)
+  else:
+    if make:
+      syntax.ast_make_type(at)
+    else:
+      if variant:
+        syntax.ast_case_type(at)
+      else:
+        at
+  let role: I64 = if call:
+    2
+  else:
+    if make || variant:
+      3
+    else:
+      if recurrence:
+        4
+      else:
+        if type:
+          1
+        else:
+          0
+  let target: I64 = if recurrence:
+    selected
+  else:
+    if role > 0:
+      source_target(view, name)
+    else:
+      -1
+  let builtin: Bool = if call:
+    typing.builtin_known(view.source, view.tokens, name)
+  else:
+    false
+  Reference(node: at, name: name, role: role, target: target, builtin: builtin)
+
+fn add_provider(rows: @Rows, selected: I64, target: I64) -> Void effects[alloc, partial]:
+  if (target < 0) || ((target == selected) || contains(rows.providers, target, 0)):
+    void
+  else:
+    if vec.len(rows.providers) >= 64:
+      let bounded: Vec[Bool] = mem.replace(@rows.bounded, vec.new())
+      vec.set(@bounded, 0, true)
+      let previous: Vec[Bool] = mem.replace(@rows.bounded, bounded)
+      void
+    else:
+      let providers: Vec[I64] = mem.replace(@rows.providers, vec.new())
+      vec.push(@providers, target)
+      let previous: Vec[I64] = mem.replace(@rows.providers, providers)
+      void
+
+fn collect_rows(view: View, selected: I64, after: I64, roles: Vec[I64], at: I64, rows: @Rows) -> Void effects[alloc, partial]:
+  if at >= after:
+    void
+  else:
+    let type: typing.TypeRef = typing.fact_type(view.facts, at)
+    if type.kind >= -1:
+      if vec.len(rows.facts) >= 512:
+        let bounded: Vec[Bool] = mem.replace(@rows.bounded, vec.new())
+        vec.set(@bounded, 1, true)
+        let previous: Vec[Bool] = mem.replace(@rows.bounded, bounded)
+        void
+      else:
+        let facts: Vec[I64] = mem.replace(@rows.facts, vec.new())
+        vec.push(@facts, at)
+        let previous: Vec[I64] = mem.replace(@rows.facts, facts)
+        void
+    else:
+      void
+    let reference: Reference = reference_at(view, at, selected, roles)
+    if reference.role > 0:
+      add_provider(@rows, selected, reference.target)
+      if vec.len(rows.references) >= 512:
+        let bounded: Vec[Bool] = mem.replace(@rows.bounded, vec.new())
+        vec.set(@bounded, 2, true)
+        let previous: Vec[Bool] = mem.replace(@rows.bounded, bounded)
+        void
+      else:
+        let references: Vec[Reference] = mem.replace(@rows.references, vec.new())
+        vec.push(@references, reference)
+        let previous: Vec[Reference] = mem.replace(@rows.references, references)
+        void
+    else:
+      void
+    recur(view, selected, after, roles, at + 1, @rows)
+
+fn rows(view: View, selected: I64) -> Rows effects[alloc, partial]:
+  let bounded: Vec[Bool] = vec.new()
+  vec.push(@bounded, false)
+  vec.push(@bounded, false)
+  vec.push(@bounded, false)
+  let result: Rows = Rows(facts: vec.new(), references: vec.new(), providers: vec.new(), bounded: bounded)
+  let after: I64 = syntax.ast_next(view.tokens, selected)
+  let roles: Vec[I64] = selected_roles(view, selected, after)
+  collect_rows(view, selected, after, roles, selected, @result)
+  result
+
+fn section(output: @Writer, bounded: Bool, limit: I64) -> Void effects[alloc, partial]:
+  put(@output, "{\"evidence\":")
+  let evidence: Bytes = if bounded:
+    "bounded"
+  else:
+    "exact"
+  json(@output, evidence)
+  put(@output, ",\"limit\":")
+  number(@output, limit)
+  put(@output, ",\"reason\":")
+  let reason: Bytes = if bounded:
+    "row-limit"
+  else:
+    ""
+  json(@output, reason)
+  put(@output, ",\"rows\":[")
+
+fn emit_providers(output: @Writer, view: View, values: Vec[I64], at: I64) -> Void effects[alloc, partial]:
+  if at >= vec.len(values):
+    void
+  else:
+    if at > 0:
+      put(@output, ",")
+    else:
+      void
+    emit_declaration(@output, view, vec.get(values, at), false)
+    recur(@output, view, values, at + 1)
+
+fn emit_facts(output: @Writer, view: View, values: Vec[I64], at: I64) -> Void effects[alloc, partial]:
+  if at >= vec.len(values):
+    void
+  else:
+    if at > 0:
+      put(@output, ",")
+    else:
+      void
+    let node: I64 = vec.get(values, at)
+    let fact: typing.Fact = vec.get(view.facts, node)
+    let mode: I64 = typing.fact_borrow_mode(fact)
+    put(@output, "{\"node\":")
+    number(@output, node)
+    put(@output, ",\"span\":")
+    emit_span(@output, form_span(view, node))
+    put(@output, ",\"name\":")
+    if mode >= 0:
+      emit_original(@output, view, origin(view, node))
+    else:
+      put(@output, "null")
+    put(@output, ",\"provenance\":")
+    let provenance: Bytes = if mode >= 0:
+      "checked-binding-fact"
+    else:
+      "checked-expression-type"
+    json(@output, provenance)
+    put(@output, ",\"type\":")
+    emit_type(@output, view, typing.fact_type(view.facts, node), false)
+    put(@output, ",\"borrow_mode\":")
+    if mode >= 0:
+      json(@output, borrow_name(mode))
+    else:
+      put(@output, "null")
+    put(@output, ",\"evidence\":\"exact\"}")
+    recur(@output, view, values, at + 1)
+
+fn emit_references(output: @Writer, view: View, values: Vec[Reference], at: I64) -> Void effects[alloc, partial]:
+  if at >= vec.len(values):
+    void
+  else:
+    if at > 0:
+      put(@output, ",")
+    else:
+      void
+    let value: Reference = vec.get(values, at)
+    put(@output, "{\"node\":")
+    number(@output, value.node)
+    put(@output, ",\"span\":")
+    let span: Span = if value.role == 4:
+      origin(view, value.node + 1)
+    else:
+      origin(view, value.name)
+    emit_span(@output, span)
+    put(@output, ",\"role\":")
+    let role: Bytes = if value.role == 1:
+      "type"
+    else:
+      if value.role == 2:
+        "call"
+      else:
+        if value.role == 3:
+          "construction"
+        else:
+          "recur"
+    json(@output, role)
+    put(@output, ",\"provenance\":")
+    let provenance: Bytes = if (value.role == 2) || (value.role == 4):
+      "checked-call-link"
+    else:
+      "checked-type-link"
+    json(@output, provenance)
+    let exact: Bool = (value.target >= 0) || value.builtin
+    put(@output, ",\"evidence\":")
+    let evidence: Bytes = if exact:
+      "exact"
+    else:
+      "unknown"
+    json(@output, evidence)
+    put(@output, ",\"reason\":")
+    let reason: Bytes = if exact:
+      ""
+    else:
+      "unsupported-reference"
+    json(@output, reason)
+    put(@output, ",\"target_kind\":")
+    let kind: Bytes = if value.target >= 0:
+      "source"
+    else:
+      if value.builtin:
+        "builtin"
+      else:
+        "unknown"
+    json(@output, kind)
+    put(@output, ",\"target_node\":")
+    if value.target >= 0:
+      number(@output, value.target)
+    else:
+      put(@output, "null")
+    put(@output, ",\"target_module\":")
+    if value.target >= 0:
+      let target: Span = origin(view, syntax.ast_item_name(value.target))
+      let file: File = vec.get(view.files, target.file)
+      json(@output, file.name)
+    else:
+      put(@output, "null")
+    put(@output, ",\"target_name\":")
+    if value.target >= 0:
+      emit_original(@output, view, origin(view, syntax.ast_item_name(value.target)))
+    else:
+      if value.builtin:
+        json(@output, builtin_name(view, value.name))
+      else:
+        put(@output, "null")
+    put(@output, "}")
+    recur(@output, view, values, at + 1)

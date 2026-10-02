@@ -1,0 +1,6 @@
+(project 1
+  (entry app)
+  (module app "app.slim" (imports gateway rules) (exports))
+  (module gateway "gateway.slim" (imports rules stats) (exports score))
+  (module rules "rules.slim" (imports) (exports Limits contains))
+  (module stats "stats.slim" (imports rules) (exports summarize)))

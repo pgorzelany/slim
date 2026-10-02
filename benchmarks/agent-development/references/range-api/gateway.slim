@@ -1,0 +1,5 @@
+module gateway
+
+fn score(values: Vec[I64], limits: rules.Limits) -> I64 effects[partial]:
+  let summary: stats.Summary = stats.summarize(values, limits)
+  summary.accepted * 10 + summary.total

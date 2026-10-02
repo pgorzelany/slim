@@ -1,0 +1,29 @@
+module metrics
+
+struct Summary:
+  count: I64
+  total: I64
+  minimum: I64
+  maximum: I64
+
+fn scan(values: Vec[I64], index: I64, total: I64, minimum: I64, maximum: I64) -> Summary effects[partial]:
+  if index >= vec.len(values):
+    Summary(count: vec.len(values), total: total, minimum: minimum, maximum: maximum)
+  else:
+    let value: I64 = vec.get(values, index)
+    let low: I64 = if value < minimum:
+      value
+    else:
+      minimum
+    let high: I64 = if value > maximum:
+      value
+    else:
+      maximum
+    recur(values, index + 1, total + value, low, high)
+
+fn summarize(values: Vec[I64]) -> Summary effects[partial]:
+  if vec.len(values) == 0:
+    Summary(count: 0, total: 0, minimum: 0, maximum: 0)
+  else:
+    let first: I64 = vec.get(values, 0)
+    scan(values, 1, first, first, first)

@@ -1,0 +1,6 @@
+(project 1
+  (entry app)
+  (module app "app.slim" (imports archive pipeline storage) (exports))
+  (module archive "archive.slim" (imports) (exports checksum))
+  (module pipeline "pipeline.slim" (imports storage) (exports round))
+  (module storage "storage.slim" (imports) (exports Buffer append drain make)))

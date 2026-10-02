@@ -120,10 +120,14 @@ check_driver_job() {
             if(role!="program" && role!="runtime" && role!="link") die()
             if(profile !~ /^[012]$/) die()
         }
-        NR==1 {if($0 !~ /^Apple clang version 21\.[0-9.]+ [(]clang-[A-Za-z0-9.]+[)]$/) die(); next}
-        NR==2 {if($0 !~ /^Target: arm64-apple-darwin[0-9.]+$/) die(); next}
-        NR==3 {if($0!="Thread model: posix") die(); next}
-        NR==4 {if($0!="InstalledDir: " root "/toolchain/bin") die(); next}
+        FILENAME==ARGV[1] {
+            if(split($0,record,/\t/)==2 && record[2]=="sdk/SDKSettings.json") sdk_settings=1
+            next
+        }
+        FNR==1 {if($0 !~ /^Apple clang version 21\.[0-9.]+ [(]clang-[A-Za-z0-9.]+[)]$/) die(); next}
+        FNR==2 {if($0 !~ /^Target: arm64-apple-darwin[0-9.]+$/) die(); next}
+        FNR==3 {if($0!="Thread model: posix") die(); next}
+        FNR==4 {if($0!="InstalledDir: " root "/toolchain/bin") die(); next}
         /^[ \t]*$/ {next}
         {
             if(++jobs!=1 || $0 !~ /^ "[^"]*"( "[^"]*")*$/) die()
@@ -151,6 +155,11 @@ check_driver_job() {
                 else if(option=="-target-abi") take("darwinpcs")
                 else if(option=="-resource-dir") take(root "/toolchain/lib/clang/21")
                 else if(option=="-isysroot") take(root "/sdk")
+                # Clang records the already captured SDK settings as an explicit
+                # dependency. No other depfile-entry path is an admitted input.
+                else if(option=="-fdepfile-entry=" root "/sdk/SDKSettings.json") {
+                    if(!sdk_settings || ++settings_inputs!=1) die()
+                }
                 else if(option=="-isystem") {
                     if(++includes>2) die()
                     take(root (includes==1 ? "/toolchain/lib/clang/21/include" : "/sdk/usr/include"))
@@ -180,7 +189,7 @@ check_driver_job() {
                 if(inputs!=1 || includes!=2 || defines!=profile+1 || (profile==2 && seen["-pthread"]!=1)) exit 2
                 for(j in required) if(!seen[required[j]]) exit 2
             }
-        }' "$4" || fail unsupported-driver-job
+        }' "$1/captured-sha256.tsv" "$4" || fail unsupported-driver-job
 }
 link_inputs() {
     test "$(wc -c < "$1")" -le 1048576 || fail link-report-capacity

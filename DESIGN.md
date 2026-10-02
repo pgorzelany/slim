@@ -2,22 +2,31 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 Name: **SLIM — Small Language for Intelligent Machines**
-Last updated: 2026-07-26
+Last updated: 2026-10-02
 
 Accepted research direction (2026-09-05): [RFC-0112: Agent development and an OS
 foundation](design/rfcs/0112-agent-development-and-os-foundation.md) specifies a
 breaking successor and staged roadmap. It is not the implemented 0.9 contract.
+The [early development-loop amendment](design/rfcs/0158-early-agent-development-loop.md)
+permits a bounded checked-source context and repair pilot after M1, while M2
+source contracts and full M3 completion retain their own gates. The
+[first bounded experiment](benchmarks/results/2026-10-02-agent-development-loop.md)
+is complete; tool correctness and measured costs are recorded, while general
+agent effectiveness remains unknown.
 
 ## Vision
 
-SLIM, the Small Language for Intelligent Machines, is a programming language
-designed for AI to write, inspect, transform, and reason about. It should
-produce programs that remain readable to humans while using a compact,
-token-efficient syntax.
+SLIM helps humans and agents build safe native software through precise compiler
+feedback, explicit resource behavior and reproducible failures. Its compiler
+should expose checked understanding of a program so a person or agent can make
+a smaller, justified change and verify the result against an explicit contract.
 
-SLIM aims to combine systems-language performance and static safety with strong
-support for program analysis, deterministic concurrency, and mechanical
-simplification.
+The language combines native performance and static safety with readable,
+compact source, deterministic artifacts and bounded analysis. Token economy is
+useful evidence; correctness, resource behavior and time to an accepted result
+determine whether the development loop helps. Debugging, failure replay and
+controlled agent evaluation remain staged research work until their contracts
+and evidence are complete.
 
 This document records the durable design choices and research aspirations.
 Core now has a concrete canonical syntax, type/effect/ownership checker,

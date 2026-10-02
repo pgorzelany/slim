@@ -1,0 +1,14 @@
+module stats
+
+fn scan(values: Vec[I64], limits: rules.Limits, index: I64, total: I64) -> I64 effects[partial]:
+  if index >= vec.len(values):
+    total
+  else:
+    let value: I64 = vec.get(values, index)
+    if rules.contains(value, limits):
+      recur(values, limits, index + 1, total + value)
+    else:
+      recur(values, limits, index + 1, total)
+
+fn summarize(values: Vec[I64], limits: rules.Limits) -> I64 effects[partial]:
+  scan(values, limits, 0, 0)

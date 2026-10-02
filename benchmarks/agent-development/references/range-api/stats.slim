@@ -1,0 +1,22 @@
+module stats
+
+struct Summary:
+  accepted: I64
+  total: I64
+  rejected: I64
+
+fn scan(values: Vec[I64], limits: rules.Limits, index: I64, accepted: I64, total: I64, rejected: I64) -> Summary effects[partial]:
+  if index >= vec.len(values):
+    Summary(accepted: accepted, total: total, rejected: rejected)
+  else:
+    let decision: rules.Decision = rules.classify(vec.get(values, index), limits)
+    match decision:
+      Below:
+        recur(values, limits, index + 1, accepted, total, rejected + 1)
+      Inside(value):
+        recur(values, limits, index + 1, accepted + 1, total + value, rejected)
+      Above:
+        recur(values, limits, index + 1, accepted, total, rejected + 1)
+
+fn summarize(values: Vec[I64], limits: rules.Limits) -> Summary effects[partial]:
+  scan(values, limits, 0, 0, 0, 0)

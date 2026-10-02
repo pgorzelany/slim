@@ -1,0 +1,11 @@
+module render
+
+fn render(summary: metrics.Summary) -> Void effects[io]:
+  io.print_i64(summary.count)
+  io.print_bytes(",")
+  io.print_i64(summary.total)
+  io.print_bytes(",")
+  io.print_i64(summary.minimum)
+  io.print_bytes(",")
+  io.print_i64(summary.maximum)
+  io.println("")

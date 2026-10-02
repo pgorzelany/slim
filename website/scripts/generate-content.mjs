@@ -36,6 +36,7 @@ const developmentSources = [
   ["overview", "roadmap", "ROADMAP.md"],
   ["overview", "feature-policy", "design/FEATURE_POLICY.md"],
   ["contracts", "incremental", "docs/INCREMENTAL.md"],
+  ["contracts", "semantic-context", "docs/CONTEXT.md"],
   ["contracts", "integer-proofs", "docs/INTEGER_PROOFS.md"],
   ["contracts", "memory", "docs/MEMORY.md"],
   ["contracts", "parallelism", "docs/PARALLELISM.md"],
@@ -515,6 +516,10 @@ for (const algorithm of challengeRows) {
 
 const excludedMarkdown = new Map([
   ["AGENTS.md", "Internal operational policy for repository agents."],
+  ["benchmarks/agent-development/PROTOCOL.md", "Internal preregistered pilot protocol; participant and oracle material are kept separate."],
+  ["benchmarks/agent-development/tasks/buffer-drain/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
+  ["benchmarks/agent-development/tasks/effects-report/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
+  ["benchmarks/agent-development/tasks/range-api/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
 ]);
 const markdownFiles = await collectMarkdown(repositoryRoot);
 const unclassified = markdownFiles.filter(

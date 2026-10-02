@@ -45,9 +45,18 @@ The compiler reserves these stable conditions:
 - `E0358`: Void used in a storable position
 - `E0359`: assignment to an immutable binding
 - `E0361`: integer literal outside the signed I64 range
+- `E0450`: context expected complete input is stale
+- `E0451`: context admission, selected-source, canonical-node or report limit
+- `E0452`: context original qualified declaration selector is absent
+- `E0453`: invalid context arguments or mismatched input kinds
 
 Each points at the offending byte interval, or the zero-width location where
 required structure is missing.
+
+The context tooling conditions use the zero-width request span `0:0` and are
+fixed by [semantic context schema 1](CONTEXT.md) and its production command tests.
+They do not imply source rejection. Its read, manifest and source-check failures
+retain the existing source diagnostic identities and mapped byte spans.
 
 The exact code-to-condition mapping is executable: failure fixtures in
 `conformance/manifest.tsv` and `conformance/projects/manifest.tsv` pin codes

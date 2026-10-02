@@ -1,0 +1,8 @@
+module rules
+
+struct Limits:
+  lower: I64
+  upper: I64
+
+fn contains(value: I64, limits: Limits) -> Bool:
+  value >= limits.lower && value <= limits.upper

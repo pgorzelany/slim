@@ -1,0 +1,9 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let values: Vec[I64] = vec.new()
+  vec.push(@values, 6)
+  vec.push(@values, -2)
+  vec.push(@values, 9)
+  report.send(values)
+  0

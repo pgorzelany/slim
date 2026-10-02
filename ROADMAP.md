@@ -2,299 +2,204 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 Current milestone: Pre-1.0 evidence-driven development
-Last updated: 2026-07-27
+Current goal: Reliable project checks and compiler dogfooding
+Last updated: 2026-10-02
 
-The accepted next research sequence is in [RFC-0112: Agent development and an
-OS foundation](design/rfcs/0112-agent-development-and-os-foundation.md#test-and-acceptance-plan).
-It starts with current-contract repairs and actual incremental-work evidence,
-then develops an expressive safe core, agent/debugger tools, deterministic
-simulation, and a freestanding OS substrate. Implementation is authorized and in progress; completed successor features
-will be recorded separately from the historical milestone record below; its review findings
-also identify current claims that need correction during the first milestone.
+SLIM helps humans and agents build safe native software through precise compiler
+feedback, explicit resource behavior and reproducible failures. The
+[first measured development loop](benchmarks/results/2026-10-02-agent-development-loop.md)
+is complete for its bounded scope: production semantic context, independent
+conformance/cost evidence and six frozen repair trials. Strict acceptance is 2/3
+per condition; general effectiveness remains unknown. Retain opt-in schema 1 and
+freeze its breadth. The next outcome is reliable project contracts and a stronger
+compiler/library dogfooding experiment.
 
-## Direction
+[RFC-0112](design/rfcs/0112-agent-development-and-os-foundation.md) remains the
+accepted successor direction. [RFC-0158](design/rfcs/0158-early-agent-development-loop.md)
+amends its dependency order for this bounded slice after completed M0/M1, before
+requiring all M2 migrations. The full M3 agent/debugger milestone still retains
+its actual M2 dependencies. Milestone planning does not pre-approve features or
+waive `design/FEATURE_POLICY.md`.
 
-SLIM grows by strengthening guarantees and implementation capability before
-expanding language surface. Compiler analysis, ordinary libraries, and existing
-forms are preferred over new primitives. Every durable change follows
-`design/FEATURE_POLICY.md`; planning a milestone does not pre-approve its
-features.
+## Completed early agent loop
 
-The internal stabilization sequence was:
+The completed bounded outcome implements and evaluates an interface that helps a
+checked SLIM program before changing it. Reuse the production compiler's checked
+source facts; keep ordinary checking as the sole acceptance authority. The
+[context architecture decision](design/rfcs/0159-bounded-semantic-context.md)
+specifies the supported source/project shape, identities, protocol and fixed
+work/output budgets before production implementation.
 
-1. Core 1H: bounded resources and application evidence.
-2. Core 1I: a safe typed host boundary.
-3. Core 1J: deterministic structured concurrency for effectful work.
-4. Core 1K: stronger semantic quality and reduction.
-5. Core 1L: compatibility and release stabilization.
+| Deliverable | Dependencies | Exit evidence |
+| --- | --- | --- |
+| Bounded semantic context | Completed M0/M1; accepted context architecture | Production self-hosted SLIM implementation; documented facts, source association, limits and unsupported cases; deterministic output. |
+| Independent validation | Frozen context contract and workloads | Positive, negative and diagnostic expectations; wrong/stale source and project identities rejected; exact limit boundaries crossed; geometric work and same-host query costs measured. |
+| Repair feasibility pilot | Working context; frozen tasks and independent acceptance tests | Three paired tasks in six fresh Sol 6.1 extra-high sessions; 15 minutes and 24 compiler-wrapper operations per session; model tool-call/token observation and enforcement remain unknown where traces are unavailable; all successes, failures and interruptions retained. |
+| Adoption decision | Validation, pilot and unchanged repository/release gates | Explicit adopt/narrow/reject disposition, observed costs and remaining unknowns; a bounded result stays bounded. |
 
-LLVM, a second executable IR, unrestricted source FFI, detached tasks, locks,
-and duplicate syntax are outside this roadmap unless new evidence reverses an
-accepted RFC.
+The paired runs use the same model, reasoning configuration, ordinary tools,
+libraries, initial tasks and acceptance tests. Context access is the declared
+treatment. Freeze ordering, isolation, timing and budgets before measured runs;
+keep human intervention, model tokens where observable, tool calls, repair
+iterations, native/resource quality and time to an accepted result separate.
+No outside model API spending is authorized. This feasibility pilot measures its
+named tasks; broader effectiveness needs the later controlled evaluation.
+
+This outcome excludes source migration, session-protocol expansion, incomplete
+source acceptance, debugger value inspection, failure recording, provider
+simulation and replay. Each needs its own accepted contract and evidence.
+
+## Next substantial outcome
+
+1. Reproduce and repair the existing manifest import/export canonical-order and
+   uniqueness contract in production SLIM. Cross mixed-case and prefix ordering,
+   duplicate and unsorted lists with positive/negative/diagnostic conformance;
+   preserve the frozen pilot on its original compiler and measure costs.
+2. Prepare a new preregistered evaluation protocol with explicit or queued
+   concurrency, immutable per-operation source inputs, independent dispatch and
+   submission observations, and component acceptance aligned with public docs.
+   Keep the first protocol and every outcome unchanged.
+3. Evaluate larger held-out compiler/library repairs with ordinary tools versus
+   context before expanding context, sessions or source surface. Choose task
+   domains and budgets before trials; keep native/resource quality independent.
+
+Exit evidence is the reconciled project contract, permanent regression gates,
+all frozen held-out outcomes and an explicit evidence-based next decision. No
+new language feature, provider, dependency or budget relaxation is pre-approved.
+
+## Dependencies and remaining milestones
+
+M0 current-contract repairs and M1 retained checking/native sessions are complete
+at their identified release checkpoints. Their costs and limits remain in the
+[SLIM Next progress ledger](benchmarks/results/2026-09-05-slim-next-progress.md)
+and [M1 closure report](benchmarks/results/2026-09-08-m1-closure.md).
+
+| Track | Current state | Remaining deliverable and exit |
+| --- | --- | --- |
+| Early agent loop | Complete for bounded RFC-0158/0159 scope | Retain opt-in schema 1; costs and failed protocol/contract observations stay in the closure report. |
+| M2: expressive safe core | Separately staged contracts and native experiments; source cutovers pending | Follow the [dependency slices](benchmarks/results/2026-09-08-m2-plan.md); accepted coupled ownership/lifetime/allocation contracts, two substantial applications, compiler/library migration, resource budgets and full release evidence precede closure. |
+| M3: agent and debugger interface | Full milestone pending | Add remaining service/edit/evidence and debugger contracts, source/value tests and measured query behavior; early context alone cannot close it. |
+| M4: reproducible component laboratory | Pending | The same native component under deterministic providers, generated properties, failure replay and bounded minimization; validate the provider model and incomplete recordings. |
+| M5: systems resource contracts | Pending | Explicit authority/lifetime/cleanup and no-alloc/no-block contracts with exhaustion, call-path and native resource evidence. |
+| M6: freestanding kernel substrate | Pending | One RISC-V/QEMU target, audited machine boundary, isolation and repeatable fault-containment scenarios. |
+| M7: OS research slice | Pending | The maintained storage service across native runner, simulator and OS, with cross-environment faults, resource evidence and independent agent evaluation. |
+
+The bounded storage service remains the eventual integration target. A separate
+codec/parser and queue/allocation workload prevent one application from defining
+every language decision. Library composition, proof precision and compiler
+implementation take priority over new primitives. Broader automatic parallelism,
+a new backend and additional source surface require demonstrated need.
+
+## Decision and closure discipline
+
+1. Record the need and freeze tasks, independent oracles, workloads and budgets.
+2. Accept the smallest contract before dependent production changes; implement
+   compiler capabilities in `selfhost/` through the portable seed.
+3. Preserve canonical source, exact/bounded/unknown evidence and every permanent
+   correctness, performance, parallel and native-analysis gate.
+4. Measure actual work and costs separately from source/edit proxies and agent
+   outcomes. Keep failures and contrary evidence at their original revisions.
+5. Run the required AGENTS.md checks before committing compiler, runtime,
+   benchmark or agent-tool changes, and the full release gate at outcome closure.
+6. Adopt, narrow or reject from the stated evidence. Never call a milestone
+   complete through an undocumented fallback or a roadmap label.
+
+There are no calendar promises or performance-budget relaxations in this plan.
+The current language and `docs/COMPATIBILITY.md` remain authoritative until an
+accepted and implemented successor decision replaces their named contract.
 
 ## Completed foundations
 
-Detailed implementation history belongs in `design/rfcs/`; measured
-acceptance evidence belongs in `benchmarks/results/`. This table is the durable
-summary rather than a second copy of those records.
+The records below preserve historical milestone facts at their original
+revisions. They are foundations, not claims that every historical implementation
+is present in the current compiler. Detailed acceptance and measurements remain
+in linked RFCs and reports.
 
-| Milestone | Result |
+| Milestone | Historical result and record |
 | --- | --- |
-| Core 0.1 | Executable conformance, differential checking, and stable declaration identities. Historical Rust incremental reuse is not implemented in the current production compiler. |
-| Core 0.2 | Deterministic projects, canonical interfaces, validated persistent caches, and bounded module scheduling. |
-| Core 0.3 | Full self-hosted compiler parity and a modular SLIM compiler project. |
-| Toolchain cutover | The generated portable C11 seed replaced the Rust semantic compiler as the bootstrap trust artifact. |
-| Core 0.4 | Affine ownership, compiler-selected regions, deterministic destruction, and typed allocation failure. |
-| Core 1A | Direct checked-source analysis and a small terminating, idempotent reduction system. |
-| Core 1B | Bounded quality evidence, replayed reduction proofs, finite Boolean equivalence, and structural edits. |
-| Core 1C | Permanent compiler, runtime, incremental, comparison, and agent-oriented regression gates. |
-| Core 1D | One retained checked compiler view for typing, ownership, effects, memory planning, diagnostics, and emission. |
-| Core 1E | Safety-preserving native efficiency with the portable C11 backend. |
-| Core 1F | Bounded totality, reorder-safety, and deterministic parallel-plan evidence. |
-| Core 1G | Guarded automatic parallel execution for one proven, profitable, race-free, and deadlock-free subset. |
-| Core 1H | Bounded resource evidence over fourteen maintained applications without new source contracts. |
-| Core 1I | One monotonic clock and one bounded TCP exchange without source handles or FFI. |
-| Core 1J | One lexical two-call parallel region for bounded host work, isolated task regions, and deterministic join. |
-| Core 1K | Exact Boolean/byte specification evidence, named cost vectors, and strict replayable atom reductions without new syntax. |
-| Core 1L | Internal stabilization evidence for compatibility, diagnostics, ABI, reproducible source packaging, and clean-install validation. |
-
-Core 0.3 evidence is summarized in
-`benchmarks/results/2026-07-21-core-03.md`; Core 0.4 through Core 1C have
-milestone reports with matching names under `benchmarks/results/`. Core 1D
-through Core 1G close with RFC-0058, RFC-0061, RFC-0069, and RFC-0071 plus their dated
-reports.
+| Core 0.1 | Executable conformance, differential checking and stable declaration identities. Historical Rust incremental reuse is not current production reuse. |
+| Core 0.2 | Deterministic projects, canonical interfaces, validated caches and bounded module scheduling. |
+| Core 0.3 | Self-hosted compiler parity and a modular SLIM project; [acceptance report](benchmarks/results/2026-07-21-core-03.md). |
+| Toolchain cutover | The generated portable C11 seed replaced Rust semantics as the bootstrap trust artifact; [RFC-0027](design/rfcs/0027-portable-c-bootstrap-seed.md). |
+| Core 0.4 | Affine ownership, compiler-selected regions, deterministic destruction and typed allocation failure; [report](benchmarks/results/2026-07-22-core-04.md). |
+| Core 1A | Checked-source analysis and terminating, idempotent reduction; [report](benchmarks/results/2026-07-22-core-1a.md). |
+| Core 1B | Bounded quality evidence, replayed proofs, finite Boolean equivalence and structural edits; [report](benchmarks/results/2026-07-22-core-1b.md). |
+| Core 1C | Permanent compiler, runtime, incremental, comparison and agent-oriented regression gates; [report](benchmarks/results/2026-07-22-core-1c.md). |
 
 ### Core 1D: complete typed compiler view
 
 Status: complete
 
-Core 1D is accepted by RFC-0058. The compiler retains one bounded typed artifact
-instead of reconstructing semantics in later passes. Its permanent gates cover
-typed links and plans, project source projection, diagnostics, adversarial
-source shapes, fixed-point bootstrap, and scaling.
+Core 1D is accepted by RFC-0058. One bounded checked view serves typing,
+ownership, effects, memory planning, diagnostics and emission. Its fixed-point,
+identity, project and scaling evidence is in the
+[acceptance report](benchmarks/results/2026-07-23-core-1d-progress.md).
 
 ### Core 1E: safety-preserving native efficiency
 
 Status: complete
 
-RFC-0061 accepts Core 1E. Header-visible checked fast paths and allocation-free
-region elision reduce native overhead without unchecked profiles, new syntax,
-LLVM, or a second executable IR. The twelve maintained programs remain within
-their per-workload runtime budgets.
+RFC-0061 accepts Core 1E. Checked fast paths and allocation-free region elision
+retain the portable C11 backend and workload runtime budgets;
+[measurements and acceptance](benchmarks/results/2026-07-23-core-1e-progress.md).
 
 ### Core 1F: deterministic parallelism evidence
 
 Status: complete
 
-Core 1F derives bounded integer proofs, complete blocker sets, total recurrence
-facts, reorder-safety, and one deterministic non-overlapping schedule. RFC-0069
-kept execution disabled until the worker ABI, lowering, failure behavior,
-profitability evidence, and a second application existed.
+RFC-0069 closes bounded totality, complete blocker sets, recurrence facts and
+pairwise non-overlapping planning before execution;
+[acceptance and linked precision records](benchmarks/results/2026-07-23-core-1f-acceptance.md).
 
 ### Core 1G: guarded automatic execution
 
 Status: complete
 
-RFC-0070 defines a tiered structured worker ABI. RFC-0071 executes only two adjacent
-leading direct calls with atomic captures, complete totality and reorder-safety
-proofs, exact recurrence work above the accepted threshold, serial fallback,
-one parent-owned join, and no nested worker expansion. Everything else remains
-serial. The exact boundary is in `docs/PARALLELISM.md`.
+RFC-0070/0071 admit only a proven, profitable leading two-call shape, one
+parent-owned join, identical serial fallback and no nested expansion;
+[execution evidence](benchmarks/results/2026-07-23-core-1g-automatic-execution.md).
+The exact current boundary is in `docs/PARALLELISM.md`.
 
 ## Core 1H: bounded resources and application evidence
 
 Status: complete
 
-Core 1H makes physical limits useful without pretending arbitrary
-programs are decidable. RFC-0073 advances analysis to schema 6,
-publishes bounded recurrence profiles and exact-or-unknown call workloads, and
-locks a 14-application resource baseline without adding language surface.
-RFC-0074 closes the milestone without resource syntax because the corpus does not
-justify physical time, allocation-volume, or peak-byte contracts.
-
-### Work
-
-- Maintain the application corpus without shaping it around one optimization.
-- Derive execution-step, allocation, peak-live-memory, recurrence, task,
-  effect, and failure-path evidence from the existing checked artifact.
-- Classify every fact as `exact`, `bounded`, or `unknown`; unknown never means
-  safe, cheap, or bad.
-- Extend the existing analysis report before proposing source syntax.
-- If applications require assumptions that cannot be inferred, evaluate
-  exactly one resource-contract mechanism through the weighted feature policy.
-- Give every enforced limit defined typed behavior.
-- Let proven bounds inform quality comparisons, reduction, equivalence, and the
-  automatic-parallel cost model without changing ordinary semantics.
-
-### Acceptance
-
-- Multiple maintained applications exercise each accepted fact and failure
-  path.
-- Analysis remains bounded, deterministic, approximately linear, and reuses
-  the production checked artifact.
-- Limits cannot introduce undefined behavior, hidden allocation, or a second
-  execution profile.
-- Permanent conformance, malformed-input, scaling, runtime, and fixed-point
-  gates pass together.
-- Any new surface has one semantic role, a scored decision, diagnostics,
-  examples, and removal criteria.
+RFC-0073/0074 retain a fourteen-application baseline and bounded resource facts
+without source resource contracts;
+[acceptance and unsupported bounds](benchmarks/results/2026-07-23-core-1h-resource-evidence.md).
 
 ## Core 1I: safe typed host boundary
 
 Status: complete
 
-Core 1I makes SLIM useful for real operating-system work while preserving
-the default safety model. RFC-0075 starts with one allocation-free monotonic clock
-behind the existing statically enforced `io` effect. RFC-0076 adds one bounded
-whole TCP exchange. RFC-0077 closes the milestone without source handles, DNS,
-TLS, processes, or foreign declarations because maintained applications do not
-justify their state and authority surface.
-
-### Work
-
-- Measure application needs for files, clocks, timers, networking, process
-  interaction, and platform services.
-- Define a small typed capability boundary with explicit effects, ownership,
-  failure, and resource limits.
-- Keep raw pointers, unchecked aliasing, ambient authority, and arbitrary C
-  declarations out of ordinary SLIM source.
-- Use one host-operation model across the portable runtime and supported
-  targets; do not add a second way to express existing I/O.
-
-### Acceptance
-
-- Representative applications use the boundary without compiler-specific
-  escape hatches.
-- Invalid handles, lifetime violations, authority leaks, and unreported host
-  failures are rejected or represented explicitly.
-- Unsupported targets fail predictably or expose a documented capability
-  absence.
-- The ordinary compiler and programs that do not use host services pay no
-  material cost.
+RFC-0075/0076/0077 retain an effect-gated monotonic clock and bounded whole TCP
+exchange without source handles or FFI;
+[clock evidence](benchmarks/results/2026-07-23-core-1i-monotonic-clock.md) and
+[TCP evidence](benchmarks/results/2026-07-23-core-1i-bounded-tcp.md).
 
 ## Core 1J: deterministic structured concurrency
 
 Status: complete
 
-Automatic parallelism is suitable for proven pure CPU work, but effectful host
-operations have observable intent that cannot generally be inferred. RFC-0078
-therefore admits one leading two-call `parallel`; RFC-0079 closes the milestone
-without general task state.
-
-### Work
-
-- Cover parallel host operations such as starting two requests and joining both
-  results.
-- Require lexical task ownership, bounded lifetime, one structured join, and
-  explicit effect and failure composition.
-- Preserve race freedom and deadlock freedom by construction; do not add
-  detached tasks, locks, or worker-to-worker waits.
-- Keep operations bounded by typed timeout and response limits; every started
-  task completes and joins, so no user-visible cancellation state is needed.
-- Reuse Core 1G analysis and the host boundary instead of creating an unrelated
-  scheduler type system.
-
-### Acceptance
-
-- At least two representative applications show material latency or throughput
-  benefit.
-- Every spawn is bounded and every started task is joined or cancelled within
-  its lexical scope.
-- Scheduling variance cannot change accepted deterministic behavior.
-- Serial fallback, partial failure, timeout, limit exhaustion, and the absence
-  of detached or cancellable state have permanent tests.
-
-The maintained `dual_fetch` and `dual_health` applications show 0.529 and
-0.534 parallel/serial latency ratios under permanent 0.75 budgets. Owned
-results transfer only after join. Spawn, join, allocation, timeout, and
-unsupported-tier behavior have permanent tests.
+RFC-0078/0079 retain one lexical two-call region with isolated task storage and
+deterministic join. The maintained dual-request applications, serial/parallel
+ratios, fault and unsupported-tier evidence remain in the
+[acceptance report](benchmarks/results/2026-07-23-core-1j-structured-concurrency.md).
 
 ## Core 1K: semantic quality and reduction
 
 Status: complete
 
-Core 1K compares programs against explicit specifications and cost models, not
-one universal goodness score. RFC-0080 accepts one exact byte domain and analysis
-schema 7; RFC-0081 closes on three strictly token-reducing atom rules.
-
-### Work
-
-- Represent selected invariants so valid and reachable states can be
-  distinguished from merely representable states.
-- Extend bounded equivalence beyond the current finite Boolean subset where
-  Core 1H bounds make the domain finite and tractable.
-- Add named cost models for source size, runtime work, peak memory, effect
-  surface, failure surface, and proof burden.
-- Expand reduction only with terminating, deterministic, replayable
-  transformations whose chosen cost strictly improves.
-- Report counterexamples and proof boundaries rather than optimistic claims.
-
-### Acceptance
-
-- Equivalent and different results are independently checkable; unsupported
-  cases remain `unknown`.
-- Quality output remains a vector of evidence unless a caller explicitly
-  selects a cost model.
-- Reduction terminates, is idempotent for its declared domain, preserves
-  behavior, and cannot silently trade safety for a lower score.
-- Application evidence demonstrates that the added specification burden
-  removes real invalid states or proof obligations.
-
-The maintained byte-state predicate accepts exactly two of 256 representable
-states. A different range predicate proves the same set; a three-state
-predicate returns byte `3` as the first counterexample. The reduction fixture
-falls from 410 to 310 canonical tokens, replays independently, is byte-stable
-on a second pass, and retains computed or effect-relevant shapes.
+RFC-0080/0081 retain exact Boolean/byte specifications, independent named cost
+vectors and three strictly reducing atom rules. State counts, first
+counterexamples, idempotence and proof replay remain in the
+[acceptance report](benchmarks/results/2026-07-23-core-1k-semantic-quality.md).
 
 ## Core 1L: internal stabilization milestone
 
 Status: complete
 
-Core 1L stabilized the accepted internal language candidate; it was not a
-public 1.0 freeze or a feature sweep.
-
-### Work
-
-- Freeze the canonical surface, semantics, diagnostics, analysis schemas,
-  project format, generated-runtime contract, and compatibility policy.
-- Publish a compact language specification, tested tutorial, reference,
-  migration policy, release artifacts, and reproducible bootstrap instructions.
-- Validate supported platforms and the portable C11 backend; a new native
-  backend is not required for 1.0.
-- Define package and library boundaries only to the extent required by the
-  maintained 1.0 applications.
-- Remove provisional paths, obsolete compatibility code, and undocumented
-  behavior before freezing.
-
-### Acceptance
-
-- The compiler builds from the checked-in seed and reproduces its fixed point on
-  every supported release platform.
-- The complete corpus, sanitizers, fault injection, malformed-input mutations,
-  performance budgets, application suites, and website drift checks pass.
-- Every accepted surface item maps to a decision, specification, diagnostic
-  contract, conformance coverage, and compatibility rule.
-- A clean installation can build and run the maintained applications without
-  repository-internal knowledge.
-
-RFC-0082 freezes the compatibility and runtime contracts without language
-surface. RFC-0083 accepts a reproducible source archive, clean bootstrap and
-application run, complete repository and website gates, and one honestly
-validated Darwin/arm64 release target.
-
-## Milestone discipline
-
-For every milestone:
-
-1. Record the need and a measurable baseline.
-2. Prefer proof precision, libraries, or compiler implementation over syntax.
-3. Score each durable decision and reject duplicate semantics.
-4. Implement the smallest complete slice in SLIM.
-5. Add permanent correctness and performance gates before claiming a gain.
-6. Freeze dated evidence and update `docs/STATUS.md`.
-7. Do not call the milestone complete while any required behavior depends on an
-   undocumented fallback.
-
-SLIM 0.9 follows the pre-1.0 policy in `docs/COMPATIBILITY.md`. Future work
-still begins with evidence; the design goals and feature policy take
-precedence over milestone labels.
+RFC-0082/0083 stabilized compatibility, diagnostics, runtime ABI, reproducible
+source packaging and clean installation on the identified Darwin/arm64 target;
+[release evidence and honest limits](benchmarks/results/2026-07-23-core-1l-slim-1-0.md).
+This historical internal closure is not an active public 1.0 freeze.
