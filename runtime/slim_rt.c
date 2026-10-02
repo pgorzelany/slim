@@ -402,7 +402,10 @@ int64_t slim_monotonic_ms(void) {
     }
     int64_t milliseconds = (int64_t)(seconds * 1000);
     if (now.tv_nsec > 0) {
-        milliseconds += (int64_t)((uint64_t)now.tv_nsec / 1000000);
+        uint64_t fraction = (uint64_t)now.tv_nsec / 1000000;
+        milliseconds = fraction > (uint64_t)(INT64_MAX - milliseconds)
+                           ? INT64_MAX
+                           : milliseconds + (int64_t)fraction;
     }
     if (milliseconds > slim_last_monotonic_ms) {
         slim_last_monotonic_ms = milliseconds;
