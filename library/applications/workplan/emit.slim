@@ -1,0 +1,67 @@
+module workplan_emit
+
+fn error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn steps(graph: workplan_model.Graph, plan: workplan_model.Plan, cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(plan.steps):
+    void
+  else:
+    let step: workplan_model.Step = vec.get(plan.steps, cursor)
+    let task: workplan_model.Task = vec.get(graph.tasks, step.ordinal)
+    std_text.append_bytes(@output, "task ")
+    let name: Bool = std_bytes.append_range(graph.index.source, task.name_start, task.name_end, @output)
+    if name:
+      std_text.append_bytes(@output, " start ")
+      std_text.append_i64(@output, step.start)
+      std_text.append_bytes(@output, " finish ")
+      std_text.append_i64(@output, step.finish)
+      std_text.append_bytes(@output, "\n")
+      recur(graph, plan, cursor + 1, @output)
+    else:
+      void
+
+fn ancestry(plan: workplan_model.Plan, cursor: I64, remaining: I64, path: @Vec[I64]) -> Void effects[alloc, partial]:
+  if (cursor < 0) || (remaining == 0):
+    void
+  else:
+    vec.push(@path, cursor)
+    recur(plan, vec.get(plan.parents, cursor), remaining - 1, @path)
+
+fn path(graph: workplan_model.Graph, chain: Vec[I64], remaining: I64, first: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if remaining == 0:
+    void
+  else:
+    if first:
+      void
+    else:
+      std_text.append_bytes(@output, ",")
+    let task: workplan_model.Task = vec.get(graph.tasks, vec.get(chain, remaining - 1))
+    let name: Bool = std_bytes.append_range(graph.index.source, task.name_start, task.name_end, @output)
+    if name:
+      recur(graph, chain, remaining - 1, false, @output)
+    else:
+      void
+
+fn report(graph: workplan_model.Graph, plan: workplan_model.Plan) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "tasks ")
+  std_text.append_i64(@output, vec.len(graph.tasks))
+  std_text.append_bytes(@output, " edges ")
+  std_text.append_i64(@output, vec.len(graph.edges))
+  std_text.append_bytes(@output, " span ")
+  std_text.append_i64(@output, plan.span)
+  std_text.append_bytes(@output, "\n")
+  steps(graph, plan, 0, @output)
+  std_text.append_bytes(@output, "critical ")
+  let chain: Vec[I64] = vec.new()
+  ancestry(plan, plan.critical_task, vec.len(graph.tasks), @chain)
+  path(graph, chain, vec.len(chain), true, @output)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))

@@ -1,0 +1,303 @@
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 4 edges 2 span 5
+task a start 0 finish 2
+task b start 0 finish 2
+task c start 2 finish 5
+task d start 0 finish 0
+critical a,c
+tasks 3 edges 2 span 0
+task a start 0 finish 0
+task z start 0 finish 0
+task x start 0 finish 0
+critical a
+error 22 at 32
+error 21 at 14
+error 21 at 13
+tasks 0 edges 0 span 0
+critical 
+tasks 3 edges 0 span 1
+task A start 0 finish 1
+task Z start 0 finish 1
+task a start 0 finish 1
+critical A

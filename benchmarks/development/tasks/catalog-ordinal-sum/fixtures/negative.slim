@@ -1,0 +1,11 @@
+module catalog_app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let loaded: catalog_model.Loaded = catalog_data.load("", 0)
+  match loaded:
+    Invalid(code, position):
+      void
+    Ready(catalog):
+      let bounds: std_byte_index.Bounds = catalog_data.select(catalog, true, true)
+      void
+  0

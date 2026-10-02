@@ -93,7 +93,25 @@ test("every Markdown source is published once or explicitly excluded", async () 
   }, ...["buffer-drain", "effects-report", "range-api"].map((task) => ({
     sourcePath: `benchmarks/agent-development/tasks/${task}/TASK.md`,
     reason: "Internal frozen pilot participant task; excluded from public task discovery.",
+  })), {
+    sourcePath: "benchmarks/development/PROTOCOL.md",
+    reason: "Internal preregistered development protocol; participant and oracle material are kept separate.",
+  }, {
+    sourcePath: "benchmarks/development/tasks/README.md",
+    reason: "Internal development corpus inventory and acceptance domains; excluded from public task discovery.",
+  }, ...[
+    "byte-index-range", "catalog-ordinal-sum", "decimal-exact", "effects-call-ceilings",
+    "format-call-modes", "hex-atomic-codec", "http-header-window", "identity-span-intersection",
+    "ledger-overflow-transaction", "netstring-batch-atomic", "text-budgeted-quote", "workplan-critical-ties",
+  ].map((task) => ({
+    sourcePath: `benchmarks/development/tasks/${task}/TASK.md`,
+    reason: "Internal development participant task; excluded from public task discovery.",
   }))]);
+  assert.deepEqual(generated.coverage.published.find((entry) => entry.sourcePath === "library/COMPONENTS.md"), {
+    sourcePath: "library/COMPONENTS.md",
+    route: "/development/subsystems/experimental-library-components",
+    kind: "development",
+  });
   assert.equal(generated.stats.publishedMarkdown, published.length);
   assert.equal(generated.stats.excludedMarkdown, excluded.length);
 });
@@ -298,7 +316,7 @@ test("search keeps current, development, RFC, and evidence scopes distinct", asy
   );
   assert.deepEqual(counts, {
     current: 38,
-    development: 22,
+    development: 23,
     rfc: (await readdir(path.join(repositoryRoot, "design/rfcs"))).filter((name) => name.endsWith(".md")).length,
     evidence: (await readdir(path.join(repositoryRoot, "benchmarks/results"))).filter((name) => name.endsWith(".md")).length,
   });

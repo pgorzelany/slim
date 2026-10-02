@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "finite-client",
+      "operation": "run",
+      "overlay": {
+        "applications/catalog/main.slim": "fixtures/client.slim"
+      },
+      "expect": {
+        "returncode": 0,
+        "stdout": "fixtures/expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "76 fixed catalogs/selections: all six input permutations of three strict-prefix/mixed-case keys, six queries, both modes; positive/negative overflow, extreme cancellation and empty catalog. Original emit client observes selected records."
+    },
+    {
+      "id": "caller-contract",
+      "operation": "check",
+      "overlay": {
+        "applications/catalog/main.slim": "fixtures/negative.slim"
+      },
+      "positive": {
+        "applications/catalog/main.slim": "fixtures/positive.slim"
+      },
+      "expect": {
+        "returncode": 1,
+        "diagnostics": [
+          [
+            "E0344",
+            "catalog_app",
+            291,
+            295
+          ]
+        ],
+        "stdout": "fixtures/negative-expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "One missing-exclusive-marker caller (E0360) or wrong argument type (E0344), with separately accepted same-API control; exact argument source span."
+    }
+  ]
+}

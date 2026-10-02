@@ -52,43 +52,43 @@ int main(int argc, char **argv) {
     SlimRegion region;
     slim_alloc_status_init(&allocation);
     slim_rt_init(&region, &allocation);
-    Slim_type_nativecache_95State state = slim_fn_nativecache_95start(
+    Slim_type_pnativecache_95_95State state = slim_fn_pnativecache_95_95start(
         1, literal("context"), 256, 67108864, &region);
     SlimBytes input = slim_bytes_static(buffer, boundary ? 1 : size);
     SlimBytes output = slim_bytes_static(buffer, boundary ? size - 1 : size);
-    Slim_type_nativecache_95Key key = slim_fn_zzprobe_95key(
+    Slim_type_pnativecache_95_95Key key = slim_fn_pzzprobe_95_95key(
         1, literal("context"), 0, 0, input, literal(""), &region);
     if (boundary) {
         /* The complete byte limit is crossed before any retained byte clone. */
-        Slim_type_nativecache_95Stored invalid = slim_fn_nativecache_95publish(
+        Slim_type_pnativecache_95_95Stored invalid = slim_fn_pnativecache_95_95publish(
             &state, key, slim_bytes_static(buffer, size), &region);
         require(!invalid.slim_field_accepted);
         require(atomic_load(&allocation.attempts) == 2);
     }
     reset_counts();
     uint64_t begin = now_ns();
-    Slim_type_nativecache_95Stored saved = slim_fn_nativecache_95publish(&state, key, output, &region);
+    Slim_type_pnativecache_95_95Stored saved = slim_fn_pnativecache_95_95publish(&state, key, output, &region);
     uint64_t finished = now_ns();
     require(saved.slim_field_accepted);
     report("publish", begin, finished, &region);
     reset_counts();
     begin = now_ns();
-    Slim_type_nativecache_95Probe found = slim_fn_nativecache_95lookup(&state, key, &region);
+    Slim_type_pnativecache_95_95Probe found = slim_fn_pnativecache_95_95lookup(&state, key, &region);
     finished = now_ns();
     require(found.slim_field_hit && found.slim_field_artifact.len == output.len);
     require(memcmp(found.slim_field_artifact.data, output.data, (size_t)output.len) == 0);
     report("hit", begin, finished, &region);
     reset_counts();
-    Slim_type_nativecache_95Key different = slim_fn_zzprobe_95key(
+    Slim_type_pnativecache_95_95Key different = slim_fn_pzzprobe_95_95key(
         1, literal("context"), 0, 0, literal("different"), literal(""), &region);
     begin = now_ns();
-    Slim_type_nativecache_95Probe missed = slim_fn_nativecache_95lookup(&state, different, &region);
+    Slim_type_pnativecache_95_95Probe missed = slim_fn_pnativecache_95_95lookup(&state, different, &region);
     finished = now_ns();
     require(!missed.slim_field_hit && missed.slim_field_artifact.len == 0);
     report("miss", begin, finished, &region);
     reset_counts();
     begin = now_ns();
-    Slim_type_nativecache_95Stored duplicate = slim_fn_nativecache_95publish(&state, key, output, &region);
+    Slim_type_pnativecache_95_95Stored duplicate = slim_fn_pnativecache_95_95publish(&state, key, output, &region);
     finished = now_ns();
     require(duplicate.slim_field_accepted);
     report("duplicate", begin, finished, &region);

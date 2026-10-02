@@ -23,3 +23,48 @@ static int test_proc_pidinfo(int pid, int flavor, uint64_t argument, void *buffe
 }
 #define proc_listpids test_proc_listpids
 #define proc_pidinfo test_proc_pidinfo
+
+/* Child waits until the parent has made (or deliberately declined) the exact
+   group. This prevents scheduling from invalidating the wrong-group control. */
+static unsigned test_group_mode;
+static int test_group_gate[2] = {-1, -1};
+static int test_setpgid(pid_t pid, pid_t group) {
+    if (!test_group_mode) return setpgid(pid, group);
+    if (pid == 0) {
+        assert(group == 0 && test_group_gate[0] >= 0 && test_group_gate[1] >= 0);
+        assert(close(test_group_gate[1]) == 0);
+        char ready;
+        ssize_t count;
+        do { count = read(test_group_gate[0], &ready, 1); } while (count < 0 && errno == EINTR);
+        assert(count == 1 && ready == 'g' && close(test_group_gate[0]) == 0);
+        assert((getpgrp() == getpid()) == (test_group_mode != 2));
+        errno = test_group_mode == 3 ? EIO : EPERM;
+        return -1;
+    }
+    assert(pid == group && test_group_gate[0] >= 0 && test_group_gate[1] >= 0);
+    int result;
+    if (test_group_mode == 2) {
+        result = -1; errno = EPERM;
+    } else {
+        result = setpgid(pid, group);
+        assert(result == 0);
+    }
+    int saved = errno;
+    assert(close(test_group_gate[0]) == 0);
+    ssize_t count;
+    do { count = write(test_group_gate[1], "g", 1); } while (count < 0 && errno == EINTR);
+    assert(count == 1 && close(test_group_gate[1]) == 0);
+    test_group_gate[0] = test_group_gate[1] = -1;
+    errno = saved;
+    return result;
+}
+#define setpgid test_setpgid
+static pid_t test_waitpid(pid_t pid, int *status, int options) {
+    pid_t result = waitpid(pid, status, options);
+    if (result == pid && test_group_mode) {
+        assert(WIFEXITED(*status));
+        assert(WEXITSTATUS(*status) == (test_group_mode == 1 ? 0 : 126));
+    }
+    return result;
+}
+#define waitpid test_waitpid

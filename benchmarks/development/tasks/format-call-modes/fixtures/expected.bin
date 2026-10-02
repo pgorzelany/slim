@@ -1,0 +1,268 @@
+1
+0
+module sample
+
+fn zero() -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  zero()
+1
+0
+module sample
+
+fn zero() -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  zero()
+1
+0
+module sample
+
+fn zero() -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  zero()
+1
+0
+module sample
+
+fn zero() -> I64:
+  0
+
+fn main(args: Vec[Bytes]) -> I64:
+  zero()
+1
+0
+module sample
+
+fn mutate(output: @Vec[I64]) -> Void effects[alloc]:
+  vec.push(@output, 1)
+
+fn consume(input: ^Vec[I64]) -> I64:
+  vec.len(input)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  mutate(@output)
+  consume(^output)
+1
+0
+module sample
+
+fn mutate(output: @Vec[I64]) -> Void effects[alloc]:
+  vec.push(@output, 1)
+
+fn consume(input: ^Vec[I64]) -> I64:
+  vec.len(input)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  mutate(@output)
+  consume(^output)
+1
+0
+module sample
+
+fn mutate(output: @Vec[I64]) -> Void effects[alloc]:
+  vec.push(@output, 1)
+
+fn consume(input: ^Vec[I64]) -> I64:
+  vec.len(input)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  mutate(@output)
+  consume(^output)
+1
+0
+module sample
+
+fn mutate(output: @Vec[I64]) -> Void effects[alloc]:
+  vec.push(@output, 1)
+
+fn consume(input: ^Vec[I64]) -> I64:
+  vec.len(input)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  mutate(@output)
+  consume(^output)
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:
+  if count == 0:
+    vec.len(output) + vec.len(input)
+  else:
+    recur(@output, ^input, count - 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  fold(@output, ^input, 3)
+1
+0
+module sample
+
+fn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:
+  if count == 0:
+    vec.len(output) + vec.len(input)
+  else:
+    recur(@output, ^input, count - 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  fold(@output, ^input, 3)
+1
+0
+module sample
+
+fn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:
+  if count == 0:
+    vec.len(output) + vec.len(input)
+  else:
+    recur(@output, ^input, count - 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  fold(@output, ^input, 3)
+1
+0
+module sample
+
+fn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:
+  if count == 0:
+    vec.len(output) + vec.len(input)
+  else:
+    recur(@output, ^input, count - 1)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  fold(@output, ^input, 3)
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn choose(value: I64) -> I64:
+  value
+
+fn main(args: Vec[Bytes]) -> I64:
+  choose(1)
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))
+1
+0
+module sample
+
+fn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:
+  (vec.len(output) + vec.len(input)) + value
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let output: Vec[I64] = vec.new()
+  let input: Vec[I64] = vec.new()
+  combine(@output, ^input, bytes.len("a"))

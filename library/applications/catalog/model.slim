@@ -1,0 +1,27 @@
+module catalog_model
+
+struct Record:
+  key_start: I64
+  key_end: I64
+  weight: I64
+  value_start: I64
+  value_end: I64
+
+struct Catalog:
+  index: std_byte_index.Index
+  records: Vec[Record]
+
+enum Loaded:
+  Invalid(I64, I64)
+  Ready(Catalog)
+
+struct Status:
+  valid: Bool
+  code: I64
+  position: I64
+
+struct Selection:
+  valid: Bool
+  position: I64
+  count: I64
+  total: I64

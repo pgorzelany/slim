@@ -2792,7 +2792,13 @@ fn project_analysis_dogfoods_the_bounded_parallelism_view() {
     let report = String::from_utf8(output.stdout).unwrap();
     assert!(report.starts_with("(analysis 7 (module project)"));
     assert!(report.contains("(parallelism (guarantee bounded) (function-limit 64)"));
-    assert!(report.contains("analysis_binding_active (guarantee exact) (status safe)"));
+    assert!(
+        report.contains("panalysis__binding_0active (guarantee exact) (status safe) (blockers)")
+    );
+    assert!(report.contains(
+        "panalysis__emit_0function (guarantee exact) (status unavailable) (reason exclusive-borrow) (blockers exclusive-borrow allocation-or-io callee-not-safe function-limit)"
+    ));
+    assert!(!report.contains("analysis_binding_active (guarantee exact)"));
 }
 
 #[test]

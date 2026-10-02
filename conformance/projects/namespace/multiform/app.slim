@@ -1,0 +1,32 @@
+module app
+
+fn descend(n: I64, value: lib.Number) -> lib.Number effects[partial]:
+  if n <= 0:
+    value
+  else:
+    recur(n - 1, lib.Number(value: lib.identity(value.value)))
+
+fn parallel_value(flag: Bool) -> I64 effects[io, partial]:
+  parallel:
+    let first: I64 = lib.sample(2)
+    let second: I64 = lib.sample(4)
+    var current: lib.Number = lib.Number(value: 0)
+    current = if flag:
+      lib.Number(value: lib.identity(first))
+    else:
+      lib.Number(value: lib.identity(second))
+    let state: lib.Choice = if flag:
+      lib.Choice::Value(lib.identity(current.value))
+    else:
+      lib.Choice::Empty()
+    match state:
+      Empty:
+        lib.identity(second)
+      Value(value):
+        lib.identity(value)
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let value: lib.Number = descend(2, lib.Number(value: 7))
+  io.print_i64(value.value + parallel_value(true) + parallel_value(false))
+  io.println("")
+  0

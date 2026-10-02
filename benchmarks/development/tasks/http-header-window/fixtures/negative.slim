@@ -1,0 +1,5 @@
+module http_app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let response: http_model.Response = http_parser.parse(true)
+  0

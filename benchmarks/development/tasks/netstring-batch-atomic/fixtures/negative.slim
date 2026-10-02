@@ -1,0 +1,7 @@
+module component_tests
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let frames: Vec[std_netstring.Frame] = vec.new()
+  let output: Vec[U8] = vec.new()
+  let ok: Bool = std_netstring.append_batch("", frames, 0, output)
+  0

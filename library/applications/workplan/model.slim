@@ -1,0 +1,51 @@
+module workplan_model
+
+struct Task:
+  name_start: I64
+  name_end: I64
+  cost: I64
+  dependencies_start: I64
+  dependencies_end: I64
+
+struct Edge:
+  dependent: I64
+  next: I64
+  position: I64
+
+struct Graph:
+  index: std_byte_index.Index
+  tasks: Vec[Task]
+  edges: Vec[Edge]
+  heads: Vec[I64]
+  indegree: Vec[I64]
+
+struct Status:
+  valid: Bool
+  code: I64
+  position: I64
+
+enum Loaded:
+  Invalid(I64, I64)
+  Ready(Graph)
+
+struct Step:
+  ordinal: I64
+  start: I64
+  finish: I64
+
+struct Plan:
+  steps: Vec[Step]
+  parents: Vec[I64]
+  critical_task: I64
+  span: I64
+
+enum Scheduled:
+  Invalid(I64, I64)
+  Ready(Plan)
+
+struct Schedule:
+  valid: Bool
+  code: I64
+  position: I64
+  critical_task: I64
+  span: I64

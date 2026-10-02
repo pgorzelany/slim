@@ -5,7 +5,7 @@ import sys
 
 root = Path(sys.argv[1])
 code = (root/'slimc-seed.c').read_text()
-pattern = r'(?m)^static [^\n]*\bslim_fn_nativecache_95clone_95rows\([^\n]*\) \{$'
+pattern = r'(?m)^static [^\n]*\bslim_fn_pnativecache_95_95clone_950rows\([^\n]*\) \{$'
 matches = list(re.finditer(pattern, code))
 assert len(matches) == 1
 match = matches[0]
@@ -45,7 +45,7 @@ uint64_t slim_test_freed_bytes(void) { return slim_test_freed; }
 
 path = root/'native.c'
 code = path.read_text()
-anchor = 'static Slim_type_nativecache_95State native_cache;'
+anchor = 'static Slim_type_pnativecache_95_95State native_cache;'
 assert code.count(anchor) == 1
 code = code.replace(anchor, anchor+'\n'+Path('tests/fixtures/native_resource_probe.h').read_text())
 for anchor, addition in [

@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "finite-client",
+      "operation": "run",
+      "overlay": {
+        "driver.slim": "fixtures/client.slim"
+      },
+      "expect": {
+        "returncode": 0,
+        "stdout": "fixtures/expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "Every U8 byte at five exact/under budgets; empty/bounds/prefix cases plus generated source lengths1048576/1048577, 1297 cases. Ordinary source <=3 bytes; large source probes empty slice and exact source admission boundary; rejection preserves pre:."
+    },
+    {
+      "id": "caller-contract",
+      "operation": "check",
+      "overlay": {
+        "driver.slim": "fixtures/negative.slim"
+      },
+      "positive": {
+        "driver.slim": "fixtures/positive.slim"
+      },
+      "expect": {
+        "returncode": 1,
+        "diagnostics": [
+          [
+            "E0360",
+            "driver",
+            167,
+            173
+          ]
+        ],
+        "stdout": "fixtures/negative-expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "One missing-exclusive-marker caller (E0360) or wrong argument type (E0344), with separately accepted same-API control; exact argument source span."
+    }
+  ]
+}

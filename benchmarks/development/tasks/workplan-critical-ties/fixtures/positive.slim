@@ -1,0 +1,11 @@
+module workplan_app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let loaded: workplan_model.Loaded = workplan_load.load("", 0, 0)
+  match loaded:
+    Invalid(code, position):
+      void
+    Ready(graph):
+      let plan: workplan_model.Scheduled = workplan_schedule.plan(graph)
+      void
+  0

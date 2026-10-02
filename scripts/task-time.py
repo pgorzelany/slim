@@ -16,7 +16,7 @@ import time
 import uuid
 
 
-DEFAULT_LOG = Path(__file__).resolve().parents[1] / "design/task-times.jsonl"
+DEFAULT_LOG = Path(__file__).resolve().parents[1] / "build/task-times.jsonl"
 MAX_EVENT_BYTES = 16384
 BASE_FIELDS = {"schema", "event", "id", "at", "stamp_basis", "recorded_at", "evidence"}
 END_FIELDS = {"outcome", "duration_ns", "duration_basis"}
@@ -126,6 +126,8 @@ def replay(stream):
 def locked_log(path, write=False):
     # All cooperating writers lock this inode before replay and append. Do not
     # replace or rotate the file while a task-time process is using it.
+    if write:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
     try:
         stream = Path(path).open("a+b" if write else "rb")
     except FileNotFoundError:

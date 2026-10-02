@@ -2,7 +2,7 @@
 
 Status: SLIM 0.9 — experimental, pre-1.0
 Current milestone: Pre-1.0 evidence-driven development
-Current goal: Reliable project checks and compiler dogfooding
+Current goal: Measured compiler and library development in SLIM
 Last updated: 2026-10-02
 
 SLIM helps humans and agents build safe native software through precise compiler
@@ -11,8 +11,8 @@ feedback, explicit resource behavior and reproducible failures. The
 is complete for its bounded scope: production semantic context, independent
 conformance/cost evidence and six frozen repair trials. Strict acceptance is 2/3
 per condition; general effectiveness remains unknown. Retain opt-in schema 1 and
-freeze its breadth. The next outcome is reliable project contracts and a stronger
-compiler/library dogfooding experiment.
+freeze its breadth. The next outcome is reliable project contracts, useful
+ordinary-source components and a stronger compiler/library development experiment.
 
 [RFC-0112](design/rfcs/0112-agent-development-and-os-foundation.md) remains the
 accepted successor direction. [RFC-0158](design/rfcs/0158-early-agent-development-loop.md)
@@ -49,23 +49,39 @@ This outcome excludes source migration, session-protocol expansion, incomplete
 source acceptance, debugger value inspection, failure recording, provider
 simulation and replay. Each needs its own accepted contract and evidence.
 
-## Next substantial outcome
+## Current substantial outcome
 
-1. Reproduce and repair the existing manifest import/export canonical-order and
-   uniqueness contract in production SLIM. Cross mixed-case and prefix ordering,
-   duplicate and unsorted lists with positive/negative/diagnostic conformance;
-   preserve the frozen pilot on its original compiler and measure costs.
-2. Prepare a new preregistered evaluation protocol with explicit or queued
-   concurrency, immutable per-operation source inputs, independent dispatch and
-   submission observations, and component acceptance aligned with public docs.
-   Keep the first protocol and every outcome unchanged.
-3. Evaluate larger held-out compiler/library repairs with ordinary tools versus
-   context before expanding context, sessions or source surface. Choose task
-   domains and budgets before trials; keep native/resource quality independent.
+The maintainer authorized continuous development until 2026-10-03 10:00
+Europe/Warsaw (08:00 UTC), starting 2026-10-02 18:06 UTC. Check the clock and
+choose further useful work until that boundary; this does not promise that all
+successor milestones fit in one night. Parallel implementation feeds reviewed
+integration; measured trials and native benchmarks run without competing work.
 
-Exit evidence is the reconciled project contract, permanent regression gates,
-all frozen held-out outcomes and an explicit evidence-based next decision. No
-new language feature, provider, dependency or budget relaxation is pre-approved.
+| Workstream | Concrete result | Acceptance |
+| --- | --- | --- |
+| Project contracts | Canonical import/export lists and distinct module declaration identities, with checked visibility and original source diagnostics. | Collision, lexical/type-role, nested-expression and visibility fixtures; clean/retained parity; unchanged safety gates and measured checking work. |
+| Ordinary SLIM components | Bounded framing and byte indexing, used by catalog queries/snapshot reconciliation, dependency planning and development-result summaries. | Independent behavior/failure matrices, explicit admission bounds, native/resource tests, deterministic results and preserved work budgets. |
+| Compiler dogfooding | Apply the components and focused tools to actual compiler/project data and repairs. | Complete production checking, reproducible outputs and named correctness/resource contracts. |
+| Development evaluator | Immutable operation/submission snapshots, queued concurrent requests and separately observed task/tool timing. | Permanent transport, identity, timeout and acceptance tests; no second semantic checker. |
+| Held-out evaluation | Larger paired compiler/library tasks with ordinary tools versus optional context, using fresh Sol 6.1 extra-high agents. | Freeze tasks, independent tests, order and budgets before dispatch; retain every outcome and report unknown observations explicitly. |
+| Closure | Reviewed, verified commits pushed to `codex/slim-next`; concise current status and results. | Required compiler/runtime/benchmark checks and source-bound repository, release and website acceptance. |
+
+The morning outcome is working source and evidence: reconcile actual compiler
+inputs, plan their dependencies, summarize every configured development trial,
+and compare ordinary feedback with optional semantic context. Name measured
+benefits and costs per domain; retain unknown results and infrastructure failures.
+Reliable native session execution is part of acceptance, not an optional cleanup.
+
+Only reviewed bounded ordinary-source and evaluator contracts are accepted
+within this window. New language syntax, runtime integration, dependencies and
+performance-budget relaxation remain outside its scope. The first pilot stays
+frozen. A result may support retaining, narrowing or rejecting context use; a
+larger task corpus still does not establish universal agent effectiveness.
+
+Operator timing and transient logs stay in ignored `build/`. Current docs explain
+contracts, decisions and next work; durable tests and relevant measurements
+remain product infrastructure. Do not create a historical prose journal for
+each implementation or verification attempt.
 
 ## Dependencies and remaining milestones
 
@@ -104,102 +120,59 @@ a new backend and additional source surface require demonstrated need.
 6. Adopt, narrow or reject from the stated evidence. Never call a milestone
    complete through an undocumented fallback or a roadmap label.
 
-There are no calendar promises or performance-budget relaxations in this plan.
+The work window does not promise milestone closure or relax performance budgets.
 The current language and `docs/COMPATIBILITY.md` remain authoritative until an
 accepted and implemented successor decision replaces their named contract.
 
-## Completed foundations
+## Foundation records
 
-The records below preserve historical milestone facts at their original
-revisions. They are foundations, not claims that every historical implementation
-is present in the current compiler. Detailed acceptance and measurements remain
-in linked RFCs and reports.
+The production compiler is self-hosted SLIM with the portable C seed under
+[RFC-0027](design/rfcs/0027-portable-c-bootstrap-seed.md). Current language and
+implementation boundaries are in [CORE.md](docs/CORE.md) and
+[STATUS.md](docs/STATUS.md). Earlier milestone evidence remains in the
+[results index](benchmarks/results/README.md); this roadmap tracks current work.
 
-| Milestone | Historical result and record |
-| --- | --- |
-| Core 0.1 | Executable conformance, differential checking and stable declaration identities. Historical Rust incremental reuse is not current production reuse. |
-| Core 0.2 | Deterministic projects, canonical interfaces, validated caches and bounded module scheduling. |
-| Core 0.3 | Self-hosted compiler parity and a modular SLIM project; [acceptance report](benchmarks/results/2026-07-21-core-03.md). |
-| Toolchain cutover | The generated portable C11 seed replaced Rust semantics as the bootstrap trust artifact; [RFC-0027](design/rfcs/0027-portable-c-bootstrap-seed.md). |
-| Core 0.4 | Affine ownership, compiler-selected regions, deterministic destruction and typed allocation failure; [report](benchmarks/results/2026-07-22-core-04.md). |
-| Core 1A | Checked-source analysis and terminating, idempotent reduction; [report](benchmarks/results/2026-07-22-core-1a.md). |
-| Core 1B | Bounded quality evidence, replayed proofs, finite Boolean equivalence and structural edits; [report](benchmarks/results/2026-07-22-core-1b.md). |
-| Core 1C | Permanent compiler, runtime, incremental, comparison and agent-oriented regression gates; [report](benchmarks/results/2026-07-22-core-1c.md). |
+The following closure markers retain the governance-checked historical
+boundaries. Detailed evidence stays in the linked decisions and results index.
 
 ### Core 1D: complete typed compiler view
 
 Status: complete
 
-Core 1D is accepted by RFC-0058. One bounded checked view serves typing,
-ownership, effects, memory planning, diagnostics and emission. Its fixed-point,
-identity, project and scaling evidence is in the
-[acceptance report](benchmarks/results/2026-07-23-core-1d-progress.md).
+Core 1D is accepted by RFC-0058.
 
 ### Core 1E: safety-preserving native efficiency
 
 Status: complete
 
-RFC-0061 accepts Core 1E. Checked fast paths and allocation-free region elision
-retain the portable C11 backend and workload runtime budgets;
-[measurements and acceptance](benchmarks/results/2026-07-23-core-1e-progress.md).
-
-### Core 1F: deterministic parallelism evidence
-
-Status: complete
-
-RFC-0069 closes bounded totality, complete blocker sets, recurrence facts and
-pairwise non-overlapping planning before execution;
-[acceptance and linked precision records](benchmarks/results/2026-07-23-core-1f-acceptance.md).
-
-### Core 1G: guarded automatic execution
-
-Status: complete
-
-RFC-0070/0071 admit only a proven, profitable leading two-call shape, one
-parent-owned join, identical serial fallback and no nested expansion;
-[execution evidence](benchmarks/results/2026-07-23-core-1g-automatic-execution.md).
-The exact current boundary is in `docs/PARALLELISM.md`.
+RFC-0061 accepts Core 1E.
 
 ## Core 1H: bounded resources and application evidence
 
 Status: complete
 
-RFC-0073/0074 retain a fourteen-application baseline and bounded resource facts
-without source resource contracts;
-[acceptance and unsupported bounds](benchmarks/results/2026-07-23-core-1h-resource-evidence.md).
+Historical acceptance: RFC-0073/0074.
 
 ## Core 1I: safe typed host boundary
 
 Status: complete
 
-RFC-0075/0076/0077 retain an effect-gated monotonic clock and bounded whole TCP
-exchange without source handles or FFI;
-[clock evidence](benchmarks/results/2026-07-23-core-1i-monotonic-clock.md) and
-[TCP evidence](benchmarks/results/2026-07-23-core-1i-bounded-tcp.md).
+Historical acceptance: RFC-0075/0076/0077.
 
 ## Core 1J: deterministic structured concurrency
 
 Status: complete
 
-RFC-0078/0079 retain one lexical two-call region with isolated task storage and
-deterministic join. The maintained dual-request applications, serial/parallel
-ratios, fault and unsupported-tier evidence remain in the
-[acceptance report](benchmarks/results/2026-07-23-core-1j-structured-concurrency.md).
+Historical acceptance: RFC-0078/0079.
 
 ## Core 1K: semantic quality and reduction
 
 Status: complete
 
-RFC-0080/0081 retain exact Boolean/byte specifications, independent named cost
-vectors and three strictly reducing atom rules. State counts, first
-counterexamples, idempotence and proof replay remain in the
-[acceptance report](benchmarks/results/2026-07-23-core-1k-semantic-quality.md).
+Historical acceptance: RFC-0080/0081.
 
 ## Core 1L: internal stabilization milestone
 
 Status: complete
 
-RFC-0082/0083 stabilized compatibility, diagnostics, runtime ABI, reproducible
-source packaging and clean installation on the identified Darwin/arm64 target;
-[release evidence and honest limits](benchmarks/results/2026-07-23-core-1l-slim-1-0.md).
-This historical internal closure is not an active public 1.0 freeze.
+Historical acceptance: RFC-0082/0083; this is not an active public 1.0 freeze.

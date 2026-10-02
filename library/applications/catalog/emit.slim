@@ -1,0 +1,40 @@
+module catalog_emit
+
+fn error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn append_record(catalog: catalog_model.Catalog, ordinal: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let record: catalog_model.Record = vec.get(catalog.records, ordinal)
+  let key: Bool = std_netstring.append(catalog.index.source, record.key_start, record.key_end, 256, @output)
+  let number: Vec[U8] = vec.new()
+  std_text.append_i64(@number, record.weight)
+  let weight: Bytes = bytes.freeze(^number)
+  let weight_ok: Bool = std_netstring.append(weight, 0, bytes.len(weight), 20, @output)
+  let value: Bool = std_netstring.append(catalog.index.source, record.value_start, record.value_end, 1048576, @output)
+  key && (weight_ok && value)
+
+fn records(catalog: catalog_model.Catalog, cursor: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == end:
+    void
+  else:
+    let entry: std_byte_index.Entry = vec.get(catalog.index.entries, cursor)
+    if append_record(catalog, entry.ordinal, @output):
+      recur(catalog, cursor + 1, end, @output)
+    else:
+      void
+
+fn report(catalog: catalog_model.Catalog, bounds: std_byte_index.Bounds, selection: catalog_model.Selection) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "records ")
+  std_text.append_i64(@output, selection.count)
+  std_text.append_bytes(@output, " total ")
+  std_text.append_i64(@output, selection.total)
+  std_text.append_bytes(@output, "\n")
+  records(catalog, bounds.start, bounds.end, @output)
+  io.print_bytes(bytes.freeze(^output))

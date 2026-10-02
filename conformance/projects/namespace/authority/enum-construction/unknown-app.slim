@@ -1,0 +1,9 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64:
+  let value: ghost.Choice = ghost.Choice::Some(7)
+  match value:
+    Some(inner):
+      inner
+    Zero:
+      0

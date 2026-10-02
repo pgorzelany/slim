@@ -13,6 +13,24 @@ int main(int argc, char **argv) {
     strcpy(native_directory, argv[2]);
     assert(setenv("SLIM_NATIVE_TEST_SECRET", "must-not-reach-child", 1) == 0);
     assert(process_case(argv[1], "okay", true, false) == 0);
+    /* Real parent group creation followed by child EPERM must still execute.
+       Wrong group and non-EPERM failures must reject before helper diagnostics. */
+    const int group_expected[] = {0, 3, 3};
+    for (unsigned mode = 1; mode <= 3; ++mode) {
+        host_clear_capture();
+        test_group_mode = mode;
+        assert(pipe(test_group_gate) == 0);
+        assert(process_case(argv[1], "diagnostics", true, false) == group_expected[mode-1]);
+        assert(!native_cleanup_failure);
+        if (mode == 1) {
+            assert(host_diagnostic_length == 6 && memcmp(host_diagnostics, "abcdef", 6) == 0);
+        } else {
+            assert(host_diagnostic_length == 0);
+        }
+        assert(test_group_gate[0] == -1 && test_group_gate[1] == -1);
+        test_group_mode = 0;
+    }
+    host_clear_capture();
     assert(process_case(argv[1], "failure", true, false) == 3);
     assert(process_case(argv[1], "signal", true, false) == 3);
     assert(process_case(argv[1], "cpu-signal", true, false) == 4);

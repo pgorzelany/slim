@@ -1,0 +1,124 @@
+module text
+
+fn append_span(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let done: Bool = index >= end
+  if done:
+    void
+  else:
+    let byte: U8 = bytes.get(source, index)
+    vec.push(@output, byte)
+    let next: I64 = index + 1
+    recur(source, next, end, @output)
+
+fn append_text_chars(text: Bytes, index: I64, length: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let done: Bool = index >= length
+  if done:
+    void
+  else:
+    let byte: U8 = bytes.get(text, index)
+    vec.push(@output, byte)
+    let next: I64 = index + 1
+    recur(text, next, length, @output)
+
+fn append_text(output: @Vec[U8], text: Bytes) -> Void effects[alloc, partial]:
+  let length: I64 = bytes.len(text)
+  append_text_chars(text, 0, length, @output)
+
+fn append_nonnegative_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let multiple: Bool = value >= 10
+  if multiple:
+    let prefix: I64 = value / 10
+    let remainder: I64 = value % 10
+    append_nonnegative_i64(prefix, @output)
+    let code: I64 = remainder + 48
+    let byte: U8 = i64.to_u8(code)
+    vec.push(@output, byte)
+  else:
+    let code: I64 = value + 48
+    let byte: U8 = i64.to_u8(code)
+    vec.push(@output, byte)
+
+fn append_negative_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value <= -10:
+    append_negative_i64(value / 10, @output)
+  else:
+    void
+  let remainder: I64 = value % 10
+  let digit: I64 = 0 - remainder
+  let byte: U8 = i64.to_u8(digit + 48)
+  vec.push(@output, byte)
+
+fn append_i64(value: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value < 0:
+    append_text(@output, "-")
+    append_negative_i64(value, @output)
+  else:
+    append_negative_i64(0 - value, @output)
+
+fn append_token(source: Bytes, tokens: Vec[syntax.Token], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  let start: I64 = syntax.ast_node_start(tokens, index)
+  let end: I64 = syntax.ast_node_end(tokens, index)
+  append_span(source, start, end, @output)
+
+fn quoted_width(code: I64) -> I64:
+  if (code == 34) || ((code == 92) || ((code == 10) || ((code == 13) || (code == 9)))):
+    2
+  else:
+    if (code >= 32) && (code <= 126):
+      1
+    else:
+      4
+
+fn quoted_fits(source: Bytes, cursor: I64, end: I64, remaining: I64) -> Bool effects[partial]:
+  if cursor == end:
+    true
+  else:
+    let width: I64 = quoted_width(u8.to_i64(bytes.get(source, cursor)))
+    if width > remaining:
+      false
+    else:
+      recur(source, cursor + 1, end, remaining - width)
+
+fn quoted_hex(code: I64) -> U8 effects[partial]:
+  bytes.get("0123456789abcdef", code)
+
+fn quoted_write(source: Bytes, cursor: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == end:
+    void
+  else:
+    let byte: U8 = bytes.get(source, cursor)
+    let code: I64 = u8.to_i64(byte)
+    if (code == 34) || (code == 92):
+      vec.push(@output, i64.to_u8(92))
+      vec.push(@output, byte)
+    else:
+      if (code == 10) || ((code == 13) || (code == 9)):
+        vec.push(@output, i64.to_u8(92))
+        let letter: I64 = if code == 10:
+          110
+        else:
+          if code == 13:
+            114
+          else:
+            116
+        vec.push(@output, i64.to_u8(letter))
+      else:
+        if (code >= 32) && (code <= 126):
+          vec.push(@output, byte)
+        else:
+          append_text(@output, "\\x")
+          vec.push(@output, quoted_hex(code / 16))
+          vec.push(@output, quoted_hex(code % 16))
+    recur(source, cursor + 1, end, @output)
+
+fn append_quoted_slice(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if (start < 0) || ((end < start) || ((end > bytes.len(source)) || ((bytes.len(source) > 1048576) || ((maximum < 2) || (maximum > 1048576))))):
+    false
+  else:
+    if quoted_fits(source, start, end, maximum - 2):
+      vec.push(@output, i64.to_u8(34))
+      quoted_write(source, start, end, @output)
+      vec.push(@output, i64.to_u8(34))
+      true
+    else:
+      false

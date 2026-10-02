@@ -1,0 +1,8 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let left: a.B_C = a.B_C(value: 1)
+  let right: a_B.C = a_B.C(value: 2)
+  io.print_i64(left.value + right.value)
+  io.println("")
+  0

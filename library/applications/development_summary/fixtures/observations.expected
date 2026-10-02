@@ -1,0 +1,9 @@
+development-summary-v1 tasks 3 trials 6
+identities supplied 0000000000000000000000000000000000000000000000000000000000000000 1111111111111111111111111111111111111111111111111111111111111111 2222222222222222222222222222222222222222222222222222222222222222 3333333333333333333333333333333333333333333333333333333333333333
+condition baseline configured 3 dispatched 2 terminal 2 accepted 1 correctness-failure 1 infrastructure-failure 0 interrupted 0 elapsed-timeout 0 constraint-failure 0 unresolved 0 not-run 1 oracle-true 1 oracle-false 1 oracle-unknown 1 operations-known 2 operations-sum 3 operations-unknown 1 requests-known 2 requests-sum 3 requests-unknown 1 terminal-elapsed-known 2 terminal-elapsed-missing 0 terminal-elapsed-sum 1600000000 excluded-elapsed-known 0
+condition context configured 3 dispatched 3 terminal 2 accepted 2 correctness-failure 0 infrastructure-failure 0 interrupted 0 elapsed-timeout 0 constraint-failure 0 unresolved 1 not-run 0 oracle-true 2 oracle-false 0 oracle-unknown 1 operations-known 3 operations-sum 3 operations-unknown 0 requests-known 3 requests-sum 3 requests-unknown 0 terminal-elapsed-known 2 terminal-elapsed-missing 0 terminal-elapsed-sum 900000000 excluded-elapsed-known 1
+pairs oracle TT 1 TF 0 FT 1 FF 0 unknown 1 strict-accepted 1 elapsed-exact 1 elapsed-missing 0 elapsed-zero-denominator 0 elapsed-outside-accepted 2
+task 3:api, baseline correctness-failure context accepted elapsed-ratio unknown reason outside-accepted
+task 7:pending, baseline not-run context unresolved elapsed-ratio unknown reason outside-accepted
+task 7:tooling, baseline accepted context accepted elapsed-ratio 400000000/600000000 reason exact
+model-tokens unknown model-calls unknown active-model-time unknown native-performance unknown general-effectiveness unknown

@@ -1,0 +1,70 @@
+module catalog_data
+
+fn parse(source: Bytes, cursor: I64, maximum: I64, records: @Vec[catalog_model.Record], entries: @Vec[std_byte_index.Entry]) -> catalog_model.Status effects[alloc, partial]:
+  let parsed: framed_records.Parsed = framed_records.parse(source, cursor, bytes.len(source), 256, 20, 1048576)
+  match parsed:
+    End:
+      catalog_model.Status(valid: true, code: 0, position: cursor)
+    Invalid(code, position):
+      catalog_model.Status(valid: false, code: 100 + code, position: position)
+    Value(triple):
+      if vec.len(records) == maximum:
+        catalog_model.Status(valid: false, code: 10, position: cursor)
+      else:
+        if triple.first.start == triple.first.end:
+          catalog_model.Status(valid: false, code: 11, position: triple.first.start)
+        else:
+          let number: std_decimal.Parsed = framed_records.integer(source, triple.second)
+          match number:
+            Invalid(position):
+              catalog_model.Status(valid: false, code: 12, position: position)
+            Overflow(position):
+              catalog_model.Status(valid: false, code: 13, position: position)
+            Value(weight, next):
+              let ordinal: I64 = vec.len(records)
+              let record: catalog_model.Record = catalog_model.Record(key_start: triple.first.start, key_end: triple.first.end, weight: weight, value_start: triple.third.start, value_end: triple.third.end)
+              vec.push(@records, record)
+              vec.push(@entries, std_byte_index.Entry(start: triple.first.start, end: triple.first.end, ordinal: ordinal))
+              recur(source, triple.next, maximum, @records, @entries)
+
+fn load(source: Bytes, maximum: I64) -> catalog_model.Loaded effects[alloc, partial]:
+  if (maximum < 0) || ((maximum > 4096) || (bytes.len(source) > 1048576)):
+    catalog_model.Loaded::Invalid(10, 0)
+  else:
+    let records: Vec[catalog_model.Record] = vec.new()
+    let entries: Vec[std_byte_index.Entry] = vec.new()
+    let status: catalog_model.Status = parse(source, 0, maximum, @records, @entries)
+    if !status.valid:
+      catalog_model.Loaded::Invalid(status.code, status.position)
+    else:
+      let built: std_byte_index.Built = std_byte_index.build(source, ^entries, maximum)
+      match built:
+        Invalid(code, position):
+          if code == 3:
+            catalog_model.Loaded::Invalid(14, position)
+          else:
+            catalog_model.Loaded::Invalid(15, position)
+        Ready(index):
+          catalog_model.Loaded::Ready(catalog_model.Catalog(index: index, records: records))
+
+fn accumulate(catalog: catalog_model.Catalog, cursor: I64, end: I64, count: I64, total: I64) -> catalog_model.Selection effects[partial]:
+  if cursor == end:
+    catalog_model.Selection(valid: true, position: 0, count: count, total: total)
+  else:
+    let entry: std_byte_index.Entry = vec.get(catalog.index.entries, cursor)
+    let record: catalog_model.Record = vec.get(catalog.records, entry.ordinal)
+    if framed_records.addition_fits(total, record.weight):
+      recur(catalog, cursor + 1, end, count + 1, total + record.weight)
+    else:
+      catalog_model.Selection(valid: false, position: record.key_start, count: count, total: total)
+
+fn select(catalog: catalog_model.Catalog, query: Bytes, exact: Bool) -> std_byte_index.Bounds effects[partial]:
+  let bounds: std_byte_index.Bounds = std_byte_index.prefix(catalog.index, query)
+  if exact:
+    let ordinal: I64 = std_byte_index.find(catalog.index, query, 0, bytes.len(query))
+    if ordinal < 0:
+      std_byte_index.Bounds(start: bounds.start, end: bounds.start)
+    else:
+      std_byte_index.Bounds(start: bounds.start, end: bounds.start + 1)
+  else:
+    bounds

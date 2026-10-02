@@ -10,10 +10,11 @@ cp selfhost/*.slim "$session_dir/probe/"
 cp tests/fixtures/emission_damage.slim "$session_dir/probe/zdamage.slim"
 cp tests/fixtures/transactional_session.slim "$session_dir/probe/zzprobe.slim"
 # Expose budget and integrity helpers only inside this test project's module boundary.
-sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports RangeBudget /(exports range_save range_heads range_find range_import Ranged RangeComplete PlanBudget Planned update range_checked plan_checked plan_fits RangeBudget /;s/(exports Span Entry Wrapper/(exports seal_cache Span Entry Wrapper/;$s/)$//' selfhost/slim.project > "$session_dir/probe/slim.project"
-cat >> "$session_dir/probe/slim.project" <<'MANIFEST'
+python3 -B scripts/prepare-probe-manifest.py selfhost/slim.project "$session_dir/probe/slim.project" \
+  --export retained "range_save range_heads range_find range_import Ranged RangeComplete PlanBudget Planned update range_checked plan_checked plan_fits" \
+  --export fragments "seal_cache" <<'MANIFEST'
   (module zdamage "zdamage.slim" (imports fragments identity memory parallel parallelcache project ranges retained session text) (exports check_budgets check_transition damage))
-  (module zzprobe "zzprobe.slim" (imports identity memory project ranges retained session syntax typing zdamage) (exports)))
+  (module zzprobe "zzprobe.slim" (imports identity memory project ranges retained session syntax typing zdamage) (exports))
 MANIFEST
 if ! "$session_compiler" "$session_dir/probe/slim.project" > "$session_dir/probe.c"; then
   cat "$session_dir/probe.c" >&2

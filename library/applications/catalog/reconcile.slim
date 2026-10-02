@@ -1,0 +1,120 @@
+module catalog_reconcile
+
+struct Change:
+  before: I64
+  after: I64
+
+struct Diff:
+  changes: Vec[Change]
+  report_bytes: I64
+
+enum Prepared:
+  Invalid(I64, I64)
+  Ready(Diff)
+
+fn negative_digits(value: I64, count: I64) -> I64 effects[partial]:
+  if value <= -10:
+    recur(value / 10, count + 1)
+  else:
+    count
+
+fn width(value: I64) -> I64 effects[partial]:
+  if value < 0:
+    negative_digits(value, 2)
+  else:
+    negative_digits(0 - value, 1)
+
+fn frame_size(length: I64) -> I64 effects[partial]:
+  length + width(length) + 2
+
+fn record_size(catalog: catalog_model.Catalog, ordinal: I64) -> I64 effects[partial]:
+  if ordinal < 0:
+    0
+  else:
+    let record: catalog_model.Record = vec.get(catalog.records, ordinal)
+    frame_size(record.key_end - record.key_start) + frame_size(width(record.weight)) + frame_size(record.value_end - record.value_start)
+
+fn equal(before: catalog_model.Catalog, left: I64, after: catalog_model.Catalog, right: I64) -> Bool effects[partial]:
+  let first: catalog_model.Record = vec.get(before.records, left)
+  let second: catalog_model.Record = vec.get(after.records, right)
+  if first.weight == second.weight:
+    let length: I64 = first.value_end - first.value_start
+    if length == second.value_end - second.value_start:
+      std_bytes.range_equal(before.index.source, first.value_start, after.index.source, second.value_start, length)
+    else:
+      false
+  else:
+    false
+
+fn merge(before: catalog_model.Catalog, left: I64, after: catalog_model.Catalog, right: I64, maximum: I64, changes: @Vec[Change]) -> Bool effects[alloc, partial]:
+  if (left == vec.len(before.index.entries)) && (right == vec.len(after.index.entries)):
+    true
+  else:
+    let order: I64 = if left == vec.len(before.index.entries):
+      1
+    else:
+      if right == vec.len(after.index.entries):
+        -1
+      else:
+        let first: std_byte_index.Entry = vec.get(before.index.entries, left)
+        let second: std_byte_index.Entry = vec.get(after.index.entries, right)
+        std_byte_index.compare(before.index.source, first.start, first.end, after.index.source, second.start, second.end)
+    let first_ordinal: I64 = if order <= 0:
+      let entry: std_byte_index.Entry = vec.get(before.index.entries, left)
+      entry.ordinal
+    else:
+      -1
+    let second_ordinal: I64 = if order >= 0:
+      let entry: std_byte_index.Entry = vec.get(after.index.entries, right)
+      entry.ordinal
+    else:
+      -1
+    let changed: Bool = if order == 0:
+      !equal(before, first_ordinal, after, second_ordinal)
+    else:
+      true
+    if changed && (vec.len(changes) == maximum):
+      false
+    else:
+      if changed:
+        vec.push(@changes, Change(before: first_ordinal, after: second_ordinal))
+      else:
+        void
+      let next_left: I64 = if order <= 0:
+        left + 1
+      else:
+        left
+      let next_right: I64 = if order >= 0:
+        right + 1
+      else:
+        right
+      recur(before, next_left, after, next_right, maximum, @changes)
+
+fn size(before: catalog_model.Catalog, after: catalog_model.Catalog, changes: Vec[Change], cursor: I64, total: I64) -> I64 effects[partial]:
+  if cursor == vec.len(changes):
+    total
+  else:
+    let change: Change = vec.get(changes, cursor)
+    let key_length: I64 = if change.before >= 0:
+      let record: catalog_model.Record = vec.get(before.records, change.before)
+      record.key_end - record.key_start
+    else:
+      let record: catalog_model.Record = vec.get(after.records, change.after)
+      record.key_end - record.key_start
+    let amount: I64 = frame_size(key_length) + frame_size(record_size(before, change.before)) + frame_size(record_size(after, change.after))
+    recur(before, after, changes, cursor + 1, total + amount)
+
+fn prepare(before: catalog_model.Catalog, after: catalog_model.Catalog, change_limit: I64, output_limit: I64) -> Prepared effects[alloc, partial]:
+  if (change_limit < 0) || ((change_limit > 8192) || ((output_limit < 0) || (output_limit > 8388608))):
+    Prepared::Invalid(23, 0)
+  else:
+    let changes: Vec[Change] = vec.new()
+    if merge(before, 0, after, 0, change_limit, @changes):
+      let header: I64 = 9 + width(vec.len(changes))
+      let amount: I64 = size(before, after, changes, 0, header)
+      if amount > output_limit:
+        Prepared::Invalid(24, 0)
+      else:
+        Prepared::Ready(Diff(changes: changes, report_bytes: amount))
+    else:
+      Prepared::Invalid(23, 0)

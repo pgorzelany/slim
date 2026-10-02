@@ -1,0 +1,83 @@
+module driver
+
+fn classify(source: Bytes) -> Void effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  boolean(parsed.valid)
+  if parsed.valid:
+    syntax.link_declaration_names(source, @tokens)
+    let item: I64 = syntax.ast_module_items(0)
+    let body: I64 = syntax.ast_function_body(tokens, item)
+    let callee: I64 = syntax.ast_call_callee(body)
+    boolean(effects.call_requires(source, tokens, callee, 1))
+    boolean(effects.call_requires(source, tokens, callee, 2))
+    boolean(effects.call_requires(source, tokens, callee, 3))
+  else:
+    void
+
+fn checked(source: Bytes) -> Void effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  boolean(parsed.valid)
+  if parsed.valid:
+    number(check.check_source_all(source, @tokens))
+  else:
+    void
+
+fn number(value: I64) -> Void effects[io]:
+  io.print_i64(value)
+  io.print_bytes("\n")
+
+fn boolean(value: Bool) -> Void effects[io]:
+  if value:
+    number(1)
+  else:
+    number(0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  classify("module sample\n\nfn caller() -> Vec[I64] effects[alloc]:\n  vec.new()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller(values: @Vec[I64]) -> Void effects[alloc]:\n  vec.push(@values, 1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Arena[I64] effects[alloc]:\n  arena.new()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller(values: @Arena[I64]) -> Id[I64] effects[alloc]:\n  arena.add(@values, 1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller(output: @Vec[U8]) -> Bool effects[alloc, io]:\n  io.read_file(\"missing\", @output)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller(output: @Vec[U8]) -> Bool effects[alloc, io]:\n  io.tcp_exchange(\"127.0.0.1\", 80, \"\", 1024, 1, @output)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[io]:\n  io.print_i64(1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[io]:\n  io.print_bytes(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[io]:\n  io.println(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> I64 effects[io]:\n  io.monotonic_ms()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller(values: Vec[I64]) -> I64:\n  vec.len(values)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> I64:\n  bytes.len(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void:\n  mystery()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[io]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, io]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[io, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  classify("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, io, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn main(args: Vec[Bytes]) -> I64:\n  let value: I64 = io.monotonic_ms()\n  0\n")
+  checked("module sample\n\nfn main(args: Vec[Bytes]) -> I64 effects[io]:\n  let value: I64 = io.monotonic_ms()\n  0\n")
+  checked("module sample\n\nfn main(args: Vec[Bytes]) -> I64:\n  let value: Vec[I64] = vec.new()\n  0\n")
+  checked("module sample\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n  let value: Vec[I64] = vec.new()\n  0\n")
+  checked("module sample\n\nfn caller() -> Vec[I64] effects[alloc]:\n  vec.new()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller(values: @Vec[I64]) -> Void effects[alloc]:\n  vec.push(@values, 1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Arena[I64] effects[alloc]:\n  arena.new()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller(values: @Arena[I64]) -> Id[I64] effects[alloc]:\n  arena.add(@values, 1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller(output: @Vec[U8]) -> Bool effects[alloc, io]:\n  io.read_file(\"missing\", @output)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller(output: @Vec[U8]) -> Bool effects[alloc, io]:\n  io.tcp_exchange(\"127.0.0.1\", 80, \"\", 1024, 1, @output)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[io]:\n  io.print_i64(1)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[io]:\n  io.print_bytes(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[io]:\n  io.println(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> I64 effects[io]:\n  io.monotonic_ms()\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller(values: Vec[I64]) -> I64:\n  vec.len(values)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> I64:\n  bytes.len(\"\")\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[io]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, io]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[io, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  checked("module sample\n\nfn caller() -> Void effects[alloc, io, partial]:\n  helper()\n\nfn helper() -> Void effects[alloc, io, partial]:\n  void\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n")
+  0

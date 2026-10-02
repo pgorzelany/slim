@@ -26,6 +26,8 @@ schema-3 interface output is the compatibility authority; the generated
 | `std_i64` | Integer min/max/clamp and checked absolute value |
 | `std_i64_vec` | Application-justified helpers for `Vec[I64]` |
 | `std_u8_vec` | Application-justified helpers for `Vec[U8]` |
+| `std_netstring` | Canonical bounded binary framing |
+| `std_byte_index` | Validated byte-span sorting and exact/prefix lookup |
 
 The type-specific vector modules are intentionally separate. SLIM does not
 yet have accepted generic source declarations, and ordinary duplicated modules
@@ -38,7 +40,12 @@ replayer, bounded DPLL SAT solver, deterministic triangle rasterizer, LZ4 block
 compressor/decompressor, and bounded HTTP/1.1 client. Tooling includes canonical
 API comparison, interface-derived reference generation, and a seeded typed
 source generator whose mutations exercise records, variants, effects, and
-exhaustive matching.
+exhaustive matching. A framed record catalog and deterministic DAG work planner
+share binary framing, canonical record validation and sorted key indexing; their
+current APIs, limits and failure contracts are in [COMPONENTS.md](COMPONENTS.md).
+A bounded development summary consumes validated measurement observations,
+keeps incomplete outcomes and unknown evidence visible, and optionally reports
+terminal-time order statistics under [RFC-0164](../design/rfcs/0164-bounded-development-summary.md).
 
 Run the complete library and application corpus with:
 

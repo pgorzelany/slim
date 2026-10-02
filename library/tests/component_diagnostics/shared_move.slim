@@ -1,0 +1,7 @@
+module component_bad
+
+fn misuse(entries: Vec[std_byte_index.Entry]) -> std_byte_index.Built effects[alloc, partial]:
+  std_byte_index.build("a", ^entries, 1)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

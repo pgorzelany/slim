@@ -1,0 +1,86 @@
+module catalog_diff_tests
+
+fn integer_argument(value: Bytes) -> I64 effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(value, 0, bytes.len(value))
+  match parsed:
+    Invalid(position):
+      -1
+    Overflow(position):
+      -1
+    Value(number, next):
+      if next == bytes.len(value):
+        number
+      else:
+        -1
+
+fn after_input(before: catalog_model.Catalog, path: Bytes, change_limit: I64, output_limit: I64, corrupt: Bool) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        catalog_diff_emit.error(code, "after", position)
+        65
+      Ready(after):
+        let prepared: catalog_reconcile.Prepared = catalog_reconcile.prepare(before, after, change_limit, output_limit)
+        match prepared:
+          Invalid(code, position):
+            catalog_diff_emit.error(code, "diff", position)
+            65
+          Ready(diff):
+            let checked: catalog_reconcile.Diff = if corrupt:
+              catalog_reconcile.Diff(changes: vec.new(), report_bytes: 0)
+            else:
+              diff
+            if catalog_diff_emit.report(before, after, checked):
+              0
+            else:
+              catalog_diff_emit.error(25, "diff", 0)
+              65
+  else:
+    catalog_diff_emit.error(1, "after", 0)
+    66
+
+fn prepare_probe(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(vec.get(args, 1), @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        catalog_diff_emit.error(code, "before", position)
+        65
+      Ready(before):
+        after_input(before, vec.get(args, 2), integer_argument(vec.get(args, 3)), integer_argument(vec.get(args, 4)), vec.len(args) == 6)
+  else:
+    catalog_diff_emit.error(1, "before", 0)
+    66
+
+fn compare_probe(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let left: Vec[U8] = vec.new()
+  let right: Vec[U8] = vec.new()
+  if io.read_file(vec.get(args, 2), @left) && io.read_file(vec.get(args, 5), @right):
+    let first: Bytes = bytes.freeze(^left)
+    let second: Bytes = bytes.freeze(^right)
+    let left_start: I64 = integer_argument(vec.get(args, 3))
+    let left_end: I64 = integer_argument(vec.get(args, 4))
+    let right_start: I64 = integer_argument(vec.get(args, 6))
+    let right_end: I64 = integer_argument(vec.get(args, 7))
+    if (left_start >= 0) && ((left_start <= left_end) && ((left_end <= bytes.len(first)) && ((right_start >= 0) && ((right_start <= right_end) && (right_end <= bytes.len(second)))))):
+      let output: Vec[U8] = vec.new()
+      std_text.append_i64(@output, std_byte_index.compare(first, left_start, left_end, second, right_start, right_end))
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+    else:
+      64
+  else:
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if (vec.len(args) == 5) || (vec.len(args) == 6):
+    prepare_probe(args)
+  else:
+    if vec.len(args) == 8:
+      compare_probe(args)
+    else:
+      64

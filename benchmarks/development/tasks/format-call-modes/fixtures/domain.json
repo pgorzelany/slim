@@ -1,0 +1,37 @@
+{
+  "inputs": [
+    "module sample\n\nfn zero() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  zero()\n",
+    "module sample\n\nfn zero() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  zero()\n",
+    "module sample\n\nfn mutate(output: @Vec[I64]) -> Void effects[alloc]:\n  vec.push(@output, 1)\n\nfn consume(input: ^Vec[I64]) -> I64:\n  vec.len(input)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  mutate(@output)\n  consume(^output)\n",
+    "module sample\n\nfn mutate(output: @Vec[I64]) -> Void effects[alloc]:\n  vec.push( @output,    1)\n\nfn consume(input: ^Vec[I64]) -> I64:\n  vec.len(input)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  mutate( @output)\n  consume( ^output)\n",
+    "module sample\n\nfn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine(@output, ^input, bytes.len(\"a\"))\n",
+    "module sample\n\nfn combine(output: @Vec[I64],    input: ^Vec[I64],    value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine( @output,    ^input,    bytes.len(\"a\"))\n",
+    "module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(1)\n",
+    "module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(1)\n",
+    "module sample\n\nfn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:\n  if count == 0:\n    vec.len(output) + vec.len(input)\n  else:\n    recur(@output, ^input, count - 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  fold(@output, ^input, 3)\n",
+    "module sample\n\nfn fold(output: @Vec[I64],    input: ^Vec[I64],    count: I64) -> I64 effects[partial]:\n  if count == 0:\n    vec.len(output) + vec.len(input)\n  else:\n    recur( @output,    ^input,    count - 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  fold( @output,    ^input,    3)\n",
+    "module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(\n    1\n  )\n",
+    "module sample\n\nfn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine(\n    @output,\n    ^input,\n    bytes.len(\"a\")\n  )\n"
+  ],
+  "canonical": [
+    "module sample\n\nfn zero() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  zero()\n",
+    "module sample\n\nfn mutate(output: @Vec[I64]) -> Void effects[alloc]:\n  vec.push(@output, 1)\n\nfn consume(input: ^Vec[I64]) -> I64:\n  vec.len(input)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  mutate(@output)\n  consume(^output)\n",
+    "module sample\n\nfn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine(@output, ^input, bytes.len(\"a\"))\n",
+    "module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(1)\n",
+    "module sample\n\nfn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:\n  if count == 0:\n    vec.len(output) + vec.len(input)\n  else:\n    recur(@output, ^input, count - 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  fold(@output, ^input, 3)\n"
+  ],
+  "indices": [
+    0,
+    0,
+    1,
+    1,
+    2,
+    2,
+    3,
+    3,
+    4,
+    4,
+    3,
+    2
+  ]
+}

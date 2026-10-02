@@ -1,0 +1,18 @@
+module lib
+
+enum Choice:
+  Empty
+  Value(I64)
+
+struct Number:
+  value: I64
+
+fn hidden(value: I64) -> I64:
+  value
+
+fn identity(value: I64) -> I64:
+  value
+
+fn sample(value: I64) -> I64 effects[io]:
+  let now: I64 = io.monotonic_ms()
+  value

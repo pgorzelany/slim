@@ -20,7 +20,7 @@ static void native_resource_report(const char *stage) {
     if (native_region_live) {
         live = slim_test_region_bytes(&native_region);
         assert(native_cache.slim_field_headers.len == 1);
-        Slim_type_nativecache_95Header *header = (void *)native_cache.slim_field_headers.data;
+        Slim_type_pnativecache_95_95Header *header = (void *)native_cache.slim_field_headers.data;
         used = (uint64_t)header->slim_field_used;
         records = (uint64_t)native_cache.slim_field_entries.len;
     }

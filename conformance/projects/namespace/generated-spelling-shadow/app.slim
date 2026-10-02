@@ -1,0 +1,10 @@
+module app
+
+fn pa__value() -> I64:
+  2
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let pa__value: I64 = 3
+  io.print_i64(a.value() + pa__value + pa__value())
+  io.println("")
+  0

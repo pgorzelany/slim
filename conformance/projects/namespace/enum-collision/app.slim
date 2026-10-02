@@ -1,0 +1,18 @@
+module app
+
+fn first_value(value: a.B_C) -> I64:
+  match value:
+    Item(number):
+      number
+
+fn second_value(value: a_B.C) -> I64:
+  match value:
+    Item(number):
+      number
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let first: a.B_C = a.B_C::Item(1)
+  let second: a_B.C = a_B.C::Item(2)
+  io.print_i64(first_value(first) + second_value(second))
+  io.println("")
+  0

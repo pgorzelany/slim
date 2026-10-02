@@ -1,0 +1,9 @@
+module app
+
+fn I64() -> I64:
+  3
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  io.print_i64(I64())
+  io.println("")
+  0

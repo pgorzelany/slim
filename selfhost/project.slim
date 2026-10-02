@@ -54,71 +54,194 @@ fn project_module_path(manifest_path: Bytes, manifest_source: Bytes, manifest_to
   text.append_span(manifest_source, content_start, content_end, @output)
   bytes.freeze(^output)
 
-fn append_qualification_replaced(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
-  let done: Bool = index >= end
-  if done:
+# RFC-0162: source underscores/dots have distinct escapes and escaped segments
+# never contain the double-underscore pair separator. No source prefix is reserved.
+fn append_namespace_segment(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index >= end:
     void
   else:
     let byte: U8 = bytes.get(source, index)
     let code: I64 = u8.to_i64(byte)
-    let slash: Bool = code == 47
-    let dot: Bool = code == 46
-    if slash || dot:
-      text.append_text(@output, "_")
+    if code == 95:
+      text.append_text(@output, "_0")
     else:
-      vec.push(@output, byte)
-    let next: I64 = index + 1
-    recur(source, next, end, @output)
+      if code == 46:
+        text.append_text(@output, "_1")
+      else:
+        vec.push(@output, byte)
+    recur(source, index + 1, end, @output)
 
-fn atom_is_member_name(tokens: Vec[syntax.Token], atom: I64) -> Bool effects[partial]:
-  let tag: I64 = syntax.ast_node_tag(tokens, atom)
-  let member_atom: Bool = (tag == 22) || (tag == 23)
-  if member_atom:
-    true
+fn append_namespace_pair(module_source: Bytes, module_start: I64, module_end: I64, name_source: Bytes, name_start: I64, name_end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "p")
+  append_namespace_segment(module_source, module_start, module_end, @output)
+  text.append_text(@output, "__")
+  append_namespace_segment(name_source, name_start, name_end, @output)
+
+fn append_absent_namespace(source: Bytes, start: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  text.append_text(@output, "u")
+  append_namespace_segment(source, start, end, @output)
+
+fn initialize_namespace_roles(count: I64, roles: @Vec[I64]) -> Void effects[alloc, partial]:
+  if vec.len(roles) >= count:
+    void
   else:
-    if atom <= 0:
-      false
-    else:
-      let previous: I64 = atom - 1
-      let kind: I64 = syntax.ast_node_kind(tokens, previous)
-      let previous_tag: I64 = syntax.ast_node_tag(tokens, previous)
-      (kind == 0) && (previous_tag == 21)
+    vec.push(@roles, 0)
+    recur(count, @roles)
 
-fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, atom: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+# 0 preserves lexical/literal/marker roles; 1 is a user callee, 2 a current
+# declaration, 3 an annotation type, 4 a nominal constructor. Syntax metadata only.
+fn mark_namespace_type(source: Bytes, tokens: Vec[syntax.Token], node: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_node_is_list(tokens, node):
+    let composite: Bool = syntax.ast_type_is_vec(source, tokens, node) || (syntax.ast_type_is_arena(source, tokens, node) || syntax.ast_type_is_id(source, tokens, node))
+    if composite:
+      recur(source, tokens, syntax.ast_type_argument(node), root, @roles)
+    else:
+      # The normal checker alone decides unsupported type forms.
+      void
+  else:
+    if syntax.ast_node_is_name(tokens, node) && (syntax.scalar_type_kind(source, tokens, node) < 0):
+      vec.set(@roles, node - root, 3)
+    else:
+      void
+
+fn mark_namespace_nominal(tokens: Vec[syntax.Token], node: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_node_is_name(tokens, node):
+    vec.set(@roles, node - root, 4)
+  else:
+    void
+
+fn mark_namespace_binding_types(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    mark_namespace_type(source, tokens, syntax.ast_binding_type(source, tokens, cursor), root, @roles)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @roles)
+
+fn mark_namespace_payload_types(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    mark_namespace_type(source, tokens, cursor, root, @roles)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @roles)
+
+fn mark_namespace_field_types(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    mark_namespace_type(source, tokens, syntax.ast_member_value(cursor), root, @roles)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @roles)
+
+fn mark_namespace_case_types(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    mark_namespace_payload_types(source, tokens, syntax.ast_member_value(cursor), root, @roles)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @roles)
+
+fn mark_namespace_form(source: Bytes, tokens: Vec[syntax.Token], node: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if syntax.ast_item_is_function(source, tokens, node):
+    vec.set(@roles, syntax.ast_item_name(node) - root, 2)
+    let params: I64 = syntax.ast_function_parameters(node)
+    mark_namespace_binding_types(source, tokens, syntax.ast_parameters_first(params), root, @roles)
+    mark_namespace_type(source, tokens, syntax.ast_function_return_type(tokens, node), root, @roles)
+  else:
+    if syntax.ast_item_is_record(source, tokens, node):
+      vec.set(@roles, syntax.ast_item_name(node) - root, 2)
+      mark_namespace_field_types(source, tokens, syntax.ast_data_members_first(node), root, @roles)
+    else:
+      if syntax.ast_item_is_variant(source, tokens, node):
+        vec.set(@roles, syntax.ast_item_name(node) - root, 2)
+        mark_namespace_case_types(source, tokens, syntax.ast_data_members_first(node), root, @roles)
+      else:
+        if syntax.ast_expression_is_let(source, tokens, node):
+          mark_namespace_type(source, tokens, syntax.ast_let_type(node), root, @roles)
+        else:
+          if syntax.ast_expression_is_call(source, tokens, node):
+            let callee: I64 = syntax.ast_call_callee(node)
+            if !typing.builtin_known(source, tokens, callee):
+              vec.set(@roles, callee - root, 1)
+            else:
+              void
+          else:
+            if syntax.ast_expression_is_make(source, tokens, node):
+              mark_namespace_nominal(tokens, syntax.ast_make_type(node), root, @roles)
+            else:
+              if syntax.ast_expression_is_case(source, tokens, node):
+                mark_namespace_nominal(tokens, syntax.ast_case_type(node), root, @roles)
+              else:
+                # Other supported expression shapes carry no declaration names;
+                # their nested expressions are visited by the same flat walk.
+                void
+
+fn mark_namespace_roles(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
+  if cursor >= end:
+    void
+  else:
+    let form: Bool = syntax.ast_node_is_list(tokens, cursor)
+    let tagged: Bool = syntax.ast_node_tag(tokens, cursor) > 0
+    if form && tagged:
+      # Real tags exclude plain parameter/arm containers. Their arbitrary user
+      # names must not activate legacy textual fallbacks in canonical helpers.
+      mark_namespace_form(source, tokens, cursor, root, @roles)
+    else:
+      void
+    recur(source, tokens, syntax.ast_node_after(cursor), end, root, @roles)
+
+fn project_namespace_roles(source: Bytes, tokens: Vec[syntax.Token], root: I64) -> Vec[I64] effects[alloc, partial]:
+  let roles: Vec[I64] = vec.new()
+  let end: I64 = syntax.ast_next(tokens, root)
+  initialize_namespace_roles(end - root, @roles)
+  mark_namespace_roles(source, tokens, syntax.ast_module_items(root), end, root, @roles)
+  roles
+
+fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, entry_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], root: I64, entry: Bool, roles: Vec[I64], declarations: I64, namespace: NamespaceView, atom: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   let start: I64 = syntax.ast_node_start(module_tokens, atom)
   let end: I64 = syntax.ast_node_end(module_tokens, atom)
   let synthetic: Bool = start == end
   if synthetic:
     let parent: I64 = atom - 1
     let tag: I64 = syntax.ast_node_tag(module_tokens, parent)
-    let call_marker: Bool = tag == 10
-    if call_marker:
+    if tag == 10:
       text.append_text(@output, "call")
     else:
       text.append_text(@output, "effects")
   else:
-    let dots: I64 = syntax.span_count_byte(module_source, start, end, 46, 0)
-    let builtin: Bool = typing.builtin_known(module_source, module_tokens, atom)
-    let qualified: Bool = (dots > 0) && (!builtin)
-    if qualified:
-      append_qualification_replaced(module_source, start, end, @output)
+    let role: I64 = vec.get(roles, atom - root)
+    if role == 0:
+      text.append_token(module_source, module_tokens, atom, @output)
     else:
-      let declaration_form: I64 = syntax.ast_node_link(module_tokens, atom)
-      let declaration: Bool = declaration_form >= 0
-      let member_name: Bool = atom_is_member_name(module_tokens, atom)
-      let main_name: Bool = syntax.ast_node_text_is(module_source, module_tokens, atom, "main")
-      let entry_main: Bool = entry && main_name
-      let referenced_declaration: Bool = declaration && (!member_name)
-      let prefix: Bool = if referenced_declaration:
-        !entry_main
+      let dot: I64 = if !(role == 2):
+        find_span_dot(module_source, start, end)
       else:
-        false
-      if prefix:
-        text.append_token(manifest_source, manifest_tokens, module_name, @output)
-        text.append_text(@output, "_")
-        text.append_token(module_source, module_tokens, atom, @output)
+        -1
+      if dot >= 0:
+        let name_start: I64 = dot + 1
+        let entry_start: I64 = syntax.ast_node_start(manifest_tokens, entry_name)
+        let entry_end: I64 = syntax.ast_node_end(manifest_tokens, entry_name)
+        let target_entry: Bool = cross_spans_equal(manifest_source, entry_start, entry_end, module_source, start, dot)
+        let main: Bool = syntax.span_equal(module_source, name_start, end, "main")
+        if target_entry && main:
+          text.append_text(@output, "main")
+        else:
+          append_namespace_pair(module_source, start, dot, module_source, name_start, end, @output)
       else:
-        text.append_token(module_source, module_tokens, atom, @output)
+        let main: Bool = syntax.ast_node_text_is(module_source, module_tokens, atom, "main")
+        if entry && main:
+          text.append_text(@output, "main")
+        else:
+          let declaration: I64 = if role == 2:
+            atom
+          else:
+            namespace_lookup(module_source, start, end, declarations, namespace)
+          if declaration < 0:
+            # Exact absence in the complete canonical declaration index. No
+            # rendered declaration has this initial byte; the normal checker
+            # must reject the unresolved callee/type without owner expansion.
+            append_absent_namespace(module_source, start, end, @output)
+          else:
+            let module_start: I64 = syntax.ast_node_start(manifest_tokens, module_name)
+            let module_end: I64 = syntax.ast_node_end(manifest_tokens, module_name)
+            append_namespace_pair(manifest_source, module_start, module_end, module_source, start, end, @output)
 
 struct Origin:
   module: I64
@@ -164,7 +287,7 @@ fn push_flat_token(kind: I64, tag: I64, start: I64, end: I64, tokens: @Vec[synta
   let token: syntax.Token = syntax.Token(kind: kind, tag: tag, start: start, end: end, link: -1, next: -1)
   vec.push(@tokens, token)
 
-fn append_project_tokens(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, entry: Bool, module_index: I64, index: I64, end: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
+fn append_project_tokens(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_name: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, root: I64, entry_name: I64, entry: Bool, roles: Vec[I64], declarations: I64, namespace: NamespaceView, module_index: I64, index: I64, end: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
   let done: Bool = index >= end
   if done:
     void
@@ -174,7 +297,7 @@ fn append_project_tokens(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
     let flat_start: I64 = vec.len(output)
     let atom: Bool = kind == 2
     if atom:
-      append_project_atom(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, @output)
+      append_project_atom(manifest_source, manifest_tokens, module_name, entry_name, module_source, module_tokens, root, entry, roles, declarations, namespace, index, @output)
     else:
       let string_value: Bool = kind == 3
       if string_value:
@@ -187,9 +310,9 @@ fn append_project_tokens(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
     let finish: I64 = syntax.ast_node_end(module_tokens, index)
     append_origin(module_index, start, finish, @origins)
     let next: I64 = index + 1
-    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, module_index, next, end, @output, @flat_tokens, @origins)
+    recur(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, root, entry_name, entry, roles, declarations, namespace, module_index, next, end, @output, @flat_tokens, @origins)
 
-fn append_loaded_project_modules(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
+fn append_loaded_project_modules(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, index: I64, output: @Vec[U8], flat_tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Void effects[alloc, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -207,11 +330,13 @@ fn append_loaded_project_modules(manifest_source: Bytes, manifest_tokens: Vec[sy
     let entry_name_start: I64 = syntax.ast_node_start(manifest_tokens, entry_name)
     let entry_name_end: I64 = syntax.ast_node_end(manifest_tokens, entry_name)
     let entry: Bool = syntax.spans_equal(manifest_source, module_name_start, module_name_end, entry_name_start, entry_name_end)
-    append_project_tokens(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, entry, index, module_items, end, @output, @flat_tokens, @origins)
+    let metadata: NamespaceModule = vec.get(namespace.modules, index)
+    let roles: Vec[I64] = metadata.roles
+    append_project_tokens(manifest_source, manifest_tokens, module_name, module_source, module_tokens, module_items, root, entry_name, entry, roles, metadata.declarations, namespace, index, module_items, end, @output, @flat_tokens, @origins)
     let next: I64 = index + 1
-    recur(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, next, @output, @flat_tokens, @origins)
+    recur(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, namespace, next, @output, @flat_tokens, @origins)
 
-fn flatten_loaded_source(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
+fn flatten_loaded_source(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
   let atom_source: Vec[U8] = vec.new()
   let flat_tokens: Vec[syntax.Token] = vec.new()
   push_flat_token(0, 1, 0, 0, @flat_tokens)
@@ -223,7 +348,7 @@ fn flatten_loaded_source(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
   let name_end: I64 = vec.len(atom_source)
   push_flat_token(2, 0, name_start, name_end, @flat_tokens)
   append_origin(-1, 0, 0, @origins)
-  append_loaded_project_modules(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, 0, @atom_source, @flat_tokens, @origins)
+  append_loaded_project_modules(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, namespace, 0, @atom_source, @flat_tokens, @origins)
   let close_position: I64 = vec.len(atom_source)
   push_flat_token(1, 0, close_position, close_position, @flat_tokens)
   append_origin(-1, 0, 0, @origins)
@@ -233,8 +358,8 @@ fn flatten_loaded_source(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
   format.emit_module(atoms, flat_tokens, @output)
   bytes.freeze(^output)
 
-fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
-  let source: Bytes = flatten_loaded_source(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, @origins)
+fn flatten_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry_name: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, tokens: @Vec[syntax.Token], origins: @Vec[Origin]) -> Bytes effects[alloc, partial]:
+  let source: Bytes = flatten_loaded_source(manifest_source, manifest_tokens, entry_name, module_tokens, loaded, namespace, @origins)
   let parsed: Bool = syntax.parse_program(source, @tokens)
   source
 
@@ -395,19 +520,17 @@ fn find_reciprocal_cycle(source: Bytes, tokens: Vec[syntax.Token], modules: I64,
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, modules, next)
 
+# Declared names contain no dot; the last separator preserves dotted modules.
 fn find_span_dot(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
-  let done: Bool = index >= end
-  if done:
+  if index >= end:
     -1
   else:
-    let byte: U8 = bytes.get(source, index)
-    let code: I64 = u8.to_i64(byte)
-    let dot: Bool = code == 46
-    if dot:
-      index
+    let previous: I64 = end - 1
+    let code: I64 = u8.to_i64(bytes.get(source, previous))
+    if code == 46:
+      previous
     else:
-      let next: I64 = index + 1
-      recur(source, next, end)
+      recur(source, index, previous)
 
 fn exports_has_segment(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, segment_start: I64, segment_end: I64) -> Bool effects[partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
@@ -465,10 +588,10 @@ fn report_project_issues(issues: Vec[typing.Issue], index: I64, origins: Vec[Ori
     let total: I64 = count + reported
     recur(issues, next, origins, manifest_source, manifest_tokens, loaded, total)
 
-fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
-  let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, @tokens, @origins)
+  let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, namespace, @tokens, @origins)
   let count: I64 = vec.len(tokens)
   if strict && ((token_limit < 1) || (count > token_limit)):
     let prepared: PreparedProject = invalid_prepared_project(65)
@@ -518,11 +641,12 @@ fn parse_project_manifest(source: Bytes, tokens: @Vec[syntax.Token]) -> I64 effe
 
 fn finish_project_preparation(source: Bytes, tokens: ^Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let entry: I64 = 5
-  let errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded)
+  let namespace: NamespaceView = derive_namespace(source, tokens, module_tokens, loaded)
+  let errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded, namespace)
   if errors > 0:
     invalid_project_attempt(errors)
   else:
-    prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, retain, strict, previous, revision, token_limit)
+    prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, namespace, retain, strict, previous, revision, token_limit)
 
 fn prepare_project_attempt(path: Bytes, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
@@ -682,10 +806,10 @@ fn uncached_parsed_project(status: I64, executed: I64, reused: I64, imported: I6
   let module_parsing: ModuleParses = empty_module_parses()
   ParsedProject(attempt: attempt, parsing: parsing, module_parsing: module_parsing, executed: executed, reused: reused, imported: imported)
 
-fn prepare_parsed_project(input: ProjectInput, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], module_parsing: ^ModuleParses, module_work: ModuleParseWork, previous: retained.Cache, old_parse: syntax.ParseCache, revision: identity.Revision, token_limit: I64, config: Bytes) -> ParsedProject effects[alloc, io, partial]:
+fn prepare_parsed_project(input: ProjectInput, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, module_parsing: ^ModuleParses, module_work: ModuleParseWork, previous: retained.Cache, old_parse: syntax.ParseCache, revision: identity.Revision, token_limit: I64, config: Bytes) -> ParsedProject effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
-  let source: Bytes = flatten_loaded_source(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded, @origins)
+  let source: Bytes = flatten_loaded_source(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded, namespace, @origins)
   let owner: identity.FileId = identity.FileId(revision: revision, slot: 0)
   let parsed: syntax.RetainedParse = syntax.parse_program_retained(source, @tokens, old_parse, owner, config)
   let count: I64 = vec.len(tokens)
@@ -718,7 +842,8 @@ fn prepare_project_input(input: ProjectInput, previous: retained.Cache, old_pars
     if work.status > 0:
       uncached_parsed_project(work.status, work.executed, work.reused, work.imported)
     else:
-      let errors: I64 = report_loaded_project(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded)
+      let namespace: NamespaceView = derive_namespace(input.manifest_source, input.manifest_tokens, module_tokens, loaded)
+      let errors: I64 = report_loaded_project(input.manifest_source, input.manifest_tokens, 5, module_tokens, loaded, namespace)
       if errors > 0:
         uncached_parsed_project(errors, work.executed, work.reused, work.imported)
       else:
@@ -726,7 +851,7 @@ fn prepare_project_input(input: ProjectInput, previous: retained.Cache, old_pars
           ModuleParses(caches: caches, names: names, edges: edges)
         else:
           empty_module_parses()
-        prepare_parsed_project(input, module_tokens, loaded, ^module_parsing, work, previous, old_parse, revision, token_limit, config)
+        prepare_parsed_project(input, module_tokens, loaded, namespace, ^module_parsing, work, previous, old_parse, revision, token_limit, config)
 
 fn prepare_project_path(path: Bytes) -> PreparedProject effects[alloc, io, partial]:
   let previous: retained.Cache = retained.empty_cache()
@@ -995,6 +1120,44 @@ fn span_less(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) ->
   let right_end: I64 = syntax.ast_node_end(tokens, right)
   span_less_chars(source, left_start, left_end, right_start, right_end)
 
+fn find_unsorted_name_list(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    -1
+  else:
+    let first: Bool = previous < 0
+    let ordered: Bool = if first:
+      true
+    else:
+      span_less(source, tokens, previous, cursor)
+    if ordered:
+      let next: I64 = syntax.ast_node_after(cursor)
+      recur(source, tokens, next, cursor)
+    else:
+      cursor
+
+fn find_unsorted_module_lists(source: Bytes, tokens: Vec[syntax.Token], cursor: I64) -> I64 effects[partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    -1
+  else:
+    let imports: I64 = cursor + 4
+    let first_import: I64 = imports + 2
+    let invalid_import: I64 = find_unsorted_name_list(source, tokens, first_import, -1)
+    if invalid_import >= 0:
+      invalid_import
+    else:
+      let exports: I64 = syntax.ast_next(tokens, imports)
+      let first_export: I64 = exports + 2
+      let invalid_export: I64 = find_unsorted_name_list(source, tokens, first_export, -1)
+      if invalid_export >= 0:
+        invalid_export
+      else:
+        let next: I64 = syntax.ast_next(tokens, cursor)
+        recur(source, tokens, next)
+
 fn find_unsorted_module(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
   let done: Bool = kind == 1
@@ -1244,21 +1407,27 @@ fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I
           let end: I64 = syntax.ast_node_end(tokens, invalid_path)
           report_project_diagnostic("E0407", "-", start, end)
         else:
-          let self_import: I64 = find_self_import(source, tokens, modules)
-          let has_self: Bool = self_import >= 0
-          if has_self:
-            let start: I64 = syntax.ast_node_start(tokens, self_import)
-            let end: I64 = syntax.ast_node_end(tokens, self_import)
-            report_project_diagnostic("E0412", "-", start, end)
+          let unsorted_list: I64 = find_unsorted_module_lists(source, tokens, modules)
+          if unsorted_list >= 0:
+            let start: I64 = syntax.ast_node_start(tokens, unsorted_list)
+            let end: I64 = syntax.ast_node_end(tokens, unsorted_list)
+            report_project_diagnostic("E0406", "-", start, end)
           else:
-            let unknown_import: I64 = find_unknown_import(source, tokens, modules, modules)
-            let has_unknown: Bool = unknown_import >= 0
-            if has_unknown:
-              let start: I64 = syntax.ast_node_start(tokens, unknown_import)
-              let end: I64 = syntax.ast_node_end(tokens, unknown_import)
-              report_project_diagnostic("E0411", "-", start, end)
+            let self_import: I64 = find_self_import(source, tokens, modules)
+            let has_self: Bool = self_import >= 0
+            if has_self:
+              let start: I64 = syntax.ast_node_start(tokens, self_import)
+              let end: I64 = syntax.ast_node_end(tokens, self_import)
+              report_project_diagnostic("E0412", "-", start, end)
             else:
-              0
+              let unknown_import: I64 = find_unknown_import(source, tokens, modules, modules)
+              let has_unknown: Bool = unknown_import >= 0
+              if has_unknown:
+                let start: I64 = syntax.ast_node_start(tokens, unknown_import)
+                let end: I64 = syntax.ast_node_end(tokens, unknown_import)
+                report_project_diagnostic("E0411", "-", start, end)
+              else:
+                0
   else:
     report_project_diagnostic("E0403", "-", entry_start, entry_end)
 
@@ -1467,120 +1636,166 @@ fn find_declaration_segment(declaration_source: Bytes, module_tokens: Vec[syntax
       let next: I64 = syntax.ast_next(module_tokens, cursor)
       recur(declaration_source, module_tokens, next, reference_source, segment_start, segment_end)
 
-fn target_call_status(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, target_index: I64, reference_source: Bytes, prefix_start: I64, slash: I64, reference_end: I64) -> I64 effects[partial]:
-  let current_manifest: I64 = current.manifest
-  let imports: I64 = current_manifest + 4
-  let first_import: I64 = imports + 2
-  let imported: Bool = exports_has_segment(manifest_source, manifest_tokens, first_import, reference_source, prefix_start, slash)
-  if imported:
-    let target: LoadedModule = vec.get(loaded, target_index)
-    let target_manifest: I64 = target.manifest
-    let target_imports: I64 = target_manifest + 4
-    let exports: I64 = syntax.ast_next(manifest_tokens, target_imports)
-    let first_export: I64 = exports + 2
-    let name_start: I64 = slash + 1
-    let exported: Bool = exports_has_segment(manifest_source, manifest_tokens, first_export, reference_source, name_start, reference_end)
-    if exported:
-      let target_source: Bytes = target.source
-      let target_root: I64 = target.root
-      let target_items: I64 = target_root + 3
-      let declaration: I64 = find_declaration_segment(target_source, module_tokens, target_items, reference_source, name_start, reference_end)
-      let found: Bool = declaration >= 0
-      let callable: Bool = if found:
-        syntax.ast_item_is_function(target_source, module_tokens, declaration)
+struct NamespaceModule:
+  imports: I64
+  exports: I64
+  declarations: I64
+  roles: Vec[I64]
+
+struct NamespaceView:
+  names: Vec[syntax.NameNode]
+  edges: Vec[syntax.NameEdge]
+  modules: Vec[NamespaceModule]
+
+fn index_namespace_list(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, names: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge]) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    let previous: I64 = syntax.insert_name_chars(source, syntax.ast_node_start(tokens, cursor), syntax.ast_node_end(tokens, cursor), cursor, root, @names, @edges)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @names, @edges)
+
+fn index_namespace_declarations(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, root: I64, names: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge]) -> Void effects[alloc, partial]:
+  if syntax.ast_list_done(tokens, cursor):
+    void
+  else:
+    let name: I64 = syntax.ast_item_name(cursor)
+    let previous: I64 = syntax.insert_name_chars(source, syntax.ast_node_start(tokens, name), syntax.ast_node_end(tokens, name), cursor, root, @names, @edges)
+    recur(source, tokens, syntax.ast_next(tokens, cursor), root, @names, @edges)
+
+fn index_namespace_modules(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, names: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge], modules: @Vec[NamespaceModule]) -> Void effects[alloc, partial]:
+  if index >= vec.len(loaded):
+    void
+  else:
+    let module: LoadedModule = vec.get(loaded, index)
+    let previous: I64 = syntax.insert_name_chars(manifest_source, syntax.ast_node_start(manifest_tokens, module.name), syntax.ast_node_end(manifest_tokens, module.name), index, 0, @names, @edges)
+    let imports: I64 = syntax.append_name_node(-1, @names)
+    let exports: I64 = syntax.append_name_node(-1, @names)
+    let declarations: I64 = syntax.append_name_node(-1, @names)
+    let import_form: I64 = module.manifest + 4
+    let export_form: I64 = syntax.ast_next(manifest_tokens, import_form)
+    index_namespace_list(manifest_source, manifest_tokens, import_form + 2, imports, @names, @edges)
+    index_namespace_list(manifest_source, manifest_tokens, export_form + 2, exports, @names, @edges)
+    index_namespace_declarations(module.source, tokens, syntax.ast_module_items(module.root), declarations, @names, @edges)
+    let roles: Vec[I64] = project_namespace_roles(module.source, tokens, module.root)
+    vec.push(@modules, NamespaceModule(imports: imports, exports: exports, declarations: declarations, roles: roles))
+    recur(manifest_source, manifest_tokens, tokens, loaded, index + 1, @names, @edges, @modules)
+
+fn derive_namespace(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> NamespaceView effects[alloc, partial]:
+  let names: Vec[syntax.NameNode] = vec.new()
+  let edges: Vec[syntax.NameEdge] = vec.new()
+  let modules: Vec[NamespaceModule] = vec.new()
+  let root: I64 = syntax.append_name_node(-1, @names)
+  index_namespace_modules(manifest_source, manifest_tokens, tokens, loaded, 0, @names, @edges, @modules)
+  NamespaceView(names: names, edges: edges, modules: modules)
+
+fn namespace_lookup(source: Bytes, start: I64, end: I64, root: I64, namespace: NamespaceView) -> I64 effects[partial]:
+  syntax.lookup_name_chars(source, start, end, root, namespace.names, namespace.edges)
+
+fn namespace_target_kind(source: Bytes, tokens: Vec[syntax.Token], declaration: I64, role: I64, reference: I64) -> Bool effects[partial]:
+  if declaration < 0:
+    false
+  else:
+    let function: Bool = syntax.ast_item_is_function(source, tokens, declaration)
+    let record: Bool = syntax.ast_item_is_record(source, tokens, declaration)
+    let variant: Bool = syntax.ast_item_is_variant(source, tokens, declaration)
+    if role == 1:
+      let empty_record: Bool = if record:
+        syntax.ast_list_done(tokens, syntax.ast_data_members_first(declaration)) && syntax.ast_list_done(tokens, syntax.ast_call_arguments(reference - 2))
       else:
         false
-      if callable:
-        0
-      else:
-        3
+      function || empty_record
     else:
-      3
-  else:
-    2
+      if role == 3:
+        record || variant
+      else:
+        let tag: I64 = syntax.ast_node_tag(tokens, reference - 2)
+        if tag == 11:
+          record
+        else:
+          variant
 
-fn qualified_call_status(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, callee: I64) -> I64 effects[partial]:
-  let reference_source: Bytes = current.source
-  let start: I64 = syntax.ast_node_start(module_tokens, callee)
-  let end: I64 = syntax.ast_node_end(module_tokens, callee)
-  let builtin: Bool = typing.builtin_known(reference_source, module_tokens, callee)
-  let dot: I64 = find_span_dot(reference_source, start, end)
-  let qualified: Bool = dot >= 0
-  if builtin:
+fn qualified_reference_status(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, current_index: I64, reference: I64, role: I64) -> I64 effects[partial]:
+  let current: LoadedModule = vec.get(loaded, current_index)
+  let source: Bytes = current.source
+  let start: I64 = syntax.ast_node_start(tokens, reference)
+  let end: I64 = syntax.ast_node_end(tokens, reference)
+  let dot: I64 = find_span_dot(source, start, end)
+  if dot < 0:
     0
   else:
-    if qualified:
-      let current_name: I64 = current.name
-      let current_start: I64 = syntax.ast_node_start(manifest_tokens, current_name)
-      let current_end: I64 = syntax.ast_node_end(manifest_tokens, current_name)
-      let self: Bool = cross_spans_equal(manifest_source, current_start, current_end, reference_source, start, dot)
-      if self:
-        1
-      else:
-        let target: I64 = find_loaded_segment(manifest_source, manifest_tokens, loaded, reference_source, start, dot, 0)
-        let found: Bool = target >= 0
-        if found:
-          target_call_status(manifest_source, manifest_tokens, module_tokens, loaded, current, target, reference_source, start, dot, end)
-        else:
-          2
+    let target_index: I64 = namespace_lookup(source, start, dot, 0, namespace)
+    if target_index == current_index:
+      1
     else:
-      0
+      let metadata: NamespaceModule = vec.get(namespace.modules, current_index)
+      let imported: I64 = namespace_lookup(source, start, dot, metadata.imports, namespace)
+      if (target_index < 0) || (imported < 0):
+        2
+      else:
+        let target_metadata: NamespaceModule = vec.get(namespace.modules, target_index)
+        let exported: I64 = namespace_lookup(source, dot + 1, end, target_metadata.exports, namespace)
+        if exported < 0:
+          3
+        else:
+          let declaration: I64 = namespace_lookup(source, dot + 1, end, target_metadata.declarations, namespace)
+          let target: LoadedModule = vec.get(loaded, target_index)
+          if namespace_target_kind(target.source, tokens, declaration, role, reference):
+            0
+          else:
+            3
 
-fn find_invalid_loaded_call(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], current: LoadedModule, cursor: I64, end: I64) -> I64 effects[partial]:
-  let done: Bool = cursor >= end
-  if done:
+fn find_invalid_namespace_reference(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, index: I64, cursor: I64, end: I64) -> I64 effects[partial]:
+  if cursor >= end:
     -1
   else:
-    let source: Bytes = current.source
-    let call_form: Bool = syntax.ast_expression_is_call(source, module_tokens, cursor)
-    let callee: I64 = syntax.ast_call_callee(cursor)
-    let status: I64 = if call_form:
-      qualified_call_status(manifest_source, manifest_tokens, module_tokens, loaded, current, callee)
+    let current: LoadedModule = vec.get(loaded, index)
+    let metadata: NamespaceModule = vec.get(namespace.modules, index)
+    let role: I64 = vec.get(metadata.roles, cursor - current.root)
+    let reference: Bool = (role == 1) || ((role == 3) || (role == 4))
+    let status: I64 = if reference:
+      qualified_reference_status(manifest_source, manifest_tokens, tokens, loaded, namespace, index, cursor, role)
     else:
       0
-    let invalid: Bool = status > 0
-    if invalid:
+    if status > 0:
       cursor
     else:
-      let next: I64 = syntax.ast_node_after(cursor)
-      recur(manifest_source, manifest_tokens, module_tokens, loaded, current, next, end)
+      recur(manifest_source, manifest_tokens, tokens, loaded, namespace, index, syntax.ast_node_after(cursor), end)
 
-fn report_qualified_calls(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
-  let length: I64 = vec.len(loaded)
-  let done: Bool = index >= length
-  if done:
+fn report_namespace_references(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, index: I64) -> I64 effects[alloc, io, partial]:
+  if index >= vec.len(loaded):
     0
   else:
     let module: LoadedModule = vec.get(loaded, index)
-    let root: I64 = module.root
-    let first: I64 = syntax.ast_module_items(root)
-    let end: I64 = syntax.ast_next(module_tokens, root)
-    let invalid: I64 = find_invalid_loaded_call(manifest_source, manifest_tokens, module_tokens, loaded, module, first, end)
-    let found: Bool = invalid >= 0
-    if found:
-      let callee: I64 = syntax.ast_call_callee(invalid)
-      let status: I64 = qualified_call_status(manifest_source, manifest_tokens, module_tokens, loaded, module, callee)
-      let self: Bool = status == 1
-      let code: Bytes = if self:
+    let metadata: NamespaceModule = vec.get(namespace.modules, index)
+    let first: I64 = syntax.ast_module_items(module.root)
+    let end: I64 = syntax.ast_next(tokens, module.root)
+    let invalid: I64 = find_invalid_namespace_reference(manifest_source, manifest_tokens, tokens, loaded, namespace, index, first, end)
+    if invalid >= 0:
+      let role: I64 = vec.get(metadata.roles, invalid - module.root)
+      let status: I64 = qualified_reference_status(manifest_source, manifest_tokens, tokens, loaded, namespace, index, invalid, role)
+      let code: Bytes = if status == 1:
         "E0417"
       else:
-        let unimported: Bool = status == 2
-        if unimported:
+        if status == 2:
           "E0416"
         else:
           "E0415"
-      let start: I64 = syntax.ast_node_start(module_tokens, invalid)
-      let next_form: I64 = syntax.ast_next(module_tokens, invalid)
-      let closing: I64 = next_form - 1
-      let call_end: I64 = syntax.ast_node_end(module_tokens, closing)
-      let name: I64 = module.name
-      let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-      report_project_diagnostic(code, module_name, start, call_end)
+      let diagnostic_node: I64 = if role == 3:
+        invalid
+      else:
+        invalid - 2
+      let start: I64 = syntax.ast_node_start(tokens, diagnostic_node)
+      let closing: I64 = syntax.ast_next(tokens, diagnostic_node) - 1
+      let diagnostic_end: I64 = if role == 3:
+        syntax.ast_node_end(tokens, invalid)
+      else:
+        syntax.ast_node_end(tokens, closing)
+      let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, module.name)
+      report_project_diagnostic(code, module_name, start, diagnostic_end)
     else:
-      let next: I64 = index + 1
-      recur(manifest_source, manifest_tokens, module_tokens, loaded, next)
+      recur(manifest_source, manifest_tokens, tokens, loaded, namespace, index + 1)
 
-fn report_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+fn report_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView) -> I64 effects[alloc, io, partial]:
   let identities: I64 = report_module_identities(manifest_source, manifest_tokens, module_tokens, loaded, 0)
   let invalid_identity: Bool = identities > 0
   if invalid_identity:
@@ -1596,7 +1811,7 @@ fn report_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
       if invalid_main:
         mains
       else:
-        let calls: I64 = report_qualified_calls(manifest_source, manifest_tokens, module_tokens, loaded, 0)
+        let calls: I64 = report_namespace_references(manifest_source, manifest_tokens, module_tokens, loaded, namespace, 0)
         let invalid_call: Bool = calls > 0
         if invalid_call:
           calls
@@ -1652,6 +1867,19 @@ fn report_interface_bindings(manifest_source: Bytes, manifest_tokens: Vec[syntax
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
 
+
+fn report_interface_fields(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+  let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
+  let done: Bool = kind == 1
+  if done:
+    count
+  else:
+    let type_index: I64 = syntax.ast_member_value(cursor)
+    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, type_index, diagnostic_start, diagnostic_end)
+    let next: I64 = syntax.ast_next(module_tokens, cursor)
+    let total: I64 = count + reported
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
+
 fn report_interface_payload(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
@@ -1697,7 +1925,7 @@ fn report_export_interfaces(manifest_source: Bytes, manifest_tokens: Vec[syntax.
       let body: I64 = syntax.ast_data_body(item)
       let first_member: I64 = syntax.ast_data_members_first(item)
       if record_item:
-        report_interface_bindings(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0)
+        report_interface_fields(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0)
       else:
         report_interface_cases(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0)
     let next: I64 = syntax.ast_node_after(cursor)

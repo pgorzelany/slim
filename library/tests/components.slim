@@ -1,0 +1,137 @@
+module component_tests
+
+fn frame_output(parsed: std_netstring.Parsed) -> Void effects[alloc, io, partial]:
+  match parsed:
+    End:
+      io.print_bytes("end\n")
+    Invalid(code, position):
+      let output: Vec[U8] = vec.new()
+      std_text.append_bytes(@output, "invalid ")
+      std_text.append_i64(@output, code)
+      std_text.append_bytes(@output, " at ")
+      std_text.append_i64(@output, position)
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+    Value(frame):
+      let output: Vec[U8] = vec.new()
+      std_text.append_bytes(@output, "frame ")
+      std_text.append_i64(@output, frame.start)
+      std_text.append_bytes(@output, " ")
+      std_text.append_i64(@output, frame.end)
+      std_text.append_bytes(@output, " ")
+      std_text.append_i64(@output, frame.next)
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+
+fn integer_argument(value: Bytes) -> I64 effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(value, 0, bytes.len(value))
+  match parsed:
+    Invalid(position):
+      -1
+    Overflow(position):
+      -1
+    Value(number, next):
+      if next == bytes.len(value):
+        number
+      else:
+        -1
+
+fn run_frame(mode: Bytes, source: Bytes, start: I64, end: I64, maximum: I64) -> I64 effects[alloc, io, partial]:
+  if std_bytes.equal(mode, "parse"):
+    frame_output(std_netstring.parse(source, start, end, maximum))
+    0
+  else:
+    if std_bytes.equal(mode, "append"):
+      let output: Vec[U8] = vec.new()
+      std_text.append_bytes(@output, "prefix:")
+      let accepted: Bool = std_netstring.append(source, start, end, maximum, @output)
+      if accepted:
+        std_text.append_bytes(@output, "\n")
+      else:
+        std_text.append_bytes(@output, "invalid\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+    else:
+      64
+
+fn entries(cursor: I64, source: Bytes, output: @Vec[std_byte_index.Entry]) -> Void effects[alloc, partial]:
+  if cursor == bytes.len(source):
+    void
+  else:
+    vec.push(@output, std_byte_index.Entry(start: cursor, end: cursor + 1, ordinal: cursor))
+    recur(cursor + 1, source, @output)
+
+fn invalid_build(source: Bytes, start: I64, end: I64, ordinal: I64, maximum: I64) -> I64 effects[alloc, io, partial]:
+  let values: Vec[std_byte_index.Entry] = vec.new()
+  vec.push(@values, std_byte_index.Entry(start: start, end: end, ordinal: ordinal))
+  let built: std_byte_index.Built = std_byte_index.build(source, ^values, maximum)
+  match built:
+    Invalid(code, position):
+      let output: Vec[U8] = vec.new()
+      std_text.append_i64(@output, code)
+      std_text.append_bytes(@output, " ")
+      std_text.append_i64(@output, position)
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+    Ready(index):
+      io.print_bytes("ready\n")
+      0
+
+fn sorted(index: std_byte_index.Index, cursor: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(index.entries):
+    void
+  else:
+    let entry: std_byte_index.Entry = vec.get(index.entries, cursor)
+    std_text.append_i64(@output, entry.ordinal)
+    std_text.append_bytes(@output, ",")
+    recur(index, cursor + 1, @output)
+
+fn index_probe(source: Bytes, query: Bytes, start: I64, end: I64) -> I64 effects[alloc, io, partial]:
+  let values: Vec[std_byte_index.Entry] = vec.new()
+  entries(0, source, @values)
+  let built: std_byte_index.Built = std_byte_index.build(source, ^values, 4096)
+  match built:
+    Invalid(code, position):
+      let output: Vec[U8] = vec.new()
+      std_text.append_bytes(@output, "invalid ")
+      std_text.append_i64(@output, code)
+      std_text.append_bytes(@output, " at ")
+      std_text.append_i64(@output, position)
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+    Ready(index):
+      let output: Vec[U8] = vec.new()
+      sorted(index, 0, @output)
+      std_text.append_bytes(@output, " find ")
+      std_text.append_i64(@output, std_byte_index.find(index, query, start, end))
+      let bounds: std_byte_index.Bounds = std_byte_index.prefix(index, query)
+      std_text.append_bytes(@output, " prefix ")
+      std_text.append_i64(@output, bounds.start)
+      std_text.append_bytes(@output, " ")
+      std_text.append_i64(@output, bounds.end)
+      std_text.append_bytes(@output, "\n")
+      io.print_bytes(bytes.freeze(^output))
+      0
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 6:
+    let input: Vec[U8] = vec.new()
+    if io.read_file(vec.get(args, 2), @input):
+      let source: Bytes = bytes.freeze(^input)
+      if std_bytes.equal(vec.get(args, 1), "index"):
+        index_probe(source, vec.get(args, 3), integer_argument(vec.get(args, 4)), integer_argument(vec.get(args, 5)))
+      else:
+        run_frame(vec.get(args, 1), source, integer_argument(vec.get(args, 3)), integer_argument(vec.get(args, 4)), integer_argument(vec.get(args, 5)))
+    else:
+      66
+  else:
+    if vec.len(args) == 7:
+      let input: Vec[U8] = vec.new()
+      if io.read_file(vec.get(args, 2), @input):
+        invalid_build(bytes.freeze(^input), integer_argument(vec.get(args, 3)), integer_argument(vec.get(args, 4)), integer_argument(vec.get(args, 5)), integer_argument(vec.get(args, 6)))
+      else:
+        66
+    else:
+      64

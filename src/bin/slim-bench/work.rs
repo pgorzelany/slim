@@ -336,6 +336,14 @@ fn hook_formal(metric: &str, base: &str, signature: &str) -> Result<String, Stri
     Ok(candidates[0].to_owned())
 }
 
+// Observe RFC-0162 private symbols only; this adapter never accepts SLIM.
+fn project_c_function(qualified: &str) -> String {
+    let (module, name) = qualified.rsplit_once('.').expect("fixed qualified hook");
+    let escape = |segment: &str| segment.replace('_', "_0").replace('.', "_1");
+    let name = format!("p{}__{}", escape(module), escape(name));
+    format!("slim_fn_{}", name.replace('_', "_95"))
+}
+
 fn instrument(seed: &str) -> Result<String, String> {
     let lines: Vec<_> = seed.split_inclusive('\n').collect();
     let mut result = String::from("#include \"work_probe.h\"\n");
@@ -351,7 +359,10 @@ fn instrument(seed: &str) -> Result<String, String> {
         if line.starts_with("static SLIM_UNUSED_FUNCTION ") && line.trim_end().ends_with(" {") {
             active.clear();
             child_entry = None;
-            if line.contains(" slim_fn_typing_95infer_95control_95walk(") {
+            if line.contains(&format!(
+                " {}(",
+                project_c_function("typing.infer_control_walk")
+            )) {
                 let returning = hook_formal("expression_check_calls", "slim_v_returning", line)?;
                 let depth = hook_formal("expression_check_calls", "slim_v_depth", line)?;
                 // RFC-0141 keeps the function-root entry above, then checks
@@ -360,8 +371,7 @@ fn instrument(seed: &str) -> Result<String, String> {
                 child_entry = Some(format!("(uint64_t)(!{returning} && {depth} > 0)"));
             }
             for (index, hook) in HOOKS.iter().enumerate() {
-                let encoded = hook.function.replace('.', "_").replace('_', "_95");
-                if line.contains(&format!(" slim_fn_{encoded}(")) {
+                if line.contains(&format!(" {}(", project_c_function(hook.function))) {
                     active.push(index);
                 }
             }

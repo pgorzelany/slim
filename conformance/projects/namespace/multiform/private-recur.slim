@@ -1,0 +1,10 @@
+module app
+
+fn descend(n: I64, value: I64) -> I64 effects[partial]:
+  if n <= 0:
+    value
+  else:
+    recur(n - 1, lib.hidden(value))
+
+fn main(args: Vec[Bytes]) -> I64 effects[partial]:
+  descend(1, 0)

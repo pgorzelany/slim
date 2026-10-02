@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "finite-client",
+      "operation": "run",
+      "overlay": {
+        "tests/main.slim": "fixtures/client.slim"
+      },
+      "expect": {
+        "returncode": 0,
+        "stdout": "fixtures/expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "283 fixed whole-slice cases: canonical -128..128 inside delimiters, malformed/overflow extrema and bad bounds. Prefix parser remains original project source."
+    },
+    {
+      "id": "caller-contract",
+      "operation": "check",
+      "overlay": {
+        "tests/main.slim": "fixtures/negative.slim"
+      },
+      "positive": {
+        "tests/main.slim": "fixtures/positive.slim"
+      },
+      "expect": {
+        "returncode": 1,
+        "diagnostics": [
+          [
+            "E0344",
+            "std_tests",
+            143,
+            147
+          ]
+        ],
+        "stdout": "fixtures/negative-expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "One missing-exclusive-marker caller (E0360) or wrong argument type (E0344), with separately accepted same-API control; exact argument source span."
+    }
+  ]
+}

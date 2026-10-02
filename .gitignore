@@ -5,3 +5,5 @@
 *.dSYM/
 *.profraw
 *.profdata
+__pycache__/
+*.py[cod]

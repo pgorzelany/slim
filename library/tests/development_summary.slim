@@ -1,0 +1,94 @@
+module development_test
+
+fn argument(value: Bytes) -> I64 effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(value, 0, bytes.len(value))
+  match parsed:
+    Invalid(position):
+      -1
+    Overflow(position):
+      -1
+    Value(number, next):
+      if next == bytes.len(value):
+        number
+      else:
+        -1
+
+fn print_step(result: development_model.Step) -> I64 effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  let valid: I64 = if result.valid:
+    1
+  else:
+    0
+  std_text.append_i64(@output, valid)
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, result.work)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+  0
+
+fn descending(remaining: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if remaining == 0:
+    void
+  else:
+    vec.push(@output, remaining)
+    recur(remaining - 1, @output)
+
+fn print_median(count: I64, maximum: I64) -> I64 effects[alloc, io, partial]:
+  if (count < 0) || (count > 33):
+    64
+  else:
+    let values: Vec[I64] = vec.new()
+    descending(count, @values)
+    let result: development_model.Median = development_stats.median(^values, maximum)
+    let output: Vec[U8] = vec.new()
+    let known: I64 = if result.known:
+      1
+    else:
+      0
+    std_text.append_i64(@output, known)
+    std_text.append_bytes(@output, " ")
+    std_text.append_i64(@output, result.reason)
+    std_text.append_bytes(@output, " ")
+    std_text.append_i64(@output, result.lower)
+    std_text.append_bytes(@output, " ")
+    std_text.append_i64(@output, result.upper)
+    std_text.append_bytes(@output, " ")
+    std_text.append_i64(@output, result.work)
+    std_text.append_bytes(@output, "\n")
+    io.print_bytes(bytes.freeze(^output))
+    0
+
+fn report(path: Bytes, maximum: I64, tasks: I64, statistics: Bool) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: development_model.Loaded = development_data.load(bytes.freeze(^input), tasks)
+    match loaded:
+      Invalid(code, position):
+        development_emit.error(code, position)
+        65
+      Ready(summary):
+        if development_emit.report(summary, statistics, maximum):
+          0
+        else:
+          development_emit.error(23, 0)
+          65
+  else:
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 4:
+    if std_bytes.equal(vec.get(args, 1), "step"):
+      print_step(development_stats.step(argument(vec.get(args, 2)), argument(vec.get(args, 3))))
+    else:
+      if std_bytes.equal(vec.get(args, 1), "median"):
+        print_median(argument(vec.get(args, 3)), argument(vec.get(args, 2)))
+      else:
+        64
+  else:
+    if vec.len(args) == 6:
+      if std_bytes.equal(vec.get(args, 1), "report"):
+        report(vec.get(args, 2), argument(vec.get(args, 3)), argument(vec.get(args, 4)), std_bytes.equal(vec.get(args, 5), "stats"))
+      else:
+        64
+    else:
+      64

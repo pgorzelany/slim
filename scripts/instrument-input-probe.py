@@ -3,27 +3,30 @@ import re
 import sys
 
 source_path = Path(sys.argv[1])
-encode = lambda name: "slim_fn_" + name.replace("_", "_95")
-transfer = encode("retained_input_transfer")
-start = encode("retained_input_start_history")
-discover = encode("retained_input_discover_calls")
-collect = encode("ranges_collect_function_invariants")
-target = encode("ranges_parameter_call_target")
-import_structure = encode("retained_input_import_arguments")
-query = encode("retained_input_query_functions")
-find = encode("retained_input_find_queries")
-apply = encode("retained_input_import_results")
-names = {encode("ranges_merge_parameter_fact"): "scalar_merges",
-         encode("ranges_scan_parameter_calls"): "fallback_scans",
-         encode("retained_input_merge_current"): "query_producers"}
-names[encode("retained_input_result_keys_match")] = "query_versions"
+def encode(qualified):
+    module, name = qualified.rsplit(".", 1)
+    escape = lambda part: part.replace("_", "_0").replace(".", "_1")
+    return "slim_fn_" + ("p" + escape(module) + "__" + escape(name)).replace("_", "_95")
+transfer = encode("retained.input_transfer")
+start = encode("retained.input_start_history")
+discover = encode("retained.input_discover_calls")
+collect = encode("ranges.collect_function_invariants")
+target = encode("ranges.parameter_call_target")
+import_structure = encode("retained.input_import_arguments")
+query = encode("retained.input_query_functions")
+find = encode("retained.input_find_queries")
+apply = encode("retained.input_import_results")
+names = {encode("ranges.merge_parameter_fact"): "scalar_merges",
+         encode("ranges.scan_parameter_calls"): "fallback_scans",
+         encode("retained.input_merge_current"): "query_producers"}
+names[encode("retained.input_result_keys_match")] = "query_versions"
 names[collect] = "invariant_producers"
 names[target] = "discovery_node_visits"
-copies = {encode("retained_input_copy_previous_keys"): "copied_keys",
-          encode("retained_input_copy_previous_results"): "copied_results",
-          encode("retained_input_copy_previous_entries"): "copied_entries",
-          encode("retained_input_owner_maps"): "owner_map_rows"}
-copies[encode("retained_input_import_invariants")] = "imported_invariants"
+copies = {encode("retained.input_copy_previous_keys"): "copied_keys",
+          encode("retained.input_copy_previous_results"): "copied_results",
+          encode("retained.input_copy_previous_entries"): "copied_entries",
+          encode("retained.input_owner_maps"): "owner_map_rows"}
+copies[encode("retained.input_import_invariants")] = "imported_invariants"
 copies[import_structure] = "imported_arguments"
 counters = ["key_rows", "adjacency_rows", "topology_producers", "structure_imports", "transfer_calls", "current_lookups", "previous_lookups", "current_imports", "previous_imports", *names.values(), *copies.values()]
 # Six independent optional-history limits per previous-snapshot invocation.
@@ -57,7 +60,7 @@ for line in source_path.read_text().splitlines():
     match = re.match(r"^static .* (slim_fn_\w+)\(.*\) \{$", line)
     if match:
         inside = match[1]
-    if inside == encode("zzprobe_compare_previous_limit") and line.lstrip().startswith("return "):
+    if inside == encode("zzprobe.compare_previous_limit") and line.lstrip().startswith("return "):
         output.append("input_end();")
         phase_returns += 1
     if inside == start and line.lstrip().startswith("return "):
@@ -80,15 +83,15 @@ for line in source_path.read_text().splitlines():
         if inside != import_structure or push_index == 0:
             output.append(f"if (input_phase_active) input_count(&input_{copies[inside]});")
         pushes[inside] = push_index + 1
-    if inside == encode("retained_input_contribution_keys_match") and " = " + encode("ranges_fact_at") + "(" in line:
+    if inside == encode("retained.input_contribution_keys_match") and " = " + encode("ranges.fact_at") + "(" in line:
         output.append("if (input_phase_active && input_active) input_count(&input_key_rows);")
         key_rows += 1
-    if inside == encode("retained_input_adjacency") and line.startswith("((") and "slim_vec_check_index" in line and "] = " in line:
+    if inside == encode("retained.input_adjacency") and line.startswith("((") and "slim_vec_check_index" in line and "] = " in line:
         if adjacency_writes == 0:
             output.append("if (input_phase_active) input_count(&input_adjacency_rows);")
         adjacency_writes += 1
     output.append(line)
-    if match and inside == encode("zzprobe_compare_previous_limit"):
+    if match and inside == encode("zzprobe.compare_previous_limit"):
         output.append("input_begin();")
         phase_entries += 1
     if match and inside in names:

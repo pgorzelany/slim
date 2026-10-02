@@ -1,0 +1,9 @@
+module app
+
+fn identity(value: a_Value) -> a_Value:
+  value
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  io.print_i64(0)
+  io.println("")
+  0

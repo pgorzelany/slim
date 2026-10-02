@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "finite-client",
+      "operation": "run",
+      "overlay": {
+        "tests/components.slim": "fixtures/client.slim"
+      },
+      "expect": {
+        "returncode": 0,
+        "stdout": "fixtures/expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "196 ordered endpoint pairs over14 binary/mixed-case/prefix/missing queries;9 unsorted distinct keys, duplicate ordinal values; exact selected sorted positions and ordinals."
+    },
+    {
+      "id": "caller-contract",
+      "operation": "check",
+      "overlay": {
+        "tests/components.slim": "fixtures/negative.slim"
+      },
+      "positive": {
+        "tests/components.slim": "fixtures/positive.slim"
+      },
+      "expect": {
+        "returncode": 1,
+        "diagnostics": [
+          [
+            "E0344",
+            "component_tests",
+            360,
+            364
+          ]
+        ],
+        "stdout": "fixtures/negative-expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "One missing-exclusive-marker caller (E0360) or wrong argument type (E0344), with separately accepted same-API control; exact argument source span."
+    }
+  ]
+}

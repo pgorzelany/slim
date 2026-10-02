@@ -1,0 +1,78 @@
+module std_netstring
+
+struct Frame:
+  start: I64
+  end: I64
+  next: I64
+
+enum Parsed:
+  End
+  Invalid(I64, I64)
+  Value(Frame)
+
+fn payload(source: Bytes, cursor: I64, end: I64, length: I64) -> Parsed effects[partial]:
+  let start: I64 = cursor + 1
+  if length > end - start:
+    Parsed::Invalid(6, end)
+  else:
+    let finish: I64 = start + length
+    if finish == end:
+      Parsed::Invalid(7, finish)
+    else:
+      if u8.to_i64(bytes.get(source, finish)) == 44:
+        Parsed::Value(Frame(start: start, end: finish, next: finish + 1))
+      else:
+        Parsed::Invalid(7, finish)
+
+fn header(source: Bytes, cursor: I64, end: I64, maximum: I64, value: I64, digits: I64, zero: Bool) -> Parsed effects[partial]:
+  if cursor == end:
+    Parsed::Invalid(3, cursor)
+  else:
+    let byte: U8 = bytes.get(source, cursor)
+    if u8.to_i64(byte) == 58:
+      if digits == 0:
+        Parsed::Invalid(2, cursor)
+      else:
+        payload(source, cursor, end, value)
+    else:
+      if std_ascii.is_digit(byte):
+        if zero:
+          Parsed::Invalid(4, cursor)
+        else:
+          let digit: I64 = std_ascii.digit_value(byte)
+          if (digit > maximum) || (value > (maximum - digit) / 10):
+            Parsed::Invalid(5, cursor)
+          else:
+            recur(source, cursor + 1, end, maximum, value * 10 + digit, digits + 1, (digits == 0) && (digit == 0))
+      else:
+        Parsed::Invalid(2, cursor)
+
+fn parse(source: Bytes, start: I64, end: I64, maximum: I64) -> Parsed effects[partial]:
+  if (start < 0) || ((end < start) || ((end > bytes.len(source)) || ((maximum < 0) || (maximum > 1048576)))):
+    Parsed::Invalid(1, start)
+  else:
+    if start == end:
+      Parsed::End()
+    else:
+      header(source, start, end, maximum, 0, 0, false)
+
+fn append(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if (start < 0) || ((end < start) || ((end > bytes.len(source)) || ((maximum < 0) || (maximum > 1048576)))):
+    false
+  else:
+    let length: I64 = end - start
+    if length > maximum:
+      false
+    else:
+      std_text.append_i64(@output, length)
+      std_text.append_bytes(@output, ":")
+      let appended: Bool = std_bytes.append_range(source, start, end, @output)
+      if appended:
+        std_text.append_bytes(@output, ",")
+        true
+      else:
+        false
+
+fn append_batch(source: Bytes, frames: Vec[Frame], maximum: I64, output: @Vec[U8]) -> Bool effects[alloc]:
+  let written: Bool = append(source, 0, bytes.len(source), maximum, @output)
+  written

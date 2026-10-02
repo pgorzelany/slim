@@ -1,0 +1,7 @@
+module driver
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let file: identity.FileId = identity.FileId(revision: identity.Revision(epoch: 1, serial: 1), slot: 0)
+  let span: identity.Span = identity.Span(file: file, start: 0, end: 0)
+  let result: identity.Overlap = identity.intersect_span(true, "", span, span)
+  0

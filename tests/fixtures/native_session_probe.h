@@ -11,12 +11,12 @@ static void native_probe_before(void) {
     if (native_probe_requests != 2) return;
     const char *name = native_probe_case();
     assert(native_region_live && native_cache.slim_field_headers.len == 1);
-    Slim_type_nativecache_95Header *header = (void *)native_cache.slim_field_headers.data;
+    Slim_type_pnativecache_95_95Header *header = (void *)native_cache.slim_field_headers.data;
     if (strcmp(name, "metadata") == 0) header->slim_field_seal ^= 1;
     else if (strncmp(name, "artifact-", 9) == 0) {
         unsigned role = (unsigned)(name[9] - '0');
         assert(role < 3 && native_cache.slim_field_entries.len == 3);
-        Slim_type_nativecache_95Entry *entries = (void *)native_cache.slim_field_entries.data;
+        Slim_type_pnativecache_95_95Entry *entries = (void *)native_cache.slim_field_entries.data;
         assert(entries[role].slim_field_key.slim_field_role == role);
         SlimBytes artifact = entries[role].slim_field_artifact;
         assert(artifact.len > 0);
@@ -24,7 +24,7 @@ static void native_probe_before(void) {
         ((uint8_t *)artifact.data)[0] ^= 1;
     } else if (strcmp(name, "byte-capacity") == 0) {
         native_cache.slim_field_bytes_95limit = header->slim_field_used;
-        header->slim_field_seal = slim_fn_nativecache_95metadata_95seal(native_cache, &native_region);
+        header->slim_field_seal = slim_fn_pnativecache_95_95metadata_950seal(native_cache, &native_region);
     } else if (strcmp(name, "cleanup") == 0) native_probe_group_failure = true;
 }
 static void native_probe_publish(unsigned role) {
@@ -41,7 +41,7 @@ static void native_probe_report(void) {
     const char *path = getenv("SLIM_NATIVE_STATE_REPORT");
     if (!path || !*path || !native_region_live) return;
     assert(native_cache.slim_field_headers.len == 1);
-    Slim_type_nativecache_95Header *header = (void *)native_cache.slim_field_headers.data;
+    Slim_type_pnativecache_95_95Header *header = (void *)native_cache.slim_field_headers.data;
     char row[256];
     int length = snprintf(row, sizeof(row), "%u\t%" PRId64 "\t%" PRId64 "\t%" PRId64
         "\t%" PRId64 "\t%d\t%" PRId64 "\n", native_probe_requests,

@@ -1,0 +1,10 @@
+(project 1
+  (entry missing)
+  (module A "lib0.slim" (imports) (exports Value))
+  (module Aa "lib1.slim" (imports) (exports Value))
+  (module Z "lib2.slim" (imports) (exports Value))
+  (module _case "lib3.slim" (imports) (exports Value))
+  (module a "lib4.slim" (imports) (exports Value))
+  (module a0 "lib5.slim" (imports) (exports Value))
+  (module aa "lib6.slim" (imports) (exports Value))
+  (module app "app.slim" (imports Aa A) (exports Aa A)))

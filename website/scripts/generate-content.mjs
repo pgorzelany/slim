@@ -53,6 +53,7 @@ const developmentSources = [
   ["subsystems", "website", "website/README.md"],
   ["subsystems", "experimental-library", "library/README.md"],
   ["subsystems", "experimental-library-reference", "library/REFERENCE.md"],
+  ["subsystems", "experimental-library-components", "library/COMPONENTS.md"],
 ].map(([group, slug, sourcePath], order) => ({
   group,
   slug,
@@ -520,6 +521,20 @@ const excludedMarkdown = new Map([
   ["benchmarks/agent-development/tasks/buffer-drain/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
   ["benchmarks/agent-development/tasks/effects-report/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
   ["benchmarks/agent-development/tasks/range-api/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
+  ["benchmarks/development/PROTOCOL.md", "Internal preregistered development protocol; participant and oracle material are kept separate."],
+  ["benchmarks/development/tasks/README.md", "Internal development corpus inventory and acceptance domains; excluded from public task discovery."],
+  ["benchmarks/development/tasks/byte-index-range/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/catalog-ordinal-sum/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/decimal-exact/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/effects-call-ceilings/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/format-call-modes/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/hex-atomic-codec/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/http-header-window/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/identity-span-intersection/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/ledger-overflow-transaction/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/netstring-batch-atomic/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/text-budgeted-quote/TASK.md", "Internal development participant task; excluded from public task discovery."],
+  ["benchmarks/development/tasks/workplan-critical-ties/TASK.md", "Internal development participant task; excluded from public task discovery."],
 ]);
 const markdownFiles = await collectMarkdown(repositoryRoot);
 const unclassified = markdownFiles.filter(

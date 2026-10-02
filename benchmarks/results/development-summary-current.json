@@ -1,0 +1,99 @@
+{
+  "actual_cohort_observation": {
+    "adapter_sha256": "87e0a749a607ff324b1e96dd36416c3a722fb0cbe8282bacd9142235fd59c86d",
+    "dispatches": 0,
+    "evaluator_sha256": "0d7f318270c1d6270cf7eb5266c834783799c383ead9b145f386c337199de5f7",
+    "freeze_sha256": "a3af569e5003c411e9cea35ec98f5c246d1d59645ef0e6542599ad5d1a4fbd2f",
+    "input_sha256": "b934801eb8d8b5ddda6779c0bcf2ebc94022623cc3f8adb430e123fd8be5dd18",
+    "native_receipt": "build/development-summary-validation/actual-freeze5-native/receipt.json",
+    "not_run": 24,
+    "oracle_known": 0,
+    "source": "read-only frozen5/runs5 at 2026-10-02T20:48:51Z; native report at 20:50:45Z exactly matches independent finite byte oracle in ordinary and address+undefined sanitized variants",
+    "tasks": 12,
+    "trials": 24
+  },
+  "date": "2026-10-02",
+  "finite_native_controls": {
+    "adapter_scope": "synthetic terminal facts and real ledger lifecycle controls only; no model or source correctness claim",
+    "adapter_self_identity_barrier": "copied adapter mutation rejected; observed source bytes only, no interpreter bytecode/ABA claim",
+    "adapter_transport_cases": 9,
+    "admitted_domains": 85,
+    "allocation_controls": {
+      "ordinary": {
+        "checked_cap": 1024,
+        "first_complete_position": 98,
+        "observed_failure_positions": 97
+      },
+      "sanitized": {
+        "checked_cap": 1024,
+        "first_complete_position": 98,
+        "observed_failure_positions": 97
+      }
+    },
+    "bounded_caps": {
+      "report_bytes": 65536,
+      "source_bytes": 131072,
+      "stats_work_per_condition": 1024,
+      "tasks": 32,
+      "trials": 64
+    },
+    "cases": 214,
+    "freeze_replacement_barrier": "individually valid changed freeze rejected for all-not-run input",
+    "observations": 864,
+    "variants": [
+      "ordinary",
+      "address+undefined sanitized"
+    ]
+  },
+  "integration": "library corpus row+exact synthetic golden; permanent verify.sh focused command wired by coordinator",
+  "raw_receipts": "build/development-summary-validation/; all failed checks/attempts retained",
+  "rfc_completion_metadata": {
+    "path": "design/rfcs/0164-bounded-development-summary.md",
+    "scope": "only Implementation metadata and Decision completion sentence changed after native4; executable and contract identities unchanged",
+    "sha256": "511dd8270b1db8c2b0201c2d809786b1caaeb8073175fd5b458489a5f1282de8"
+  },
+  "schema": 1,
+  "scope": "RFC0164 ordinary experimental development summary; outside frozen evaluation feedback/corpus/budgets",
+  "source_contract": "normal production formatter applied; project fmt --check passed; independent source-bound fixture/golden registered",
+  "source_identities": {
+    "benchmarks/development/evaluate.py": "0d7f318270c1d6270cf7eb5266c834783799c383ead9b145f386c337199de5f7",
+    "benchmarks/development/test_evaluate.py": "38cc1fe520be54ef30bf3838a3487eea65d9352bd8f0082f162c651357ae6c1d",
+    "build/development-summary-validation/held-compiler": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+    "design/rfcs/0164-bounded-development-summary.md": "d829671350c3c1ad52b85749cacead89a2c40a13e1eb52bd476e797f8a36f97f",
+    "library/applications/development_summary/fixtures/observations.expected": "aa677bffb113efe26602afbd80eb03eb269d5ecdf947b6b10caa6c71f010017c",
+    "library/applications/development_summary/fixtures/observations.ns": "c76d708f8b26386fd02722bd6c4c4af6e66039973fde318029fc5c0a3238fdaf",
+    "library/applications/development_summary/main.slim": "e4b40f941ec3e58758ec58729f594fa01f56c687e15b562b60e42f2979f7c758",
+    "library/components/development_summary_data.slim": "e97bbcab63b5f744329bca5f1b3bee04a7f6a93daee7c6a9f3724e6ec566a17f",
+    "library/components/development_summary_emit.slim": "a3bc3abab7d406c0b5286d42855691fcd556ec450cefb683ad89b78a71ce4026",
+    "library/components/development_summary_model.slim": "5bfcd8460ea5bd2200db9232de51133a79c50d8dc0b7fd87c2dba6881a374f36",
+    "library/components/development_summary_stats.slim": "bf5f47d185ff99e610ac43aaf0aafd5aca28944c84ea71d0425c5ae3f5cfccc9",
+    "library/components/records.slim": "4222ced6f4a4d26ee306544b2feba22464c965a649538b88c564d7a176325c08",
+    "library/development-summary-tests.project": "63218e312c775f5c93514a5a65bb9f986cebccc4d139730fef0f77fc0cd254c8",
+    "library/development-summary.project": "4284716dde4239f6c1fd6860be85cc007e99dbc7b87a9f5bba74272cc2bbfb32",
+    "library/experimental/ascii.slim": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5",
+    "library/experimental/byte_index.slim": "fcf814eda17d2bb5b4e0475f1f99ab8a9e4b63937655694d8d55958457651e80",
+    "library/experimental/bytes.slim": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb",
+    "library/experimental/cursor.slim": "030c61612cb40f948fde65841c7511e50e88914414b78d4f43a3bbf22526f6d6",
+    "library/experimental/decimal.slim": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5",
+    "library/experimental/i64.slim": "6751b53ce36dc95d9ec495b4824a95beaf15d7b0bf97452d5ed14060433a1690",
+    "library/experimental/i64_vec.slim": "df9426ff3f33b0a4d58fe66833a5d295b6e4473215a75eaff0e15b1ebfd18283",
+    "library/experimental/netstring.slim": "acb1d1134577d1e8091a90330e33c3099ffa9d2f894d3aade4dbff83cf9db6b8",
+    "library/experimental/span.slim": "4d52dda280219480b3af18ca4a7f9b9d79db24fc6d093820c8e59879223bc746",
+    "library/experimental/test.slim": "4353728617dac6faec681f3cb68f92bc346bc022345bb5a90fb517567443e03a",
+    "library/experimental/text.slim": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f",
+    "library/experimental/u8_vec.slim": "7618eacc6aa1c00e84820c5e0356015b1756df7bfdd2a5f0d4ec579fe14e487e",
+    "library/tests/development_summary.slim": "29f82c76743dd6e5ef4d512a51635db1027b2969b0af90e0ad92a09a750cb45a",
+    "runtime/slim_rt.c": "2287a7376782a1802a3b3d4a1f263e2183689ace24f747f83b2779a7316b345b",
+    "runtime/slim_rt.h": "dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f",
+    "scripts/development-summary-input.py": "87e0a749a607ff324b1e96dd36416c3a722fb0cbe8282bacd9142235fd59c86d",
+    "scripts/verify-development-summary.py": "f1c9ebe05cf7f0dde3f3752ab2d1ebeebaaefa452dda318e910968eb1b41ca02"
+  },
+  "status": "scoped formatted ordinary consumer and native/adapter acceptance passed; full repository gates pending",
+  "timing": "17.530s local formatted-source verification attempt4; uncoordinated correctness only, not native/model performance",
+  "unknown": [
+    "general development effectiveness",
+    "model tokens/calls/active time",
+    "native comparative application performance",
+    "kernel boot continuity"
+  ]
+}

@@ -8,9 +8,9 @@ trap 'rm -rf "$query_dir"' EXIT HUP INT TERM
 mkdir "$query_dir/probe"
 cp selfhost/*.slim "$query_dir/probe/"
 cp tests/fixtures/parallel_query.slim "$query_dir/probe/zzprobe.slim"
-sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports Cache empty_cache analyze copy_sites rebase)/(exports metadata_seal Cache empty_cache analyze copy_sites rebase)/;$s/)$//' selfhost/slim.project > "$query_dir/probe/slim.project"
-cat >> "$query_dir/probe/slim.project" <<'MANIFEST'
-  (module zzprobe "zzprobe.slim" (imports identity parallel parallelcache project retained) (exports)))
+python3 -B scripts/prepare-probe-manifest.py selfhost/slim.project "$query_dir/probe/slim.project" \
+  --export parallelcache "metadata_seal" <<'MANIFEST'
+  (module zzprobe "zzprobe.slim" (imports identity parallel parallelcache project retained) (exports))
 MANIFEST
 if ! "$query_compiler" "$query_dir/probe/slim.project" > "$query_dir/probe.c"; then
     cat "$query_dir/probe.c" >&2
@@ -34,22 +34,22 @@ assert fields == set(re.findall(r'left\.(\w+)', body)), 'View'
 code = (root / 'probe.c').read_text()
 # Fixed two-query fixture: counts cannot exceed three producer calls and one
 # import. These independent native observations never infer reuse from a report.
-for index, name in enumerate(['parallel_95analyze', 'parallelcache_95analyze', 'parallelcache_95import_95view']):
+for index, name in enumerate(['pparallel_95_95analyze', 'pparallelcache_95_95analyze', 'pparallelcache_95_95import_950view']):
     pattern = r'(?m)^(static [^\n]*\bslim_fn_'+name+r'\([^\n]*\) \{)$'
     code, count = re.subn(pattern, lambda m: m[0]+f'\n++parallel_query_counts[{index}];', code)
     assert count == 1, (name, count)
 # Count real validation/import loop bodies, excluding terminal loop entries.
 for index, name, collection, suffix in [
-    (3, 'same_95inputs', 'count', ''),
-    (4, 'same_95ranges', 'owner', '.slim_field_count'),
-    (5, 'profile_95at', 'profiles', '.len'),
-    (6, 'import_95facts', 'old', '.len'),
-    (7, 'import_95sites', 'old', '.slim_field_sites.len'),
-    (8, 'fact_95frames', 'view', '.slim_field_facts.len'),
-    (9, 'site_95frames', 'view', '.slim_field_sites.len'),
-    (10, 'select_95rows', 'declarations', '.len'),
+    (3, 'same_950inputs', 'count', ''),
+    (4, 'same_950ranges', 'owner', '.slim_field_count'),
+    (5, 'profile_950at', 'profiles', '.len'),
+    (6, 'import_950facts', 'old', '.len'),
+    (7, 'import_950sites', 'old', '.slim_field_sites.len'),
+    (8, 'fact_950frames', 'view', '.slim_field_facts.len'),
+    (9, 'site_950frames', 'view', '.slim_field_sites.len'),
+    (10, 'select_950rows', 'declarations', '.len'),
 ]:
-    pattern = r'(?m)^(static [^\n]*\bslim_fn_parallelcache_95'+name+r'\([^\n]*\) \{)$'
+    pattern = r'(?m)^(static [^\n]*\bslim_fn_pparallelcache_95_95'+name+r'\([^\n]*\) \{)$'
     matches = list(re.finditer(pattern, code))
     assert len(matches) == 1, (name, len(matches))
     match = matches[0]

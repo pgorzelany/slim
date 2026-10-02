@@ -1,0 +1,4 @@
+(project 1 (entry app)
+  (module app "app.slim" (imports ) (exports ))
+  (module lib "lib.slim" (imports ) (exports ))
+)

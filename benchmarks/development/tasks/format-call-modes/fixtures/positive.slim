@@ -1,0 +1,9 @@
+module driver
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let source: Bytes = "module sample\n"
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let output: Vec[U8] = vec.new()
+  format.emit_module(source, tokens, @output)
+  0

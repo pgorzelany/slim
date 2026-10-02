@@ -1,0 +1,12 @@
+module component_tests
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let entries: Vec[std_byte_index.Entry] = vec.new()
+  let built: std_byte_index.Built = std_byte_index.build("", ^entries, 0)
+  match built:
+    Invalid(code, position):
+      void
+    Ready(index):
+      let bounds: std_byte_index.Bounds = std_byte_index.range(index, "", true)
+      void
+  0

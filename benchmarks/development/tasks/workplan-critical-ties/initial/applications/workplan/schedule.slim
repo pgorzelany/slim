@@ -1,0 +1,113 @@
+module workplan_schedule
+
+fn initialize(graph: workplan_model.Graph, cursor: I64, degrees: @Vec[I64], earliest: @Vec[I64], parents: @Vec[I64], ranks: @Vec[I64]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(graph.tasks):
+    void
+  else:
+    vec.push(@degrees, vec.get(graph.indegree, cursor))
+    vec.push(@earliest, 0)
+    vec.push(@parents, -1)
+    vec.push(@ranks, 0)
+    recur(graph, cursor + 1, @degrees, @earliest, @parents, @ranks)
+
+fn rank(graph: workplan_model.Graph, cursor: I64, ranks: @Vec[I64]) -> Void effects[partial]:
+  if cursor == vec.len(graph.index.entries):
+    void
+  else:
+    let entry: std_byte_index.Entry = vec.get(graph.index.entries, cursor)
+    vec.set(@ranks, entry.ordinal, cursor)
+    recur(graph, cursor + 1, @ranks)
+
+fn ready(graph: workplan_model.Graph, degrees: Vec[I64], cursor: I64) -> I64 effects[partial]:
+  if cursor == vec.len(graph.index.entries):
+    -1
+  else:
+    let entry: std_byte_index.Entry = vec.get(graph.index.entries, cursor)
+    if vec.get(degrees, cursor) == 0:
+      cursor
+    else:
+      recur(graph, degrees, cursor + 1)
+
+fn blocked(graph: workplan_model.Graph, degrees: Vec[I64], cursor: I64) -> I64 effects[partial]:
+  if cursor == vec.len(graph.index.entries):
+    bytes.len(graph.index.source)
+  else:
+    let entry: std_byte_index.Entry = vec.get(graph.index.entries, cursor)
+    if vec.get(degrees, entry.ordinal) >= 0:
+      entry.start
+    else:
+      recur(graph, degrees, cursor + 1)
+
+fn release(graph: workplan_model.Graph, task: I64, cursor: I64, finish: I64, ranks: Vec[I64], degrees: @Vec[I64], earliest: @Vec[I64], parents: @Vec[I64]) -> Void effects[partial]:
+  if cursor < 0:
+    void
+  else:
+    let edge: workplan_model.Edge = vec.get(graph.edges, cursor)
+    let degree: I64 = vec.get(degrees, edge.dependent)
+    let prior: I64 = vec.get(earliest, edge.dependent)
+    let parent: I64 = vec.get(parents, edge.dependent)
+    let replace: Bool = if finish > prior:
+      true
+    else:
+      if finish == prior:
+        if parent < 0:
+          true
+        else:
+          vec.get(ranks, task) > vec.get(ranks, parent)
+      else:
+        false
+    if replace:
+      vec.set(@earliest, edge.dependent, finish)
+      vec.set(@parents, edge.dependent, task)
+    else:
+      void
+    vec.set(@degrees, edge.dependent, degree - 1)
+    recur(graph, task, edge.next, finish, ranks, @degrees, @earliest, @parents)
+
+fn run(graph: workplan_model.Graph, ranks: Vec[I64], critical: I64, span: I64, degrees: @Vec[I64], earliest: @Vec[I64], parents: @Vec[I64], steps: @Vec[workplan_model.Step]) -> workplan_model.Schedule effects[alloc, partial]:
+  if vec.len(steps) == vec.len(graph.tasks):
+    workplan_model.Schedule(valid: true, code: 0, position: 0, critical_task: critical, span: span)
+  else:
+    let selected: I64 = ready(graph, degrees, 0)
+    if selected < 0:
+      workplan_model.Schedule(valid: false, code: 21, position: blocked(graph, degrees, 0), critical_task: critical, span: span)
+    else:
+      let task: workplan_model.Task = vec.get(graph.tasks, selected)
+      let start: I64 = vec.get(earliest, selected)
+      if !framed_records.addition_fits(start, task.cost):
+        workplan_model.Schedule(valid: false, code: 22, position: task.name_start, critical_task: critical, span: span)
+      else:
+        let finish: I64 = start + task.cost
+        let replace: Bool = if critical < 0:
+          true
+        else:
+          if finish > span:
+            true
+          else:
+            (finish == span) && (vec.get(ranks, selected) > vec.get(ranks, critical))
+        let next_critical: I64 = if replace:
+          selected
+        else:
+          critical
+        let next_span: I64 = if replace:
+          finish
+        else:
+          span
+        vec.push(@steps, workplan_model.Step(ordinal: selected, start: start, finish: finish))
+        vec.set(@degrees, selected, -1)
+        release(graph, selected, vec.get(graph.heads, selected), finish, ranks, @degrees, @earliest, @parents)
+        recur(graph, ranks, next_critical, next_span, @degrees, @earliest, @parents, @steps)
+
+fn plan(graph: workplan_model.Graph) -> workplan_model.Scheduled effects[alloc, partial]:
+  let degrees: Vec[I64] = vec.new()
+  let earliest: Vec[I64] = vec.new()
+  let parents: Vec[I64] = vec.new()
+  let ranks: Vec[I64] = vec.new()
+  let steps: Vec[workplan_model.Step] = vec.new()
+  initialize(graph, 0, @degrees, @earliest, @parents, @ranks)
+  rank(graph, 0, @ranks)
+  let scheduled: workplan_model.Schedule = run(graph, ranks, -1, 0, @degrees, @earliest, @parents, @steps)
+  if scheduled.valid:
+    workplan_model.Scheduled::Ready(workplan_model.Plan(steps: steps, parents: parents, critical_task: scheduled.critical_task, span: scheduled.span))
+  else:
+    workplan_model.Scheduled::Invalid(scheduled.code, scheduled.position)

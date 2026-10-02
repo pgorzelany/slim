@@ -1,0 +1,297 @@
+module development_data
+
+fn matches(source: Bytes, frame: std_netstring.Frame, value: Bytes) -> Bool effects[partial]:
+  ((frame.end - frame.start) == bytes.len(value)) && std_bytes.range_equal(source, frame.start, value, 0, bytes.len(value))
+
+fn hash_bytes(source: Bytes, cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor == end:
+    true
+  else:
+    let value: I64 = u8.to_i64(bytes.get(source, cursor))
+    if ((value >= 48) && (value <= 57)) || ((value >= 97) && (value <= 102)):
+      recur(source, cursor + 1, end)
+    else:
+      false
+
+fn hash_valid(source: Bytes, frame: std_netstring.Frame) -> Bool effects[partial]:
+  ((frame.end - frame.start) == 64) && hash_bytes(source, frame.start, frame.end)
+
+fn number(source: Bytes, frame: std_netstring.Frame, maximum: I64) -> development_model.Number effects[partial]:
+  if frame.start == frame.end:
+    development_model.Number(valid: true, known: false, value: 0, code: 0, position: frame.start)
+  else:
+    let parsed: std_decimal.Parsed = framed_records.integer(source, frame)
+    match parsed:
+      Invalid(position):
+        development_model.Number(valid: false, known: false, value: 0, code: 15, position: position)
+      Overflow(position):
+        development_model.Number(valid: false, known: false, value: 0, code: 16, position: position)
+      Value(value, next):
+        development_model.Number(valid: (value >= 0) && (value <= maximum), known: true, value: value, code: 17, position: frame.start)
+
+fn outcome(source: Bytes, frame: std_netstring.Frame) -> I64 effects[partial]:
+  if matches(source, frame, "accepted"):
+    0
+  else:
+    if matches(source, frame, "correctness-failure"):
+      1
+    else:
+      if matches(source, frame, "infrastructure-failure"):
+        2
+      else:
+        if matches(source, frame, "interrupted"):
+          3
+        else:
+          if matches(source, frame, "elapsed-timeout"):
+            4
+          else:
+            if matches(source, frame, "constraint-failure"):
+              5
+            else:
+              if matches(source, frame, "unresolved"):
+                6
+              else:
+                if matches(source, frame, "not-run"):
+                  7
+                else:
+                  -1
+
+fn oracle(source: Bytes, frame: std_netstring.Frame) -> I64 effects[partial]:
+  if matches(source, frame, "true"):
+    0
+  else:
+    if matches(source, frame, "false"):
+      1
+    else:
+      if matches(source, frame, "unknown"):
+        2
+      else:
+        -1
+
+fn lifecycle(source: Bytes, frame: std_netstring.Frame) -> I64 effects[partial]:
+  if frame.start == frame.end:
+    -1
+  else:
+    if matches(source, frame, "unprepared"):
+      0
+    else:
+      if matches(source, frame, "prepared-undispatched"):
+        1
+      else:
+        if matches(source, frame, "dispatched-unsubmitted"):
+          2
+        else:
+          if matches(source, frame, "unfinished-submission"):
+            3
+          else:
+            if matches(source, frame, "submitted-awaiting-evaluation"):
+              4
+            else:
+              if matches(source, frame, "unfinished-evaluation"):
+                5
+              else:
+                -2
+
+fn fields(source: Bytes, cursor: I64, end: I64, output: @Vec[std_netstring.Frame]) -> development_model.Status effects[alloc, partial]:
+  if cursor == end:
+    development_model.Status(valid: vec.len(output) == 9, code: 19, position: cursor)
+  else:
+    if vec.len(output) == 9:
+      development_model.Status(valid: false, code: 19, position: cursor)
+    else:
+      let parsed: std_netstring.Parsed = std_netstring.parse(source, cursor, end, 128)
+      match parsed:
+        End:
+          development_model.Status(valid: false, code: 19, position: cursor)
+        Invalid(code, position):
+          development_model.Status(valid: false, code: 100 + code, position: position)
+        Value(frame):
+          vec.push(@output, frame)
+          recur(source, frame.next, end, @output)
+
+fn validate_fields(source: Bytes, fields: Vec[std_netstring.Frame]) -> development_model.Status effects[partial]:
+  let identifier: std_netstring.Frame = vec.get(fields, 0)
+  let outcome_frame: std_netstring.Frame = vec.get(fields, 1)
+  let oracle_frame: std_netstring.Frame = vec.get(fields, 2)
+  let elapsed_frame: std_netstring.Frame = vec.get(fields, 3)
+  let basis: std_netstring.Frame = vec.get(fields, 4)
+  let operations_frame: std_netstring.Frame = vec.get(fields, 5)
+  let requests_frame: std_netstring.Frame = vec.get(fields, 6)
+  let lifecycle_frame: std_netstring.Frame = vec.get(fields, 7)
+  let submitted: std_netstring.Frame = vec.get(fields, 8)
+  let observed_outcome: I64 = outcome(source, outcome_frame)
+  let observed_oracle: I64 = oracle(source, oracle_frame)
+  let observed_lifecycle: I64 = lifecycle(source, lifecycle_frame)
+  let elapsed: development_model.Number = number(source, elapsed_frame, 9223372036854775807)
+  let operations: development_model.Number = number(source, operations_frame, 4096)
+  let requests: development_model.Number = number(source, requests_frame, 4096)
+  if identifier.start == identifier.end:
+    development_model.Status(valid: false, code: 13, position: identifier.start)
+  else:
+    if observed_outcome < 0:
+      development_model.Status(valid: false, code: 14, position: outcome_frame.start)
+    else:
+      if observed_oracle < 0:
+        development_model.Status(valid: false, code: 14, position: oracle_frame.start)
+      else:
+        if !elapsed.valid:
+          development_model.Status(valid: false, code: elapsed.code, position: elapsed.position)
+        else:
+          let basis_valid: Bool = if elapsed.known:
+            matches(source, basis, "same-host-monotonic-conditional")
+          else:
+            matches(source, basis, "unknown")
+          if !basis_valid:
+            development_model.Status(valid: false, code: 18, position: basis.start)
+          else:
+            if !operations.valid:
+              development_model.Status(valid: false, code: operations.code, position: operations.position)
+            else:
+              if !requests.valid:
+                development_model.Status(valid: false, code: requests.code, position: requests.position)
+              else:
+                if observed_lifecycle == -2:
+                  development_model.Status(valid: false, code: 14, position: lifecycle_frame.start)
+                else:
+                  if (submitted.start < submitted.end) && (!hash_valid(source, submitted)):
+                    development_model.Status(valid: false, code: 12, position: submitted.start)
+                  else:
+                    if ((observed_outcome == 0) && (observed_oracle > 0)) || ((observed_outcome >= 6) && (observed_oracle < 2)):
+                      development_model.Status(valid: false, code: 18, position: oracle_frame.start)
+                    else:
+                      if operations.known && (requests.known && (operations.value > requests.value)):
+                        development_model.Status(valid: false, code: 18, position: operations_frame.start)
+                      else:
+                        let lifecycle_valid: Bool = if observed_outcome < 6:
+                          observed_lifecycle == -1
+                        else:
+                          if observed_outcome == 6:
+                            observed_lifecycle >= 2
+                          else:
+                            (observed_lifecycle == 0) || (observed_lifecycle == 1)
+                        development_model.Status(valid: lifecycle_valid, code: 18, position: lifecycle_frame.start)
+
+fn trial(source: Bytes, fields: Vec[std_netstring.Frame]) -> development_model.Trial effects[partial]:
+  development_model.Trial(identifier: vec.get(fields, 0), outcome: outcome(source, vec.get(fields, 1)), oracle: oracle(source, vec.get(fields, 2)), elapsed: number(source, vec.get(fields, 3), 9223372036854775807), operations: number(source, vec.get(fields, 5), 4096), requests: number(source, vec.get(fields, 6), 4096), lifecycle: lifecycle(source, vec.get(fields, 7)), submitted_source: vec.get(fields, 8))
+
+fn add_pair(source: Bytes, triple: framed_records.Triple, pairs: @Vec[development_model.Pair], keys: @Vec[std_byte_index.Entry], trial_keys: @Vec[std_byte_index.Entry]) -> development_model.Status effects[alloc, partial]:
+  let baseline_fields: Vec[std_netstring.Frame] = vec.new()
+  let context_fields: Vec[std_netstring.Frame] = vec.new()
+  let baseline_shape: development_model.Status = fields(source, triple.second.start, triple.second.end, @baseline_fields)
+  if !baseline_shape.valid:
+    baseline_shape
+  else:
+    let baseline_valid: development_model.Status = validate_fields(source, baseline_fields)
+    if !baseline_valid.valid:
+      baseline_valid
+    else:
+      let context_shape: development_model.Status = fields(source, triple.third.start, triple.third.end, @context_fields)
+      if !context_shape.valid:
+        context_shape
+      else:
+        let context_valid: development_model.Status = validate_fields(source, context_fields)
+        if !context_valid.valid:
+          context_valid
+        else:
+          let ordinal: I64 = vec.len(pairs)
+          let baseline: development_model.Trial = trial(source, baseline_fields)
+          let context: development_model.Trial = trial(source, context_fields)
+          vec.push(@keys, std_byte_index.Entry(start: triple.first.start, end: triple.first.end, ordinal: ordinal))
+          vec.push(@trial_keys, std_byte_index.Entry(start: baseline.identifier.start, end: baseline.identifier.end, ordinal: ordinal * 2))
+          vec.push(@trial_keys, std_byte_index.Entry(start: context.identifier.start, end: context.identifier.end, ordinal: (ordinal * 2) + 1))
+          vec.push(@pairs, development_model.Pair(key: triple.first, baseline: baseline, context: context))
+          development_model.Status(valid: true, code: 0, position: triple.next)
+
+fn pairs(source: Bytes, cursor: I64, maximum: I64, output: @Vec[development_model.Pair], keys: @Vec[std_byte_index.Entry], trial_keys: @Vec[std_byte_index.Entry]) -> development_model.Status effects[alloc, partial]:
+  let parsed: framed_records.Parsed = framed_records.parse(source, cursor, bytes.len(source), 64, 1024, 1024)
+  match parsed:
+    End:
+      development_model.Status(valid: true, code: 0, position: cursor)
+    Invalid(code, position):
+      development_model.Status(valid: false, code: 100 + code, position: position)
+    Value(triple):
+      if vec.len(output) == maximum:
+        development_model.Status(valid: false, code: 10, position: cursor)
+      else:
+        if triple.first.start == triple.first.end:
+          development_model.Status(valid: false, code: 13, position: triple.first.start)
+        else:
+          let valid: development_model.Status = add_pair(source, triple, @output, @keys, @trial_keys)
+          if valid.valid:
+            recur(source, triple.next, maximum, @output, @keys, @trial_keys)
+          else:
+            valid
+
+fn indexed(source: Bytes, header: development_model.Header, output: ^Vec[development_model.Pair], keys: ^Vec[std_byte_index.Entry], trial_keys: ^Vec[std_byte_index.Entry], maximum: I64) -> development_model.Loaded effects[alloc, partial]:
+  let tasks: std_byte_index.Built = std_byte_index.build(source, ^keys, maximum)
+  match tasks:
+    Invalid(code, position):
+      let reported: I64 = if code == 3:
+        20
+      else:
+        22
+      development_model.Loaded::Invalid(reported, position)
+    Ready(index):
+      let trials: std_byte_index.Built = std_byte_index.build(source, ^trial_keys, maximum * 2)
+      match trials:
+        Invalid(code, position):
+          let reported: I64 = if code == 3:
+            21
+          else:
+            22
+          development_model.Loaded::Invalid(reported, position)
+        Ready(trial_index):
+          development_model.Loaded::Ready(development_model.Summary(header: header, index: index, pairs: output))
+
+fn load_after_header(source: Bytes, triple: framed_records.Triple, maximum: I64) -> development_model.Loaded effects[alloc, partial]:
+  let identities: framed_records.Parsed = framed_records.parse(source, triple.third.start, triple.third.end, 64, 64, 64)
+  match identities:
+    End:
+      development_model.Loaded::Invalid(108, triple.third.start)
+    Invalid(code, position):
+      development_model.Loaded::Invalid(100 + code, position)
+    Value(identity):
+      if identity.next < triple.third.end:
+        development_model.Loaded::Invalid(19, identity.next)
+      else:
+        let bad: I64 = if !hash_valid(source, identity.first):
+          identity.first.start
+        else:
+          if !hash_valid(source, identity.second):
+            identity.second.start
+          else:
+            if !hash_valid(source, identity.third):
+              identity.third.start
+            else:
+              -1
+        if bad >= 0:
+          development_model.Loaded::Invalid(12, bad)
+        else:
+          let output: Vec[development_model.Pair] = vec.new()
+          let keys: Vec[std_byte_index.Entry] = vec.new()
+          let trial_keys: Vec[std_byte_index.Entry] = vec.new()
+          let status: development_model.Status = pairs(source, triple.next, maximum, @output, @keys, @trial_keys)
+          if status.valid:
+            let header: development_model.Header = development_model.Header(freeze: triple.second, compiler: identity.first, evaluator: identity.second, manifest: identity.third)
+            indexed(source, header, ^output, ^keys, ^trial_keys, maximum)
+          else:
+            development_model.Loaded::Invalid(status.code, status.position)
+
+fn load(source: Bytes, maximum: I64) -> development_model.Loaded effects[alloc, partial]:
+  if (maximum < 0) || ((maximum > 32) || (bytes.len(source) > 131072)):
+    development_model.Loaded::Invalid(10, 0)
+  else:
+    let header: framed_records.Parsed = framed_records.parse(source, 0, bytes.len(source), 32, 64, 256)
+    match header:
+      End:
+        development_model.Loaded::Invalid(108, 0)
+      Invalid(code, position):
+        development_model.Loaded::Invalid(100 + code, position)
+      Value(triple):
+        if !matches(source, triple.first, "slim-development-summary-1"):
+          development_model.Loaded::Invalid(11, triple.first.start)
+        else:
+          if !hash_valid(source, triple.second):
+            development_model.Loaded::Invalid(12, triple.second.start)
+          else:
+            load_after_header(source, triple, maximum)

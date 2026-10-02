@@ -110,7 +110,7 @@ static SlimBytes host_bytes(const char *text) {
     return slim_bytes_static((const uint8_t *)text, (int64_t)strlen(text));
 }
 
-static int host_response(Slim_type_session_95Report report, SlimBytes code) {
+static int host_response(Slim_type_psession_95_95Report report, SlimBytes code) {
     SlimBytes reason = report.slim_field_reason;
     if (reason.len < 0 || reason.len > 4096 || code.len < 0 || code.len > HOST_CODE_LIMIT)
         return host_error("H0005", 65);
@@ -180,13 +180,13 @@ int main(int argc, char **argv) {
     SlimRegion root;
     slim_alloc_status_init(&allocation);
     slim_rt_init(&root, &allocation);
-    const Slim_type_session_95Limits limits = {64, 67108864, 1000000, 67108864};
-    const Slim_type_session_95Config config = {
+    const Slim_type_psession_95_95Limits limits = {64, 67108864, 1000000, 67108864};
+    const Slim_type_psession_95_95Config config = {
         host_bytes(SLIM_SESSION_COMPILER_ID), host_bytes(SLIM_SESSION_RUNTIME_ID),
         host_bytes(SLIM_SESSION_TARGET), host_bytes(SLIM_SESSION_OPTIONS_ID)
     };
     int64_t epoch = 1;
-    Slim_type_session_95State state = slim_fn_session_95start(epoch, limits, &root);
+    Slim_type_psession_95_95State state = slim_fn_psession_95_95start(epoch, limits, &root);
     int result = 0;
     for (;;) {
         if (slim_region_failed(&root)) {
@@ -216,7 +216,7 @@ int main(int argc, char **argv) {
             host_clear_capture();
             slim_alloc_status_init(&allocation);
             slim_rt_init(&root, &allocation);
-            state = slim_fn_session_95start(++epoch, limits, &root);
+            state = slim_fn_psession_95_95start(++epoch, limits, &root);
             if (slim_region_failed(&root)) continue;
             unsigned char value[8];
             host_u64(value, (uint64_t)epoch);
@@ -238,7 +238,7 @@ int main(int argc, char **argv) {
         host_diagnostic_length = 0;
         host_capture_failure = 0;
         SlimBytes source = slim_bytes_static(path, (int64_t)size);
-        Slim_type_session_95Report report = slim_fn_session_95update_95path(&state, source, config, &root);
+        Slim_type_psession_95_95Report report = slim_fn_psession_95_95update_950path(&state, source, config, &root);
         if (slim_region_failed(&root)) continue;
         if (host_capture_failure) {
             result = host_error(host_capture_failure == 71 ? "H0006" : "H0003", host_capture_failure);
@@ -246,7 +246,7 @@ int main(int argc, char **argv) {
         }
         SlimBytes code = slim_bytes_static(NULL, 0);
         if (report.slim_field_status == 0) {
-            Slim_type_session_95Artifact artifact = slim_fn_session_95artifact(state.slim_field_good, &root);
+            Slim_type_psession_95_95Artifact artifact = slim_fn_psession_95_95artifact(state.slim_field_good, &root);
             if (slim_region_failed(&root)) continue;
             code = artifact.slim_field_code;
         }

@@ -1,0 +1,811 @@
+{
+  "schema": 1,
+  "observed_date": "2026-10-02",
+  "contract": "RFC-0162",
+  "stage": "scoped correctness and quiet cost evidence retained; aggregate analysis label migration passed complete fact comparison and focused e2e; failed full integrated attempt1 retained, complete retry pending",
+  "identities": {
+    "production_source_sha256": "f08e6c788a25aeb8124dfb9008f0671ade45d66305714bc149db686aa925d875",
+    "source_tree_sha256": "16302f3c5aa1b5b974cad12fc998be7595e917f297523aa90270c7f5e0c7d692",
+    "source_tree_hash_rule": "SHA256 of sorted UTF8 repository-relative path TAB SHA256 LF for selfhost/*.slim and selfhost/slim.project",
+    "seed_c_sha256": "d199910449a78e0ec3afb05bd4e18c357389ebe27ed198f9241b241fbd96b711",
+    "generated_c_sha256": "d199910449a78e0ec3afb05bd4e18c357389ebe27ed198f9241b241fbd96b711",
+    "compiler_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+    "observer_sha256": "90dc07df29db342be1b949e43a77524d99e0961624a8b33eb200f592b6e64a98",
+    "project_manifest_sha256": "03c2b2961f94e58c388c23847503d9c88fab3cd7d18405e69efe0b67a5074a4a",
+    "rfc_sha256": "cb13f67d66416e7b00a13d68fcc0ba9ccc5cfefec35a5e982421472fdd803a84"
+  },
+  "fixedpoint": {
+    "classification": "exact",
+    "successive_c_bytes_equal": true,
+    "c_bytes": 5269067
+  },
+  "finite_conformance": {
+    "classification": "bounded",
+    "new_project_rows_passed": 87,
+    "unchanged_existing_diagnostic_rows_passed": 48,
+    "universal_correctness": "unknown: finite fixtures only",
+    "full_fixture_rows_passed": 445,
+    "deterministic_malformed_mutations_passed": 2000,
+    "bounded_tool_probes_per_command": 100
+  },
+  "work": {
+    "classification": "bounded",
+    "geometric_sizes": [
+      16,
+      32,
+      64,
+      128
+    ],
+    "families": [
+      "modules",
+      "known-owner",
+      "unknown-call-owner",
+      "unknown-type-owner"
+    ],
+    "inputs": 16,
+    "exponents": {
+      "modules": 1.0093435104372661,
+      "known-owner": 1.0490121850565306,
+      "unknown-call-owner": 1.0202002354106434,
+      "unknown-type-owner": 0.9958919368810487
+    },
+    "portable_budgets": {
+      "role_initialization_per_source_byte_plus_module": 1,
+      "trie_work_per_source_byte": 8,
+      "edge_steps_per_trie_step": 65,
+      "role_and_trie_source_exponent": 1.15,
+      "unknown_namespace_loop_steps_per_source_byte": 1,
+      "unknown_namespace_emitted_bytes_per_source_byte": 2
+    },
+    "counter_cap": 1000000000,
+    "counter_controls": [
+      {
+        "name": "increment-to-cap",
+        "expected_returncode": 0,
+        "observed_returncode": 0,
+        "expected_value": 1000000000
+      },
+      {
+        "name": "increment-crossing",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      },
+      {
+        "name": "add-crossing",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      },
+      {
+        "name": "add-overflow-attempt",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      },
+      {
+        "name": "maximum-admitted-add",
+        "expected_returncode": 0,
+        "observed_returncode": 0,
+        "expected_value": 1000000000
+      },
+      {
+        "name": "near-cap-add-crossing",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      },
+      {
+        "name": "corrupt-counter-overflow-attempt",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      },
+      {
+        "name": "corrupt-counter-zero-add",
+        "expected_returncode": -6,
+        "observed_returncode": -6,
+        "expected_value": null
+      }
+    ],
+    "known_owner_output": "accounted per encoded occurrence; not claimed linear in raw source for arbitrarily repeated long owners"
+  },
+  "measurements": {
+    "comparative_latency": {
+      "scope": "same-host descriptive frontend launcher-to-reap observations only; five balanced pairs per fixture; no portable timing gate or native runtime claim",
+      "baseline_sha256": "48000c6a28bb09d36cc756568064ab29cc29316efb6aa243bc1b886a376b8bf3",
+      "candidate_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+      "observer_sha256": "90dc07df29db342be1b949e43a77524d99e0961624a8b33eb200f592b6e64a98",
+      "identities_unchanged": true,
+      "rows": [
+        {
+          "family": "modules",
+          "size": 16,
+          "source_bytes": 3786,
+          "median_ns": {
+            "baseline": 5206000,
+            "candidate": 5215250
+          },
+          "candidate_baseline_ratio": 1.00177679600461
+        },
+        {
+          "family": "modules",
+          "size": 32,
+          "source_bytes": 7450,
+          "median_ns": {
+            "baseline": 5345541,
+            "candidate": 5534667
+          },
+          "candidate_baseline_ratio": 1.0353801420660695
+        },
+        {
+          "family": "modules",
+          "size": 64,
+          "source_bytes": 14778,
+          "median_ns": {
+            "baseline": 7252625,
+            "candidate": 7259791
+          },
+          "candidate_baseline_ratio": 1.0009880560486721
+        },
+        {
+          "family": "modules",
+          "size": 128,
+          "source_bytes": 29434,
+          "median_ns": {
+            "baseline": 9838125,
+            "candidate": 9668750
+          },
+          "candidate_baseline_ratio": 0.9827838129724922
+        },
+        {
+          "family": "known-owner",
+          "size": 16,
+          "source_bytes": 687,
+          "median_ns": {
+            "baseline": 4425667,
+            "candidate": 4373334
+          },
+          "candidate_baseline_ratio": 0.9881751157509139
+        },
+        {
+          "family": "known-owner",
+          "size": 32,
+          "source_bytes": 1199,
+          "median_ns": {
+            "baseline": 3991709,
+            "candidate": 4099458
+          },
+          "candidate_baseline_ratio": 1.0269932001556226
+        },
+        {
+          "family": "known-owner",
+          "size": 64,
+          "source_bytes": 2223,
+          "median_ns": {
+            "baseline": 4279708,
+            "candidate": 4212375
+          },
+          "candidate_baseline_ratio": 0.9842669172756646
+        },
+        {
+          "family": "known-owner",
+          "size": 128,
+          "source_bytes": 4271,
+          "median_ns": {
+            "baseline": 4833542,
+            "candidate": 4975917
+          },
+          "candidate_baseline_ratio": 1.0294556248812983
+        },
+        {
+          "family": "unknown-call-owner",
+          "size": 16,
+          "source_bytes": 775,
+          "median_ns": {
+            "baseline": 3982125,
+            "candidate": 4085459
+          },
+          "candidate_baseline_ratio": 1.0259494616567788
+        },
+        {
+          "family": "unknown-call-owner",
+          "size": 32,
+          "source_bytes": 1399,
+          "median_ns": {
+            "baseline": 3946917,
+            "candidate": 3972916
+          },
+          "candidate_baseline_ratio": 1.0065871666417106
+        },
+        {
+          "family": "unknown-call-owner",
+          "size": 64,
+          "source_bytes": 2647,
+          "median_ns": {
+            "baseline": 3938959,
+            "candidate": 3952500
+          },
+          "candidate_baseline_ratio": 1.0034377103188938
+        },
+        {
+          "family": "unknown-call-owner",
+          "size": 128,
+          "source_bytes": 5143,
+          "median_ns": {
+            "baseline": 4204375,
+            "candidate": 4110083
+          },
+          "candidate_baseline_ratio": 0.9775728853872454
+        },
+        {
+          "family": "unknown-type-owner",
+          "size": 16,
+          "source_bytes": 711,
+          "median_ns": {
+            "baseline": 3892625,
+            "candidate": 3976667
+          },
+          "candidate_baseline_ratio": 1.0215900581227322
+        },
+        {
+          "family": "unknown-type-owner",
+          "size": 32,
+          "source_bytes": 1271,
+          "median_ns": {
+            "baseline": 4033000,
+            "candidate": 4016166
+          },
+          "candidate_baseline_ratio": 0.9958259360277709
+        },
+        {
+          "family": "unknown-type-owner",
+          "size": 64,
+          "source_bytes": 2391,
+          "median_ns": {
+            "baseline": 4320875,
+            "candidate": 4403875
+          },
+          "candidate_baseline_ratio": 1.0192090722365261
+        },
+        {
+          "family": "unknown-type-owner",
+          "size": 128,
+          "source_bytes": 4631,
+          "median_ns": {
+            "baseline": 4271042,
+            "candidate": 4475209
+          },
+          "candidate_baseline_ratio": 1.0478026205314768
+        }
+      ],
+      "receipt": "build/overnight/namespace-quiet-1-receipt.json",
+      "receipt_sha256": "2101af4332b84658837e4cbbbf36aa15e9d1ac964a446bc4990b1c884dec4c44",
+      "log": "build/overnight/namespace-quiet-1.log"
+    },
+    "native_runtime": "five fixed native applications have separate same-host descriptive finite output/timing observations in native_backend_campaign; selfhost compile-only; general native performance unknown",
+    "timing_scope": "quiet comparison observations are explicitly source-bound same-host descriptive ratios; earlier local validation times remain uncoordinated operator elapsed",
+    "native_backend_campaign": {
+      "scope": "same-host descriptive separated frontend/backend/native launcher-to-direct-reap monotonic observations; two warmups and five balanced pairs per condition/project; no portable timing gate",
+      "receipt": "build/overnight/namespace-cost-quiet-2/receipt.json",
+      "receipt_sha256": "1ceba7ee752a5ed6be478672086e4d48e7b178749b99e95c0aef720ccfaaedf1",
+      "recipe_sha256": "6f6fb2ab9e2b51e73733f19528afc9d2d54cf3fe7b334b814c5e6aefa8e83287",
+      "runner_sha256": "73778500886a0f9232300752efb4bcc533d8fdfb6805997df735c93027ee2014",
+      "inputs_sha256": "67a0ebb7d53ab021723218e965171c65bebc10868ec56f2983fbb815e6c8d07b",
+      "captured_inputs_match_attempt1": true,
+      "captured_inputs_match_after_campaign": true,
+      "compiler_sha256": {
+        "after": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+        "before": "48000c6a28bb09d36cc756568064ab29cc29316efb6aa243bc1b886a376b8bf3"
+      },
+      "cc": {
+        "path": "/usr/bin/cc",
+        "sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
+        "version_stderr": "",
+        "version_stdout": "Apple clang version 21.0.0 (clang-2100.3.34.2)\nTarget: arm64-apple-darwin27.0.0\nThread model: posix\nInstalledDir: /Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin\n"
+      },
+      "runtime_sha256": {
+        "assets/runtime/slim_rt.c": "2287a7376782a1802a3b3d4a1f263e2183689ace24f747f83b2779a7316b345b",
+        "assets/runtime/slim_rt.h": "dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f"
+      },
+      "per_invocation_seconds": 120,
+      "campaign_seconds": 1800,
+      "unknown": [
+        "kernel boot continuity",
+        "model active time",
+        "unobserved descendant process CPU",
+        "general native performance outside named inputs",
+        "transitive SDK/linker/library identities beyond named CC binary and version"
+      ],
+      "excluded_evidence": "attempt1 partial timings inadmissible: runner changed during campaign; missing structured-runtime flag failure retained separately",
+      "projects": [
+        {
+          "project": "basic",
+          "source_bytes": 193,
+          "structured_runtime_marker": false,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 2339,
+              "sha256": "90ccfbf1bf945b1419624d4e824530a647b56326a049654d3169ff02fd8318bb"
+            },
+            "after": {
+              "bytes": 2351,
+              "sha256": "7b12109541f339a955499133aa482adf5528798954b58386dde7ea07b4969619"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 4203125,
+                "after": 4354791
+              },
+              "paired_after_before_ratios": [
+                0.8659337860468825,
+                0.5073936807754512,
+                0.9986420423682781,
+                1.1081835539033458,
+                0.9869559090747608
+              ],
+              "median_paired_after_before_ratio": 0.9869559090747608,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 127269416,
+                "after": 128624000
+              },
+              "paired_after_before_ratios": [
+                1.0177022812770666,
+                0.8607011955271325,
+                0.9832842090606155,
+                1.009276066533573,
+                1.024598521539638
+              ],
+              "median_paired_after_before_ratio": 1.009276066533573,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "median_ns": {
+                "before": 51614792,
+                "after": 48857542
+              },
+              "paired_after_before_ratios": [
+                0.32808317422187994,
+                0.9465802361462582,
+                1.6366919327867213,
+                1.1762419559764286,
+                1.0927294931220768
+              ],
+              "median_paired_after_before_ratio": 1.0927294931220768,
+              "samples_per_condition": 5
+            }
+          }
+        },
+        {
+          "project": "catalog",
+          "source_bytes": 34880,
+          "structured_runtime_marker": false,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 189660,
+              "sha256": "9bf4d9f639236c6307d3ade1400b7164e244c677fc932b61e60daa06662d27e6"
+            },
+            "after": {
+              "bytes": 193901,
+              "sha256": "c4437b4ff685856914648e9f06d212801fa98f0f62dfbe57a8de991b4d93d9d0"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 14879458,
+                "after": 13796792
+              },
+              "paired_after_before_ratios": [
+                0.925182086605574,
+                0.9503182163721635,
+                0.9076179823595494,
+                0.985461702946637,
+                0.9797254792287593
+              ],
+              "median_paired_after_before_ratio": 0.9503182163721635,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 412812958,
+                "after": 415354834
+              },
+              "paired_after_before_ratios": [
+                0.9861193952458203,
+                1.019621927439862,
+                0.9979134012551999,
+                1.007241520301031,
+                1.0061242446686143
+              ],
+              "median_paired_after_before_ratio": 1.0061242446686143,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "median_ns": {
+                "before": 86211250,
+                "after": 80244833
+              },
+              "paired_after_before_ratios": [
+                0.9082436181949741,
+                0.8646168028025689,
+                1.1046983200045415,
+                0.9492806116997345,
+                0.8144775188852963
+              ],
+              "median_paired_after_before_ratio": 0.9082436181949741,
+              "samples_per_condition": 5
+            }
+          }
+        },
+        {
+          "project": "selfhost",
+          "source_bytes": 1167485,
+          "structured_runtime_marker": false,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 5174369,
+              "sha256": "971027b6cca84be80a8b9b1df6142f4afd4c27063e380887c4cdce12bf5be836"
+            },
+            "after": {
+              "bytes": 5269067,
+              "sha256": "d199910449a78e0ec3afb05bd4e18c357389ebe27ed198f9241b241fbd96b711"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 280962708,
+                "after": 271735333
+              },
+              "paired_after_before_ratios": [
+                0.9733044452738798,
+                0.9543937029445118,
+                0.9742044663094577,
+                0.9450599164026655,
+                0.9685751336837696
+              ],
+              "median_paired_after_before_ratio": 0.9685751336837696,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 6873020708,
+                "after": 6887075041
+              },
+              "paired_after_before_ratios": [
+                1.0018866179378147,
+                0.9937774642691833,
+                1.0071718270384205,
+                0.9992224186093636,
+                1.0041262293108135
+              ],
+              "median_paired_after_before_ratio": 1.0018866179378147,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "status": "excluded: selfhost compile-only"
+            }
+          }
+        },
+        {
+          "project": "signal_network",
+          "source_bytes": 1806,
+          "structured_runtime_marker": true,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-DSLIM_PARALLEL=1"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 14368,
+              "sha256": "f6a2b3c8d3c72360b366361032760c2135c75ec84e41cf7b3e8c9660b41caabc"
+            },
+            "after": {
+              "bytes": 14613,
+              "sha256": "2b390c775dcd6b5f5be33af8b697b6f4c57e02028f4c87ad54bf100ef34de0ed"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 5781042,
+                "after": 5642958
+              },
+              "paired_after_before_ratios": [
+                0.9591172812577643,
+                0.940401624308838,
+                0.9209854889859698,
+                1.0002233161426608,
+                1.131065461261025
+              ],
+              "median_paired_after_before_ratio": 0.9591172812577643,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 143943625,
+                "after": 148379500
+              },
+              "paired_after_before_ratios": [
+                1.4146183401489174,
+                1.0308167520444202,
+                0.9878930927955414,
+                1.0265401854719083,
+                1.024077938671667
+              ],
+              "median_paired_after_before_ratio": 1.0265401854719083,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "median_ns": {
+                "before": 53704917,
+                "after": 52426750
+              },
+              "paired_after_before_ratios": [
+                2.3964541000181474,
+                0.5137098664844302,
+                2.236357726344452,
+                0.40803327304734327,
+                0.9297247773420821
+              ],
+              "median_paired_after_before_ratio": 0.9297247773420821,
+              "samples_per_condition": 5
+            }
+          }
+        },
+        {
+          "project": "state_machine",
+          "source_bytes": 1172,
+          "structured_runtime_marker": true,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror",
+            "-DSLIM_PARALLEL=1"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 10085,
+              "sha256": "83c3b13bbd1f6b87da53d3a36c7b64920bcf94e13827199333a833a254143c6d"
+            },
+            "after": {
+              "bytes": 10290,
+              "sha256": "75dd63834f36578b11e8a199a515aec7bd6a4396a7cf8a0abd79911a2201313a"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 5495166,
+                "after": 5307250
+              },
+              "paired_after_before_ratios": [
+                0.9966040539106442,
+                0.9986580933132866,
+                0.7990362970494331,
+                1.0251618179521027,
+                1.1060418467173654
+              ],
+              "median_paired_after_before_ratio": 0.9986580933132866,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 141519875,
+                "after": 140821000
+              },
+              "paired_after_before_ratios": [
+                0.9728073672095078,
+                0.987673095442523,
+                1.0308703951229499,
+                0.9880643973152181,
+                1.0004491682115293
+              ],
+              "median_paired_after_before_ratio": 0.9880643973152181,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "median_ns": {
+                "before": 53316875,
+                "after": 53533500
+              },
+              "paired_after_before_ratios": [
+                2.525383229981127,
+                0.37849034871320897,
+                2.680843426040039,
+                0.984464535958577,
+                1.068220549843622
+              ],
+              "median_paired_after_before_ratio": 1.068220549843622,
+              "samples_per_condition": 5
+            }
+          }
+        },
+        {
+          "project": "workplan",
+          "source_bytes": 37152,
+          "structured_runtime_marker": false,
+          "backend_flags": [
+            "-std=c11",
+            "-O2",
+            "-DNDEBUG",
+            "-Wall",
+            "-Wextra",
+            "-Werror"
+          ],
+          "generated_c": {
+            "before": {
+              "bytes": 194710,
+              "sha256": "338ca101037e8c7d901fd7e864a67b690c5cb766deaa98ba5a65562763c227a4"
+            },
+            "after": {
+              "bytes": 198343,
+              "sha256": "1da871cb6130e31b1857ea68cd04eb076eed4f4100782a53ac5d3955d8dfe7c9"
+            }
+          },
+          "phases": {
+            "frontend": {
+              "median_ns": {
+                "before": 15255416,
+                "after": 14601167
+              },
+              "paired_after_before_ratios": [
+                1.0114371488481173,
+                0.9474858433611236,
+                0.9693741822868236,
+                0.9495070472021215,
+                0.9370885202546084
+              ],
+              "median_paired_after_before_ratio": 0.9495070472021215,
+              "samples_per_condition": 5
+            },
+            "backend": {
+              "median_ns": {
+                "before": 430696709,
+                "after": 427299375
+              },
+              "paired_after_before_ratios": [
+                1.0289688448821048,
+                0.9771248881702002,
+                0.9931575957317101,
+                1.0141368438243779,
+                0.9619550177934572
+              ],
+              "median_paired_after_before_ratio": 0.9931575957317101,
+              "samples_per_condition": 5
+            },
+            "native": {
+              "median_ns": {
+                "before": 63182834,
+                "after": 61310708
+              },
+              "paired_after_before_ratios": [
+                0.7894766339838505,
+                1.3471231624525972,
+                0.8383763777802126,
+                0.9703697051639057,
+                1.0974923853890535
+              ],
+              "median_paired_after_before_ratio": 0.9703697051639057,
+              "samples_per_condition": 5
+            }
+          }
+        }
+      ]
+    }
+  },
+  "expectation_corrections": {
+    "construction_private": "Number60:80\u219260:70,Empty60:71\u219260:69,Choice60:79\u219260:70; original canonical head intervals, existing rows unchanged",
+    "unknown_nonentry_main": "invalid standalone E0102 prediction corrected by independent valid absent four-byte nope control to E0314@lib@48:52",
+    "absent_lookup_work": "early missing-edge termination predicted from canonical trie helper; limits unchanged"
+  },
+  "raw_receipts": "build/overnight/probes/qualification-identity/; failures and retries retained",
+  "migrated_observers": {
+    "inputs": "passed full ordinary/sanitized/observed adjacency/copy and geometric fixtures",
+    "project_lists": "passed124 deterministic rows,47 maintained manifests, unchanged portable budgets",
+    "checking": "passed full counter/token/geometry/ownership/state/allocation/mutation gates;293 state fixtures,1601 mutations within4096 cap",
+    "retained": "passed95fixtures and1024fault ordinals (581allocationfailures,443successful)",
+    "session": "passed full ordinary/sanitized/observed cache/source/capture/range cases and2048update+2048fragmentfault positions",
+    "production_work": "passed work --quick exactcounter/cachedproject/revision/fault campaigns; timings uncoordinated",
+    "retained_project": "passed95fixtures and2048fault ordinals (665allocationfailures,1383successful)",
+    "session_analysis": "passed full range/quality/parallel retained edit comparisons",
+    "session_host": "passed complete native host edit/history/fault/resource controls; three geometries x three repeats, zero live payload/header/host storage after reset and exit"
+  },
+  "aggregate_analysis_label_migration": {
+    "scope": "same held current selfhost/slim.project input under production48000 and ee6264; complete derived analysis report comparison",
+    "input_files": 36,
+    "input_identities_sha256": "3b7b87a49c228bf6823bf31a9b42ce26d9ea299135d940f1ea82bc8e51f618c2",
+    "input_live_matches_held_snapshot": true,
+    "compiler_sha256": {
+      "before": "48000c6a28bb09d36cc756568064ab29cc29316efb6aa243bc1b886a376b8bf3",
+      "after": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6"
+    },
+    "reports": {
+      "before": {
+        "bytes": 3809542,
+        "sha256": "acf10af6ee3a707c7183ecccca6ae8a566aeee1b0db69d14d626d9604f0445fd"
+      },
+      "after": {
+        "bytes": 3830707,
+        "sha256": "17a39bb9112ffb1550d3503c1eb260a4eacdc3582304b399e9e2dbcc16d7ae1a"
+      }
+    },
+    "complete_normalized_report_sha256": "17a39bb9112ffb1550d3503c1eb260a4eacdc3582304b399e9e2dbcc16d7ae1a",
+    "complete_report_equal_after_exact_label_mapping": true,
+    "program_tokens": 283020,
+    "report_tokens": 832998,
+    "declared_identifier_pairs": 1873,
+    "lexical_changed_rows": 17,
+    "unchanged_lexical_old_global_spelling_collision_rows": 1,
+    "derived_span_normalizations": 0,
+    "preserved_facts": "every non-identifier byte: all guarantees, statuses, complete blocker sets, domains, bounds, source-size values, numeric node/span identities, ownership and dependency facts",
+    "row_explanations": "build/overnight/probes/project-analysis-identity/comparison-receipt.json",
+    "row_explanations_sha256": "df67b38f809a7fe802c1b644ba5d5f8870abcda7ae01e612e786734d0b9c8185",
+    "mapping": "build/overnight/probes/project-analysis-identity/identifier-mapping.json",
+    "mapping_sha256": "4543fc7c37d476cc86933f50371fe8d0397617db14961bba5d35345f83fb01f1",
+    "focused_e2e": {
+      "status": "passed",
+      "tests": 1,
+      "operator_elapsed_ns": 1579573084,
+      "log": "build/overnight/probes/project-analysis-identity/focused-e2e-attempt2.log",
+      "log_sha256": "c6e8481db1765704c9497ec38ae6700b8ed906b3f173cd827b76ef02f4fdf9c5",
+      "test_source_sha256": "bb95ffc4829423e47186a80fac56e16a8127ce0d3e8ebd007aa35bd79390df28",
+      "rfc_sha256": "93413cae9da03c0dad04d3524ae39fc5fb5e34f3ebb7e2dd0b00204f1e47003a",
+      "assertions": [
+        "exact safe row with empty blockers",
+        "exact unavailable row with full exclusive-borrow allocation-or-io callee-not-safe function-limit blockers",
+        "legacy derived name absent"
+      ],
+      "rustfmt": "attempt1 failed layout only; attempt2 passed; exact assertions unchanged"
+    },
+    "prior_integrated_attempt": {
+      "status": "failed",
+      "source_snapshot": "/private/tmp/slim-overnight-integrated-ypzf33v8",
+      "log": "build/overnight/integrated-verify-0.9-attempt1.log",
+      "log_sha256": "c7589ae7f353c75a6c5e53c50ea465bf9b7365fc05644f1ebb772bb35d64a73b",
+      "operator_elapsed_ns": 137466795209,
+      "e2e_passed": 74,
+      "e2e_failed": 1,
+      "failure": "old derived analysis_binding_active label assertion; attempt remains failed"
+    },
+    "raw_capture": "build/overnight/probes/project-analysis-identity; capture-attempt1 receipt inspection failure preserved; attempt2 positive process receipts complete"
+  }
+}

@@ -9,6 +9,11 @@ NAMES = {
     "finish_builtin": "builtin",
     "finish_scalar_operand": "scalar",
 }
+def c_function(name):
+    encoded = "ptyping__" + name.replace("_", "_0")
+    return "slim_fn_" + encoded.replace("_", "_95")
+
+SYMBOLS = {c_function(name): metric for name, metric in NAMES.items()}
 definitions = {name: 0 for name in NAMES.values()}
 ends = {"entry": 0, "machine": 0}
 headers = decisions = mains = 0
@@ -17,13 +22,12 @@ variables = {}
 output = []
 
 for line in sys.stdin:
-    match = re.fullmatch(r"static .* slim_fn_typing_95([A-Za-z_0-9]+)\((.*)\) \{\n", line)
+    match = re.fullmatch(r"static .* (slim_fn_[A-Za-z_0-9]+)\((.*)\) \{\n", line)
     if re.match(r"^static .*\) \{$", line.rstrip()):
         current = None
     output.append(line)
     if match:
-        name = match[1].replace("_95", "_")
-        current = NAMES.get(name)
+        current = SYMBOLS.get(match[1])
         if current:
             definitions[current] += 1
             variables = {name.replace("_95", "_"): full for full, name in

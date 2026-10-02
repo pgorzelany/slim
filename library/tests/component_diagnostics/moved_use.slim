@@ -1,0 +1,6 @@
+module component_bad
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let entries: Vec[std_byte_index.Entry] = vec.new()
+  let built: std_byte_index.Built = std_byte_index.build("a", ^entries, 1)
+  vec.len(entries)

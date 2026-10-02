@@ -1,0 +1,11 @@
+(project 1
+  (entry ledger)
+  (module ledger "applications/ledger/main.slim" (imports ledger_emit ledger_model ledger_state) (exports))
+  (module ledger_emit "applications/ledger/emit.slim" (imports ledger_model ledger_state std_text) (exports print_error print_report))
+  (module ledger_model "applications/ledger/model.slim" (imports) (exports Account Applied Command Parsed Run Word))
+  (module ledger_parser "applications/ledger/parser.slim" (imports ledger_model std_bytes std_decimal) (exports parse_line))
+  (module ledger_state "applications/ledger/state.slim" (imports ledger_model ledger_parser std_bytes) (exports apply process total))
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value hex_value is_alpha is_alphanumeric is_digit is_hex_digit is_lower is_space is_upper))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64 parse_u8))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span)))

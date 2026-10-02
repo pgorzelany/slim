@@ -1,0 +1,3 @@
+(project 1 (entry app)
+  (module app "private-recur.slim" (imports lib) (exports))
+  (module lib "lib.slim" (imports) (exports Choice Number identity sample)))

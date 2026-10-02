@@ -1,0 +1,42 @@
+{
+  "schema": 2,
+  "components": [
+    {
+      "id": "finite-client",
+      "operation": "run",
+      "overlay": {
+        "tests/main.slim": "fixtures/client.slim"
+      },
+      "expect": {
+        "returncode": 0,
+        "stdout": "fixtures/expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "1054 fixed cases: every byte encode at budgets1/2 and uppercase decode at0/1; mixed/lowercase malformed, binary, empty, bounds/resource extrema, generated source lengths1048576/1048577 both modes and prefix preservation."
+    },
+    {
+      "id": "caller-contract",
+      "operation": "check",
+      "overlay": {
+        "tests/main.slim": "fixtures/negative.slim"
+      },
+      "positive": {
+        "tests/main.slim": "fixtures/positive.slim"
+      },
+      "expect": {
+        "returncode": 1,
+        "diagnostics": [
+          [
+            "E0360",
+            "std_tests",
+            160,
+            166
+          ]
+        ],
+        "stdout": "fixtures/negative-expected.bin",
+        "stderr": "fixtures/empty.bin"
+      },
+      "domain": "One missing-exclusive-marker caller (E0360) or wrong argument type (E0344), with separately accepted same-API control; exact argument source span."
+    }
+  ]
+}

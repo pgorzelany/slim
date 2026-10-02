@@ -1,0 +1,7 @@
+module ledger
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let accounts: Vec[ledger_model.Account] = vec.new()
+  let command: ledger_model.Command = ledger_model.Command::Open(0, 1, 0)
+  let result: ledger_model.Applied = ledger_state.apply("a", command, @accounts)
+  0

@@ -36,7 +36,7 @@ static int native_context_state; /* 0 lazy, 1 captured, 2 declined */
 static SlimRegion native_region;
 static bool native_region_live, native_allocation_failure;
 static bool native_cleanup_failure;
-static Slim_type_nativecache_95State native_cache;
+static Slim_type_pnativecache_95_95State native_cache;
 static uint64_t native_allocations, native_fail_at;
 
 static uint64_t native_now(void) {
@@ -198,7 +198,12 @@ static int native_process(char *const argv[], bool setup, bool diagnostics, uint
     pid_t child = fork();
     if (child == 0) {
         (void)close(pipes[0]);
-        if (setpgid(0, 0) != 0 || chdir(native_directory) != 0 ||
+        if (setpgid(0, 0) != 0) {
+            int group_error = errno;
+            /* The parent may already have established this exact group. */
+            if (group_error != EPERM || getpgrp() != getpid()) _exit(126);
+        }
+        if (chdir(native_directory) != 0 ||
             dup2(pipes[1], STDOUT_FILENO) < 0 || dup2(pipes[1], STDERR_FILENO) < 0) _exit(126);
         (void)close(pipes[1]);
         int null_fd = open("/dev/null", O_RDONLY);
@@ -350,7 +355,7 @@ static int native_setup(int64_t epoch, SlimRegion *root, NativeWork *work) {
         if (!native_region_live) {
             slim_region_init(&native_region, root);
             native_region_live = true;
-            native_cache = slim_fn_nativecache_95start(epoch, host_bytes(native_context), 256, NATIVE_BYTE_LIMIT, &native_region);
+            native_cache = slim_fn_pnativecache_95_95start(epoch, host_bytes(native_context), 256, NATIVE_BYTE_LIMIT, &native_region);
         }
         return 0;
     }
@@ -392,7 +397,7 @@ static int native_setup(int64_t epoch, SlimRegion *root, NativeWork *work) {
     if (!native_manifest_valid(native_inputs.bytes)) { *native_context = 0; return 2; }
     slim_region_init(&native_region, root);
     native_region_live = true;
-    native_cache = slim_fn_nativecache_95start(epoch, host_bytes(native_context), 256, NATIVE_BYTE_LIMIT, &native_region);
+    native_cache = slim_fn_pnativecache_95_95start(epoch, host_bytes(native_context), 256, NATIVE_BYTE_LIMIT, &native_region);
     if (slim_region_failed(root)) return 2;
     native_context_state = 1;
     return 0;
@@ -469,25 +474,25 @@ static bool native_known_link_inputs(void) {
     free(report.owned);
     return okay;
 }
-static NativeBytes native_lookup(Slim_type_nativecache_95Key key, unsigned role, NativeWork *work) {
-    Slim_type_nativecache_95Probe result = slim_fn_nativecache_95lookup(&native_cache, key, &native_region);
+static NativeBytes native_lookup(Slim_type_pnativecache_95_95Key key, unsigned role, NativeWork *work) {
+    Slim_type_pnativecache_95_95Probe result = slim_fn_pnativecache_95_95lookup(&native_cache, key, &native_region);
     work->hits[role] = result.slim_field_hit;
     SlimBytes reason = result.slim_field_reason;
     if (!result.slim_field_hit && !(reason.len == 7 && memcmp(reason.data,"missing",7) == 0)) work->retention[role] = reason;
     return (NativeBytes){result.slim_field_artifact, NULL};
 }
-static void native_publish(Slim_type_nativecache_95Key key, unsigned role, NativeWork *work, NativeBytes output) {
-    Slim_type_nativecache_95Stored result = slim_fn_nativecache_95publish(&native_cache, key, output.bytes, &native_region);
+static void native_publish(Slim_type_pnativecache_95_95Key key, unsigned role, NativeWork *work, NativeBytes output) {
+    Slim_type_pnativecache_95_95Stored result = slim_fn_pnativecache_95_95publish(&native_cache, key, output.bytes, &native_region);
     if (!result.slim_field_accepted && work->retention[role].len == 0) work->retention[role] = result.slim_field_reason;
 }
-static int native_build(Slim_type_nativebuild_95Selection selected, int64_t epoch,
+static int native_build(Slim_type_pnativebuild_95_95Selection selected, int64_t epoch,
                         NativeWork *work, NativeBytes *executable) {
     SlimBytes empty = slim_bytes_static(NULL, 0), context = host_bytes(native_context);
-    Slim_type_nativecache_95Key program_key = {epoch, context, 0, selected.slim_field_workers, selected.slim_field_code, empty};
-    Slim_type_nativecache_95Key runtime_key = {epoch, context, 1, selected.slim_field_workers,
+    Slim_type_pnativecache_95_95Key program_key = {epoch, context, 0, selected.slim_field_workers, selected.slim_field_code, empty};
+    Slim_type_pnativecache_95_95Key runtime_key = {epoch, context, 1, selected.slim_field_workers,
         slim_bytes_static(native_runtime_c, sizeof(native_runtime_c)), slim_bytes_static(native_runtime_h, sizeof(native_runtime_h))};
     NativeBytes objects[2] = {{{NULL, 0}, NULL}, {{NULL, 0}, NULL}};
-    Slim_type_nativecache_95Key keys[2] = {program_key, runtime_key};
+    Slim_type_pnativecache_95_95Key keys[2] = {program_key, runtime_key};
     int status = 0;
     for (unsigned role = 0; role < 2 && !status; ++role) {
         objects[role] = native_lookup(keys[role], role, work);
@@ -503,7 +508,7 @@ static int native_build(Slim_type_nativebuild_95Selection selected, int64_t epoc
         }
     }
     if (!status && !slim_region_failed(&native_region)) {
-        Slim_type_nativecache_95Key link_key = {epoch, context, 2, selected.slim_field_workers, objects[0].bytes, objects[1].bytes};
+        Slim_type_pnativecache_95_95Key link_key = {epoch, context, 2, selected.slim_field_workers, objects[0].bytes, objects[1].bytes};
         *executable = native_lookup(link_key, 2, work);
         if (!work->hits[2] && !slim_region_failed(&native_region)) {
             if (!native_write_file("program.o", objects[0].bytes) || !native_write_file("runtime.o", objects[1].bytes)) status = 3;
@@ -551,13 +556,13 @@ static int64_t native_request_word(const unsigned char *data) {
     memcpy(&value, &bits, sizeof(value));
     return value;
 }
-static int native_request(Slim_type_session_95State state, const unsigned char payload[17], SlimRegion *root) {
+static int native_request(Slim_type_psession_95_95State state, const unsigned char payload[17], SlimRegion *root) {
     uint64_t begin = native_now();
     int64_t epoch = native_request_word(payload), serial = native_request_word(payload+8);
     NativeWork work = {0};
     host_diagnostic_length = 0;
     host_capture_failure = 0;
-    Slim_type_nativebuild_95Selection selected = slim_fn_nativebuild_95select(state, epoch, serial, payload[16], root);
+    Slim_type_pnativebuild_95_95Selection selected = slim_fn_pnativebuild_95_95select(state, epoch, serial, payload[16], root);
     NativeBytes executable = {{NULL, 0}, NULL};
     const char *reason = "";
     char selection_reason[128];

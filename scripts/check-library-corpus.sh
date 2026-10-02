@@ -6,6 +6,7 @@ slim_corpus_work=$(mktemp -d "${TMPDIR:-/tmp}/slim-library-corpus.XXXXXX")
 trap 'rm -rf "$slim_corpus_work"' EXIT HUP INT TERM
 slim_corpus_compiler="$slim_corpus_root/slimc"
 slim_corpus_tab=$(printf '\t')
+slim_corpus_count=0
 
 while IFS="$slim_corpus_tab" read -r slim_corpus_name slim_corpus_project; do
     case "$slim_corpus_name" in
@@ -15,6 +16,7 @@ while IFS="$slim_corpus_tab" read -r slim_corpus_name slim_corpus_project; do
         echo "library corpus: malformed row for $slim_corpus_name" >&2
         exit 1
     fi
+    slim_corpus_count=$((slim_corpus_count + 1))
     "$slim_corpus_compiler" fmt "$slim_corpus_root/$slim_corpus_project" --check
     "$slim_corpus_compiler" check "$slim_corpus_root/$slim_corpus_project"
     "$slim_corpus_compiler" build "$slim_corpus_root/$slim_corpus_project" -o "$slim_corpus_work/$slim_corpus_name"
@@ -23,6 +25,12 @@ done < "$slim_corpus_root/library/corpus.tsv"
 "$slim_corpus_work/standard-library" > "$slim_corpus_work/standard-library.first"
 "$slim_corpus_work/standard-library" > "$slim_corpus_work/standard-library.second"
 cmp "$slim_corpus_work/standard-library.first" "$slim_corpus_work/standard-library.second"
+
+"$slim_corpus_work/development-summary" \
+    "$slim_corpus_root/library/applications/development_summary/fixtures/observations.ns" \
+    > "$slim_corpus_work/development-summary.out"
+cmp "$slim_corpus_work/development-summary.out" \
+    "$slim_corpus_root/library/applications/development_summary/fixtures/observations.expected"
 
 if "$slim_corpus_work/api-diff" \
     "$slim_corpus_root/library/tools/fixtures/api-previous.sli" \
@@ -111,4 +119,8 @@ while test "$slim_corpus_seed" -lt 12; do
 done
 
 "$slim_corpus_root/scripts/generate-library-docs.sh" --check
-echo "library corpus: 10 projects, 12 valid generated programs, and 12 rejected mutants passed"
+python3 "$slim_corpus_root/scripts/verify-source-components.py" \
+    --binaries-directory "$slim_corpus_work" --output "$slim_corpus_work/source-components" --full --faults --work
+python3 "$slim_corpus_root/scripts/verify-catalog-diff.py" \
+    --catalog-binary "$slim_corpus_work/catalog" --output "$slim_corpus_work/catalog-diff" --full --faults --work
+echo "library corpus: $slim_corpus_count projects, 12 valid generated programs, and 12 rejected mutants passed"

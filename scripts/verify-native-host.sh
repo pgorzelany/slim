@@ -2,10 +2,14 @@
 set -eu
 native_host=${1:-build/toolchain/slim-session}
 native_compiler=${2:-build/toolchain/slimc}
+python3 -B scripts/test-native-failure-receipt.py
 sh scripts/verify-native-process.sh
 sh scripts/verify-native-copy.sh
 native_dir=$(mktemp -d "${TMPDIR:-/tmp}/slim-native-host-verify.XXXXXX")
 trap 'rm -rf "$native_dir"' EXIT HUP INT TERM
+native_evidence=$(mktemp -d "$PWD/build/native-corpus-failure.XXXXXX")
+# Successful gates leave no history; retain the bounded first-failure archive.
+trap 'rm -rf "$native_dir"; rmdir "$native_evidence" 2>/dev/null || :' EXIT HUP INT TERM
 cp "$(dirname "$native_host")/session-identity.h" "$(dirname "$native_host")/native-inputs.h" "$native_dir/"
 cp compiler/session.c compiler/native.c "$native_dir/"
 if ! "$native_compiler" selfhost/slim.project > "$native_dir/slimc-seed.c"; then
@@ -53,8 +57,10 @@ python3 -B scripts/instrument-native-resources.py "$native_dir"
 "$native_dir/link-fixture"
 python3 -B scripts/verify-native-host.py "$native_host"
 python3 -B scripts/verify-native-host.py "$native_dir/observed" --observe
-python3 -B scripts/verify-native-corpus.py "$native_host" "$native_compiler"
-python3 -B scripts/verify-native-corpus.py "$native_dir/observed" "$native_compiler" --observe
+python3 -B scripts/verify-native-corpus.py "$native_host" "$native_compiler" \
+    --failure-dir "$native_evidence/ordinary"
+python3 -B scripts/verify-native-corpus.py "$native_dir/observed" "$native_compiler" --observe \
+    --failure-dir "$native_evidence/observed"
 python3 -B scripts/verify-native-host-faults.py "$native_host"
 python3 -B scripts/verify-native-host-faults.py "$native_dir/observed" --observe
 python3 -B scripts/verify-native-recovery.py "$native_dir/observed"

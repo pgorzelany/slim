@@ -5,10 +5,16 @@ repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repo_dir"
 
 ./bootstrap.sh
+python3 -B scripts/verify-project-lists.py --compiler build/toolchain/slimc \
+  --generated-c build/toolchain/slimc.c --receipt build/project-list-work.json
+python3 -B scripts/verify-project-namespace.py --compiler build/toolchain/slimc \
+  --generated-c build/toolchain/slimc.c --receipt build/project-namespace-work.json
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
 cargo run --quiet --bin slim-govern -- check
+python3 scripts/test-task-time.py
+SLIM_DEVELOPMENT_COMPILER="$PWD/build/toolchain/slimc" python3 benchmarks/development/test_evaluate.py
 cargo run --quiet --bin slim-conform -- check
 ./scripts/check-library-corpus.sh
 cargo run --release --quiet --bin slim-bench -- performance --quick
@@ -27,6 +33,9 @@ cargo run --release --quiet --bin slim-bench -- agent
 
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
 trap 'rm -rf "$verify_dir"' EXIT HUP INT TERM
+
+python3 -B scripts/verify-development-summary.py --compiler build/toolchain/slimc \
+  --output "$verify_dir/development-summary"
 
 clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
   -Wall -Wextra -Werror -I runtime \

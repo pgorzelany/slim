@@ -1,0 +1,49 @@
+module driver
+
+fn probe(source: Bytes) -> Void effects[alloc, io, partial]:
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  boolean(parsed.valid)
+  if parsed.valid:
+    number(check.check_source_all(source, @tokens))
+    let output: Vec[U8] = vec.new()
+    format.emit_module(source, tokens, @output)
+    let first: Bytes = bytes.freeze(^output)
+    io.print_bytes(first)
+    let second_tokens: Vec[syntax.Token] = vec.new()
+    let second_parsed: syntax.ProgramParse = syntax.parse_program_result(first, @second_tokens)
+    boolean(second_parsed.valid)
+    if second_parsed.valid:
+      number(check.check_source_all(first, @second_tokens))
+      let second: Vec[U8] = vec.new()
+      format.emit_module(first, second_tokens, @second)
+      io.print_bytes(bytes.freeze(^second))
+    else:
+      void
+  else:
+    void
+
+fn number(value: I64) -> Void effects[io]:
+  io.print_i64(value)
+  io.print_bytes("\n")
+
+fn boolean(value: Bool) -> Void effects[io]:
+  if value:
+    number(1)
+  else:
+    number(0)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  probe("module sample\n\nfn zero() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  zero()\n")
+  probe("module sample\n\nfn zero() -> I64:\n  0\n\nfn main(args: Vec[Bytes]) -> I64:\n  zero()\n")
+  probe("module sample\n\nfn mutate(output: @Vec[I64]) -> Void effects[alloc]:\n  vec.push(@output, 1)\n\nfn consume(input: ^Vec[I64]) -> I64:\n  vec.len(input)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  mutate(@output)\n  consume(^output)\n")
+  probe("module sample\n\nfn mutate(output: @Vec[I64]) -> Void effects[alloc]:\n  vec.push( @output,    1)\n\nfn consume(input: ^Vec[I64]) -> I64:\n  vec.len(input)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  mutate( @output)\n  consume( ^output)\n")
+  probe("module sample\n\nfn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine(@output, ^input, bytes.len(\"a\"))\n")
+  probe("module sample\n\nfn combine(output: @Vec[I64],    input: ^Vec[I64],    value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine( @output,    ^input,    bytes.len(\"a\"))\n")
+  probe("module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(1)\n")
+  probe("module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(1)\n")
+  probe("module sample\n\nfn fold(output: @Vec[I64], input: ^Vec[I64], count: I64) -> I64 effects[partial]:\n  if count == 0:\n    vec.len(output) + vec.len(input)\n  else:\n    recur(@output, ^input, count - 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  fold(@output, ^input, 3)\n")
+  probe("module sample\n\nfn fold(output: @Vec[I64],    input: ^Vec[I64],    count: I64) -> I64 effects[partial]:\n  if count == 0:\n    vec.len(output) + vec.len(input)\n  else:\n    recur( @output,    ^input,    count - 1)\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc,    partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  fold( @output,    ^input,    3)\n")
+  probe("module sample\n\nfn choose(value: I64) -> I64:\n  value\n\nfn main(args: Vec[Bytes]) -> I64:\n  choose(\n    1\n  )\n")
+  probe("module sample\n\nfn combine(output: @Vec[I64], input: ^Vec[I64], value: I64) -> I64 effects[partial]:\n  (vec.len(output) + vec.len(input)) + value\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:\n  let output: Vec[I64] = vec.new()\n  let input: Vec[I64] = vec.new()\n  combine(\n    @output,\n    ^input,\n    bytes.len(\"a\")\n  )\n")
+  0

@@ -1,0 +1,81 @@
+module catalog_app
+
+fn query(source: Bytes, mode: Bytes, key: Bytes) -> I64 effects[alloc, io, partial]:
+  let loaded: catalog_model.Loaded = catalog_data.load(source, 4096)
+  match loaded:
+    Invalid(code, position):
+      catalog_emit.error(code, position)
+      65
+    Ready(catalog):
+      let bounds: std_byte_index.Bounds = catalog_data.select(catalog, key, std_bytes.equal(mode, "exact"))
+      let selection: catalog_model.Selection = catalog_data.accumulate(catalog, bounds.start, bounds.end, 0, 0)
+      if selection.valid:
+        catalog_emit.report(catalog, bounds, selection)
+        0
+      else:
+        catalog_emit.error(16, selection.position)
+        65
+
+fn compare_after(before: catalog_model.Catalog, path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        catalog_diff_emit.error(code, "after", position)
+        65
+      Ready(after):
+        let prepared: catalog_reconcile.Prepared = catalog_reconcile.prepare(before, after, 8192, 8388608)
+        match prepared:
+          Invalid(code, position):
+            catalog_diff_emit.error(code, "diff", position)
+            65
+          Ready(diff):
+            if catalog_diff_emit.report(before, after, diff):
+              0
+            else:
+              catalog_diff_emit.error(25, "diff", 0)
+              65
+  else:
+    catalog_diff_emit.error(1, "after", 0)
+    66
+
+fn compare_files(before_path: Bytes, after_path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(before_path, @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        catalog_diff_emit.error(code, "before", position)
+        65
+      Ready(before):
+        compare_after(before, after_path)
+  else:
+    catalog_diff_emit.error(1, "before", 0)
+    66
+
+fn run(path: Bytes, mode: Bytes, key: Bytes) -> I64 effects[alloc, io, partial]:
+  if (!std_bytes.equal(mode, "exact")) && (!std_bytes.equal(mode, "prefix")):
+    if std_bytes.equal(mode, "diff"):
+      compare_files(path, key)
+    else:
+      catalog_emit.error(2, 0)
+      64
+  else:
+    if bytes.len(key) > 256:
+      catalog_emit.error(2, 0)
+      64
+    else:
+      let input: Vec[U8] = vec.new()
+      if io.read_file(path, @input):
+        query(bytes.freeze(^input), mode, key)
+      else:
+        catalog_emit.error(1, 0)
+        66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 4:
+    run(vec.get(args, 1), vec.get(args, 2), vec.get(args, 3))
+  else:
+    catalog_emit.error(2, 0)
+    64

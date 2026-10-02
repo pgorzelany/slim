@@ -1,0 +1,5 @@
+module component_bad
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, partial]:
+  let accepted: Bool = std_netstring.append("a", 0, 1, 1, @vec.new())
+  0

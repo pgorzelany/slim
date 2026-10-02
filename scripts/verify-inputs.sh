@@ -6,9 +6,10 @@ trap 'rm -rf "$input_dir"' EXIT HUP INT TERM
 mkdir "$input_dir/project"
 cp selfhost/*.slim "$input_dir/project/"
 cp tests/fixtures/retained_inputs.slim "$input_dir/project/zzprobe.slim"
-sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports RangeBudget /(exports input_admitted input_frames_valid input_previous_head input_query_chain input_seal_history empty_input_queries RangeBudget /;s/(exports fact_at /(exports analyze_functions fact_at /;$s/)$//' selfhost/slim.project > "$input_dir/project/slim.project"
-cat >> "$input_dir/project/slim.project" <<'MANIFEST'
-  (module zzprobe "zzprobe.slim" (imports check identity ranges retained syntax typing) (exports)))
+python3 -B scripts/prepare-probe-manifest.py selfhost/slim.project "$input_dir/project/slim.project" \
+  --export retained "input_admitted input_frames_valid input_previous_head input_query_chain input_seal_history empty_input_queries" \
+  --export ranges "analyze_functions" <<'MANIFEST'
+  (module zzprobe "zzprobe.slim" (imports check identity ranges retained syntax typing) (exports))
 MANIFEST
 if ! "$input_compiler" "$input_dir/project/slim.project" > "$input_dir/probe.c"; then
   cat "$input_dir/probe.c" >&2

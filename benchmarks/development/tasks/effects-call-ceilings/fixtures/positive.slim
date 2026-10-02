@@ -1,0 +1,8 @@
+module driver
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let source: Bytes = "module sample\n\nfn main(args: Vec[Bytes]) -> I64:\n  io.monotonic_ms()\n"
+  let tokens: Vec[syntax.Token] = vec.new()
+  let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @tokens)
+  let requires: Bool = effects.builtin_requires(source, tokens, 0, 2)
+  0

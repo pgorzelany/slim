@@ -1,0 +1,9 @@
+(project 1
+  (entry component_tests)
+  (module component_tests "tests/components.slim" (imports std_byte_index std_bytes std_decimal std_netstring std_text) (exports))
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value is_digit))
+  (module std_byte_index "experimental/byte_index.slim" (imports) (exports Bounds Built Entry Index build find prefix))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range equal range_equal))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64))
+  (module std_netstring "experimental/netstring.slim" (imports std_ascii std_bytes std_text) (exports Frame Parsed append parse))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_bytes append_i64)))

@@ -1,0 +1,7 @@
+module app
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  parallel:
+    let first: I64 = lib.sample(2)
+    let second: I64 = lib.sample(4)
+    first + second

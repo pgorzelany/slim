@@ -1,0 +1,33 @@
+module development_app
+
+fn run(path: Bytes, statistics: Bool) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: development_model.Loaded = development_data.load(bytes.freeze(^input), 32)
+    match loaded:
+      Invalid(code, position):
+        development_emit.error(code, position)
+        65
+      Ready(summary):
+        if development_emit.report(summary, statistics, 65536):
+          0
+        else:
+          development_emit.error(23, 0)
+          65
+  else:
+    development_emit.error(1, 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    run(vec.get(args, 1), false)
+  else:
+    if vec.len(args) == 3:
+      if std_bytes.equal(vec.get(args, 2), "stats"):
+        run(vec.get(args, 1), true)
+      else:
+        development_emit.error(2, 0)
+        64
+    else:
+      development_emit.error(2, 0)
+      64

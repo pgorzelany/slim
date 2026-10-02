@@ -1,0 +1,192 @@
+module development_stats
+
+fn zeros(count: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if vec.len(output) == count:
+    void
+  else:
+    vec.push(@output, 0)
+    recur(count, @output)
+
+fn aggregate() -> development_model.Aggregate:
+  development_model.Aggregate(count: 0, valid: true, total: 0)
+
+fn add(total: development_model.Aggregate, value: development_model.Number) -> development_model.Aggregate effects[partial]:
+  if !value.known:
+    total
+  else:
+    let valid: Bool = total.valid && framed_records.addition_fits(total.total, value.value)
+    let sum: I64 = if valid:
+      total.total + value.value
+    else:
+      total.total
+    development_model.Aggregate(count: total.count + 1, valid: valid, total: sum)
+
+fn add_trial(trial: development_model.Trial, current: development_model.ConditionState, outcomes: @Vec[I64], oracles: @Vec[I64]) -> development_model.ConditionState effects[partial]:
+  let outcome_count: I64 = vec.get(outcomes, trial.outcome)
+  let oracle_count: I64 = vec.get(oracles, trial.oracle)
+  vec.set(@outcomes, trial.outcome, outcome_count + 1)
+  vec.set(@oracles, trial.oracle, oracle_count + 1)
+  let terminal: Bool = trial.outcome < 6
+  let elapsed: development_model.Aggregate = if terminal:
+    add(current.elapsed, trial.elapsed)
+  else:
+    current.elapsed
+  let missing: I64 = if terminal && (!trial.elapsed.known):
+    1
+  else:
+    0
+  let excluded: I64 = if (!terminal) && trial.elapsed.known:
+    1
+  else:
+    0
+  let dispatched: I64 = if trial.outcome < 7:
+    1
+  else:
+    0
+  let finished: I64 = if terminal:
+    1
+  else:
+    0
+  development_model.ConditionState(operations: add(current.operations, trial.operations), requests: add(current.requests, trial.requests), elapsed: elapsed, missing_terminal_elapsed: current.missing_terminal_elapsed + missing, excluded_known_elapsed: current.excluded_known_elapsed + excluded, dispatched: current.dispatched + dispatched, terminal: current.terminal + finished)
+
+fn count(summary: development_model.Summary, cursor: I64, condition: I64, current: development_model.ConditionState, outcomes: @Vec[I64], oracles: @Vec[I64]) -> development_model.ConditionState effects[partial]:
+  if cursor == vec.len(summary.pairs):
+    current
+  else:
+    let pair: development_model.Pair = vec.get(summary.pairs, cursor)
+    let trial: development_model.Trial = if condition == 0:
+      pair.baseline
+    else:
+      pair.context
+    let next: development_model.ConditionState = add_trial(trial, current, @outcomes, @oracles)
+    recur(summary, cursor + 1, condition, next, @outcomes, @oracles)
+
+fn condition(summary: development_model.Summary, which: I64) -> development_model.Condition effects[alloc, partial]:
+  let outcomes: Vec[I64] = vec.new()
+  let oracles: Vec[I64] = vec.new()
+  zeros(8, @outcomes)
+  zeros(3, @oracles)
+  let empty: development_model.ConditionState = development_model.ConditionState(operations: aggregate(), requests: aggregate(), elapsed: aggregate(), missing_terminal_elapsed: 0, excluded_known_elapsed: 0, dispatched: 0, terminal: 0)
+  let counts: development_model.ConditionState = count(summary, 0, which, empty, @outcomes, @oracles)
+  development_model.Condition(outcomes: outcomes, oracles: oracles, counts: counts)
+
+fn ratio_reason(pair: development_model.Pair) -> I64:
+  if (pair.baseline.outcome > 0) || (pair.context.outcome > 0):
+    3
+  else:
+    if (!pair.baseline.elapsed.known) || (!pair.context.elapsed.known):
+      1
+    else:
+      if pair.baseline.elapsed.value == 0:
+        2
+      else:
+        0
+
+fn paired(summary: development_model.Summary, cursor: I64, facts: development_model.PairState, oracles: @Vec[I64]) -> development_model.PairState effects[partial]:
+  if cursor == vec.len(summary.pairs):
+    facts
+  else:
+    let pair: development_model.Pair = vec.get(summary.pairs, cursor)
+    let oracle: I64 = if (pair.baseline.oracle == 2) || (pair.context.oracle == 2):
+      4
+    else:
+      (pair.baseline.oracle * 2) + pair.context.oracle
+    let oracle_count: I64 = vec.get(oracles, oracle)
+    vec.set(@oracles, oracle, oracle_count + 1)
+    let reason: I64 = ratio_reason(pair)
+    let accepted: I64 = if reason < 3:
+      1
+    else:
+      0
+    let exact: I64 = if reason == 0:
+      1
+    else:
+      0
+    let missing: I64 = if reason == 1:
+      1
+    else:
+      0
+    let zero: I64 = if reason == 2:
+      1
+    else:
+      0
+    let outside: I64 = if reason == 3:
+      1
+    else:
+      0
+    let next: development_model.PairState = development_model.PairState(accepted: facts.accepted + accepted, exact: facts.exact + exact, missing: facts.missing + missing, zero: facts.zero + zero, outside: facts.outside + outside)
+    recur(summary, cursor + 1, next, @oracles)
+
+fn pairs(summary: development_model.Summary) -> development_model.PairFacts effects[alloc, partial]:
+  let oracles: Vec[I64] = vec.new()
+  zeros(5, @oracles)
+  let empty: development_model.PairState = development_model.PairState(accepted: 0, exact: 0, missing: 0, zero: 0, outside: 0)
+  let counts: development_model.PairState = paired(summary, 0, empty, @oracles)
+  development_model.PairFacts(oracles: oracles, counts: counts)
+
+fn collect(summary: development_model.Summary, cursor: I64, condition: I64, values: @Vec[I64]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(summary.pairs):
+    void
+  else:
+    let pair: development_model.Pair = vec.get(summary.pairs, cursor)
+    let trial: development_model.Trial = if condition == 0:
+      pair.baseline
+    else:
+      pair.context
+    if (trial.outcome < 6) && trial.elapsed.known:
+      vec.push(@values, trial.elapsed.value)
+    else:
+      void
+    recur(summary, cursor + 1, condition, @values)
+
+fn step(work: I64, maximum: I64) -> development_model.Step:
+  if (work < 0) || ((maximum < 0) || ((maximum > 1024) || (work >= maximum))):
+    development_model.Step(valid: false, work: work)
+  else:
+    development_model.Step(valid: true, work: work + 1)
+
+fn insert(values: @Vec[I64], cursor: I64, value: I64, work: I64, maximum: I64) -> development_model.Step effects[partial]:
+  if cursor == 0:
+    vec.set(@values, 0, value)
+    development_model.Step(valid: true, work: work)
+  else:
+    let next: development_model.Step = step(work, maximum)
+    if !next.valid:
+      next
+    else:
+      let previous: I64 = vec.get(values, cursor - 1)
+      if previous <= value:
+        vec.set(@values, cursor, value)
+        next
+      else:
+        vec.set(@values, cursor, previous)
+        recur(@values, cursor - 1, value, next.work, maximum)
+
+fn sort(values: @Vec[I64], cursor: I64, work: I64, maximum: I64) -> development_model.Step effects[partial]:
+  if cursor >= vec.len(values):
+    development_model.Step(valid: true, work: work)
+  else:
+    let value: I64 = vec.get(values, cursor)
+    let next: development_model.Step = insert(@values, cursor, value, work, maximum)
+    if next.valid:
+      recur(@values, cursor + 1, next.work, maximum)
+    else:
+      next
+
+fn median(values: ^Vec[I64], maximum: I64) -> development_model.Median effects[partial]:
+  if (vec.len(values) > 32) || ((maximum < 0) || (maximum > 1024)):
+    development_model.Median(known: false, reason: 2, lower: 0, upper: 0, work: 0)
+  else:
+    if vec.len(values) == 0:
+      development_model.Median(known: false, reason: 1, lower: 0, upper: 0, work: 0)
+    else:
+      let result: development_model.Step = sort(@values, 1, 0, maximum)
+      if result.valid:
+        development_model.Median(known: true, reason: 0, lower: vec.get(values, (vec.len(values) - 1) / 2), upper: vec.get(values, vec.len(values) / 2), work: result.work)
+      else:
+        development_model.Median(known: false, reason: 2, lower: 0, upper: 0, work: result.work)
+
+fn summary_median(summary: development_model.Summary, which: I64) -> development_model.Median effects[alloc, partial]:
+  let values: Vec[I64] = vec.new()
+  collect(summary, 0, which, @values)
+  median(^values, 1024)

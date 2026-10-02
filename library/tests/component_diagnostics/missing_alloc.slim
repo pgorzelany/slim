@@ -1,0 +1,7 @@
+module component_bad
+
+fn misuse(output: @Vec[U8]) -> Bool effects[partial]:
+  std_netstring.append("a", 0, 1, 1, @output)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

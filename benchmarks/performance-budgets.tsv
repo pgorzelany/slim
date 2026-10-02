@@ -24,6 +24,8 @@ incremental-exponent	deep-public-interface	1.25	exponent	RFC-0030
 project-emit-exponent	wide	1.25	exponent	RFC-0030
 project-emit-exponent	deep	1.25	exponent	RFC-0030
 application-emit-check-ratio	api-diff	2.00	ratio	RFC-0030
+application-emit-check-ratio	catalog	2.00	ratio	RFC-0030
+application-emit-check-ratio	development-summary	2.00	ratio	RFC-0030
 application-emit-check-ratio	http	2.00	ratio	RFC-0030
 application-emit-check-ratio	ledger	2.00	ratio	RFC-0030
 application-emit-check-ratio	lz4	2.00	ratio	RFC-0030
@@ -33,6 +35,7 @@ application-emit-check-ratio	sat	2.00	ratio	RFC-0030
 application-emit-check-ratio	source-gen	2.00	ratio	RFC-0030
 application-emit-check-ratio	standard-library	2.00	ratio	RFC-0030
 application-emit-check-ratio	std-docs	2.00	ratio	RFC-0030
+application-emit-check-ratio	workplan	2.00	ratio	RFC-0030
 native-runtime-ratio	gcd_fib	1.75	slim-over-c	RFC-0030
 native-runtime-ratio	sieve	2.50	slim-over-c	RFC-0061
 native-runtime-ratio	bfs	2.00	slim-over-c	RFC-0061

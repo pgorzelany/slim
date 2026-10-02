@@ -25,15 +25,15 @@ M2 source cutovers remain pending; the
 staged memory and host contracts and native component evidence.
 
 The [early agent development loop](../design/rfcs/0158-early-agent-development-loop.md)
-is complete for its bounded scope. Production self-hosted schema-1
-[semantic context](CONTEXT.md), independent conformance, native costs, all six
-frozen Sol 6.1 xhigh trials and all release components are recorded in the
-[closure report](../benchmarks/results/2026-10-02-agent-development-loop.md).
-Strict task acceptance is 2/3 in each condition; context benefit remains unknown.
-The decision retains opt-in context and freezes breadth. The next priority is
-the existing manifest sorting/uniqueness contract, then reliable transport and
-held-out compiler/library repair tasks. This accepted branch does not complete
-M2 or the full M3 agent/debugger interface.
+completed its bounded context/pilot scope; strict acceptance was 2/3 in each
+condition and general context benefit remains unknown. The
+[closure report](../benchmarks/results/2026-10-02-agent-development-loop.md)
+retains original outcomes and costs.
+
+The [current roadmap](../ROADMAP.md) authorizes continuous work until 2026-10-03
+10:00 Europe/Warsaw: project-list validation, bounded ordinary-source data
+components and a stronger development evaluator. Implemented slices remain
+pending coordinated acceptance. M2/full M3 are not closed by this work.
 
 M3-M7 and general agent effectiveness remain pending. A bounded pilot cannot
 establish a general effectiveness claim. The

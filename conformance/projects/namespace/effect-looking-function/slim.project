@@ -1,0 +1,4 @@
+(project 1 (entry app)
+  (module a "a.slim" (imports ) (exports alloc))
+  (module app "app.slim" (imports a) (exports ))
+)

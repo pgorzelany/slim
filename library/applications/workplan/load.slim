@@ -1,0 +1,135 @@
+module workplan_load
+
+fn name_error(source: Bytes, cursor: I64, end: I64) -> I64 effects[partial]:
+  if cursor == end:
+    -1
+  else:
+    let byte: U8 = bytes.get(source, cursor)
+    let code: I64 = u8.to_i64(byte)
+    if std_ascii.is_alphanumeric(byte) || ((code == 95) || ((code == 45) || (code == 46))):
+      recur(source, cursor + 1, end)
+    else:
+      cursor
+
+fn name(source: Bytes, start: I64, end: I64) -> I64 effects[partial]:
+  if (start == end) || (end - start > 64):
+    start
+  else:
+    name_error(source, start, end)
+
+fn tasks(source: Bytes, cursor: I64, maximum: I64, output: @Vec[workplan_model.Task], entries: @Vec[std_byte_index.Entry]) -> workplan_model.Status effects[alloc, partial]:
+  let parsed: framed_records.Parsed = framed_records.parse(source, cursor, bytes.len(source), 64, 19, 1048576)
+  match parsed:
+    End:
+      workplan_model.Status(valid: true, code: 0, position: cursor)
+    Invalid(code, position):
+      workplan_model.Status(valid: false, code: 100 + code, position: position)
+    Value(triple):
+      if vec.len(output) == maximum:
+        workplan_model.Status(valid: false, code: 10, position: cursor)
+      else:
+        let bad_name: I64 = name(source, triple.first.start, triple.first.end)
+        if bad_name >= 0:
+          workplan_model.Status(valid: false, code: 11, position: bad_name)
+        else:
+          let number: std_decimal.Parsed = framed_records.integer(source, triple.second)
+          match number:
+            Invalid(position):
+              workplan_model.Status(valid: false, code: 12, position: position)
+            Overflow(position):
+              workplan_model.Status(valid: false, code: 13, position: position)
+            Value(cost, next):
+              if cost < 0:
+                workplan_model.Status(valid: false, code: 12, position: triple.second.start)
+              else:
+                let ordinal: I64 = vec.len(output)
+                vec.push(@output, workplan_model.Task(name_start: triple.first.start, name_end: triple.first.end, cost: cost, dependencies_start: triple.third.start, dependencies_end: triple.third.end))
+                vec.push(@entries, std_byte_index.Entry(start: triple.first.start, end: triple.first.end, ordinal: ordinal))
+                recur(source, triple.next, maximum, @output, @entries)
+
+fn initialize(count: I64, cursor: I64, heads: @Vec[I64], indegree: @Vec[I64], marks: @Vec[I64]) -> Void effects[alloc, partial]:
+  if cursor == count:
+    void
+  else:
+    vec.push(@heads, -1)
+    vec.push(@indegree, 0)
+    vec.push(@marks, -1)
+    recur(count, cursor + 1, @heads, @indegree, @marks)
+
+fn dependencies(index: std_byte_index.Index, dependent: I64, cursor: I64, end: I64, maximum: I64, edges: @Vec[workplan_model.Edge], heads: @Vec[I64], indegree: @Vec[I64], marks: @Vec[I64]) -> workplan_model.Status effects[alloc, partial]:
+  let separator: I64 = std_bytes.find_byte(index.source, i64.to_u8(44), cursor, end)
+  let finish: I64 = if separator < 0:
+    end
+  else:
+    separator
+  let bad_name: I64 = name(index.source, cursor, finish)
+  if bad_name >= 0:
+    workplan_model.Status(valid: false, code: 16, position: bad_name)
+  else:
+    let prerequisite: I64 = std_byte_index.find(index, index.source, cursor, finish)
+    if prerequisite < 0:
+      workplan_model.Status(valid: false, code: 17, position: cursor)
+    else:
+      if prerequisite == dependent:
+        workplan_model.Status(valid: false, code: 18, position: cursor)
+      else:
+        if vec.get(marks, prerequisite) == dependent:
+          workplan_model.Status(valid: false, code: 19, position: cursor)
+        else:
+          if vec.len(edges) == maximum:
+            workplan_model.Status(valid: false, code: 20, position: cursor)
+          else:
+            let head: I64 = vec.get(heads, prerequisite)
+            let ordinal: I64 = vec.len(edges)
+            let degree: I64 = vec.get(indegree, dependent)
+            vec.push(@edges, workplan_model.Edge(dependent: dependent, next: head, position: cursor))
+            vec.set(@heads, prerequisite, ordinal)
+            vec.set(@indegree, dependent, degree + 1)
+            vec.set(@marks, prerequisite, dependent)
+            if separator < 0:
+              workplan_model.Status(valid: true, code: 0, position: end)
+            else:
+              recur(index, dependent, separator + 1, end, maximum, @edges, @heads, @indegree, @marks)
+
+fn resolve(index: std_byte_index.Index, tasks: Vec[workplan_model.Task], cursor: I64, maximum: I64, edges: @Vec[workplan_model.Edge], heads: @Vec[I64], indegree: @Vec[I64], marks: @Vec[I64]) -> workplan_model.Status effects[alloc, partial]:
+  if cursor == vec.len(tasks):
+    workplan_model.Status(valid: true, code: 0, position: bytes.len(index.source))
+  else:
+    let task: workplan_model.Task = vec.get(tasks, cursor)
+    let result: workplan_model.Status = if task.dependencies_start == task.dependencies_end:
+      workplan_model.Status(valid: true, code: 0, position: task.dependencies_end)
+    else:
+      dependencies(index, cursor, task.dependencies_start, task.dependencies_end, maximum, @edges, @heads, @indegree, @marks)
+    if result.valid:
+      recur(index, tasks, cursor + 1, maximum, @edges, @heads, @indegree, @marks)
+    else:
+      result
+
+fn load(source: Bytes, task_limit: I64, edge_limit: I64) -> workplan_model.Loaded effects[alloc, partial]:
+  if (task_limit < 0) || ((task_limit > 4096) || ((edge_limit < 0) || ((edge_limit > 65536) || (bytes.len(source) > 1048576)))):
+    workplan_model.Loaded::Invalid(10, 0)
+  else:
+    let output: Vec[workplan_model.Task] = vec.new()
+    let entries: Vec[std_byte_index.Entry] = vec.new()
+    let parsed: workplan_model.Status = tasks(source, 0, task_limit, @output, @entries)
+    if !parsed.valid:
+      workplan_model.Loaded::Invalid(parsed.code, parsed.position)
+    else:
+      let built: std_byte_index.Built = std_byte_index.build(source, ^entries, task_limit)
+      match built:
+        Invalid(code, position):
+          if code == 3:
+            workplan_model.Loaded::Invalid(14, position)
+          else:
+            workplan_model.Loaded::Invalid(15, position)
+        Ready(index):
+          let edges: Vec[workplan_model.Edge] = vec.new()
+          let heads: Vec[I64] = vec.new()
+          let indegree: Vec[I64] = vec.new()
+          let marks: Vec[I64] = vec.new()
+          initialize(vec.len(output), 0, @heads, @indegree, @marks)
+          let resolved: workplan_model.Status = resolve(index, output, 0, edge_limit, @edges, @heads, @indegree, @marks)
+          if resolved.valid:
+            workplan_model.Loaded::Ready(workplan_model.Graph(index: index, tasks: output, edges: edges, heads: heads, indegree: indegree))
+          else:
+            workplan_model.Loaded::Invalid(resolved.code, resolved.position)

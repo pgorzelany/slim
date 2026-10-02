@@ -33,6 +33,19 @@ for project_fixture in conformance/pass/*.slim benchmarks/challenges/*/program.s
     NR == 3 { if ($1 != 1 || $2 != 0) exit 1 } END { if (NR != 3) exit 1 }' "$project_dir/report.tsv"
   project_cases=$((project_cases + 1))
 done
+# Multisource namespace roles use the same complete prepared/generated-C oracle.
+# Keep this separate from the unchanged single-source fixture wrapping above.
+project_namespace_manifest=conformance/projects/namespace/multiform/slim.project
+"$project_dir/ordinary" "$project_namespace_manifest" "$project_namespace_manifest" work > "$project_dir/ordinary.out"
+SLIM_RETAINED_REPORT="$project_dir/report.tsv" "$project_dir/observed" "$project_namespace_manifest" "$project_namespace_manifest" work > "$project_dir/observed.out"
+SLIM_RETAINED_REPORT="$project_dir/repeat.tsv" "$project_dir/observed" "$project_namespace_manifest" "$project_namespace_manifest" work > "$project_dir/repeat.out"
+cmp "$project_dir/ordinary.out" "$project_dir/observed.out"
+cmp "$project_dir/ordinary.out" "$project_dir/repeat.out"
+cmp "$project_dir/report.tsv" "$project_dir/repeat.tsv"
+awk -F '\t' 'NR == 1 { if ($0 != "slim-retained\t1\texact\t1000000000") exit 1 }
+  NR == 2 { if ($1 != 0 || $2 <= 0) exit 1 }
+  NR == 3 { if ($1 != 1 || $2 != 0) exit 1 } END { if (NR != 3) exit 1 }' "$project_dir/report.tsv"
+project_cases=$((project_cases + 1))
 printf '(project 1 (entry hello) (module hello "program.slim" (imports) (exports)))\n' > "$project_manifest"
 cp examples/hello.slim "$project_dir/input/program.slim"
 cp "$project_manifest" "$project_dir/rejected/slim.project"

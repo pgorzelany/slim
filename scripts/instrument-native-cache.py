@@ -5,14 +5,14 @@ import sys
 
 code = Path(sys.argv[1]).read_text()
 # These counters observe executed functions and loop bodies, not reported hits.
-for index, name in enumerate(['lookup', 'publish', 'entry_95frame']):
-    pattern = r'(?m)^(static [^\n]*\bslim_fn_nativecache_95' + name + r'\([^\n]*\) \{)$'
+for index, name in enumerate(['lookup', 'publish', 'entry_950frame']):
+    pattern = r'(?m)^(static [^\n]*\bslim_fn_pnativecache_95_95' + name + r'\([^\n]*\) \{)$'
     code, count = re.subn(pattern, lambda m: m[0] + f'\n++native_query_counts[{index}];', code)
     assert count == 1, (name, count)
 for index, name, at_name, limit_name, suffix in [
-    (3, 'nativecache_95clone_95rows', 'at', 'source', '.len'),
-    (4, 'cache_95weighted_95checksum', 'index', 'end', ''),
-    (5, 'retained_95equal_95from', 'at', 'left', '.len'),
+    (3, 'pnativecache_95_95clone_950rows', 'at', 'source', '.len'),
+    (4, 'pcache_95_95weighted_950checksum', 'index', 'end', ''),
+    (5, 'pretained_95_95equal_950from', 'at', 'left', '.len'),
 ]:
     pattern = r'(?m)^static [^\n]*\bslim_fn_' + name + r'\([^\n]*\) \{$'
     matches = list(re.finditer(pattern, code))

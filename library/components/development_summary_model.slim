@@ -1,0 +1,84 @@
+module development_model
+
+struct Status:
+  valid: Bool
+  code: I64
+  position: I64
+
+struct Number:
+  valid: Bool
+  known: Bool
+  value: I64
+  code: I64
+  position: I64
+
+struct Trial:
+  identifier: std_netstring.Frame
+  outcome: I64
+  oracle: I64
+  elapsed: Number
+  operations: Number
+  requests: Number
+  lifecycle: I64
+  submitted_source: std_netstring.Frame
+
+struct Pair:
+  key: std_netstring.Frame
+  baseline: Trial
+  context: Trial
+
+struct Header:
+  freeze: std_netstring.Frame
+  compiler: std_netstring.Frame
+  evaluator: std_netstring.Frame
+  manifest: std_netstring.Frame
+
+struct Summary:
+  header: Header
+  index: std_byte_index.Index
+  pairs: Vec[Pair]
+
+enum Loaded:
+  Invalid(I64, I64)
+  Ready(Summary)
+
+struct Aggregate:
+  count: I64
+  valid: Bool
+  total: I64
+
+struct ConditionState:
+  operations: Aggregate
+  requests: Aggregate
+  elapsed: Aggregate
+  missing_terminal_elapsed: I64
+  excluded_known_elapsed: I64
+  dispatched: I64
+  terminal: I64
+
+struct Condition:
+  outcomes: Vec[I64]
+  oracles: Vec[I64]
+  counts: ConditionState
+
+struct PairState:
+  accepted: I64
+  exact: I64
+  missing: I64
+  zero: I64
+  outside: I64
+
+struct PairFacts:
+  oracles: Vec[I64]
+  counts: PairState
+
+struct Step:
+  valid: Bool
+  work: I64
+
+struct Median:
+  known: Bool
+  reason: I64
+  lower: I64
+  upper: I64
+  work: I64

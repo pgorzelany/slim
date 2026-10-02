@@ -1,0 +1,19 @@
+module app
+
+fn inspect(value: lib.Bool) -> I64:
+  match value:
+    Item(number):
+      number
+
+fn main(args: Vec[Bytes]) -> I64 effects[io]:
+  let number: I64 = 3
+  let enabled: Bool = true
+  let item: lib.I64 = lib.I64(value: number)
+  let empty: lib.U8 = lib.U8()
+  let choice: lib.Bool = lib.Bool::Item(4)
+  if enabled:
+    io.print_i64(item.value + inspect(choice))
+    io.println("")
+  else:
+    io.println("bad")
+  0

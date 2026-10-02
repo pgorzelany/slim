@@ -1,0 +1,158 @@
+module development_emit
+
+fn error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn text(output: @Vec[U8], value: Bytes, maximum: I64) -> Bool effects[alloc, partial]:
+  if bytes.len(value) > (maximum - vec.len(output)):
+    false
+  else:
+    std_text.append_bytes(@output, value)
+    true
+
+fn integer(output: @Vec[U8], value: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  let digits: Vec[U8] = vec.new()
+  std_text.append_i64(@digits, value)
+  text(@output, bytes.freeze(^digits), maximum)
+
+fn span(output: @Vec[U8], source: Bytes, value: std_netstring.Frame, maximum: I64) -> Bool effects[alloc, partial]:
+  if (value.end - value.start) > (maximum - vec.len(output)):
+    false
+  else:
+    std_bytes.append_range(source, value.start, value.end, @output)
+
+fn value(output: @Vec[U8], total: development_model.Aggregate, maximum: I64) -> Bool effects[alloc, partial]:
+  if total.valid:
+    integer(@output, total.total, maximum)
+  else:
+    text(@output, "unknown", maximum)
+
+fn field(output: @Vec[U8], label: Bytes, number: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  text(@output, label, maximum) && integer(@output, number, maximum)
+
+fn outcome(which: I64) -> Bytes:
+  if which == 0:
+    "accepted"
+  else:
+    if which == 1:
+      "correctness-failure"
+    else:
+      if which == 2:
+        "infrastructure-failure"
+      else:
+        if which == 3:
+          "interrupted"
+        else:
+          if which == 4:
+            "elapsed-timeout"
+          else:
+            if which == 5:
+              "constraint-failure"
+            else:
+              if which == 6:
+                "unresolved"
+              else:
+                "not-run"
+
+fn outcomes(output: @Vec[U8], values: Vec[I64], cursor: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if cursor == 8:
+    true
+  else:
+    text(@output, " ", maximum) && (text(@output, outcome(cursor), maximum) && (text(@output, " ", maximum) && (integer(@output, vec.get(values, cursor), maximum) && outcomes(@output, values, cursor + 1, maximum))))
+
+fn aggregate(output: @Vec[U8], name: Bytes, total: development_model.Aggregate, configured: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  text(@output, " ", maximum) && (text(@output, name, maximum) && (field(@output, "-known ", total.count, maximum) && (text(@output, " ", maximum) && (text(@output, name, maximum) && (text(@output, "-sum ", maximum) && (value(@output, total, maximum) && (text(@output, " ", maximum) && (text(@output, name, maximum) && field(@output, "-unknown ", configured - total.count, maximum)))))))))
+
+fn condition(output: @Vec[U8], summary: development_model.Summary, which: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  let report: development_model.Condition = development_stats.condition(summary, which)
+  let counts: development_model.ConditionState = report.counts
+  let name: Bytes = if which == 0:
+    "baseline"
+  else:
+    "context"
+  text(@output, "condition ", maximum) && (text(@output, name, maximum) && (field(@output, " configured ", vec.len(summary.pairs), maximum) && (field(@output, " dispatched ", counts.dispatched, maximum) && (field(@output, " terminal ", counts.terminal, maximum) && (outcomes(@output, report.outcomes, 0, maximum) && (field(@output, " oracle-true ", vec.get(report.oracles, 0), maximum) && (field(@output, " oracle-false ", vec.get(report.oracles, 1), maximum) && (field(@output, " oracle-unknown ", vec.get(report.oracles, 2), maximum) && (aggregate(@output, "operations", counts.operations, vec.len(summary.pairs), maximum) && (aggregate(@output, "requests", counts.requests, vec.len(summary.pairs), maximum) && (field(@output, " terminal-elapsed-known ", counts.elapsed.count, maximum) && (field(@output, " terminal-elapsed-missing ", counts.missing_terminal_elapsed, maximum) && (text(@output, " terminal-elapsed-sum ", maximum) && (value(@output, counts.elapsed, maximum) && (field(@output, " excluded-elapsed-known ", counts.excluded_known_elapsed, maximum) && text(@output, "\n", maximum))))))))))))))))
+
+fn optional(output: @Vec[U8], known: Bool, value: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if known:
+    integer(@output, value, maximum)
+  else:
+    text(@output, "unknown", maximum)
+
+fn median_reason(reason: I64) -> Bytes:
+  if reason == 0:
+    "exact"
+  else:
+    if reason == 1:
+      "empty"
+    else:
+      "work-bound"
+
+fn median(output: @Vec[U8], summary: development_model.Summary, which: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  let measured: development_model.Median = development_stats.summary_median(summary, which)
+  let name: Bytes = if which == 0:
+    "baseline"
+  else:
+    "context"
+  let prefix: Bool = text(@output, "stats ", maximum) && (text(@output, name, maximum) && field(@output, " bounded maximum 32 work ", measured.work, maximum))
+  let lower: Bool = text(@output, " cap 1024 lower ", maximum) && optional(@output, measured.known, measured.lower, maximum)
+  let upper: Bool = text(@output, " upper ", maximum) && optional(@output, measured.known, measured.upper, maximum)
+  prefix && (lower && (upper && (text(@output, " reason ", maximum) && (text(@output, median_reason(measured.reason), maximum) && text(@output, "\n", maximum)))))
+
+fn pair_counts(output: @Vec[U8], summary: development_model.Summary, maximum: I64) -> Bool effects[alloc, partial]:
+  let facts: development_model.PairFacts = development_stats.pairs(summary)
+  let counts: development_model.PairState = facts.counts
+  field(@output, "pairs oracle TT ", vec.get(facts.oracles, 0), maximum) && (field(@output, " TF ", vec.get(facts.oracles, 1), maximum) && (field(@output, " FT ", vec.get(facts.oracles, 2), maximum) && (field(@output, " FF ", vec.get(facts.oracles, 3), maximum) && (field(@output, " unknown ", vec.get(facts.oracles, 4), maximum) && (field(@output, " strict-accepted ", counts.accepted, maximum) && (field(@output, " elapsed-exact ", counts.exact, maximum) && (field(@output, " elapsed-missing ", counts.missing, maximum) && (field(@output, " elapsed-zero-denominator ", counts.zero, maximum) && (field(@output, " elapsed-outside-accepted ", counts.outside, maximum) && text(@output, "\n", maximum))))))))))
+
+fn ratio_reason(reason: I64) -> Bytes:
+  if reason == 0:
+    "exact"
+  else:
+    if reason == 1:
+      "missing"
+    else:
+      if reason == 2:
+        "zero-denominator"
+      else:
+        "outside-accepted"
+
+fn task(output: @Vec[U8], summary: development_model.Summary, pair: development_model.Pair, maximum: I64) -> Bool effects[alloc, partial]:
+  let reason: I64 = development_stats.ratio_reason(pair)
+  let prefix: Bool = text(@output, "task ", maximum) && (integer(@output, pair.key.end - pair.key.start, maximum) && (text(@output, ":", maximum) && (span(@output, summary.index.source, pair.key, maximum) && (text(@output, ", baseline ", maximum) && (text(@output, outcome(pair.baseline.outcome), maximum) && (text(@output, " context ", maximum) && (text(@output, outcome(pair.context.outcome), maximum) && text(@output, " elapsed-ratio ", maximum))))))))
+  let ratio: Bool = if reason == 0:
+    integer(@output, pair.context.elapsed.value, maximum) && (text(@output, "/", maximum) && integer(@output, pair.baseline.elapsed.value, maximum))
+  else:
+    text(@output, "unknown", maximum)
+  prefix && (ratio && (text(@output, " reason ", maximum) && (text(@output, ratio_reason(reason), maximum) && text(@output, "\n", maximum))))
+
+fn tasks(output: @Vec[U8], summary: development_model.Summary, cursor: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(summary.index.entries):
+    true
+  else:
+    let entry: std_byte_index.Entry = vec.get(summary.index.entries, cursor)
+    task(@output, summary, vec.get(summary.pairs, entry.ordinal), maximum) && tasks(@output, summary, cursor + 1, maximum)
+
+fn header(output: @Vec[U8], summary: development_model.Summary, maximum: I64) -> Bool effects[alloc, partial]:
+  field(@output, "development-summary-v1 tasks ", vec.len(summary.pairs), maximum) && (field(@output, " trials ", vec.len(summary.pairs) * 2, maximum) && (text(@output, "\nidentities supplied ", maximum) && (span(@output, summary.index.source, summary.header.freeze, maximum) && (text(@output, " ", maximum) && (span(@output, summary.index.source, summary.header.compiler, maximum) && (text(@output, " ", maximum) && (span(@output, summary.index.source, summary.header.evaluator, maximum) && (text(@output, " ", maximum) && (span(@output, summary.index.source, summary.header.manifest, maximum) && text(@output, "\n", maximum))))))))))
+
+fn report(summary: development_model.Summary, statistics: Bool, maximum: I64) -> Bool effects[alloc, io, partial]:
+  if (maximum < 0) || (maximum > 65536):
+    false
+  else:
+    let output: Vec[U8] = vec.new()
+    let valid: Bool = header(@output, summary, maximum) && (condition(@output, summary, 0, maximum) && condition(@output, summary, 1, maximum))
+    let bounded: Bool = if statistics:
+      valid && (median(@output, summary, 0, maximum) && median(@output, summary, 1, maximum))
+    else:
+      valid
+    let complete: Bool = bounded && (pair_counts(@output, summary, maximum) && (tasks(@output, summary, 0, maximum) && text(@output, "model-tokens unknown model-calls unknown active-model-time unknown native-performance unknown general-effectiveness unknown\n", maximum)))
+    if complete:
+      io.print_bytes(bytes.freeze(^output))
+      true
+    else:
+      false

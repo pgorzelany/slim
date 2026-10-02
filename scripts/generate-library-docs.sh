@@ -18,11 +18,13 @@ fi
 "$slim_library_root/slimc" build "$slim_library_root/library/std-docs.project" -o "$slim_library_work/std-docs"
 "$slim_library_work/std-docs" \
     "$slim_library_work/interfaces/std_ascii.sli" \
+    "$slim_library_work/interfaces/std_byte_index.sli" \
     "$slim_library_work/interfaces/std_bytes.sli" \
     "$slim_library_work/interfaces/std_cursor.sli" \
     "$slim_library_work/interfaces/std_decimal.sli" \
     "$slim_library_work/interfaces/std_i64.sli" \
     "$slim_library_work/interfaces/std_i64_vec.sli" \
+    "$slim_library_work/interfaces/std_netstring.sli" \
     "$slim_library_work/interfaces/std_span.sli" \
     "$slim_library_work/interfaces/std_test.sli" \
     "$slim_library_work/interfaces/std_text.sli" \

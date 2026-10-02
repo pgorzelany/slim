@@ -8,9 +8,9 @@ trap 'rm -rf "$native_dir"' EXIT HUP INT TERM
 mkdir "$native_dir/probe"
 cp selfhost/*.slim "$native_dir/probe/"
 cp tests/fixtures/native_cache.slim "$native_dir/probe/zzprobe.slim"
-sed '/(module driver /d;s/(entry driver)/(entry zzprobe)/;s/(exports Entry Header Key Probe State Stored start lookup publish)/(exports key_fingerprint metadata_seal set_header Entry Header Key Probe State Stored start lookup publish)/;$s/)$//' selfhost/slim.project > "$native_dir/probe/slim.project"
-cat >> "$native_dir/probe/slim.project" <<'MANIFEST'
-  (module zzprobe "zzprobe.slim" (imports nativecache retained text) (exports borrowed borrowed_probe key)))
+python3 -B scripts/prepare-probe-manifest.py selfhost/slim.project "$native_dir/probe/slim.project" \
+  --export nativecache "key_fingerprint metadata_seal set_header" <<'MANIFEST'
+  (module zzprobe "zzprobe.slim" (imports nativecache retained text) (exports borrowed borrowed_probe key))
 MANIFEST
 if ! "$native_compiler" "$native_dir/probe/slim.project" > "$native_dir/probe.c"; then
     cat "$native_dir/probe.c" >&2
@@ -28,13 +28,13 @@ int main(void) {
     slim_alloc_status_init(&allocation);
     slim_rt_init(&region, &allocation);
     uint8_t context[] = "context", source[] = "source", artifact[] = "object";
-    Slim_type_nativecache_95State state = slim_fn_zzprobe_95borrowed(
+    Slim_type_pnativecache_95_95State state = slim_fn_pzzprobe_95_95borrowed(
         slim_bytes_static(context, 7), slim_bytes_static(source, 6),
         slim_bytes_static(artifact, 6), &region);
     memset(context, 'x', 7);
     memset(source, 'x', 6);
     memset(artifact, 'x', 6);
-    bool exact = slim_fn_zzprobe_95borrowed_95probe(&state, &region);
+    bool exact = slim_fn_pzzprobe_95_95borrowed_950probe(&state, &region);
     slim_rt_shutdown();
     return exact ? 0 : 1;
 }

@@ -270,9 +270,11 @@ need demonstrated task utility sufficient to justify their permanent costs.
 The coordinator's earlier “90%” described deliverables, not remaining time, and
 misleadingly suggested imminent completion. Three full attempts consumed over an
 hour of inferred wall spans before documentation repair. Failed runs are not
-completed-release duration samples. The local operator log
-[`design/task-times.jsonl`](../../design/task-times.jsonl) preserves attempt
-outcomes, UTC observations, independent elapsed receipts and explicit unknowns.
+completed-release duration samples. The initial 74-record operator snapshot is
+retained in the [evidence bundle](archive/2026-10-02-agent-loop-evidence.json.gz);
+the subsequent ten records remain in Git history and the local retained log.
+Future coarse records stay locally in ignored `build/task-times.jsonl`, rather
+than growing a tracked historical journal.
 [`scripts/task-time.py`](../../scripts/task-time.py) records future command
 durations with a monotonic clock; manual coordination spans remain wall-clock
 observations. It does not infer ETA, model active time or native performance.

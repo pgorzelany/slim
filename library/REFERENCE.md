@@ -16,6 +16,18 @@ Generated from canonical interface schema 3. Do not edit by hand.
 (fn is_upper ((copy U8)) Bool (effects))
 ```
 
+## `std_byte_index`
+
+```slim-interface
+(record Bounds ((start I64) (end I64)))
+(variant Built ((Invalid I64 I64) (Ready std_byte_index.Index)))
+(record Entry ((start I64) (end I64) (ordinal I64)))
+(record Index ((source Bytes) (entries (Vec std_byte_index.Entry))))
+(fn build ((copy Bytes) (owned (Vec std_byte_index.Entry)) (copy I64)) std_byte_index.Built (effects alloc partial))
+(fn find ((shared std_byte_index.Index) (copy Bytes) (copy I64) (copy I64)) I64 (effects partial))
+(fn prefix ((shared std_byte_index.Index) (copy Bytes)) std_byte_index.Bounds (effects partial))
+```
+
 ## `std_bytes`
 
 ```slim-interface
@@ -67,6 +79,15 @@ Generated from canonical interface schema 3. Do not edit by hand.
 (fn filled ((copy I64) (copy I64) (copy I64) (exclusive (Vec I64))) Void (effects alloc partial))
 (fn push_at ((exclusive (Vec I64)) (copy I64) (copy I64)) I64 (effects alloc partial))
 (fn top ((shared (Vec I64)) (copy I64)) I64 (effects partial))
+```
+
+## `std_netstring`
+
+```slim-interface
+(record Frame ((start I64) (end I64) (next I64)))
+(variant Parsed ((End) (Invalid I64 I64) (Value std_netstring.Frame)))
+(fn append ((copy Bytes) (copy I64) (copy I64) (copy I64) (exclusive (Vec U8))) Bool (effects alloc partial))
+(fn parse ((copy Bytes) (copy I64) (copy I64) (copy I64)) std_netstring.Parsed (effects partial))
 ```
 
 ## `std_span`

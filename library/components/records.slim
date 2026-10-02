@@ -1,0 +1,68 @@
+module framed_records
+
+struct Triple:
+  first: std_netstring.Frame
+  second: std_netstring.Frame
+  third: std_netstring.Frame
+  next: I64
+
+enum Parsed:
+  End
+  Invalid(I64, I64)
+  Value(Triple)
+
+fn parse(source: Bytes, start: I64, end: I64, first_limit: I64, second_limit: I64, third_limit: I64) -> Parsed effects[partial]:
+  let first: std_netstring.Parsed = std_netstring.parse(source, start, end, first_limit)
+  match first:
+    End:
+      Parsed::End()
+    Invalid(code, position):
+      Parsed::Invalid(code, position)
+    Value(one):
+      let second: std_netstring.Parsed = std_netstring.parse(source, one.next, end, second_limit)
+      match second:
+        End:
+          Parsed::Invalid(8, one.next)
+        Invalid(code, position):
+          Parsed::Invalid(code, position)
+        Value(two):
+          let third: std_netstring.Parsed = std_netstring.parse(source, two.next, end, third_limit)
+          match third:
+            End:
+              Parsed::Invalid(8, two.next)
+            Invalid(code, position):
+              Parsed::Invalid(code, position)
+            Value(three):
+              Parsed::Value(Triple(first: one, second: two, third: three, next: three.next))
+
+fn integer(source: Bytes, frame: std_netstring.Frame) -> std_decimal.Parsed effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, frame.start, frame.end)
+  match parsed:
+    Invalid(position):
+      std_decimal.Parsed::Invalid(position)
+    Overflow(position):
+      std_decimal.Parsed::Overflow(position)
+    Value(value, next):
+      if next < frame.end:
+        std_decimal.Parsed::Invalid(next)
+      else:
+        let first: I64 = u8.to_i64(bytes.get(source, frame.start))
+        if first == 48:
+          if frame.end - frame.start > 1:
+            std_decimal.Parsed::Invalid(frame.start + 1)
+          else:
+            std_decimal.Parsed::Value(value, next)
+        else:
+          if first == 45:
+            if u8.to_i64(bytes.get(source, frame.start + 1)) == 48:
+              std_decimal.Parsed::Invalid(frame.start + 1)
+            else:
+              std_decimal.Parsed::Value(value, next)
+          else:
+            std_decimal.Parsed::Value(value, next)
+
+fn addition_fits(left: I64, right: I64) -> Bool effects[partial]:
+  if right >= 0:
+    left <= 9223372036854775807 - right
+  else:
+    left >= (-9223372036854775807 - 1) - right

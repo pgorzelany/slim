@@ -1,0 +1,52 @@
+module std_hex
+
+fn valid_span(source: Bytes, start: I64, end: I64, maximum: I64) -> Bool:
+  (start >= 0) && ((end >= start) && ((end <= bytes.len(source)) && ((bytes.len(source) <= 1048576) && ((maximum >= 0) && (maximum <= 1048576)))))
+
+fn encode_write(source: Bytes, cursor: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == end:
+    void
+  else:
+    let code: I64 = u8.to_i64(bytes.get(source, cursor))
+    vec.push(@output, bytes.get("0123456789abcdef", code / 16))
+    vec.push(@output, bytes.get("0123456789abcdef", code % 16))
+    recur(source, cursor + 1, end, @output)
+
+fn encode(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if valid_span(source, start, end, maximum):
+    if end - start <= maximum / 2:
+      encode_write(source, start, end, @output)
+      true
+    else:
+      false
+  else:
+    false
+
+fn hex_valid(source: Bytes, cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor == end:
+    true
+  else:
+    if std_ascii.is_hex_digit(bytes.get(source, cursor)):
+      recur(source, cursor + 1, end)
+    else:
+      false
+
+fn decode_write(source: Bytes, cursor: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if cursor == end:
+    void
+  else:
+    let high: I64 = std_ascii.hex_value(bytes.get(source, cursor))
+    let low: I64 = std_ascii.hex_value(bytes.get(source, cursor + 1))
+    vec.push(@output, i64.to_u8(high * 16 + low))
+    recur(source, cursor + 2, end, @output)
+
+fn decode(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if valid_span(source, start, end, maximum):
+    let length: I64 = end - start
+    if (length % 2 == 0) && ((length / 2 <= maximum) && hex_valid(source, start, end)):
+      decode_write(source, start, end, @output)
+      true
+    else:
+      false
+  else:
+    false

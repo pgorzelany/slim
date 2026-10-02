@@ -1,0 +1,735 @@
+{
+  "schema": 2,
+  "model": "gpt-6.1-sol",
+  "reasoning_effort": "xhigh",
+  "budgets": {
+    "elapsed_seconds": 900,
+    "operations": 40,
+    "process_seconds": 60
+  },
+  "tasks": [
+    {
+      "id": "text-budgeted-quote",
+      "files": [
+        "slim.project",
+        "analysis.slim",
+        "cache.slim",
+        "check.slim",
+        "codegen.slim",
+        "context.slim",
+        "control.slim",
+        "driver.slim",
+        "edit.slim",
+        "effects.slim",
+        "equivalence.slim",
+        "flow.slim",
+        "format.slim",
+        "fragments.slim",
+        "identity.slim",
+        "ir.slim",
+        "memory.slim",
+        "nativebuild.slim",
+        "nativecache.slim",
+        "ownership.slim",
+        "parallel.slim",
+        "parallelcache.slim",
+        "project.slim",
+        "proof.slim",
+        "quality.slim",
+        "query.slim",
+        "ranges.slim",
+        "reduce.slim",
+        "retained.slim",
+        "scheduler.slim",
+        "session.slim",
+        "slimc.slim",
+        "syntax.slim",
+        "text.slim",
+        "typing.slim",
+        "validate.slim"
+      ],
+      "editable": [
+        "text.slim",
+        "driver.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "rejected",
+      "base": {
+        "analysis.slim": "selfhost/analysis.slim",
+        "cache.slim": "selfhost/cache.slim",
+        "check.slim": "selfhost/check.slim",
+        "codegen.slim": "selfhost/codegen.slim",
+        "slimc.slim": "selfhost/slimc.slim",
+        "context.slim": "selfhost/context.slim",
+        "control.slim": "selfhost/control.slim",
+        "driver.slim": "selfhost/driver.slim",
+        "edit.slim": "selfhost/edit.slim",
+        "effects.slim": "selfhost/effects.slim",
+        "equivalence.slim": "selfhost/equivalence.slim",
+        "flow.slim": "selfhost/flow.slim",
+        "format.slim": "selfhost/format.slim",
+        "fragments.slim": "selfhost/fragments.slim",
+        "identity.slim": "selfhost/identity.slim",
+        "ir.slim": "selfhost/ir.slim",
+        "memory.slim": "selfhost/memory.slim",
+        "nativebuild.slim": "selfhost/nativebuild.slim",
+        "nativecache.slim": "selfhost/nativecache.slim",
+        "ownership.slim": "selfhost/ownership.slim",
+        "parallel.slim": "selfhost/parallel.slim",
+        "parallelcache.slim": "selfhost/parallelcache.slim",
+        "project.slim": "selfhost/project.slim",
+        "proof.slim": "selfhost/proof.slim",
+        "quality.slim": "selfhost/quality.slim",
+        "query.slim": "selfhost/query.slim",
+        "ranges.slim": "selfhost/ranges.slim",
+        "reduce.slim": "selfhost/reduce.slim",
+        "retained.slim": "selfhost/retained.slim",
+        "scheduler.slim": "selfhost/scheduler.slim",
+        "session.slim": "selfhost/session.slim",
+        "syntax.slim": "selfhost/syntax.slim",
+        "text.slim": "selfhost/text.slim",
+        "typing.slim": "selfhost/typing.slim",
+        "validate.slim": "selfhost/validate.slim"
+      }
+    },
+    {
+      "id": "identity-span-intersection",
+      "files": [
+        "slim.project",
+        "analysis.slim",
+        "cache.slim",
+        "check.slim",
+        "codegen.slim",
+        "context.slim",
+        "control.slim",
+        "driver.slim",
+        "edit.slim",
+        "effects.slim",
+        "equivalence.slim",
+        "flow.slim",
+        "format.slim",
+        "fragments.slim",
+        "identity.slim",
+        "ir.slim",
+        "memory.slim",
+        "nativebuild.slim",
+        "nativecache.slim",
+        "ownership.slim",
+        "parallel.slim",
+        "parallelcache.slim",
+        "project.slim",
+        "proof.slim",
+        "quality.slim",
+        "query.slim",
+        "ranges.slim",
+        "reduce.slim",
+        "retained.slim",
+        "scheduler.slim",
+        "session.slim",
+        "slimc.slim",
+        "syntax.slim",
+        "text.slim",
+        "typing.slim",
+        "validate.slim"
+      ],
+      "editable": [
+        "identity.slim",
+        "driver.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "analysis.slim": "selfhost/analysis.slim",
+        "cache.slim": "selfhost/cache.slim",
+        "check.slim": "selfhost/check.slim",
+        "codegen.slim": "selfhost/codegen.slim",
+        "slimc.slim": "selfhost/slimc.slim",
+        "context.slim": "selfhost/context.slim",
+        "control.slim": "selfhost/control.slim",
+        "driver.slim": "selfhost/driver.slim",
+        "edit.slim": "selfhost/edit.slim",
+        "effects.slim": "selfhost/effects.slim",
+        "equivalence.slim": "selfhost/equivalence.slim",
+        "flow.slim": "selfhost/flow.slim",
+        "format.slim": "selfhost/format.slim",
+        "fragments.slim": "selfhost/fragments.slim",
+        "identity.slim": "selfhost/identity.slim",
+        "ir.slim": "selfhost/ir.slim",
+        "memory.slim": "selfhost/memory.slim",
+        "nativebuild.slim": "selfhost/nativebuild.slim",
+        "nativecache.slim": "selfhost/nativecache.slim",
+        "ownership.slim": "selfhost/ownership.slim",
+        "parallel.slim": "selfhost/parallel.slim",
+        "parallelcache.slim": "selfhost/parallelcache.slim",
+        "project.slim": "selfhost/project.slim",
+        "proof.slim": "selfhost/proof.slim",
+        "quality.slim": "selfhost/quality.slim",
+        "query.slim": "selfhost/query.slim",
+        "ranges.slim": "selfhost/ranges.slim",
+        "reduce.slim": "selfhost/reduce.slim",
+        "retained.slim": "selfhost/retained.slim",
+        "scheduler.slim": "selfhost/scheduler.slim",
+        "session.slim": "selfhost/session.slim",
+        "syntax.slim": "selfhost/syntax.slim",
+        "text.slim": "selfhost/text.slim",
+        "typing.slim": "selfhost/typing.slim",
+        "validate.slim": "selfhost/validate.slim"
+      }
+    },
+    {
+      "id": "decimal-exact",
+      "files": [
+        "slim.project",
+        "experimental/ascii.slim",
+        "experimental/bytes.slim",
+        "experimental/cursor.slim",
+        "experimental/decimal.slim",
+        "experimental/i64.slim",
+        "experimental/i64_vec.slim",
+        "experimental/span.slim",
+        "experimental/test.slim",
+        "experimental/text.slim",
+        "experimental/u8_vec.slim",
+        "tests/main.slim"
+      ],
+      "editable": [
+        "experimental/decimal.slim",
+        "tests/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/cursor.slim": "library/experimental/cursor.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/i64.slim": "library/experimental/i64.slim",
+        "experimental/i64_vec.slim": "library/experimental/i64_vec.slim",
+        "experimental/span.slim": "library/experimental/span.slim",
+        "experimental/test.slim": "library/experimental/test.slim",
+        "tests/main.slim": "library/tests/main.slim",
+        "experimental/text.slim": "library/experimental/text.slim",
+        "experimental/u8_vec.slim": "library/experimental/u8_vec.slim"
+      }
+    },
+    {
+      "id": "netstring-batch-atomic",
+      "files": [
+        "slim.project",
+        "experimental/ascii.slim",
+        "experimental/byte_index.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/netstring.slim",
+        "experimental/text.slim",
+        "tests/components.slim"
+      ],
+      "editable": [
+        "experimental/netstring.slim",
+        "tests/components.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "rejected",
+      "base": {
+        "tests/components.slim": "library/tests/components.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/byte_index.slim": "library/experimental/byte_index.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/netstring.slim": "library/experimental/netstring.slim",
+        "experimental/text.slim": "library/experimental/text.slim"
+      }
+    },
+    {
+      "id": "byte-index-range",
+      "files": [
+        "slim.project",
+        "experimental/ascii.slim",
+        "experimental/byte_index.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/netstring.slim",
+        "experimental/text.slim",
+        "tests/components.slim"
+      ],
+      "editable": [
+        "experimental/byte_index.slim",
+        "tests/components.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "tests/components.slim": "library/tests/components.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/byte_index.slim": "library/experimental/byte_index.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/netstring.slim": "library/experimental/netstring.slim",
+        "experimental/text.slim": "library/experimental/text.slim"
+      }
+    },
+    {
+      "id": "hex-atomic-codec",
+      "files": [
+        "slim.project",
+        "experimental/ascii.slim",
+        "experimental/bytes.slim",
+        "experimental/cursor.slim",
+        "experimental/decimal.slim",
+        "experimental/hex.slim",
+        "experimental/i64.slim",
+        "experimental/i64_vec.slim",
+        "experimental/span.slim",
+        "experimental/test.slim",
+        "experimental/text.slim",
+        "experimental/u8_vec.slim",
+        "tests/main.slim"
+      ],
+      "editable": [
+        "experimental/hex.slim",
+        "tests/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "rejected",
+      "base": {
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/cursor.slim": "library/experimental/cursor.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/i64.slim": "library/experimental/i64.slim",
+        "experimental/i64_vec.slim": "library/experimental/i64_vec.slim",
+        "experimental/span.slim": "library/experimental/span.slim",
+        "experimental/test.slim": "library/experimental/test.slim",
+        "tests/main.slim": "library/tests/main.slim",
+        "experimental/text.slim": "library/experimental/text.slim",
+        "experimental/u8_vec.slim": "library/experimental/u8_vec.slim"
+      }
+    },
+    {
+      "id": "catalog-ordinal-sum",
+      "files": [
+        "slim.project",
+        "applications/catalog/catalog.slim",
+        "applications/catalog/emit.slim",
+        "applications/catalog/main.slim",
+        "applications/catalog/model.slim",
+        "components/records.slim",
+        "experimental/ascii.slim",
+        "experimental/byte_index.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/netstring.slim",
+        "experimental/text.slim"
+      ],
+      "editable": [
+        "applications/catalog/catalog.slim",
+        "applications/catalog/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "applications/catalog/main.slim": "library/applications/catalog/main.slim",
+        "applications/catalog/catalog.slim": "library/applications/catalog/catalog.slim",
+        "applications/catalog/emit.slim": "library/applications/catalog/emit.slim",
+        "applications/catalog/model.slim": "library/applications/catalog/model.slim",
+        "components/records.slim": "library/components/records.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/byte_index.slim": "library/experimental/byte_index.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/netstring.slim": "library/experimental/netstring.slim",
+        "experimental/text.slim": "library/experimental/text.slim"
+      }
+    },
+    {
+      "id": "workplan-critical-ties",
+      "files": [
+        "slim.project",
+        "applications/workplan/emit.slim",
+        "applications/workplan/load.slim",
+        "applications/workplan/main.slim",
+        "applications/workplan/model.slim",
+        "applications/workplan/schedule.slim",
+        "components/records.slim",
+        "experimental/ascii.slim",
+        "experimental/byte_index.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/netstring.slim",
+        "experimental/text.slim"
+      ],
+      "editable": [
+        "applications/workplan/schedule.slim",
+        "applications/workplan/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "components/records.slim": "library/components/records.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/byte_index.slim": "library/experimental/byte_index.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/netstring.slim": "library/experimental/netstring.slim",
+        "experimental/text.slim": "library/experimental/text.slim",
+        "applications/workplan/main.slim": "library/applications/workplan/main.slim",
+        "applications/workplan/emit.slim": "library/applications/workplan/emit.slim",
+        "applications/workplan/load.slim": "library/applications/workplan/load.slim",
+        "applications/workplan/model.slim": "library/applications/workplan/model.slim",
+        "applications/workplan/schedule.slim": "library/applications/workplan/schedule.slim"
+      }
+    },
+    {
+      "id": "http-header-window",
+      "files": [
+        "slim.project",
+        "applications/http/emit.slim",
+        "applications/http/main.slim",
+        "applications/http/model.slim",
+        "applications/http/parser.slim",
+        "experimental/ascii.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/text.slim"
+      ],
+      "editable": [
+        "applications/http/parser.slim",
+        "applications/http/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "applications/http/main.slim": "library/applications/http/main.slim",
+        "applications/http/emit.slim": "library/applications/http/emit.slim",
+        "applications/http/model.slim": "library/applications/http/model.slim",
+        "applications/http/parser.slim": "library/applications/http/parser.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/text.slim": "library/experimental/text.slim"
+      }
+    },
+    {
+      "id": "ledger-overflow-transaction",
+      "files": [
+        "slim.project",
+        "applications/ledger/emit.slim",
+        "applications/ledger/main.slim",
+        "applications/ledger/model.slim",
+        "applications/ledger/parser.slim",
+        "applications/ledger/state.slim",
+        "experimental/ascii.slim",
+        "experimental/bytes.slim",
+        "experimental/decimal.slim",
+        "experimental/text.slim"
+      ],
+      "editable": [
+        "applications/ledger/state.slim",
+        "applications/ledger/main.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "rejected",
+      "base": {
+        "applications/ledger/main.slim": "library/applications/ledger/main.slim",
+        "applications/ledger/emit.slim": "library/applications/ledger/emit.slim",
+        "applications/ledger/model.slim": "library/applications/ledger/model.slim",
+        "applications/ledger/parser.slim": "library/applications/ledger/parser.slim",
+        "applications/ledger/state.slim": "library/applications/ledger/state.slim",
+        "experimental/ascii.slim": "library/experimental/ascii.slim",
+        "experimental/bytes.slim": "library/experimental/bytes.slim",
+        "experimental/decimal.slim": "library/experimental/decimal.slim",
+        "experimental/text.slim": "library/experimental/text.slim"
+      }
+    },
+    {
+      "id": "format-call-modes",
+      "files": [
+        "slim.project",
+        "analysis.slim",
+        "cache.slim",
+        "check.slim",
+        "codegen.slim",
+        "context.slim",
+        "control.slim",
+        "driver.slim",
+        "edit.slim",
+        "effects.slim",
+        "equivalence.slim",
+        "flow.slim",
+        "format.slim",
+        "fragments.slim",
+        "identity.slim",
+        "ir.slim",
+        "memory.slim",
+        "nativebuild.slim",
+        "nativecache.slim",
+        "ownership.slim",
+        "parallel.slim",
+        "parallelcache.slim",
+        "project.slim",
+        "proof.slim",
+        "quality.slim",
+        "query.slim",
+        "ranges.slim",
+        "reduce.slim",
+        "retained.slim",
+        "scheduler.slim",
+        "session.slim",
+        "slimc.slim",
+        "syntax.slim",
+        "text.slim",
+        "typing.slim",
+        "validate.slim"
+      ],
+      "editable": [
+        "format.slim",
+        "driver.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "analysis.slim": "selfhost/analysis.slim",
+        "cache.slim": "selfhost/cache.slim",
+        "check.slim": "selfhost/check.slim",
+        "codegen.slim": "selfhost/codegen.slim",
+        "slimc.slim": "selfhost/slimc.slim",
+        "context.slim": "selfhost/context.slim",
+        "control.slim": "selfhost/control.slim",
+        "driver.slim": "selfhost/driver.slim",
+        "edit.slim": "selfhost/edit.slim",
+        "effects.slim": "selfhost/effects.slim",
+        "equivalence.slim": "selfhost/equivalence.slim",
+        "flow.slim": "selfhost/flow.slim",
+        "format.slim": "selfhost/format.slim",
+        "fragments.slim": "selfhost/fragments.slim",
+        "identity.slim": "selfhost/identity.slim",
+        "ir.slim": "selfhost/ir.slim",
+        "memory.slim": "selfhost/memory.slim",
+        "nativebuild.slim": "selfhost/nativebuild.slim",
+        "nativecache.slim": "selfhost/nativecache.slim",
+        "ownership.slim": "selfhost/ownership.slim",
+        "parallel.slim": "selfhost/parallel.slim",
+        "parallelcache.slim": "selfhost/parallelcache.slim",
+        "project.slim": "selfhost/project.slim",
+        "proof.slim": "selfhost/proof.slim",
+        "quality.slim": "selfhost/quality.slim",
+        "query.slim": "selfhost/query.slim",
+        "ranges.slim": "selfhost/ranges.slim",
+        "reduce.slim": "selfhost/reduce.slim",
+        "retained.slim": "selfhost/retained.slim",
+        "scheduler.slim": "selfhost/scheduler.slim",
+        "session.slim": "selfhost/session.slim",
+        "syntax.slim": "selfhost/syntax.slim",
+        "text.slim": "selfhost/text.slim",
+        "typing.slim": "selfhost/typing.slim",
+        "validate.slim": "selfhost/validate.slim"
+      }
+    },
+    {
+      "id": "effects-call-ceilings",
+      "files": [
+        "slim.project",
+        "analysis.slim",
+        "cache.slim",
+        "check.slim",
+        "codegen.slim",
+        "context.slim",
+        "control.slim",
+        "driver.slim",
+        "edit.slim",
+        "effects.slim",
+        "equivalence.slim",
+        "flow.slim",
+        "format.slim",
+        "fragments.slim",
+        "identity.slim",
+        "ir.slim",
+        "memory.slim",
+        "nativebuild.slim",
+        "nativecache.slim",
+        "ownership.slim",
+        "parallel.slim",
+        "parallelcache.slim",
+        "project.slim",
+        "proof.slim",
+        "quality.slim",
+        "query.slim",
+        "ranges.slim",
+        "reduce.slim",
+        "retained.slim",
+        "scheduler.slim",
+        "session.slim",
+        "slimc.slim",
+        "syntax.slim",
+        "text.slim",
+        "typing.slim",
+        "validate.slim"
+      ],
+      "editable": [
+        "effects.slim",
+        "driver.slim"
+      ],
+      "entry": "slim.project",
+      "initial_check": "accepted",
+      "base": {
+        "analysis.slim": "selfhost/analysis.slim",
+        "cache.slim": "selfhost/cache.slim",
+        "check.slim": "selfhost/check.slim",
+        "codegen.slim": "selfhost/codegen.slim",
+        "slimc.slim": "selfhost/slimc.slim",
+        "context.slim": "selfhost/context.slim",
+        "control.slim": "selfhost/control.slim",
+        "driver.slim": "selfhost/driver.slim",
+        "edit.slim": "selfhost/edit.slim",
+        "effects.slim": "selfhost/effects.slim",
+        "equivalence.slim": "selfhost/equivalence.slim",
+        "flow.slim": "selfhost/flow.slim",
+        "format.slim": "selfhost/format.slim",
+        "fragments.slim": "selfhost/fragments.slim",
+        "identity.slim": "selfhost/identity.slim",
+        "ir.slim": "selfhost/ir.slim",
+        "memory.slim": "selfhost/memory.slim",
+        "nativebuild.slim": "selfhost/nativebuild.slim",
+        "nativecache.slim": "selfhost/nativecache.slim",
+        "ownership.slim": "selfhost/ownership.slim",
+        "parallel.slim": "selfhost/parallel.slim",
+        "parallelcache.slim": "selfhost/parallelcache.slim",
+        "project.slim": "selfhost/project.slim",
+        "proof.slim": "selfhost/proof.slim",
+        "quality.slim": "selfhost/quality.slim",
+        "query.slim": "selfhost/query.slim",
+        "ranges.slim": "selfhost/ranges.slim",
+        "reduce.slim": "selfhost/reduce.slim",
+        "retained.slim": "selfhost/retained.slim",
+        "scheduler.slim": "selfhost/scheduler.slim",
+        "session.slim": "selfhost/session.slim",
+        "syntax.slim": "selfhost/syntax.slim",
+        "text.slim": "selfhost/text.slim",
+        "typing.slim": "selfhost/typing.slim",
+        "validate.slim": "selfhost/validate.slim"
+      }
+    }
+  ],
+  "trials": [
+    {
+      "id": "text-budgeted-quote-baseline",
+      "task": "text-budgeted-quote",
+      "condition": "baseline"
+    },
+    {
+      "id": "text-budgeted-quote-context",
+      "task": "text-budgeted-quote",
+      "condition": "context"
+    },
+    {
+      "id": "identity-span-intersection-context",
+      "task": "identity-span-intersection",
+      "condition": "context"
+    },
+    {
+      "id": "identity-span-intersection-baseline",
+      "task": "identity-span-intersection",
+      "condition": "baseline"
+    },
+    {
+      "id": "decimal-exact-baseline",
+      "task": "decimal-exact",
+      "condition": "baseline"
+    },
+    {
+      "id": "decimal-exact-context",
+      "task": "decimal-exact",
+      "condition": "context"
+    },
+    {
+      "id": "netstring-batch-atomic-context",
+      "task": "netstring-batch-atomic",
+      "condition": "context"
+    },
+    {
+      "id": "netstring-batch-atomic-baseline",
+      "task": "netstring-batch-atomic",
+      "condition": "baseline"
+    },
+    {
+      "id": "byte-index-range-baseline",
+      "task": "byte-index-range",
+      "condition": "baseline"
+    },
+    {
+      "id": "byte-index-range-context",
+      "task": "byte-index-range",
+      "condition": "context"
+    },
+    {
+      "id": "hex-atomic-codec-context",
+      "task": "hex-atomic-codec",
+      "condition": "context"
+    },
+    {
+      "id": "hex-atomic-codec-baseline",
+      "task": "hex-atomic-codec",
+      "condition": "baseline"
+    },
+    {
+      "id": "catalog-ordinal-sum-baseline",
+      "task": "catalog-ordinal-sum",
+      "condition": "baseline"
+    },
+    {
+      "id": "catalog-ordinal-sum-context",
+      "task": "catalog-ordinal-sum",
+      "condition": "context"
+    },
+    {
+      "id": "workplan-critical-ties-context",
+      "task": "workplan-critical-ties",
+      "condition": "context"
+    },
+    {
+      "id": "workplan-critical-ties-baseline",
+      "task": "workplan-critical-ties",
+      "condition": "baseline"
+    },
+    {
+      "id": "http-header-window-baseline",
+      "task": "http-header-window",
+      "condition": "baseline"
+    },
+    {
+      "id": "http-header-window-context",
+      "task": "http-header-window",
+      "condition": "context"
+    },
+    {
+      "id": "ledger-overflow-transaction-context",
+      "task": "ledger-overflow-transaction",
+      "condition": "context"
+    },
+    {
+      "id": "ledger-overflow-transaction-baseline",
+      "task": "ledger-overflow-transaction",
+      "condition": "baseline"
+    },
+    {
+      "id": "format-call-modes-baseline",
+      "task": "format-call-modes",
+      "condition": "baseline"
+    },
+    {
+      "id": "format-call-modes-context",
+      "task": "format-call-modes",
+      "condition": "context"
+    },
+    {
+      "id": "effects-call-ceilings-context",
+      "task": "effects-call-ceilings",
+      "condition": "context"
+    },
+    {
+      "id": "effects-call-ceilings-baseline",
+      "task": "effects-call-ceilings",
+      "condition": "baseline"
+    }
+  ]
+}

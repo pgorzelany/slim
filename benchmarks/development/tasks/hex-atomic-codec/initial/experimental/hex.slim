@@ -1,0 +1,9 @@
+module std_hex
+
+fn encode(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc]:
+  vec.push(output, bytes.get(source, start))
+  true
+
+fn decode(source: Bytes, start: I64, end: I64, maximum: I64, output: @Vec[U8]) -> Bool effects[alloc]:
+  vec.push(output, bytes.get(source, start))
+  true

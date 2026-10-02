@@ -1,0 +1,7 @@
+module component_bad
+
+fn misuse(source: Bytes) -> std_netstring.Parsed:
+  std_netstring.parse(source, 0, 1, 1)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

@@ -1,0 +1,7 @@
+module component_bad
+
+fn misuse(index: std_byte_index.Index) -> I64 effects[partial]:
+  std_byte_index.find(index, true, 0, 1)
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

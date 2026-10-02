@@ -1,0 +1,5 @@
+module std_tests
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let result: std_decimal.Parsed = std_decimal.parse_i64_exact(true, 0, 1)
+  0

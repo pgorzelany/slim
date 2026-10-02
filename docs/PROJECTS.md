@@ -29,9 +29,9 @@ exports = (exports NAME*)
 
 There is exactly one `entry` clause and it precedes every module clause.
 Module clauses are sorted by module identity. Import and export names are
-strictly sorted and unique. A module must not import itself. Reordering these
-semantic sets is rejected with a canonical replacement instead of becoming a
-second accepted representation.
+strictly sorted and unique in unsigned ASCII byte order. A module must not
+import itself. Duplicate or descending import/export names produce `E0406`
+at the first offending name; the compiler does not silently sort input.
 
 Module identities and declared names are ASCII identifiers. Module identities
 may contain `.` for flat organizational names. `.` separates a module identity
@@ -88,13 +88,13 @@ slimc fmt PATH [--check]
 slimc interfaces MANIFEST [--jobs N] -o DIRECTORY
 ```
 
-`interfaces` is the only additional operation. It materializes the same
-canonical interface bytes used by checking and caching; it is not another way
-to compile. Project operations accept `--jobs N`; `--jobs 1` is the serial
-oracle and remains the default. CLI project operations use `.slim-cache/v3`
-beside the manifest; the library's `compile`/`compile_with_jobs` entry points
-remain cache-free clean oracles. The compiler never searches upward for a
-manifest.
+`interfaces` materializes canonical exported signatures. The native compiler
+writes one interface per stdout line; the launcher writes `.sli` files under
+`-o DIRECTORY`. One-shot operations check current source without a default
+cache directory. `--jobs N` remains accepted, but current production checking
+and emission are serial; a scheduler plan is not executed worker activity.
+The compiler never searches upward for a manifest. Bounded semantic queries
+are documented in [CONTEXT.md](CONTEXT.md).
 
 ## Canonical interface artifact
 
@@ -103,7 +103,7 @@ Each module has one UTF-8 interface artifact:
 ```text
 (interface 3 math
   (struct Number ((value I64)))
-  (fn add ((owned math.Number) (owned math.Number)) math.Number (effects)))
+  (fn add ((copy I64) (copy I64)) math.Number (effects)))
 ```
 
 The grammar is:
@@ -132,10 +132,11 @@ there is no permissive reader for unknown fields.
 ## Incremental cache
 
 The working `slimc session` protocol reuses accepted parsed declarations, checked
-bodies and C fragments across framed updates. RFC-0143 integration and full M1
-closure remain pending. Historical invalidation estimates have moved to a
-measurement fixture compiled by the production compiler. See [incremental compilation status](INCREMENTAL.md) for the current
-measurement boundary and the SLIM Next implementation requirements.
+bodies, analysis and C fragments across framed updates; native artifacts use
+the RFC-0146 session contract. M1 release verification is complete. See
+[INCREMENTAL.md](INCREMENTAL.md) for retained identities, work, admission and
+last-good boundaries. Historical invalidation estimates remain separate
+measurement fixtures, not evidence of executed checking or emission.
 
 The internal `cache PROJECT CACHE_FILE` command in `selfhost/cache.slim`
 provides a whole-project generated-C artifact probe. Its key contains the
@@ -154,42 +155,23 @@ does not itself maintain a default cache directory, write atomically, or
 reconstruct a project from individual module fragments. The checksum detects
 accidental corruption; it is not an authenticity or semantic proof. The frame
 also lacks a compiler-build identity, so callers must invalidate it across
-compiler changes. A versioned, compiler-identified cache is M1 work.
+compiler changes. The public session captures compiler/runtime/tool identities
+through its separate checked contract; this internal probe is not that service.
 
-## Deterministic parallel checking
+## Scheduling and measured implementation boundary
 
-The coordinator computes stable topological layers. Modules in one layer have
-no dependency edges between them and may be checked concurrently. Each worker
-owns its parser, checker state, source, and output and receives immutable copies
-of already completed dependency interfaces. Workers never wait for other
-workers and share no mutable compiler state. The coordinator joins the finite
-layer and merges results in module-identity order.
+The production scheduler derives stable dependency layers and bounded worker
+batches, but one-shot project preparation and C emission execute serially.
+Historical multi-worker measurements describe their original implementations;
+they cannot establish current worker execution or a speedup.
 
-Worker count is bounded by the layer size, `--jobs`, and available hardware.
-Diagnostics, interfaces, caches, generated C, and work counts must be identical
-for one worker and every tested higher worker count. Parallel checking becomes
-the default only if repeated geometric benchmarks show a benefit outside the
-recorded noise band; otherwise the implementation remains available and the
-default stays serial.
-
-The committed geometric measurements did not justify a parallel default.
-Across the tested wide and deep graphs through 129 declarations, two and four
-workers were slower than the serial oracle because each owned worker currently
-rebuilds declaration lookup state. The worker path remains useful correctness
-infrastructure and opt-in experimentation; it is not presented as a speedup.
-
-## Measured implementation boundary
-
-The production compiler is the SLIM implementation and portable C seed.
-Historical `ProjectSession` descriptions referred to a retained compilation
-API that is absent from this production path. Current session counts describe
-selected invalidations; they do not demonstrate cached checking or emission.
-The [historical project measurements](../benchmarks/results/2026-07-21-project.tsv)
-remain available, but must not establish a present-day reuse claim.
-
-Whole-project artifact hits and dependency-invalidation estimates are separate
-mechanisms. True declaration-local incremental compilation, transactional
-last-good state, and actual operation counters are pending RFC-0112 M1.
+The production compiler is SLIM with the portable C seed. Retained declaration
+checking, transactional last-good state and measured producer work exist through
+`slimc session`; ordinary project commands do not acquire that retained state.
+Whole-project artifact probes, invalidation estimates and public retained work
+remain separate mechanisms. [INCREMENTAL.md](INCREMENTAL.md) names their contracts
+and current measurement boundaries. Parallel execution within compiled programs
+has its own [PARALLELISM.md](PARALLELISM.md) contract.
 
 ## Stable project diagnostics
 
@@ -235,4 +217,4 @@ work.
 - Cyclic modules, recursive interfaces, separate compilation ABI stability, or
   dynamic linking.
 - Public/private syntax on declarations.
-- Parallel execution in compiled SLIM programs.
+- A parallel default for compiler project checking.

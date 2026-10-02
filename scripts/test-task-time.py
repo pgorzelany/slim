@@ -5,6 +5,7 @@ import importlib.util
 import json
 from pathlib import Path
 import subprocess
+import shutil
 import sys
 import tempfile
 import unittest
@@ -41,6 +42,21 @@ class TaskTimeTests(unittest.TestCase):
     def test_missing_log_status_is_read_only(self):
         self.assertEqual(self.cli("status").stdout, "")
         self.assertFalse(self.log.exists())
+
+    def test_fresh_checkout_default_log_is_local_and_creates_parent(self):
+        checkout = Path(self.temporary.name) / "fresh-checkout"
+        script = checkout / "scripts/task-time.py"
+        script.parent.mkdir(parents=True)
+        shutil.copyfile(SCRIPT, script)
+        status = subprocess.run([sys.executable, str(script), "status"], capture_output=True, text=True)
+        self.assertEqual(status.returncode, 0, status.stderr)
+        self.assertFalse((checkout / "build").exists())
+        started = subprocess.run([sys.executable, str(script), "start", "fresh local scope"],
+                                 capture_output=True, text=True)
+        self.assertEqual(started.returncode, 0, started.stderr)
+        task_id = json.loads(started.stdout)["id"]
+        self.assertIn(task_id, TASK_TIME.read_tasks(checkout / "build/task-times.jsonl"))
+        self.assertFalse((checkout / "design/task-times.jsonl").exists())
 
     def test_manual_wall_span_and_status_replay(self):
         start = json.loads(self.cli("start", "release validation", "--at", START,

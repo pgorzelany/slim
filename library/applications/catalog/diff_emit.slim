@@ -1,0 +1,56 @@
+module catalog_diff_emit
+
+fn error(code: I64, side: Bytes, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " in ")
+  std_text.append_bytes(@output, side)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn nested(catalog: catalog_model.Catalog, ordinal: I64) -> Bytes effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  if ordinal >= 0:
+    let appended: Bool = catalog_emit.append_record(catalog, ordinal, @output)
+    if appended:
+      void
+    else:
+      void
+  else:
+    void
+  bytes.freeze(^output)
+
+fn changes(before: catalog_model.Catalog, after: catalog_model.Catalog, diff: catalog_reconcile.Diff, cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(diff.changes):
+    true
+  else:
+    let change: catalog_reconcile.Change = vec.get(diff.changes, cursor)
+    let key_ok: Bool = if change.before >= 0:
+      let record: catalog_model.Record = vec.get(before.records, change.before)
+      std_netstring.append(before.index.source, record.key_start, record.key_end, 256, @output)
+    else:
+      let record: catalog_model.Record = vec.get(after.records, change.after)
+      std_netstring.append(after.index.source, record.key_start, record.key_end, 256, @output)
+    let first: Bytes = nested(before, change.before)
+    let second: Bytes = nested(after, change.after)
+    let before_ok: Bool = std_netstring.append(first, 0, bytes.len(first), 1048576, @output)
+    let after_ok: Bool = std_netstring.append(second, 0, bytes.len(second), 1048576, @output)
+    if key_ok && (before_ok && after_ok):
+      recur(before, after, diff, cursor + 1, @output)
+    else:
+      false
+
+fn report(before: catalog_model.Catalog, after: catalog_model.Catalog, diff: catalog_reconcile.Diff) -> Bool effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "changes ")
+  std_text.append_i64(@output, vec.len(diff.changes))
+  std_text.append_bytes(@output, "\n")
+  let complete: Bool = changes(before, after, diff, 0, @output)
+  if complete && (vec.len(output) == diff.report_bytes):
+    io.print_bytes(bytes.freeze(^output))
+    true
+  else:
+    false

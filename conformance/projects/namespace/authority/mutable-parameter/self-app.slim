@@ -1,0 +1,16 @@
+module app
+
+struct Empty:
+
+struct Number:
+  value: I64
+
+enum Choice:
+  Some(I64)
+  Zero
+
+fn inspect(var value: app.Number) -> I64:
+  value.value
+
+fn main(args: Vec[Bytes]) -> I64:
+  0

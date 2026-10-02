@@ -12,16 +12,16 @@ These rules apply to every change in this repository.
 
 ## Task timing and progress
 
-- Read `design/task-times.jsonl` with `python3 scripts/task-time.py status`
-  before estimating task duration or remaining time. Use comparable completed
-  runs; identify their scope, sample count and uncertainty. With no comparable
-  history, report the estimate as unknown.
-- Record substantial implementation, delegation, review and verification work.
-  Use `python3 scripts/task-time.py run LABEL -- COMMAND ...` for commands and
-  `start`/`end` for coordination. Record failed attempts and retries separately.
-- Preserve evidence for historical entries. Missing times remain unknown;
-  inferred file timestamps are not measured durations. Keep operator elapsed
-  time distinct from native performance metrics and model active time.
+- Keep operator timing local in ignored `build/task-times.jsonl`; use
+  `python3 scripts/task-time.py --log build/task-times.jsonl`. Record substantial
+  stages and long validation attempts, including failures, rather than every
+  read, edit or command. Do not grow tracked historical operator journals.
+- Consult comparable completed scopes before estimating duration; name scope,
+  sample count and uncertainty. Missing times remain unknown. Keep operator
+  elapsed time distinct from native performance and model active time.
+- Maintain a concise current roadmap/status. Preserve durable contracts,
+  independent acceptance and permanent benchmark evidence; keep transient
+  coordination logs local instead of adding a dated prose report per attempt.
 - Progress updates state elapsed time, the current stage and unfinished
   acceptance gates. A deliverable percentage needs an explicit basis and must
   not imply a remaining-time estimate. Do not add overlapping task durations to
