@@ -101,8 +101,9 @@ output retains the existing partial-write/trap contract.
 
 [RFC-0165](../design/rfcs/0165-checked-project-input-producer.md) adds the
 ordinary `project-input` producer and fixed measurement adapter. Native and
-repository/release/website gates pass at `e506464`; actual million-node and
-aggregate-source crossings remain pending. Build it from a repository checkout:
+repository/release/website gates pass at `915f836`. Fixed million-node and
+aggregate-source native crossings pass; their durable gate is being integrated.
+Build it from a repository checkout:
 
 ```sh
 ./slimc build project-input.project -o build/project-input-tool
@@ -152,12 +153,31 @@ alone does not. Cycles terminate by marking each node before enqueue.
 The [current record](../benchmarks/results/project-impact-current.json) names
 limits, diagnostics, native domains and measured candidate byte counts.
 Its corpus fixture is independently sealed synthetic data. Focused ordinary and
-sanitized checks pass; full current-source integration remains pending.
+sanitized checks and full source-bound integration pass at `915f836`.
 Candidate scope is a context proxy, not saved compile time or agent effectiveness.
+
+[RFC-0170](../design/rfcs/0170-project-impact-context-export.md) binds the capture,
+adapter and impact steps into one checkout command:
+
+```sh
+python3 scripts/project-impact-context.py BEFORE.project AFTER.project --output build/FRESH
+```
+
+Use two stopped-writer snapshots and a new output directory. Success produces
+`context.json` and a complete matching `receipt.json`; a partial directory alone
+is not acceptance. The command builds and runs the two ordinary SLIM tools,
+checks both captured projects and retains each native phase's diagnostics.
+Module/path labels remain lossless hex bytes. Candidate records identify current
+modules selected by declared-import impact; they do not load those paths, prove
+context sufficiency or request incremental recompilation. An unchanged comparison
+selects zero modules. Initial declaration investigation uses the existing semantic
+context interface separately. Fixed data/workflow checks pass; coherent full
+integration remains pending. The [current record](../benchmarks/results/project-impact-context-current.json)
+separates candidate byte counts, collection cost and remaining unknowns.
 
 [RFC-0166](../design/rfcs/0166-bounded-development-operation-cost.md) adds an
 ordinary operation-cost consumer. Native and repository/release/website gates
-pass at `e506464`. Its fixed
+pass at `915f836`. Its fixed
 adapter reads validated protocol-2 observations after writers stop:
 
 ```sh

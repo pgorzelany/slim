@@ -2,7 +2,7 @@
   "schema": 1,
   "contract": "RFC-0168",
   "observed_date": "2026-10-03",
-  "status": "Focused canonical ordinary/sanitized production acceptance passed; corpus/budget/permanent verifier wired; full current-source repository/release/website verification pending.",
+  "status": "Focused canonical ordinary/sanitized production acceptance and full source-bound repository, release, clean-install and website integration passed at915f836.",
   "scope": "Exact metadata reconciliation and declared-import reverse closure for admitted data; checked source acceptance remains separate production producer/checker authority.",
   "sources": {
     "design/rfcs/0168-declared-import-project-impact.md": {
@@ -686,5 +686,24 @@
     "toolchain": "direct executable pins do not attest SDK/transitive toolchain identity"
   },
   "permanent_gate": "python3 -B scripts/verify-project-impact.py --compiler build/toolchain/slimc --output build/overnight-project-impact/FRESH/current; scripts/verify.sh invokes the fixed bounded campaign.",
-  "recorded_utc": "2026-10-03T01:50:54.469073+00:00"
+  "recorded_utc": "2026-10-03T01:50:54.469073+00:00",
+  "integration": {
+    "classification": "exact for the named immutable source tree",
+    "checkpoint": "915f83634c66b3b5effc98347534d43eff541027",
+    "branch": "codex/slim-next",
+    "source_commit": "cf16b1408d3b24703a5c4b5c52442f72ddd5ea1a",
+    "source_files": 1918,
+    "command": [
+      "sh",
+      "scripts/verify-0.9.sh"
+    ],
+    "repository_release_website": "passed in one complete invocation, including reproducible archive and clean install",
+    "validation_receipt_sha256": "855a546623e23c659ee5665603e271298e8cd6fefd58146a4a430fa40b335270",
+    "reproducible_release_sha256": "9d4be1ef93cdaef9b56b43a5eda30c75686f6c14f2d3ea38958ee4a324f860ba",
+    "started_utc": "2026-10-03T01:57:54.737235+00:00",
+    "finished_utc": "2026-10-03T02:39:52.922366+00:00",
+    "elapsed_ns": 2518172664917,
+    "timing_scope": "operator validation duration; no model active-time claim",
+    "source_unchanged": true
+  }
 }

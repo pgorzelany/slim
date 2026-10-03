@@ -1,7 +1,7 @@
 # RFC-0168: Declared-import project impact data
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, under delegated ordinary-library direction
@@ -271,9 +271,10 @@ implemented. Canonical formatting and 433 ordinary/sanitized gates plus ten
 geometric rows pass on the frozen 124-case domain. Actual checked compiler and
 catalog source snapshots establish the separate producer workflow and candidate
 scope facts in the [current record](../../benchmarks/results/project-impact-current.json).
-The corpus and permanent verifier are wired; full current-source repository,
-release and website integration remain pending. Original failed harness and
-formatting attempts remain retained separately.
+The corpus and permanent verifier pass the full source-bound repository,
+reproducible release, clean-install and website gate at checkpoint `915f836`.
+The current record retains focused source identities and the separate full
+integration identity; routine attempts remain in ignored build storage.
 
 ## Removal and supersession
 

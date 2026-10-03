@@ -1,0 +1,46 @@
+module project_input_app
+
+fn observed(input: project.ProjectInput) -> I64 effects[alloc, io, partial]:
+  let previous: retained.Cache = retained.empty_cache()
+  let parsing: syntax.ParseCache = syntax.empty_parse_cache()
+  let modules: project.ModuleParses = project.empty_module_parses()
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+  let checked: project.ParsedProject = project.prepare_project_input(input, previous, parsing, modules, revision, project_input_limits.maximum(project_input_limits.Resource::Nodes()), "project-input-v1")
+  let output: Vec[U8] = vec.new()
+  std_text.append_i64(@output, checked.attempt.canonical_nodes)
+  std_text.append_bytes(@output, " ")
+  if checked.attempt.work.capacity:
+    std_text.append_bytes(@output, "1")
+  else:
+    std_text.append_bytes(@output, "0")
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, checked.attempt.prepared.status)
+  std_text.append_bytes(@output, " 1 0\n")
+  io.print_bytes(bytes.freeze(^output))
+  if checked.attempt.prepared.status > 0:
+    65
+  else:
+    0
+
+fn declined(admission: I64) -> I64 effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "0 0 0 0 ")
+  std_text.append_i64(@output, admission)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+  65
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    let input: project.ProjectInput = project.capture_project_input(vec.get(args, 1))
+    if input.status > 0:
+      65
+    else:
+      let admission: I64 = project_input_data.source_admission(input)
+      if admission > 0:
+        declined(admission)
+      else:
+        observed(input)
+  else:
+    project_input_emit.error(2)
+    64

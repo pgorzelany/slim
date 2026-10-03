@@ -72,12 +72,13 @@ and compare ordinary feedback with optional semantic context. Name measured
 benefits and costs per domain; retain unknown results and infrastructure failures.
 Reliable native session execution is part of acceptance, not an optional cleanup.
 
-Checkpoint `e506464`, pushed to `codex/slim-next`, passes repository,
-reproducible release/clean install and website gates. It adds checked project
-capture, operation-cost reporting and private duplicate-path validation.
-The full invocation's website classification failure and successful isolated
-repair remain distinct. Actual million-node and aggregate-source producer
-crossings still require native evidence. The
+Checkpoint `915f836`, pushed to `codex/slim-next`, passes the complete repository,
+reproducible release/clean-install and website invocation. Checked project
+capture, operation-cost reporting, private duplicate-path validation and ordinary
+SLIM declared-import impact analysis now compose a measured development workflow.
+Fixed million-node and aggregate-source crossings and the single-command
+RFC-0170 context export pass focused native acceptance; permanent gates are wired
+and coherent repository/release/website integration is next. The
 [protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
 serial Sol 6.1 extra-high trials; eight participants passed their independent
 oracles. Dispatch nine was interrupted before a participant started because
@@ -88,7 +89,7 @@ The accepted [duplicate-path optimization](design/rfcs/0167-linear-manifest-vali
 reuses the existing byte trie only for repeated raw path identity. The broader
 membership experiment failed its unchanged scaling gate and was narrowed.
 Original name searches, diagnostics and cycle order remain. Exact work, cleanup,
-parity, resource and same-host comparisons pass for the named focused domains;
+parity, resource and same-host comparisons pass for the named focused domains.
 The verified checkpoint includes these changes. Whole-manifest checking remains
 outside the local linear-work claim.
 

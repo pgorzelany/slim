@@ -1,8 +1,8 @@
 {
   "schema": 1,
   "contract": "RFC-0165",
-  "status": "Independent finite ordinary/sanitized checker, producer and real consumer acceptance passed; permanent gate wired; repository/release/website verification passed at e506464.",
-  "observed_date": "2026-10-02",
+  "status": "Independent finite producer/consumer acceptance and full source-bound core integration passed at915f836; permanent node/source and module/edge boundary verifiers passed focused native acceptance and are wired, next coherent full invocation pending.",
+  "observed_date": "2026-10-03",
   "compiler_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
   "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
   "producer_sources": {
@@ -82,19 +82,18 @@
     "RSS and end-to-end CPU bounds",
     "live filesystem atomicity/ABA",
     "skipped allocation ordinals",
-    "actual flattened canonical parsed node entries1000000 and aggregate4MiB crossings",
     "successful complete transport at 8 MiB and receipt at 4 MiB (unreachable with other admissions)",
     "SDK/transitive native toolchain identities",
-    "model calls/tokens or development success"
+    "model calls/tokens or development success",
+    "generalization of canonical node geometry beyond the fixed observed source family"
   ],
   "full_project_boundary": {
     "classification": "exact within fixed three-fixture domain",
-    "status": "passed with adopted path-only production source and matching successful producer/control compiler; current-source integration passed at e506464",
-    "receipt": "build/overnight-project-input-boundaries/native-002/receipt.json",
-    "receipt_sha256": "5eeaa0a6bcfc950c8d76bd3247e870a0cd471a3e15f4d31f949da52e462d9878",
-    "tested_verifier_sha256": "12a91ec103c48a0858711af2ceb026e40b8f0b20e8e2cc9edfe297c8f5706ddd",
-    "current_verifier_sha256": "12a91ec103c48a0858711af2ceb026e40b8f0b20e8e2cc9edfe297c8f5706ddd",
-    "verifier_followup": "current metadata repair now executed; original experimental-source native001 receipt remains retained",
+    "status": "Permanent captured-byte verifier passed with adopted e40 source and controlCD; coherent next full invocation pending",
+    "receipt": "build/overnight-project-input-boundaries/permanent-native-001/receipt.json",
+    "receipt_sha256": "e4d457e128a66b386e170afca531a0edf2a8aed2259555c5445ae1900a996d57",
+    "tested_verifier_sha256": "27a0b5d36469776c81bddfb1a0a1ec1218cab6024eaf5a6f89cc1e18f4e2e0fe",
+    "current_verifier_sha256": "27a0b5d36469776c81bddfb1a0a1ec1218cab6024eaf5a6f89cc1e18f4e2e0fe",
     "control_compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
     "producer_project_source_sha256": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f",
     "producer_source_scope": "adopted path-only RFC0167 SLIM source; producer compiled by updated bootstrap fixed-point compiler",
@@ -122,20 +121,145 @@
     "one_excess_results": "both variants: exit65, exact error10 at0 newline, empty stderr, zero successful transport prefix",
     "control_checker_acceptance": "all three exact fixtures accepted; producer logical limits are separate from compiler acceptance",
     "pins_unchanged": true,
-    "wrapper_elapsed_ns": 23495951667,
+    "wrapper_elapsed_ns": 23167077792,
     "canonical_parsed_node_count": null,
     "node_boundary": "unknown",
-    "consumer_acceptance": "unknown for this large fixture"
+    "consumer_acceptance": "unknown for this large fixture",
+    "permanent_gate": "scripts/verify.sh invokes the explicit fixed run; fresh expectations sealed before native",
+    "cleanup_scope": "source-bound runner unconditionally killpg/direct-waits; raw launch/exit/timing records have no separate kill flag"
   },
   "integration": {
-    "classification": "exact for named immutable source scopes",
-    "checkpoint": "e506464054fb658137469c92b09a6b2182b3b68c",
+    "classification": "exact for the named immutable source tree",
+    "checkpoint": "915f83634c66b3b5effc98347534d43eff541027",
     "branch": "codex/slim-next",
-    "source_commit": "58d9d7d4e94647e1add700189fa7ad1a1e755edd",
-    "repository_release_source_commit": "8c4a41e112c39ba23b9eecd54de2df0087c71104",
-    "repository_release": "passed required repository gates, reproducible archive and clean install",
-    "website": "two website JS classification/inventory repairs; full build and18 tests passed;1717 release-selected files unchanged",
-    "original_full_invocation": "failed at website classification; retained separately",
-    "authority": "composite exact-scope verification; original complete invocation did not pass"
+    "source_commit": "cf16b1408d3b24703a5c4b5c52442f72ddd5ea1a",
+    "source_files": 1918,
+    "command": [
+      "sh",
+      "scripts/verify-0.9.sh"
+    ],
+    "repository_release_website": "passed in one complete invocation, including reproducible archive and clean install",
+    "validation_receipt_sha256": "855a546623e23c659ee5665603e271298e8cd6fefd58146a4a430fa40b335270",
+    "reproducible_release_sha256": "9d4be1ef93cdaef9b56b43a5eda30c75686f6c14f2d3ea38958ee4a324f860ba",
+    "started_utc": "2026-10-03T01:57:54.737235+00:00",
+    "finished_utc": "2026-10-03T02:39:52.922366+00:00",
+    "elapsed_ns": 2518172664917,
+    "timing_scope": "operator validation duration; no model active-time claim",
+    "source_unchanged": true
+  },
+  "canonical_node_source_boundaries": {
+    "classification": "exact for six fixed source families; source-plus canonical count unknown because preparation was declined",
+    "status": "Permanent fixed verifier/probe passed ordinary/sanitized and is wired into full repository verification; coherent next full invocation pending",
+    "receipt": "build/overnight-project-input-node-boundaries/permanent-native-001/receipt.json",
+    "receipt_sha256": "3ad433f13f5b6e2c1767ce9dcbd95ca65ed6ce5fd5f33ee0fcc401a339e968e5",
+    "model_sha256": "bb423f51c2a3d3c7a4d4a0039d27cd82c334354d47c19b4c39130097a9e62a85",
+    "freeze_sha256": "eef9cd81202743b4d237e272ad9b17f8e31478477fede1377b13ed88ac5e80d7",
+    "tested_verifier_sha256": "9766971e46a3638f08bb938273283c39b9355f11fef020ed8754c777451918d3",
+    "observer_sha256": "709d4e38e41e8919e1f589cba6bb13ea0366a699859b82c7cb4c10bf9fff54df",
+    "control_compiler": {
+      "bytes": 628368,
+      "path": "/Users/mlody/Projects/SLIM/build/toolchain/slimc",
+      "sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a"
+    },
+    "producer_project_source": {
+      "bytes": 105349,
+      "sha256": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f"
+    },
+    "gates": 46,
+    "boundaries": 6,
+    "inventory_conversions": 8,
+    "observations": {
+      "variants": [
+        "ordinary",
+        "address+undefined sanitized; leak detection unavailable"
+      ],
+      "variants_identical": true,
+      "rows": [
+        {
+          "case": "nodes-minus",
+          "classification": "exact",
+          "canonical_nodes": 999999,
+          "capacity": false,
+          "prepared_status": 0,
+          "prepare_called": true,
+          "admission_code": 0
+        },
+        {
+          "case": "nodes-exact",
+          "classification": "exact",
+          "canonical_nodes": 1000000,
+          "capacity": false,
+          "prepared_status": 0,
+          "prepare_called": true,
+          "admission_code": 0
+        },
+        {
+          "case": "nodes-plus",
+          "classification": "exact",
+          "canonical_nodes": 1000001,
+          "capacity": true,
+          "prepared_status": 65,
+          "prepare_called": true,
+          "admission_code": 0
+        },
+        {
+          "case": "sources-minus",
+          "classification": "exact",
+          "canonical_nodes": 66,
+          "capacity": false,
+          "prepared_status": 0,
+          "prepare_called": true,
+          "admission_code": 0
+        },
+        {
+          "case": "sources-exact",
+          "classification": "exact",
+          "canonical_nodes": 66,
+          "capacity": false,
+          "prepared_status": 0,
+          "prepare_called": true,
+          "admission_code": 0
+        },
+        {
+          "case": "sources-plus",
+          "classification": "unknown",
+          "canonical_nodes": null,
+          "capacity": null,
+          "prepared_status": null,
+          "prepare_called": false,
+          "admission_code": 10
+        }
+      ],
+      "authority": "actual existing prepare API fields; source-plus reserved zeros are sentinels and node/status/capacity remain unknown"
+    },
+    "normal_checker": "node-plus exact E0102@0:1565240 newline and exit1; all five other fixtures accepted",
+    "producer": "four positives exact literal transports; node-plus/source-plus exit65 exact error10 at0 newline, empty stderr, no successful transport prefix",
+    "all_children_reaped": true,
+    "group_cleanup": "unconditional killpg or already absent; closed-pipe descendant observed absent",
+    "source_tool_held_generated_native_inventory_plan_pins_unchanged": true,
+    "started_utc": "2026-10-03T03:09:06.057722Z",
+    "finished_utc": "2026-10-03T03:10:09.645244Z",
+    "wrapper_elapsed_ns": 63587180167,
+    "timing_scope": "same-process whole native wrapper through final source/tool/artifact pins; final receipt publication/shutdown excluded",
+    "bounds": {
+      "canonical_nodes_limit": 1000000,
+      "child_file_bytes": 134217728,
+      "child_seconds": 60,
+      "emit_stdout_bytes": 16777216,
+      "fixture_cases": 6,
+      "freeze_bytes": 67108864,
+      "freeze_files": 128,
+      "global_seconds": 900,
+      "model_bytes": 4194304,
+      "native_labels": 46,
+      "observer_cap_scope": "numeric observation only; never the production node-admission limit",
+      "observer_numeric_field_cap": 1000000000,
+      "payload_bytes_limit": 1048576,
+      "retries": 0,
+      "source_bytes_limit": 4194304,
+      "stderr_bytes": 262144,
+      "stdout_bytes": 8388608,
+      "successful_inventory_conversions": 8
+    }
   }
 }

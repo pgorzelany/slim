@@ -11,7 +11,7 @@ import argparse
 from dataclasses import dataclass
 from datetime import datetime, timezone
 import hashlib
-import importlib.util
+from types import ModuleType
 import json
 import os
 from pathlib import Path
@@ -83,12 +83,19 @@ def write_frozen(path, value):
 
 def load_fixed(relative, name, expected_hash):
     path = ROOT / relative
-    require(sha(path) == expected_hash, 'fixed Python helper source changed before import')
-    spec = importlib.util.spec_from_file_location(name, path)
-    result = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(result)
-    require(sha(path) == expected_hash, 'fixed Python helper source changed after import')
-    return result
+    captured = path.read_bytes()
+    require(digest(captured) == expected_hash and name not in sys.modules,
+            'fixed Python helper source changed before import')
+    result = ModuleType(name)
+    result.__file__ = str(path)
+    sys.modules[name] = result
+    try:
+        exec(compile(captured, str(path), 'exec', dont_inherit=True), result.__dict__)
+        require(path.read_bytes() == captured, 'fixed Python helper source changed after import')
+        return result
+    except BaseException:
+        sys.modules.pop(name, None)
+        raise
 
 
 def frame(value):

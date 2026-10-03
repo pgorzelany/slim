@@ -1,0 +1,211 @@
+{
+  "acceptance": {
+    "cleanup": "all99 direct reaps and group kill/already-absent; closed-pipe descendant absent",
+    "control_endpoints": 5,
+    "data_rows": 73,
+    "elapsed_ns": 151931599417,
+    "elapsed_scope": "independent fresh hold plus fixed verifier through observations, before final receipt publication",
+    "finished_observation_utc": "2026-10-03T03:23:19.831581+00:00",
+    "freeze_sha256": "acd875f27b1983a51297158637042db242b66dcd141ef954fc149315648a5208",
+    "model_sha256": "7f8bcc0609d13721a49a8e0743fc56680727bbdd09104b9cb49a90f922eb71ac",
+    "native_children": 99,
+    "production_source_pairs": 6,
+    "receipt_sha256": "283c21d09a6fa9b6a62e6827673900b1e72b4ab792189c6936d8b0b192d73673",
+    "source_endpoints": 69,
+    "started_utc": "2026-10-03T03:20:47.899347+00:00",
+    "tool_endpoints": 3,
+    "zero_native_controls": 8
+  },
+  "command": "python3 scripts/project-impact-context.py BEFORE.project AFTER.project --output build/FRESH",
+  "cost_scope": "Collector observations include seven fresh native roles and artifact work. Native phase totals overlap collector durations; do not add them. Filesystem caches are uncontrolled; these are operator observations, not model active time.",
+  "fixed_budgets": {
+    "artifact_files": 35,
+    "child_seconds": 60,
+    "context_json_bytes": 25165824,
+    "report_bytes": 8388608,
+    "retained_bytes": 402653184,
+    "whole_seconds": 900
+  },
+  "integration": "Permanent current-source gate being wired; existing budgets and compiler semantics unchanged.",
+  "native_authority": {
+    "compiler": {
+      "bytes": 628368,
+      "path_hex": "2f55736572732f6d6c6f64792f50726f6a656374732f534c494d2f6275696c642f746f6f6c636861696e2f736c696d63",
+      "sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a"
+    },
+    "impact_acceptance": "Actual successful matching ordinary SLIM impact invocation for all four frozen inputs",
+    "source_acceptance": "Actual successful matching production producer invocations for both snapshots"
+  },
+  "production_semantics": "ordinary SLIM RFC0165 checked project input and RFC0168 reconciliation/reverse closure; Python transports and projects checked data only",
+  "schema": 1,
+  "scope": "RFC0170 experimental checked project-impact context export; six fixed real source pairs and finite transport/workflow controls",
+  "source": {
+    "scripts/project-impact-context-oracle.py": {
+      "bytes": 46835,
+      "sha256": "49152057083c695693b1674053eef34411bde6bee51d39c56f959d5ae28ff0fe"
+    },
+    "scripts/project-impact-context.py": {
+      "bytes": 35166,
+      "sha256": "e25abf743d656ed7e6d0a8828a72c098e65a1e3ccfdae8d1c043be5fdfe79b9d"
+    },
+    "scripts/verify-project-impact-context.py": {
+      "bytes": 41649,
+      "sha256": "267f22c268449bd4968ffedcaddf0bc2b2cab3c4b104f9b2c19e00bc45cceb05"
+    }
+  },
+  "source_pair_observations": [
+    {
+      "collector_elapsed_ns": 6461465250,
+      "context_bytes": 4406,
+      "facts": {
+        "after_closure_count": 0,
+        "after_direct_import_edges": 1,
+        "after_manifest_bytes": 110,
+        "after_module_catalog_weight_bytes": 81,
+        "after_module_count": 2,
+        "after_root_count": 0,
+        "before_closure_count": 0,
+        "before_direct_import_edges": 1,
+        "before_manifest_bytes": 110,
+        "before_module_catalog_weight_bytes": 81,
+        "before_module_count": 2,
+        "before_root_count": 0,
+        "current_candidate_catalog_weight_bytes": 0,
+        "current_candidate_count": 0,
+        "import_change_count": 0,
+        "module_change_count": 0
+      },
+      "name": "real-unchanged-tiny",
+      "native_phase_ns": 6406410542
+    },
+    {
+      "collector_elapsed_ns": 6068684166,
+      "context_bytes": 5028,
+      "facts": {
+        "after_closure_count": 2,
+        "after_direct_import_edges": 1,
+        "after_manifest_bytes": 110,
+        "after_module_catalog_weight_bytes": 82,
+        "after_module_count": 2,
+        "after_root_count": 1,
+        "before_closure_count": 2,
+        "before_direct_import_edges": 1,
+        "before_manifest_bytes": 110,
+        "before_module_catalog_weight_bytes": 81,
+        "before_module_count": 2,
+        "before_root_count": 1,
+        "current_candidate_catalog_weight_bytes": 82,
+        "current_candidate_count": 2,
+        "import_change_count": 0,
+        "module_change_count": 1
+      },
+      "name": "real-changed-tiny",
+      "native_phase_ns": 6031037166
+    },
+    {
+      "collector_elapsed_ns": 6070439917,
+      "context_bytes": 5208,
+      "facts": {
+        "after_closure_count": 2,
+        "after_direct_import_edges": 1,
+        "after_manifest_bytes": 110,
+        "after_module_catalog_weight_bytes": 81,
+        "after_module_count": 2,
+        "after_root_count": 2,
+        "before_closure_count": 2,
+        "before_direct_import_edges": 1,
+        "before_manifest_bytes": 110,
+        "before_module_catalog_weight_bytes": 81,
+        "before_module_count": 2,
+        "before_root_count": 2,
+        "current_candidate_catalog_weight_bytes": 81,
+        "current_candidate_count": 2,
+        "import_change_count": 1,
+        "module_change_count": 2
+      },
+      "name": "real-deletion-rename-tiny",
+      "native_phase_ns": 6029652209
+    },
+    {
+      "collector_elapsed_ns": 6064446958,
+      "context_bytes": 4699,
+      "facts": {
+        "after_closure_count": 0,
+        "after_direct_import_edges": 1,
+        "after_manifest_bytes": 111,
+        "after_module_catalog_weight_bytes": 81,
+        "after_module_count": 2,
+        "after_root_count": 0,
+        "before_closure_count": 0,
+        "before_direct_import_edges": 1,
+        "before_manifest_bytes": 110,
+        "before_module_catalog_weight_bytes": 81,
+        "before_module_count": 2,
+        "before_root_count": 0,
+        "current_candidate_catalog_weight_bytes": 81,
+        "current_candidate_count": 2,
+        "import_change_count": 0,
+        "module_change_count": 0
+      },
+      "name": "real-manifest-widen-tiny",
+      "native_phase_ns": 6026262208
+    },
+    {
+      "collector_elapsed_ns": 6569323541,
+      "context_bytes": 7177,
+      "facts": {
+        "after_closure_count": 11,
+        "after_direct_import_edges": 153,
+        "after_manifest_bytes": 8909,
+        "after_module_catalog_weight_bytes": 1173379,
+        "after_module_count": 35,
+        "after_root_count": 1,
+        "before_closure_count": 11,
+        "before_direct_import_edges": 153,
+        "before_manifest_bytes": 8909,
+        "before_module_catalog_weight_bytes": 1173378,
+        "before_module_count": 35,
+        "before_root_count": 1,
+        "current_candidate_catalog_weight_bytes": 287285,
+        "current_candidate_count": 11,
+        "import_change_count": 0,
+        "module_change_count": 1
+      },
+      "name": "real-compiler-body-newline",
+      "native_phase_ns": 6521417040
+    },
+    {
+      "collector_elapsed_ns": 6027563375,
+      "context_bytes": 5935,
+      "facts": {
+        "after_closure_count": 3,
+        "after_direct_import_edges": 31,
+        "after_manifest_bytes": 1770,
+        "after_module_catalog_weight_bytes": 34881,
+        "after_module_count": 13,
+        "after_root_count": 1,
+        "before_closure_count": 3,
+        "before_direct_import_edges": 31,
+        "before_manifest_bytes": 1770,
+        "before_module_catalog_weight_bytes": 34880,
+        "before_module_count": 13,
+        "before_root_count": 1,
+        "current_candidate_catalog_weight_bytes": 9597,
+        "current_candidate_count": 3,
+        "import_change_count": 0,
+        "module_change_count": 1
+      },
+      "name": "real-catalog-body-newline",
+      "native_phase_ns": 5985652583
+    }
+  ],
+  "status": "Focused canonical current-source acceptance passes; permanent full repository/release/website integration pending.",
+  "unknown": {
+    "agent_effectiveness": "not measured by this campaign",
+    "atomic_live_identity": "before/after byte endpoints only, without loaded-code/ABA/host-boot or transitive SDK attestation",
+    "context_sufficiency": "declared-import selection alone does not establish sufficient context or application invariants",
+    "physical_memory": "logical caps are not RSS bounds",
+    "physical_source_deduplication": "catalog row weights count supplied records",
+    "saved_compiler_work": "not measured"
+  }
+}

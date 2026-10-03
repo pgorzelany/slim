@@ -2,7 +2,7 @@
   "acceptance": {
     "corpus_and_application_budget": "passed: all14 corpus projects, exact synthetic report, retained component/mutation/work/resource checks; new emit/check1.569 <=unchanged2.00",
     "focused": "passed ordinary and address+undefined sanitized; source/tool identities unchanged",
-    "full_current_source_integration": "pending",
+    "full_current_source_integration": "passed at915f836 in one complete source-bound repository/release/website invocation",
     "permanent_integration": "alphabetical corpus member, unchanged RFC0030 2.00 application emit/check gate, exact synthetic corpus report, full focused verify.sh command"
   },
   "actual_cohort_observation": {
@@ -134,14 +134,22 @@
     "unreached allocation ordinals"
   ],
   "integration": {
-    "classification": "exact for named immutable source scopes",
-    "checkpoint": "e506464054fb658137469c92b09a6b2182b3b68c",
+    "classification": "exact for the named immutable source tree",
+    "checkpoint": "915f83634c66b3b5effc98347534d43eff541027",
     "branch": "codex/slim-next",
-    "source_commit": "58d9d7d4e94647e1add700189fa7ad1a1e755edd",
-    "repository_release_source_commit": "8c4a41e112c39ba23b9eecd54de2df0087c71104",
-    "repository_release": "passed required repository gates, reproducible archive and clean install",
-    "website": "two website JS classification/inventory repairs; full build and18 tests passed;1717 release-selected files unchanged",
-    "original_full_invocation": "failed at website classification; retained separately",
-    "authority": "composite exact-scope verification; original complete invocation did not pass"
+    "source_commit": "cf16b1408d3b24703a5c4b5c52442f72ddd5ea1a",
+    "source_files": 1918,
+    "command": [
+      "sh",
+      "scripts/verify-0.9.sh"
+    ],
+    "repository_release_website": "passed in one complete invocation, including reproducible archive and clean install",
+    "validation_receipt_sha256": "855a546623e23c659ee5665603e271298e8cd6fefd58146a4a430fa40b335270",
+    "reproducible_release_sha256": "9d4be1ef93cdaef9b56b43a5eda30c75686f6c14f2d3ea38958ee4a324f860ba",
+    "started_utc": "2026-10-03T01:57:54.737235+00:00",
+    "finished_utc": "2026-10-03T02:39:52.922366+00:00",
+    "elapsed_ns": 2518172664917,
+    "timing_scope": "operator validation duration; no model active-time claim",
+    "source_unchanged": true
   }
 }

@@ -1,7 +1,7 @@
 # RFC-0165: Checked ordinary project input producer
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, under delegated overnight ordinary-library direction
@@ -204,6 +204,17 @@ Ordinary producer code belongs in `library/components/project_input_*.slim`
 and `library/applications/project_input/main.slim`, exposed by the root
 `project-input.project`. Fixed measurement and finite verification scripts belong
 in `scripts/`. No production selfhost/compiler edit is authorized by this RFC.
+
+The ordinary producer and adapter pass source-bound repository/release/website
+integration at `915f836`. Permanent native boundary verifiers cover exact
+4095-module/65536-edge admission and their single excesses, plus the fixed
+999999/1000000/1000001-node and aggregate 4 MiB minus/exact/plus families.
+The current prepare API supplies node counts; source excess is declined before
+preparation and retains an unknown count. Ordinary and sanitized gates pass;
+both explicit bounded verifier commands are wired into `scripts/verify.sh` for
+the next coherent full invocation. Fresh fixtures are generated, never historical
+gate inputs. Source identities and finite scope remain in the
+[current record](../../benchmarks/results/project-input-current.json).
 
 ## Removal and supersession
 

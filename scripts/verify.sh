@@ -19,6 +19,10 @@ impact_dir=$(mktemp -d "$PWD/build/overnight-project-impact/check.XXXXXX")
 python3 -B scripts/verify-project-impact.py --compiler build/toolchain/slimc \
   --output "$impact_dir/current"
 rm -rf "$impact_dir"
+context_dir=$(mktemp -d "$PWD/build/overnight-project-impact/context-check.XXXXXX")
+python3 -B scripts/verify-project-impact-context.py --current \
+  --output "$context_dir/current" --compiler build/toolchain/slimc --cc "$(command -v cc)"
+rm -rf "$context_dir"
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
@@ -52,6 +56,23 @@ python3 -B scripts/verify-development-summary.py --compiler build/toolchain/slim
 
 python3 -B scripts/verify-project-input.py --compiler build/toolchain/slimc \
   --output "$verify_dir/project-input"
+
+mkdir -p "$PWD/build/overnight-project-input-node-boundaries"
+node_boundary_dir=$(mktemp -d "$PWD/build/overnight-project-input-node-boundaries/check.XXXXXX")
+python3 -B scripts/verify-project-input-node-boundaries.py freeze \
+  --output "$node_boundary_dir/frozen" > "$node_boundary_dir/freeze-summary.json"
+node_model_sha=$(python3 -c 'import hashlib,sys; data=open(sys.argv[1],"rb").read(4194305); assert len(data)<=4194304; print(hashlib.sha256(data).hexdigest())' "$node_boundary_dir/frozen/model.json")
+node_freeze_sha=$(python3 -c 'import hashlib,sys; data=open(sys.argv[1],"rb").read(4194305); assert len(data)<=4194304; print(hashlib.sha256(data).hexdigest())' "$node_boundary_dir/frozen/freeze.json")
+python3 -B scripts/verify-project-input-node-boundaries.py run \
+  --output "$node_boundary_dir/native" --held "$node_boundary_dir/frozen" \
+  --model-sha "$node_model_sha" --freeze-sha "$node_freeze_sha"
+rm -rf "$node_boundary_dir"
+
+mkdir -p "$PWD/build/overnight-project-input-boundaries"
+edge_boundary_dir=$(mktemp -d "$PWD/build/overnight-project-input-boundaries/check.XXXXXX")
+python3 -B scripts/verify-project-input-boundaries.py run \
+  --compiler build/toolchain/slimc --output "$edge_boundary_dir/current"
+rm -rf "$edge_boundary_dir"
 
 clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
   -Wall -Wextra -Werror -I runtime \

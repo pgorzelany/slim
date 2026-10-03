@@ -6,14 +6,13 @@ its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
-Checkpoint [e506464](https://github.com/pgorzelany/slim/commit/e506464054fb658137469c92b09a6b2182b3b68c)
-is pushed to `codex/slim-next`. Required repository gates and reproducible
-release/clean install passed; an isolated two-file website inventory repair
-passes all 18 website tests. The original full invocation remains a website
-classification failure. The checkpoint includes checked project capture,
-operation-cost reporting and duplicate-path validation. General model benefit
-and actual million-node/aggregate-source producer crossings remain unresolved.
-Later declared-import impact code passes focused checks and awaits full integration.
+Checkpoint [915f836](https://github.com/pgorzelany/slim/commit/915f83634c66b3b5effc98347534d43eff541027)
+is pushed to `codex/slim-next`. The complete source-bound repository,
+reproducible release/clean-install and website invocation passed. The checkpoint
+includes checked project capture, operation-cost reporting, duplicate-path
+validation and ordinary SLIM declared-import impact analysis. General model
+benefit remains unknown. Fixed million-node/aggregate-source native crossings
+pass; their durable gate and RFC-0170 single-command context export are being integrated.
 
 | Checkpoint | Record |
 | --- | --- |
@@ -22,6 +21,7 @@ Later declared-import impact code passes focused checks and awaits full integrat
 | Current declared-import impact | [Exact finite relations and source-bound candidate scope](project-impact-current.json) |
 | Current checked project inputs | [Finite producer/consumer domains and compiler inventory](project-input-current.json) |
 | Current operation costs | [Separate observed tool phases, coverage and missing evidence](development-operation-cost-current.json) |
+| Checked impact context export | [Current source, native authority, costs and limits](project-impact-context-current.json) |
 | Current ordinary development summary | [Finite native/adapter domains, identities and incomplete cohort](development-summary-current.json) |
 | Current development evaluator | [Protocol and budgets](../development/PROTOCOL.md); [configured versus completed trials](../development/current.json) |
 | Bounded early agent loop, 2026-10-02 | [Self-hosted context, native costs, six frozen trials and release closure](2026-10-02-agent-development-loop.md) |
