@@ -758,15 +758,16 @@
       "scripts/verify-native-platform.sh": "03f1255898931d05fae74ea2888f3ee2b4a938560ef16713e2542f4b85678f36"
     },
     "compiler_sha256": "17893e9bd6a9f01b0ada6130dca5ed4969591d7892a2ad44da58656339c24aa6",
-    "completed_at": "2026-10-03T21:27:09.497560Z",
+    "completed_at": "2026-10-03T21:33:33.467422Z",
     "corpus_manifest_sha256": "9a81c659f06e8f358f7d8b4fb715bc98522274e0ba9fa5e6b126060f09c47a1c",
-    "coverage": "all compiler gates completed from source-identical prefix and fresh remaining repository gates; release and website pending clean commit; original whole invocation failed",
+    "coverage": "all required compiler, repository, release and website gates completed through source-bound split scopes; original failed invocations retained",
     "fresh_scope": {
       "command": [
         "sh",
         "build/repair-diagnostics-7ngbgl82/resume-source010.sh"
       ],
       "exit_code": 1,
+      "failure": "repository gates passed, then release packaging required committed clean source; verified separately after source commit",
       "log_path": "build/repair-diagnostics-7ngbgl82/resume-source010.log",
       "log_sha256": "1449efa49b616a0412baf0c05a6a87c4fb55f8818b64e18b61589b1a32aaa5db",
       "repository_scope": "passed; release precondition requires committed clean source",
@@ -777,6 +778,19 @@
         "same seed sanitized compiler rebuild",
         "unchanged scripts/verify.sh lines 237 onward"
       ]
+    },
+    "governance": {
+      "command": [
+        "cargo",
+        "run",
+        "--quiet",
+        "--bin",
+        "slim-govern",
+        "--",
+        "check"
+      ],
+      "exit_code": 0,
+      "log_sha256": "8c8d15baf3afa4841589ba30ea244eb90b5e28fa32c2546aefdb0511da2fe45f"
     },
     "measurement_receipt_sha256": "68dee669ae07e0dd0030ea799b9fa2b0e9b2a7e48c373c42819cc57045c83db8",
     "prior_invocation": {
@@ -789,13 +803,37 @@
       "log_path": "build/repair-diagnostics-7ngbgl82/verify-0.9-source009.log",
       "log_sha256": "6d94b62b61c641862c622b36d19eaaf547faff136f965161688378f780efce89"
     },
+    "release": {
+      "command": [
+        "sh",
+        "scripts/verify-release.sh"
+      ],
+      "completed_at": "2026-10-03T21:33:33.467422Z",
+      "exit_code": 0,
+      "log_path": "build/repair-diagnostics-7ngbgl82/release-source010.log",
+      "log_sha256": "e50445618ce661129a6ca2b6c634db49a7b06afaf6fce0839f8510b50bd32950",
+      "source_commit": "a9989911434730f6c8234ea0d7b6bbb00145060f"
+    },
     "repair_cases": 65,
     "repair_verifier_sha256": "013f87ff3ee5f8cd519a455ce8be8df8297d892604ede3a743abac12fa8891d6",
-    "reused_completed_scope": "scripts/verify.sh lines 1-235 and scripts/verify-native-host.sh correctness substage; all affected source009 identities and production compiler/runtime artifacts unchanged",
+    "reused_completed_scope": "scripts/verify.sh lines 1-235 and scripts/verify-native-host.sh correctness substage; compiler, tools, fixtures and runtime source009 identities unchanged; later documentation/validation metadata independently checked",
     "seed_sha256": "db3250b737068d2d832d757d7c40f433581f8a91b70489d3daf834348a22b4fa",
     "source009_seal_sha256": "c288c8aba13cf8e8c0bf0941e27f820316e664bb00c061088366189f5b8bb31b",
     "source010_seal_sha256": "5a13967dc26477d7b0221201de5c3c526329d80ced0bcc0f686c24700651ad37",
-    "verification_script_sha256": "47dd4583a596781c192f97107abc46c68f9eed78113d7ffbb04f7cdeeb52d15c"
+    "source_commit": "a9989911434730f6c8234ea0d7b6bbb00145060f",
+    "verification_script_sha256": "47dd4583a596781c192f97107abc46c68f9eed78113d7ffbb04f7cdeeb52d15c",
+    "website": {
+      "command": [
+        "npm",
+        "--prefix",
+        "website",
+        "test"
+      ],
+      "completed_at": "2026-10-03T21:30:45.644031Z",
+      "exit_code": 0,
+      "log_path": "build/repair-diagnostics-7ngbgl82/website-source010.log",
+      "log_sha256": "426576296f5f06dcaff0f1e02ee371e9d80b9e78835ea63fe77edb6f17fbeac7"
+    }
   },
   "workload_recipe": {
     "declaration": "fn f{index}(value: I64) -> I64:\n  value + {index}\n\n",

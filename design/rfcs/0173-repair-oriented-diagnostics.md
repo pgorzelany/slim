@@ -1,7 +1,7 @@
 # RFC-0173: Repair-oriented compiler diagnostics
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, implementing the maintainer's requested general diagnostic improvements
@@ -186,9 +186,8 @@ host operations, weakened checks or performance-budget exceptions.
 
 Implemented in the production SLIM checker; 65 independent diagnostic cases,
 12 actual development tasks and source-bound compiler gates pass. Same-host
-measurements preserve raw output and generated C. Clean release/website
-verification follows the required source commit. Agent repair benefit remains
-unmeasured. Operator timing and transient coordination stay in ignored build/.
+measurements preserve raw output and generated C. Reproducible release, clean install and website gates pass from committed
+source. Agent repair benefit remains unmeasured. Operator timing and transient coordination stay in ignored build/.
 
 ## Removal and supersession
 

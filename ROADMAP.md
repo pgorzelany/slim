@@ -11,8 +11,8 @@ feedback, explicit resource behavior and reproducible failures. The
 is complete for its bounded scope: production semantic context, independent
 conformance/cost evidence and six frozen repair trials. Strict acceptance is 2/3
 per condition; general effectiveness remains unknown. Retain opt-in schema 1 and
-freeze its breadth. The next outcome is diagnostic feedback that explains a
-rejection and provides the exact context needed to repair compiler/library code.
+freeze its breadth. General repair diagnostics now retain rejection causes and
+source context. Next, measure their benefit on real compiler/library repairs.
 
 [RFC-0112](design/rfcs/0112-agent-development-and-os-foundation.md) remains the
 accepted successor direction. [RFC-0158](design/rfcs/0158-early-agent-development-loop.md)
@@ -53,9 +53,9 @@ ownership facts where applicable. Never infer the intended repair from acceptanc
 Acceptance requires independent syntax, name, type, effect, ownership and project
 cases; correct manifest/module provenance; fixed reporting limits; unchanged raw
 diagnostics and generated programs; same-host cost measurements; and all compiler
-and release gates. Production implementation, 65 independent cases, 12 actual
-development tasks and compiler gates pass. Clean release/website verification
-follows the source commit. Next, measure real repair iterations and time before
+and release gates. Complete: 65 independent cases, 12 actual development tasks,
+source-bound compiler gates, reproducible release, clean install and website
+checks pass. Next, measure paired real repair iterations and time before
 claiming an agent effectiveness benefit.
 
 ## Completed overnight scope
