@@ -90,12 +90,16 @@ contracts, decisions and next work; durable tests and relevant measurements
 remain product infrastructure. Do not create a historical prose journal for
 each implementation or verification attempt.
 
-Next, propose source-bound reuse of producer and impact build artifacts. In one
+Next, prefer composing the existing checked native session and cache to reuse
+producer and impact build artifacts. In one
 checked ledger replay, producer compilation took 5.035390667s within a
 7.222748625s run; this one-host observation identifies a cost, not a general
 speedup. Adoption needs a separate accepted contract, complete source/compiler/
 runtime/CC/flag binding, cold and warm controls, invalidation tests and retained
 failure/resource gates.
+First establish complete binding of checked revisions and native toolchain profiles,
+and cancellation and reaping of every nested native group within the unchanged
+60-second operation budget.
 
 Then define recoverable aggregate-ledger outcomes with an independent oracle;
 RFC-0171 protects individual mutations while aggregation remains partial.
