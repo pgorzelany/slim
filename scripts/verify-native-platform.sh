@@ -16,6 +16,7 @@ if test "$native_supported" -eq 0; then
     python3 -B scripts/verify-native-unavailable.py "$native_host"
 elif test "$native_scope" = full; then
     sh scripts/verify-native-host.sh "$native_host" "$native_compiler"
+    python3 -B scripts/test-native-session-diagnostics.py
     python3 -B scripts/measure-native-session.py
 else
     python3 -B - "$native_host" <<'PY'

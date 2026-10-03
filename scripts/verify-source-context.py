@@ -25,7 +25,7 @@ NATIVE_FILE_CAP = 128*MIB
 ENTRY_CAP = 1024
 RECEIPT_CAP = 8*MIB
 HELPER_PATH = 'scripts/verify-project-impact.py'
-HELPER_SHA = '6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be'
+HELPER_SHA = '245ccc2e41b38546bdc12bb49dae0b4331731db57174704c4d16ee805aff9c8c'
 RFC_PATH = 'design/rfcs/0172-bounded-source-record-selection.md'
 APPLICATION_MANIFEST = 'library/source-context.project'
 APPLICATION_BODIES = (
@@ -34,7 +34,7 @@ APPLICATION_BODIES = (
  'library/applications/source_context/data.slim',
  'library/applications/source_context/report.slim')
 SELFHOST = (
- 'analysis','cache','check','codegen','slimc','context','control','driver',
+ 'analysis','cache','check','codegen','slimc','context','control','diagnostics','driver',
  'edit','effects','equivalence','flow','format','fragments','identity','ir',
  'memory','nativebuild','nativecache','ownership','parallel','parallelcache',
  'project','proof','quality','query','ranges','reduce','retained','scheduler',
@@ -65,7 +65,7 @@ READSET = tuple(sorted(tuple('selfhost/'+name+'.slim' for name in SELFHOST)
  +tuple(sorted(set(LEDGER+CATALOG+PRODUCER_ONLY)))+MANIFESTS
  +('runtime/slim_rt.c','runtime/slim_rt.h','scripts/project-input-inventory.py',
    HELPER_PATH,'design/rfcs/0165-checked-project-input-producer.md')))
-ORACLE_SHA = 'c110ef8f8a463524b9c12364e1988e561ce96d06eef4b4b80039e3496b5939ef'
+ORACLE_SHA = 'fd48460075c04cd2f4f3b031c4c43d3a29649849380d4a398e3d30da89309ee4'
 CONTROL_PATHS = {
  'rfc':RFC_PATH,'application_manifest':APPLICATION_MANIFEST,
  'application_main':APPLICATION_BODIES[0],'application_model':APPLICATION_BODIES[1],
@@ -175,11 +175,11 @@ def artifact_plan():
     fifos={'fifos/C08','fifos/C09','commands/C04-ordinary/poison.fifo',
            'commands/C04-sanitized/poison.fifo'}
     directories={str(parent) for name in regular|fifos for parent in Path(name).parents if str(parent)!='.'}
-    require(len(SNAPSHOT_PATHS)==56 and len(regular)==717+len(sidecars),'prospective fixed native file geometry')
+    require(len(SNAPSHOT_PATHS)==57 and len(regular)==718+len(sidecars),'prospective fixed native file geometry')
     require(len(regular)+len(fifos)+len(directories)<=ENTRY_CAP,'prospective closed native tree geometry')
     return {'platform':sys.platform,'machine':machine,'regular_files':sorted(regular),
             'fifo_paths':sorted(fifos),'directories':sorted(directories),
-            'files_including_receipt':717+len(sidecars),'nonself_hashes':716+len(sidecars),
+            'files_including_receipt':718+len(sidecars),'nonself_hashes':717+len(sidecars),
             'sidecar_paths':list(sidecars),'entry_cap':ENTRY_CAP}
 
 
@@ -224,7 +224,7 @@ def held_admission(folder, cutoff, model_sha, freeze_sha):
     require(tuple(row['label'] for row in model['cards'])==tuple(f'C{i:02d}' for i in range(1,65)) and
             tuple(row['label'] for row in model['geometry'])==('G64','G128','G256','G512'),'complete held card order')
     require(model['source_pins']==record['sources_before']==record['sources_after'] and
-            set(model['source_pins'])==set(READSET) and len(READSET)==67,'complete held source domain/endpoints')
+            set(model['source_pins'])==set(READSET) and len(READSET)==68,'complete held source domain/endpoints')
     require(model['control_pins']==record['controls_before']==record['controls_after'] and
             set(model['control_pins'])==set(CONTROL_PATHS) and len(model['control_pins'])==9,'complete fresh controls/endpoints')
     require(model['tools']==record['tools_before']==record['tools_after'] and
@@ -528,7 +528,7 @@ def source_admission(root, compiler, cc, cutoff, receipt):
     receipt['sources_before']=pins
     for path in READSET:
         cutoff();captured[path]=read(root/path);pins[path]=identity(captured[path])
-    require(len(pins)==67 and set(pins)==set(READSET),'complete literal current source registry')
+    require(len(pins)==68 and set(pins)==set(READSET),'complete literal current source registry')
     require(len(APPLICATION_BODIES)>0 and len(APPLICATION_BODIES)<=8 and
             all(path.startswith('library/applications/source_context/') and path.endswith('.slim') for path in APPLICATION_BODIES)
             and len(set(APPLICATION_BODIES))==len(APPLICATION_BODIES),'exact accepted implementation body registry')

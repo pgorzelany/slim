@@ -3,10 +3,10 @@
 Schema: 1
 Status: SLIM 0.9 — experimental, pre-1.0
 
-Every rejected program produces one or more diagnostics in deterministic
-source order. A diagnostic has a stable `E` code, severity, source identity,
-and half-open primary byte span. Byte offsets refer to the exact input bytes;
-they do not depend on display columns or Unicode width.
+Rejected programs produce deterministic diagnostics: stable `E` code, severity,
+source identity and half-open primary byte span. Offsets address captured bytes,
+independent of display width. Whole-project canonical admission spans lack an
+original source; `repair.source` is unavailable.
 
 Human output is for reading. For agents and tools:
 
@@ -22,24 +22,34 @@ schema, code, severity, message, file, span, labels, notes, fixes
 ```
 
 `schema` is `1`; `span` contains `start`, `end`, `line`, and `column`.
-`labels`, `notes`, and `fixes` are arrays even when empty. Unknown additive
-fields may be ignored. Removing a field, changing its type, changing byte-span
-semantics, or reusing a code for a different condition requires a new schema.
+`labels`, `notes`, and `fixes` are arrays even when empty. Additive fields may
+be ignored; existing types, byte spans and code meanings require a new schema
+when changed. [RFC-0173](../design/rfcs/0173-repair-oriented-diagnostics.md)
+defines repair reports with concrete rule explanations, captured context and
+retained checker facts. The production checker supplies these fields. Excerpts
+cannot certify a complete revision or authorize an edit without rechecking.
+
+`repair.status` concerns primary source and detail admission; optional facts
+retain their own evidence. Null related locations carry no location claim.
+The type-depth budget includes the leaf. `json-byte-escapes-v1` escapes each
+non-ASCII byte separately; decode escaped values as byte values when recovering
+original source or path bytes.
 
 Malformed user input must not panic the compiler. Multiple independent issues
-are retained within documented analyzer bounds. Project diagnostics use the
-manifest module identity as their source identity. A consumer must treat an
-unknown schema as unsupported rather than inferring a layout.
+are retained within documented analyzer bounds. Project diagnostic identities
+retain module labels; `repair.source` identifies the captured source owning the
+span. Treat an unknown schema as unsupported. Code-family explanations can
+cover multiple conditions; retained producer facts identify narrower causes.
 
 The compiler reserves these stable conditions:
 
-- `E0102`: malformed source structure or block
-- `E0103`: tab indentation
+- `E0102`: malformed structure/block or canonical-node capacity
+- `E0103`: source tab outside a byte string
 - `E0104`: odd indentation width
 - `E0105`: skipped indentation level
 - `E0106`: forbidden brace or semicolon
 - `E0107`: unterminated byte string
-- `E0108`: missing comma, with an insertion fix where unambiguous
+- `E0108`: missing list separator or closing delimiter
 - `E0109`: leading, doubled, or trailing comma
 - `E0357`: discarded non-Void result
 - `E0358`: Void used in a storable position

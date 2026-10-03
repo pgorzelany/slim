@@ -16,6 +16,17 @@ struct Issue:
   start: I64
   end: I64
   blocks_inference: Bool
+  repair: Repair
+
+struct Repair:
+  expected: TypeRef
+  actual: TypeRef
+  requirement: I64
+  related: I64
+  rule: Bytes
+  expected_count: I64
+  actual_count: I64
+  effect: I64
 
 struct View:
   facts: Vec[Fact]
@@ -463,11 +474,11 @@ fn type_valid(type: TypeRef) -> Bool:
   type.kind >= -1
 
 fn append_issue(code: Bytes, start: I64, end: I64, issues: @Vec[Issue]) -> Void effects[alloc]:
-  let issue: Issue = Issue(code: code, start: start, end: end, blocks_inference: true)
+  let issue: Issue = Issue(code: code, start: start, end: end, blocks_inference: true, repair: empty_repair())
   vec.push(@issues, issue)
 
 fn append_ownership_issue(code: Bytes, token: I64, issues: @Vec[Issue]) -> Void effects[alloc]:
-  let issue: Issue = Issue(code: code, start: token, end: token, blocks_inference: false)
+  let issue: Issue = Issue(code: code, start: token, end: token, blocks_inference: false, repair: empty_repair())
   vec.push(@issues, issue)
 
 fn issues_block_inference(issues: Vec[Issue]) -> Bool effects[partial]:
@@ -486,6 +497,19 @@ fn record_issue(code: Bytes, token: I64, issues: @Vec[Issue]) -> Void effects[al
     void
   else:
     append_issue(code, token, token, @issues)
+
+fn empty_repair() -> Repair:
+  Repair(expected: TypeRef(kind: -2, form: -1), actual: TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "", expected_count: -1, actual_count: -1, effect: -1)
+
+fn record_repair_issue(code: Bytes, token: I64, repair: Repair, issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+  if issues_block_inference(issues):
+    void
+  else:
+    vec.push(@issues, Issue(code: code, start: token, end: token, blocks_inference: true, repair: repair))
+
+fn record_type_issue(token: I64, expected: TypeRef, actual: TypeRef, requirement: I64, rule: Bytes, issues: @Vec[Issue]) -> Void effects[alloc, partial]:
+  let repair: Repair = Repair(expected: expected, actual: actual, requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: -1)
+  record_repair_issue("E0344", token, repair, @issues)
 
 fn type_forms_equal(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
   let left_kind: I64 = syntax.ast_node_kind(tokens, left)
@@ -550,15 +574,19 @@ fn finish_type(source: Bytes, tokens: Vec[syntax.Token], expr: I64, expected: I6
   let valid: Bool = type_valid(actual)
   let contextual: Bool = expected >= 0
   let compare: Bool = valid && contextual
+  let required: TypeRef = if compare:
+    source_type(source, tokens, expected)
+  else:
+    invalid_type(expr)
   let same: Bool = if compare:
-    type_matches_form(source, tokens, actual, expected)
+    types_equal(source, tokens, actual, required)
   else:
     true
   if same:
     add_fact(expr, actual, @facts)
     fact_type(facts, expr)
   else:
-    record_issue("E0344", expr, @issues)
+    record_type_issue(expr, required, actual, expected, "declared-type", @issues)
     invalid_type(expr)
 
 fn parameter_is_exclusive(source: Bytes, tokens: Vec[syntax.Token], parameter: I64) -> Bool effects[partial]:
@@ -710,7 +738,7 @@ fn mark_named_move(tokens: Vec[syntax.Token], argument: I64, bindings: @Vec[Bind
             true
           else:
             let frame: I64 = advance_binding(@bindings, binding_index, @scopes, @frames)
-            ownership.set_moved(@frames, frame, true)
+            ownership.set_moved_at(@frames, frame, true, argument)
             true
     else:
       true
@@ -1022,7 +1050,8 @@ fn expect_arity(tokens: Vec[syntax.Token], cursor: I64, expected: I64, token: I6
   if same:
     true
   else:
-    record_issue("E0351", token, @issues)
+    let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: -1, related: -1, rule: "arity", expected_count: expected, actual_count: actual, effect: -1)
+    record_repair_issue("E0351", token, repair, @issues)
     false
 
 fn expect_kind(actual: TypeRef, kind: I64, token: I64, issues: @Vec[Issue]) -> Bool effects[alloc, partial]:
@@ -1032,7 +1061,7 @@ fn expect_kind(actual: TypeRef, kind: I64, token: I64, issues: @Vec[Issue]) -> B
   if same:
     true
   else:
-    record_issue("E0344", token, @issues)
+    record_type_issue(token, scalar_type(kind, -1), actual, -1, "intrinsic-operand", @issues)
     false
 
 fn builtin_group_math(source: Bytes, tokens: Vec[syntax.Token], callee: I64) -> Bool effects[partial]:
@@ -1246,7 +1275,10 @@ fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, 
               void
             let moved: Bool = find_binding_moved(tokens, @bindings, expr, @scopes, @frames)
             if moved:
-              append_ownership_issue("E0315", expr, @issues)
+              let binding: Binding = vec.get(bindings, binding_index)
+              let state: ownership.Frame = vec.get(frames, binding.move_scope)
+              let repair: Repair = Repair(expected: invalid_type(-1), actual: source_type(source, tokens, type), requirement: binding.name, related: state.move_origin, rule: "prior-possible-move", expected_count: -1, actual_count: -1, effect: -1)
+              vec.push(@issues, Issue(code: "E0315", start: expr, end: expr, blocks_inference: false, repair: repair))
               source_type(source, tokens, type)
             else:
               source_type(source, tokens, type)
@@ -1388,7 +1420,17 @@ fn next_argument(source: Bytes, tokens: Vec[syntax.Token], expr: I64, recursive:
           syntax.ast_function_return_type(tokens, linked_item(tokens, structure.callee))
         ArgumentNext(state: state, done: true, expected: -1, result: source_type(source, tokens, type))
       else:
-        record_issue("E0351", structure.callee, @issues)
+        if issues_block_inference(issues):
+          void
+        else:
+          if recursive:
+            record_issue("E0351", structure.callee, @issues)
+          else:
+            let parameters: I64 = syntax.ast_function_parameters(linked_item(tokens, structure.callee))
+            let expected_count: I64 = form_count(tokens, syntax.ast_parameters_first(parameters), 0)
+            let actual_count: I64 = form_count(tokens, structure.arguments, 0)
+            let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: parameters, related: -1, rule: "arity", expected_count: expected_count, actual_count: actual_count, effect: -1)
+            record_repair_issue("E0351", structure.callee, repair, @issues)
         ArgumentNext(state: state, done: true, expected: -1, result: invalid_type(expr))
     else:
       let expected: I64 = parameter_type(source, tokens, state.parameter)
@@ -2118,7 +2160,7 @@ fn finish_branch_arm(source: Bytes, tokens: Vec[syntax.Token], frame: Pending, a
   if same_type:
     void
   else:
-    record_issue("E0344", structure.body, @issues)
+    record_type_issue(structure.body, state.first, actual, state.first.form, "branch-result-agreement", @issues)
   let first: TypeRef = if state.has_first:
     state.first
   else:
@@ -2766,7 +2808,10 @@ fn check_declaration_types(source: Bytes, tokens: Vec[syntax.Token], declaration
     let first_declaration: I64 = syntax.ast_node_link(tokens, name)
     let duplicate: Bool = (first_declaration >= 0) && (first_declaration < item)
     if duplicate:
-      record_issue("E0352", name, @issues)
+      let absent: TypeRef = TypeRef(kind: -2, form: -1)
+      let earlier_name: I64 = syntax.ast_item_name(first_declaration)
+      let repair: Repair = Repair(expected: absent, actual: absent, requirement: -1, related: earlier_name, rule: "duplicate-declaration", expected_count: -1, actual_count: -1, effect: -1)
+      record_repair_issue("E0352", name, repair, @issues)
     else:
       void
     let function: Bool = syntax.ast_item_is_function(source, tokens, item)

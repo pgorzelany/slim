@@ -24,10 +24,10 @@ CHILD_SECONDS = 60
 MODEL_CAP = 4*MIB
 FREEZE_CAP = 64*MIB
 FILE_COUNT_CAP = 128
-HELPER_SHA = '6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be'
+HELPER_SHA = '245ccc2e41b38546bdc12bb49dae0b4331731db57174704c4d16ee805aff9c8c'
 VARIANTS = (('ordinary',('-O2','-DNDEBUG')),
             ('sanitized',('-O1','-g','-fsanitize=address,undefined','-fno-sanitize-recover=all')))
-PRODUCER_MANIFEST_SHA = 'b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f'
+PRODUCER_MANIFEST_SHA = 'db5881e40b6ab96f08872318d8eac640a72c911e40b401dad662fa3a6e2263c0'
 PROBE_PATH = 'tests/fixtures/project_input_node_observer.slim'
 RFC_PATH = 'design/rfcs/0165-checked-project-input-producer.md'
 COUNTER_CAP = 1000000000
@@ -46,7 +46,7 @@ OBSERVATIONS = {
  'sources-exact':(0,66,0,0,1,0), 'sources-plus':(65,0,0,0,0,10),
 }
 SOURCE_PATHS = (
- 'selfhost/check.slim','selfhost/codegen.slim','selfhost/control.slim',
+ 'selfhost/check.slim','selfhost/codegen.slim','selfhost/control.slim','selfhost/diagnostics.slim',
  'selfhost/effects.slim','selfhost/format.slim','selfhost/identity.slim',
  'selfhost/ir.slim','selfhost/memory.slim','selfhost/ownership.slim',
  'selfhost/parallel.slim','selfhost/project.slim',
@@ -163,7 +163,7 @@ def prerequisite(repository):
     require(b'Status: accepted' in raw.splitlines()[:24],'accepted RFC165 required')
     manifest = read(repository/'project-input.project',MIB)
     require(sha(manifest)==PRODUCER_MANIFEST_SHA,'fixed producer manifest declaration bytes')
-    require(len(SOURCE_PATHS)==27 and len(set(SOURCE_PATHS))==27,'fixed producer source registry')
+    require(len(SOURCE_PATHS)==28 and len(set(SOURCE_PATHS))==28,'fixed producer source registry')
     return {'rfc_source':identity(raw),'manifest':identity(manifest),
             'scope':'accepted RFC165; fixed restricted constructor; current opaque tooling bytes',
             'constructor_argument':

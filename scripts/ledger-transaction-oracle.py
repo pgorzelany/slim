@@ -25,7 +25,7 @@ CASE_CAP, FILE_CAP = 192, 128
 MODEL_CAP, FREEZE_CAP, SOURCE_CAP, TOOL_CAP = 4*MIB, 16*MIB, MIB, 128*MIB
 GLOBAL_SECONDS, CHILD_SECONDS = 900, 60
 HELPER_PATH = "scripts/verify-project-impact.py"
-HELPER_SHA = "6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be"
+HELPER_SHA = "245ccc2e41b38546bdc12bb49dae0b4331731db57174704c4d16ee805aff9c8c"
 CONTROL_PATHS = {
     "oracle": "scripts/ledger-transaction-oracle.py",
     "verifier": "scripts/verify-ledger-transaction.py",
@@ -63,7 +63,7 @@ COLLECTOR_PATHS = (
     "library/experimental/text.slim", "library/project-impact.project", "project-input.project",
     "runtime/slim_rt.c", "runtime/slim_rt.h", "scripts/project-impact-context.py",
     "scripts/project-input-inventory.py", "selfhost/check.slim", "selfhost/codegen.slim",
-    "selfhost/control.slim", "selfhost/effects.slim", "selfhost/format.slim", "selfhost/identity.slim",
+    "selfhost/control.slim", "selfhost/diagnostics.slim", "selfhost/effects.slim", "selfhost/format.slim", "selfhost/identity.slim",
     "selfhost/ir.slim", "selfhost/memory.slim", "selfhost/ownership.slim", "selfhost/parallel.slim",
     "selfhost/project.slim", "selfhost/ranges.slim", "selfhost/retained.slim",
     "selfhost/scheduler.slim", "selfhost/syntax.slim", "selfhost/text.slim",
@@ -346,7 +346,7 @@ def native_labels():
 def model():
     states, replays, partials, diagnostics = state_cases(), cli_cases(), partial_cases(), diagnostic_cases()
     require(len(states) + len(replays) + len(partials) + len(diagnostics) + 1 == 184 <= CASE_CAP, "case cap")
-    require(len(LEDGER_PATHS) == 10 and len(COLLECTOR_PATHS) == 49 and len(READSET) == 56, "literal readset count")
+    require(len(LEDGER_PATHS) == 10 and len(COLLECTOR_PATHS) == 50 and len(READSET) == 57, "literal readset count")
     return {"schema": 1, "contract": "accepted-RFC-0171", "source_hex": SOURCE.hex(),
             "states": states, "replays": replays, "partials": partials, "diagnostics": diagnostics,
             "baseline": baseline_case(), "data_cases": 184, "native_labels": native_labels(),
@@ -420,8 +420,14 @@ def freeze(output, compiler=None, cc=None, admission=None):
         require(admission == {"sources":source_pins,"controls":control_pins,"tools":tools},
                 "complete caller admission before captured oracle execution")
     expected = model()
+    # Keep every established artifact and the fixed hold of 128 files. The one
+    # new dependency is retained completely inside the already-hashed model.
+    # The original 1 MiB source and 4 MiB model bounds apply before storage.
     expected.update(source_pins=source_pins, tools=tools, oracle=identity(own_bytes),
-                    control_sources=control_pins, baseline_state=control_pins["baseline"])
+                    control_sources=control_pins, baseline_state=control_pins["baseline"],
+                    additional_source_hex={"selfhost/diagnostics.slim":sources["selfhost/diagnostics.slim"].hex()},
+                    source_storage={"physical_hold_files":128,"logical_hold_artifacts":129,
+                                    "source_records":57,"standalone_source_files":56,"inline_source_records":1})
     model_bytes = canonical(expected)
     require(len(model_bytes) <= MODEL_CAP, "model cap")
     files = {"oracle.py":own_bytes,"verifier.py":controls["verifier"],"generator.py":controls["generator"],
@@ -430,7 +436,8 @@ def freeze(output, compiler=None, cc=None, admission=None):
              "sources-before.json": canonical(source_pins), "tools-before.json": canonical(tools),
              "states.expected.bin": b"".join(bytes.fromhex(case["stdout_hex"]) for case in expected["states"])}
     for name, data in sources.items():
-        files["sources/" + name] = data
+        if name != "selfhost/diagnostics.slim":
+            files["sources/" + name] = data
     # Two independently retained complete before trees; fixed paths, opaque bytes.
     for prefix in ("before", "expected"):
         for name in LEDGER_PATHS:

@@ -11,8 +11,8 @@ feedback, explicit resource behavior and reproducible failures. The
 is complete for its bounded scope: production semantic context, independent
 conformance/cost evidence and six frozen repair trials. Strict acceptance is 2/3
 per condition; general effectiveness remains unknown. Retain opt-in schema 1 and
-freeze its breadth. The next outcome is reliable project contracts, useful
-ordinary-source components and a stronger compiler/library development experiment.
+freeze its breadth. The next outcome is diagnostic feedback that explains a
+rejection and provides the exact context needed to repair compiler/library code.
 
 [RFC-0112](design/rfcs/0112-agent-development-and-os-foundation.md) remains the
 accepted successor direction. [RFC-0158](design/rfcs/0158-early-agent-development-loop.md)
@@ -45,11 +45,23 @@ simulation and replay. Each needs its own accepted contract and evidence.
 
 ## Current substantial outcome
 
-The maintainer authorized continuous development until 2026-10-03 10:00
-Europe/Warsaw (08:00 UTC), starting 2026-10-02 18:06 UTC. Check the clock and
-choose further useful work until that boundary; this does not promise that all
-successor milestones fit in one night. Parallel implementation feeds reviewed
-integration; measured trials and native benchmarks run without competing work.
+Implement [general repair diagnostics](design/rfcs/0173-repair-oriented-diagnostics.md)
+in the production SLIM compiler. Every rejection must explain the violated rule.
+Retain original source context and the rejecting decision's type, capability or
+ownership facts where applicable. Never infer the intended repair from acceptance.
+
+Acceptance requires independent syntax, name, type, effect, ownership and project
+cases; correct manifest/module provenance; fixed reporting limits; unchanged raw
+diagnostics and generated programs; same-host cost measurements; and all compiler
+and release gates. Production implementation, 65 independent cases, 12 actual
+development tasks and compiler gates pass. Clean release/website verification
+follows the source commit. Next, measure real repair iterations and time before
+claiming an agent effectiveness benefit.
+
+## Completed overnight scope
+
+The authorized window ended at 2026-10-03 10:00 Europe/Warsaw. Its reviewed scope
+is published; the successor milestones below retain their separate gates.
 
 | Workstream | Concrete result | Acceptance |
 | --- | --- | --- |

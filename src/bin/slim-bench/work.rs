@@ -184,7 +184,7 @@ const HOOKS: &[Hook] = &[
     },
     Hook {
         metric: "project_load_steps",
-        function: "project.load_project_modules",
+        function: "project.load_project_modules_report",
         point: Point::Header,
         amount: "1",
     },
@@ -1426,11 +1426,76 @@ mod tests {
     #[test]
     fn observation_anchors_reject_missing_or_duplicate_definitions() {
         let seed = fs::read_to_string(repository_root().join("bootstrap/slimc-seed.c")).unwrap();
-        assert!(instrument(&seed).is_ok());
+        instrument(&seed).unwrap();
         assert!(instrument("").is_err());
         assert!(instrument(&format!("{seed}{seed}")).is_err());
         assert!(replace_once("same same", "same", "new").is_err());
         assert!(instrument_runtime("").is_err());
+    }
+
+    fn generated_definition<'a>(source: &'a str, qualified: &str) -> &'a str {
+        let symbol = format!(" {}(", project_c_function(qualified));
+        let signature = source
+            .lines()
+            .find(|line| {
+                line.starts_with("static SLIM_UNUSED_FUNCTION ")
+                    && line.ends_with(" {")
+                    && line.contains(&symbol)
+            })
+            .expect("exact generated definition");
+        let suffix = &source[source.find(signature).unwrap()..];
+        let end = suffix
+            .find("\nstatic SLIM_UNUSED_FUNCTION ")
+            .unwrap_or(suffix.len());
+        &suffix[..end]
+    }
+
+    #[test]
+    fn project_load_steps_observe_reporter_loop_headers() {
+        let seed = fs::read_to_string(repository_root().join("bootstrap/slimc-seed.c")).unwrap();
+        let index = HOOKS
+            .iter()
+            .position(|hook| hook.metric == "project_load_steps")
+            .unwrap();
+        assert_eq!(HOOKS[index].function, "project.load_project_modules_report");
+        assert!(matches!(HOOKS[index].point, Point::Header));
+        assert_eq!(HOOKS[index].amount, "1");
+        let observed = instrument(&seed).unwrap();
+        let counter = format!("slim_work_add({index}, 1);\n");
+        let loop_body = generated_definition(&observed, "project.load_project_modules_report");
+        assert!(loop_body.contains(&format!("slim_recur: ;\n{counter}")));
+        assert_eq!(loop_body.matches(&counter).count(), 1);
+        assert!(
+            !generated_definition(&observed, "project.load_project_modules").contains(&counter)
+        );
+
+        let original = generated_definition(&seed, "project.load_project_modules_report");
+        let signature = original.lines().next().unwrap();
+        let missing = seed.replacen(
+            signature,
+            &signature.replace(
+                &project_c_function("project.load_project_modules_report"),
+                "missing_project_loader",
+            ),
+            1,
+        );
+        assert!(
+            instrument(&missing)
+                .unwrap_err()
+                .contains("project_load_steps observation anchor count is 0")
+        );
+        let duplicate = format!("{seed}{signature}\nslim_recur: ;\n}}\n");
+        assert!(
+            instrument(&duplicate)
+                .unwrap_err()
+                .contains("project_load_steps observation anchor count is 2")
+        );
+        let no_header = seed.replacen(original, &original.replacen("slim_recur: ;\n", "", 1), 1);
+        assert!(
+            instrument(&no_header)
+                .unwrap_err()
+                .contains("project_load_steps observation anchor count is 0")
+        );
     }
 
     #[test]

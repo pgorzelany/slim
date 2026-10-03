@@ -250,11 +250,12 @@ def geometry():
 COMPILER_ROWS = (
  ('analysis','analysis.slim','memory parallel quality ranges reduce syntax text typing'),
  ('cache','cache.slim','project syntax text'),
- ('check','check.slim','effects identity ir memory ranges retained syntax text typing validate'),
+ ('check','check.slim','diagnostics effects identity ir memory ranges retained syntax text typing validate'),
  ('codegen','codegen.slim','memory parallel ranges syntax text typing'),
  ('compiler','slimc.slim','analysis cache check codegen context edit equivalence format memory project proof reduce scheduler session syntax text typing validate'),
  ('context','context.slim','cache check identity project retained syntax text typing'),
- ('control','control.slim','syntax'),('driver','driver.slim','compiler'),
+ ('control','control.slim','syntax'),
+ ('diagnostics','diagnostics.slim','syntax text typing'),('driver','driver.slim','compiler'),
  ('edit','edit.slim','format syntax text'),('effects','effects.slim','syntax'),
  ('equivalence','equivalence.slim','syntax text'),
  ('flow','flow.slim','control identity retained syntax typing'),
@@ -265,7 +266,7 @@ COMPILER_ROWS = (
  ('nativecache','nativecache.slim','cache retained'),('ownership','ownership.slim',''),
  ('parallel','parallel.slim','effects ranges syntax text typing'),
  ('parallelcache','parallelcache.slim','identity parallel project ranges retained syntax'),
- ('project','project.slim','check codegen format identity memory ranges retained scheduler syntax text typing validate'),
+ ('project','project.slim','check codegen diagnostics format identity memory ranges retained scheduler syntax text typing validate'),
  ('proof','proof.slim','reduce syntax text'),('quality','quality.slim','ranges reduce syntax text'),
  ('query','query.slim','identity project syntax text'),
  ('ranges','ranges.slim','effects syntax text typing'),
@@ -298,7 +299,7 @@ CATALOG_ROWS = (
  ('std_text','experimental/text.slim','std_bytes'))
 REAL = {
  'compiler':('selfhost/slim.project','selfhost',
-             '8f75c79f783c1942e1b1faa30867d34097ed86ee7b999cdf5153b58502dce9fe',
+             '2076323f8f1888aa67c2b88946b99ceb047b34ccf216900224009eae41aa850f',
              COMPILER_ROWS,('compiler','context','project')),
  'ledger':('library/ledger.project','library',
            '376145c7517aa1a65180d7d9b44949ea5a8a479752b7643701b12a14e46891b1',

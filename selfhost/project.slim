@@ -724,19 +724,22 @@ fn report_project_issue(issue: typing.Issue, origins: Vec[Origin], manifest_sour
     let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
     report_project_diagnostic(issue.code, module_name, start_origin.start, end_origin.end)
 
-fn report_project_issues(issues: Vec[typing.Issue], index: I64, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], count: I64) -> I64 effects[alloc, io, partial]:
+fn report_project_issues(input: Bytes, tokens: Vec[syntax.Token], issues: Vec[typing.Issue], index: I64, origins: Vec[Origin], manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(issues)
   let done: Bool = index >= length
   if done:
     count
   else:
     let issue: typing.Issue = vec.get(issues, index)
-    let reported: I64 = report_project_issue(issue, origins, manifest_source, manifest_tokens, loaded)
+    let reported: I64 = if report.json:
+      diagnostics.emit_node(@report, issue.code, input, tokens, issue.start, issue.end, issue.repair)
+    else:
+      report_project_issue(issue, origins, manifest_source, manifest_tokens, loaded)
     let next: I64 = index + 1
     let total: I64 = count + reported
-    recur(issues, next, origins, manifest_source, manifest_tokens, loaded, total)
+    recur(input, tokens, issues, next, origins, manifest_source, manifest_tokens, loaded, total, @report)
 
-fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64, report: @diagnostics.Reporter) -> ProjectAttempt effects[alloc, io, partial]:
   let origins: Vec[Origin] = vec.new()
   let tokens: Vec[syntax.Token] = vec.new()
   let source: Bytes = flatten_loaded_project(manifest_source, manifest_tokens, entry, module_tokens, loaded, namespace, @tokens, @origins)
@@ -747,20 +750,31 @@ fn prepare_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.T
     let work: retained.Work = retained.Work(executed: -1, reused: 0, imported: 0, capacity: true)
     ProjectAttempt(transition: retained.empty_update(), canonical_nodes: count, prepared: prepared, cache: cache, work: work)
   else:
-    check_loaded_project(manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, retain, previous, revision, token_limit)
+    check_loaded_project_report(manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, retain, previous, revision, token_limit, @report)
 
 fn check_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], source: Bytes, tokens: ^Vec[syntax.Token], origins: ^Vec[Origin], loaded: Vec[LoadedModule], retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  check_loaded_project_report(manifest_source, ^manifest_tokens, source, ^tokens, ^origins, loaded, retain, previous, revision, token_limit, @report)
+
+fn check_loaded_project_report(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Token], source: Bytes, tokens: ^Vec[syntax.Token], origins: ^Vec[Origin], loaded: Vec[LoadedModule], retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64, report: @diagnostics.Reporter) -> ProjectAttempt effects[alloc, io, partial]:
+  if report.json:
+    install_report_origins(@report, origins, 0)
+  else:
+    void
   let attempt: check.Attempt = if retain:
     check.check_source_retained(source, @tokens, previous, revision, token_limit)
   else:
-    let checked: typing.Checked = check.check_source_deferred(source, @tokens)
+    let checked: typing.Checked = if report.json:
+      check.check_source_deferred_report(source, @tokens, @report)
+    else:
+      check.check_source_deferred(source, @tokens)
     check.uncached_attempt(^checked)
   let status: I64 = attempt.checked.status
   let facts: Vec[typing.Fact] = mem.replace(@attempt.checked.view.facts, vec.new())
   let layouts: Vec[I64] = mem.replace(@attempt.checked.view.layouts, vec.new())
   let issues: Vec[typing.Issue] = mem.replace(@attempt.checked.issues, vec.new())
   let plan: memory.Plan = mem.replace(@attempt.checked.plan, memory.empty_plan())
-  let reported: I64 = report_project_issues(issues, 0, origins, manifest_source, manifest_tokens, loaded, 0)
+  let reported: I64 = report_project_issues(source, tokens, issues, 0, origins, manifest_source, manifest_tokens, loaded, 0, @report)
   let canonical_nodes: I64 = vec.len(tokens)
   let range_view: ranges.View = mem.replace(@attempt.range_view, ranges.empty_view())
   let prepared: PreparedProject = PreparedProject(status: status, source: source, tokens: tokens, origins: origins, manifest_source: manifest_source, manifest_tokens: manifest_tokens, facts: facts, layouts: layouts, issues: issues, plan: plan, range_ready: attempt.range_ready, range_view: range_view)
@@ -769,53 +783,65 @@ fn check_loaded_project(manifest_source: Bytes, manifest_tokens: ^Vec[syntax.Tok
   ProjectAttempt(transition: transition, canonical_nodes: canonical_nodes, prepared: prepared, cache: cache, work: attempt.work)
 
 fn parse_project_manifest(source: Bytes, tokens: @Vec[syntax.Token]) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  parse_project_manifest_report(source, @tokens, @report)
+
+fn parse_project_manifest_report(source: Bytes, tokens: @Vec[syntax.Token], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   syntax.lex_data(source, 0, @tokens)
   let version: I64 = 2
   let valid_version: Bool = syntax.ast_node_text_is(source, tokens, version, "1")
   if valid_version:
     let entry_form: I64 = 3
     let modules: I64 = syntax.ast_next(tokens, entry_form)
-    let manifest_errors: I64 = report_manifest_rules(source, tokens, entry_form, modules)
+    let manifest_errors: I64 = report_manifest_rules(source, tokens, entry_form, modules, @report)
     if manifest_errors > 0:
       manifest_errors
     else:
       let cycle: I64 = find_reciprocal_cycle(source, tokens, modules, modules)
       if cycle >= 0:
-        report_project_diagnostic("E0413", "-", syntax.ast_node_start(tokens, cycle), syntax.ast_node_end(tokens, cycle))
+        emit_project_diagnostic(@report, "manifest", source, "E0413", "-", syntax.ast_node_start(tokens, cycle), syntax.ast_node_end(tokens, cycle))
       else:
         0
   else:
-    report_project_diagnostic("E0402", "-", syntax.ast_node_start(tokens, version), syntax.ast_node_end(tokens, version))
+    emit_project_diagnostic(@report, "manifest", source, "E0402", "-", syntax.ast_node_start(tokens, version), syntax.ast_node_end(tokens, version))
 
-fn finish_project_preparation(source: Bytes, tokens: ^Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+fn finish_project_preparation(source: Bytes, tokens: ^Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], retain: Bool, strict: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64, report: @diagnostics.Reporter) -> ProjectAttempt effects[alloc, io, partial]:
   let entry: I64 = 5
   let namespace: NamespaceView = derive_namespace(source, tokens, module_tokens, loaded)
-  let errors: I64 = report_loaded_project(source, tokens, entry, module_tokens, loaded, namespace)
+  if report.json:
+    install_report_files(@report, source, tokens, loaded)
+  else:
+    void
+  let errors: I64 = report_loaded_project_report(source, tokens, entry, module_tokens, loaded, namespace, @report)
   if errors > 0:
     invalid_project_attempt(errors)
   else:
-    prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, namespace, retain, strict, previous, revision, token_limit)
+    prepare_loaded_project(source, ^tokens, entry, module_tokens, loaded, namespace, retain, strict, previous, revision, token_limit, @report)
 
 fn prepare_project_attempt(path: Bytes, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> ProjectAttempt effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  prepare_project_attempt_report(path, retain, previous, revision, token_limit, @report)
+
+fn prepare_project_attempt_report(path: Bytes, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64, report: @diagnostics.Reporter) -> ProjectAttempt effects[alloc, io, partial]:
   let source_bytes: Vec[U8] = vec.new()
   let source_read: Bool = io.read_file(path, @source_bytes)
   let source: Bytes = bytes.freeze(^source_bytes)
   let tokens: Vec[syntax.Token] = vec.new()
   if source_read:
-    let status: I64 = parse_project_manifest(source, @tokens)
+    let status: I64 = parse_project_manifest_report(source, @tokens, @report)
     if status > 0:
       invalid_project_attempt(status)
     else:
       let modules: I64 = syntax.ast_next(tokens, 3)
       let module_tokens: Vec[syntax.Token] = vec.new()
       let loaded: Vec[LoadedModule] = vec.new()
-      let errors: I64 = load_project_modules(path, source, tokens, modules, @module_tokens, @loaded)
+      let errors: I64 = load_project_modules_report(path, source, tokens, modules, @module_tokens, @loaded, @report)
       if errors > 0:
         invalid_project_attempt(errors)
       else:
-        finish_project_preparation(source, ^tokens, module_tokens, loaded, retain, false, previous, revision, token_limit)
+        finish_project_preparation(source, ^tokens, module_tokens, loaded, retain, false, previous, revision, token_limit, @report)
   else:
-    let reported: I64 = report_project_diagnostic("E0409", "-", 0, 0)
+    let reported: I64 = emit_manifest_read_failure(@report, "E0409", "-", 0, 0)
     invalid_project_attempt(1)
 
 fn empty_project_input() -> ProjectInput effects[alloc]:
@@ -1520,7 +1546,7 @@ fn find_unknown_import(source: Bytes, tokens: Vec[syntax.Token], modules: I64, c
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, modules, next)
 
-fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I64, modules: I64) -> I64 effects[alloc, io, partial]:
+fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I64, modules: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let entry: I64 = entry_form + 2
   let entry_start: I64 = syntax.ast_node_start(tokens, entry)
   let entry_end: I64 = syntax.ast_node_end(tokens, entry)
@@ -1532,11 +1558,11 @@ fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I
     if has_unsorted:
       let start: I64 = syntax.ast_node_start(tokens, unsorted)
       let end: I64 = syntax.ast_node_end(tokens, unsorted)
-      let order_report: I64 = report_project_diagnostic("E0406", "-", start, end)
+      let order_report: I64 = emit_project_diagnostic(@report, "manifest", source, "E0406", "-", start, end)
       let duplicate: I64 = find_duplicate_module(source, tokens, modules, modules)
       let same_span: Bool = duplicate == unsorted
       if same_span:
-        let duplicate_report: I64 = report_project_diagnostic("E0408", "-", start, end)
+        let duplicate_report: I64 = emit_project_diagnostic(@report, "manifest", source, "E0408", "-", start, end)
         order_report
       else:
         order_report
@@ -1549,38 +1575,38 @@ fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I
       if has_duplicate_path:
         let start: I64 = syntax.ast_node_start(tokens, duplicate_path)
         let end: I64 = syntax.ast_node_end(tokens, duplicate_path)
-        report_project_diagnostic("E0408", "-", start, end)
+        emit_project_diagnostic(@report, "manifest", source, "E0408", "-", start, end)
       else:
         let invalid_path: I64 = find_invalid_path(source, tokens, modules)
         let has_invalid_path: Bool = invalid_path >= 0
         if has_invalid_path:
           let start: I64 = syntax.ast_node_start(tokens, invalid_path)
           let end: I64 = syntax.ast_node_end(tokens, invalid_path)
-          report_project_diagnostic("E0407", "-", start, end)
+          emit_project_diagnostic(@report, "manifest", source, "E0407", "-", start, end)
         else:
           let unsorted_list: I64 = find_unsorted_module_lists(source, tokens, modules)
           if unsorted_list >= 0:
             let start: I64 = syntax.ast_node_start(tokens, unsorted_list)
             let end: I64 = syntax.ast_node_end(tokens, unsorted_list)
-            report_project_diagnostic("E0406", "-", start, end)
+            emit_project_diagnostic(@report, "manifest", source, "E0406", "-", start, end)
           else:
             let self_import: I64 = find_self_import(source, tokens, modules)
             let has_self: Bool = self_import >= 0
             if has_self:
               let start: I64 = syntax.ast_node_start(tokens, self_import)
               let end: I64 = syntax.ast_node_end(tokens, self_import)
-              report_project_diagnostic("E0412", "-", start, end)
+              emit_project_diagnostic(@report, "manifest", source, "E0412", "-", start, end)
             else:
               let unknown_import: I64 = find_unknown_import(source, tokens, modules, modules)
               let has_unknown: Bool = unknown_import >= 0
               if has_unknown:
                 let start: I64 = syntax.ast_node_start(tokens, unknown_import)
                 let end: I64 = syntax.ast_node_end(tokens, unknown_import)
-                report_project_diagnostic("E0411", "-", start, end)
+                emit_project_diagnostic(@report, "manifest", source, "E0411", "-", start, end)
               else:
                 0
   else:
-    report_project_diagnostic("E0403", "-", entry_start, entry_end)
+    emit_project_diagnostic(@report, "manifest", source, "E0403", "-", entry_start, entry_end)
 
 struct LoadedModule:
   manifest: I64
@@ -1590,6 +1616,10 @@ struct LoadedModule:
   root: I64
 
 fn finish_module_parse(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, source: Bytes, root: I64, parsed: syntax.ProgramParse, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  finish_module_parse_report(manifest_source, manifest_tokens, cursor, source, root, parsed, @module_tokens, @loaded, @report)
+
+fn finish_module_parse_report(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, source: Bytes, root: I64, parsed: syntax.ProgramParse, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let name: I64 = cursor + 2
   let path: I64 = cursor + 3
   let end: I64 = vec.len(module_tokens)
@@ -1601,23 +1631,36 @@ fn finish_module_parse(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token
   else:
     let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
     if parsed.valid:
-      report_project_diagnostic("E0102", module_name, 0, bytes.len(source))
+      let count: I64 = end - root
+      let repair: typing.Repair = if count > 1000000:
+        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: count, effect: -1)
+      else:
+        typing.empty_repair()
+      emit_parsed_module(@report, manifest_source, manifest_tokens, path, source, "E0102", module_name, 0, bytes.len(source), repair)
     else:
-      report_project_diagnostic(parsed.code, module_name, parsed.start, parsed.end)
+      emit_parsed_module(@report, manifest_source, manifest_tokens, path, source, parsed.code, module_name, parsed.start, parsed.end, typing.empty_repair())
 
 fn load_module_input(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, input: ModuleInput, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  load_module_input_report(manifest_source, manifest_tokens, cursor, input, @module_tokens, @loaded, @report)
+
+fn load_module_input_report(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, input: ModuleInput, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let name: I64 = cursor + 2
   let path: I64 = cursor + 3
   if input.read:
     let source: Bytes = input.source
     let root: I64 = vec.len(module_tokens)
     let parsed: syntax.ProgramParse = syntax.parse_program_result(source, @module_tokens)
-    finish_module_parse(manifest_source, manifest_tokens, cursor, source, root, parsed, @module_tokens, @loaded)
+    finish_module_parse_report(manifest_source, manifest_tokens, cursor, source, root, parsed, @module_tokens, @loaded, @report)
   else:
     let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-    report_project_diagnostic("E0409", module_name, syntax.ast_node_start(manifest_tokens, path), syntax.ast_node_end(manifest_tokens, path))
+    emit_project_diagnostic(@report, "manifest", manifest_source, "E0409", module_name, syntax.ast_node_start(manifest_tokens, path), syntax.ast_node_end(manifest_tokens, path))
 
 fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  load_project_modules_report(manifest_path, manifest_source, manifest_tokens, cursor, @module_tokens, @loaded, @report)
+
+fn load_project_modules_report(manifest_path: Bytes, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_tokens: @Vec[syntax.Token], loaded: @Vec[LoadedModule], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   if syntax.ast_node_kind(manifest_tokens, cursor) == 1:
     0
   else:
@@ -1626,13 +1669,13 @@ fn load_project_modules(manifest_path: Bytes, manifest_source: Bytes, manifest_t
     let read: Bool = io.read_file(module_path, @bytes)
     let source: Bytes = bytes.freeze(^bytes)
     let input: ModuleInput = ModuleInput(read: read, source: source)
-    let result: I64 = load_module_input(manifest_source, manifest_tokens, cursor, input, @module_tokens, @loaded)
+    let result: I64 = load_module_input_report(manifest_source, manifest_tokens, cursor, input, @module_tokens, @loaded, @report)
     if result == 0:
-      recur(manifest_path, manifest_source, manifest_tokens, syntax.ast_next(manifest_tokens, cursor), @module_tokens, @loaded)
+      recur(manifest_path, manifest_source, manifest_tokens, syntax.ast_next(manifest_tokens, cursor), @module_tokens, @loaded, @report)
     else:
       result
 
-fn report_module_identities(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_module_identities(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1650,10 +1693,10 @@ fn report_module_identities(manifest_source: Bytes, manifest_tokens: Vec[syntax.
     let same: Bool = cross_spans_equal(manifest_source, manifest_start, manifest_end, source, source_start, source_end)
     if same:
       let next: I64 = index + 1
-      recur(manifest_source, manifest_tokens, module_tokens, loaded, next)
+      recur(manifest_source, manifest_tokens, module_tokens, loaded, next, @report)
     else:
       let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-      report_project_diagnostic("E0410", module_name, manifest_start, manifest_end)
+      emit_project_diagnostic(@report, "manifest", manifest_source, "E0410", module_name, manifest_start, manifest_end)
 
 fn find_missing_export(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], cursor: I64, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
@@ -1669,7 +1712,7 @@ fn find_missing_export(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token
     else:
       cursor
 
-fn report_missing_exports(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_missing_exports(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1690,10 +1733,10 @@ fn report_missing_exports(manifest_source: Bytes, manifest_tokens: Vec[syntax.To
       let start: I64 = syntax.ast_node_start(manifest_tokens, missing)
       let end: I64 = syntax.ast_node_end(manifest_tokens, missing)
       let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-      report_project_diagnostic("E0414", module_name, start, end)
+      emit_project_diagnostic(@report, "manifest", manifest_source, "E0414", module_name, start, end)
     else:
       let next: I64 = index + 1
-      recur(manifest_source, manifest_tokens, module_tokens, loaded, next)
+      recur(manifest_source, manifest_tokens, module_tokens, loaded, next, @report)
 
 fn find_named_declaration(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, name: Bytes) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
@@ -1717,7 +1760,7 @@ fn loaded_is_entry(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], e
   let entry_end: I64 = syntax.ast_node_end(manifest_tokens, entry)
   syntax.spans_equal(manifest_source, name_start, name_end, entry_start, entry_end)
 
-fn report_project_mains(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64) -> I64 effects[alloc, io, partial]:
+fn report_project_mains(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -1733,14 +1776,14 @@ fn report_project_mains(manifest_source: Bytes, manifest_tokens: Vec[syntax.Toke
     if is_entry:
       if has_main:
         let next: I64 = index + 1
-        recur(manifest_source, manifest_tokens, entry, module_tokens, loaded, next)
+        recur(manifest_source, manifest_tokens, entry, module_tokens, loaded, next, @report)
       else:
         let name: I64 = module.name
         let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
         let next_form: I64 = syntax.ast_next(module_tokens, root)
         let closing: I64 = next_form - 1
         let end: I64 = syntax.ast_node_end(module_tokens, closing)
-        report_project_diagnostic("E0419", module_name, 0, end)
+        emit_project_diagnostic(@report, "module", module.source, "E0419", module_name, 0, end)
     else:
       if has_main:
         let start: I64 = syntax.ast_node_start(module_tokens, main)
@@ -1749,10 +1792,10 @@ fn report_project_mains(manifest_source: Bytes, manifest_tokens: Vec[syntax.Toke
         let end: I64 = syntax.ast_node_end(module_tokens, closing)
         let name: I64 = module.name
         let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, name)
-        report_project_diagnostic("E0419", module_name, start, end)
+        emit_project_diagnostic(@report, "module", module.source, "E0419", module_name, start, end)
       else:
         let next: I64 = index + 1
-        recur(manifest_source, manifest_tokens, entry, module_tokens, loaded, next)
+        recur(manifest_source, manifest_tokens, entry, module_tokens, loaded, next, @report)
 
 fn find_loaded_segment(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], reference_source: Bytes, segment_start: I64, segment_end: I64, index: I64) -> I64 effects[partial]:
   let length: I64 = vec.len(loaded)
@@ -1912,7 +1955,7 @@ fn find_invalid_namespace_reference(manifest_source: Bytes, manifest_tokens: Vec
     else:
       recur(manifest_source, manifest_tokens, tokens, loaded, namespace, index, syntax.ast_node_after(cursor), end)
 
-fn report_namespace_references(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, index: I64) -> I64 effects[alloc, io, partial]:
+fn report_namespace_references(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, index: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   if index >= vec.len(loaded):
     0
   else:
@@ -1942,39 +1985,43 @@ fn report_namespace_references(manifest_source: Bytes, manifest_tokens: Vec[synt
       else:
         syntax.ast_node_end(tokens, closing)
       let module_name: Bytes = token_bytes(manifest_source, manifest_tokens, module.name)
-      report_project_diagnostic(code, module_name, start, diagnostic_end)
+      emit_project_diagnostic(@report, "module", module.source, code, module_name, start, diagnostic_end)
     else:
-      recur(manifest_source, manifest_tokens, tokens, loaded, namespace, index + 1)
+      recur(manifest_source, manifest_tokens, tokens, loaded, namespace, index + 1, @report)
 
 fn report_loaded_project(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView) -> I64 effects[alloc, io, partial]:
-  let identities: I64 = report_module_identities(manifest_source, manifest_tokens, module_tokens, loaded, 0)
+  let report: diagnostics.Reporter = diagnostics.raw(true)
+  report_loaded_project_report(manifest_source, manifest_tokens, entry, module_tokens, loaded, namespace, @report)
+
+fn report_loaded_project_report(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], entry: I64, module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], namespace: NamespaceView, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  let identities: I64 = report_module_identities(manifest_source, manifest_tokens, module_tokens, loaded, 0, @report)
   let invalid_identity: Bool = identities > 0
   if invalid_identity:
     identities
   else:
-    let exports: I64 = report_missing_exports(manifest_source, manifest_tokens, module_tokens, loaded, 0)
+    let exports: I64 = report_missing_exports(manifest_source, manifest_tokens, module_tokens, loaded, 0, @report)
     let invalid_export: Bool = exports > 0
     if invalid_export:
       exports
     else:
-      let mains: I64 = report_project_mains(manifest_source, manifest_tokens, entry, module_tokens, loaded, 0)
+      let mains: I64 = report_project_mains(manifest_source, manifest_tokens, entry, module_tokens, loaded, 0, @report)
       let invalid_main: Bool = mains > 0
       if invalid_main:
         mains
       else:
-        let calls: I64 = report_namespace_references(manifest_source, manifest_tokens, module_tokens, loaded, namespace, 0)
+        let calls: I64 = report_namespace_references(manifest_source, manifest_tokens, module_tokens, loaded, namespace, 0, @report)
         let invalid_call: Bool = calls > 0
         if invalid_call:
           calls
         else:
-          report_private_type_leaks(manifest_source, manifest_tokens, module_tokens, loaded)
+          report_private_type_leaks(manifest_source, manifest_tokens, module_tokens, loaded, @report)
 
-fn report_interface_type(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, type_index: I64, diagnostic_start: I64, diagnostic_end: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_type(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, type_index: I64, diagnostic_start: I64, diagnostic_end: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, type_index)
   let composite: Bool = kind == 0
   if composite:
     let inner: I64 = syntax.ast_type_argument(type_index)
-    report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, inner, diagnostic_start, diagnostic_end)
+    report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, inner, diagnostic_start, diagnostic_end, @report)
   else:
     let scalar_kind: I64 = syntax.scalar_type_kind(module_source, module_tokens, type_index)
     let scalar: Bool = scalar_kind >= 0
@@ -2004,56 +2051,56 @@ fn report_interface_type(manifest_source: Bytes, manifest_tokens: Vec[syntax.Tok
         if valid:
           0
         else:
-          report_project_diagnostic("E0418", module_name, diagnostic_start, diagnostic_end)
+          emit_project_diagnostic(@report, "manifest", manifest_source, "E0418", module_name, diagnostic_start, diagnostic_end)
 
-fn report_interface_bindings(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_bindings(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     count
   else:
     let type_index: I64 = syntax.ast_binding_type(module_source, module_tokens, cursor)
-    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, type_index, diagnostic_start, diagnostic_end)
+    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, type_index, diagnostic_start, diagnostic_end, @report)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total, @report)
 
-fn report_interface_fields(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_fields(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     count
   else:
     let type_index: I64 = syntax.ast_member_value(cursor)
-    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, type_index, diagnostic_start, diagnostic_end)
+    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, type_index, diagnostic_start, diagnostic_end, @report)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total, @report)
 
-fn report_interface_payload(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_payload(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     count
   else:
-    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, cursor, diagnostic_start, diagnostic_end)
+    let reported: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, cursor, diagnostic_start, diagnostic_end, @report)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total, @report)
 
-fn report_interface_cases(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_interface_cases(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)
   let done: Bool = kind == 1
   if done:
     count
   else:
     let first_type: I64 = syntax.ast_member_value(cursor)
-    let reported: I64 = report_interface_payload(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_type, diagnostic_start, diagnostic_end, 0)
+    let reported: I64 = report_interface_payload(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_type, diagnostic_start, diagnostic_end, 0, @report)
     let next: I64 = syntax.ast_next(module_tokens, cursor)
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total, @report)
 
-fn report_export_interfaces(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_export_interfaces(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(manifest_tokens, cursor)
   let done: Bool = kind == 1
   if done:
@@ -2066,23 +2113,23 @@ fn report_export_interfaces(manifest_source: Bytes, manifest_tokens: Vec[syntax.
     let reported: I64 = if function_item:
       let params: I64 = syntax.ast_function_parameters(item)
       let first_parameter: I64 = syntax.ast_parameters_first(params)
-      let parameter_errors: I64 = report_interface_bindings(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_parameter, diagnostic_start, diagnostic_end, 0)
+      let parameter_errors: I64 = report_interface_bindings(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_parameter, diagnostic_start, diagnostic_end, 0, @report)
       let return_type: I64 = syntax.ast_function_return_type(module_tokens, item)
-      let return_errors: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, return_type, diagnostic_start, diagnostic_end)
+      let return_errors: I64 = report_interface_type(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, return_type, diagnostic_start, diagnostic_end, @report)
       parameter_errors + return_errors
     else:
       let record_item: Bool = syntax.ast_item_is_record(module_source, module_tokens, item)
       let body: I64 = syntax.ast_data_body(item)
       let first_member: I64 = syntax.ast_data_members_first(item)
       if record_item:
-        report_interface_fields(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0)
+        report_interface_fields(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0, @report)
       else:
-        report_interface_cases(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0)
+        report_interface_cases(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, first_member, diagnostic_start, diagnostic_end, 0, @report)
     let next: I64 = syntax.ast_node_after(cursor)
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, total)
+    recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, total, @report)
 
-fn report_private_type_leaks_from(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, count: I64) -> I64 effects[alloc, io, partial]:
+fn report_private_type_leaks_from(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let length: I64 = vec.len(loaded)
   let done: Bool = index >= length
   if done:
@@ -2098,15 +2145,106 @@ fn report_private_type_leaks_from(manifest_source: Bytes, manifest_tokens: Vec[s
     let source: Bytes = module.source
     let root: I64 = module.root
     let module_items: I64 = syntax.ast_module_items(root)
-    let reported: I64 = report_export_interfaces(manifest_source, manifest_tokens, first_export, module_name, source, module_tokens, module_items, first_export, 0)
+    let reported: I64 = report_export_interfaces(manifest_source, manifest_tokens, first_export, module_name, source, module_tokens, module_items, first_export, 0, @report)
     let next: I64 = index + 1
     let total: I64 = count + reported
-    recur(manifest_source, manifest_tokens, module_tokens, loaded, next, total)
+    recur(manifest_source, manifest_tokens, module_tokens, loaded, next, total, @report)
 
-fn report_private_type_leaks(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> I64 effects[alloc, io, partial]:
-  let errors: I64 = report_private_type_leaks_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, 0)
+fn report_private_type_leaks(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], module_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  let errors: I64 = report_private_type_leaks_from(manifest_source, manifest_tokens, module_tokens, loaded, 0, 0, @report)
   let invalid: Bool = errors > 0
   if invalid:
     1
   else:
     0
+
+fn bounded_token(source: Bytes, tokens: Vec[syntax.Token], node: I64) -> Bytes effects[alloc, partial]:
+  let start: I64 = syntax.ast_node_start(tokens, node)
+  let end: I64 = syntax.ast_node_end(tokens, node)
+  if (end - start) <= 256:
+    token_bytes(source, tokens, node)
+  else:
+    ""
+
+fn diagnostic_module_source(report: diagnostics.Reporter, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], path: I64, label: Bytes, content: Bytes) -> diagnostics.Source effects[alloc, partial]:
+  let prefix: I64 = last_path_slash(report.path, 0, bytes.len(report.path), 0)
+  let path_length: I64 = (syntax.ast_node_end(manifest_tokens, path) - syntax.ast_node_start(manifest_tokens, path)) - 2
+  let length: I64 = if path_length <= (9223372036854775807 - prefix):
+    prefix + path_length
+  else:
+    -1
+  let pathname: Bytes = if (length >= 0) && (length <= 256):
+    project_module_path(report.path, manifest_source, manifest_tokens, path)
+  else:
+    ""
+  let file: diagnostics.Source = diagnostics.source("module", label, pathname, content, true)
+  diagnostics.Source(kind: file.kind, label: file.label, path: file.path, content: file.content, available: true, identity_bytes: file.identity_bytes, path_bytes: length)
+
+fn report_files(report: diagnostics.Reporter, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule], index: I64, files: @Vec[diagnostics.Source]) -> Void effects[alloc, partial]:
+  if index >= vec.len(loaded):
+    void
+  else:
+    let module: LoadedModule = vec.get(loaded, index)
+    let label: Bytes = bounded_token(manifest_source, manifest_tokens, module.name)
+    let file: diagnostics.Source = diagnostic_module_source(report, manifest_source, manifest_tokens, module.path, label, module.source)
+    let length: I64 = syntax.ast_node_end(manifest_tokens, module.name) - syntax.ast_node_start(manifest_tokens, module.name)
+    vec.push(@files, diagnostics.Source(kind: file.kind, label: file.label, path: file.path, content: file.content, available: file.available, identity_bytes: length, path_bytes: file.path_bytes))
+    recur(report, manifest_source, manifest_tokens, loaded, index + 1, @files)
+
+fn install_report_files(report: @diagnostics.Reporter, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], loaded: Vec[LoadedModule]) -> Void effects[alloc, partial]:
+  let files: Vec[diagnostics.Source] = vec.new()
+  report_files(report, manifest_source, manifest_tokens, loaded, 0, @files)
+  let previous: Vec[diagnostics.Source] = mem.replace(@report.files, files)
+  void
+
+fn install_report_origins(report: @diagnostics.Reporter, origins: Vec[Origin], index: I64) -> Void effects[alloc, partial]:
+  if index >= vec.len(origins):
+    void
+  else:
+    let value: Origin = vec.get(origins, index)
+    let output: Vec[diagnostics.Mapping] = mem.replace(@report.origins, vec.new())
+    vec.push(@output, diagnostics.Mapping(file: value.module, start: value.start, end: value.end))
+    let previous: Vec[diagnostics.Mapping] = mem.replace(@report.origins, output)
+    recur(@report, origins, index + 1)
+
+fn find_report_source(report: diagnostics.Reporter, label: Bytes, content: Bytes, index: I64) -> diagnostics.Source effects[partial]:
+  if index >= vec.len(report.files):
+    diagnostics.source("module", label, "", content, true)
+  else:
+    let file: diagnostics.Source = vec.get(report.files, index)
+    if syntax.span_equal(label, 0, bytes.len(label), file.label):
+      file
+    else:
+      recur(report, label, content, index + 1)
+
+fn emit_project_diagnostic(report: @diagnostics.Reporter, kind: Bytes, content: Bytes, code: Bytes, label: Bytes, start: I64, end: I64) -> I64 effects[alloc, io, partial]:
+  if report.json:
+    let manifest: Bool = syntax.span_equal(kind, 0, bytes.len(kind), "manifest")
+    let file: diagnostics.Source = if manifest:
+      diagnostics.source("manifest", "-", report.path, content, true)
+    else:
+      find_report_source(report, label, content, 0)
+    diagnostics.emit_source(@report, code, label, file, start, end, typing.empty_repair())
+  else:
+    report_project_diagnostic(code, label, start, end)
+
+fn emit_parsed_module(report: @diagnostics.Reporter, manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], path: I64, content: Bytes, code: Bytes, label: Bytes, start: I64, end: I64, repair: typing.Repair) -> I64 effects[alloc, io, partial]:
+  if report.json:
+    let file: diagnostics.Source = diagnostic_module_source(report, manifest_source, manifest_tokens, path, label, content)
+    diagnostics.emit_source(@report, code, label, file, start, end, repair)
+  else:
+    report_project_diagnostic(code, label, start, end)
+
+fn emit_manifest_read_failure(report: @diagnostics.Reporter, code: Bytes, label: Bytes, start: I64, end: I64) -> I64 effects[alloc, io, partial]:
+  if report.json:
+    let file: diagnostics.Source = diagnostics.source("manifest", "-", report.path, "", false)
+    diagnostics.emit_source(@report, code, label, file, start, end, typing.empty_repair())
+  else:
+    report_project_diagnostic(code, label, start, end)
+
+fn check_project_json(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.json_reporter(path, true)
+  let previous: retained.Cache = retained.empty_cache()
+  let revision: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+  let attempt: ProjectAttempt = prepare_project_attempt_report(path, false, previous, revision, 0, @report)
+  attempt.prepared.status

@@ -1,0 +1,814 @@
+{
+  "baseline_revision": "605597ce445bacdbbed0975018cf12f17187ec87",
+  "bindings": {
+    "build/repair-diagnostics-7ngbgl82/baseline/slimc": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+    "build/repair-diagnostics-7ngbgl82/performance-model.json": "b7e30b8f75c11e455d69f8795b25567e5ad384106e0b407c7c697fc007597726",
+    "build/repair-diagnostics-7ngbgl82/workloads/error-1000.slim": "51ec4ead394e9db7a5009df80a7173cb7c4426f8348179d39ba5cf05c6c21949",
+    "build/repair-diagnostics-7ngbgl82/workloads/error-2000.slim": "40bc0fe28b8ab3813741c3aff4f117a3be54ba06f6b4669cc3e1019f1c56d812",
+    "build/repair-diagnostics-7ngbgl82/workloads/error-250.slim": "d47a0f778d4989f1efa0fda8b63dfd63743fd1146d91032a28bdc8bfd1e2472e",
+    "build/repair-diagnostics-7ngbgl82/workloads/error-500.slim": "8bc4c852b1c296cbfb680881459c37e155e27ab0400e441e49f2758d2a20ffd8",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/analysis.slim": "20ebb786fcdac8fcf8c62b6221e6e5475cbd5f886a7436343e168bd28ba932af",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/cache.slim": "2611c0bb0a35dcd2f2c26d93c14128602478c72b94051f1a41e5169f2cdfd895",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/check.slim": "3e518c907852a1bf7cf9a6ccc5ce4b748da1f485b5d4ee954aa980d71ab0f489",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/codegen.slim": "2438334805c83645e6219a669739c792e78373870d3bd65b639a565fdbb1ab5e",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/context.slim": "0df6afa47b746ba62a829b28c9ad75391cd9257930012c987863d047b063d815",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/control.slim": "7ec0d388147b9bef0de684c84a849014a1b901aca019edfbf5935288555f9e3e",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/driver.slim": "19969233cc6bf0aba385ca9fa33295e3a43f3e83be3eef68bab57759934dff4d",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/edit.slim": "b72fa5131f622852ab932253b963c78d93f08780f76256876a701ee75504bba7",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/effects.slim": "72e791bbe3e4c92c9ad3bced1dbfa13047ee4521a3042432aefdaa8f8a24ba0f",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/equivalence.slim": "66c1318ac61b992b0c2a5465dcabae507e4a0c0c9401a5dbb09709fba97bb6f1",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/flow.slim": "1eed825632354f27252ba730fa1b36e9a05117c101b25ec3bd1f821bdfe995ad",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/format.slim": "2443ada8ecc772e7b82d6f07b794b725883548d3084c3db28ebae2e8bb661330",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/fragments.slim": "6e1c5c6953730b5939350cc3245d79d32f9fed38653352a76e2eac5e920d1cb9",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/identity.slim": "b10a11fd875151e6e20ddd6b2dc2ea35da1fc917913138e53095503704b7f500",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/ir.slim": "679fad5f439d37164c9de223566f1bcc9c07b38b875fbd8eb4dd2dde906fd465",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/memory.slim": "239fd3e532a9a82a6e224621c9b5930c7b9ba8b4d71ab75ef611f9d2dc8366ad",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/nativebuild.slim": "2503ecbc831f5117ba8e233c215e554aa3bfd710d87937ee4de98a59cdf1c936",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/nativecache.slim": "237178d7a6f86db7dc1dee69a1dc49f9e67fdac831b7e3db7161d2fcdd824aa6",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/ownership.slim": "df3aa938361c3d6e6e91c9e97121e19348a0634268bfeffeb7bd495569c82846",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/parallel.slim": "48bf3c6c1c4e0b0b668450627720394dcc6e0459a8c35e520d75b391c02fa856",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/parallelcache.slim": "96f0e942d981c1b5c7dba6d25aaa24a3d550da9d0a90789f2751b0adb5ae2e06",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/project.slim": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/proof.slim": "81dc74167154ce663f49b4ce925d7291cf9bc25ffa83d11087cb564c8d78bee9",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/quality.slim": "8baf11be75e4c2eacbf176c57a31f72d627b85888fc745ac2bbbf20ff0383286",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/query.slim": "80beb4d6b72322504c3fa04a583421b9c28635f60b059c4e77b6a6c83b731c47",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/ranges.slim": "5dcbc19087a8c628dee77cc76a7e915814941007ea21c98e52ca34fc69fba705",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/reduce.slim": "4396e9de32ca4e78817ccf968ae1660a29356d37ada31ce40dbe2b3e8fe25ae0",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/retained.slim": "7e75fc14afd192060667168d8f04c37e0b251759d1ddbd11fb5f06294679de3e",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/scheduler.slim": "65de980440f6d50c191c2cd516b2775935503973ff3de009793dfa057907a347",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/session.slim": "c35e903d52254112d3a66f3ee953b946371b48eb59fe5067fe106c469745808a",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/slim.project": "8f75c79f783c1942e1b1faa30867d34097ed86ee7b999cdf5153b58502dce9fe",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/slimc.slim": "d87b8c59aaa55c17edc51d66327593bf7a7f0e69bdad22eed58fd4d39c38de87",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/syntax.slim": "dcc1e3d2f05647b2c6b0bbcda3873e0facec36e6ee169d30a3fd8ba22a43e832",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/text.slim": "cf10092cb33f80902e120b917a20825e2d382234119addcefe5c236352f619db",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/typing.slim": "f5f1078ea85c414d37d619f15195e397a5807979bbb0a628a28c1d7e90053842",
+    "build/repair-diagnostics-7ngbgl82/workloads/selfhost/validate.slim": "5e1707730216ea9d6eeb7f723121c504325bf3f9dae3a6aa1cf6585e651c7814",
+    "build/repair-diagnostics-7ngbgl82/workloads/valid-1000.slim": "9d0641b93e978cb2eae1e6b0f1d78fb64a4f1d3e63ec47b5c01bcbe1ac2c8dd2",
+    "build/repair-diagnostics-7ngbgl82/workloads/valid-2000.slim": "cdf87d64daa7c86251aceeea2cf62387612efdf6abb67493d8165fe7d7548dbd",
+    "build/repair-diagnostics-7ngbgl82/workloads/valid-250.slim": "64234a9c0da00ef0be486ebde1fee19a3f69faa76d919028261560211a3b4d1d",
+    "build/repair-diagnostics-7ngbgl82/workloads/valid-500.slim": "e2ccad136a45430ce980d3b6634496d5e16ba8a5b76dc27524db99729d392962",
+    "build/toolchain/slimc": "17893e9bd6a9f01b0ada6130dca5ed4969591d7892a2ad44da58656339c24aa6",
+    "selfhost/analysis.slim": "20ebb786fcdac8fcf8c62b6221e6e5475cbd5f886a7436343e168bd28ba932af",
+    "selfhost/cache.slim": "2611c0bb0a35dcd2f2c26d93c14128602478c72b94051f1a41e5169f2cdfd895",
+    "selfhost/check.slim": "f3600d4ccf248b47cda69d5ffbf0042aa4a92353c62e3b143191ba74becc4149",
+    "selfhost/codegen.slim": "2438334805c83645e6219a669739c792e78373870d3bd65b639a565fdbb1ab5e",
+    "selfhost/context.slim": "0df6afa47b746ba62a829b28c9ad75391cd9257930012c987863d047b063d815",
+    "selfhost/control.slim": "7ec0d388147b9bef0de684c84a849014a1b901aca019edfbf5935288555f9e3e",
+    "selfhost/diagnostics.slim": "4af871b67fca8cafc3fcfa04f4c0dcaabfad4de5177335cfd2f5d24541b01998",
+    "selfhost/driver.slim": "19969233cc6bf0aba385ca9fa33295e3a43f3e83be3eef68bab57759934dff4d",
+    "selfhost/edit.slim": "b72fa5131f622852ab932253b963c78d93f08780f76256876a701ee75504bba7",
+    "selfhost/effects.slim": "72e791bbe3e4c92c9ad3bced1dbfa13047ee4521a3042432aefdaa8f8a24ba0f",
+    "selfhost/equivalence.slim": "66c1318ac61b992b0c2a5465dcabae507e4a0c0c9401a5dbb09709fba97bb6f1",
+    "selfhost/flow.slim": "1eed825632354f27252ba730fa1b36e9a05117c101b25ec3bd1f821bdfe995ad",
+    "selfhost/format.slim": "2443ada8ecc772e7b82d6f07b794b725883548d3084c3db28ebae2e8bb661330",
+    "selfhost/fragments.slim": "6e1c5c6953730b5939350cc3245d79d32f9fed38653352a76e2eac5e920d1cb9",
+    "selfhost/identity.slim": "b10a11fd875151e6e20ddd6b2dc2ea35da1fc917913138e53095503704b7f500",
+    "selfhost/ir.slim": "679fad5f439d37164c9de223566f1bcc9c07b38b875fbd8eb4dd2dde906fd465",
+    "selfhost/memory.slim": "239fd3e532a9a82a6e224621c9b5930c7b9ba8b4d71ab75ef611f9d2dc8366ad",
+    "selfhost/nativebuild.slim": "2503ecbc831f5117ba8e233c215e554aa3bfd710d87937ee4de98a59cdf1c936",
+    "selfhost/nativecache.slim": "237178d7a6f86db7dc1dee69a1dc49f9e67fdac831b7e3db7161d2fcdd824aa6",
+    "selfhost/ownership.slim": "c9bad4a523cfe36192d129a54638c2c745583be83fbd4ed83def11e517f2189f",
+    "selfhost/parallel.slim": "48bf3c6c1c4e0b0b668450627720394dcc6e0459a8c35e520d75b391c02fa856",
+    "selfhost/parallelcache.slim": "96f0e942d981c1b5c7dba6d25aaa24a3d550da9d0a90789f2751b0adb5ae2e06",
+    "selfhost/project.slim": "401bd923c145c27a58d5db0e423726bcfba8f4d92e834fc44db79d636ff7eea5",
+    "selfhost/proof.slim": "81dc74167154ce663f49b4ce925d7291cf9bc25ffa83d11087cb564c8d78bee9",
+    "selfhost/quality.slim": "8baf11be75e4c2eacbf176c57a31f72d627b85888fc745ac2bbbf20ff0383286",
+    "selfhost/query.slim": "80beb4d6b72322504c3fa04a583421b9c28635f60b059c4e77b6a6c83b731c47",
+    "selfhost/ranges.slim": "5dcbc19087a8c628dee77cc76a7e915814941007ea21c98e52ca34fc69fba705",
+    "selfhost/reduce.slim": "4396e9de32ca4e78817ccf968ae1660a29356d37ada31ce40dbe2b3e8fe25ae0",
+    "selfhost/retained.slim": "7e75fc14afd192060667168d8f04c37e0b251759d1ddbd11fb5f06294679de3e",
+    "selfhost/scheduler.slim": "65de980440f6d50c191c2cd516b2775935503973ff3de009793dfa057907a347",
+    "selfhost/session.slim": "c35e903d52254112d3a66f3ee953b946371b48eb59fe5067fe106c469745808a",
+    "selfhost/slim.project": "2076323f8f1888aa67c2b88946b99ceb047b34ccf216900224009eae41aa850f",
+    "selfhost/slimc.slim": "f9d546469318df61f5877d50228a8ae447c09865c29f4204238a5c812e7c44e9",
+    "selfhost/syntax.slim": "dcc1e3d2f05647b2c6b0bbcda3873e0facec36e6ee169d30a3fd8ba22a43e832",
+    "selfhost/text.slim": "cf10092cb33f80902e120b917a20825e2d382234119addcefe5c236352f619db",
+    "selfhost/typing.slim": "04ec292cf325106e5f8ccdcbfd4bb174b1912fb55a3220199f9d2d3c446106eb",
+    "selfhost/validate.slim": "5e1707730216ea9d6eeb7f723121c504325bf3f9dae3a6aa1cf6585e651c7814"
+  },
+  "budgets": "descriptive ratios; every existing portable regression gate remains required",
+  "compiler_seed_sha256": "db3250b737068d2d832d757d7c40f433581f8a91b70489d3daf834348a22b4fa",
+  "frozen_model_sha256": "b7e30b8f75c11e455d69f8795b25567e5ad384106e0b407c7c697fc007597726",
+  "host": "macOS-27.0-arm64-arm-64bit",
+  "measured_at": "2026-10-03T20:20:35.190254+00:00",
+  "measurement_script_sha256": "cc9022b398ed89f616f685e384f2270f73705cea8a3012ed606bf6ec43943968",
+  "native_build_profile": {
+    "command": "cc -std=c11 -O2 -DNDEBUG -Wall -Wextra -Werror -I runtime compiler.c runtime/slim_rt.c -o compiler",
+    "compiler_version_after_measurement": "Apple clang version 21.0.0 (clang-2100.3.34.2)"
+  },
+  "production_source_scope": "Production SLIM diagnostic reporter with original source provenance and retained rejection facts; final catalog predicates independently audited; seed fixed point verified",
+  "replay": {
+    "argv": {
+      "baseline_raw": [
+        "baseline compiler",
+        "check",
+        "source"
+      ],
+      "candidate_json": [
+        "candidate compiler",
+        "check-json",
+        "source"
+      ],
+      "candidate_raw": [
+        "candidate compiler",
+        "check",
+        "source"
+      ]
+    },
+    "capture_output": true,
+    "cwd": "repository root",
+    "emit_c_control_argv": [
+      "compiler",
+      "source"
+    ],
+    "even_order": [
+      "baseline_raw",
+      "candidate_raw",
+      "candidate_json"
+    ],
+    "iterations": "0..12; retain iterations2..12",
+    "measured_order_counts": {
+      "even": 6,
+      "odd": 5
+    },
+    "odd_order": [
+      "candidate_json",
+      "candidate_raw",
+      "baseline_raw"
+    ],
+    "position_note": "candidate_raw is always middle; ratios are descriptive, not a statistical causal claim",
+    "samples": 11,
+    "scale_index_range": "0..count-1",
+    "timeout_seconds": 30,
+    "warmups": 2
+  },
+  "rows": [
+    {
+      "bytes": 10582,
+      "declarations": 250,
+      "generated_c_sha256": "875926a2d8f79e8f65c5cf0106252794597b9271a7319762d45335231c3263f1",
+      "json_candidate_over_raw": 1.0248166944992465,
+      "kind": "valid",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 5102208,
+          "median_ns": 4655209,
+          "min_ns": 4336167,
+          "samples_ns": [
+            4632041,
+            4697958,
+            4336167,
+            5102208,
+            4840834,
+            4844708,
+            4590375,
+            4427000,
+            4403250,
+            4726959,
+            4655209
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 8330708,
+          "median_ns": 4709375,
+          "min_ns": 4075375,
+          "samples_ns": [
+            8330708,
+            4415250,
+            6075708,
+            4681500,
+            5024792,
+            4725709,
+            5135667,
+            4709375,
+            4439792,
+            4075375,
+            4334084
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 5178667,
+          "median_ns": 4595334,
+          "min_ns": 4175583,
+          "samples_ns": [
+            4739625,
+            4295667,
+            4802792,
+            5023625,
+            4595334,
+            4360334,
+            5178667,
+            4793125,
+            4347833,
+            4415500,
+            4175583
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 0.9871380640482522,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/valid-250.slim"
+    },
+    {
+      "bytes": 10605,
+      "declarations": 250,
+      "generated_c_sha256": null,
+      "json_candidate_over_raw": 0.9490686909163831,
+      "kind": "error",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 6400375,
+          "median_ns": 4598042,
+          "min_ns": 4100750,
+          "samples_ns": [
+            4958291,
+            4444209,
+            4100750,
+            4225291,
+            4737792,
+            4736125,
+            6400375,
+            4577583,
+            5656125,
+            4591667,
+            4598042
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 6708625,
+          "median_ns": 4316167,
+          "min_ns": 3933167,
+          "samples_ns": [
+            4042833,
+            3933167,
+            4021709,
+            4802291,
+            4461250,
+            4158583,
+            4024500,
+            4722584,
+            6708625,
+            5869667,
+            4316167
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 6159166,
+          "median_ns": 4547792,
+          "min_ns": 4037625,
+          "samples_ns": [
+            4037625,
+            4155917,
+            4654584,
+            4523208,
+            4547792,
+            4470709,
+            4246584,
+            5003500,
+            5728416,
+            6159166,
+            4712291
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 0.9890714351891523,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/error-250.slim"
+    },
+    {
+      "bytes": 21332,
+      "declarations": 500,
+      "generated_c_sha256": "71b516084ce97d8978f3827980acf30a5c427c0e23e07211a871d4bdce819951",
+      "json_candidate_over_raw": 0.9984877841311848,
+      "kind": "valid",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 6528542,
+          "median_ns": 5254334,
+          "min_ns": 4630000,
+          "samples_ns": [
+            5050917,
+            5309416,
+            5651542,
+            5243834,
+            6528542,
+            5064292,
+            5654000,
+            5570292,
+            5254334,
+            4630000,
+            4960125
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 6454500,
+          "median_ns": 5282250,
+          "min_ns": 4511041,
+          "samples_ns": [
+            5125750,
+            5466083,
+            5855250,
+            4914708,
+            5282250,
+            5337416,
+            6454500,
+            6018916,
+            5145042,
+            4511041,
+            5067833
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 9372875,
+          "median_ns": 5290250,
+          "min_ns": 4961041,
+          "samples_ns": [
+            5116000,
+            9372875,
+            5605541,
+            5290250,
+            5375166,
+            5469708,
+            5838084,
+            5286833,
+            5081750,
+            4961041,
+            5049667
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 1.0068354999891518,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/valid-500.slim"
+    },
+    {
+      "bytes": 21355,
+      "declarations": 500,
+      "generated_c_sha256": null,
+      "json_candidate_over_raw": 1.016352006337359,
+      "kind": "error",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 4954209,
+          "median_ns": 4780209,
+          "min_ns": 4428375,
+          "samples_ns": [
+            4587667,
+            4748625,
+            4428375,
+            4914084,
+            4909583,
+            4531917,
+            4954209,
+            4807917,
+            4952917,
+            4780209,
+            4716416
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 5257167,
+          "median_ns": 4741959,
+          "min_ns": 4319125,
+          "samples_ns": [
+            4718958,
+            4870792,
+            4575167,
+            4803125,
+            5257167,
+            4644667,
+            4741959,
+            4795750,
+            4787208,
+            4319125,
+            4539500
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 5202666,
+          "median_ns": 4665666,
+          "min_ns": 4454750,
+          "samples_ns": [
+            4595208,
+            4600459,
+            4454750,
+            4613166,
+            5073000,
+            4665666,
+            5202666,
+            4994750,
+            4922083,
+            4636333,
+            4978792
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 0.976038076996215,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/error-500.slim"
+    },
+    {
+      "bytes": 42832,
+      "declarations": 1000,
+      "generated_c_sha256": "472224f3790850d0ef24845e75c0923f6533721a70af6afe0abe9f56595b5964",
+      "json_candidate_over_raw": 1.0052492141581728,
+      "kind": "valid",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 10619042,
+          "median_ns": 6789875,
+          "min_ns": 6483291,
+          "samples_ns": [
+            6483291,
+            6942167,
+            6987625,
+            7075250,
+            6524083,
+            6789875,
+            6750084,
+            6498833,
+            10619042,
+            7099792,
+            6705667
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 7420375,
+          "median_ns": 6917916,
+          "min_ns": 6256333,
+          "samples_ns": [
+            6798584,
+            6968209,
+            6802208,
+            6633958,
+            7420375,
+            6943666,
+            6964292,
+            6917916,
+            6256333,
+            7020000,
+            6642292
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 7608292,
+          "median_ns": 6881792,
+          "min_ns": 6602833,
+          "samples_ns": [
+            6957833,
+            7205000,
+            7206250,
+            7315333,
+            6738416,
+            7608292,
+            6729833,
+            6821542,
+            6602833,
+            6881792,
+            6765042
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 1.0135373626171322,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/valid-1000.slim"
+    },
+    {
+      "bytes": 42855,
+      "declarations": 1000,
+      "generated_c_sha256": null,
+      "json_candidate_over_raw": 1.019682971870563,
+      "kind": "error",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 6669084,
+          "median_ns": 6324375,
+          "min_ns": 6176917,
+          "samples_ns": [
+            6392375,
+            6320292,
+            6181958,
+            6478417,
+            6495958,
+            6324375,
+            6553791,
+            6279084,
+            6261750,
+            6669084,
+            6176917
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 6719834,
+          "median_ns": 6397959,
+          "min_ns": 6011417,
+          "samples_ns": [
+            6449125,
+            6647458,
+            6317833,
+            6484167,
+            6397959,
+            6481834,
+            6123375,
+            6260625,
+            6719834,
+            6168625,
+            6011417
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 6819500,
+          "median_ns": 6274459,
+          "min_ns": 5966292,
+          "samples_ns": [
+            6196625,
+            6309750,
+            6594958,
+            5966292,
+            6063917,
+            6819500,
+            6450500,
+            6161667,
+            6152542,
+            6274459,
+            6366458
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 0.9921073623875877,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/error-1000.slim"
+    },
+    {
+      "bytes": 87832,
+      "declarations": 2000,
+      "generated_c_sha256": "b7a6fcc08333cdf2cfaa4e2b71c6bb59ce68e0c77267baec548f0fef79089377",
+      "json_candidate_over_raw": 1.015001429423551,
+      "kind": "valid",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 10458292,
+          "median_ns": 9724334,
+          "min_ns": 9332667,
+          "samples_ns": [
+            9871208,
+            10397292,
+            9860875,
+            9670292,
+            9332667,
+            10458292,
+            10069042,
+            9527875,
+            9507083,
+            9532584,
+            9724334
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 10122959,
+          "median_ns": 9855875,
+          "min_ns": 9196584,
+          "samples_ns": [
+            9729875,
+            9390459,
+            9999917,
+            9855875,
+            9575208,
+            9872666,
+            10117583,
+            9196584,
+            9667917,
+            10058250,
+            10122959
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 10523709,
+          "median_ns": 9710208,
+          "min_ns": 9435333,
+          "samples_ns": [
+            9921042,
+            9501042,
+            9435333,
+            9859333,
+            9688292,
+            10523709,
+            9904459,
+            9710208,
+            9778917,
+            9477250,
+            9545750
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 0.9985473555309803,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/valid-2000.slim"
+    },
+    {
+      "bytes": 87855,
+      "declarations": 2000,
+      "generated_c_sha256": null,
+      "json_candidate_over_raw": 1.008126694325268,
+      "kind": "error",
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 10662334,
+          "median_ns": 8832459,
+          "min_ns": 8758292,
+          "samples_ns": [
+            8774834,
+            8779625,
+            10662334,
+            9080250,
+            8832459,
+            8983000,
+            9466458,
+            8758292,
+            8825792,
+            8765000,
+            9048084
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 12997000,
+          "median_ns": 8973000,
+          "min_ns": 8549541,
+          "samples_ns": [
+            8678625,
+            8685417,
+            12997000,
+            9069750,
+            8973000,
+            9066833,
+            9104750,
+            9091667,
+            8906834,
+            8652084,
+            8549541
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 10026458,
+          "median_ns": 8900667,
+          "min_ns": 8551875,
+          "samples_ns": [
+            8720709,
+            9043250,
+            8551875,
+            8785375,
+            8794708,
+            8900667,
+            10026458,
+            9045500,
+            9009958,
+            8976583,
+            8860917
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 1.0077224247517027,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/error-2000.slim"
+    },
+    {
+      "bytes": 8909,
+      "bytes_metric": "manifest bytes; see captured_project_bytes",
+      "captured_project_bytes": 1182287,
+      "captured_project_files": 36,
+      "declarations": null,
+      "generated_c_sha256": "ddc09934921cd7a08a05a0dc17fc45070cbe959eb96c689830d23a2e776c1fb9",
+      "json_candidate_over_raw": 1.0263466395038363,
+      "kind": "project",
+      "manifest_bytes": 8909,
+      "measurements": {
+        "baseline_raw": {
+          "max_ns": 173676292,
+          "median_ns": 165373625,
+          "min_ns": 163174375,
+          "samples_ns": [
+            164791167,
+            163174375,
+            163439875,
+            165216167,
+            165614084,
+            164313292,
+            165373625,
+            165657917,
+            168368875,
+            173676292,
+            170986333
+          ]
+        },
+        "candidate_json": {
+          "max_ns": 176891458,
+          "median_ns": 170284250,
+          "min_ns": 167417042,
+          "samples_ns": [
+            167851250,
+            170551584,
+            167417042,
+            167830334,
+            172124916,
+            167779500,
+            170596375,
+            169553041,
+            176891458,
+            170284250,
+            171807417
+          ]
+        },
+        "candidate_raw": {
+          "max_ns": 176048708,
+          "median_ns": 165913000,
+          "min_ns": 163799625,
+          "samples_ns": [
+            163799625,
+            169069375,
+            163830291,
+            165913000,
+            165846750,
+            164688333,
+            168504792,
+            165599084,
+            174551750,
+            176048708,
+            167524167
+          ]
+        }
+      },
+      "raw_candidate_over_baseline": 1.00326155395094,
+      "raw_parity": true,
+      "source": "build/repair-diagnostics-7ngbgl82/workloads/selfhost/slim.project"
+    }
+  ],
+  "sampling": "two warmups; eleven samples; alternating baseline/raw/JSON order; no concurrent native benchmark dispatched by coordinator",
+  "schema": 1,
+  "scope": "same-host fresh native processes; capture, check and diagnostic output; no native C build or retained edit latency",
+  "unchanged_runtime_after_measurement": {
+    "runtime/slim_rt.c": "2287a7376782a1802a3b3d4a1f263e2183689ace24f747f83b2779a7316b345b",
+    "runtime/slim_rt.h": "dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f"
+  },
+  "validation": {
+    "actual_corpus_tasks": 12,
+    "agent_effectiveness": "unmeasured; compiler cost and independent acceptance do not establish agent repair success or speed",
+    "changed_failure_reporting_tools": {
+      "scripts/measure-native-session.py": "c8aa5ee71e5c1ffc2b08865b3feb057baf6f6ac7d9f0fc7086d5fba484477572",
+      "scripts/test-native-session-diagnostics.py": "ce8e53478300deb58ee24bb11203f4b6415c538786f27a59594a0c79e66175c2",
+      "scripts/verify-native-platform.sh": "03f1255898931d05fae74ea2888f3ee2b4a938560ef16713e2542f4b85678f36"
+    },
+    "compiler_sha256": "17893e9bd6a9f01b0ada6130dca5ed4969591d7892a2ad44da58656339c24aa6",
+    "completed_at": "2026-10-03T21:27:09.497560Z",
+    "corpus_manifest_sha256": "9a81c659f06e8f358f7d8b4fb715bc98522274e0ba9fa5e6b126060f09c47a1c",
+    "coverage": "all compiler gates completed from source-identical prefix and fresh remaining repository gates; release and website pending clean commit; original whole invocation failed",
+    "fresh_scope": {
+      "command": [
+        "sh",
+        "build/repair-diagnostics-7ngbgl82/resume-source010.sh"
+      ],
+      "exit_code": 1,
+      "log_path": "build/repair-diagnostics-7ngbgl82/resume-source010.log",
+      "log_sha256": "1449efa49b616a0412baf0c05a6a87c4fb55f8818b64e18b61589b1a32aaa5db",
+      "repository_scope": "passed; release precondition requires committed clean source",
+      "resume_script_sha256": "2baac47f72c5b70c62c9411e99b916574f01019a4d168c796f1f18f8f1081e2c",
+      "steps": [
+        "new pure native frame diagnostics tests",
+        "actual measure-native-session.py default five-sample ten-case campaign",
+        "same seed sanitized compiler rebuild",
+        "unchanged scripts/verify.sh lines 237 onward"
+      ]
+    },
+    "measurement_receipt_sha256": "68dee669ae07e0dd0030ea799b9fa2b0e9b2a7e48c373c42819cc57045c83db8",
+    "prior_invocation": {
+      "command": [
+        "sh",
+        "scripts/verify-0.9.sh"
+      ],
+      "exit_code": 1,
+      "failure": "native session measurement returned status 3, native-build-failed, empty diagnostics; cause remains unknown",
+      "log_path": "build/repair-diagnostics-7ngbgl82/verify-0.9-source009.log",
+      "log_sha256": "6d94b62b61c641862c622b36d19eaaf547faff136f965161688378f780efce89"
+    },
+    "repair_cases": 65,
+    "repair_verifier_sha256": "013f87ff3ee5f8cd519a455ce8be8df8297d892604ede3a743abac12fa8891d6",
+    "reused_completed_scope": "scripts/verify.sh lines 1-235 and scripts/verify-native-host.sh correctness substage; all affected source009 identities and production compiler/runtime artifacts unchanged",
+    "seed_sha256": "db3250b737068d2d832d757d7c40f433581f8a91b70489d3daf834348a22b4fa",
+    "source009_seal_sha256": "c288c8aba13cf8e8c0bf0941e27f820316e664bb00c061088366189f5b8bb31b",
+    "source010_seal_sha256": "5a13967dc26477d7b0221201de5c3c526329d80ced0bcc0f686c24700651ad37",
+    "verification_script_sha256": "47dd4583a596781c192f97107abc46c68f9eed78113d7ffbb04f7cdeeb52d15c"
+  },
+  "workload_recipe": {
+    "declaration": "fn f{index}(value: I64) -> I64:\n  value + {index}\n\n",
+    "error_body": "  \"intentional type error\"\n",
+    "header": "module scale\n\n",
+    "main_header": "fn main(args: Vec[Bytes]) -> I64:\n",
+    "project": "all selfhost source files and slim.project from baseline_revision, unchanged bytes",
+    "scales": [
+      250,
+      500,
+      1000,
+      2000
+    ],
+    "valid_body": "  0\n"
+  }
+}

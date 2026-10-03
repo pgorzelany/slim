@@ -398,11 +398,18 @@ fn run_ordinary(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
         64
     else:
       let checking: Bool = syntax.span_equal(command, 0, command_length, "check")
-      if checking:
+      let structured: Bool = syntax.span_equal(command, 0, command_length, "check-json")
+      if checking || structured:
         let has_source: Bool = arg_count >= 3
         if has_source:
           let source_path: Bytes = vec.get(args, 2)
-          check_input_path(source_path)
+          if structured:
+            if project.path_is_project(source_path):
+              project.check_project_json(source_path)
+            else:
+              check.check_path_json(source_path)
+          else:
+            check_input_path(source_path)
         else:
           io.println("usage: slimc check SOURCE")
           64

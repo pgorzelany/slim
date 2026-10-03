@@ -220,10 +220,11 @@ if (*value >= UINT64_C(1000000000)) abort();
 """
 
 
-def instrument_old(source, counters):
+def instrument_old(source, counters, manifest_parser="parse_project_manifest"):
     """Exact held-C anchors; instrumentation records calls and retains their order."""
     index = {name: position for position, name in enumerate(counters)}
     fn = lambda name: namespace_function("project", name)
+    parser = fn(manifest_parser)
     headers = {
         fn("find_unsorted_module"): "module_order_headers",
         fn("find_duplicate_module"): "duplicate_module_headers",
@@ -243,7 +244,7 @@ def instrument_old(source, counters):
         (fn("module_imports_name"), fn("imports_has_name")): 5,
         (fn("module_cycle_imports"), fn("imports_has_name")): 6,
     }
-    observed = set(headers) | {fn("find_manifest_module"), fn("imports_has_name"), fn("parse_project_manifest")} | {parent for parent, _ in phase_calls}
+    observed = set(headers) | {fn("find_manifest_module"), fn("imports_has_name"), parser} | {parent for parent, _ in phase_calls}
     definitions = dict.fromkeys(observed, 0)
     loop_hits = dict.fromkeys(set(headers) | {fn("find_manifest_module"), fn("imports_has_name")}, 0)
     calls = dict.fromkeys(phase_calls, 0)
@@ -304,7 +305,7 @@ def instrument_old(source, counters):
                 output.append(switch("_headers"))
             else:
                 output.append("switch (slim_manifest_validation_phase) {\ncase 5: " + increment("cycle_unused_list_headers") + "break;\ncase 6: " + increment("cycle_actual_list_headers") + "break;\ndefault: abort();\n}\n")
-        if active == fn("parse_project_manifest") and "= " + namespace_function("syntax", "lex_data") + "(" in line:
+        if active == parser and "= " + namespace_function("syntax", "lex_data") + "(" in line:
             token_hits += 1
             output.append(f"if (slim_v_tokens_n6->len < 0 || (uint64_t)slim_v_tokens_n6->len > UINT64_C({COUNTER_CAP}) || slim_manifest_validation_counts[{index['manifest_tokens']}] != 0) abort();\n")
             output.append(f"slim_manifest_validation_counts[{index['manifest_tokens']}] = (uint64_t)slim_v_tokens_n6->len;\n")
@@ -318,7 +319,7 @@ def instrument_old(source, counters):
     return "".join(output), {"definitions": definitions, "loops": loop_hits,
                              "ordered_calls": {str(key): value for key, value in calls.items()},
                              "pair_calls": pair_hits, "comparison_calls": comparisons,
-                             "parse_calls": token_hits, "main_calls": main_hits}
+                             "parse_calls": token_hits, "main_calls": main_hits, "manifest_parser": manifest_parser}
 
 
 def expect(row, result, stdout, stderr, command):
@@ -844,7 +845,7 @@ def arithmetic_controls():
 
 def instrument_current(source, oracle, path_oracle):
     """Observe only the private manifest trie; all unrelated syntax tries stay idle."""
-    source, legacy_anchors = instrument_old(source, oracle.LEGACY)
+    source, legacy_anchors = instrument_old(source, oracle.LEGACY, "parse_project_manifest_report")
     counters = path_oracle.COUNTERS + path_oracle.ELIGIBILITY
     index = {name: position for position, name in enumerate(counters)}
     project = lambda name: namespace_function("project", name)

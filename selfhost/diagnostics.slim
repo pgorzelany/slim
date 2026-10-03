@@ -1,0 +1,702 @@
+module diagnostics
+
+struct Source:
+  kind: Bytes
+  label: Bytes
+  path: Bytes
+  content: Bytes
+  available: Bool
+  identity_bytes: I64
+  path_bytes: I64
+
+struct Mapping:
+  file: I64
+  start: I64
+  end: I64
+
+struct Reporter:
+  json: Bool
+  project: Bool
+  path: Bytes
+  state: Vec[I64]
+  files: Vec[Source]
+  origins: Vec[Mapping]
+
+struct Location:
+  source: Source
+  start: I64
+  end: I64
+  known: Bool
+
+struct TypeInfo:
+  kind: Bytes
+  text: Bytes
+  evidence: Bytes
+  reason: Bytes
+
+struct Detail:
+  expected: TypeInfo
+  actual: TypeInfo
+  requirement: Location
+  related: Location
+  rule: Bytes
+  expected_count: I64
+  actual_count: I64
+  effect: I64
+
+struct Rule:
+  category: Bytes
+  cause: Bytes
+  guidance: Bytes
+
+struct Writer:
+  data: Vec[U8]
+  state: Vec[I64]
+
+struct Position:
+  line: I64
+  column: I64
+  reason: Bytes
+
+fn raw(project: Bool) -> Reporter effects[alloc]:
+  Reporter(json: false, project: project, path: "", state: vec.new(), files: vec.new(), origins: vec.new())
+
+fn json_reporter(path: Bytes, project: Bool) -> Reporter effects[alloc]:
+  let state: Vec[I64] = vec.new()
+  vec.push(@state, 0)
+  Reporter(json: true, project: project, path: path, state: state, files: vec.new(), origins: vec.new())
+
+fn source(kind: Bytes, label: Bytes, path: Bytes, content: Bytes, available: Bool) -> Source:
+  let label_text: Bytes = if bytes.len(label) <= 256:
+    label
+  else:
+    ""
+  let path_text: Bytes = if bytes.len(path) <= 256:
+    path
+  else:
+    ""
+  Source(kind: kind, label: label_text, path: path_text, content: content, available: available, identity_bytes: bytes.len(label), path_bytes: bytes.len(path))
+
+fn unavailable() -> Location:
+  Location(source: source("unavailable", "", "", "", false), start: 0, end: 0, known: false)
+
+fn unknown_type(reason: Bytes) -> TypeInfo:
+  TypeInfo(kind: "unknown", text: "", evidence: "unknown", reason: reason)
+
+fn empty_detail() -> Detail:
+  Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: "", expected_count: -1, actual_count: -1, effect: -1)
+
+fn writer() -> Writer effects[alloc]:
+  let state: Vec[I64] = vec.new()
+  vec.push(@state, 0)
+  vec.push(@state, 0)
+  Writer(data: vec.new(), state: state)
+
+fn fail(output: @Writer) -> Void effects[alloc, partial]:
+  let state: Vec[I64] = mem.replace(@output.state, vec.new())
+  vec.set(@state, 0, 1)
+  let previous: Vec[I64] = mem.replace(@output.state, state)
+  void
+
+fn put(output: @Writer, value: Bytes) -> Void effects[alloc, partial]:
+  if (vec.get(output.state, 0) == 0) && (bytes.len(value) <= (8192 - vec.len(output.data))):
+    let data: Vec[U8] = mem.replace(@output.data, vec.new())
+    text.append_text(@data, value)
+    let previous: Vec[U8] = mem.replace(@output.data, data)
+    void
+  else:
+    fail(@output)
+
+fn put_byte(output: @Writer, value: U8) -> Void effects[alloc, partial]:
+  if (vec.get(output.state, 0) == 0) && (vec.len(output.data) < 8192):
+    let data: Vec[U8] = mem.replace(@output.data, vec.new())
+    vec.push(@data, value)
+    let previous: Vec[U8] = mem.replace(@output.data, data)
+    void
+  else:
+    fail(@output)
+
+fn number(output: @Writer, value: I64) -> Void effects[alloc, partial]:
+  let data: Vec[U8] = vec.new()
+  text.append_i64(value, @data)
+  put(@output, bytes.freeze(^data))
+
+fn optional_number(output: @Writer, value: I64) -> Void effects[alloc, partial]:
+  if value < 0:
+    put(@output, "null")
+  else:
+    number(@output, value)
+
+fn boolean(output: @Writer, value: Bool) -> Void effects[alloc, partial]:
+  if value:
+    put(@output, "true")
+  else:
+    put(@output, "false")
+
+fn json_chars(output: @Writer, value: Bytes, at: I64, end: I64) -> Void effects[alloc, partial]:
+  if (at >= end) || (!(vec.get(output.state, 0) == 0)):
+    void
+  else:
+    let byte: U8 = bytes.get(value, at)
+    let code: I64 = u8.to_i64(byte)
+    if (code < 32) || (code >= 127):
+      put(@output, "\\u00")
+      let digits: Bytes = "0123456789abcdef"
+      put_byte(@output, bytes.get(digits, code / 16))
+      put_byte(@output, bytes.get(digits, code % 16))
+    else:
+      if (code == 34) || (code == 92):
+        put(@output, "\\")
+      else:
+        void
+      put_byte(@output, byte)
+    recur(@output, value, at + 1, end)
+
+fn json_span(output: @Writer, value: Bytes, start: I64, end: I64) -> Void effects[alloc, partial]:
+  if (start >= 0) && ((end >= start) && ((end <= bytes.len(value)) && ((end - start) <= 256))):
+    put(@output, "\"")
+    json_chars(@output, value, start, end)
+    put(@output, "\"")
+  else:
+    fail(@output)
+
+fn json(output: @Writer, value: Bytes) -> Void effects[alloc, partial]:
+  json_span(@output, value, 0, bytes.len(value))
+
+fn position_scan(value: Bytes, at: I64, end: I64, line: I64, column: I64) -> Position effects[partial]:
+  if at >= end:
+    Position(line: line, column: column, reason: "")
+  else:
+    let newline: Bool = u8.to_i64(bytes.get(value, at)) == 10
+    let next_line: I64 = if newline:
+      line + 1
+    else:
+      line
+    let next_column: I64 = if newline:
+      1
+    else:
+      column + 1
+    recur(value, at + 1, end, next_line, next_column)
+
+fn position(output: @Writer, location: Location) -> Position effects[alloc, partial]:
+  if !location.known:
+    Position(line: 0, column: 0, reason: "source-unavailable")
+  else:
+    if (location.start < 0) || (location.start > bytes.len(location.source.content)):
+      Position(line: 0, column: 0, reason: "unsupported-source-span")
+    else:
+      if location.start > (1048576 - vec.get(output.state, 1)):
+        Position(line: 0, column: 0, reason: "line-scan-limit")
+      else:
+        let state: Vec[I64] = mem.replace(@output.state, vec.new())
+        let count: I64 = vec.get(state, 1) + location.start
+        vec.set(@state, 1, count)
+        let previous: Vec[I64] = mem.replace(@output.state, state)
+        position_scan(location.source.content, 0, location.start, 1, 1)
+
+fn span(output: @Writer, location: Location, at: Position) -> Void effects[alloc, partial]:
+  put(@output, "{\"start\":")
+  number(@output, location.start)
+  put(@output, ",\"end\":")
+  number(@output, location.end)
+  put(@output, ",\"line\":")
+  number(@output, at.line)
+  put(@output, ",\"column\":")
+  number(@output, at.column)
+  put(@output, "}")
+
+fn source_json(output: @Writer, location: Location, detailed: Bool, at: Position) -> Void effects[alloc, partial]:
+  let value: Source = location.source
+  put(@output, "{\"kind\":")
+  json(@output, value.kind)
+  put(@output, ",\"label\":")
+  json(@output, value.label)
+  put(@output, ",\"path\":")
+  json(@output, value.path)
+  put(@output, ",\"identity_bytes\":")
+  number(@output, value.identity_bytes)
+  put(@output, ",\"path_bytes\":")
+  number(@output, value.path_bytes)
+  put(@output, ",\"bytes\":")
+  if value.available:
+    number(@output, bytes.len(value.content))
+  else:
+    put(@output, "null")
+  put(@output, ",\"span_valid\":")
+  boolean(@output, location.known)
+  put(@output, ",\"location_reason\":")
+  json(@output, at.reason)
+  put(@output, ",\"excerpt\":")
+  if location.known && detailed:
+    let start: I64 = if location.start >= 64:
+      location.start - 64
+    else:
+      0
+    let remaining: I64 = bytes.len(value.content) - start
+    let length: I64 = if remaining > 256:
+      256
+    else:
+      remaining
+    let end: I64 = start + length
+    put(@output, "{\"start\":")
+    number(@output, start)
+    put(@output, ",\"end\":")
+    number(@output, end)
+    put(@output, ",\"text\":")
+    json_span(@output, value.content, start, end)
+    put(@output, "}")
+  else:
+    put(@output, "null")
+  put(@output, "}")
+
+fn location_json(output: @Writer, location: Location) -> Void effects[alloc, partial]:
+  if location.known:
+    let at: Position = position(@output, location)
+    put(@output, "{\"source\":")
+    source_json(@output, location, true, at)
+    put(@output, ",\"span\":")
+    span(@output, location, at)
+    put(@output, "}")
+  else:
+    put(@output, "null")
+
+fn type_json(output: @Writer, value: TypeInfo) -> Void effects[alloc, partial]:
+  put(@output, "{\"evidence\":")
+  json(@output, value.evidence)
+  put(@output, ",\"kind\":")
+  json(@output, value.kind)
+  put(@output, ",\"text\":")
+  if syntax.span_equal(value.evidence, 0, bytes.len(value.evidence), "exact"):
+    json(@output, value.text)
+  else:
+    put(@output, "null")
+  put(@output, ",\"reason\":")
+  json(@output, value.reason)
+  put(@output, "}")
+
+fn scalar_name(kind: I64) -> Bytes:
+  if kind == 0:
+    "Void"
+  else:
+    if kind == 1:
+      "Bool"
+    else:
+      if kind == 2:
+        "U8"
+      else:
+        if kind == 3:
+          "I64"
+        else:
+          "Bytes"
+
+fn origin(report: Reporter, node: I64) -> Location effects[partial]:
+  if (node >= 0) && (node < vec.len(report.origins)):
+    let value: Mapping = vec.get(report.origins, node)
+    if (value.file >= 0) && (value.file < vec.len(report.files)):
+      let file: Source = vec.get(report.files, value.file)
+      let known: Bool = file.available && ((value.start >= 0) && ((value.end >= value.start) && (value.end <= bytes.len(file.content))))
+      Location(source: file, start: value.start, end: value.end, known: known)
+    else:
+      unavailable()
+  else:
+    unavailable()
+
+fn node_location(report: Reporter, input: Bytes, tokens: Vec[syntax.Token], node: I64, whole: Bool) -> Location effects[partial]:
+  if (node < 0) || (node >= vec.len(tokens)):
+    unavailable()
+  else:
+    let after: I64 = if whole:
+      syntax.ast_next(tokens, node)
+    else:
+      node + 1
+    if (after <= node) || (after > vec.len(tokens)):
+      unavailable()
+    else:
+      if report.project:
+        let first: Location = origin(report, node)
+        let last: Location = origin(report, after - 1)
+        if first.known && last.known:
+          let x: Mapping = vec.get(report.origins, node)
+          let y: Mapping = vec.get(report.origins, after - 1)
+          let same: Bool = x.file == y.file
+          let known: Bool = same && ((last.end >= first.start) && (last.end <= bytes.len(first.source.content)))
+          Location(source: first.source, start: first.start, end: last.end, known: known)
+        else:
+          unavailable()
+      else:
+        let start: I64 = syntax.ast_node_start(tokens, node)
+        let end: I64 = syntax.ast_node_end(tokens, after - 1)
+        let file: Source = source("module", report.path, report.path, input, true)
+        Location(source: file, start: start, end: end, known: (start >= 0) && ((end >= start) && (end <= bytes.len(input))))
+
+fn type_depth(input: Bytes, tokens: Vec[syntax.Token], node: I64, depth: I64) -> I64 effects[partial]:
+  if depth >= 128:
+    129
+  else:
+    if (node < 0) || (node >= vec.len(tokens)):
+      129
+    else:
+      let composite: Bool = syntax.ast_type_is_vec(input, tokens, node) || (syntax.ast_type_is_arena(input, tokens, node) || syntax.ast_type_is_id(input, tokens, node))
+      if composite:
+        recur(input, tokens, syntax.ast_type_argument(node), depth + 1)
+      else:
+        depth + 1
+
+fn checked_type(report: Reporter, input: Bytes, tokens: Vec[syntax.Token], value: typing.TypeRef) -> TypeInfo effects[alloc, partial]:
+  if value.kind < -1:
+    unknown_type("not-recorded-at-rejection")
+  else:
+    if (value.kind >= 0) && (value.kind <= 4):
+      TypeInfo(kind: "scalar", text: scalar_name(value.kind), evidence: "exact", reason: "")
+    else:
+      let at: Location = node_location(report, input, tokens, value.form, true)
+      if !at.known:
+        unknown_type("unsupported-source-span")
+      else:
+        if type_depth(input, tokens, value.form, 0) > 128:
+          TypeInfo(kind: "source-form", text: "", evidence: "bounded", reason: "type-depth-limit")
+        else:
+          if (at.end - at.start) > 256:
+            TypeInfo(kind: "source-form", text: "", evidence: "bounded", reason: "type-text-limit")
+          else:
+            let data: Vec[U8] = vec.new()
+            text.append_span(at.source.content, at.start, at.end, @data)
+            TypeInfo(kind: "source-form", text: bytes.freeze(^data), evidence: "exact", reason: "")
+
+fn detail(report: Reporter, input: Bytes, tokens: Vec[syntax.Token], value: typing.Repair) -> Detail effects[alloc, partial]:
+  Detail(expected: checked_type(report, input, tokens, value.expected), actual: checked_type(report, input, tokens, value.actual), requirement: node_location(report, input, tokens, value.requirement, true), related: node_location(report, input, tokens, value.related, false), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect)
+
+fn rule(code: Bytes) -> Rule effects[partial]:
+  if syntax.span_equal(code, 0, bytes.len(code), "E0102"):
+    Rule(category: "syntax", cause: "The source violates a required declaration, expression, executable shape or supported canonical-node bound.", guidance: "Check the marked structure, executable entry requirements and canonical-node admission bound.")
+  else:
+    if syntax.span_equal(code, 0, bytes.len(code), "E0103"):
+      Rule(category: "syntax", cause: "A tab occurs outside a byte string in source.", guidance: "Replace the marked source tab with spaces.")
+    else:
+      if syntax.span_equal(code, 0, bytes.len(code), "E0104"):
+        Rule(category: "syntax", cause: "Indentation width is odd.", guidance: "Use two spaces for each indentation level.")
+      else:
+        if syntax.span_equal(code, 0, bytes.len(code), "E0105"):
+          Rule(category: "syntax", cause: "Indentation skips a required level.", guidance: "Introduce the missing enclosing block or reduce indentation.")
+        else:
+          if syntax.span_equal(code, 0, bytes.len(code), "E0106"):
+            Rule(category: "syntax", cause: "A brace or semicolon is forbidden in canonical source.", guidance: "Use indentation and the specified expression form.")
+          else:
+            if syntax.span_equal(code, 0, bytes.len(code), "E0107"):
+              Rule(category: "syntax", cause: "A byte string is unterminated.", guidance: "Close the marked byte string and check its escapes.")
+            else:
+              if syntax.span_equal(code, 0, bytes.len(code), "E0108"):
+                Rule(category: "syntax", cause: "A list requires a comma separator or its closing delimiter here.", guidance: "Separate list elements with a comma, or close the list with its required delimiter.")
+              else:
+                if syntax.span_equal(code, 0, bytes.len(code), "E0109"):
+                  Rule(category: "syntax", cause: "A comma has no element on one side.", guidance: "Remove the extra comma or supply the missing list element.")
+                else:
+                  if syntax.span_equal(code, 0, bytes.len(code), "E0221"):
+                    Rule(category: "syntax", cause: "An expression uses an unknown operation form.", guidance: "Use the canonical expression form for the intended operation.")
+                  else:
+                    if syntax.span_equal(code, 0, bytes.len(code), "E0228"):
+                      Rule(category: "name", cause: "A qualified name has too many qualification segments.", guidance: "Use the supported module and declaration qualification.")
+                    else:
+                      if syntax.span_equal(code, 0, bytes.len(code), "E0314"):
+                        Rule(category: "name", cause: "The name does not resolve to an available binding or declaration.", guidance: "Check its spelling, lexical scope, declaration and project imports.")
+                      else:
+                        if syntax.span_equal(code, 0, bytes.len(code), "E0315"):
+                          Rule(category: "ownership", cause: "This binding may already have been moved on the current control path.", guidance: "Use the retained move location when available; reinitialize before another use or change the transfer.")
+                        else:
+                          if syntax.span_equal(code, 0, bytes.len(code), "E0335"):
+                            Rule(category: "branch", cause: "A branch pattern is unknown or repeated.", guidance: "Use each required pattern once in the specified order.")
+                          else:
+                            if syntax.span_equal(code, 0, bytes.len(code), "E0336"):
+                              Rule(category: "branch", cause: "The match does not cover every required alternative.", guidance: "Add the missing alternatives; retain the declared alternative order.")
+                            else:
+                              if syntax.span_equal(code, 0, bytes.len(code), "E0343"):
+                                Rule(category: "effect", cause: "The operation or recurrence does not satisfy its declared effect or checked-totality contract.", guidance: "Check the declared capabilities, recurrent argument update and checked-call totality constraints.")
+                              else:
+                                if syntax.span_equal(code, 0, bytes.len(code), "E0344"):
+                                  Rule(category: "type", cause: "The value type does not satisfy the type required at this operation.", guidance: "Compare the captured expected and actual types and the requirement location; change the value or declaration consistently.")
+                                else:
+                                  if syntax.span_equal(code, 0, bytes.len(code), "E0347"):
+                                    Rule(category: "ownership", cause: "The operation would move, mutate or let a borrowed value escape outside its allowed capability.", guidance: "Respect the declared shared or exclusive borrow and owned-transfer boundary.")
+                                  else:
+                                    if syntax.span_equal(code, 0, bytes.len(code), "E0348"):
+                                      Rule(category: "ownership", cause: "The exclusive operation requires a suitable named place.", guidance: "Pass an eligible named binding rather than a temporary expression.")
+                                    else:
+                                      if syntax.span_equal(code, 0, bytes.len(code), "E0349"):
+                                        Rule(category: "ownership", cause: "The operation conflicts with an active loan or another argument referring to the same storage.", guidance: "End the overlapping loan or pass distinct eligible storage.")
+                                      else:
+                                        if syntax.span_equal(code, 0, bytes.len(code), "E0350"):
+                                          Rule(category: "ownership", cause: "Recurrence changes an exclusive binding identity.", guidance: "Pass the same exclusive binding back to its corresponding parameter.")
+                                        else:
+                                          if syntax.span_equal(code, 0, bytes.len(code), "E0351"):
+                                            Rule(category: "shape", cause: "The supplied argument, field, payload or alternative count does not match the required shape.", guidance: "Compare the declaration with the supplied elements; preserve canonical order.")
+                                          else:
+                                            if syntax.span_equal(code, 0, bytes.len(code), "E0352"):
+                                              Rule(category: "name", cause: "A declaration name is duplicated, or a type, member, field or alternative name violates its required declaration kind, membership or canonical order.", guidance: "Give each declaration a unique name and preserve required member or alternative names and order.")
+                                            else:
+                                              if syntax.span_equal(code, 0, bytes.len(code), "E0354"):
+                                                Rule(category: "type", cause: "The declared type is unsupported, unresolved or has a recursive inline layout.", guidance: "Use a supported resolved type and break recursive inline storage with an explicit supported container.")
+                                              else:
+                                                if syntax.span_equal(code, 0, bytes.len(code), "E0355"):
+                                                  Rule(category: "type", cause: "The main declaration has an unsupported signature.", guidance: "Use one Vec[Bytes] argument and an I64 result for main.")
+                                                else:
+                                                  if syntax.span_equal(code, 0, bytes.len(code), "E0356"):
+                                                    Rule(category: "parallel", cause: "The fork does not meet the supported leading task and effect boundaries.", guidance: "Use the supported leading fork shape with eligible total task calls.")
+                                                  else:
+                                                    if syntax.span_equal(code, 0, bytes.len(code), "E0357"):
+                                                      Rule(category: "type", cause: "A non-Void result is discarded.", guidance: "Bind or return the value, or call a Void operation.")
+                                                    else:
+                                                      if syntax.span_equal(code, 0, bytes.len(code), "E0358"):
+                                                        Rule(category: "type", cause: "Void is used where a stored value is required.", guidance: "Use a storable type or a Void statement position.")
+                                                      else:
+                                                        if syntax.span_equal(code, 0, bytes.len(code), "E0359"):
+                                                          Rule(category: "ownership", cause: "Assignment targets an immutable binding.", guidance: "Declare the intended binding mutable or remove the assignment.")
+                                                        else:
+                                                          if syntax.span_equal(code, 0, bytes.len(code), "E0360"):
+                                                            Rule(category: "ownership", cause: "The explicit argument or parameter mode does not match its declared transfer capability.", guidance: "Match ordinary, shared, exclusive and owned modes exactly.")
+                                                          else:
+                                                            if syntax.span_equal(code, 0, bytes.len(code), "E0361"):
+                                                              Rule(category: "type", cause: "The integer literal is outside the signed I64 range.", guidance: "Use a literal from -9223372036854775808 through 9223372036854775807.")
+                                                            else:
+                                                              if syntax.span_equal(code, 0, bytes.len(code), "E0402"):
+                                                                Rule(category: "project", cause: "The project manifest version is unsupported.", guidance: "Use project manifest version 1.")
+                                                              else:
+                                                                if syntax.span_equal(code, 0, bytes.len(code), "E0403"):
+                                                                  Rule(category: "project", cause: "The manifest entry does not name a declared module.", guidance: "Declare the entry module and use its exact module name.")
+                                                                else:
+                                                                  if syntax.span_equal(code, 0, bytes.len(code), "E0406"):
+                                                                    Rule(category: "project", cause: "The manifest module or import/export list order is not strictly canonical.", guidance: "Sort module names and import/export names and remove duplicate list names.")
+                                                                  else:
+                                                                    if syntax.span_equal(code, 0, bytes.len(code), "E0407"):
+                                                                      Rule(category: "project", cause: "The module source path is not an admitted relative path.", guidance: "Use a valid relative source path without escapes or parent traversal.")
+                                                                    else:
+                                                                      if syntax.span_equal(code, 0, bytes.len(code), "E0408"):
+                                                                        Rule(category: "project", cause: "A manifest module name or source path is duplicated.", guidance: "Give each module a distinct name and source path.")
+                                                                      else:
+                                                                        if syntax.span_equal(code, 0, bytes.len(code), "E0409"):
+                                                                          Rule(category: "input", cause: "The required source file could not be read.", guidance: "Check the recorded path, existence and read access; retain a complete readable input snapshot.")
+                                                                        else:
+                                                                          if syntax.span_equal(code, 0, bytes.len(code), "E0410"):
+                                                                            Rule(category: "project", cause: "The source module identity differs from its manifest module name.", guidance: "Make the source module declaration and manifest name agree.")
+                                                                          else:
+                                                                            if syntax.span_equal(code, 0, bytes.len(code), "E0411"):
+                                                                              Rule(category: "project", cause: "An import names a module absent from the manifest.", guidance: "Declare that module or correct the import name.")
+                                                                            else:
+                                                                              if syntax.span_equal(code, 0, bytes.len(code), "E0412"):
+                                                                                Rule(category: "project", cause: "A module imports itself.", guidance: "Remove the self import.")
+                                                                              else:
+                                                                                if syntax.span_equal(code, 0, bytes.len(code), "E0413"):
+                                                                                  Rule(category: "project", cause: "Two modules contain reciprocal imports.", guidance: "Remove the reciprocal dependency or move shared declarations to a provider.")
+                                                                                else:
+                                                                                  if syntax.span_equal(code, 0, bytes.len(code), "E0414"):
+                                                                                    Rule(category: "project", cause: "An exported name has no matching declaration in its module.", guidance: "Correct the export name or provide the corresponding declaration.")
+                                                                                  else:
+                                                                                    if syntax.span_equal(code, 0, bytes.len(code), "E0415"):
+                                                                                      Rule(category: "project", cause: "The qualified reference does not identify an admitted exported declaration of the required kind.", guidance: "Check the provider export and declaration kind.")
+                                                                                    else:
+                                                                                      if syntax.span_equal(code, 0, bytes.len(code), "E0416"):
+                                                                                        Rule(category: "project", cause: "The referenced provider is absent from the project or the current module declared imports.", guidance: "Declare the provider import or use an available declaration.")
+                                                                                      else:
+                                                                                        if syntax.span_equal(code, 0, bytes.len(code), "E0417"):
+                                                                                          Rule(category: "project", cause: "A qualified reference uses the current module as its provider.", guidance: "Use an admitted local declaration name without the module prefix.")
+                                                                                        else:
+                                                                                          if syntax.span_equal(code, 0, bytes.len(code), "E0418"):
+                                                                                            Rule(category: "project", cause: "An exported signature references a local name that is not an exported type declaration.", guidance: "Export a valid local type declaration or correct the public signature type name.")
+                                                                                          else:
+                                                                                            if syntax.span_equal(code, 0, bytes.len(code), "E0419"):
+                                                                                              Rule(category: "project", cause: "The entry/non-entry placement of main violates the project executable rules.", guidance: "Provide main only in the entry module with the supported signature.")
+                                                                                            else:
+                                                                                              if syntax.span_equal(code, 0, bytes.len(code), "Q0002"):
+                                                                                                Rule(category: "resource", cause: "The captured module input count does not match the manifest module count.", guidance: "Re-capture a complete project with one input record for each manifest module.")
+                                                                                              else:
+                                                                                                Rule(category: "compiler", cause: "The input violates the compiler rule identified by this diagnostic code.", guidance: "Inspect the captured source location and this rule before changing the retained input.")
+
+fn render(output: @Writer, code: Bytes, label: Bytes, primary: Location, value: Detail, detailed: Bool, reason: Bytes, identity_length: I64) -> Void effects[alloc, partial]:
+  let known_rule: Rule = if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "canonical-node-limit"):
+    Rule(category: "resource", cause: "The canonical input exceeds the supported 1000000-node admission bound.", guidance: "Reduce the source or project canonical-node count to the supported bound before checking again.")
+  else:
+    if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "effect-ceiling"):
+      Rule(category: "effect", cause: "The operation requires an effect outside the function declared capability ceiling.", guidance: "Declare the captured required capability or remove the operation requiring it.")
+    else:
+      if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "recurrence-totality"):
+        Rule(category: "effect", cause: "Recurrence is not proven total while partial is absent from the function capability ceiling.", guidance: "Provide the required checked structural descent and total update, or explicitly declare partial when intended.")
+      else:
+        if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "checked-call-cycle"):
+          Rule(category: "effect", cause: "The checked-total call graph contains a cycle outside supported total recurrence.", guidance: "Remove the checked-call cycle or make the intended partial boundary explicit.")
+        else:
+          if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "duplicate-declaration"):
+            Rule(category: "name", cause: "A declaration name is duplicated in the module namespace.", guidance: "Rename or remove one declaration; inspect the earlier declaration at the related location.")
+          else:
+            rule(code)
+  let at: Position = if detailed:
+    position(@output, primary)
+  else:
+    Position(line: 0, column: 0, reason: "diagnostic-limit")
+  let bounded: Bool = bytes.len(reason) > 0
+  put(@output, "{\"schema\":1,\"code\":")
+  json(@output, code)
+  put(@output, ",\"severity\":\"error\",\"message\":")
+  json(@output, known_rule.cause)
+  put(@output, ",\"file\":")
+  json(@output, label)
+  put(@output, ",\"span\":")
+  span(@output, primary, at)
+  put(@output, ",\"labels\":[],\"notes\":[")
+  json(@output, known_rule.guidance)
+  put(@output, ",\"Retain the complete input snapshot and recheck it before applying any repair.\"],\"fixes\":[],\"encoding\":\"json-byte-escapes-v1\",\"repair\":{\"status\":")
+  let status: Bytes = if bounded:
+    "bounded"
+  else:
+    if primary.known:
+      "exact"
+    else:
+      "unknown"
+  json(@output, status)
+  put(@output, ",\"reason\":")
+  let status_reason: Bytes = if bounded:
+    reason
+  else:
+    if primary.known:
+      ""
+    else:
+      "source-unavailable"
+  json(@output, status_reason)
+  put(@output, ",\"category\":")
+  json(@output, known_rule.category)
+  put(@output, ",\"cause\":")
+  json(@output, known_rule.cause)
+  put(@output, ",\"identity_bytes\":")
+  number(@output, identity_length)
+  put(@output, ",\"source\":")
+  source_json(@output, primary, detailed, at)
+  put(@output, ",\"expected\":")
+  type_json(@output, value.expected)
+  put(@output, ",\"actual\":")
+  type_json(@output, value.actual)
+  put(@output, ",\"requirement\":")
+  location_json(@output, value.requirement)
+  put(@output, ",\"related\":")
+  location_json(@output, value.related)
+  put(@output, ",\"producer_rule\":")
+  json(@output, value.rule)
+  put(@output, ",\"expected_count\":")
+  optional_number(@output, value.expected_count)
+  put(@output, ",\"actual_count\":")
+  optional_number(@output, value.actual_count)
+  put(@output, ",\"required_effect\":")
+  if value.effect < 0:
+    put(@output, "null")
+  else:
+    let name: Bytes = if value.effect == 1:
+      "alloc"
+    else:
+      if value.effect == 2:
+        "io"
+      else:
+        "partial"
+    json(@output, name)
+  put(@output, ",\"snapshot_requirement\":\"retain-complete-input-and-recheck\"}}\n")
+
+fn emit(report: @Reporter, code: Bytes, label: Bytes, primary: Location, value: Detail) -> I64 effects[alloc, io, partial]:
+  if report.json:
+    let identity_length: I64 = if (bytes.len(label) == 0) && (primary.source.identity_bytes > 256):
+      primary.source.identity_bytes
+    else:
+      bytes.len(label)
+    let ordinal: I64 = vec.get(report.state, 0)
+    let state: Vec[I64] = mem.replace(@report.state, vec.new())
+    let next: I64 = if ordinal < 64:
+      ordinal + 1
+    else:
+      64
+    vec.set(@state, 0, next)
+    let previous: Vec[I64] = mem.replace(@report.state, state)
+    let identity_limited: Bool = (bytes.len(label) > 256) || ((primary.source.identity_bytes > 256) || (primary.source.path_bytes > 256))
+    let detailed: Bool = (ordinal < 64) && (!identity_limited)
+    let reason: Bytes = if identity_limited:
+      "identity-limit"
+    else:
+      if ordinal >= 64:
+        "diagnostic-limit"
+      else:
+        ""
+    let identity: Bytes = if !identity_limited:
+      label
+    else:
+      ""
+    let selected_primary: Location = if identity_limited:
+      let original: Source = primary.source
+      let file: Source = Source(kind: original.kind, label: "", path: "", content: original.content, available: original.available, identity_bytes: original.identity_bytes, path_bytes: original.path_bytes)
+      Location(source: file, start: primary.start, end: primary.end, known: primary.known)
+    else:
+      primary
+    let selected: Detail = if detailed:
+      value
+    else:
+      empty_detail()
+    let output: Writer = writer()
+    render(@output, code, identity, selected_primary, selected, detailed, reason, identity_length)
+    if vec.get(output.state, 0) == 0:
+      let data: Vec[U8] = mem.replace(@output.data, vec.new())
+      io.print_bytes(bytes.freeze(^data))
+      1
+    else:
+      let original: Source = primary.source
+      let file: Source = Source(kind: original.kind, label: "", path: "", content: original.content, available: original.available, identity_bytes: original.identity_bytes, path_bytes: original.path_bytes)
+      let fallback: Location = Location(source: file, start: primary.start, end: primary.end, known: primary.known)
+      let complete: Writer = writer()
+      render(@complete, code, "", fallback, empty_detail(), false, "row-limit", identity_length)
+      let data: Vec[U8] = mem.replace(@complete.data, vec.new())
+      io.print_bytes(bytes.freeze(^data))
+      1
+  else:
+    let data: Vec[U8] = vec.new()
+    text.append_text(@data, code)
+    text.append_text(@data, "@")
+    if report.project:
+      text.append_text(@data, label)
+      text.append_text(@data, "@")
+    else:
+      void
+    text.append_nonnegative_i64(primary.start, @data)
+    text.append_text(@data, ":")
+    text.append_nonnegative_i64(primary.end, @data)
+    text.append_text(@data, "\n")
+    io.print_bytes(bytes.freeze(^data))
+    1
+
+fn emit_source(report: @Reporter, code: Bytes, label: Bytes, file: Source, start: I64, end: I64, value: typing.Repair) -> I64 effects[alloc, io, partial]:
+  let valid: Bool = file.available && ((start >= 0) && ((end >= start) && (end <= bytes.len(file.content))))
+  let captured: Detail = Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect)
+  emit(@report, code, label, Location(source: file, start: start, end: end, known: valid), captured)
+
+fn emit_node(report: @Reporter, code: Bytes, input: Bytes, tokens: Vec[syntax.Token], first: I64, last: I64, value: typing.Repair) -> I64 effects[alloc, io, partial]:
+  let start: I64 = syntax.ast_node_start(tokens, first)
+  let end: I64 = syntax.ast_node_end(tokens, last)
+  let primary: Location = if report.json && report.project:
+    let a: Location = origin(report, first)
+    let b: Location = origin(report, last)
+    let same: Bool = if (first >= 0) && ((last >= 0) && ((first < vec.len(report.origins)) && (last < vec.len(report.origins)))):
+      let x: Mapping = vec.get(report.origins, first)
+      let y: Mapping = vec.get(report.origins, last)
+      x.file == y.file
+    else:
+      false
+    if a.known && (b.known && same):
+      Location(source: a.source, start: a.start, end: b.end, known: b.end >= a.start)
+    else:
+      Location(source: source("unavailable", "-", report.path, "", false), start: start, end: end, known: false)
+  else:
+    let file: Source = source("module", report.path, report.path, input, report.json)
+    Location(source: file, start: start, end: end, known: report.json && ((start >= 0) && ((end >= start) && (end <= bytes.len(input)))))
+  let label: Bytes = if report.project:
+    primary.source.label
+  else:
+    report.path
+  let selected: Detail = if report.json:
+    if vec.get(report.state, 0) < 64:
+      detail(report, input, tokens, value)
+    else:
+      empty_detail()
+  else:
+    empty_detail()
+  emit(@report, code, label, primary, selected)

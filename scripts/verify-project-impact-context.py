@@ -64,6 +64,7 @@ selfhost/check.slim
 selfhost/codegen.slim
 selfhost/context.slim
 selfhost/control.slim
+selfhost/diagnostics.slim
 selfhost/driver.slim
 selfhost/edit.slim
 selfhost/effects.slim
@@ -574,7 +575,7 @@ def _verify(args,begin,started):
     try:
         # All fixed body/control/tool bytes are admitted before executing helpers.
         # Collector loading and every data/native test follow complete data sealing.
-        require(len(SOURCE_PATHS)==69 and len(set(SOURCE_PATHS))==69,'fixed69 opaque source paths')
+        require(len(SOURCE_PATHS)==70 and len(set(SOURCE_PATHS))==70,'fixed70 opaque source paths')
         campaign.source_pins={name:file_identity(root/name,MIB) for name in SOURCE_PATHS}
         control_bytes={name:read(root/path,MIB) for name,path in
           (('oracle',ORACLE_PATH),('inherited_oracle',INHERITED_PATH),('verifier',VERIFIER_PATH),
@@ -587,8 +588,8 @@ def _verify(args,begin,started):
         campaign.receipt.update(source_pins=campaign.source_pins,control_sources=campaign.controls,tools=campaign.tools)
         oracle=captured_module(root/ORACLE_PATH,control_bytes['oracle'],campaign.controls['oracle']['sha256'],
                                'rfc170_current_oracle')
-        require(tuple(oracle.SOURCE_PATHS)==tuple(SOURCE_PATHS) and len(oracle.REGISTRY)==49,
-                'independent fixed69/49 source registries')
+        require(tuple(oracle.SOURCE_PATHS)==tuple(SOURCE_PATHS) and len(oracle.REGISTRY)==50,
+                'independent fixed70/50 source registries')
         admission={'sources':campaign.source_pins,'controls':campaign.controls,'tools':campaign.tools}
         generated=oracle.freeze(freeze,compiler,cc,admission)
         # Pin the returned independent publication, then revalidate every file
@@ -612,7 +613,7 @@ def _verify(args,begin,started):
                 'current adapter before captured load')
         adapter=captured_module(root/'scripts/project-input-inventory.py',adapter_bytes,ADAPTER_SHA,'rfc170_fixed_adapter')
         collector=captured_module(collector_path,collector_bytes,collector_pin,'rfc170_data_collector')
-        require(tuple(collector.REGISTRY)==tuple(model['source_registry']) and len(collector.REGISTRY)==49,'fixed49 source registry')
+        require(tuple(collector.REGISTRY)==tuple(model['source_registry']) and len(collector.REGISTRY)==50,'fixed50 source registry')
         campaign.receipt['data_rows']=data_controls(collector,adapter,model,files)
         readiness={'zero_templates':ZERO_TEMPLATES,'injection_points':INJECTION_POINTS,
           'mock_sources_hex':{name:data.hex() for name,data in MOCKS.items()},'native_labels':model['native']['labels']}

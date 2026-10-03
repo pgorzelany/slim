@@ -29,6 +29,7 @@
       "name": "check",
       "path": "check.slim",
       "imports": [
+        "diagnostics",
         "effects",
         "identity",
         "ir",
@@ -96,6 +97,15 @@
       "path": "control.slim",
       "imports": [
         "syntax"
+      ]
+    },
+    {
+      "name": "diagnostics",
+      "path": "diagnostics.slim",
+      "imports": [
+        "syntax",
+        "text",
+        "typing"
       ]
     },
     {
@@ -235,6 +245,7 @@
       "imports": [
         "check",
         "codegen",
+        "diagnostics",
         "format",
         "identity",
         "memory",

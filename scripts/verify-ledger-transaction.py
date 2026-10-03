@@ -19,9 +19,9 @@ import time
 import types
 
 MIB = 1048576
-ORACLE_SHA = '65cb1e08ad8863694720159bc02b8d43530d1977f5254bf7f83f88fbc69282e0'
-HELPER_SHA = '6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be'
-COLLECTOR_SHA = 'e25abf743d656ed7e6d0a8828a72c098e65a1e3ccfdae8d1c043be5fdfe79b9d'
+ORACLE_SHA = '46e1511237cf6194fd52f2b68b25b1a79d927e75ba7ee1bc5b0e282e79b1c9bb'
+HELPER_SHA = '245ccc2e41b38546bdc12bb49dae0b4331731db57174704c4d16ee805aff9c8c'
+COLLECTOR_SHA = 'ccfb96dd2f0cd5fbeaeb0b4f16a1ca7e040baa1bd31fbe14ba15fe2939cfa84a'
 ADAPTER_SHA = '004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00'
 STATE_PATH = 'library/applications/ledger/state.slim'
 BASELINE_SHA = '0316e7900060a061ec16f5859905a28dfecceec383828bd9f0a58a2955efc69e'
@@ -85,6 +85,7 @@ scripts/project-input-inventory.py
 selfhost/check.slim
 selfhost/codegen.slim
 selfhost/control.slim
+selfhost/diagnostics.slim
 selfhost/effects.slim
 selfhost/format.slim
 selfhost/identity.slim
@@ -214,6 +215,47 @@ def captured_module(path, data, pin, name):
         raise
     return module
 
+def additional_source(model):
+    inline = model.get('additional_source_hex')
+    require(type(inline) is dict and set(inline) == {'selfhost/diagnostics.slim'}, 'fixed additional source domain')
+    name = 'selfhost/diagnostics.slim'
+    value = inline[name]
+    require(type(value) is str and len(value) <= 2*MIB and len(value)%2 == 0 and
+            all(byte in '0123456789abcdef' for byte in value), 'bounded complete source byte encoding')
+    data = bytes.fromhex(value)
+    require(identity(data) == model['source_pins'][name], 'complete additional source identity')
+    return data
+
+
+def additional_source_integrity():
+    # These are private held-data custody controls, never source acceptance.
+    name = 'selfhost/diagnostics.slim'
+    def declaration(value, pin):
+        return {'additional_source_hex':{name:value},'source_pins':{name:pin}}
+    data = b'\x00\xff\n'
+    pin = identity(data)
+    require(additional_source(declaration('00ff0a',pin)) == data, 'literal complete binary source bytes')
+    maximum = b'x'*MIB
+    require(additional_source(declaration(maximum.hex(),identity(maximum))) == maximum, 'exact source byte bound')
+    failures = (
+        {'additional_source_hex':[], 'source_pins':{name:pin}},
+        {'additional_source_hex':{'other.slim':'00ff0a'}, 'source_pins':{name:pin}},
+        declaration(0,pin), declaration('0',pin), declaration('00ff0g',pin),
+        declaration('00'* (MIB+1),pin),
+        declaration('00ff0a',dict(pin,bytes=4)),
+        declaration('00ff0a',dict(pin,sha256='0'*64)),
+    )
+    for case in failures:
+        try:
+            additional_source(case)
+        except ValueError:
+            pass
+        else:
+            raise ValueError('malformed held source unexpectedly admitted')
+    return {'scope':'opaque held-data integrity; no SLIM parsing or source acceptance',
+            'positive_controls':2,'negative_controls':len(failures)}
+
+
 def held_data(folder, model_sha, freeze_sha, controls):
     raw = read(folder/'freeze.json', MIB)
     require(identity(raw)['sha256'] == freeze_sha, 'fresh independent freeze identity')
@@ -239,10 +281,18 @@ def held_data(folder, model_sha, freeze_sha, controls):
     for name, artifact in (('oracle','oracle.py'),('verifier','verifier.py'),('generator','generator.py'),
                            ('prefix','prefix.slim'),('baseline','baseline-state.slim'),('rfc','rfc.md')):
         require(files[artifact] == controls[name], 'current frozen control bytes')
-    require(set(model['source_pins']) == set(READSET) and len(READSET) == 56 and len(COLLECTOR_PATHS) == 49,
+    require(set(model['source_pins']) == set(READSET) and len(READSET) == 57 and len(COLLECTOR_PATHS) == 50,
             'literal source registry')
     require(record['sources_before'] == record['sources_after'] == model['source_pins'] and
             record['tools_before'] == record['tools_after'] == model['tools'], 'held endpoint equality')
+    require(model['source_storage'] == {'physical_hold_files':128,'logical_hold_artifacts':129,
+            'source_records':57,'standalone_source_files':56,'inline_source_records':1},
+            'fixed physical and logical source storage')
+    # The one additional source shares the hashed model artifact. The physical
+    # hold keeps all 128 files; this ephemeral byte view adds one logical entry.
+    name = 'selfhost/diagnostics.slim'
+    require('sources/'+name not in files, 'additional source has no separate physical artifact')
+    files['sources/'+name] = additional_source(model)
     require(model['native_labels'] == labels() and len(labels()) == 46 and model['data_cases'] == 184 and
             len(model['states']) == 171 and len(model['replays']) == 8 and len(model['partials']) == 2 and
             len(model['diagnostics']) == 2, 'fixed finite campaign')
@@ -256,7 +306,7 @@ def held_data(folder, model_sha, freeze_sha, controls):
 def source_admission(root):
     captured = {name: read(root/name) for name in READSET}
     pins = {name: identity(data) for name, data in captured.items()}
-    require(len(READSET) == 56 and len(set(READSET)) == 56, 'fixed current opaque source registry')
+    require(len(READSET) == 57 and len(set(READSET)) == 57, 'fixed current opaque source registry')
     controls = {name:read(root/path) for name,path in CONTROL_PATHS.items()}
     for name, pin in (('oracle',ORACLE_SHA),('prefix',PREFIX_SHA),('generator',GENERATOR_SHA),('baseline',BASELINE_SHA)):
         require(identity(controls[name])['sha256'] == pin, 'fixed independent oracle/probe/baseline source')
@@ -723,6 +773,7 @@ def run(args):
         # Fresh opaque source/control/direct-tool admission precedes even the
         # independent oracle's captured-byte execution. No historical hold is loaded.
         before_captured,before_pins,before_controls,before_tools,compiler,cc = source_admission(root)
+        receipt['additional_source_integrity'] = additional_source_integrity()
         pins,controls,tools = before_pins,before_controls,before_tools
         receipt.update(sources_before=before_pins,tools_before=before_tools,
                        controls_before={name:identity(data) for name,data in before_controls.items()})
@@ -738,7 +789,8 @@ def run(args):
         record, model, files, captured, pins, controls, tools, compiler, cc = admit(root, folder, args.model_sha, args.freeze_sha)
         require(pins == before_pins and controls == before_controls and tools == before_tools,
                 'full current admission unchanged through data sealing')
-        receipt.update(hold={'model':record['model'],'freeze':file_identity(folder/'freeze.json',MIB),'files':128},
+        receipt.update(hold={'model':record['model'],'freeze':file_identity(folder/'freeze.json',MIB),'files':128,
+                            'physical_files':128,'logical_artifacts':129,'inline_source_records':1},
                        sources_before=pins, tools_before=tools, controls_before={name:identity(data) for name,data in controls.items()})
         save()
         # All complete independent data, current source, prospective code and

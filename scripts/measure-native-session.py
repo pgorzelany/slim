@@ -23,20 +23,60 @@ now = time.perf_counter_ns
 sha = lambda data: hashlib.sha256(data).hexdigest()
 
 
+class NativeResponseFailure(AssertionError):
+    """Rejected public response, with the facts actually present in its frame."""
+
+
+def reject_response(problem, tag, payload, **facts):
+    checksum = hashlib.sha256(tag + struct.pack('>I', len(payload)))
+    checksum.update(payload)
+    raise NativeResponseFailure(dict(problem=problem, tag=tag,
+        payload_bytes=len(payload), frame_bytes=5+len(payload),
+        frame_sha256=checksum.hexdigest(), **facts))
+
+
 def decode(tag, payload):
-    assert tag == b'N' and len(payload) >= 116 and payload[0] == 1
-    status, = struct.unpack('>q',payload[17:25])
-    lengths = struct.unpack('>4I',payload[100:116])
-    assert sum(lengths)+116 == len(payload) and status == 0, (status,payload[116:500])
+    if tag != b'N' or len(payload) < 116 or payload[0] != 1:
+        reject_response('invalid-native-prefix',tag,payload)
+    epoch,serial,status,profile,elapsed = struct.unpack('>5q',payload[1:41])
     starts = struct.unpack('>3Q',payload[41:65])
+    hits = tuple(payload[65:68])
     times = struct.unpack('>4Q',payload[68:100])
-    context = payload[116:116+lengths[0]].decode()
-    diagnostics_at = 116+lengths[0]+lengths[1]
-    diagnostics = payload[diagnostics_at:diagnostics_at+lengths[2]].decode(errors='replace')
-    return payload[-lengths[3]:], starts, times, context, diagnostics
+    lengths = struct.unpack('>4I',payload[100:116])
+    header = dict(revision=(epoch,serial),status=status,profile=profile,
+                  elapsed_ns=elapsed,starts=starts,hits=hits,times=times,lengths=lengths)
+    if sum(lengths)+116 != len(payload):
+        reject_response('inconsistent-native-lengths',tag,payload,**header)
+    # These are the existing N-frame field bounds, also enforced by the host.
+    if any(size>limit for size,limit in zip(lengths,(1024,4096,1048576,67108864))):
+        reject_response('native-field-limit',tag,payload,**header)
+    if any(hit not in (0,1) for hit in hits):
+        reject_response('invalid-native-hit',tag,payload,**header)
+    at = 116
+    fields = []
+    for size in lengths:
+        fields.append(payload[at:at+size])
+        at += size
+    context,reason,diagnostics,artifact = fields
+    if status != 0:
+        reject_response('native-status-rejected',tag,payload,**header,
+            context=context,reason=reason,diagnostics=diagnostics,
+            artifact_bytes=len(artifact),artifact_sha256=sha(artifact))
+    return artifact, starts, times, context.decode(), diagnostics.decode(errors='replace')
 
 
-def pipeline(client, source, workers, target, expected_code, expected_output, environment):
+def pipeline(client, source, workers, target, expected_code, expected_output, environment,
+             *, case, sample, operation):
+    try:
+        return pipeline_operation(client,source,workers,target,expected_code,expected_output,environment)
+    except AssertionError as error:
+        failure = error.args[0] if len(error.args)==1 else error.args
+        error.args = (dict(case=case,sample=sample,operation=operation,workers=workers,
+                           source=os.fsdecode(source),failure=failure),)
+        raise
+
+
+def pipeline_operation(client, source, workers, target, expected_code, expected_output, environment):
     begin = now()
     tag, payload = client.request(b'U',os.fsencode(source))
     received_source = now()
@@ -44,7 +84,16 @@ def pipeline(client, source, workers, target, expected_code, expected_output, en
     assert accepted['status'] == 0, {k:v for k,v in accepted.items() if k!='code'}
     tag, payload = client.request(b'B',struct.pack('>QQB',*accepted['published'],workers))
     received_native = now()
-    artifact, starts, times, context, diagnostics = decode(tag,payload)
+    try:
+        artifact, starts, times, context, diagnostics = decode(tag,payload)
+    except NativeResponseFailure as error:
+        # The accepted U reply is already retained by the caller. Hash only
+        # on rejection; never reopen source or add hashing to successful work.
+        facts = error.args[0]
+        facts.update(accepted_revision=accepted['published'],
+                     accepted_code_bytes=len(accepted['code']),
+                     accepted_code_sha256=sha(accepted['code']))
+        raise
     native.publish(target,artifact)
     published = now()
     run = subprocess.run([str(target)],capture_output=True,env=environment,timeout=120)
@@ -126,8 +175,10 @@ def run(samples):
             client = native.Client(['./slimc','session'],environment)
             started = now()-begin
             try:
-                cold = pipeline(client,path,workers,root/'setup-program',code[0],b'0\n',environment)
-                warm = pipeline(client,path,workers,root/'setup-program',code[0],b'0\n',environment)
+                cold = pipeline(client,path,workers,root/'setup-program',code[0],b'0\n',environment,
+                                case=name,sample=sample,operation='setup-cold')
+                warm = pipeline(client,path,workers,root/'setup-program',code[0],b'0\n',environment,
+                                case=name,sample=sample,operation='setup-warm')
                 assert cold['starts'] == (1,1,1) and cold['setup_ns'] > 0 and warm['starts'] == (0,0,0)
                 if sample:
                     setup.append(cold['setup_ns'])
@@ -138,7 +189,8 @@ def run(samples):
                     client.process.stdin.close();client.process.wait(timeout=20)
         client = native.Client(['./slimc','session'],environment)
         try:
-            pipeline(client,cases[0][2],0,root/'program',cases[0][4][0],b'0\n',environment)
+            pipeline(client,cases[0][2],0,root/'program',cases[0][4][0],b'0\n',environment,
+                     case=cases[0][0],sample=None,operation='prime')
             for name, workers, path, texts, code in cases:
                 environment['SLIM_WORKER_TIER'] = 'posix' if workers else 'serial'
                 rows = []
@@ -153,7 +205,8 @@ def run(samples):
                     observed = {}
                     for label,index in [('epoch-cold',0),('unchanged',0),('body',1),('revert',0)]:
                         if label != 'unchanged': path.with_name('program.slim').write_text(texts[index])
-                        observed[label] = pipeline(client,path,workers,root/'program',code[index],f'{index}\n'.encode(),environment)
+                        observed[label] = pipeline(client,path,workers,root/'program',code[index],f'{index}\n'.encode(),environment,
+                                                   case=name,sample=sample,operation=label)
                     if sample % 2: controls_now()
                     assert observed['epoch-cold']['starts'] == (1,1,1)
                     assert observed['body']['starts'] == (1,0,1)

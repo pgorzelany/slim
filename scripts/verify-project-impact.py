@@ -31,7 +31,7 @@ STDOUT_CAP = 8 * MIB
 STDERR_CAP = 256 * 1024
 EMIT_CAP = 16 * MIB
 FILE_CAP = 128 * MIB
-ORACLE_SHA = '91cecce2601e0052ec28a32292b8c89fab533b6c2a6c4c85e0097f744ede4997'
+ORACLE_SHA = 'dfa89550b7866575acd31eedd1c64dfc0e64828ab0e17068dfa62d4f7e651df0'
 VARIANTS = (('ordinary', ('-O2', '-DNDEBUG')),
             ('sanitized', ('-O1', '-g', '-fsanitize=address,undefined', '-fno-sanitize-recover=all')))
 WORK_KEYS = tuple(side + '_' + field for side in ('old', 'new')

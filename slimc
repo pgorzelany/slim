@@ -189,6 +189,33 @@ case "$slim_command" in
         test "$#" -ge 1 || { slim_usage >&2; exit 64; }
         slim_source=$1
         shift
+        if test "$slim_message_format" = json; then
+            if "$slim_compiler" check-json "$slim_source" "$@" > "$slim_tmp/diagnostics"; then
+                slim_status=0
+            else
+                slim_status=$?
+            fi
+            if test "$slim_status" -eq 0; then
+                if test -s "$slim_tmp/diagnostics"; then
+                    echo "slimc: native compiler does not support the structured diagnostic protocol" >&2
+                    exit 64
+                fi
+                exit 0
+            fi
+            if test "$slim_status" -ne 64; then
+                # Validate only the native transport framing. Keep complete
+                # schema1 rows byte-for-byte; never reconstruct diagnostics.
+                if ! LC_ALL=C awk '
+                    { count++; if (substr($0, 1, 12) != "{\"schema\":1," || length($0) > 8191) exit 1 }
+                    END { if (count == 0) exit 1 }
+                ' "$slim_tmp/diagnostics" || test -n "$(tail -c 1 "$slim_tmp/diagnostics")"; then
+                    echo "slimc: native compiler does not support the structured diagnostic protocol" >&2
+                    exit 64
+                fi
+            fi
+            cat "$slim_tmp/diagnostics" >&2
+            exit "$slim_status"
+        fi
         if "$slim_compiler" check "$slim_source" "$@" > "$slim_tmp/diagnostics"; then
             exit 0
         else

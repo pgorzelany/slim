@@ -35,7 +35,7 @@ STDERR_CAP=256*1024
 RETAINED_CAP=384*MIB
 ADAPTER_SHA='004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00'
 MANIFEST_PINS={
- 'project-input.project':'b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f',
+ 'project-input.project':'db5881e40b6ab96f08872318d8eac640a72c911e40b401dad662fa3a6e2263c0',
  'library/project-impact.project':'86a2c62e3e631b35b7b38b23d6f69c994fea38b70e0ab5cbc1dc7d0fec9f5b68',
 }
 ROLES=('emit-producer','build-producer','emit-impact','build-impact',
@@ -55,7 +55,7 @@ REGISTRY=('library/applications/catalog/catalog.slim','library/applications/cata
  'library/experimental/text.slim','library/project-impact.project','project-input.project',
  'runtime/slim_rt.c','runtime/slim_rt.h','scripts/project-impact-context.py',
  'scripts/project-input-inventory.py','selfhost/check.slim','selfhost/codegen.slim',
- 'selfhost/control.slim','selfhost/effects.slim','selfhost/format.slim','selfhost/identity.slim',
+ 'selfhost/control.slim','selfhost/diagnostics.slim','selfhost/effects.slim','selfhost/format.slim','selfhost/identity.slim',
  'selfhost/ir.slim','selfhost/memory.slim','selfhost/ownership.slim','selfhost/parallel.slim',
  'selfhost/project.slim','selfhost/ranges.slim','selfhost/retained.slim','selfhost/scheduler.slim',
  'selfhost/syntax.slim','selfhost/text.slim','selfhost/typing.slim','selfhost/validate.slim')

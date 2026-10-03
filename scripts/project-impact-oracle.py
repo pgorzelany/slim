@@ -542,11 +542,12 @@ def bad_cases():
 COMPILER = (
  ('analysis','analysis.slim','memory parallel quality ranges reduce syntax text typing'),
  ('cache','cache.slim','project syntax text'),
- ('check','check.slim','effects identity ir memory ranges retained syntax text typing validate'),
+ ('check','check.slim','diagnostics effects identity ir memory ranges retained syntax text typing validate'),
  ('codegen','codegen.slim','memory parallel ranges syntax text typing'),
  ('compiler','slimc.slim','analysis cache check codegen context edit equivalence format memory project proof reduce scheduler session syntax text typing validate'),
  ('context','context.slim','cache check identity project retained syntax text typing'),
- ('control','control.slim','syntax'), ('driver','driver.slim','compiler'),
+ ('control','control.slim','syntax'), ('diagnostics','diagnostics.slim','syntax text typing'),
+ ('driver','driver.slim','compiler'),
  ('edit','edit.slim','format syntax text'), ('effects','effects.slim','syntax'),
  ('equivalence','equivalence.slim','syntax text'), ('flow','flow.slim','control identity retained syntax typing'),
  ('format','format.slim','syntax text'),
@@ -555,7 +556,7 @@ COMPILER = (
  ('nativebuild','nativebuild.slim','identity session'), ('nativecache','nativecache.slim','cache retained'),
  ('ownership','ownership.slim',''), ('parallel','parallel.slim','effects ranges syntax text typing'),
  ('parallelcache','parallelcache.slim','identity parallel project ranges retained syntax'),
- ('project','project.slim','check codegen format identity memory ranges retained scheduler syntax text typing validate'),
+ ('project','project.slim','check codegen diagnostics format identity memory ranges retained scheduler syntax text typing validate'),
  ('proof','proof.slim','reduce syntax text'), ('quality','quality.slim','ranges reduce syntax text'),
  ('query','query.slim','identity project syntax text'), ('ranges','ranges.slim','effects syntax text typing'),
  ('reduce','reduce.slim','format syntax text'), ('retained','retained.slim','identity ir memory ranges syntax text typing'),
@@ -576,7 +577,7 @@ CATALOG = (
  ('std_netstring','experimental/netstring.slim','std_ascii std_bytes std_text'), ('std_text','experimental/text.slim','std_bytes'),
 )
 MANIFEST_PINS = {
-    'selfhost/slim.project':'8f75c79f783c1942e1b1faa30867d34097ed86ee7b999cdf5153b58502dce9fe',
+    'selfhost/slim.project':'2076323f8f1888aa67c2b88946b99ceb047b34ccf216900224009eae41aa850f',
     'library/catalog.project':'28951ae70aaa93248fb5770ef3c8d0ec8649bd7f45456527136209c86195b16c',
 }
 SOURCE_PATHS = '''
@@ -587,6 +588,7 @@ selfhost/check.slim
 selfhost/codegen.slim
 selfhost/context.slim
 selfhost/control.slim
+selfhost/diagnostics.slim
 selfhost/driver.slim
 selfhost/edit.slim
 selfhost/effects.slim
@@ -636,7 +638,9 @@ library/experimental/text.slim
 def fixed_sources(root):
     rows = tuple(line for line in SOURCE_PATHS.splitlines() if line)
     declared = set(MANIFEST_PINS) | {'selfhost/'+path for _,path,_ in COMPILER} | {'library/'+path for _,path,_ in CATALOG}
-    require(len(rows) == 50 and len(set(rows)) == 50 and set(rows) == declared,'fixed real read set')
+    # RFC173 adds one production module and two imports. This source binding
+    # follows that accepted declaration set; held campaigns stay immutable.
+    require(len(rows) == 51 and len(set(rows)) == 51 and set(rows) == declared,'fixed real read set')
     sources = {}
     for name in rows:
         path = root / name

@@ -226,8 +226,9 @@ specified in `docs/HOST.md`.
 
 ## Diagnostics and tooling
 
-Every diagnostic has a stable code, severity, primary byte span, optional
-labels, notes, and fixes. Human and JSON renderings carry the same information.
+Every diagnostic has a stable code, severity and primary byte span. Human
+output preserves raw diagnostics; JSON check reports add captured context and
+retained repair facts.
 
 Analysis, reduction, equivalence, proof, edit, and agent-patch outputs are
 versioned tooling data, never a second executable representation. Canonical

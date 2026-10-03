@@ -14,6 +14,7 @@ struct Frame:
   entry: Bool
   moved: Bool
   visited: I64
+  move_origin: I64
 
 fn current(scopes: Vec[Scope]) -> I64 effects[partial]:
   let cursor: Scope = vec.get(scopes, 0)
@@ -60,14 +61,18 @@ fn end(scopes: @Vec[Scope], scope: I64, enclosing: I64) -> Void effects[partial]
     relink(@scopes, parent, parent, rank, enclosing)
   relink(@scopes, 0, enclosing, 0, enclosing)
 
-fn append_frame(scopes: Vec[Scope], frames: @Vec[Frame], scope: I64, parent: I64, entry: Bool) -> I64 effects[alloc, partial]:
+fn append_frame(scopes: Vec[Scope], frames: @Vec[Frame], scope: I64, parent: I64, entry: Bool, origin: I64) -> I64 effects[alloc, partial]:
   let control: Scope = vec.get(scopes, scope)
   let moved: Bool = if control.arms > 0:
     false
   else:
     entry
   let index: I64 = vec.len(frames)
-  vec.push(@frames, Frame(scope: scope, parent: parent, entry: entry, moved: moved, visited: 0))
+  let anchor: I64 = if moved:
+    origin
+  else:
+    -1
+  vec.push(@frames, Frame(scope: scope, parent: parent, entry: entry, moved: moved, visited: 0, move_origin: anchor))
   index
 
 fn close_frame(scopes: Vec[Scope], frames: @Vec[Frame], index: I64) -> I64 effects[partial]:
@@ -86,7 +91,18 @@ fn close_frame(scopes: Vec[Scope], frames: @Vec[Frame], index: I64) -> I64 effec
     parent.moved || moved
   else:
     moved
-  vec.set(@frames, frame.parent, Frame(scope: parent.scope, parent: parent.parent, entry: parent.entry, moved: joined, visited: parent.visited + 1))
+  let origin: I64 = if parent.moved && (parent.move_origin >= 0):
+    parent.move_origin
+  else:
+    if frame.moved:
+      frame.move_origin
+    else:
+      parent.move_origin
+  let anchor: I64 = if joined:
+    origin
+  else:
+    -1
+  vec.set(@frames, frame.parent, Frame(scope: parent.scope, parent: parent.parent, entry: parent.entry, moved: joined, visited: parent.visited + 1, move_origin: anchor))
   frame.parent
 
 fn unwind(scopes: Vec[Scope], frames: @Vec[Frame], index: I64, ancestor: I64) -> I64 effects[alloc, partial]:
@@ -98,8 +114,8 @@ fn unwind(scopes: Vec[Scope], frames: @Vec[Frame], index: I64, ancestor: I64) ->
     let enclosing: Scope = vec.get(scopes, parent.scope)
     let common: Scope = vec.get(scopes, ancestor)
     if enclosing.depth < common.depth:
-      let middle: I64 = append_frame(scopes, @frames, ancestor, frame.parent, frame.entry)
-      vec.set(@frames, index, Frame(scope: frame.scope, parent: middle, entry: frame.entry, moved: frame.moved, visited: frame.visited))
+      let middle: I64 = append_frame(scopes, @frames, ancestor, frame.parent, frame.entry, frame.move_origin)
+      vec.set(@frames, index, Frame(scope: frame.scope, parent: middle, entry: frame.entry, moved: frame.moved, visited: frame.visited, move_origin: frame.move_origin))
     else:
       void
     let next: I64 = close_frame(scopes, @frames, index)
@@ -107,7 +123,7 @@ fn unwind(scopes: Vec[Scope], frames: @Vec[Frame], index: I64, ancestor: I64) ->
 
 fn advance(scopes: @Vec[Scope], frames: @Vec[Frame], previous: I64) -> I64 effects[alloc, partial]:
   let initial: I64 = if previous < 0:
-    append_frame(scopes, @frames, 1, -1, false)
+    append_frame(scopes, @frames, 1, -1, false, -1)
   else:
     previous
   let frame: Frame = vec.get(frames, initial)
@@ -127,8 +143,15 @@ fn advance(scopes: @Vec[Scope], frames: @Vec[Frame], previous: I64) -> I64 effec
         parent.entry
       else:
         parent.moved
-      append_frame(scopes, @frames, here, joined, entry)
+      append_frame(scopes, @frames, here, joined, entry, parent.move_origin)
 
 fn set_moved(frames: @Vec[Frame], index: I64, moved: Bool) -> Void effects[partial]:
+  set_moved_at(@frames, index, moved, -1)
+
+fn set_moved_at(frames: @Vec[Frame], index: I64, moved: Bool, origin: I64) -> Void effects[partial]:
   let frame: Frame = vec.get(frames, index)
-  vec.set(@frames, index, Frame(scope: frame.scope, parent: frame.parent, entry: frame.entry, moved: moved, visited: frame.visited))
+  let anchor: I64 = if moved:
+    origin
+  else:
+    -1
+  vec.set(@frames, index, Frame(scope: frame.scope, parent: frame.parent, entry: frame.entry, moved: moved, visited: frame.visited, move_origin: anchor))

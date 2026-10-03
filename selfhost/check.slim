@@ -194,16 +194,20 @@ fn append_boolean_match_items(source: Bytes, tokens: Vec[syntax.Token], declarat
     recur(source, tokens, declarations, @issues, next, total)
 
 fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64) -> Attempt effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(false)
+  check_source_attempt_report(input, @tokens, render_typed, retain, previous, revision, token_limit, @report)
+
+fn check_source_attempt_report(input: Bytes, tokens: @Vec[syntax.Token], render_typed: Bool, retain: Bool, previous: retained.Cache, revision: identity.Revision, token_limit: I64, report: @diagnostics.Reporter) -> Attempt effects[alloc, io, partial]:
   let valid: Bool = validate.executable_shape_valid(input, tokens)
   if valid:
     let declarations: Vec[ir.Declaration] = syntax.index_declarations(input, tokens)
     let syntax_issues: Vec[typing.Issue] = vec.new()
-    let syntax_status: I64 = check_path_exhaustive(input, tokens, declarations, @syntax_issues)
+    let syntax_status: I64 = check_path_exhaustive(input, tokens, declarations, @syntax_issues, @report)
     let syntax_error: Bool = syntax_status > 0
     if syntax_error:
       let recovered: I64 = append_boolean_match_items(input, tokens, declarations, @syntax_issues, 0, 0)
       let rendered: I64 = if render_typed:
-        report_issues(tokens, syntax_issues, 0, 0)
+        report_issues_json(input, tokens, syntax_issues, 0, 0, @report)
       else:
         0
       let view: typing.View = typing.empty_view()
@@ -236,7 +240,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
           memory.analyze(input, tokens, declarations)
       let checked: I64 = if typed_error:
         if render_typed:
-          report_issues(tokens, issues, 0, 0)
+          report_issues_json(input, tokens, issues, 0, 0, @report)
         else:
           1
       else:
@@ -254,7 +258,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
           0
         else:
           let rendered: I64 = if render_typed:
-            report_issues(tokens, issues, 0, 0)
+            report_issues_json(input, tokens, issues, 0, 0, @report)
           else:
             0
           let additional: I64 = append_boolean_match_items(input, tokens, declarations, @issues, 0, 0)
@@ -266,7 +270,7 @@ fn check_source_attempt(input: Bytes, tokens: @Vec[syntax.Token], render_typed: 
       finish_attempt(^checked, ^cache, work, previous.index.revision, range_ready, ^range_view, ^transition)
   else:
     let declarations: Vec[ir.Declaration] = vec.new()
-    let status: I64 = check_path(input, tokens, declarations)
+    let status: I64 = check_path(input, tokens, declarations, @report)
     let view: typing.View = typing.empty_view()
     let issues: Vec[typing.Issue] = vec.new()
     let plan: memory.Plan = memory.empty_plan()
@@ -293,6 +297,10 @@ fn check_source_all(input: Bytes, tokens: @Vec[syntax.Token]) -> I64 effects[all
   checked.status
 
 fn check_path_all(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.raw(false)
+  check_path_all_report(path, @report)
+
+fn check_path_all_report(path: Bytes, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let input_bytes: Vec[U8] = vec.new()
   let input_read: Bool = io.read_file(path, @input_bytes)
   if input_read:
@@ -300,12 +308,26 @@ fn check_path_all(path: Bytes) -> I64 effects[alloc, io, partial]:
     let tokens: Vec[syntax.Token] = vec.new()
     let parsed: syntax.ProgramParse = syntax.parse_program_result(input, @tokens)
     if parsed.valid:
-      check_source_all(input, @tokens)
+      if report.json:
+        let previous: retained.Cache = retained.empty_cache()
+        let revision: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+        let attempt: Attempt = check_source_attempt_report(input, @tokens, true, false, previous, revision, 0, @report)
+        attempt.checked.status
+      else:
+        check_source_all(input, @tokens)
     else:
-      report_diagnostic(parsed.code, parsed.start, parsed.end)
+      if report.json:
+        let file: diagnostics.Source = diagnostics.source("module", path, path, input, true)
+        diagnostics.emit_source(@report, parsed.code, path, file, parsed.start, parsed.end, typing.empty_repair())
+      else:
+        report_diagnostic(parsed.code, parsed.start, parsed.end)
   else:
-    io.println("E0409@0:0")
-    1
+    if report.json:
+      let file: diagnostics.Source = diagnostics.source("module", path, path, "", false)
+      diagnostics.emit_source(@report, "E0409", path, file, 0, 0, typing.empty_repair())
+    else:
+      io.println("E0409@0:0")
+      1
 
 fn recur_parameter_name(source: Bytes, tokens: Vec[syntax.Token], parameter: I64) -> I64 effects[partial]:
   syntax.ast_binding_name(source, tokens, parameter)
@@ -743,8 +765,8 @@ fn find_invalid_fork(source: Bytes, tokens: Vec[syntax.Token], index: I64) -> I6
     else:
       index
 
-fn check_path_exhaustive(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, io, partial]:
-  let checked: I64 = check_path_project(input, tokens, declarations)
+fn check_path_exhaustive(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  let checked: I64 = check_path_project(input, tokens, declarations, @report)
   let prior_error: Bool = checked > 0
   if prior_error:
     checked
@@ -756,10 +778,15 @@ fn check_path_exhaustive(input: Bytes, tokens: Vec[syntax.Token], declarations: 
     else:
       0
 
-fn call_missing_effect(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, callee: I64, effect_code: I64) -> Bool effects[partial]:
+struct MissingEffect:
+  node: I64
+  requirement: I64
+  effect: I64
+
+fn call_missing_effect(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, callee: I64, effect_code: I64) -> I64 effects[partial]:
   let done: Bool = effect_code > 3
   if done:
-    false
+    0
   else:
     let required: Bool = effects.call_requires(source, tokens, callee, effect_code)
     let first_declared: I64 = syntax.ast_effects_first(declared_effects)
@@ -767,15 +794,15 @@ fn call_missing_effect(source: Bytes, tokens: Vec[syntax.Token], module_items: I
     let not_declared: Bool = !declared
     let missing: Bool = required && not_declared
     if missing:
-      true
+      effect_code
     else:
       let next: I64 = effect_code + 1
       recur(source, tokens, module_items, declared_effects, callee, next)
 
-fn find_missing_effect_in_span(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, cursor: I64, end: I64) -> I64 effects[partial]:
+fn find_missing_effect_in_span(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declared_effects: I64, cursor: I64, end: I64) -> MissingEffect effects[partial]:
   let done: Bool = cursor >= end
   if done:
-    -1
+    MissingEffect(node: -1, requirement: -1, effect: -1)
   else:
     let kind: I64 = syntax.ast_node_kind(tokens, cursor)
     let form: Bool = kind == 0
@@ -784,27 +811,27 @@ fn find_missing_effect_in_span(source: Bytes, tokens: Vec[syntax.Token], module_
       syntax.ast_expression_is_call(source, tokens, cursor)
     else:
       false
-    let missing: Bool = if call_form:
+    let effect: I64 = if call_form:
       let callee: I64 = syntax.ast_call_callee(cursor)
       call_missing_effect(source, tokens, module_items, declared_effects, callee, 1)
     else:
-      false
-    if missing:
-      cursor
+      0
+    if effect > 0:
+      MissingEffect(node: cursor, requirement: declared_effects, effect: effect)
     else:
       let next: I64 = syntax.ast_node_after(cursor)
       recur(source, tokens, module_items, declared_effects, next, end)
 
-fn find_missing_effect_items(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declarations: Vec[ir.Declaration], index: I64) -> I64 effects[partial]:
+fn find_missing_effect_items(source: Bytes, tokens: Vec[syntax.Token], module_items: I64, declarations: Vec[ir.Declaration], index: I64) -> MissingEffect effects[partial]:
   let declaration_count: I64 = vec.len(declarations)
   let done: Bool = index >= declaration_count
   if done:
-    -1
+    MissingEffect(node: -1, requirement: -1, effect: -1)
   else:
     let declaration: ir.Declaration = vec.get(declarations, index)
     let cursor: I64 = declaration.form
     let function_item: Bool = syntax.ast_item_is_function(source, tokens, cursor)
-    let missing: I64 = if function_item:
+    let missing: MissingEffect = if function_item:
       let params: I64 = syntax.ast_function_parameters(cursor)
       let return_type: I64 = syntax.ast_function_return_type(tokens, cursor)
       let declared_effects: I64 = syntax.ast_function_effects(tokens, cursor)
@@ -812,8 +839,8 @@ fn find_missing_effect_items(source: Bytes, tokens: Vec[syntax.Token], module_it
       let body_end: I64 = syntax.ast_next(tokens, body)
       find_missing_effect_in_span(source, tokens, module_items, declared_effects, body, body_end)
     else:
-      -1
-    let found: Bool = missing >= 0
+      MissingEffect(node: -1, requirement: -1, effect: -1)
+    let found: Bool = missing.node >= 0
     if found:
       missing
     else:
@@ -821,10 +848,10 @@ fn find_missing_effect_items(source: Bytes, tokens: Vec[syntax.Token], module_it
       recur(source, tokens, module_items, declarations, next)
 
 fn check_path_effects(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
-  let missing: I64 = find_missing_effect_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
-  let invalid: Bool = missing >= 0
+  let missing: MissingEffect = find_missing_effect_items(input, tokens, syntax.ast_module_items(0), declarations, 0)
+  let invalid: Bool = missing.node >= 0
   if invalid:
-    append_form_issue("E0343", missing, tokens, @issues)
+    append_repair_form_issue("E0343", missing.node, tokens, missing.requirement, missing.effect, "effect-ceiling", @issues)
   else:
     0
 
@@ -964,14 +991,14 @@ fn check_termination_view(source: Bytes, tokens: Vec[syntax.Token], declarations
 
 fn finish_termination(source: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], missing: I64, issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   if missing >= 0:
-    append_form_issue("E0343", missing, tokens, @issues)
+    append_repair_form_issue("E0343", missing, tokens, -1, -1, "recurrence-totality", @issues)
   else:
     let colors: Vec[I64] = vec.new()
     let frames: Vec[TerminationFrame] = vec.new()
     termination_initialize(vec.len(tokens), @colors)
     let cycle: I64 = termination_cycles(source, tokens, declarations, 0, @colors, @frames)
     if cycle >= 0:
-      append_form_issue("E0343", cycle, tokens, @issues)
+      append_repair_form_issue("E0343", cycle, tokens, -1, -1, "checked-call-cycle", @issues)
     else:
       0
 
@@ -995,8 +1022,8 @@ fn find_overqualified(source: Bytes, tokens: Vec[syntax.Token], index: I64, leng
       let next: I64 = index + 1
       recur(source, tokens, next, length)
 
-fn check_path_project(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
-  let core: I64 = check_path_full(input, tokens, declarations)
+fn check_path_project(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  let core: I64 = check_path_full(input, tokens, declarations, @report)
   let core_error: Bool = core > 0
   if core_error:
     core
@@ -1007,7 +1034,7 @@ fn check_path_project(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec
     if invalid:
       let start: I64 = syntax.ast_node_start(tokens, invalid_token)
       let end: I64 = syntax.ast_node_end(tokens, invalid_token)
-      report_diagnostic("E0228", start, end)
+      diagnostics.emit_node(@report, "E0228", input, tokens, invalid_token, invalid_token, typing.empty_repair())
     else:
       0
 
@@ -1096,7 +1123,7 @@ fn append_diagnostic_identity(diagnostic: Diagnostic, output: @Vec[U8]) -> Void 
   text.append_nonnegative_i64(end, @output)
   text.append_text(@output, "\n")
 
-fn check_path(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
+fn check_path(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
   let token_count: I64 = vec.len(tokens)
   let unterminated: I64 = find_unterminated(tokens, 0, token_count, 0, 0)
   let delimiters_valid: Bool = unterminated < 0
@@ -1110,8 +1137,20 @@ fn check_path(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Decl
     let output: Vec[U8] = vec.new()
     append_diagnostic_identity(diagnostic, @output)
     let bytes: Bytes = bytes.freeze(^output)
-    io.print_bytes(bytes)
-    1
+    if report.json:
+      let file: diagnostics.Source = if report.project:
+        diagnostics.source("unavailable", "-", report.path, "", false)
+      else:
+        diagnostics.source("module", report.path, report.path, input, true)
+      let label: Bytes = report.path
+      let repair: typing.Repair = if token_count > 1000000:
+        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: token_count, effect: -1)
+      else:
+        typing.empty_repair()
+      diagnostics.emit_source(@report, "E0102", label, file, 0, input_length, repair)
+    else:
+      io.print_bytes(bytes)
+      1
 
 fn last_form_in_list(tokens: Vec[syntax.Token], cursor: I64, previous: I64) -> I64 effects[partial]:
   let kind: I64 = syntax.ast_node_kind(tokens, cursor)
@@ -1289,8 +1328,8 @@ fn report_diagnostic(code: Bytes, start: I64, end: I64) -> I64 effects[alloc, io
 fn report_program_parse(parsed: syntax.ProgramParse) -> I64 effects[alloc, io, partial]:
   report_diagnostic(parsed.code, parsed.start, parsed.end)
 
-fn check_path_full(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration]) -> I64 effects[alloc, io, partial]:
-  let lexical: I64 = check_path(input, tokens, declarations)
+fn check_path_full(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Declaration], report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  let lexical: I64 = check_path(input, tokens, declarations, @report)
   let lexical_error: Bool = lexical > 0
   if lexical_error:
     lexical
@@ -1300,6 +1339,36 @@ fn check_path_full(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir
     if invalid:
       let start: I64 = syntax.ast_node_start(tokens, unknown)
       let end: I64 = syntax.ast_node_end(tokens, unknown)
-      report_diagnostic("E0221", start, end)
+      diagnostics.emit_node(@report, "E0221", input, tokens, unknown, unknown, typing.empty_repair())
     else:
       0
+
+fn report_issues_json(input: Bytes, tokens: Vec[syntax.Token], issues: Vec[typing.Issue], index: I64, count: I64, report: @diagnostics.Reporter) -> I64 effects[alloc, io, partial]:
+  if index >= vec.len(issues):
+    if count > 0:
+      1
+    else:
+      0
+  else:
+    let issue: typing.Issue = vec.get(issues, index)
+    let reported: I64 = if report.json:
+      diagnostics.emit_node(@report, issue.code, input, tokens, issue.start, issue.end, issue.repair)
+    else:
+      report_issue(tokens, issue)
+    recur(input, tokens, issues, index + 1, count + reported, @report)
+
+fn check_source_deferred_report(input: Bytes, tokens: @Vec[syntax.Token], report: @diagnostics.Reporter) -> typing.Checked effects[alloc, io, partial]:
+  let previous: retained.Cache = retained.empty_cache()
+  let revision: identity.Revision = identity.Revision(epoch: 0, serial: 0)
+  let attempt: Attempt = check_source_attempt_report(input, @tokens, false, false, previous, revision, 0, @report)
+  mem.replace(@attempt.checked, empty_checked())
+
+fn check_path_json(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let report: diagnostics.Reporter = diagnostics.json_reporter(path, false)
+  check_path_all_report(path, @report)
+
+fn append_repair_form_issue(code: Bytes, form: I64, tokens: Vec[syntax.Token], requirement: I64, effect: I64, rule: Bytes, issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
+  let closing: I64 = syntax.ast_next(tokens, form) - 1
+  let repair: typing.Repair = typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: effect)
+  vec.push(@issues, typing.Issue(code: code, start: form, end: closing, blocks_inference: true, repair: repair))
+  1

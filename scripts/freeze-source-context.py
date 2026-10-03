@@ -39,20 +39,20 @@ CONTROLS = {
     'freezer': 'scripts/freeze-source-context.py',
     'observer': 'scripts/verify-source-context.py',
 }
-ORACLE_SHA = 'c110ef8f8a463524b9c12364e1988e561ce96d06eef4b4b80039e3496b5939ef'
+ORACLE_SHA = 'fd48460075c04cd2f4f3b031c4c43d3a29649849380d4a398e3d30da89309ee4'
 APPLICATION_MANIFEST_SHA = '71b2d510341440beedbfcd9508bcc8b979dee0840cf646c38106a0e749019d6b'
 MANIFEST_SHA = {
-    'selfhost/slim.project': '8f75c79f783c1942e1b1faa30867d34097ed86ee7b999cdf5153b58502dce9fe',
+    'selfhost/slim.project': '2076323f8f1888aa67c2b88946b99ceb047b34ccf216900224009eae41aa850f',
     'library/ledger.project': '376145c7517aa1a65180d7d9b44949ea5a8a479752b7643701b12a14e46891b1',
     'library/catalog.project': '28951ae70aaa93248fb5770ef3c8d0ec8649bd7f45456527136209c86195b16c',
-    'project-input.project': 'b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f',
+    'project-input.project': 'db5881e40b6ab96f08872318d8eac640a72c911e40b401dad662fa3a6e2263c0',
 }
 FIXED_SHA = {
     'scripts/project-input-inventory.py': '004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00',
-    'scripts/verify-project-impact.py': '6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be',
+    'scripts/verify-project-impact.py': '245ccc2e41b38546bdc12bb49dae0b4331731db57174704c4d16ee805aff9c8c',
 }
 SELFHOST = (
-    'analysis','cache','check','codegen','slimc','context','control','driver',
+    'analysis','cache','check','codegen','slimc','context','control','diagnostics','driver',
     'edit','effects','equivalence','flow','format','fragments','identity','ir',
     'memory','nativebuild','nativecache','ownership','parallel','parallelcache',
     'project','proof','quality','query','ranges','reduce','retained','scheduler',
@@ -279,14 +279,14 @@ class Freeze:
         require(self.output.parent.resolve(strict=True).is_relative_to((self.root/'build').resolve(strict=True)) and
                 self.output.is_dir() and not self.output.is_symlink() and not any(self.output.iterdir()),
                 'fresh empty ordinary ignored-build data subtree')
-        require(len(SELFHOST)==35 and len(LEDGER)==9 and len(CATALOG)==13,'literal real body domains')
-        require(len(SOURCE_PATHS)==67 and len(set(SOURCE_PATHS))==67,'literal complete fixed readset67')
+        require(len(SELFHOST)==36 and len(LEDGER)==9 and len(CATALOG)==13,'literal real body domains')
+        require(len(SOURCE_PATHS)==68 and len(set(SOURCE_PATHS))==68,'literal complete fixed readset68')
         require(type(self.admission) is dict and set(self.admission)=={'sources','controls','tools'},
                 'caller-owned complete captured admission shape')
         require(type(self.admission['sources']) is dict and set(self.admission['sources'])==set(SOURCE_PATHS) and
                 type(self.admission['controls']) is dict and set(self.admission['controls'])==set(CONTROLS) and
                 type(self.admission['tools']) is dict and set(self.admission['tools'])==set(self.tool_paths),
-                'complete67-source/nine-control/three-tool admission before oracle')
+                'complete68-source/nine-control/three-tool admission before oracle')
         captured=dict(self.admission['sources']);controls=dict(self.admission['controls'])
         require(all(type(data) is bytes and len(data)<=SOURCE_CAP for data in (*captured.values(),*controls.values())),
                 'bounded immutable captured source/control bytes')
@@ -421,7 +421,7 @@ class Freeze:
         try:
             self.observed_files()
             if all(len(self.receipt.get(key,{}))==count for key,count in
-                   (('sources_before',67),('controls_before',9),('tools_before',3))):
+                   (('sources_before',68),('controls_before',9),('tools_before',3))):
                 self.endpoints(self.receipt['sources_before'],self.receipt['controls_before'],self.receipt['tools_before'])
         except BaseException as secondary:
             self.receipt['retention_error']=(type(secondary).__name__+': '+str(secondary))[:4096]

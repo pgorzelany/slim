@@ -143,19 +143,19 @@ def diff_expected(before, after):
 
 
 def compiler_schedule_expected(rows):
-    """Finite graph-data oracle over the declared 35/153 fixture, not SLIM."""
-    assert len(rows) == 35 and sum(0 if not imports else imports.count(b',') + 1
-                                 for name, path, source, imports in rows) == 153
+    """Finite graph-data oracle over the declared 36/158 fixture, not SLIM."""
+    assert len(rows) == 36 and sum(0 if not imports else imports.count(b',') + 1
+                                 for name, path, source, imports in rows) == 158
     costs = {name: len(source) for name, path, source, imports in rows}
     dependencies = {name: imports.split(b',') if imports else [] for name, path, source, imports in rows}
-    assert len(costs) == 35 and sum(costs.values()) <= 4 * MIB
+    assert len(costs) == 36 and sum(costs.values()) <= 4 * MIB
     assert all(target in costs for targets in dependencies.values() for target in targets)
     positions, cursor = {}, 0
     for name, path, source, imports in rows:
         positions[name] = cursor + len(str(len(name))) + 1
         cursor += len(triples([(name, str(len(source)).encode(), imports)]))
     completed, parents, steps = {}, {}, []
-    for _ in range(35):
+    for _ in range(36):
         available = [name for name in sorted(costs) if name not in completed
                      and all(target in completed for target in dependencies[name])]
         if not available:
@@ -172,7 +172,7 @@ def compiler_schedule_expected(rows):
     while endpoint is not None:
         chain.append(endpoint)
         endpoint = parents.get(endpoint)
-    report = f'tasks 35 edges 153 span {span}\n'.encode() + b''.join(steps)
+    report = f'tasks 36 edges 158 span {span}\n'.encode() + b''.join(steps)
     report += b'critical ' + b','.join(reversed(chain)) + b'\n'
     return 0, report, b''
 
@@ -672,7 +672,7 @@ def verify_edit_consumers(programs, output, environment):
 def verify_compiler_project(compiler, programs, adapter, output, environment):
     specification = json.loads((ROOT / 'library/tests/project_input/compiler-input.json').read_bytes())
     supplied = specification['modules']
-    assert len(supplied) == 35 and sum(len(row['imports']) for row in supplied) == 153
+    assert len(supplied) == 36 and sum(len(row['imports']) for row in supplied) == 158
     folder, manifest_path = ROOT / 'selfhost', ROOT / 'selfhost/slim.project'
     paths = [manifest_path] + [folder / row['path'] for row in supplied]
     before = {str(path.relative_to(ROOT)): sha(path) for path in paths}
@@ -685,7 +685,7 @@ def verify_compiler_project(compiler, programs, adapter, output, environment):
               'expected_capture_sha256': digest(expected), 'expected_capture_bytes': len(expected)}
     expected_records = known_catalog_records(raw_manifest, rows)
     planned = compiler_schedule_expected(rows)
-    oracle.update(expected_catalog_records=36, expected_total_source_bytes=sum(value[0] for value in expected_records.values()),
+    oracle.update(expected_catalog_records=37, expected_total_source_bytes=sum(value[0] for value in expected_records.values()),
                   expected_workplan_returncode=planned[0], expected_workplan_stdout_hex=planned[1].hex())
     (output / 'compiler-project-oracle.json').write_text(json.dumps(oracle, indent=2) + '\n')
     assert execute([compiler, 'check', manifest_path], output, 'compiler-project-check', environment) == (0, b'', b'')
@@ -709,11 +709,11 @@ def verify_compiler_project(compiler, programs, adapter, output, environment):
         assert reconciled == (0, b'changes 0\n', b''), ('identical compiler catalog reconciliation', mode, reconciled)
         scheduled = execute([programs['workplan'][mode], output / f'compiler-graph-{mode}.ns'], output,
                             f'compiler-workplan-{mode}', environment)
-        assert scheduled == planned, ('independent 35/153 graph-data plan, source-byte cost units', mode, scheduled, planned)
+        assert scheduled == planned, ('independent 36/158 graph-data plan, source-byte cost units', mode, scheduled, planned)
         observations.append({'variant': ('ordinary', 'sanitized')[mode], 'capture_sha256': digest(actual[1]),
                              'catalog_sha256': digest(catalog), 'graph_sha256': digest(workplan),
                              'modules': metadata['module_count'], 'edges': metadata['direct_import_edges'],
-                             'catalog_records': 36, 'catalog_total_source_bytes': oracle['expected_total_source_bytes'],
+                             'catalog_records': 37, 'catalog_total_source_bytes': oracle['expected_total_source_bytes'],
                              'workplan_returncode': scheduled[0], 'workplan_stdout_sha256': digest(scheduled[1]),
                              'inventory_receipt_sha256': sha(output / f'compiler-inventory-{mode}.json')})
     assert before == {str(path.relative_to(ROOT)): sha(path) for path in paths}, 'held compiler input changed'

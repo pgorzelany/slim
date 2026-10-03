@@ -27,7 +27,7 @@ FIXTURE_CAP = 16*MIB
 FILE_CAP = 128
 ADAPTER_SHA = '004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00'
 MANIFEST_PINS = {
-    'project-input.project':'b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f',
+    'project-input.project':'db5881e40b6ab96f08872318d8eac640a72c911e40b401dad662fa3a6e2263c0',
     'library/project-impact.project':'86a2c62e3e631b35b7b38b23d6f69c994fea38b70e0ab5cbc1dc7d0fec9f5b68',
 }
 H0 = b'0'*64
@@ -70,6 +70,7 @@ scripts/project-input-inventory.py
 selfhost/check.slim
 selfhost/codegen.slim
 selfhost/control.slim
+selfhost/diagnostics.slim
 selfhost/effects.slim
 selfhost/format.slim
 selfhost/identity.slim
@@ -125,6 +126,7 @@ selfhost/check.slim
 selfhost/codegen.slim
 selfhost/context.slim
 selfhost/control.slim
+selfhost/diagnostics.slim
 selfhost/driver.slim
 selfhost/edit.slim
 selfhost/effects.slim
@@ -621,7 +623,7 @@ def overhead_proof():
     maximum=2*REPORT_CAP+256*8190+128*4095+128*4095+16*(4*4095)+262144
     require(ceiling==107136 and maximum==20446400 and maximum<JSON_CAP,'literal envelope arithmetic')
     require(len(header_json)<262144,'complete max-argument header bytes')
-    require(len(REGISTRY)==49 and len(set(REGISTRY))==49,'literal registry49')
+    require(len(REGISTRY)==50 and len(set(REGISTRY))==50,'literal registry50')
     require(len(artifact_names())==35 and len(set(artifact_names()))==35,'artifact35')
     return {'record_fixed':121,'D_row_extra':47,'G_row_extra':73,'candidate_comma':1,
       'name_punctuation':3,'header_fixed_strings':strings,'header_integers':integers,
@@ -749,15 +751,15 @@ def freeze(destination, compiler, cc, admission):
     collector_path='scripts/project-impact-context.py'
     collector_source=read_small(root/collector_path)
     require(identity(collector_source)==admission['controls']['collector'],'opaque collector custody before freeze')
-    require(len(SOURCE_PATHS)==69 and len(set(SOURCE_PATHS))==69,'fixed69 opaque body paths')
+    require(len(SOURCE_PATHS)==70 and len(set(SOURCE_PATHS))==70,'fixed70 opaque body paths')
     sources={name:read_small(root/name) for name in SOURCE_PATHS}
     require({name:identity(data) for name,data in sources.items()}==admission['sources'],
             'source admission before inherited helper execution')
     old,old_source=inherited(root,admission['controls']['inherited_oracle'])
     inherited_paths=tuple(line for line in old.SOURCE_PATHS.splitlines() if line)
-    require(len(inherited_paths)==50 and len(set(inherited_paths))==50,'inherited fixed50 read set')
+    require(len(inherited_paths)==51 and len(set(inherited_paths))==51,'inherited fixed51 read set')
     names=tuple(sorted((set(REGISTRY)-{collector_path})|set(inherited_paths)))
-    require(names==tuple(SOURCE_PATHS),'fixed69 registry union')
+    require(names==tuple(SOURCE_PATHS),'fixed70 registry union')
     for name,pin in {**old.MANIFEST_PINS,**MANIFEST_PINS}.items():
         require(sha(sources[name])==pin,'fixed manifest registration')
     require(sha(sources['scripts/project-input-inventory.py'])==ADAPTER_SHA,'adapter registration')
@@ -874,4 +876,3 @@ def freeze(destination, compiler, cc, admission):
     with (destination/'freeze.json').open('xb') as stream:
         stream.write(receipt_bytes)
     return receipt
-
