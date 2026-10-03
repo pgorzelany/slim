@@ -60,20 +60,17 @@ integration; measured trials and native benchmarks run without competing work.
 | Held-out evaluation | Larger paired compiler/library tasks with ordinary tools versus optional context, using fresh Sol 6.1 extra-high agents. | Freeze tasks, independent tests, order and budgets before dispatch; retain every outcome and report unknown observations explicitly. |
 | Closure | Reviewed, verified commits pushed to `codex/slim-next`; concise current status and results. | Required compiler/runtime/benchmark checks and source-bound repository, release and website acceptance. |
 
-Checkpoint `112f6ed` is pushed to `codex/slim-next`. Fresh source8b passes all
-repository, release and website gates with verification tools built in that
-captured checkout. Historical copied-cache source binding remains unknown.
-Checked project capture, operation-cost reporting, duplicate-path validation,
-declared-import impact and context export compose the development workflow.
-Fixed million-node/source crossings and ledger overflow preflight pass durable gates.
-RFC-0172 explicit source selection passes218 focused observations across three
-real projects; its fresh canonical current-source gate also passes. Combined
-source9 repository, release and website acceptance remains pending.
-The [protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
-serial Sol 6.1 extra-high trials; eight participants passed their independent
-oracles. Dispatch nine was interrupted before a participant started because
-fresh-agent capacity was exhausted; fifteen trials remain undispatched. General effectiveness,
-model calls and tokens remain unknown; successor milestones retain their gates.
+Published code [`710bc29`](https://github.com/pgorzelany/slim/commit/710bc29c4dade7e2194ac11ea678c43f0d1ac461) passed source9 repository/release/website gates
+over 1,944 files with Rust tools built there.
+[Integration identities](benchmarks/results/development-operation-cost-current.json)
+retain hashes/times. Later metadata notes are separate.
+Historical Rust-root binding and model benefit remain unknown.
+The [protocol-2 cohort](benchmarks/development/current.json) retains all 24 configured
+fresh serial Sol 6.1 extra-high trials: 13 participants passed independent oracles,
+with six accepted pairs. Dispatch nine was interrupted before actor creation by
+fresh-agent capacity; ten trials remain undispatched. Recorded elapsed time includes
+coordinator/delivery/queue delays. General effectiveness, model calls and tokens
+remain unknown; successor milestones retain their gates.
 
 The accepted [duplicate-path optimization](design/rfcs/0167-linear-manifest-validation.md)
 reuses the existing byte trie only for repeated raw path identity. The broader
@@ -92,6 +89,20 @@ Operator timing and transient logs stay in ignored `build/`. Current docs explai
 contracts, decisions and next work; durable tests and relevant measurements
 remain product infrastructure. Do not create a historical prose journal for
 each implementation or verification attempt.
+
+Next, propose source-bound reuse of producer and impact build artifacts. In one
+checked ledger replay, producer compilation took 5.035390667s within a
+7.222748625s run; this one-host observation identifies a cost, not a general
+speedup. Adoption needs a separate accepted contract, complete source/compiler/
+runtime/CC/flag binding, cold and warm controls, invalidation tests and retained
+failure/resource gates.
+
+Then define recoverable aggregate-ledger outcomes with an independent oracle;
+RFC-0171 protects individual mutations while aggregation remains partial.
+Complete the remaining ten frozen trials when fresh-agent capacity and time permit,
+preserving order, budgets and interrupted/unrun outcomes. Retain M2 ownership,
+lifetime, allocation, application and release gates; context selection does not
+close them.
 
 ## Dependencies and remaining milestones
 

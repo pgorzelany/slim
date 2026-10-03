@@ -23,6 +23,13 @@
     "time_comparison_limit": "Netstring baseline contains recorded coordinator dispatch-to-spawn delay; decimal context used zero context requests. Four selected strict pairs do not establish context effectiveness.",
     "trials": 24
   },
+  "current_integration": {
+    "code_commit": "710bc29c4dade7e2194ac11ea678c43f0d1ac461",
+    "record": "development-operation-cost-current.json",
+    "scope": "Named source9 code passed; later metadata separate.",
+    "source_commit": "aa8315ff291033c8a275cd61044158a785d7420e",
+    "validated_tree": "5801d7cf804606cd62a456d8477e89112a1bdf7c"
+  },
   "date": "2026-10-03",
   "finite_native_controls": {
     "adapter_scope": "synthetic terminal facts and real ledger lifecycle controls only; no model or source correctness claim",
@@ -99,7 +106,7 @@
     "scripts/development-summary-input.py": "87e0a749a607ff324b1e96dd36416c3a722fb0cbe8282bacd9142235fd59c86d",
     "scripts/verify-development-summary.py": "f1c9ebe05cf7f0dde3f3752ab2d1ebeebaaefa452dda318e910968eb1b41ca02"
   },
-  "status": "Scoped native/adapter acceptance and source2 repository/release/website verification passed; participant effectiveness and later integration retain separate evidence.",
+  "status": "Scoped native/adapter acceptance and original source2 invocation passed. Historical isolated Rust-root binding unknown/unreviewed; named current source9 reference separate.",
   "timing": "17.530s local formatted-source verification attempt4; uncoordinated correctness only, not native/model performance",
   "unknown": [
     "general development effectiveness",
@@ -114,7 +121,7 @@
     "log_sha256": "677a4a2c69692e2d8d5b2de154906cc32b95aa1c81e2d3bce57be135cf43dfd9",
     "operator_elapsed_ns": 2342329313375,
     "pushed_branch": "codex/slim-next",
-    "scope": "Complete source-bound repository, reproducible release and website verification; later RFC0165 work excluded. Operator elapsed, not model active time.",
+    "scope": "Original source2 repository/release/website invocation passed; isolated Rust-root binding unknown/unreviewed. Operator elapsed, not model active time.",
     "source_files": 1864,
     "source_snapshot_commit": "6643d1ecb94b930f51a006a82eeda8a54880d53e",
     "started_utc": "2026-10-02T21:10:48.831864+00:00",

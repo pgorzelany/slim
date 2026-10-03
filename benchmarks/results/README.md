@@ -6,15 +6,11 @@ its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
-Fresh source8b snapshot `9d01a96a0c2705b7cbaf25ed330e7221ff30bb43` passed all
-repository, release and website gates in 44m05s over 1,932 files, with fresh Rust
-binaries whose embedded repository root was checked. The
-[current integration identities](development-operation-cost-current.json) bind
-receipt `40062efe…5432e`. Historical checkpoint
-[112f6ed](https://github.com/pgorzelany/slim/commit/112f6ed4eb957dcd4909a0ab595b71d634ecc20d)
-passed its invocation with copied-cache provenance unresolved. Source8b excludes
-RFC172 and subsequent metadata; combined source9 verification remains pending.
-General model benefit remains unknown.
+Published code [`710bc29`](https://github.com/pgorzelany/slim/commit/710bc29c4dade7e2194ac11ea678c43f0d1ac461) passed source9 repository/release/website gates
+over 1,944 files with Rust tools built there.
+[Integration identities](development-operation-cost-current.json)
+retain hashes/times. Later metadata notes are separate.
+Historical Rust-root binding and model benefit remain unknown.
 
 | Checkpoint | Record |
 | --- | --- |

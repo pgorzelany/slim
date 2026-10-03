@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "scope": "RFC0171 ordinary ledger transaction overflow preflight",
-  "status": "Focused and permanent current-source ordinary/sanitized finite domains pass; fresh source8b full integration passes. Combined source9 pending.",
+  "status": "Finite native domains/source9 pass; later metadata separate.",
   "command": "python3 -B scripts/verify-ledger-transaction.py --current --output build/overnight-ledger-transaction/FRESH",
   "production_source": {
     "path": "library/applications/ledger/state.slim",
@@ -79,7 +79,7 @@
     "scope": "canonical current-native-001; historical focused workflow bytes remain in original native002 receipt"
   },
   "permanent_gate": {
-    "status": "184 cases and46 fixed native observations pass, including fresh source8b integration; finite tested domains only.",
+    "status": "Finite native domains/source9 pass; later metadata separate.",
     "source_paths": 56,
     "control_paths": 6,
     "direct_tools": 3,
@@ -88,8 +88,8 @@
     "baseline_sha256": "0316e7900060a061ec16f5859905a28dfecceec383828bd9f0a58a2955efc69e",
     "binding": "Current opaque bodies and actual accepted RFC bytes are bound per fresh hold. Historical complete project trees/model receipts are evidence, not prerequisites.",
     "current_rfc_metadata": {
-      "bytes": 14110,
-      "sha256": "ef397e1f5919d8e3ebec338e17ba819b1b86be6e2f1ac45bb81345b5c7c91a30"
+      "bytes": 14148,
+      "sha256": "0696d42c00c6589186c1a91984a12194cedde303e531562861859828e2eaae6a"
     }
   },
   "fixed_budgets": {
@@ -106,46 +106,12 @@
     "stderr_bytes": 262144
   },
   "integration": {
-    "source_commit": "9d01a96a0c2705b7cbaf25ed330e7221ff30bb43",
-    "source_files": 1932,
-    "started_utc": "2026-10-03T05:13:17.820970+00:00",
-    "finished_utc": "2026-10-03T05:57:23.021527+00:00",
-    "elapsed_ns": 2645189719791,
-    "source_unchanged": true,
-    "full_success_marker": true,
-    "classification": "exact invocation and unchanged named source; bounded checked gate domains",
-    "branch": "codex/slim-next",
-    "command": [
-      "sh",
-      "scripts/verify-0.9.sh"
-    ],
-    "repository_release_website": "passed together; source8b excludes RFC172 and subsequent metadata",
-    "validation_receipt_sha256": "40062efee6f389468278f17c0c479f08e4ba95ee70fa400f204a1d683715432e",
-    "full_log_sha256": "35fe246dd500b2c42a8210005839ef4a868c48fce2826a9fe589699087b2f7e0",
-    "reproducible_release_sha256": "e0c50abf8b3eac9ba24d1052a27f73536abf657820f37847a6df4e60654da185",
-    "timing_scope": "operator validation duration; no model active-time claim",
-    "rust_root_binary_observations": {
-      "target/debug/slim-govern": {
-        "bytes": 1606112,
-        "sha256": "e55f5effead201f5f6d8523fd4de2302a2207e7afacd9dd1ffa981cf664c87d7",
-        "private_checkout_literal_present": true,
-        "main_checkout_literal_present": false
-      },
-      "target/debug/slim-conform": {
-        "bytes": 1335632,
-        "sha256": "1c86320abfc90f3c7497bdf2993a2b104f39e879236951638ff284e3e52678e4",
-        "private_checkout_literal_present": true,
-        "main_checkout_literal_present": false
-      },
-      "target/release/slim-bench": {
-        "bytes": 810272,
-        "sha256": "1914e9912a88de1695aa7ebc4dbbbcba92a008280124152f44568edf57c79f3c",
-        "private_checkout_literal_present": true,
-        "main_checkout_literal_present": false
-      }
-    },
-    "historical_source7": "112f6ed invocation passed; copied Rust target binaries retained another checkout root, so complete isolated source binding is unknown. Original receipt/log identities remain in Git history and ignored local evidence.",
-    "current_combined_source": "Source9 with RFC172 and corrected provenance metadata awaits full acceptance."
+    "status": "pass",
+    "record": "development-operation-cost-current.json",
+    "code_commit": "710bc29c4dade7e2194ac11ea678c43f0d1ac461",
+    "validated_tree": "5801d7cf804606cd62a456d8477e89112a1bdf7c",
+    "source_commit": "aa8315ff291033c8a275cd61044158a785d7420e",
+    "scope": "Metadata only; later HEAD not full-verified."
   },
   "unknown": {
     "application_invariants": "not inferred from representable arbitrary account fields",
@@ -184,5 +150,54 @@
     "audit": "independent raw128/241 byte rehash, unbounded171 full-poststate recomputation and all46 statuses/streams/cleanup matched;55 accepted,59 overflow44,57 earlier",
     "metadata_binding": "Receipt retains tested pre-note RFC52a5c454. This current record and the subsequent implementation note do not replace that pin; source8 gate freshly binds actual current RFC bytes.",
     "platform": "observed darwin-arm64 with six fixed dSYM files; other-host acceptance unknown"
+  },
+  "checked_edit_workflow_observation": {
+    "classification": "bounded single maintainer replay; no participant/model dispatch",
+    "status": "pass",
+    "receipt_path": "build/overnight-source-context/checked-edit-native-001/receipt.json",
+    "receipt_sha256": "06f6be3b161b4313dbc4860ebc8e9e7840a71d47661ede1758111459a43c65bc",
+    "model_sha256": "7748b55dcd43e0011c136a5615eede31e6e6924ee4299aa6d61cdde432eafe43",
+    "freeze_sha256": "91bf2f4efe87c4feef73d21784ecfa1e2c098eec304eadcfae197d1585029373",
+    "materialization_receipt_sha256": "f50b7c98f097b98dfd57a8e45578e727a775349fcdc98a829a0d9be790f2658b",
+    "baseline_commit": "112f6ed4eb957dcd4909a0ab595b71d634ecc20d",
+    "validated_source_commit": "aa8315ff291033c8a275cd61044158a785d7420e",
+    "top_level_coordinator_commands": 3,
+    "coordinator_roles": [
+      "materialize",
+      "freeze",
+      "run"
+    ],
+    "count_scope": "reviews, provenance and commit excluded; not manual/human operations",
+    "automated_workflow_actions": 5,
+    "native_leaves": 12,
+    "human_manual_operations": null,
+    "human_active_time": null,
+    "model_benefit": null,
+    "source_body_bytes": {
+      "before": 23865,
+      "after": 24288,
+      "selected_after": 10791
+    },
+    "selection_names": [
+      "ledger",
+      "ledger_emit",
+      "ledger_state"
+    ],
+    "selected_modules": 3,
+    "current_modules": 9,
+    "matching_after_capture": {
+      "bytes": 26340,
+      "sha256": "77166d20096cedfab525db2d32c0b7d4305231c0770afd728d0ba771add153ff"
+    },
+    "selected_transport": {
+      "bytes": 10977,
+      "sha256": "db5104bd38d691dbd26bd72735b60b4254017439d05cacc0971d5e3911b3f26a"
+    },
+    "normal_check": "entire after-project; observed exit0 and empty stdout/stderr",
+    "inner_elapsed_ns": 7222748625,
+    "outer_task_wrapper_elapsed_ns": 7267961709,
+    "build_producer_elapsed_ns": 5035390667,
+    "timing_scope": "one-host overlapping intervals; no saved compiler work, human effort or model benefit inferred",
+    "audit": "root and independent peer raw/source/hold/tool/cleanup checks pass; all12 statuses0, complete matching producer receipts and exact selected bytes"
   }
 }

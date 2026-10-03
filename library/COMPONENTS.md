@@ -101,7 +101,7 @@ output retains the existing partial-write/trap contract.
 
 [RFC-0165](../design/rfcs/0165-checked-project-input-producer.md) adds the
 ordinary `project-input` producer and fixed measurement adapter. Pinned native
-and million-node/aggregate-source checks pass. Fresh source8b repository, release and website verification passes.
+and million-node/aggregate-source checks pass. Source9 code 710bc29 repository, release and website verification passes.
 Build it from a repository checkout:
 
 ```sh
@@ -152,7 +152,7 @@ alone does not. Cycles terminate by marking each node before enqueue.
 The [current record](../benchmarks/results/project-impact-current.json) names
 limits, diagnostics, native domains and measured candidate byte counts.
 Its corpus fixture is independently sealed synthetic data. Focused ordinary and
-sanitized checks pass. Fresh source8b repository, release and website verification passes.
+sanitized checks pass. Source9 code 710bc29 repository, release and website verification passes.
 Candidate scope is a context proxy, not saved compile time or agent effectiveness.
 
 [RFC-0170](../design/rfcs/0170-project-impact-context-export.md) binds the capture,
@@ -170,7 +170,7 @@ Module/path labels remain lossless hex bytes. Candidate records identify current
 modules selected by declared-import impact; they do not load those paths, prove
 context sufficiency or request incremental recompilation. An unchanged comparison
 selects zero modules. Initial declaration investigation uses the existing semantic
-context interface separately. Fixed data/workflow checks pass. Fresh source8b repository, release and website verification passes. The [current record](../benchmarks/results/project-impact-context-current.json)
+context interface separately. Fixed data/workflow checks pass. Source9 code 710bc29 repository, release and website verification passes. The [current record](../benchmarks/results/project-impact-context-current.json)
 separates candidate byte counts, collection cost and remaining unknowns.
 
 [RFC-0171](../design/rfcs/0171-ledger-transaction-overflow-preflight.md) makes the
@@ -198,14 +198,14 @@ python3 -B scripts/verify-ledger-transaction.py --current --output build/overnig
 Use a new output path; its separate FRESH.held sibling preserves complete expected
 data before native execution. Failed/partial directories remain evidence, without
 automatic retries. Focused and canonical current ordinary/sanitized checks pass;
-Fresh source8b full integration passes. The
+Source9 code 710bc29 full integration passes. The
 [current record](../benchmarks/results/ledger-transaction-current.json) separates
 that domain from full acceptance. Checked baseline declaration queries and the
 actual three-of-nine impact selection are workflow observations and byte proxies,
 not sufficient context, saved native time or agent-effectiveness evidence.
 
 [RFC-0166](../design/rfcs/0166-bounded-development-operation-cost.md) adds an
-ordinary operation-cost consumer. Pinned native checks pass. Fresh source8b full integration passes. Its fixed
+ordinary operation-cost consumer. Pinned native checks pass. Source9 code 710bc29 full integration passes. Its fixed
 adapter reads validated protocol-2 observations after writers stop:
 
 ```sh
@@ -269,13 +269,37 @@ module names in strictly increasing byte order; duplicate or empty queries are
 rejected before reading the capture. Selected names, paths and source bytes are
 preserved exactly. Captured paths are never opened.
 
+For a ledger-state edit, use complete stopped-writer projects and fresh outputs
+from a bootstrapped checkout. This workflow is outside the frozen 0.9 release
+surface; packaged-install support is not claimed.
+
 ```sh
-./slimc run project-input.project -- selfhost/slim.project > build/compiler-input.ns
-./slimc run library/source-context.project -- build/compiler-input.ns compiler context project > build/compiler-context.ns
+set -eu
+set -C
+: "${BEFORE:?before ledger.project}"
+: "${AFTER:?after ledger.project}"
+test -x build/toolchain/slimc
+mkdir -p build
+RUN=build/ledger-edit-FRESH
+test ! -e "$RUN" && test ! -L "$RUN"
+mkdir "$RUN"
+python3 scripts/project-impact-context.py "$BEFORE" "$AFTER" \
+  --output "$RUN/impact" --compiler build/toolchain/slimc --cc /usr/bin/cc
 ```
 
-This checkout workflow validates transport structure, not arbitrary SLIM programs.
-Source authority needs a matching checked producer result. Selection does not
-expand dependencies or establish sufficient context. The [current record](../benchmarks/results/source-context-current.json)
-separates finite ordinary/sanitized acceptance, byte scope and remaining unknowns.
-The tool is outside the frozen 0.9 release surface.
+Require the complete matching receipt and inspect `context.json`. Continue only
+if the RFC-0171 candidates are lexical `ledger`, `ledger_emit`, `ledger_state`:
+
+```sh
+CC=/usr/bin/cc ./slimc run library/source-context.project -- \
+  "$RUN/impact/phase-06.stdout.bin" ledger ledger_emit ledger_state > "$RUN/selected.ns"
+./slimc check "$AFTER"
+```
+
+Use that matching after-capture; JSON labels contain no source bodies. Selection
+establishes neither provider closure nor sufficient context. Final acceptance
+checks the entire after-project. Retain failures; use a new path for another
+invocation. The [current record](../benchmarks/results/source-context-current.json)
+retains finite acceptance and byte scope.
+
+Verification belongs to code `710bc29`. Later metadata HEAD is separate.

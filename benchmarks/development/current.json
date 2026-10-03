@@ -1,10 +1,289 @@
 {
-  "accepted_trials": 8,
-  "completed_pairs": 4,
-  "completed_trials": 9,
+  "accepted_trials": 13,
+  "completed_pairs": 6,
+  "completed_trials": 14,
   "configured_trials": 24,
-  "dispatch_attempts": 9,
+  "dispatch_attempts": 14,
   "dispatch_order": "preregistered serial order; fresh Sol6.1xhigh sessions",
+  "final_cohort_observation": {
+    "classification": "Final captured partial-cohort facts. elapsed_ns is coordinator dispatch-to-authoritative cutoff, including delivery/coordinator/queue delays; model-active and CPU time are unknown, with no causal speedup inference. Original nine-trial native reports retain their separate scope.",
+    "participant_count_basis": "Actual root-observed fresh actor creations at original trial indexes 1,2,3,4,5,6,7,8,10,11,12,13,14; dispatch nine created no actor. Request/operation counts and self-reports do not establish participant count.",
+    "summary_identity": {
+      "bytes": 5514,
+      "denominator": 24,
+      "freeze_sha256": "a3af569e5003c411e9cea35ec98f5c246d1d59645ef0e6542599ad5d1a4fbd2f",
+      "schema": 2,
+      "sha256": "91d779fbb07d466582690b8df3934fcb4dd6a8b7eaaf2f03ed8af6fc79047783"
+    },
+    "terminal_result_sha256": {
+      "byte-index-range-baseline": "88ee26494f2d829bfa0c2ccd3050d5e4119806a2f324da31639337b67c13ee72",
+      "byte-index-range-context": "ae7740d20b63d6b03fa092dbc7f06c0eb39ad891c4814744f2ba0003fa1078a8",
+      "catalog-ordinal-sum-baseline": "9d9d00f2bd0df049cb148b6a79fcf7af3a1432a445ea917cf777822096e94632",
+      "catalog-ordinal-sum-context": "d8449c9e370a997ecd94dc5fe1b7bd0ad0662fad908a1e26966b465249ca47df",
+      "decimal-exact-baseline": "c67e94c0689aed8bd5ecad6ebb6eb668354c5ea05591fdddb61990ac791a1cc0",
+      "decimal-exact-context": "cbe3dd107375c76659584a3e3ef0b03a5c0443ae567d9fc3f2bfc15ad1d08616",
+      "hex-atomic-codec-baseline": "cb0a385e52e71b09441bb54e248590f53b85dba5e7ae9a69e40cb98c3383cfd2",
+      "hex-atomic-codec-context": "b5f4caff09ba898947e268b6cf5257093b6d633007cbb32120a80d949995774a",
+      "identity-span-intersection-baseline": "85d8b67e217ae505d183fe809fced0dd3d564ea4596e4cfe5444308a4a9ea6be",
+      "identity-span-intersection-context": "f9d55bd0f4e9d1955db59f102ee4d39fb02d01e9b0692050ebdd68e9f081d273",
+      "netstring-batch-atomic-baseline": "e70a3b8dd9b59bce8201a5b8b3ac89cdb06d679d169dc09ce1e0a78f373b957c",
+      "netstring-batch-atomic-context": "986bb262ee5acf414ea14b6ba5e5c174107eb9303332e78c73bb171cfcc44738",
+      "text-budgeted-quote-baseline": "2939cd8a33dc631893c62e4c572f0f8eb29081e3980289ddc0322f0c9c501bfc",
+      "text-budgeted-quote-context": "f4e4840d99c07f533683bb929e496a3625ea643275e401c523442794963c431c"
+    },
+    "trials": [
+      {
+        "condition": "baseline",
+        "elapsed_ns": 263448895333,
+        "id": "text-budgeted-quote-baseline",
+        "operations": 13,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 13,
+        "task": "text-budgeted-quote"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 202646744625,
+        "id": "text-budgeted-quote-context",
+        "operations": 9,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 9,
+        "task": "text-budgeted-quote"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 201812896500,
+        "id": "identity-span-intersection-context",
+        "operations": 8,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 8,
+        "task": "identity-span-intersection"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 178102852417,
+        "id": "identity-span-intersection-baseline",
+        "operations": 5,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 5,
+        "task": "identity-span-intersection"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 125301420417,
+        "id": "decimal-exact-baseline",
+        "operations": 4,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 4,
+        "task": "decimal-exact"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 164662371334,
+        "id": "decimal-exact-context",
+        "operations": 4,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 4,
+        "task": "decimal-exact"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 191258832292,
+        "id": "netstring-batch-atomic-context",
+        "operations": 9,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 9,
+        "task": "netstring-batch-atomic"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 336507483500,
+        "id": "netstring-batch-atomic-baseline",
+        "operations": 6,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 6,
+        "task": "netstring-batch-atomic"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 215793366875,
+        "id": "byte-index-range-baseline",
+        "operations": 0,
+        "oracle_accepted": false,
+        "outcome": "interrupted",
+        "requests": 0,
+        "task": "byte-index-range"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 172418526250,
+        "id": "byte-index-range-context",
+        "operations": 7,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 7,
+        "task": "byte-index-range"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 222628825625,
+        "id": "hex-atomic-codec-context",
+        "operations": 12,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 12,
+        "task": "hex-atomic-codec"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 197674735000,
+        "id": "hex-atomic-codec-baseline",
+        "operations": 7,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 7,
+        "task": "hex-atomic-codec"
+      },
+      {
+        "condition": "baseline",
+        "elapsed_ns": 157041518500,
+        "id": "catalog-ordinal-sum-baseline",
+        "operations": 6,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 6,
+        "task": "catalog-ordinal-sum"
+      },
+      {
+        "condition": "context",
+        "elapsed_ns": 194731044291,
+        "id": "catalog-ordinal-sum-context",
+        "operations": 11,
+        "oracle_accepted": true,
+        "outcome": "accepted",
+        "requests": 11,
+        "task": "catalog-ordinal-sum"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "context",
+        "id": "workplan-critical-ties-context",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "workplan-critical-ties"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "baseline",
+        "id": "workplan-critical-ties-baseline",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "workplan-critical-ties"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "baseline",
+        "id": "http-header-window-baseline",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "http-header-window"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "context",
+        "id": "http-header-window-context",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "http-header-window"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "context",
+        "id": "ledger-overflow-transaction-context",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "ledger-overflow-transaction"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "baseline",
+        "id": "ledger-overflow-transaction-baseline",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "ledger-overflow-transaction"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "baseline",
+        "id": "format-call-modes-baseline",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "format-call-modes"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "context",
+        "id": "format-call-modes-context",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "format-call-modes"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "context",
+        "id": "effects-call-ceilings-context",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "effects-call-ceilings"
+      },
+      {
+        "acceptance_evidence": "unknown-no-terminal-evaluation",
+        "condition": "baseline",
+        "id": "effects-call-ceilings-baseline",
+        "observation": "prepared-undispatched",
+        "operations": 0,
+        "oracle_accepted": null,
+        "outcome": "not-run",
+        "requests": 0,
+        "task": "effects-call-ceilings"
+      }
+    ]
+  },
   "fixture_finished_utc": "2026-10-02T20:45:01.009088+00:00",
   "fixture_seconds": 117.971,
   "fixture_started_utc": "2026-10-02T20:43:02.931647+00:00",
@@ -17,9 +296,9 @@
   "manifest_sha256": "fa0018eb8f35a45dbc02682050731fc5f73d51ebec3a97a5e670d471d999435a",
   "model_calls": "unknown-not-observed",
   "model_tokens": "unknown-not-observed",
-  "participant_observation": "eight fresh participants independently accepted; ninth authoritative dispatch interrupted before participant creation by agent thread capacity; fifteen planned trials not yet dispatched; no general efficacy conclusion",
+  "participant_observation": "13 root-observed fresh Sol 6.1 extra-high/forknone participants independently accepted; dispatch nine interrupted before participant creation by agent thread capacity; ten planned trials remain undispatched; no general efficacy conclusion",
   "participant_start_utc": "2026-10-02T21:57:29.263757Z",
-  "participant_trials": 8,
+  "participant_trials": 13,
   "production_control": {
     "accepted_domain": "independent client inputs -3,0,7",
     "compiler_sha256": "48000c6a28bb09d36cc756568064ab29cc29316efb6aa243bc1b886a376b8bf3",
@@ -28,7 +307,7 @@
   "protocol": 2,
   "raw_receipt": "build/overnight-components/evaluator-parallel-transport/full-suite-1.json",
   "schema": 2,
-  "status": "frozen-verified-incomplete-cohort-fresh-agent-capacity-limited",
+  "status": "frozen-verified-partial-night-cohort",
   "tested_sources": {
     "benchmarks/development/evaluate.py": "0d7f318270c1d6270cf7eb5266c834783799c383ead9b145f386c337199de5f7",
     "benchmarks/development/test_evaluate.py": "38cc1fe520be54ef30bf3838a3487eea65d9352bd8f0082f162c651357ae6c1d"

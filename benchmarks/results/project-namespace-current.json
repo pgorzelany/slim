@@ -2,7 +2,7 @@
   "schema": 2,
   "observed_date": "2026-10-02",
   "contract": "RFC-0162",
-  "stage": "Scoped correctness and quiet costs retained; complete analysis label comparison and source2 repository/release/website verification passed. Later integration retains separate gates.",
+  "stage": "Old scoped/quiet facts retained; source9 passes, no remeasurement.",
   "production": {
     "production_source_sha256": "f08e6c788a25aeb8124dfb9008f0671ade45d66305714bc149db686aa925d875",
     "source_tree_sha256": "16302f3c5aa1b5b974cad12fc998be7595e917f297523aa90270c7f5e0c7d692",
@@ -157,9 +157,17 @@
     "started_utc": "2026-10-02T21:10:48.831864+00:00",
     "finished_utc": "2026-10-02T21:49:51.172856+00:00",
     "operator_elapsed_ns": 2342329313375,
-    "scope": "Complete source-bound repository, reproducible release and website verification; later RFC0165 work excluded. Operator elapsed, not model active time.",
+    "scope": "Source2 invocation passed; isolated Rust-root binding unknown/unreviewed; operator elapsed, not model activity.",
     "log": "build/overnight/integrated-verify-0.9-attempt2.log",
     "log_sha256": "677a4a2c69692e2d8d5b2de154906cc32b95aa1c81e2d3bce57be135cf43dfd9",
     "pushed_branch": "codex/slim-next"
+  },
+  "integration": {
+    "status": "pass",
+    "record": "development-operation-cost-current.json",
+    "code_commit": "710bc29c4dade7e2194ac11ea678c43f0d1ac461",
+    "validated_tree": "5801d7cf804606cd62a456d8477e89112a1bdf7c",
+    "source_commit": "aa8315ff291033c8a275cd61044158a785d7420e",
+    "scope": "Metadata only; later HEAD not full-verified."
   }
 }

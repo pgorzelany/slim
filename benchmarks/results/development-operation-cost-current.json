@@ -2,7 +2,7 @@
   "acceptance": {
     "corpus_and_application_budget": "passed: all14 corpus projects, exact synthetic report, retained component/mutation/work/resource checks; new emit/check1.569 <=unchanged2.00",
     "focused": "passed ordinary and address+undefined sanitized; source/tool identities unchanged",
-    "full_current_source_integration": "Fresh source8b repository/release/website invocation passed; see integration identities. Combined source9 pending.",
+    "full_current_source_integration": "Finite native domains/source9 pass; later metadata separate.",
     "permanent_integration": "alphabetical corpus member, unchanged RFC0030 2.00 application emit/check gate, exact synthetic corpus report, full focused verify.sh command"
   },
   "actual_cohort_observation": {
@@ -134,45 +134,52 @@
     "unreached allocation ordinals"
   ],
   "integration": {
-    "source_commit": "9d01a96a0c2705b7cbaf25ed330e7221ff30bb43",
-    "source_files": 1932,
-    "started_utc": "2026-10-03T05:13:17.820970+00:00",
-    "finished_utc": "2026-10-03T05:57:23.021527+00:00",
-    "elapsed_ns": 2645189719791,
+    "source_commit": "aa8315ff291033c8a275cd61044158a785d7420e",
+    "code_commit": "710bc29c4dade7e2194ac11ea678c43f0d1ac461",
+    "validated_tree": "5801d7cf804606cd62a456d8477e89112a1bdf7c",
+    "source_files": 1944,
+    "started_utc": "2026-10-03T06:10:34.018363+00:00",
+    "finished_utc": "2026-10-03T06:54:46.728121+00:00",
+    "elapsed_ns": 2652697737041,
     "source_unchanged": true,
     "full_success_marker": true,
-    "classification": "exact invocation and unchanged named source; bounded checked gate domains",
+    "classification": "exact named code invocation; bounded checked domains",
     "branch": "codex/slim-next",
     "command": [
       "sh",
       "scripts/verify-0.9.sh"
     ],
-    "repository_release_website": "passed together; source8b excludes RFC172 and subsequent metadata",
-    "validation_receipt_sha256": "40062efee6f389468278f17c0c479f08e4ba95ee70fa400f204a1d683715432e",
-    "full_log_sha256": "35fe246dd500b2c42a8210005839ef4a868c48fce2826a9fe589699087b2f7e0",
-    "reproducible_release_sha256": "e0c50abf8b3eac9ba24d1052a27f73536abf657820f37847a6df4e60654da185",
+    "repository_release_website": "passed including RFC172",
+    "validation_receipt_sha256": "de86eedf6e35b0e659df9f19dd3606d3db191b2a3add34ba179dc35468d84793",
+    "full_log_sha256": "20651c6c12fd17fe3e472eaeca66c4179009f02cd141eb49ec83d10a7f8d867b",
+    "reproducible_release_sha256": "1853ac0662b6dfaeb5da923facefcdfada9a745da9a9f675f92a41860c209c89",
     "timing_scope": "operator validation duration; no model active-time claim",
     "rust_root_binary_observations": {
       "target/debug/slim-govern": {
         "bytes": 1606112,
-        "sha256": "e55f5effead201f5f6d8523fd4de2302a2207e7afacd9dd1ffa981cf664c87d7",
+        "sha256": "6b0fec19d9dbabce76a6a893071c6df2cbc237e63714de33074f0c6bd6c28ab8",
         "private_checkout_literal_present": true,
         "main_checkout_literal_present": false
       },
       "target/debug/slim-conform": {
         "bytes": 1335632,
-        "sha256": "1c86320abfc90f3c7497bdf2993a2b104f39e879236951638ff284e3e52678e4",
+        "sha256": "dff9598a1bec280fdf61a00d6c58c61f18b2e8391397169eddc429e133df340c",
         "private_checkout_literal_present": true,
         "main_checkout_literal_present": false
       },
       "target/release/slim-bench": {
         "bytes": 810272,
-        "sha256": "1914e9912a88de1695aa7ebc4dbbbcba92a008280124152f44568edf57c79f3c",
+        "sha256": "3cd5d09cb147a58b3cc275b285cf8565c186651b2be7842b84b18a02b2c7ee79",
         "private_checkout_literal_present": true,
         "main_checkout_literal_present": false
       }
     },
-    "historical_source7": "112f6ed invocation passed; copied Rust target binaries retained another checkout root, so complete isolated source binding is unknown. Original receipt/log identities remain in Git history and ignored local evidence.",
-    "current_combined_source": "Source9 with RFC172 and corrected provenance metadata awaits full acceptance."
+    "validated_rfc_sha256": {
+      "design/rfcs/0170-project-impact-context-export.md": "8566f92a5b26e4ea5da10f8e944e9a5ceb6e92dec5081616ce3b432b64e175f0",
+      "design/rfcs/0171-ledger-transaction-overflow-preflight.md": "e7d3336298687a23bfba6b738674d06ddd3fbe1e41d0ad26b957dc17aaa00cb1",
+      "design/rfcs/0172-bounded-source-record-selection.md": "710c517571815e9e56605cd2b4ee938f47d35923207df44a14ad2efe0bb848e7"
+    },
+    "metadata_followup": "Metadata only; later HEAD not full-verified.",
+    "historical_source7": "112f6ed invocation passed; copied Rust target binaries retained another checkout root, so complete isolated source binding is unknown. Original receipt/log identities remain in Git history and ignored local evidence."
   }
 }

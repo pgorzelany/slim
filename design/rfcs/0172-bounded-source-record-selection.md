@@ -233,8 +233,8 @@ Independently audited focused and canonical fresh-current campaigns passed all 2
 leaves across 64 literal cards, 4 geometries and 3 actual production captures,
 including ordinary/sanitized selection, bounded allocation faults and group
 cleanup. Complete held data and original artifact/source/control/tool endpoints
-matched; canonical formatting also passed. Full source9 verification remains
-pending; source8b excludes this application. The
+matched; canonical formatting also passed. Source9 code 710bc29 passed repository, release and website gates.
+Later metadata is separate from that code tree. The
 [current record](../../benchmarks/results/source-context-current.json) distinguishes
 both tested RFC identities from this later note. Context sufficiency, model
 benefit and physical memory bounds remain unknown.

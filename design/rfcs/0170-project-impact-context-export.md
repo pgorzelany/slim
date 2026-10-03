@@ -534,9 +534,8 @@ actual seven-role collections take6.028..6.569s on this host. The current record
 [project-impact-context-current.json](../../benchmarks/results/project-impact-context-current.json).
 Its identities preserve the original campaign scope; no candidate-byte result is
 an agent effectiveness or saved compilation claim. `scripts/verify.sh` runs the
-fixed current-source campaign. Fresh source8b passes repository, release and website verification with Rust tools
-built in that exact checkout. The current record retains its source identities and
-the historical copied-cache provenance caveat. Combined source9 remains pending.
+fixed current-source campaign. Source9 code 710bc29 passed repository, release and website gates.
+Later metadata is separate from that code tree.
 
 ## Removal and supersession
 

@@ -230,8 +230,8 @@ freeze `f9bec8d7e1218aae27bb0bf10b62363137df0201209e3507cc9ec773e48361cd`
 and receipt `a2439f29f5c330076e7cfe5cf0bef38d663d5c2b035b1ee5edecb7cb754b5c61`.
 That receipt pins the pre-note RFC bytes52a5c454 and canonical oracle65cb1e08/
 verifier6a255fb5; later current campaigns bind actual RFC metadata afresh.
-Fresh source8b passes repository, release and website integration with verification
-tools built in the captured checkout; combined source9 closure remains pending.
+Source9 code 710bc29 passed repository, release and website gates.
+Later metadata is separate from that code tree.
 
 ## Removal and supersession
 
