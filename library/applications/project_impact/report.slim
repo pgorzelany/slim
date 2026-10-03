@@ -1,0 +1,239 @@
+module project_impact_report
+
+fn width_from(value: I64, count: I64) -> I64 effects[partial]:
+  if value >= 10:
+    recur(value / 10, count + 1)
+  else:
+    count
+
+fn width(value: I64) -> I64 effects[partial]:
+  width_from(value, 1)
+
+fn frame_size(length: I64) -> I64 effects[partial]:
+  (length + width(length)) + 2
+
+fn add(total: I64, amount: I64, limit: I64) -> I64 effects[partial]:
+  if (total < 0) || ((amount < 0) || (total > limit)):
+    -1
+  else:
+    if amount > (limit - total):
+      -1
+    else:
+      total + amount
+
+fn record_size(catalog: catalog_model.Catalog, ordinal: I64) -> I64 effects[partial]:
+  if ordinal < 0:
+    0
+  else:
+    let record: catalog_model.Record = vec.get(catalog.records, ordinal)
+    (frame_size(record.key_end - record.key_start) + frame_size(width(record.weight))) + frame_size(record.value_end - record.value_start)
+
+fn kind(change: catalog_reconcile.Change) -> Bytes:
+  if change.before < 0:
+    "added"
+  else:
+    if change.after < 0:
+      "removed"
+    else:
+      "modified"
+
+fn size_changes(before: catalog_model.Catalog, after: catalog_model.Catalog, changes: Vec[catalog_reconcile.Change], cursor: I64, total: I64, limit: I64) -> I64 effects[partial]:
+  if cursor == vec.len(changes):
+    total
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let key_length: I64 = if change.before >= 0:
+      let record: catalog_model.Record = vec.get(before.records, change.before)
+      record.key_end - record.key_start
+    else:
+      let record: catalog_model.Record = vec.get(after.records, change.after)
+      record.key_end - record.key_start
+    let amount: I64 = ((frame_size(bytes.len(kind(change))) + frame_size(key_length)) + frame_size(record_size(before, change.before))) + frame_size(record_size(after, change.after))
+    recur(before, after, changes, cursor + 1, add(total, amount, limit), limit)
+
+fn size_graph(before: workplan_model.Graph, after: workplan_model.Graph, changes: Vec[catalog_reconcile.Change], cursor: I64, total: I64, limit: I64) -> I64 effects[partial]:
+  if cursor == vec.len(changes):
+    total
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let first: workplan_model.Task = vec.get(before.tasks, change.before)
+    let second: workplan_model.Task = vec.get(after.tasks, change.after)
+    let amount: I64 = (frame_size(first.name_end - first.name_start) + frame_size(first.dependencies_end - first.dependencies_start)) + frame_size(second.dependencies_end - second.dependencies_start)
+    recur(before, after, changes, cursor + 1, add(total, amount, limit), limit)
+
+fn count(marks: Vec[I64], cursor: I64, total: I64) -> I64 effects[partial]:
+  if cursor == vec.len(marks):
+    total
+  else:
+    let next: I64 = if vec.get(marks, cursor) == 1:
+      total + 1
+    else:
+      total
+    recur(marks, cursor + 1, next)
+
+fn size_marks(graph: workplan_model.Graph, marks: Vec[I64], cursor: I64, total: I64, limit: I64) -> I64 effects[partial]:
+  if cursor == vec.len(graph.index.entries):
+    total
+  else:
+    let entry: std_byte_index.Entry = vec.get(graph.index.entries, cursor)
+    let amount: I64 = if vec.get(marks, entry.ordinal) == 1:
+      frame_size(entry.end - entry.start)
+    else:
+      0
+    recur(graph, marks, cursor + 1, add(total, amount, limit), limit)
+
+fn size_candidates(snapshot: project_impact_model.Snapshot, marks: Vec[I64], all: Bool, cursor: I64, total: I64, limit: I64) -> I64 effects[partial]:
+  if cursor == vec.len(snapshot.graph.index.entries):
+    total
+  else:
+    let entry: std_byte_index.Entry = vec.get(snapshot.graph.index.entries, cursor)
+    let amount: I64 = if all || (vec.get(marks, entry.ordinal) == 1):
+      let ordinal: I64 = std_byte_index.find(snapshot.catalog.index, snapshot.graph.index.source, entry.start, entry.end)
+      frame_size(record_size(snapshot.catalog, ordinal))
+    else:
+      0
+    recur(snapshot, marks, all, cursor + 1, add(total, amount, limit), limit)
+
+fn measure(before: project_impact_model.Snapshot, after: project_impact_model.Snapshot, changes: Vec[catalog_reconcile.Change], graph_changes: Vec[catalog_reconcile.Change], old: project_impact_model.Closure, new: project_impact_model.Closure, manifest: Bool, limit: I64) -> I64 effects[partial]:
+  let header: I64 = ((frame_size(21) + frame_size(1)) + frame_size(record_size(before.catalog, before.reserved))) + frame_size(record_size(after.catalog, after.reserved))
+  let modules: I64 = size_changes(before.catalog, after.catalog, changes, 0, add(header, frame_size(width(vec.len(changes))), limit), limit)
+  let graph: I64 = size_graph(before.graph, after.graph, graph_changes, 0, add(modules, frame_size(width(vec.len(graph_changes))), limit), limit)
+  let old_roots: I64 = size_marks(before.graph, old.roots, 0, add(graph, frame_size(width(count(old.roots, 0, 0))), limit), limit)
+  let new_roots: I64 = size_marks(after.graph, new.roots, 0, add(old_roots, frame_size(width(count(new.roots, 0, 0))), limit), limit)
+  let old_closure: I64 = size_marks(before.graph, old.reached, 0, add(new_roots, frame_size(width(count(old.reached, 0, 0))), limit), limit)
+  let new_closure: I64 = size_marks(after.graph, new.reached, 0, add(old_closure, frame_size(width(count(new.reached, 0, 0))), limit), limit)
+  let candidates: I64 = if manifest:
+    vec.len(after.graph.tasks)
+  else:
+    count(new.reached, 0, 0)
+  size_candidates(after, new.reached, manifest, 0, add(new_closure, frame_size(width(candidates)), limit), limit)
+
+fn append(value: Bytes, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  std_netstring.append(value, 0, bytes.len(value), 1048576, @output)
+
+fn number(value: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let digits: Vec[U8] = vec.new()
+  std_text.append_i64(@digits, value)
+  let text: Bytes = bytes.freeze(^digits)
+  append(text, @output)
+
+fn nested(catalog: catalog_model.Catalog, ordinal: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if ordinal < 0:
+    append("", @output)
+  else:
+    let record: Vec[U8] = vec.new()
+    let complete: Bool = catalog_emit.append_record(catalog, ordinal, @record)
+    if complete:
+      let data: Bytes = bytes.freeze(^record)
+      append(data, @output)
+    else:
+      false
+
+fn append_changes(before: catalog_model.Catalog, after: catalog_model.Catalog, changes: Vec[catalog_reconcile.Change], cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(changes):
+    true
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let type_ok: Bool = append(kind(change), @output)
+    let key_ok: Bool = if change.before >= 0:
+      let record: catalog_model.Record = vec.get(before.records, change.before)
+      std_netstring.append(before.index.source, record.key_start, record.key_end, 1048576, @output)
+    else:
+      let record: catalog_model.Record = vec.get(after.records, change.after)
+      std_netstring.append(after.index.source, record.key_start, record.key_end, 1048576, @output)
+    let first: Bool = nested(before, change.before, @output)
+    let second: Bool = nested(after, change.after, @output)
+    if type_ok && (key_ok && (first && second)):
+      recur(before, after, changes, cursor + 1, @output)
+    else:
+      false
+
+fn append_graph(before: workplan_model.Graph, after: workplan_model.Graph, changes: Vec[catalog_reconcile.Change], cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(changes):
+    true
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let first: workplan_model.Task = vec.get(before.tasks, change.before)
+    let second: workplan_model.Task = vec.get(after.tasks, change.after)
+    let key_ok: Bool = std_netstring.append(before.index.source, first.name_start, first.name_end, 1048576, @output)
+    let old_ok: Bool = std_netstring.append(before.index.source, first.dependencies_start, first.dependencies_end, 1048576, @output)
+    let new_ok: Bool = std_netstring.append(after.index.source, second.dependencies_start, second.dependencies_end, 1048576, @output)
+    if key_ok && (old_ok && new_ok):
+      recur(before, after, changes, cursor + 1, @output)
+    else:
+      false
+
+fn append_marks(graph: workplan_model.Graph, marks: Vec[I64], cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(graph.index.entries):
+    true
+  else:
+    let entry: std_byte_index.Entry = vec.get(graph.index.entries, cursor)
+    let complete: Bool = if vec.get(marks, entry.ordinal) == 1:
+      std_netstring.append(graph.index.source, entry.start, entry.end, 1048576, @output)
+    else:
+      true
+    if complete:
+      recur(graph, marks, cursor + 1, @output)
+    else:
+      false
+
+fn marks(graph: workplan_model.Graph, values: Vec[I64], output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let count_ok: Bool = number(count(values, 0, 0), @output)
+  let names_ok: Bool = append_marks(graph, values, 0, @output)
+  count_ok && names_ok
+
+fn append_candidates(snapshot: project_impact_model.Snapshot, values: Vec[I64], all: Bool, cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(snapshot.graph.index.entries):
+    true
+  else:
+    let entry: std_byte_index.Entry = vec.get(snapshot.graph.index.entries, cursor)
+    let complete: Bool = if all || (vec.get(values, entry.ordinal) == 1):
+      let ordinal: I64 = std_byte_index.find(snapshot.catalog.index, snapshot.graph.index.source, entry.start, entry.end)
+      nested(snapshot.catalog, ordinal, @output)
+    else:
+      true
+    if complete:
+      recur(snapshot, values, all, cursor + 1, @output)
+    else:
+      false
+
+fn emit(before: project_impact_model.Snapshot, after: project_impact_model.Snapshot, changes: Vec[catalog_reconcile.Change], graph_changes: Vec[catalog_reconcile.Change], old: project_impact_model.Closure, new: project_impact_model.Closure, manifest: Bool, limit: I64) -> project_impact_model.Prepared effects[alloc, partial]:
+  let amount: I64 = measure(before, after, changes, graph_changes, old, new, manifest, limit)
+  if amount < 0:
+    project_impact_model.Prepared::Invalid(42)
+  else:
+    let output: Vec[U8] = vec.new()
+    let tag_ok: Bool = append("slim-project-impact-1", @output)
+    let manifest_flag: Bytes = if manifest:
+      "1"
+    else:
+      "0"
+    let manifest_ok: Bool = append(manifest_flag, @output)
+    let before_ok: Bool = nested(before.catalog, before.reserved, @output)
+    let after_ok: Bool = nested(after.catalog, after.reserved, @output)
+    let count_ok: Bool = number(vec.len(changes), @output)
+    let changes_ok: Bool = append_changes(before.catalog, after.catalog, changes, 0, @output)
+    let graph_count_ok: Bool = number(vec.len(graph_changes), @output)
+    let graph_ok: Bool = append_graph(before.graph, after.graph, graph_changes, 0, @output)
+    let old_roots_ok: Bool = marks(before.graph, old.roots, @output)
+    let new_roots_ok: Bool = marks(after.graph, new.roots, @output)
+    let old_closure_ok: Bool = marks(before.graph, old.reached, @output)
+    let new_closure_ok: Bool = marks(after.graph, new.reached, @output)
+    let candidate_count: I64 = if manifest:
+      vec.len(after.graph.tasks)
+    else:
+      count(new.reached, 0, 0)
+    let candidates_count_ok: Bool = number(candidate_count, @output)
+    let candidates_ok: Bool = append_candidates(after, new.reached, manifest, 0, @output)
+    let first: Bool = tag_ok && (manifest_ok && (before_ok && (after_ok && (count_ok && changes_ok))))
+    let second: Bool = graph_count_ok && (graph_ok && (old_roots_ok && (new_roots_ok && (old_closure_ok && new_closure_ok))))
+    if first && (second && (candidates_count_ok && (candidates_ok && (vec.len(output) == amount)))):
+      project_impact_model.Prepared::Ready(project_impact_model.Result(report: bytes.freeze(^output), before_work: old.work, after_work: new.work))
+    else:
+      project_impact_model.Prepared::Invalid(43)
+
+fn finish(before: project_impact_model.Snapshot, after: project_impact_model.Snapshot, changes: Vec[catalog_reconcile.Change], graph_changes: Vec[catalog_reconcile.Change], old: project_impact_model.Closure, new: project_impact_model.Closure, manifest: Bool, limit: I64) -> project_impact_model.Prepared effects[alloc, partial]:
+  if (limit < 0) || (limit > 8388608):
+    project_impact_model.Prepared::Invalid(42)
+  else:
+    emit(before, after, changes, graph_changes, old, new, manifest, limit)

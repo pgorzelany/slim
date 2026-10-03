@@ -14,6 +14,11 @@ python3 -B scripts/verify-manifest-validation.py --current \
   --compiler build/toolchain/slimc --generated-c build/toolchain/slimc.c \
   --output "$manifest_dir/current"
 rm -rf "$manifest_dir"
+mkdir -p "$PWD/build/overnight-project-impact"
+impact_dir=$(mktemp -d "$PWD/build/overnight-project-impact/check.XXXXXX")
+python3 -B scripts/verify-project-impact.py --compiler build/toolchain/slimc \
+  --output "$impact_dir/current"
+rm -rf "$impact_dir"
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test

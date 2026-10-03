@@ -132,5 +132,16 @@
     "kernel boot continuity",
     "unique exact work-exhaustion visit position; tested error24 position belongs to original parsed span",
     "unreached allocation ordinals"
-  ]
+  ],
+  "integration": {
+    "classification": "exact for named immutable source scopes",
+    "checkpoint": "e506464054fb658137469c92b09a6b2182b3b68c",
+    "branch": "codex/slim-next",
+    "source_commit": "58d9d7d4e94647e1add700189fa7ad1a1e755edd",
+    "repository_release_source_commit": "8c4a41e112c39ba23b9eecd54de2df0087c71104",
+    "repository_release": "passed required repository gates, reproducible archive and clean install",
+    "website": "two website JS classification/inventory repairs; full build and18 tests passed;1717 release-selected files unchanged",
+    "original_full_invocation": "failed at website classification; retained separately",
+    "authority": "composite exact-scope verification; original complete invocation did not pass"
+  }
 }

@@ -31,6 +31,7 @@ application-emit-check-ratio	http	2.00	ratio	RFC-0030
 application-emit-check-ratio	ledger	2.00	ratio	RFC-0030
 application-emit-check-ratio	lz4	2.00	ratio	RFC-0030
 application-emit-check-ratio	ndjson	2.00	ratio	RFC-0030
+application-emit-check-ratio	project-impact	2.00	ratio	RFC-0030
 application-emit-check-ratio	raster	2.00	ratio	RFC-0030
 application-emit-check-ratio	sat	2.00	ratio	RFC-0030
 application-emit-check-ratio	source-gen	2.00	ratio	RFC-0030

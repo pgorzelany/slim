@@ -1,0 +1,690 @@
+{
+  "schema": 1,
+  "contract": "RFC-0168",
+  "observed_date": "2026-10-03",
+  "status": "Focused canonical ordinary/sanitized production acceptance passed; corpus/budget/permanent verifier wired; full current-source repository/release/website verification pending.",
+  "scope": "Exact metadata reconciliation and declared-import reverse closure for admitted data; checked source acceptance remains separate production producer/checker authority.",
+  "sources": {
+    "design/rfcs/0168-declared-import-project-impact.md": {
+      "bytes": 15662,
+      "sha256": "4bae1e3ef0851948be8c737e224998abe35f69f5a6bbf0a4b93e5ae65ceb4e96"
+    },
+    "library/applications/catalog/catalog.slim": {
+      "bytes": 3693,
+      "sha256": "8d2505d3533d44fe19e251ed01ce75bbc7ad54dbe7d681d215a29a238a91bfff"
+    },
+    "library/applications/catalog/diff_emit.slim": {
+      "bytes": 2390,
+      "sha256": "f6cb218bddcc77cf9ac0de26d6b9e965f95ea9f965927e6af2d836e4f2321c96"
+    },
+    "library/applications/catalog/emit.slim": {
+      "bytes": 1878,
+      "sha256": "a03bb61b8570b277e392a03c85d30a2a1e77a84c2c4e42bf44d29592e8f05cc0"
+    },
+    "library/applications/catalog/main.slim": {
+      "bytes": 2777,
+      "sha256": "dc533873f3f5d36bfbcb52f69091615f5ea18c493bd66358856d0a4dabd657e0"
+    },
+    "library/applications/catalog/model.slim": {
+      "bytes": 373,
+      "sha256": "3e38668650b0429d9d7969bcddff97ec1ecfc30eaaecb52eaaa932dc87b10e94"
+    },
+    "library/applications/catalog/reconcile.slim": {
+      "bytes": 4429,
+      "sha256": "f57c68bbec1c5537a831b55fa8d673f3aaef632d80a803f3f9e0a951e09c68e2"
+    },
+    "library/applications/project_impact/closure.slim": {
+      "bytes": 2574,
+      "sha256": "1510c71433c5e8cde3ba9c91fecfd76cbd44b294b9b3bdd99feef9f98b6217f3"
+    },
+    "library/applications/project_impact/data.slim": {
+      "bytes": 5196,
+      "sha256": "ca50ec56aa9ccaf8565d6ad78915a937df40e3ff4b73643d346e4f17ac30a61b"
+    },
+    "library/applications/project_impact/input.slim": {
+      "bytes": 4381,
+      "sha256": "eab0a8991e9246c219d330838ce6bbf7ba015616c30165c568cb46027cea28cf"
+    },
+    "library/applications/project_impact/main.slim": {
+      "bytes": 947,
+      "sha256": "c4f18eb249104398d0bb911a4cc05b9317b859c6d423e672f96fe7c5a2644710"
+    },
+    "library/applications/project_impact/model.slim": {
+      "bytes": 530,
+      "sha256": "81d892db92051a16b2b095063aa7af10e4e068f30864f46b8294f18f6afc2bcb"
+    },
+    "library/applications/project_impact/prepare.slim": {
+      "bytes": 5237,
+      "sha256": "d10d6e1030b2a0edc4aa860f0ab743380f0eaeb9347220293ae43f1b2c02688b"
+    },
+    "library/applications/project_impact/report.slim": {
+      "bytes": 12425,
+      "sha256": "254b390500b7586cf57fc82ffec6ebf2832bdb241172bae0901839de5ded8869"
+    },
+    "library/applications/project_input/main.slim": {
+      "bytes": 1632,
+      "sha256": "6a56e5f2d11efa9f234ef42a9244f839ca33b365682167fbfbe5efe81a92b18e"
+    },
+    "library/applications/workplan/load.slim": {
+      "bytes": 6792,
+      "sha256": "7890ba3865d7ba86122e1e2c4b05eedb8812d402cb088ee8f2b7bc931ff92697"
+    },
+    "library/applications/workplan/model.slim": {
+      "bytes": 706,
+      "sha256": "5e9b0cd5ede7098818fa90ea10886e20193ddd35862dcc12713985078137ab45"
+    },
+    "library/catalog.project": {
+      "bytes": 1770,
+      "sha256": "28951ae70aaa93248fb5770ef3c8d0ec8649bd7f45456527136209c86195b16c"
+    },
+    "library/components/project_input_data.slim": {
+      "bytes": 8091,
+      "sha256": "4d0e3f4db3e8bd142d8bc1a10f2f27fe9593ee8ecbdc8e28fa809feb25a25ff6"
+    },
+    "library/components/project_input_emit.slim": {
+      "bytes": 4845,
+      "sha256": "4146cac1c8b16dca06eb0ca699a3df9db473daf6cdfed270566f729fe94b8098"
+    },
+    "library/components/project_input_limits.slim": {
+      "bytes": 1873,
+      "sha256": "4202a719846b1e0a57aebc7c68ddab31775f731f1760e050baaa4ff7033815bb"
+    },
+    "library/components/project_input_model.slim": {
+      "bytes": 399,
+      "sha256": "101fd0e7cfb321e1b1c6364fcef3aa5961e266daf41ade2c2c36a9dc4565a7e0"
+    },
+    "library/components/records.slim": {
+      "bytes": 2372,
+      "sha256": "4222ced6f4a4d26ee306544b2feba22464c965a649538b88c564d7a176325c08"
+    },
+    "library/experimental/ascii.slim": {
+      "bytes": 1155,
+      "sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5"
+    },
+    "library/experimental/byte_index.slim": {
+      "bytes": 6607,
+      "sha256": "fcf814eda17d2bb5b4e0475f1f99ab8a9e4b63937655694d8d55958457651e80"
+    },
+    "library/experimental/bytes.slim": {
+      "bytes": 3596,
+      "sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb"
+    },
+    "library/experimental/decimal.slim": {
+      "bytes": 2364,
+      "sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5"
+    },
+    "library/experimental/netstring.slim": {
+      "bytes": 2346,
+      "sha256": "acb1d1134577d1e8091a90330e33c3099ffa9d2f894d3aade4dbff83cf9db6b8"
+    },
+    "library/experimental/text.slim": {
+      "bytes": 900,
+      "sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f"
+    },
+    "library/project-impact.project": {
+      "bytes": 3170,
+      "sha256": "86a2c62e3e631b35b7b38b23d6f69c994fea38b70e0ab5cbc1dc7d0fec9f5b68"
+    },
+    "project-input.project": {
+      "bytes": 7938,
+      "sha256": "b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f"
+    },
+    "runtime/slim_rt.c": {
+      "bytes": 20616,
+      "sha256": "2287a7376782a1802a3b3d4a1f263e2183689ace24f747f83b2779a7316b345b"
+    },
+    "runtime/slim_rt.h": {
+      "bytes": 7485,
+      "sha256": "dfe051bd025db9b8d2847ba6facf61dfdd2ebfbdd5fcc39b825bfb8729bcf99f"
+    },
+    "scripts/project-impact-oracle.py": {
+      "bytes": 46424,
+      "sha256": "91cecce2601e0052ec28a32292b8c89fab533b6c2a6c4c85e0097f744ede4997"
+    },
+    "scripts/project-input-inventory.py": {
+      "bytes": 11706,
+      "sha256": "004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00"
+    },
+    "scripts/verify-project-impact.py": {
+      "bytes": 45650,
+      "sha256": "6e412c54726f23392003dfd82c20c159743a58ea6506c00274577f59dfb1b1be"
+    },
+    "selfhost/analysis.slim": {
+      "bytes": 18871,
+      "sha256": "20ebb786fcdac8fcf8c62b6221e6e5475cbd5f886a7436343e168bd28ba932af"
+    },
+    "selfhost/cache.slim": {
+      "bytes": 9643,
+      "sha256": "2611c0bb0a35dcd2f2c26d93c14128602478c72b94051f1a41e5169f2cdfd895"
+    },
+    "selfhost/check.slim": {
+      "bytes": 56531,
+      "sha256": "3e518c907852a1bf7cf9a6ccc5ce4b748da1f485b5d4ee954aa980d71ab0f489"
+    },
+    "selfhost/codegen.slim": {
+      "bytes": 108403,
+      "sha256": "2438334805c83645e6219a669739c792e78373870d3bd65b639a565fdbb1ab5e"
+    },
+    "selfhost/context.slim": {
+      "bytes": 41822,
+      "sha256": "0df6afa47b746ba62a829b28c9ad75391cd9257930012c987863d047b063d815"
+    },
+    "selfhost/control.slim": {
+      "bytes": 5043,
+      "sha256": "7ec0d388147b9bef0de684c84a849014a1b901aca019edfbf5935288555f9e3e"
+    },
+    "selfhost/driver.slim": {
+      "bytes": 98,
+      "sha256": "19969233cc6bf0aba385ca9fa33295e3a43f3e83be3eef68bab57759934dff4d"
+    },
+    "selfhost/edit.slim": {
+      "bytes": 7446,
+      "sha256": "b72fa5131f622852ab932253b963c78d93f08780f76256876a701ee75504bba7"
+    },
+    "selfhost/effects.slim": {
+      "bytes": 3325,
+      "sha256": "72e791bbe3e4c92c9ad3bced1dbfa13047ee4521a3042432aefdaa8f8a24ba0f"
+    },
+    "selfhost/equivalence.slim": {
+      "bytes": 25947,
+      "sha256": "66c1318ac61b992b0c2a5465dcabae507e4a0c0c9401a5dbb09709fba97bb6f1"
+    },
+    "selfhost/flow.slim": {
+      "bytes": 17250,
+      "sha256": "1eed825632354f27252ba730fa1b36e9a05117c101b25ec3bd1f821bdfe995ad"
+    },
+    "selfhost/format.slim": {
+      "bytes": 29075,
+      "sha256": "2443ada8ecc772e7b82d6f07b794b725883548d3084c3db28ebae2e8bb661330"
+    },
+    "selfhost/fragments.slim": {
+      "bytes": 34675,
+      "sha256": "6e1c5c6953730b5939350cc3245d79d32f9fed38653352a76e2eac5e920d1cb9"
+    },
+    "selfhost/identity.slim": {
+      "bytes": 2603,
+      "sha256": "b10a11fd875151e6e20ddd6b2dc2ea35da1fc917913138e53095503704b7f500"
+    },
+    "selfhost/ir.slim": {
+      "bytes": 144,
+      "sha256": "679fad5f439d37164c9de223566f1bcc9c07b38b875fbd8eb4dd2dde906fd465"
+    },
+    "selfhost/memory.slim": {
+      "bytes": 19720,
+      "sha256": "239fd3e532a9a82a6e224621c9b5930c7b9ba8b4d71ab75ef611f9d2dc8366ad"
+    },
+    "selfhost/nativebuild.slim": {
+      "bytes": 1676,
+      "sha256": "2503ecbc831f5117ba8e233c215e554aa3bfd710d87937ee4de98a59cdf1c936"
+    },
+    "selfhost/nativecache.slim": {
+      "bytes": 10750,
+      "sha256": "237178d7a6f86db7dc1dee69a1dc49f9e67fdac831b7e3db7161d2fcdd824aa6"
+    },
+    "selfhost/ownership.slim": {
+      "bytes": 5143,
+      "sha256": "df3aa938361c3d6e6e91c9e97121e19348a0634268bfeffeb7bd495569c82846"
+    },
+    "selfhost/parallel.slim": {
+      "bytes": 40521,
+      "sha256": "48bf3c6c1c4e0b0b668450627720394dcc6e0459a8c35e520d75b391c02fa856"
+    },
+    "selfhost/parallelcache.slim": {
+      "bytes": 16576,
+      "sha256": "96f0e942d981c1b5c7dba6d25aaa24a3d550da9d0a90789f2751b0adb5ae2e06"
+    },
+    "selfhost/project.slim": {
+      "bytes": 105349,
+      "sha256": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f"
+    },
+    "selfhost/proof.slim": {
+      "bytes": 4639,
+      "sha256": "81dc74167154ce663f49b4ce925d7291cf9bc25ffa83d11087cb564c8d78bee9"
+    },
+    "selfhost/quality.slim": {
+      "bytes": 21130,
+      "sha256": "8baf11be75e4c2eacbf176c57a31f72d627b85888fc745ac2bbbf20ff0383286"
+    },
+    "selfhost/query.slim": {
+      "bytes": 26819,
+      "sha256": "80beb4d6b72322504c3fa04a583421b9c28635f60b059c4e77b6a6c83b731c47"
+    },
+    "selfhost/ranges.slim": {
+      "bytes": 74446,
+      "sha256": "5dcbc19087a8c628dee77cc76a7e915814941007ea21c98e52ca34fc69fba705"
+    },
+    "selfhost/reduce.slim": {
+      "bytes": 20592,
+      "sha256": "4396e9de32ca4e78817ccf968ae1660a29356d37ada31ce40dbe2b3e8fe25ae0"
+    },
+    "selfhost/retained.slim": {
+      "bytes": 139655,
+      "sha256": "7e75fc14afd192060667168d8f04c37e0b251759d1ddbd11fb5f06294679de3e"
+    },
+    "selfhost/scheduler.slim": {
+      "bytes": 7412,
+      "sha256": "65de980440f6d50c191c2cd516b2775935503973ff3de009793dfa057907a347"
+    },
+    "selfhost/session.slim": {
+      "bytes": 23589,
+      "sha256": "c35e903d52254112d3a66f3ee953b946371b48eb59fe5067fe106c469745808a"
+    },
+    "selfhost/slim.project": {
+      "bytes": 8909,
+      "sha256": "8f75c79f783c1942e1b1faa30867d34097ed86ee7b999cdf5153b58502dce9fe"
+    },
+    "selfhost/slimc.slim": {
+      "bytes": 16287,
+      "sha256": "d87b8c59aaa55c17edc51d66327593bf7a7f0e69bdad22eed58fd4d39c38de87"
+    },
+    "selfhost/syntax.slim": {
+      "bytes": 124669,
+      "sha256": "dcc1e3d2f05647b2c6b0bbcda3873e0facec36e6ee169d30a3fd8ba22a43e832"
+    },
+    "selfhost/text.slim": {
+      "bytes": 2033,
+      "sha256": "cf10092cb33f80902e120b917a20825e2d382234119addcefe5c236352f619db"
+    },
+    "selfhost/typing.slim": {
+      "bytes": 142845,
+      "sha256": "f5f1078ea85c414d37d619f15195e397a5807979bbb0a628a28c1d7e90053842"
+    },
+    "selfhost/validate.slim": {
+      "bytes": 8651,
+      "sha256": "5e1707730216ea9d6eeb7f723121c504325bf3f9dae3a6aa1cf6585e651c7814"
+    },
+    "tests/fixtures/project_impact_probe.slim": {
+      "bytes": 4361,
+      "sha256": "447f0e8236c31b653f529b68e7593c711e8ee949c7ff6db929e0343f4620bf27"
+    }
+  },
+  "held_model_sha256": "58fc028e92e25779dc29938c063f958949a5e03a0c14261a1d03003fd7ed06ad",
+  "held_freeze_sha256": "5572693fb4136de6376aec07b811c00476e8c4db341a364528274cf82f070f4c",
+  "receipt": "build/overnight-project-impact/native-003/receipt.json",
+  "receipt_sha256": "11025a5af53decedd84902f6a66efb6a3f98014b567e3400b49534682cc8df00",
+  "control_compiler": {
+    "bytes": 628368,
+    "path": "/Users/mlody/Projects/SLIM/build/toolchain/slimc",
+    "sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a"
+  },
+  "producer_source": {
+    "authority": "producer compiled from pinned current SLIM source; control compiler separately pinned",
+    "project.slim": {
+      "bytes": 105349,
+      "sha256": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f"
+    }
+  },
+  "finite_domains": {
+    "four_file_cases": 124,
+    "positive_work_cases": 60,
+    "variants": [
+      "ordinary",
+      "address+undefined sanitizer, leak detection unavailable"
+    ],
+    "native_gates": 433,
+    "geometric_rows": 10,
+    "argument_cases_per_variant": 3,
+    "helper_limits_per_variant": 8,
+    "fifo_precedence_per_variant": 6,
+    "counter_flags_per_variant": 12,
+    "actual_real_source_checker_observations": 4,
+    "actual_real_producer_observations": 8,
+    "actual_real_impact_workflows": 4
+  },
+  "local_work": {
+    "classification": "bounded with explicit1B arithmetic domain",
+    "whole_domain": "Inherited record/graph loading O(B+(N+E)log(N+1)); new closure O(N+E); not whole compiler scaling.",
+    "geometry": [
+      {
+        "exponent": 1.0085674755211864,
+        "family": "chain",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "ordinary"
+      },
+      {
+        "exponent": 1.0085674755211864,
+        "family": "fanout",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "ordinary"
+      },
+      {
+        "exponent": 1.0105039622721284,
+        "family": "cycle",
+        "limit": 1.15,
+        "measurements": [
+          [
+            33,
+            160
+          ],
+          [
+            65,
+            320
+          ],
+          [
+            129,
+            640
+          ],
+          [
+            257,
+            1280
+          ],
+          [
+            513,
+            2560
+          ]
+        ],
+        "status": "pass",
+        "variant": "ordinary"
+      },
+      {
+        "exponent": 0.9941169057405591,
+        "family": "shared",
+        "limit": 1.15,
+        "measurements": [
+          [
+            137,
+            576
+          ],
+          [
+            409,
+            1696
+          ],
+          [
+            953,
+            3936
+          ],
+          [
+            2041,
+            8416
+          ],
+          [
+            4217,
+            17376
+          ]
+        ],
+        "status": "pass",
+        "variant": "ordinary"
+      },
+      {
+        "exponent": 1.0085674755211864,
+        "family": "prefix64",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "ordinary"
+      },
+      {
+        "exponent": 1.0085674755211864,
+        "family": "chain",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "sanitized"
+      },
+      {
+        "exponent": 1.0085674755211864,
+        "family": "fanout",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "sanitized"
+      },
+      {
+        "exponent": 1.0105039622721284,
+        "family": "cycle",
+        "limit": 1.15,
+        "measurements": [
+          [
+            33,
+            160
+          ],
+          [
+            65,
+            320
+          ],
+          [
+            129,
+            640
+          ],
+          [
+            257,
+            1280
+          ],
+          [
+            513,
+            2560
+          ]
+        ],
+        "status": "pass",
+        "variant": "sanitized"
+      },
+      {
+        "exponent": 0.9941169057405591,
+        "family": "shared",
+        "limit": 1.15,
+        "measurements": [
+          [
+            137,
+            576
+          ],
+          [
+            409,
+            1696
+          ],
+          [
+            953,
+            3936
+          ],
+          [
+            2041,
+            8416
+          ],
+          [
+            4217,
+            17376
+          ]
+        ],
+        "status": "pass",
+        "variant": "sanitized"
+      },
+      {
+        "exponent": 1.0085674755211864,
+        "family": "prefix64",
+        "limit": 1.15,
+        "measurements": [
+          [
+            32,
+            156
+          ],
+          [
+            64,
+            316
+          ],
+          [
+            128,
+            636
+          ],
+          [
+            256,
+            1276
+          ],
+          [
+            512,
+            2556
+          ]
+        ],
+        "status": "pass",
+        "variant": "sanitized"
+      }
+    ]
+  },
+  "scope_proxies": [
+    {
+      "all_current_module_bytes": 1173379,
+      "basis": "held affected report facts and current catalog byte weights, matched to frozen literal serialization",
+      "classification": "exact",
+      "current_module_count": 35,
+      "limit": "deterministic declared-import scope proxy; not saved compile time or agent effectiveness",
+      "project": "compiler",
+      "selected_current_catalog_weight_bytes": 287285,
+      "selected_current_modules": 11
+    },
+    {
+      "all_current_module_bytes": 34881,
+      "basis": "held affected report facts and current catalog byte weights, matched to frozen literal serialization",
+      "classification": "exact",
+      "current_module_count": 13,
+      "limit": "deterministic declared-import scope proxy; not saved compile time or agent effectiveness",
+      "project": "catalog",
+      "selected_current_catalog_weight_bytes": 9597,
+      "selected_current_modules": 3
+    }
+  ],
+  "timing": {
+    "operator_campaign_elapsed_ns": 35492277750,
+    "classification": "observed operator validation duration; not comparative native performance or model active time"
+  },
+  "pins_unchanged": true,
+  "allocation_and_ownership": "Generated C source review confirms root-region ownership and allocation-failure71 propagation/shutdown; no additional sparse OOM sweep or physical resource proof is claimed.",
+  "preserved_attempts": [
+    {
+      "scope": "native001 probe harness non-entry main rejected",
+      "status": "failed",
+      "receipt": "build/overnight-project-impact/native-001/receipt.json"
+    },
+    {
+      "scope": "original format001 before canonical grouping",
+      "status": "failed",
+      "receipt": "build/overnight-project-impact/format-001/receipt.json"
+    },
+    {
+      "scope": "native002 before formatter grouping",
+      "status": "pass",
+      "receipt_sha256": "a052e380f0c034f5083f36ed307c6cebc26f44f08b9c600e35fa5c83a0904778"
+    },
+    {
+      "scope": "canonical format0028exact modules",
+      "status": "pass",
+      "receipt_sha256": "b591f1ec55360402e9db8b6c2adc64cdc4b6430a17e9f79a416f577d02385b75"
+    }
+  ],
+  "unknown": {
+    "filesystem_capture": "stopped writers and byte pins do not prove atomic capture or exclude ABA",
+    "general_efficacy": "finite exact workflow only; no productivity or universal performance claim",
+    "parsed_node_boundary": "no measured 1000000-node crossing",
+    "physical_resources": "logical caps do not prove RSS, libc allocation, host I/O or CPU bounds",
+    "semantic_recheck": "declared graph candidates confer no incremental compiler authority",
+    "toolchain": "direct executable pins do not attest SDK/transitive toolchain identity"
+  },
+  "permanent_gate": "python3 -B scripts/verify-project-impact.py --compiler build/toolchain/slimc --output build/overnight-project-impact/FRESH/current; scripts/verify.sh invokes the fixed bounded campaign.",
+  "recorded_utc": "2026-10-03T01:50:54.469073+00:00"
+}

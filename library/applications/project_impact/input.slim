@@ -1,0 +1,82 @@
+module project_impact_input
+
+fn after_graph(before: project_impact_model.Snapshot, catalog: ^catalog_model.Catalog, path: Bytes, limit: I64) -> project_impact_model.Attempt effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: workplan_model.Loaded = workplan_load.load(bytes.freeze(^input), 4095, 65536)
+    match loaded:
+      Invalid(code, position):
+        project_impact_model.Attempt::Invalid(code, "after-graph", position, 65)
+      Ready(graph):
+        let association: project_impact_model.Association = project_impact_data.associate(catalog, graph)
+        if association.valid:
+          let reserved: I64 = project_impact_data.reserved(catalog)
+          let after: project_impact_model.Snapshot = project_impact_model.Snapshot(catalog: catalog, graph: graph, reserved: reserved)
+          let prepared: project_impact_model.Prepared = project_impact_prepare.prepare(before, after, limit)
+          match prepared:
+            Invalid(code):
+              project_impact_model.Attempt::Invalid(code, "impact", 0, 65)
+            Ready(result):
+              project_impact_model.Attempt::Ready(result)
+        else:
+          let stage: Bytes = if association.source == 0:
+            "after-catalog"
+          else:
+            "after-graph"
+          project_impact_model.Attempt::Invalid(41, stage, association.position, 65)
+  else:
+    project_impact_model.Attempt::Invalid(1, "after-graph", 0, 66)
+
+fn after_catalog(before: project_impact_model.Snapshot, path: Bytes, graph_path: Bytes, limit: I64) -> project_impact_model.Attempt effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        project_impact_model.Attempt::Invalid(code, "after-catalog", position, 65)
+      Ready(catalog):
+        let shape: catalog_model.Status = project_impact_data.shape(catalog)
+        if shape.valid:
+          after_graph(before, ^catalog, graph_path, limit)
+        else:
+          project_impact_model.Attempt::Invalid(shape.code, "after-catalog", shape.position, 65)
+  else:
+    project_impact_model.Attempt::Invalid(1, "after-catalog", 0, 66)
+
+fn before_graph(catalog: ^catalog_model.Catalog, path: Bytes, after_catalog_path: Bytes, after_graph_path: Bytes, limit: I64) -> project_impact_model.Attempt effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: workplan_model.Loaded = workplan_load.load(bytes.freeze(^input), 4095, 65536)
+    match loaded:
+      Invalid(code, position):
+        project_impact_model.Attempt::Invalid(code, "before-graph", position, 65)
+      Ready(graph):
+        let association: project_impact_model.Association = project_impact_data.associate(catalog, graph)
+        if association.valid:
+          let reserved: I64 = project_impact_data.reserved(catalog)
+          let before: project_impact_model.Snapshot = project_impact_model.Snapshot(catalog: catalog, graph: graph, reserved: reserved)
+          after_catalog(before, after_catalog_path, after_graph_path, limit)
+        else:
+          let stage: Bytes = if association.source == 0:
+            "before-catalog"
+          else:
+            "before-graph"
+          project_impact_model.Attempt::Invalid(41, stage, association.position, 65)
+  else:
+    project_impact_model.Attempt::Invalid(1, "before-graph", 0, 66)
+
+fn prepare(catalog_path: Bytes, graph_path: Bytes, after_catalog_path: Bytes, after_graph_path: Bytes, limit: I64) -> project_impact_model.Attempt effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(catalog_path, @input):
+    let loaded: catalog_model.Loaded = catalog_data.load(bytes.freeze(^input), 4096)
+    match loaded:
+      Invalid(code, position):
+        project_impact_model.Attempt::Invalid(code, "before-catalog", position, 65)
+      Ready(catalog):
+        let shape: catalog_model.Status = project_impact_data.shape(catalog)
+        if shape.valid:
+          before_graph(^catalog, graph_path, after_catalog_path, after_graph_path, limit)
+        else:
+          project_impact_model.Attempt::Invalid(shape.code, "before-catalog", shape.position, 65)
+  else:
+    project_impact_model.Attempt::Invalid(1, "before-catalog", 0, 66)

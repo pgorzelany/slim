@@ -32,6 +32,15 @@ cmp "$slim_corpus_work/standard-library.first" "$slim_corpus_work/standard-libra
 cmp "$slim_corpus_work/development-operation-cost.out" \
     "$slim_corpus_root/library/applications/development_operation_cost/fixtures/observations.expected"
 
+"$slim_corpus_work/project-impact" \
+    "$slim_corpus_root/library/applications/project_impact/fixtures/before-catalog.ns" \
+    "$slim_corpus_root/library/applications/project_impact/fixtures/before-graph.ns" \
+    "$slim_corpus_root/library/applications/project_impact/fixtures/after-catalog.ns" \
+    "$slim_corpus_root/library/applications/project_impact/fixtures/after-graph.ns" \
+    > "$slim_corpus_work/project-impact.out"
+cmp "$slim_corpus_work/project-impact.out" \
+    "$slim_corpus_root/library/applications/project_impact/fixtures/impact.expected"
+
 "$slim_corpus_work/development-summary" \
     "$slim_corpus_root/library/applications/development_summary/fixtures/observations.ns" \
     > "$slim_corpus_work/development-summary.out"

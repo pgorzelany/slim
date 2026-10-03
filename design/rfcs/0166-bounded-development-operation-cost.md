@@ -1,7 +1,7 @@
 # RFC-0166: Bounded ordinary development operation cost
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, under delegated overnight ordinary-library direction
@@ -547,9 +547,12 @@ dependency or performance-budget relaxation is authorized.
 
 ## Implementation
 
-Pending. Create ordinary components/application/project, fixed adapter and
-independent focused verifier after acceptance. This RFC draft itself executes
-no compiler, native validation, benchmark or frozen evaluation.
+The ordinary components, application, fixed adapter and independent verifier
+are implemented. The [current record](../../benchmarks/results/development-operation-cost-current.json)
+names finite native, sanitizer, allocation, work and adapter acceptance. Checkpoint
+`e506464` passes required repository gates, reproducible release/clean install
+and website tests through exact-scope composite verification. The frozen cohort
+remains incomplete; no general development-effectiveness claim is established.
 
 ## Removal and supersession
 

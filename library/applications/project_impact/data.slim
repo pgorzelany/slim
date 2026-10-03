@@ -1,0 +1,122 @@
+module project_impact_data
+
+fn reserved(catalog: catalog_model.Catalog) -> I64 effects[partial]:
+  std_byte_index.find(catalog.index, "@project", 0, 8)
+
+fn reserved_key(source: Bytes, start: I64, end: I64) -> Bool effects[partial]:
+  if (end - start) == 8:
+    std_bytes.range_equal(source, start, "@project", 0, 8)
+  else:
+    false
+
+fn name_bytes(source: Bytes, cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor == end:
+    true
+  else:
+    let byte: U8 = bytes.get(source, cursor)
+    let code: I64 = u8.to_i64(byte)
+    if std_ascii.is_alphanumeric(byte) || ((code == 95) || ((code == 45) || (code == 46))):
+      recur(source, cursor + 1, end)
+    else:
+      false
+
+fn digest_bytes(source: Bytes, cursor: I64, end: I64) -> Bool effects[partial]:
+  if cursor == end:
+    true
+  else:
+    let code: I64 = u8.to_i64(bytes.get(source, cursor))
+    if ((code >= 48) && (code <= 57)) || ((code >= 97) && (code <= 102)):
+      recur(source, cursor + 1, end)
+    else:
+      false
+
+fn row_shape(catalog: catalog_model.Catalog, record: catalog_model.Record) -> Bool effects[partial]:
+  if (record.weight < 0) || (record.weight > 1048576):
+    false
+  else:
+    let special: Bool = reserved_key(catalog.index.source, record.key_start, record.key_end)
+    let key_valid: Bool = if special:
+      true
+    else:
+      if ((record.key_end - record.key_start) < 1) || ((record.key_end - record.key_start) > 64):
+        false
+      else:
+        name_bytes(catalog.index.source, record.key_start, record.key_end)
+    if key_valid:
+      let separator: I64 = std_bytes.find_byte(catalog.index.source, i64.to_u8(0), record.value_start, record.value_end)
+      if separator < 0:
+        false
+      else:
+        let length: I64 = separator - record.value_start
+        if (length < 1) || ((length > 256) || (((record.value_end - separator) - 1) == 0)):
+          false
+        else:
+          if ((record.value_end - separator) - 1) == 64:
+            let path_valid: Bool = if special:
+              if length == 12:
+                std_bytes.range_equal(catalog.index.source, record.value_start, "slim.project", 0, 12)
+              else:
+                false
+            else:
+              true
+            if path_valid:
+              digest_bytes(catalog.index.source, separator + 1, record.value_end)
+            else:
+              false
+          else:
+            false
+    else:
+      false
+
+fn rows(catalog: catalog_model.Catalog, cursor: I64, total: I64) -> catalog_model.Status effects[partial]:
+  if cursor == vec.len(catalog.index.entries):
+    if reserved(catalog) < 0:
+      catalog_model.Status(valid: false, code: 40, position: 0)
+    else:
+      catalog_model.Status(valid: true, code: 0, position: 0)
+  else:
+    let entry: std_byte_index.Entry = vec.get(catalog.index.entries, cursor)
+    let record: catalog_model.Record = vec.get(catalog.records, entry.ordinal)
+    if row_shape(catalog, record):
+      if record.weight > (4194304 - total):
+        catalog_model.Status(valid: false, code: 40, position: record.key_start)
+      else:
+        recur(catalog, cursor + 1, total + record.weight)
+    else:
+      catalog_model.Status(valid: false, code: 40, position: record.key_start)
+
+fn shape(catalog: catalog_model.Catalog) -> catalog_model.Status effects[partial]:
+  rows(catalog, 0, 0)
+
+fn associate_from(catalog: catalog_model.Catalog, left: I64, graph: workplan_model.Graph, right: I64) -> project_impact_model.Association effects[partial]:
+  if left < vec.len(catalog.index.entries):
+    let first: std_byte_index.Entry = vec.get(catalog.index.entries, left)
+    if reserved_key(catalog.index.source, first.start, first.end):
+      recur(catalog, left + 1, graph, right)
+    else:
+      if right == vec.len(graph.index.entries):
+        project_impact_model.Association(valid: false, source: 0, position: first.start)
+      else:
+        let second: std_byte_index.Entry = vec.get(graph.index.entries, right)
+        let order: I64 = std_byte_index.compare(catalog.index.source, first.start, first.end, graph.index.source, second.start, second.end)
+        if order < 0:
+          project_impact_model.Association(valid: false, source: 0, position: first.start)
+        else:
+          if order > 0:
+            project_impact_model.Association(valid: false, source: 1, position: second.start)
+          else:
+            let record: catalog_model.Record = vec.get(catalog.records, first.ordinal)
+            let task: workplan_model.Task = vec.get(graph.tasks, second.ordinal)
+            if record.weight == task.cost:
+              recur(catalog, left + 1, graph, right + 1)
+            else:
+              project_impact_model.Association(valid: false, source: 1, position: second.start)
+  else:
+    if right == vec.len(graph.index.entries):
+      project_impact_model.Association(valid: true, source: 0, position: 0)
+    else:
+      let second: std_byte_index.Entry = vec.get(graph.index.entries, right)
+      project_impact_model.Association(valid: false, source: 1, position: second.start)
+
+fn associate(catalog: catalog_model.Catalog, graph: workplan_model.Graph) -> project_impact_model.Association effects[partial]:
+  associate_from(catalog, 0, graph, 0)

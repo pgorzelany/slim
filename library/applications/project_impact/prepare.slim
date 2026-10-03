@@ -1,0 +1,100 @@
+module project_impact_prepare
+
+fn modules(before: catalog_model.Catalog, after: catalog_model.Catalog, changes: Vec[catalog_reconcile.Change], cursor: I64, manifest: Bool, output: @Vec[catalog_reconcile.Change]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(changes):
+    manifest
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let special: Bool = if change.before >= 0:
+      let record: catalog_model.Record = vec.get(before.records, change.before)
+      project_impact_data.reserved_key(before.index.source, record.key_start, record.key_end)
+    else:
+      let record: catalog_model.Record = vec.get(after.records, change.after)
+      project_impact_data.reserved_key(after.index.source, record.key_start, record.key_end)
+    if special:
+      recur(before, after, changes, cursor + 1, true, @output)
+    else:
+      vec.push(@output, change)
+      recur(before, after, changes, cursor + 1, manifest, @output)
+
+fn dependency_equal(before: workplan_model.Graph, first: workplan_model.Task, after: workplan_model.Graph, second: workplan_model.Task) -> Bool effects[partial]:
+  let length: I64 = first.dependencies_end - first.dependencies_start
+  if length == (second.dependencies_end - second.dependencies_start):
+    std_bytes.range_equal(before.index.source, first.dependencies_start, after.index.source, second.dependencies_start, length)
+  else:
+    false
+
+fn graphs(before: workplan_model.Graph, left: I64, after: workplan_model.Graph, right: I64, output: @Vec[catalog_reconcile.Change]) -> Void effects[alloc, partial]:
+  if (left == vec.len(before.index.entries)) || (right == vec.len(after.index.entries)):
+    void
+  else:
+    let first: std_byte_index.Entry = vec.get(before.index.entries, left)
+    let second: std_byte_index.Entry = vec.get(after.index.entries, right)
+    let order: I64 = std_byte_index.compare(before.index.source, first.start, first.end, after.index.source, second.start, second.end)
+    if order < 0:
+      recur(before, left + 1, after, right, @output)
+    else:
+      if order > 0:
+        recur(before, left, after, right + 1, @output)
+      else:
+        let old: workplan_model.Task = vec.get(before.tasks, first.ordinal)
+        let new: workplan_model.Task = vec.get(after.tasks, second.ordinal)
+        if dependency_equal(before, old, after, new):
+          void
+        else:
+          vec.push(@output, catalog_reconcile.Change(before: first.ordinal, after: second.ordinal))
+        recur(before, left + 1, after, right + 1, @output)
+
+fn module_roots(snapshot: project_impact_model.Snapshot, changes: Vec[catalog_reconcile.Change], cursor: I64, old: Bool, roots: @Vec[I64]) -> Void effects[partial]:
+  if cursor == vec.len(changes):
+    void
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let ordinal: I64 = if old:
+      change.before
+    else:
+      change.after
+    if ordinal >= 0:
+      let record: catalog_model.Record = vec.get(snapshot.catalog.records, ordinal)
+      let task: I64 = std_byte_index.find(snapshot.graph.index, snapshot.catalog.index.source, record.key_start, record.key_end)
+      vec.set(@roots, task, 1)
+    else:
+      void
+    recur(snapshot, changes, cursor + 1, old, @roots)
+
+fn graph_roots(changes: Vec[catalog_reconcile.Change], cursor: I64, old: Bool, roots: @Vec[I64]) -> Void effects[partial]:
+  if cursor == vec.len(changes):
+    void
+  else:
+    let change: catalog_reconcile.Change = vec.get(changes, cursor)
+    let ordinal: I64 = if old:
+      change.before
+    else:
+      change.after
+    vec.set(@roots, ordinal, 1)
+    recur(changes, cursor + 1, old, @roots)
+
+fn prepare(before: project_impact_model.Snapshot, after: project_impact_model.Snapshot, output_limit: I64) -> project_impact_model.Prepared effects[alloc, partial]:
+  if (output_limit < 0) || (output_limit > 8388608):
+    project_impact_model.Prepared::Invalid(42)
+  else:
+    let reconciled: catalog_reconcile.Prepared = catalog_reconcile.prepare(before.catalog, after.catalog, 8192, 8388608)
+    match reconciled:
+      Invalid(code, position):
+        project_impact_model.Prepared::Invalid(43)
+      Ready(diff):
+        let changes: Vec[catalog_reconcile.Change] = vec.new()
+        let manifest: Bool = modules(before.catalog, after.catalog, diff.changes, 0, false, @changes)
+        let graph_changes: Vec[catalog_reconcile.Change] = vec.new()
+        graphs(before.graph, 0, after.graph, 0, @graph_changes)
+        let old_roots: Vec[I64] = vec.new()
+        let new_roots: Vec[I64] = vec.new()
+        project_impact_closure.zeros(vec.len(before.graph.tasks), 0, @old_roots)
+        project_impact_closure.zeros(vec.len(after.graph.tasks), 0, @new_roots)
+        module_roots(before, changes, 0, true, @old_roots)
+        module_roots(after, changes, 0, false, @new_roots)
+        graph_roots(graph_changes, 0, true, @old_roots)
+        graph_roots(graph_changes, 0, false, @new_roots)
+        let old: project_impact_model.Closure = project_impact_closure.close(before.graph, ^old_roots)
+        let new: project_impact_model.Closure = project_impact_closure.close(after.graph, ^new_roots)
+        project_impact_report.finish(before, after, changes, graph_changes, old, new, manifest, output_limit)

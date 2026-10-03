@@ -1,0 +1,116 @@
+module project_impact_probe
+
+fn error(code: I64, stage: Bytes, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " in ")
+  std_text.append_bytes(@output, stage)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn boolean(value: Bool, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if value:
+    std_text.append_bytes(@output, "1")
+  else:
+    std_text.append_bytes(@output, "0")
+
+fn decoded_operand(source: Bytes) -> Bool effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, 0, bytes.len(source))
+  match parsed:
+    Invalid(position):
+      false
+    Overflow(position):
+      false
+    Value(value, next):
+      if next == bytes.len(source):
+        project_impact_closure.admitted(value)
+      else:
+        false
+
+fn counters() -> I64 effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  boolean(project_impact_closure.admitted(-1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.admitted(999999999), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.admitted(1000000000), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.admitted(1000000001), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(decoded_operand("18446744073709551615"), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(decoded_operand("true"), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.addition_fits(999999999, 1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.addition_fits(1000000000, 1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.addition_fits(999999999, 1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.addition_fits(1000000000, 1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.product_fits(1000000000, 1), @output)
+  std_text.append_bytes(@output, " ")
+  boolean(project_impact_closure.product_fits(1000000000, 2), @output)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+  0
+
+fn work(value: project_impact_model.Work, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_i64(@output, value.queue_pushes)
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, value.queue_pops)
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, value.edge_visits)
+  std_text.append_bytes(@output, " ")
+  std_text.append_i64(@output, value.link_headers)
+
+fn run(args: Vec[Bytes], first: I64, limit: I64, measured: Bool) -> I64 effects[alloc, io, partial]:
+  let prepared: project_impact_model.Attempt = project_impact_input.prepare(vec.get(args, first), vec.get(args, first + 1), vec.get(args, first + 2), vec.get(args, first + 3), limit)
+  match prepared:
+    Invalid(code, stage, position, status):
+      error(code, stage, position)
+      status
+    Ready(result):
+      if measured:
+        let output: Vec[U8] = vec.new()
+        work(result.before_work, @output)
+        std_text.append_bytes(@output, " ")
+        work(result.after_work, @output)
+        std_text.append_bytes(@output, "\n")
+        io.print_bytes(bytes.freeze(^output))
+      else:
+        io.print_bytes(result.report)
+      0
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    if std_bytes.equal(vec.get(args, 1), "counters"):
+      counters()
+    else:
+      64
+  else:
+    if vec.len(args) == 6:
+      if std_bytes.equal(vec.get(args, 1), "work"):
+        run(args, 2, 8388608, true)
+      else:
+        64
+    else:
+      if vec.len(args) == 7:
+        let text: Bytes = vec.get(args, 2)
+        let parsed: std_decimal.Parsed = std_decimal.parse_i64(text, 0, bytes.len(text))
+        match parsed:
+          Invalid(position):
+            64
+          Overflow(position):
+            64
+          Value(limit, next):
+            if std_bytes.equal(vec.get(args, 1), "limit") && (next == bytes.len(text)):
+              run(args, 3, limit, false)
+            else:
+              64
+      else:
+        64

@@ -100,8 +100,9 @@ data, not a model experiment. Source admission follows ordinary file read, and
 output retains the existing partial-write/trap contract.
 
 [RFC-0165](../design/rfcs/0165-checked-project-input-producer.md) adds the
-ordinary `project-input` producer and fixed measurement adapter. Focused ordinary/sanitized acceptance passes; current-source integration remains
-pending. Build it from a repository checkout:
+ordinary `project-input` producer and fixed measurement adapter. Native and
+repository/release/website gates pass at `e506464`; actual million-node and
+aggregate-source crossings remain pending. Build it from a repository checkout:
 
 ```sh
 ./slimc build project-input.project -o build/project-input-tool
@@ -136,9 +137,27 @@ can remain partial after host write failure.
 This experimental checkout tool remains outside the frozen 0.9 source-release
 manifest while RFC-0111 is proposed.
 
+[RFC-0168](../design/rfcs/0168-declared-import-project-impact.md) composes captured
+catalogs and graphs into a declared-import impact report:
+
+```sh
+./slimc run library/project-impact.project -- BEFORE-CATALOG.ns BEFORE-GRAPH.ns AFTER-CATALOG.ns AFTER-GRAPH.ns
+```
+
+The framed report preserves exact catalog and dependency-list changes, old/new
+roots and reverse closures, and current candidate records in lexical order.
+A changed manifest conservatively selects every current module. Matching checked
+producer invocations establish source acceptance separately; supplied metadata
+alone does not. Cycles terminate by marking each node before enqueue.
+The [current record](../benchmarks/results/project-impact-current.json) names
+limits, diagnostics, native domains and measured candidate byte counts.
+Its corpus fixture is independently sealed synthetic data. Focused ordinary and
+sanitized checks pass; full current-source integration remains pending.
+Candidate scope is a context proxy, not saved compile time or agent effectiveness.
+
 [RFC-0166](../design/rfcs/0166-bounded-development-operation-cost.md) adds an
-ordinary operation-cost consumer. Focused ordinary/sanitized verification passes;
-full current-source integration remains pending. Its fixed
+ordinary operation-cost consumer. Native and repository/release/website gates
+pass at `e506464`. Its fixed
 adapter reads validated protocol-2 observations after writers stop:
 
 ```sh

@@ -1,7 +1,7 @@
 {
   "schema": 1,
   "contract": "RFC-0165",
-  "status": "Independent finite ordinary/sanitized checker, producer and real consumer acceptance passed; permanent gate wired; whole current-source repository/release/website verification pending.",
+  "status": "Independent finite ordinary/sanitized checker, producer and real consumer acceptance passed; permanent gate wired; repository/release/website verification passed at e506464.",
   "observed_date": "2026-10-02",
   "compiler_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
   "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
@@ -82,14 +82,14 @@
     "RSS and end-to-end CPU bounds",
     "live filesystem atomicity/ABA",
     "skipped allocation ordinals",
-    "flattened canonical parsed node entries1000000 boundary; full4095/65536 on subsequently adopted production source",
+    "actual flattened canonical parsed node entries1000000 and aggregate4MiB crossings",
     "successful complete transport at 8 MiB and receipt at 4 MiB (unreachable with other admissions)",
     "SDK/transitive native toolchain identities",
     "model calls/tokens or development success"
   ],
   "full_project_boundary": {
     "classification": "exact within fixed three-fixture domain",
-    "status": "passed with adopted path-only production source and matching successful producer/control compiler; full current-source integration pending",
+    "status": "passed with adopted path-only production source and matching successful producer/control compiler; current-source integration passed at e506464",
     "receipt": "build/overnight-project-input-boundaries/native-002/receipt.json",
     "receipt_sha256": "5eeaa0a6bcfc950c8d76bd3247e870a0cd471a3e15f4d31f949da52e462d9878",
     "tested_verifier_sha256": "12a91ec103c48a0858711af2ceb026e40b8f0b20e8e2cc9edfe297c8f5706ddd",
@@ -126,5 +126,16 @@
     "canonical_parsed_node_count": null,
     "node_boundary": "unknown",
     "consumer_acceptance": "unknown for this large fixture"
+  },
+  "integration": {
+    "classification": "exact for named immutable source scopes",
+    "checkpoint": "e506464054fb658137469c92b09a6b2182b3b68c",
+    "branch": "codex/slim-next",
+    "source_commit": "58d9d7d4e94647e1add700189fa7ad1a1e755edd",
+    "repository_release_source_commit": "8c4a41e112c39ba23b9eecd54de2df0087c71104",
+    "repository_release": "passed required repository gates, reproducible archive and clean install",
+    "website": "two website JS classification/inventory repairs; full build and18 tests passed;1717 release-selected files unchanged",
+    "original_full_invocation": "failed at website classification; retained separately",
+    "authority": "composite exact-scope verification; original complete invocation did not pass"
   }
 }

@@ -72,11 +72,12 @@ and compare ordinary feedback with optional semantic context. Name measured
 benefits and costs per domain; retain unknown results and infrastructure failures.
 Reliable native session execution is part of acceptance, not an optional cleanup.
 
-Checkpoint `90de8e9`, pushed to `codex/slim-next`, passes repository, release and
-website gates for the implemented project/component/evaluator slices. Later
-[project-input composition and operation-cost reporting](library/COMPONENTS.md)
-under accepted RFC-0165/0166 pass focused ordinary/sanitized checks; current-source
-integration remains pending. The
+Checkpoint `e506464`, pushed to `codex/slim-next`, passes repository,
+reproducible release/clean install and website gates. It adds checked project
+capture, operation-cost reporting and private duplicate-path validation.
+The full invocation's website classification failure and successful isolated
+repair remain distinct. Actual million-node and aggregate-source producer
+crossings still require native evidence. The
 [protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
 serial Sol 6.1 extra-high trials; eight participants passed their independent
 oracles. Dispatch nine was interrupted before a participant started because
@@ -88,8 +89,8 @@ reuses the existing byte trie only for repeated raw path identity. The broader
 membership experiment failed its unchanged scaling gate and was narrowed.
 Original name searches, diagnostics and cycle order remain. Exact work, cleanup,
 parity, resource and same-host comparisons pass for the named focused domains;
-full current-source integration remains pending. Whole-manifest checking remains
-outside its local linear-work claim.
+The verified checkpoint includes these changes. Whole-manifest checking remains
+outside the local linear-work claim.
 
 Only reviewed bounded ordinary-source, evaluator and behavior-preserving compiler
 contracts are accepted within this window. New language syntax, runtime integration, dependencies and

@@ -1,0 +1,35 @@
+module project_impact_model
+
+struct Snapshot:
+  catalog: catalog_model.Catalog
+  graph: workplan_model.Graph
+  reserved: I64
+
+struct Association:
+  valid: Bool
+  source: I64
+  position: I64
+
+struct Work:
+  queue_pushes: I64
+  queue_pops: I64
+  edge_visits: I64
+  link_headers: I64
+
+struct Closure:
+  roots: Vec[I64]
+  reached: Vec[I64]
+  work: Work
+
+struct Result:
+  report: Bytes
+  before_work: Work
+  after_work: Work
+
+enum Prepared:
+  Invalid(I64)
+  Ready(Result)
+
+enum Attempt:
+  Invalid(I64, Bytes, I64, I64)
+  Ready(Result)

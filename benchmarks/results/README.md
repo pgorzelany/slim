@@ -6,17 +6,20 @@ its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
-Checkpoint [90de8e9](https://github.com/pgorzelany/slim/commit/90de8e9059e95f23bb9be66f55f5311eb8faba4d), source tree
-`3ec37262c81a26ad9c91833f69fd06946bcd538e`, passed repository, release and
-website gates and is pushed to `codex/slim-next`. It covers project contracts,
-native repairs, catalog heap/diff, development summary and 47-test evaluator infrastructure. The frozen 24-trial
-cohort is in progress. Later RFC-0165 producer/adapter acceptance passes focused
-ordinary/sanitized checks; current-source integration remains pending; this checkpoint makes no general model-benefit claim.
+Checkpoint [e506464](https://github.com/pgorzelany/slim/commit/e506464054fb658137469c92b09a6b2182b3b68c)
+is pushed to `codex/slim-next`. Required repository gates and reproducible
+release/clean install passed; an isolated two-file website inventory repair
+passes all 18 website tests. The original full invocation remains a website
+classification failure. The checkpoint includes checked project capture,
+operation-cost reporting and duplicate-path validation. General model benefit
+and actual million-node/aggregate-source producer crossings remain unresolved.
+Later declared-import impact code passes focused checks and awaits full integration.
 
 | Checkpoint | Record |
 | --- | --- |
 | Current project contracts | [Concise source-bound namespace evidence](project-namespace-current.json); [complete original record](archive/2026-10-02-project-namespace-scoped-evidence.json.gz) |
 | Current duplicate-path validation | [Work, behavior, resources and same-host comparisons](manifest-validation-current.json) |
+| Current declared-import impact | [Exact finite relations and source-bound candidate scope](project-impact-current.json) |
 | Current checked project inputs | [Finite producer/consumer domains and compiler inventory](project-input-current.json) |
 | Current operation costs | [Separate observed tool phases, coverage and missing evidence](development-operation-cost-current.json) |
 | Current ordinary development summary | [Finite native/adapter domains, identities and incomplete cohort](development-summary-current.json) |
@@ -42,32 +45,18 @@ ordinary/sanitized checks; current-source integration remains pending; this chec
 
 ## Archived evidence
 
-The September consolidation preserves all 257 raw TSV files and the full
-development history byte-for-byte in individual gzip files. Intermediate runs,
-raw timing samples, zero-valued counters, fault ordinals, failures, regressions
-and caveats remain available. The manifest is an inventory, not a pass ledger.
-Each original filename maps to `archive/<filename>.gz`; gzip timestamps are zero.
-The history preserves its original relative links. Its TSV links resolve when
-extracted alongside the original TSV filenames.
+Historical payloads remain byte-for-byte in individually named gzip archives.
+The [manifest](archive/manifest.tsv) records original filenames, SHA-256, sizes
+and lines; it is an inventory, not a pass ledger. It preserves intermediate
+attempts, raw timings, fault ordinals and contrary results. Later archives are
+listed separately. Compression does not alter Git history or permanent gates.
 
-The original consolidation captures 270,342 text lines (16,274,889 bytes) in
-2,636,037 compressed bytes. All 257 TSVs were compared byte-for-byte against
-`010be59`; the history includes the working tree's pending byte-literal notes.
-Later checkpoint archives are listed separately in the same manifest. Existing
-Git history is preserved, so this reduces the current textual diff rather than
-removing historical blobs from the repository.
-
-The input-query checkpoint retains measurements for all three implementation
-candidates, including rejected costs. Its compressed reproduction record contains
-scripts and hash-verified source patches; its verification record contains the
-individual log payloads, hashes and completed command/source identities.
-
-The history is a snapshot of the development log before consolidation. Its last
-entry says verification was running. That run was subsequently interrupted at the
-maintainer's request with exit 143 during place fault ordinal 1,850. It is not a
-complete verification pass. The subsequent resumed suffix passes every remaining
-stage on the same seed; current status and the byte-literal report supersede that
-entry. The isolated RFC-0142 draft is not production implementation evidence.
+The original development history ends during an interrupted verification run;
+its text is not a complete pass. Current source-bound records and subsequent
+checkpoint reports identify completed scopes. Extract related TSVs beside the
+history to follow its original relative links. Reproduction and verification
+archives retain source patches, scripts and independent artifact identities;
+a stored hash alone does not establish acceptance.
 
 From the repository root, verify every archived payload against its original hash:
 

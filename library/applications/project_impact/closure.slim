@@ -1,0 +1,66 @@
+module project_impact_closure
+
+fn admitted(value: I64) -> Bool:
+  (value >= 0) && (value <= 1000000000)
+
+fn addition_fits(left: I64, right: I64) -> Bool effects[partial]:
+  if admitted(left) && admitted(right):
+    right <= (1000000000 - left)
+  else:
+    false
+
+fn product_fits(left: I64, right: I64) -> Bool effects[partial]:
+  if admitted(left) && admitted(right):
+    if left == 0:
+      true
+    else:
+      right <= (1000000000 / left)
+  else:
+    false
+
+fn zeros(count: I64, cursor: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if cursor == count:
+    void
+  else:
+    vec.push(@output, 0)
+    recur(count, cursor + 1, @output)
+
+fn initialize(roots: Vec[I64], cursor: I64, reached: @Vec[I64], queue: @Vec[I64]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(roots):
+    void
+  else:
+    let mark: I64 = vec.get(roots, cursor)
+    vec.push(@reached, mark)
+    if mark == 1:
+      vec.push(@queue, cursor)
+    else:
+      void
+    recur(roots, cursor + 1, @reached, @queue)
+
+fn follow(graph: workplan_model.Graph, head: I64, reached: @Vec[I64], queue: @Vec[I64], edges: I64, links: I64) -> project_impact_model.Work effects[alloc, partial]:
+  if head < 0:
+    project_impact_model.Work(queue_pushes: vec.len(queue), queue_pops: 0, edge_visits: edges, link_headers: links + 1)
+  else:
+    let edge: workplan_model.Edge = vec.get(graph.edges, head)
+    if vec.get(reached, edge.dependent) == 0:
+      vec.set(@reached, edge.dependent, 1)
+      vec.push(@queue, edge.dependent)
+    else:
+      void
+    recur(graph, edge.next, @reached, @queue, edges + 1, links + 1)
+
+fn visit(graph: workplan_model.Graph, cursor: I64, reached: @Vec[I64], queue: @Vec[I64], edges: I64, links: I64) -> project_impact_model.Work effects[alloc, partial]:
+  if cursor == vec.len(queue):
+    project_impact_model.Work(queue_pushes: vec.len(queue), queue_pops: cursor, edge_visits: edges, link_headers: links)
+  else:
+    let ordinal: I64 = vec.get(queue, cursor)
+    let head: I64 = vec.get(graph.heads, ordinal)
+    let next: project_impact_model.Work = follow(graph, head, @reached, @queue, edges, links)
+    recur(graph, cursor + 1, @reached, @queue, next.edge_visits, next.link_headers)
+
+fn close(graph: workplan_model.Graph, roots: ^Vec[I64]) -> project_impact_model.Closure effects[alloc, partial]:
+  let reached: Vec[I64] = vec.new()
+  let queue: Vec[I64] = vec.new()
+  initialize(roots, 0, @reached, @queue)
+  let work: project_impact_model.Work = visit(graph, 0, @reached, @queue, 0, 0)
+  project_impact_model.Closure(roots: roots, reached: reached, work: work)

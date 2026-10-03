@@ -31,14 +31,15 @@ condition and general context benefit remains unknown. The
 retains original outcomes and costs.
 
 The [current roadmap](../ROADMAP.md) authorizes continuous work until 2026-10-03
-10:00 Europe/Warsaw. Checkpoint `90de8e9`, pushed to `codex/slim-next`, passed
-repository, release and website gates for project contracts, native repairs, ordinary components and
-the development evaluator. Later
-[Project-input and operation-cost tools](../library/COMPONENTS.md), plus
-[duplicate-path validation](../benchmarks/results/manifest-validation-current.json),
-pass focused checks; current-source integration remains pending. The frozen evaluator has eight accepted participants, one infrastructure
-interruption and fifteen undispatched trials; fresh-agent capacity is exhausted.
-Model calls/tokens and general effectiveness remain unknown.
+10:00 Europe/Warsaw. Checkpoint `e506464`, pushed to `codex/slim-next`, passes
+repository, reproducible release/clean install and website gates for the
+[project-input and operation-cost tools](../library/COMPONENTS.md) and
+[duplicate-path validation](../benchmarks/results/manifest-validation-current.json).
+The first full invocation failed at website classification; its repaired
+two-file scope passes all 18 website tests. Actual million-node and aggregate-source
+producer crossings remain pending. The frozen evaluator has eight accepted
+participants, one infrastructure interruption and fifteen undispatched trials.
+Fresh-agent capacity, model calls/tokens and general effectiveness remain unresolved.
 Current [source-bound records](../benchmarks/results/README.md) retain scope and
 identities. M2/full M3 remain pending.
 

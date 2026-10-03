@@ -1,7 +1,7 @@
 # RFC-0167: Linear duplicate-path manifest validation
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, under delegated overnight SLIM development direction
@@ -590,9 +590,10 @@ records exact work, ordinary/sanitized parity, sparse allocation failures,
 resource observations and retained comparisons. All 37 same-host rows passed
 the unchanged 1.10 guard, and all six path-local exponents passed 1.15. The
 pinned candidate C was adopted as the bootstrap seed; normal bootstrap verified
-the fixed point and native hello smoke. Full current-source repository
-integration remains pending, so `Implementation: pending` is retained. The
-original failed scope and all failed invocations remain held.
+the fixed point and native hello smoke. Checkpoint `e506464` passes required
+repository gates, reproducible release/clean install and website tests. The
+initial full invocation failed at website classification; an exact two-file
+website repair passed separately. Original failures remain held.
 
 ## Removal and supersession
 

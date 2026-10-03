@@ -2,7 +2,7 @@
   "schema": 1,
   "contract": "RFC-0167",
   "observed_date": "2026-10-03",
-  "status": "Focused path-only work/parity/resource/retained/same-host checks and adopted seed bootstrap fixed point passed; full current-source repository integration pending.",
+  "status": "Focused path-only work/parity/resource/retained/same-host checks and adopted seed bootstrap fixed point passed; current-source integration passed at e506464.",
   "scope": "Original duplicate-path scan only. A temporary trie over original raw quoted path spans is owned by a private scalar-return helper and physically destroyed before remaining validators. Original name/membership lookups, malformed/unsorted legacy routes and cycle placement remain unchanged. No whole-manifest linearity or general timing speedup claim.",
   "sources": {
     "selfhost/project.slim": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f",
@@ -198,5 +198,41 @@
     "full current-source integration and final RFC implementation completion"
   ],
   "preserved_failures": "The original membership-scope exponent failure and retained-fixture precheck failure remain retained; neither invocation was relabeled or used to weaken a gate.",
-  "permanent_gate": "scripts/verify.sh invokes the portable --current work/parity/resource-control campaign from fresh generated fixtures. Explicit source-pinned --compare keeps the same-host 1.10 guard."
+  "permanent_gate": "scripts/verify.sh invokes the portable --current work/parity/resource-control campaign from fresh generated fixtures. Explicit source-pinned --compare keeps the same-host 1.10 guard.",
+  "integration": {
+    "classification": "exact for named immutable source scopes",
+    "checkpoint": "e506464054fb658137469c92b09a6b2182b3b68c",
+    "branch": "codex/slim-next",
+    "source_commit": "58d9d7d4e94647e1add700189fa7ad1a1e755edd",
+    "repository_release_source_commit": "8c4a41e112c39ba23b9eecd54de2df0087c71104",
+    "repository_release": "passed required repository gates, reproducible archive and clean install",
+    "website": "two website JS classification/inventory repairs; full build and18 tests passed;1717 release-selected files unchanged",
+    "original_full_invocation": "failed at website classification; retained separately",
+    "authority": "composite exact-scope verification; original complete invocation did not pass"
+  },
+  "later_membership_model_rejection": {
+    "status": "rejected before production edits or native comparison",
+    "contract": "Ignored proposed RFC169, not accepted",
+    "domain": "97 fixed source cases and15scalar controls per separately bounded model; same original66 cases and adopted path counts",
+    "geometries": [
+      {
+        "ordinal_encoding": "3base16nibblebytes",
+        "membership_edges_endpoint_exponent": 3.765515470478456,
+        "combined_edges_endpoint_exponent": 2.4516232174559343,
+        "model_sha256": "023e21d422c5cc7d510402f22f9a0bc09c9d6b79a8bdc2f0c5b1f8ce59a19715"
+      },
+      {
+        "ordinal_encoding": "12base2digits",
+        "membership_edges_endpoint_exponent": 4.113382597231514,
+        "combined_edges_endpoint_exponent": 2.8208017702604216,
+        "model_sha256": "aaaff7b3207cf6140f4bbc792869ab16c345803f5d27a3b0b62f7feaf8421e2c"
+      }
+    ],
+    "edges_domain": "N256 fixed; E16/32/64/128/256; X=B+N+E+1 is5728to7168. These finite endpoints do not establish universal asymptotic behavior.",
+    "limit": 1.15,
+    "other_controls": "named-unit/count/envelope/arithmetic/publication controls passed; no budget adjustment, padding or re-scoring",
+    "campaign_receipt_sha256": "968b0553431c831b1e85749d3abfae15052043e822459ad7e27961edda12f1c5",
+    "operator_campaign_elapsed_ns": 21875561542,
+    "production": "Retain accepted RFC167 path-only implementation; membership precision/performance unchanged."
+  }
 }
