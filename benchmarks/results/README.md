@@ -6,13 +6,15 @@ its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
-Checkpoint [915f836](https://github.com/pgorzelany/slim/commit/915f83634c66b3b5effc98347534d43eff541027)
-is pushed to `codex/slim-next`. The complete source-bound repository,
-reproducible release/clean-install and website invocation passed. The checkpoint
-includes checked project capture, operation-cost reporting, duplicate-path
-validation and ordinary SLIM declared-import impact analysis. General model
-benefit remains unknown. Fixed million-node/aggregate-source native crossings
-pass; their durable gate and RFC-0170 single-command context export are being integrated.
+Fresh source8b snapshot `9d01a96a0c2705b7cbaf25ed330e7221ff30bb43` passed all
+repository, release and website gates in 44m05s over 1,932 files, with fresh Rust
+binaries whose embedded repository root was checked. The
+[current integration identities](development-operation-cost-current.json) bind
+receipt `40062efe…5432e`. Historical checkpoint
+[112f6ed](https://github.com/pgorzelany/slim/commit/112f6ed4eb957dcd4909a0ab595b71d634ecc20d)
+passed its invocation with copied-cache provenance unresolved. Source8b excludes
+RFC172 and subsequent metadata; combined source9 verification remains pending.
+General model benefit remains unknown.
 
 | Checkpoint | Record |
 | --- | --- |
@@ -22,6 +24,8 @@ pass; their durable gate and RFC-0170 single-command context export are being in
 | Current checked project inputs | [Finite producer/consumer domains and compiler inventory](project-input-current.json) |
 | Current operation costs | [Separate observed tool phases, coverage and missing evidence](development-operation-cost-current.json) |
 | Checked impact context export | [Current source, native authority, costs and limits](project-impact-context-current.json) |
+| Ledger transaction overflow | [Original failure, current native contract and retained partiality](ledger-transaction-current.json) |
+| Bounded source-record selection | [Exact selected bytes, producer authority and acceptance scope](source-context-current.json) |
 | Current ordinary development summary | [Finite native/adapter domains, identities and incomplete cohort](development-summary-current.json) |
 | Current development evaluator | [Protocol and budgets](../development/PROTOCOL.md); [configured versus completed trials](../development/current.json) |
 | Bounded early agent loop, 2026-10-02 | [Self-hosted context, native costs, six frozen trials and release closure](2026-10-02-agent-development-loop.md) |
@@ -51,12 +55,10 @@ and lines; it is an inventory, not a pass ledger. It preserves intermediate
 attempts, raw timings, fault ordinals and contrary results. Later archives are
 listed separately. Compression does not alter Git history or permanent gates.
 
-The original development history ends during an interrupted verification run;
-its text is not a complete pass. Current source-bound records and subsequent
-checkpoint reports identify completed scopes. Extract related TSVs beside the
-history to follow its original relative links. Reproduction and verification
-archives retain source patches, scripts and independent artifact identities;
-a stored hash alone does not establish acceptance.
+The archived development history ends during interrupted verification, not a
+complete pass. Current source-bound records identify accepted scopes. Extract
+related TSVs beside it to preserve relative links. Reproduction artifacts retain
+patches, scripts and identities; stored hashes alone do not establish acceptance.
 
 From the repository root, verify every archived payload against its original hash:
 
@@ -88,11 +90,10 @@ benchmarks. Routine attempts and coordination stay in ignored build storage,
 without another dated prose journal. Keep interrupted and failed outcomes
 explicit; a partial run is never a complete pass.
 
-Use ignored `build/` or `benchmarks/results/raw/` for routine successful reruns.
-Preserve raw timings used for decisions, baseline controls, important failures,
-contrary results and final checkpoint evidence in uniquely named archives. Do
-not repeatedly commit every successful per-fixture counter row as plain text.
-Archive a completed report from the results directory with:
+Routine reruns stay in ignored `build/` or `benchmarks/results/raw/`. Archive
+measurements supporting decisions, baseline controls, significant failures,
+contrary results and final acceptance; avoid repeated successful counter dumps.
+For a completed report:
 
 ```sh
 python3 scripts/archive-results.py pack YYYY-MM-DD-checkpoint-work.tsv

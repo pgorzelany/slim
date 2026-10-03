@@ -1,0 +1,198 @@
+{
+ "schema": 1,
+ "scope": "RFC0172 ordinary bounded source-record selection",
+ "status": "Focused and canonical fresh-current native acceptance pass; full source9 pending.",
+ "command": "python3 scripts/verify-source-context.py --current --output build/source-context-FRESH",
+ "production_command": "./slimc run library/source-context.project -- CAPTURE.ns MODULE...",
+ "current_sources": {
+  "library/applications/source_context/main.slim": {
+   "bytes": 2229,
+   "sha256": "ee39a7950cd624e1d8b36d63ff5661f1816f9831bc89941dff481f7449cf0cf0"
+  },
+  "library/applications/source_context/model.slim": {
+   "bytes": 383,
+   "sha256": "0d74a045254a7719efb92c4114d857b8771f4f5be830388dbcc7e68a1bfa6dfb"
+  },
+  "library/applications/source_context/data.slim": {
+   "bytes": 7536,
+   "sha256": "27fc8f5c2ccbbbbe43952f1403a55eb897af3da4271f08cb152313e0d2896d0d"
+  },
+  "library/applications/source_context/report.slim": {
+   "bytes": 3851,
+   "sha256": "2ad770acf23dc15ade853fc089f55411824683357558e24493d757584bb15a1b"
+  },
+  "library/source-context.project": {
+   "bytes": 1544,
+   "sha256": "71b2d510341440beedbfcd9508bcc8b979dee0840cf646c38106a0e749019d6b"
+  },
+  "scripts/source-context-oracle.py": {
+   "bytes": 19412,
+   "sha256": "c110ef8f8a463524b9c12364e1988e561ce96d06eef4b4b80039e3496b5939ef"
+  },
+  "scripts/freeze-source-context.py": {
+   "bytes": 31417,
+   "sha256": "4e40fa1975f1273a70fcf809228ed296e114bdd47348056647eb33311bddbede"
+  },
+  "scripts/verify-source-context.py": {
+   "bytes": 46315,
+   "sha256": "f5710861819f9d69d78a471a50b57cb79b7bf2537b50636bb71310904f96a758"
+  }
+ },
+ "rfc_metadata": {
+  "path": "design/rfcs/0172-bounded-source-record-selection.md",
+  "current": {
+   "bytes": 13818,
+   "sha256": "710c517571815e9e56605cd2b4ee938f47d35923207df44a14ad2efe0bb848e7"
+  },
+  "binding": "Both receipts retain their tested RFC bytes; this subsequent metadata note does not replace those identities."
+ },
+ "finite_domain": {
+  "constructor_cards": 64,
+  "positive_cards": 19,
+  "diagnostic_cards": 45,
+  "geometry_modules": [
+   64,
+   128,
+   256,
+   512
+  ],
+  "real_projects": 3,
+  "data_scenarios": 71,
+  "native_leaves": 218,
+  "allocation_ordinals": [
+   1,
+   32
+  ],
+  "variants": [
+   "ordinary",
+   "address-undefined sanitized"
+  ],
+  "classification": "Exact literal status/bytes for named cases; bounded native acceptance under fixed limits. Transport acceptance alone does not prove checked source."
+ },
+ "focused_acceptance": {
+  "status": "pass",
+  "receipt_path": "build/overnight-source-context/native-001/receipt.json",
+  "receipt_sha256": "8d8095689671a3f37c093dcb9eee9d3cb6fd96b276845057139385697151344f",
+  "model_sha256": "bcfb7299e2fef214287b97a42b2cfd7089a33108d244c9e1bdc7e3fc5a2e0320",
+  "freeze_sha256": "cd40f322564807a48f0857942cf7a639698bc78e298ef93a4d11d908c20badd1",
+  "tested_rfc_sha256": "c4cf3955326ec72e582d716d6b65d47a4a5bc84ea38461662cda58289a2511b6",
+  "tested_observer_sha256": "76f242d5ba1470e9160618f609320657b10bd043153e7035ed973a21c051c3a8",
+  "inner_elapsed_ns": 13758043792,
+  "held_files": 161,
+  "held_bytes": 62263645,
+  "independent_audit_sha256": "afcc0dd2c41d79c77acc76361d7a7e906937e57ea6f4dbdc7390d78731a5c463"
+ },
+ "canonical_current_acceptance": {
+  "status": "pass",
+  "receipt_path": "build/overnight-source-context/current-native-001/receipt.json",
+  "receipt_sha256": "3364c9af876cb69a499f3eaed70f58eb0044f0f1133f1d9dc8523d4c8fd78086",
+  "model_sha256": "9c7c4002aa74c9115d4da5c456e552f5aa6e9b69c87603174110a0c83564b984",
+  "freeze_sha256": "13306103f87a8701f16b653f44a5406aca5c11edda15e4b79819771f3eba0fe2",
+  "tested_rfc_sha256": "0808c5cb3876a2636aae37bcf596391eb9bc3dcb143872c39f234f1b082eb984",
+  "compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+  "started_utc": "2026-10-03T06:03:28.150841Z",
+  "finished_utc": "2026-10-03T06:03:42.144878Z",
+  "inner_elapsed_ns": 13999360375,
+  "outer_task_wrapper_elapsed_ns": 14058892083,
+  "timing_scope": "One deadline covers admission/data/native/cleanup/endpoints. Inner excludes final own receipt/shutdown; outer includes them. Intervals overlap.",
+  "held_files": 166,
+  "held_bytes": 62323932,
+  "source_endpoints": 67,
+  "canonical_control_endpoints": 9,
+  "direct_tools": 3,
+  "native_files": 720,
+  "original_nonself_hashes": 719,
+  "native_directories": 234,
+  "native_fifos": 4,
+  "native_entries": 958,
+  "platform": "observed Darwin arm64 with three fixed dSYM files",
+  "cleanup": "All218 owned groups killed/already absent and direct children reaped; closed-pipe descendant absent.",
+  "allocation_observations": {
+   "exact71_no_stdout": 26,
+   "whole_exact_success_ordinal_unreached": 38
+  },
+  "independent_raw_audit_sha256": "3e5c1bf1f8d3ba1af4fc53a686f8e27b5540cc0ba6eb13eda7db3e906eec926e",
+  "tested_freezer_sha256": "e71ac0739b00a85a58abc7f1aff628418ea088741b5dc196048623a8524c4737",
+  "tested_observer_sha256": "f7b30bb806967484597cc35f9482acf6dcc1ee39a733c659f2277b27e28ff498",
+  "metadata_binding": "Later first-module-docstring edits change current freezer/observer hashes only; complete function ASTs match the original tested bytes. Full9 fresh binding remains pending."
+ },
+ "real_requested_scope": [
+  {
+   "project": "compiler",
+   "checked_modules": 35,
+   "declared_edges": 153,
+   "all_module_body_bytes": 1173378,
+   "requested_names": [
+    "compiler",
+    "context",
+    "project"
+   ],
+   "requested_body_bytes": 163458,
+   "capture_bytes": 1185311,
+   "selection_bytes": 163586
+  },
+  {
+   "project": "ledger",
+   "checked_modules": 9,
+   "declared_edges": 14,
+   "all_module_body_bytes": 24288,
+   "requested_names": [
+    "ledger",
+    "ledger_emit",
+    "ledger_state"
+   ],
+   "requested_body_bytes": 10791,
+   "capture_bytes": 26340,
+   "selection_bytes": 10977
+  },
+  {
+   "project": "catalog",
+   "checked_modules": 13,
+   "declared_edges": 31,
+   "all_module_body_bytes": 34880,
+   "requested_names": [
+    "catalog_app",
+    "catalog_data",
+    "catalog_reconcile"
+   ],
+   "requested_body_bytes": 10899,
+   "capture_bytes": 38139,
+   "selection_bytes": 11108
+  }
+ ],
+ "real_scope_meaning": "Each actual production checker/producer exits0 and matches complete independent capture bytes; both selector variants exit0 with exact requested triples. Byte facts are scope proxies, not context quality or saved work.",
+ "permanent_gate": {
+  "status": "Reviewed canonical scripts and first fresh current campaign pass; full9 pending.",
+  "binding": "67 opaque sources/nine current controls/three direct tools admitted before oracle; complete fresh hold within192 files/64MiB/4MiB-model limits admitted before helper. Historical holds are evidence, not prerequisites.",
+  "deadline": "One original900-second timer; no reset.",
+  "artifact_tiers": "Darwin arm64: 720/719/958 files/nonself hashes/entries; other POSIX prospectively 717/716/949. Other Darwin architectures decline; other-host native acceptance unknown."
+ },
+ "fixed_budgets": {
+  "whole_seconds": 900,
+  "child_seconds": 60,
+  "constructor_cards": 64,
+  "geometry_cases": 4,
+  "real_cases": 3,
+  "total_scenarios": 72,
+  "hold_files": 192,
+  "hold_bytes": 67108864,
+  "model_bytes": 4194304,
+  "source_file_bytes": 1048576,
+  "native_entries": 1024,
+  "native_file_bytes": 134217728,
+  "emit_stdout_bytes": 16777216,
+  "other_stdout_bytes": 8388608,
+  "stderr_bytes": 262144
+ },
+ "integration": {
+  "status": "pending",
+  "scope": "Full source9 repository/release/website validation required; source8b excludes RFC172 and its gate."
+ },
+ "unknown": {
+  "context_sufficiency": "No provider expansion or sufficient/minimal semantic-context proof.",
+  "model_benefit": "No new participant, model-token, cohort or causal effectiveness measurement.",
+  "saved_native_work": "Selected bytes do not measure saved compile time.",
+  "physical_memory": "Logical caps/OOM cases do not prove RSS or leak bounds.",
+  "custody": "Endpoint bytes only; atomicity, loaded-code/ABA and transitive SDK/linker identities unproved."
+ }
+}

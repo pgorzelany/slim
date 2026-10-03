@@ -26,7 +26,48 @@
     "retained_bytes": 402653184,
     "whole_seconds": 900
   },
-  "integration": "Permanent current-source gate being wired; existing budgets and compiler semantics unchanged.",
+  "integration": {
+    "source_commit": "9d01a96a0c2705b7cbaf25ed330e7221ff30bb43",
+    "source_files": 1932,
+    "started_utc": "2026-10-03T05:13:17.820970+00:00",
+    "finished_utc": "2026-10-03T05:57:23.021527+00:00",
+    "elapsed_ns": 2645189719791,
+    "source_unchanged": true,
+    "full_success_marker": true,
+    "classification": "exact invocation and unchanged named source; bounded checked gate domains",
+    "branch": "codex/slim-next",
+    "command": [
+      "sh",
+      "scripts/verify-0.9.sh"
+    ],
+    "repository_release_website": "passed together; source8b excludes RFC172 and subsequent metadata",
+    "validation_receipt_sha256": "40062efee6f389468278f17c0c479f08e4ba95ee70fa400f204a1d683715432e",
+    "full_log_sha256": "35fe246dd500b2c42a8210005839ef4a868c48fce2826a9fe589699087b2f7e0",
+    "reproducible_release_sha256": "e0c50abf8b3eac9ba24d1052a27f73536abf657820f37847a6df4e60654da185",
+    "timing_scope": "operator validation duration; no model active-time claim",
+    "rust_root_binary_observations": {
+      "target/debug/slim-govern": {
+        "bytes": 1606112,
+        "sha256": "e55f5effead201f5f6d8523fd4de2302a2207e7afacd9dd1ffa981cf664c87d7",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      },
+      "target/debug/slim-conform": {
+        "bytes": 1335632,
+        "sha256": "1c86320abfc90f3c7497bdf2993a2b104f39e879236951638ff284e3e52678e4",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      },
+      "target/release/slim-bench": {
+        "bytes": 810272,
+        "sha256": "1914e9912a88de1695aa7ebc4dbbbcba92a008280124152f44568edf57c79f3c",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      }
+    },
+    "historical_source7": "112f6ed invocation passed; copied Rust target binaries retained another checkout root, so complete isolated source binding is unknown. Original receipt/log identities remain in Git history and ignored local evidence.",
+    "current_combined_source": "Source9 with RFC172 and corrected provenance metadata awaits full acceptance."
+  },
   "native_authority": {
     "compiler": {
       "bytes": 628368,
@@ -199,7 +240,7 @@
       "native_phase_ns": 5985652583
     }
   ],
-  "status": "Focused canonical current-source acceptance passes; permanent full repository/release/website integration pending.",
+  "status": "Focused canonical current-source acceptance passes. Fresh source8b full integration passes; combined source9 pending. Historical copied-cache provenance remains explicitly unknown in integration.",
   "unknown": {
     "agent_effectiveness": "not measured by this campaign",
     "atomic_live_identity": "before/after byte endpoints only, without loaded-code/ABA/host-boot or transitive SDK attestation",

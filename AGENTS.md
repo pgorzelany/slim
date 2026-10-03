@@ -147,6 +147,10 @@ These rules apply to every change in this repository.
   execute through the production SLIM compiler.
 - Preserve deterministic formatting, diagnostics, and generated C.
 - Add positive, negative, and diagnostic tests for behavior changes.
+- For private checkout verification, build Rust verifier and benchmark tools in
+  that same checkout. Do not transplant Cargo target caches between checkouts:
+  embedded `CARGO_MANIFEST_DIR` may retain another source root and invalidate
+  source-bound evidence.
 - Run `./bootstrap.sh`, `cargo run --bin slim-govern -- check`, `cargo test`,
   `cargo run --release --bin slim-bench -- performance --quick`,
   `cargo run --release --bin slim-bench -- reduction --quick`,

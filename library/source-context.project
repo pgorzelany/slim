@@ -1,0 +1,13 @@
+(project 1
+  (entry source_context_app)
+  (module project_input_limits "components/project_input_limits.slim" (imports) (exports Resource add decimal_width frame_size maximum record_size))
+  (module source_context_app "applications/source_context/main.slim" (imports project_input_limits source_context_data source_context_model source_context_report std_byte_index std_text) (exports))
+  (module source_context_data "applications/source_context/data.slim" (imports project_input_limits source_context_model std_ascii std_byte_index std_bytes std_decimal std_netstring) (exports load))
+  (module source_context_model "applications/source_context/model.slim" (imports std_byte_index) (exports Capture Loaded Prepared Record Status))
+  (module source_context_report "applications/source_context/report.slim" (imports project_input_limits source_context_model std_byte_index std_netstring std_text) (exports prepare))
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value is_digit))
+  (module std_byte_index "experimental/byte_index.slim" (imports) (exports Built Entry Index build compare find))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range range_equal))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64))
+  (module std_netstring "experimental/netstring.slim" (imports std_ascii std_bytes std_text) (exports Frame Parsed append parse))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_bytes append_i64)))

@@ -43,12 +43,9 @@ fn credit_account(source: Bytes, start: I64, end: I64, amount: I64, accounts: @V
     if !account.open:
       rejected(34)
     else:
-      if (account.balance > (9223372036854775807 - amount)) || (account.credits == 9223372036854775807):
-        rejected(44)
-      else:
-        let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance + amount, open: true, credits: account.credits + 1, debits: account.debits)
-        vec.set(@accounts, found, next)
-        accepted()
+      let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance + amount, open: true, credits: account.credits + 1, debits: account.debits)
+      vec.set(@accounts, found, next)
+      accepted()
 
 fn debit_account(source: Bytes, start: I64, end: I64, amount: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
   let found: I64 = find_account(source, accounts, start, end, 0)
@@ -62,12 +59,9 @@ fn debit_account(source: Bytes, start: I64, end: I64, amount: I64, accounts: @Ve
       if account.balance < amount:
         rejected(37)
       else:
-        if account.debits == 9223372036854775807:
-          rejected(44)
-        else:
-          let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance - amount, open: true, credits: account.credits, debits: account.debits + 1)
-          vec.set(@accounts, found, next)
-          accepted()
+        let next: ledger_model.Account = ledger_model.Account(name_start: account.name_start, name_end: account.name_end, balance: account.balance - amount, open: true, credits: account.credits, debits: account.debits + 1)
+        vec.set(@accounts, found, next)
+        accepted()
 
 fn transfer(source: Bytes, from_start: I64, from_end: I64, to_start: I64, to_end: I64, amount: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
   let from_index: I64 = find_account(source, accounts, from_start, from_end, 0)
@@ -84,14 +78,11 @@ fn transfer(source: Bytes, from_start: I64, from_end: I64, to_start: I64, to_end
       if !usable:
         rejected(40)
       else:
-        if (to.balance > (9223372036854775807 - amount)) || ((to.credits == 9223372036854775807) || (from.debits == 9223372036854775807)):
-          rejected(44)
-        else:
-          let next_from: ledger_model.Account = ledger_model.Account(name_start: from.name_start, name_end: from.name_end, balance: from.balance - amount, open: true, credits: from.credits, debits: from.debits + 1)
-          let next_to: ledger_model.Account = ledger_model.Account(name_start: to.name_start, name_end: to.name_end, balance: to.balance + amount, open: true, credits: to.credits + 1, debits: to.debits)
-          vec.set(@accounts, from_index, next_from)
-          vec.set(@accounts, to_index, next_to)
-          accepted()
+        let next_from: ledger_model.Account = ledger_model.Account(name_start: from.name_start, name_end: from.name_end, balance: from.balance - amount, open: true, credits: from.credits, debits: from.debits + 1)
+        let next_to: ledger_model.Account = ledger_model.Account(name_start: to.name_start, name_end: to.name_end, balance: to.balance + amount, open: true, credits: to.credits + 1, debits: to.debits)
+        vec.set(@accounts, from_index, next_from)
+        vec.set(@accounts, to_index, next_to)
+        accepted()
 
 fn close_account(source: Bytes, start: I64, end: I64, accounts: @Vec[ledger_model.Account]) -> ledger_model.Applied effects[partial]:
   let found: I64 = find_account(source, accounts, start, end, 0)

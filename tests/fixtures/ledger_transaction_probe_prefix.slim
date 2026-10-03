@@ -1,0 +1,48 @@
+module ledger_probe
+
+fn print_account(account: ledger_model.Account) -> Void effects[io]:
+  io.print_bytes("account ")
+  io.print_i64(account.name_start)
+  io.print_bytes(" ")
+  io.print_i64(account.name_end)
+  io.print_bytes(" ")
+  io.print_i64(account.balance)
+  io.print_bytes(" ")
+  let opened: I64 = if account.open:
+    1
+  else:
+    0
+  io.print_i64(opened)
+  io.print_bytes(" ")
+  io.print_i64(account.credits)
+  io.print_bytes(" ")
+  io.print_i64(account.debits)
+  io.print_bytes("\n")
+
+fn print_accounts(accounts: Vec[ledger_model.Account], index: I64) -> Void effects[io, partial]:
+  if index == vec.len(accounts):
+    void
+  else:
+    print_account(vec.get(accounts, index))
+    recur(accounts, index + 1)
+
+fn print_case(label: Bytes, result: ledger_model.Applied, accounts: Vec[ledger_model.Account]) -> Void effects[io, partial]:
+  io.print_bytes("case ")
+  io.print_bytes(label)
+  match result:
+    Accepted:
+      io.print_bytes(" accepted\n")
+    Rejected(code):
+      io.print_bytes(" rejected ")
+      io.print_i64(code)
+      io.print_bytes("\n")
+  io.print_bytes("accounts ")
+  io.print_i64(vec.len(accounts))
+  io.print_bytes("\n")
+  print_accounts(accounts, 0)
+
+fn partial_total() -> I64 effects[alloc, io, partial]:
+  let accounts: Vec[ledger_model.Account] = vec.new()
+  let result: I64 = ledger_state.total(accounts, -1, 0)
+  io.print_i64(result)
+  0

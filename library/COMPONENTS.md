@@ -100,9 +100,8 @@ data, not a model experiment. Source admission follows ordinary file read, and
 output retains the existing partial-write/trap contract.
 
 [RFC-0165](../design/rfcs/0165-checked-project-input-producer.md) adds the
-ordinary `project-input` producer and fixed measurement adapter. Native and
-repository/release/website gates pass at `915f836`. Fixed million-node and
-aggregate-source native crossings pass; their durable gate is being integrated.
+ordinary `project-input` producer and fixed measurement adapter. Pinned native
+and million-node/aggregate-source checks pass. Fresh source8b repository, release and website verification passes.
 Build it from a repository checkout:
 
 ```sh
@@ -153,7 +152,7 @@ alone does not. Cycles terminate by marking each node before enqueue.
 The [current record](../benchmarks/results/project-impact-current.json) names
 limits, diagnostics, native domains and measured candidate byte counts.
 Its corpus fixture is independently sealed synthetic data. Focused ordinary and
-sanitized checks and full source-bound integration pass at `915f836`.
+sanitized checks pass. Fresh source8b repository, release and website verification passes.
 Candidate scope is a context proxy, not saved compile time or agent effectiveness.
 
 [RFC-0170](../design/rfcs/0170-project-impact-context-export.md) binds the capture,
@@ -171,13 +170,42 @@ Module/path labels remain lossless hex bytes. Candidate records identify current
 modules selected by declared-import impact; they do not load those paths, prove
 context sufficiency or request incremental recompilation. An unchanged comparison
 selects zero modules. Initial declaration investigation uses the existing semantic
-context interface separately. Fixed data/workflow checks pass; coherent full
-integration remains pending. The [current record](../benchmarks/results/project-impact-context-current.json)
+context interface separately. Fixed data/workflow checks pass. Fresh source8b repository, release and website verification passes. The [current record](../benchmarks/results/project-impact-context-current.json)
 separates candidate byte counts, collection cost and remaining unknowns.
 
+[RFC-0171](../design/rfcs/0171-ledger-transaction-overflow-preflight.md) makes the
+ordinary ledger reject an unrepresentable prospective credit, debit or transfer
+update with code44, after existing codes31..43 and before any account mutation.
+A maximum-balance credit1 retains the account and counts a rejected command.
+Aggregate totals, process counters and malformed caller spans/vectors retain
+checked partiality; no application invariant is inferred from Account fields.
+The production ledger command and manifest are unchanged:
+
+```sh
+./slimc run library/ledger.project -- library/applications/ledger/fixtures/ledger.log
+```
+
+The permanent finite regression gate freshly binds current source bytes, the
+actual accepted RFC and one small original-state fixture. It executes both
+original and current programs through the production compiler, with171 complete
+state postconditions plus13 CLI/diagnostic cases and46 fixed native observations:
+
+```sh
+mkdir -p build/overnight-ledger-transaction
+python3 -B scripts/verify-ledger-transaction.py --current --output build/overnight-ledger-transaction/FRESH
+```
+
+Use a new output path; its separate FRESH.held sibling preserves complete expected
+data before native execution. Failed/partial directories remain evidence, without
+automatic retries. Focused and canonical current ordinary/sanitized checks pass;
+Fresh source8b full integration passes. The
+[current record](../benchmarks/results/ledger-transaction-current.json) separates
+that domain from full acceptance. Checked baseline declaration queries and the
+actual three-of-nine impact selection are workflow observations and byte proxies,
+not sufficient context, saved native time or agent-effectiveness evidence.
+
 [RFC-0166](../design/rfcs/0166-bounded-development-operation-cost.md) adds an
-ordinary operation-cost consumer. Native and repository/release/website gates
-pass at `915f836`. Its fixed
+ordinary operation-cost consumer. Pinned native checks pass. Fresh source8b full integration passes. Its fixed
 adapter reads validated protocol-2 observations after writers stop:
 
 ```sh
@@ -234,3 +262,20 @@ python3 scripts/verify-catalog-diff.py --output build/catalog-diff-check \
 Both component checks run permanently in `check-library-corpus.sh`; original budgets
 and corpus members remain. Counters exclude host/runtime internals; latency,
 physical allocation bounds and leak detection remain separate evidence.
+
+[RFC-0172](../design/rfcs/0172-bounded-source-record-selection.md) adds ordinary
+`source-context` selection from the project-input transport. Request explicit
+module names in strictly increasing byte order; duplicate or empty queries are
+rejected before reading the capture. Selected names, paths and source bytes are
+preserved exactly. Captured paths are never opened.
+
+```sh
+./slimc run project-input.project -- selfhost/slim.project > build/compiler-input.ns
+./slimc run library/source-context.project -- build/compiler-input.ns compiler context project > build/compiler-context.ns
+```
+
+This checkout workflow validates transport structure, not arbitrary SLIM programs.
+Source authority needs a matching checked producer result. Selection does not
+expand dependencies or establish sufficient context. The [current record](../benchmarks/results/source-context-current.json)
+separates finite ordinary/sanitized acceptance, byte scope and remaining unknowns.
+The tool is outside the frozen 0.9 release surface.

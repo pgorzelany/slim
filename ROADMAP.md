@@ -23,12 +23,9 @@ waive `design/FEATURE_POLICY.md`.
 
 ## Completed early agent loop
 
-The completed bounded outcome implements and evaluates an interface that helps a
-checked SLIM program before changing it. Reuse the production compiler's checked
-source facts; keep ordinary checking as the sole acceptance authority. The
-[context architecture decision](design/rfcs/0159-bounded-semantic-context.md)
-specifies the supported source/project shape, identities, protocol and fixed
-work/output budgets before production implementation.
+The completed slice exposes production checked-source facts under the
+[bounded context contract](design/rfcs/0159-bounded-semantic-context.md).
+Ordinary checking remains the sole program-acceptance authority.
 
 | Deliverable | Dependencies | Exit evidence |
 | --- | --- | --- |
@@ -37,13 +34,10 @@ work/output budgets before production implementation.
 | Repair feasibility pilot | Working context; frozen tasks and independent acceptance tests | Three paired tasks in six fresh Sol 6.1 extra-high sessions; 15 minutes and 24 compiler-wrapper operations per session; model tool-call/token observation and enforcement remain unknown where traces are unavailable; all successes, failures and interruptions retained. |
 | Adoption decision | Validation, pilot and unchanged repository/release gates | Explicit adopt/narrow/reject disposition, observed costs and remaining unknowns; a bounded result stays bounded. |
 
-The paired runs use the same model, reasoning configuration, ordinary tools,
-libraries, initial tasks and acceptance tests. Context access is the declared
-treatment. Freeze ordering, isolation, timing and budgets before measured runs;
-keep human intervention, model tokens where observable, tool calls, repair
-iterations, native/resource quality and time to an accepted result separate.
-No outside model API spending is authorized. This feasibility pilot measures its
-named tasks; broader effectiveness needs the later controlled evaluation.
+Paired runs fix model, reasoning, tools, tasks, independent acceptance, order
+and budgets; context access is the treatment. Keep intervention, observable model
+usage, repair iterations, native quality and time separate. No outside model API
+spending is authorized. The pilot applies only to its named tasks.
 
 This outcome excludes source migration, session-protocol expansion, incomplete
 source acceptance, debugger value inspection, failure recording, provider
@@ -66,20 +60,16 @@ integration; measured trials and native benchmarks run without competing work.
 | Held-out evaluation | Larger paired compiler/library tasks with ordinary tools versus optional context, using fresh Sol 6.1 extra-high agents. | Freeze tasks, independent tests, order and budgets before dispatch; retain every outcome and report unknown observations explicitly. |
 | Closure | Reviewed, verified commits pushed to `codex/slim-next`; concise current status and results. | Required compiler/runtime/benchmark checks and source-bound repository, release and website acceptance. |
 
-The morning outcome is working source and evidence: reconcile actual compiler
-inputs, plan their dependencies, summarize every configured development trial,
-and compare ordinary feedback with optional semantic context. Name measured
-benefits and costs per domain; retain unknown results and infrastructure failures.
-Reliable native session execution is part of acceptance, not an optional cleanup.
-
-Checkpoint `915f836`, pushed to `codex/slim-next`, passes the complete repository,
-reproducible release/clean-install and website invocation. Checked project
-capture, operation-cost reporting, private duplicate-path validation and ordinary
-SLIM declared-import impact analysis now compose a measured development workflow.
-Fixed million-node and aggregate-source crossings and the single-command
-RFC-0170 context export pass focused native acceptance; permanent gates are wired
-and coherent repository/release/website integration is next. The
-[protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
+Checkpoint `112f6ed` is pushed to `codex/slim-next`. Fresh source8b passes all
+repository, release and website gates with verification tools built in that
+captured checkout. Historical copied-cache source binding remains unknown.
+Checked project capture, operation-cost reporting, duplicate-path validation,
+declared-import impact and context export compose the development workflow.
+Fixed million-node/source crossings and ledger overflow preflight pass durable gates.
+RFC-0172 explicit source selection passes218 focused observations across three
+real projects; its fresh canonical current-source gate also passes. Combined
+source9 repository, release and website acceptance remains pending.
+The [protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
 serial Sol 6.1 extra-high trials; eight participants passed their independent
 oracles. Dispatch nine was interrupted before a participant started because
 fresh-agent capacity was exhausted; fifteen trials remain undispatched. General effectiveness,
@@ -93,11 +83,10 @@ parity, resource and same-host comparisons pass for the named focused domains.
 The verified checkpoint includes these changes. Whole-manifest checking remains
 outside the local linear-work claim.
 
-Only reviewed bounded ordinary-source, evaluator and behavior-preserving compiler
-contracts are accepted within this window. New language syntax, runtime integration, dependencies and
-performance-budget relaxation remain outside its scope. The first pilot stays
-frozen. A result may support retaining, narrowing or rejecting context use; a
-larger task corpus still does not establish universal agent effectiveness.
+This window accepts reviewed ordinary-source, evaluator and behavior-preserving
+compiler contracts. New syntax, runtime integration, dependencies and budget
+relaxation retain their separate gates. The pilot stays frozen; the larger
+cohort may support retaining, narrowing or rejecting context use.
 
 Operator timing and transient logs stay in ignored `build/`. Current docs explain
 contracts, decisions and next work; durable tests and relevant measurements

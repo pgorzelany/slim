@@ -31,19 +31,18 @@ condition and general context benefit remains unknown. The
 retains original outcomes and costs.
 
 The [current roadmap](../ROADMAP.md) authorizes continuous work until 2026-10-03
-10:00 Europe/Warsaw. Checkpoint `915f836`, pushed to `codex/slim-next`, passes the
-complete repository, reproducible release/clean-install and website invocation for the
-[project-input and operation-cost tools](../library/COMPONENTS.md) and
-[duplicate-path validation](../benchmarks/results/manifest-validation-current.json),
-plus [ordinary declared-import impact analysis](../benchmarks/results/project-impact-current.json).
-Fixed million-node/aggregate-source crossings and RFC-0170 context export pass
-focused native acceptance; their permanent gates await coherent full integration. The frozen evaluator has eight accepted
-participants, one infrastructure interruption and fifteen undispatched trials.
+10:00 Europe/Warsaw. Checkpoint `112f6ed` is pushed to `codex/slim-next`.
+Fresh source8b passes repository, release and website verification in44m05s,
+with Rust verification tools rebuilt in the captured checkout. Historical copied-cache
+source binding remains unknown. The [ordinary development tools](../library/COMPONENTS.md),
+fixed million-node/aggregate-source crossings, context export and ledger overflow
+preflight pass that invocation. RFC-0172 explicit source selection passes218 focused
+ordinary/sanitized observations on three real projects and its fresh current-source
+gate also passes; combined source9 closure is pending.
+The frozen evaluator has eight accepted participants, one infrastructure interruption and fifteen undispatched trials.
 Fresh-agent capacity, model calls/tokens and general effectiveness remain unresolved.
 Current [source-bound records](../benchmarks/results/README.md) retain scope and
 identities. M2/full M3 remain pending.
 
-M3-M7 and general agent effectiveness remain pending. A bounded pilot cannot
-establish a general effectiveness claim. The
-[roadmap](../ROADMAP.md) records remaining exit evidence. The 0.9 language version
-is unchanged.
+The [roadmap](../ROADMAP.md) retains M3-M7 exit gates and the unchanged 0.9
+language version.

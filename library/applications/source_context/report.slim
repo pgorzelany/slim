@@ -1,0 +1,66 @@
+module source_context_report
+
+fn resolve(capture: source_context_model.Capture, args: Vec[Bytes], cursor: I64, selected: @Vec[I64]) -> source_context_model.Status effects[alloc, partial]:
+  if cursor == vec.len(args):
+    source_context_model.Status(valid: true, code: 0, position: 0)
+  else:
+    let query: Bytes = vec.get(args, cursor)
+    let ordinal: I64 = std_byte_index.find(capture.index, query, 0, bytes.len(query))
+    if ordinal < 0:
+      source_context_model.Status(valid: false, code: 40, position: cursor - 2)
+    else:
+      vec.push(@selected, ordinal)
+      recur(capture, args, cursor + 1, @selected)
+
+fn measure(capture: source_context_model.Capture, selected: Vec[I64], cursor: I64, total: I64) -> I64 effects[partial]:
+  if cursor == vec.len(selected):
+    total
+  else:
+    let record: source_context_model.Record = vec.get(capture.records, vec.get(selected, cursor))
+    let amount: I64 = project_input_limits.record_size(record.name_end - record.name_start, record.path_end - record.path_start, record.body_end - record.body_start, project_input_limits.Resource::Transport())
+    let next: I64 = project_input_limits.add(total, amount, project_input_limits.Resource::Transport())
+    if next < 0:
+      -1
+    else:
+      recur(capture, selected, cursor + 1, next)
+
+fn append(capture: source_context_model.Capture, selected: Vec[I64], cursor: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if cursor == vec.len(selected):
+    true
+  else:
+    let record: source_context_model.Record = vec.get(capture.records, vec.get(selected, cursor))
+    let name: Bool = std_netstring.append(capture.index.source, record.name_start, record.name_end, project_input_limits.maximum(project_input_limits.Resource::Name()), @output)
+    let path: Bool = std_netstring.append(capture.index.source, record.path_start, record.path_end, project_input_limits.maximum(project_input_limits.Resource::Path()), @output)
+    let body: Bool = std_netstring.append(capture.index.source, record.body_start, record.body_end, project_input_limits.maximum(project_input_limits.Resource::Payload()), @output)
+    if name && (path && body):
+      recur(capture, selected, cursor + 1, @output)
+    else:
+      false
+
+fn build(capture: source_context_model.Capture, selected: Vec[I64]) -> source_context_model.Prepared effects[alloc, partial]:
+  let tag: Bytes = "slim-source-context-1"
+  let count_width: I64 = project_input_limits.decimal_width(vec.len(selected))
+  let prefix: I64 = project_input_limits.add(project_input_limits.frame_size(bytes.len(tag)), project_input_limits.frame_size(count_width), project_input_limits.Resource::Transport())
+  let size: I64 = measure(capture, selected, 0, prefix)
+  if size < 0:
+    source_context_model.Prepared::Invalid(37, "output", 0)
+  else:
+    let output: Vec[U8] = vec.new()
+    let tag_ok: Bool = std_netstring.append(tag, 0, bytes.len(tag), project_input_limits.maximum(project_input_limits.Resource::Payload()), @output)
+    let digits: Vec[U8] = vec.new()
+    std_text.append_i64(@digits, vec.len(selected))
+    let text: Bytes = bytes.freeze(^digits)
+    let count_ok: Bool = std_netstring.append(text, 0, bytes.len(text), 16, @output)
+    let records_ok: Bool = append(capture, selected, 0, @output)
+    if (tag_ok && (count_ok && records_ok)) && (vec.len(output) == size):
+      source_context_model.Prepared::Ready(bytes.freeze(^output))
+    else:
+      source_context_model.Prepared::Invalid(37, "output", 0)
+
+fn prepare(capture: source_context_model.Capture, args: Vec[Bytes]) -> source_context_model.Prepared effects[alloc, partial]:
+  let selected: Vec[I64] = vec.new()
+  let status: source_context_model.Status = resolve(capture, args, 2, @selected)
+  if !status.valid:
+    source_context_model.Prepared::Invalid(status.code, "queries", status.position)
+  else:
+    build(capture, selected)

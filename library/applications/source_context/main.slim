@@ -1,0 +1,68 @@
+module source_context_app
+
+fn error(code: I64, stage: Bytes, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " in ")
+  std_text.append_bytes(@output, stage)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn queries_valid(args: Vec[Bytes], cursor: I64) -> Bool effects[partial]:
+  if cursor == vec.len(args):
+    true
+  else:
+    let query: Bytes = vec.get(args, cursor)
+    if (bytes.len(query) == 0) || (bytes.len(query) > project_input_limits.maximum(project_input_limits.Resource::Name())):
+      false
+    else:
+      if cursor == 2:
+        recur(args, cursor + 1)
+      else:
+        let previous: Bytes = vec.get(args, cursor - 1)
+        if std_byte_index.compare(previous, 0, bytes.len(previous), query, 0, bytes.len(query)) >= 0:
+          false
+        else:
+          recur(args, cursor + 1)
+
+fn select(source: Bytes, args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let loaded: source_context_model.Loaded = source_context_data.load(source)
+  match loaded:
+    Invalid(code, position):
+      error(code, "capture", position)
+      65
+    Ready(capture):
+      let prepared: source_context_model.Prepared = source_context_report.prepare(capture, args)
+      match prepared:
+        Invalid(code, stage, position):
+          error(code, stage, position)
+          65
+        Ready(report):
+          io.print_bytes(report)
+          0
+
+fn read(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(vec.get(args, 1), @input):
+    select(bytes.freeze(^input), args)
+  else:
+    error(1, "capture", 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) < 2:
+    error(2, "arguments", 0)
+    64
+  else:
+    if vec.len(args) - 2 > project_input_limits.maximum(project_input_limits.Resource::Modules()):
+      error(2, "arguments", 0)
+      64
+    else:
+      if queries_valid(args, 2):
+        read(args)
+      else:
+        error(2, "arguments", 0)
+        64

@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "scope": "RFC0171 ordinary ledger transaction overflow preflight",
+  "status": "Focused and permanent current-source ordinary/sanitized finite domains pass; fresh source8b full integration passes. Combined source9 pending.",
+  "command": "python3 -B scripts/verify-ledger-transaction.py --current --output build/overnight-ledger-transaction/FRESH",
+  "production_source": {
+    "path": "library/applications/ledger/state.slim",
+    "bytes": 7912,
+    "sha256": "855bc501f43dcc8dd0b6c1cb898e8a75e14e0de999a0fda5eca5658c97931a6c",
+    "change": "Three local preflight guards after original rejection31..43; no signature, effect, other-function, parser or manifest change."
+  },
+  "focused_acceptance": {
+    "classification": "bounded to184 fixed cases and the exact pinned source/control/compiler domain",
+    "state_cases": 171,
+    "literal_cli_and_diagnostic_cases": 13,
+    "native_leaves": 46,
+    "model_sha256": "f04786d828c5e86cce4eb11f340fad6c9be47f33ba4a285d97a6c9ddc3033285",
+    "freeze_sha256": "53377162af22d0f826cc07ea0c67dd3e1d9b5acdc0a477490bd04e60f2fbc4df",
+    "receipt_sha256": "7d8ce8fd7c7732b6c6e62e8ba5237a74a90ac8af68043905ec92bb86c16bee52",
+    "tested_rfc_sha256": "36473d924d72879afa42c1492701940c6bf1268b3407c1ed18290d2289c31e65",
+    "tested_verifier_sha256": "27b7ba161e06355ec0cb3625ed06a8683887994ec2b4c3150632ea4188cc9e87",
+    "compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+    "started_utc": "2026-10-03T04:26:57.830228+00:00",
+    "finished_utc": "2026-10-03T04:27:09.312926+00:00",
+    "elapsed_ns": 11482660709,
+    "timing_scope": "whole preparation, children, cleanup and publication through final endpoints; own receipt write/shutdown excluded",
+    "source_endpoints": 56,
+    "control_endpoints": 4,
+    "tool_endpoints": 3,
+    "native_files": 242,
+    "nonself_native_hashes": 241,
+    "platform": "darwin-arm64 with six fixed dSYM sidecars; other-host acceptance unknown",
+    "cleanup": "all46 owned groups killed/already absent and direct children reaped; closed-pipe descendant absent",
+    "baseline_max_credit": "actual ordinary original-state compiler/build/run exits70 with empty stdout and I64 addition overflow",
+    "current_max_credit": "ordinary and sanitized exit0: accepted1 rejected1, unchanged maximum balance",
+    "retained_partiality": "aggregate total overflow and forged negative total cursor still exit70 with exact runtime diagnostics"
+  },
+  "retained_failure": {
+    "attempt": "native-001",
+    "receipt_sha256": "cc724c9a302bf36c49772b9162f4e08170f678cbb251ffd8e75c70954cb4d3f1",
+    "result": "FAILED final implementation-only236-file assertion; six Darwin dSYM files yielded242. Original receipt and all46 raw observations remain immutable."
+  },
+  "workflow_scope": {
+    "changed_module": "ledger_state",
+    "current_candidates": [
+      "ledger",
+      "ledger_emit",
+      "ledger_state"
+    ],
+    "selected_current_modules": 3,
+    "current_modules": 9,
+    "selected_current_catalog_weight_bytes": 10791,
+    "all_current_module_bytes": 24288,
+    "impact_report_bytes": 1026,
+    "context_json_bytes": 5591,
+    "collector_wrapper_elapsed_ns": 6278345417,
+    "interpretation": "deterministic declared-import scope proxy; collector/native-role times overlap and must not be added",
+    "checked_baseline_contexts": [
+      {
+        "selector": "ledger_state.credit_account",
+        "selected_source_bytes": 664,
+        "report_bytes": 30226,
+        "inspected_nodes": 191
+      },
+      {
+        "selector": "ledger_state.debit_account",
+        "selected_source_bytes": 737,
+        "report_bytes": 32499,
+        "inspected_nodes": 215
+      },
+      {
+        "selector": "ledger_state.transfer",
+        "selected_source_bytes": 1268,
+        "report_bytes": 49591,
+        "inspected_nodes": 358
+      }
+    ],
+    "context_meaning": "actual checked identical baseline/expected snapshots; no edit diff or application-invariant proof",
+    "scope": "canonical current-native-001; historical focused workflow bytes remain in original native002 receipt"
+  },
+  "permanent_gate": {
+    "status": "184 cases and46 fixed native observations pass, including fresh source8b integration; finite tested domains only.",
+    "source_paths": 56,
+    "control_paths": 6,
+    "direct_tools": 3,
+    "fresh_hold_files": 128,
+    "baseline_fixture": "tests/fixtures/ledger_transaction_baseline_state.slim",
+    "baseline_sha256": "0316e7900060a061ec16f5859905a28dfecceec383828bd9f0a58a2955efc69e",
+    "binding": "Current opaque bodies and actual accepted RFC bytes are bound per fresh hold. Historical complete project trees/model receipts are evidence, not prerequisites.",
+    "current_rfc_metadata": {
+      "bytes": 14110,
+      "sha256": "ef397e1f5919d8e3ebec338e17ba819b1b86be6e2f1ac45bb81345b5c7c91a30"
+    }
+  },
+  "fixed_budgets": {
+    "whole_seconds": 900,
+    "child_seconds": 60,
+    "data_cases": 192,
+    "hold_files": 128,
+    "model_bytes": 4194304,
+    "hold_bytes": 16777216,
+    "native_file_bytes": 134217728,
+    "native_tree_entries": 1024,
+    "emit_stdout_bytes": 16777216,
+    "other_stdout_bytes": 8388608,
+    "stderr_bytes": 262144
+  },
+  "integration": {
+    "source_commit": "9d01a96a0c2705b7cbaf25ed330e7221ff30bb43",
+    "source_files": 1932,
+    "started_utc": "2026-10-03T05:13:17.820970+00:00",
+    "finished_utc": "2026-10-03T05:57:23.021527+00:00",
+    "elapsed_ns": 2645189719791,
+    "source_unchanged": true,
+    "full_success_marker": true,
+    "classification": "exact invocation and unchanged named source; bounded checked gate domains",
+    "branch": "codex/slim-next",
+    "command": [
+      "sh",
+      "scripts/verify-0.9.sh"
+    ],
+    "repository_release_website": "passed together; source8b excludes RFC172 and subsequent metadata",
+    "validation_receipt_sha256": "40062efee6f389468278f17c0c479f08e4ba95ee70fa400f204a1d683715432e",
+    "full_log_sha256": "35fe246dd500b2c42a8210005839ef4a868c48fce2826a9fe589699087b2f7e0",
+    "reproducible_release_sha256": "e0c50abf8b3eac9ba24d1052a27f73536abf657820f37847a6df4e60654da185",
+    "timing_scope": "operator validation duration; no model active-time claim",
+    "rust_root_binary_observations": {
+      "target/debug/slim-govern": {
+        "bytes": 1606112,
+        "sha256": "e55f5effead201f5f6d8523fd4de2302a2207e7afacd9dd1ffa981cf664c87d7",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      },
+      "target/debug/slim-conform": {
+        "bytes": 1335632,
+        "sha256": "1c86320abfc90f3c7497bdf2993a2b104f39e879236951638ff284e3e52678e4",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      },
+      "target/release/slim-bench": {
+        "bytes": 810272,
+        "sha256": "1914e9912a88de1695aa7ebc4dbbbcba92a008280124152f44568edf57c79f3c",
+        "private_checkout_literal_present": true,
+        "main_checkout_literal_present": false
+      }
+    },
+    "historical_source7": "112f6ed invocation passed; copied Rust target binaries retained another checkout root, so complete isolated source binding is unknown. Original receipt/log identities remain in Git history and ignored local evidence.",
+    "current_combined_source": "Source9 with RFC172 and corrected provenance metadata awaits full acceptance."
+  },
+  "unknown": {
+    "application_invariants": "not inferred from representable arbitrary account fields",
+    "wider_partiality": "aggregate/process counters and malformed callers outside the named domains remain partial",
+    "agent_effectiveness": "single exposed maintainer repair, not a cohort or causal model experiment",
+    "context_sufficiency": "candidate bytes and checked declaration feedback do not prove sufficient context",
+    "saved_compiler_work": "not measured",
+    "physical_memory_leaks": "logical caps and disabled host leak detection",
+    "live_atomicity_and_toolchain": "before/after byte pins only; ABA, loaded-code/host-boot and transitive SDK identities unknown"
+  },
+  "canonical_current_acceptance": {
+    "classification": "bounded to the unchanged184 cases/46 roles and exact fresh current source/control/compiler domain",
+    "receipt_path": "build/overnight-ledger-transaction/current-native-001/receipt.json",
+    "receipt_sha256": "a2439f29f5c330076e7cfe5cf0bef38d663d5c2b035b1ee5edecb7cb754b5c61",
+    "model_sha256": "a8f5ceea2c700e728b95d89306b17c183f91639ec37ebd3e086455a45dcc5bea",
+    "freeze_sha256": "f9bec8d7e1218aae27bb0bf10b62363137df0201209e3507cc9ec773e48361cd",
+    "hold_files": 128,
+    "hold_bytes": 1474501,
+    "state_cases": 171,
+    "literal_cli_and_diagnostic_cases": 13,
+    "native_leaves": 46,
+    "tested_rfc_sha256": "52a5c454d81df7f7eb893333094f3011bbc442eb65b4b6db56b6c93df601ac78",
+    "tested_oracle_sha256": "65cb1e08ad8863694720159bc02b8d43530d1977f5254bf7f83f88fbc69282e0",
+    "tested_verifier_sha256": "6a255fb58744aedb8f12694d9eb13b266c519cda8c7c796ef9bcd6c6d2fbcf52",
+    "compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+    "started_utc": "2026-10-03T04:42:16.815082+00:00",
+    "finished_utc": "2026-10-03T04:42:28.359297+00:00",
+    "inner_elapsed_ns": 11544174833,
+    "outer_task_wrapper_elapsed_ns": 11595858791,
+    "timing_scope": "whole preparation, children, cleanup and publication through final endpoints; own receipt write/shutdown excluded; outer wrapper includes receipt write/shutdown, intervals overlap",
+    "source_endpoints": 56,
+    "control_endpoints": 6,
+    "tool_endpoints": 3,
+    "native_files": 242,
+    "nonself_native_hashes": 241,
+    "audit": "independent raw128/241 byte rehash, unbounded171 full-poststate recomputation and all46 statuses/streams/cleanup matched;55 accepted,59 overflow44,57 earlier",
+    "metadata_binding": "Receipt retains tested pre-note RFC52a5c454. This current record and the subsequent implementation note do not replace that pin; source8 gate freshly binds actual current RFC bytes.",
+    "platform": "observed darwin-arm64 with six fixed dSYM files; other-host acceptance unknown"
+  }
+}

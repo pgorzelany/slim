@@ -1,0 +1,160 @@
+module source_context_data
+
+enum Counter:
+  Invalid(I64)
+  Value(I64)
+
+fn required(source: Bytes, cursor: I64, maximum: I64) -> std_netstring.Parsed effects[partial]:
+  let parsed: std_netstring.Parsed = std_netstring.parse(source, cursor, bytes.len(source), maximum)
+  match parsed:
+    End:
+      std_netstring.Parsed::Invalid(8, cursor)
+    Invalid(code, position):
+      std_netstring.Parsed::Invalid(code, position)
+    Value(frame):
+      std_netstring.Parsed::Value(frame)
+
+fn counter(source: Bytes, frame: std_netstring.Frame, maximum: I64) -> Counter effects[partial]:
+  let length: I64 = frame.end - frame.start
+  if length == 0:
+    Counter::Invalid(31)
+  else:
+    let first: U8 = bytes.get(source, frame.start)
+    if (!std_ascii.is_digit(first)) || ((u8.to_i64(first) == 48) && (length > 1)):
+      Counter::Invalid(31)
+    else:
+      let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, frame.start, frame.end)
+      match parsed:
+        Invalid(position):
+          Counter::Invalid(31)
+        Overflow(position):
+          Counter::Invalid(31)
+        Value(value, next):
+          if !(next == frame.end):
+            Counter::Invalid(31)
+          else:
+            if value > maximum:
+              Counter::Invalid(32)
+            else:
+              Counter::Value(value)
+
+fn invalid(code: I64, position: I64) -> source_context_model.Status:
+  source_context_model.Status(valid: false, code: code, position: position)
+
+fn records(source: Bytes, cursor: I64, count: I64, ordinal: I64, total: I64, output: @Vec[source_context_model.Record], entries: @Vec[std_byte_index.Entry]) -> source_context_model.Status effects[alloc, partial]:
+  if ordinal == count:
+    if cursor == bytes.len(source):
+      source_context_model.Status(valid: true, code: 0, position: cursor)
+    else:
+      invalid(36, cursor)
+  else:
+    let name: std_netstring.Parsed = required(source, cursor, project_input_limits.maximum(project_input_limits.Resource::Name()))
+    match name:
+      End:
+        invalid(8, cursor)
+      Invalid(code, position):
+        invalid(code, position)
+      Value(name_frame):
+        if name_frame.start == name_frame.end:
+          invalid(33, name_frame.start)
+        else:
+          let path: std_netstring.Parsed = required(source, name_frame.next, project_input_limits.maximum(project_input_limits.Resource::Path()))
+          match path:
+            End:
+              invalid(8, name_frame.next)
+            Invalid(code, position):
+              invalid(code, position)
+            Value(path_frame):
+              let body: std_netstring.Parsed = required(source, path_frame.next, project_input_limits.maximum(project_input_limits.Resource::Payload()))
+              match body:
+                End:
+                  invalid(8, path_frame.next)
+                Invalid(code, position):
+                  invalid(code, position)
+                Value(body_frame):
+                  let combined: I64 = project_input_limits.add(total, body_frame.end - body_frame.start, project_input_limits.Resource::Source())
+                  if combined < 0:
+                    invalid(35, body_frame.start)
+                  else:
+                    let record: source_context_model.Record = source_context_model.Record(name_start: name_frame.start, name_end: name_frame.end, path_start: path_frame.start, path_end: path_frame.end, body_start: body_frame.start, body_end: body_frame.end)
+                    vec.push(@output, record)
+                    vec.push(@entries, std_byte_index.Entry(start: name_frame.start, end: name_frame.end, ordinal: ordinal))
+                    recur(source, body_frame.next, count, ordinal + 1, combined, @output, @entries)
+
+fn graph(source: Bytes, cursor: I64, count: I64, source_bytes: I64) -> source_context_model.Loaded effects[alloc, partial]:
+  let parsed: std_netstring.Parsed = required(source, cursor, project_input_limits.maximum(project_input_limits.Resource::Payload()))
+  match parsed:
+    End:
+      source_context_model.Loaded::Invalid(8, cursor)
+    Invalid(code, position):
+      source_context_model.Loaded::Invalid(code, position)
+    Value(frame):
+      let output: Vec[source_context_model.Record] = vec.new()
+      let entries: Vec[std_byte_index.Entry] = vec.new()
+      let status: source_context_model.Status = records(source, frame.next, count, 0, source_bytes, @output, @entries)
+      if !status.valid:
+        source_context_model.Loaded::Invalid(status.code, status.position)
+      else:
+        let built: std_byte_index.Built = std_byte_index.build(source, ^entries, project_input_limits.maximum(project_input_limits.Resource::Modules()))
+        match built:
+          Invalid(code, position):
+            source_context_model.Loaded::Invalid(34, position)
+          Ready(index):
+            source_context_model.Loaded::Ready(source_context_model.Capture(index: index, records: output))
+
+fn manifest(source: Bytes, cursor: I64, count: I64) -> source_context_model.Loaded effects[alloc, partial]:
+  let parsed: std_netstring.Parsed = required(source, cursor, project_input_limits.maximum(project_input_limits.Resource::Payload()))
+  match parsed:
+    End:
+      source_context_model.Loaded::Invalid(8, cursor)
+    Invalid(code, position):
+      source_context_model.Loaded::Invalid(code, position)
+    Value(frame):
+      graph(source, frame.next, count, frame.end - frame.start)
+
+fn edges(source: Bytes, cursor: I64, count: I64) -> source_context_model.Loaded effects[alloc, partial]:
+  let parsed: std_netstring.Parsed = required(source, cursor, 16)
+  match parsed:
+    End:
+      source_context_model.Loaded::Invalid(8, cursor)
+    Invalid(code, position):
+      source_context_model.Loaded::Invalid(code, position)
+    Value(frame):
+      let number: Counter = counter(source, frame, project_input_limits.maximum(project_input_limits.Resource::Edges()))
+      match number:
+        Invalid(code):
+          source_context_model.Loaded::Invalid(code, frame.start)
+        Value(value):
+          manifest(source, frame.next, count)
+
+fn modules(source: Bytes, cursor: I64) -> source_context_model.Loaded effects[alloc, partial]:
+  let parsed: std_netstring.Parsed = required(source, cursor, 16)
+  match parsed:
+    End:
+      source_context_model.Loaded::Invalid(8, cursor)
+    Invalid(code, position):
+      source_context_model.Loaded::Invalid(code, position)
+    Value(frame):
+      let number: Counter = counter(source, frame, project_input_limits.maximum(project_input_limits.Resource::Modules()))
+      match number:
+        Invalid(code):
+          source_context_model.Loaded::Invalid(code, frame.start)
+        Value(count):
+          edges(source, frame.next, count)
+
+fn load(source: Bytes) -> source_context_model.Loaded effects[alloc, partial]:
+  if bytes.len(source) > project_input_limits.maximum(project_input_limits.Resource::Transport()):
+    source_context_model.Loaded::Invalid(10, 0)
+  else:
+    let parsed: std_netstring.Parsed = required(source, 0, project_input_limits.maximum(project_input_limits.Resource::Payload()))
+    match parsed:
+      End:
+        source_context_model.Loaded::Invalid(8, 0)
+      Invalid(code, position):
+        source_context_model.Loaded::Invalid(code, position)
+      Value(frame):
+        let tag: Bytes = "slim-project-input-1"
+        if (frame.end - frame.start == bytes.len(tag)) && std_bytes.range_equal(source, frame.start, tag, 0, bytes.len(tag)):
+          modules(source, frame.next)
+        else:
+          source_context_model.Loaded::Invalid(30, frame.start)

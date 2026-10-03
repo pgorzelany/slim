@@ -41,6 +41,12 @@ cmp "$slim_corpus_work/development-operation-cost.out" \
 cmp "$slim_corpus_work/project-impact.out" \
     "$slim_corpus_root/library/applications/project_impact/fixtures/impact.expected"
 
+"$slim_corpus_work/source-context" \
+    "$slim_corpus_root/library/applications/source_context/fixtures/capture.ns" \
+    a > "$slim_corpus_work/source-context.out"
+cmp "$slim_corpus_work/source-context.out" \
+    "$slim_corpus_root/library/applications/source_context/fixtures/selection.expected"
+
 "$slim_corpus_work/development-summary" \
     "$slim_corpus_root/library/applications/development_summary/fixtures/observations.ns" \
     > "$slim_corpus_work/development-summary.out"

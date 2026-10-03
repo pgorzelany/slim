@@ -10,6 +10,7 @@ ndjson	library/ndjson.project
 project-impact	library/project-impact.project
 raster	library/raster.project
 sat	library/sat.project
+source-context	library/source-context.project
 source-gen	library/source-gen.project
 standard-library	library/slim.project
 std-docs	library/std-docs.project

@@ -1,0 +1,26 @@
+module source_context_model
+
+struct Record:
+  name_start: I64
+  name_end: I64
+  path_start: I64
+  path_end: I64
+  body_start: I64
+  body_end: I64
+
+struct Capture:
+  index: std_byte_index.Index
+  records: Vec[Record]
+
+enum Loaded:
+  Invalid(I64, I64)
+  Ready(Capture)
+
+struct Status:
+  valid: Bool
+  code: I64
+  position: I64
+
+enum Prepared:
+  Invalid(I64, Bytes, I64)
+  Ready(Bytes)

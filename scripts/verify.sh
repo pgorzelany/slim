@@ -23,6 +23,15 @@ context_dir=$(mktemp -d "$PWD/build/overnight-project-impact/context-check.XXXXX
 python3 -B scripts/verify-project-impact-context.py --current \
   --output "$context_dir/current" --compiler build/toolchain/slimc --cc "$(command -v cc)"
 rm -rf "$context_dir"
+mkdir -p "$PWD/build/overnight-ledger-transaction"
+ledger_transaction_dir=$(mktemp -d "$PWD/build/overnight-ledger-transaction/check.XXXXXX")
+python3 -B scripts/verify-ledger-transaction.py --current \
+  --output "$ledger_transaction_dir/current"
+rm -rf "$ledger_transaction_dir"
+source_context_dir=$(mktemp -d "$PWD/build/source-context.XXXXXX")
+python3 -B scripts/verify-source-context.py --current \
+  --output "$source_context_dir/current"
+rm -rf "$source_context_dir"
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
