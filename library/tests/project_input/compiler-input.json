@@ -1,0 +1,366 @@
+{
+  "schema": 1,
+  "scope": "fixed direct-import fixture oracle for maintained selfhost/slim.project; no runtime manifest parsing or source acceptance authority",
+  "modules": [
+    {
+      "name": "analysis",
+      "path": "analysis.slim",
+      "imports": [
+        "memory",
+        "parallel",
+        "quality",
+        "ranges",
+        "reduce",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "cache",
+      "path": "cache.slim",
+      "imports": [
+        "project",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "check",
+      "path": "check.slim",
+      "imports": [
+        "effects",
+        "identity",
+        "ir",
+        "memory",
+        "ranges",
+        "retained",
+        "syntax",
+        "text",
+        "typing",
+        "validate"
+      ]
+    },
+    {
+      "name": "codegen",
+      "path": "codegen.slim",
+      "imports": [
+        "memory",
+        "parallel",
+        "ranges",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "compiler",
+      "path": "slimc.slim",
+      "imports": [
+        "analysis",
+        "cache",
+        "check",
+        "codegen",
+        "context",
+        "edit",
+        "equivalence",
+        "format",
+        "memory",
+        "project",
+        "proof",
+        "reduce",
+        "scheduler",
+        "session",
+        "syntax",
+        "text",
+        "typing",
+        "validate"
+      ]
+    },
+    {
+      "name": "context",
+      "path": "context.slim",
+      "imports": [
+        "cache",
+        "check",
+        "identity",
+        "project",
+        "retained",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "control",
+      "path": "control.slim",
+      "imports": [
+        "syntax"
+      ]
+    },
+    {
+      "name": "driver",
+      "path": "driver.slim",
+      "imports": [
+        "compiler"
+      ]
+    },
+    {
+      "name": "edit",
+      "path": "edit.slim",
+      "imports": [
+        "format",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "effects",
+      "path": "effects.slim",
+      "imports": [
+        "syntax"
+      ]
+    },
+    {
+      "name": "equivalence",
+      "path": "equivalence.slim",
+      "imports": [
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "flow",
+      "path": "flow.slim",
+      "imports": [
+        "control",
+        "identity",
+        "retained",
+        "syntax",
+        "typing"
+      ]
+    },
+    {
+      "name": "format",
+      "path": "format.slim",
+      "imports": [
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "fragments",
+      "path": "fragments.slim",
+      "imports": [
+        "cache",
+        "codegen",
+        "identity",
+        "memory",
+        "parallel",
+        "parallelcache",
+        "project",
+        "ranges",
+        "retained",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "identity",
+      "path": "identity.slim",
+      "imports": []
+    },
+    {
+      "name": "ir",
+      "path": "ir.slim",
+      "imports": []
+    },
+    {
+      "name": "memory",
+      "path": "memory.slim",
+      "imports": [
+        "effects",
+        "ir",
+        "syntax"
+      ]
+    },
+    {
+      "name": "nativebuild",
+      "path": "nativebuild.slim",
+      "imports": [
+        "identity",
+        "session"
+      ]
+    },
+    {
+      "name": "nativecache",
+      "path": "nativecache.slim",
+      "imports": [
+        "cache",
+        "retained"
+      ]
+    },
+    {
+      "name": "ownership",
+      "path": "ownership.slim",
+      "imports": []
+    },
+    {
+      "name": "parallel",
+      "path": "parallel.slim",
+      "imports": [
+        "effects",
+        "ranges",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "parallelcache",
+      "path": "parallelcache.slim",
+      "imports": [
+        "identity",
+        "parallel",
+        "project",
+        "ranges",
+        "retained",
+        "syntax"
+      ]
+    },
+    {
+      "name": "project",
+      "path": "project.slim",
+      "imports": [
+        "check",
+        "codegen",
+        "format",
+        "identity",
+        "memory",
+        "ranges",
+        "retained",
+        "scheduler",
+        "syntax",
+        "text",
+        "typing",
+        "validate"
+      ]
+    },
+    {
+      "name": "proof",
+      "path": "proof.slim",
+      "imports": [
+        "reduce",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "quality",
+      "path": "quality.slim",
+      "imports": [
+        "ranges",
+        "reduce",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "query",
+      "path": "query.slim",
+      "imports": [
+        "identity",
+        "project",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "ranges",
+      "path": "ranges.slim",
+      "imports": [
+        "effects",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "reduce",
+      "path": "reduce.slim",
+      "imports": [
+        "format",
+        "syntax",
+        "text"
+      ]
+    },
+    {
+      "name": "retained",
+      "path": "retained.slim",
+      "imports": [
+        "identity",
+        "ir",
+        "memory",
+        "ranges",
+        "syntax",
+        "text",
+        "typing"
+      ]
+    },
+    {
+      "name": "scheduler",
+      "path": "scheduler.slim",
+      "imports": [
+        "syntax"
+      ]
+    },
+    {
+      "name": "session",
+      "path": "session.slim",
+      "imports": [
+        "cache",
+        "fragments",
+        "identity",
+        "parallelcache",
+        "project",
+        "query",
+        "retained",
+        "syntax"
+      ]
+    },
+    {
+      "name": "syntax",
+      "path": "syntax.slim",
+      "imports": [
+        "identity",
+        "ir"
+      ]
+    },
+    {
+      "name": "text",
+      "path": "text.slim",
+      "imports": [
+        "syntax"
+      ]
+    },
+    {
+      "name": "typing",
+      "path": "typing.slim",
+      "imports": [
+        "control",
+        "ir",
+        "memory",
+        "ownership",
+        "syntax"
+      ]
+    },
+    {
+      "name": "validate",
+      "path": "validate.slim",
+      "imports": [
+        "syntax"
+      ]
+    }
+  ]
+}

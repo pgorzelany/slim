@@ -1,0 +1,331 @@
+module operation_cost_emit
+
+fn error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn frame_size(length: I64) -> I64 effects[partial]:
+  if length < 10:
+    length + 3
+  else:
+    if length < 100:
+      length + 4
+    else:
+      if length < 1000:
+        length + 5
+      else:
+        if length < 10000:
+          length + 6
+        else:
+          if length < 100000:
+            length + 7
+          else:
+            length + 8
+
+fn field(output: @Vec[U8], source: Bytes, start: I64, end: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if (maximum < 0) || ((maximum > 524288) || ((start < 0) || ((end < start) || (end > bytes.len(source))))):
+    false
+  else:
+    let length: I64 = end - start
+    let current: I64 = vec.len(output)
+    if (length > 524288) || (current > maximum):
+      false
+    else:
+      if frame_size(length) > (maximum - current):
+        false
+      else:
+        std_netstring.append(source, start, end, 524288, @output)
+
+fn text(output: @Vec[U8], value: Bytes, maximum: I64) -> Bool effects[alloc, partial]:
+  field(@output, value, 0, bytes.len(value), maximum)
+
+fn span(output: @Vec[U8], source: Bytes, value: std_netstring.Frame, maximum: I64) -> Bool effects[alloc, partial]:
+  field(@output, source, value.start, value.end, maximum)
+
+fn integer(output: @Vec[U8], value: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if value < 0:
+    false
+  else:
+    let digits: Vec[U8] = vec.new()
+    std_text.append_i64(@digits, value)
+    text(@output, bytes.freeze(^digits), maximum)
+
+fn nested(output: @Vec[U8], value: ^Vec[U8], maximum: I64) -> Bool effects[alloc, partial]:
+  text(@output, bytes.freeze(^value), maximum)
+
+fn raw(output: @Vec[U8], value: ^Vec[U8], maximum: I64) -> Bool effects[alloc, partial]:
+  if (maximum < 0) || ((maximum > 524288) || (vec.len(output) > maximum)):
+    false
+  else:
+    if vec.len(value) > (maximum - vec.len(output)):
+      false
+    else:
+      let source: Bytes = bytes.freeze(^value)
+      std_bytes.append_range(source, 0, bytes.len(source), @output)
+
+fn condition(which: I64) -> Bytes:
+  if which == 0:
+    "baseline"
+  else:
+    "context"
+
+fn operation(which: I64) -> Bytes:
+  if which == 0:
+    "check"
+  else:
+    if which == 1:
+      "interfaces"
+    else:
+      if which == 2:
+        "context"
+      else:
+        if which == 3:
+          "build"
+        else:
+          "run"
+
+fn phase(which: I64) -> Bytes:
+  if which < 3:
+    operation(which)
+  else:
+    if which == 3:
+      "emit-c"
+    else:
+      if which == 4:
+        "native-compile"
+      else:
+        "execute"
+
+fn request_group(view: operation_cost_model.View, group: I64) -> Bool effects[partial]:
+  let trials: I64 = vec.len(view.trials) * 2
+  if group < (trials + 4):
+    (group % 2) == 0
+  else:
+    group < (trials + 14)
+
+fn kind(view: operation_cost_model.View, group: I64) -> Bytes effects[partial]:
+  let trials: I64 = vec.len(view.trials) * 2
+  if group < trials:
+    if (group % 2) == 0:
+      "trial-request"
+    else:
+      "trial-command"
+  else:
+    if group < (trials + 4):
+      if (group % 2) == 0:
+        "condition-request"
+      else:
+        "condition-command"
+    else:
+      if group < (trials + 14):
+        "operation-request"
+      else:
+        "phase-command"
+
+fn identity(output: @Vec[U8], view: operation_cost_model.View, group: I64) -> Bool effects[alloc, partial]:
+  let trials: I64 = vec.len(view.trials) * 2
+  if group < trials:
+    let trial: operation_cost_model.Trial = vec.get(view.trials, group / 2)
+    span(@output, view.source, trial.identifier, 212) && (span(@output, view.source, trial.task, 212) && text(@output, condition(trial.condition), 212))
+  else:
+    if group < (trials + 4):
+      text(@output, "", 212) && (text(@output, "", 212) && text(@output, condition((group - trials) / 2), 212))
+    else:
+      if group < (trials + 14):
+        let selected: I64 = (group - trials) - 4
+        text(@output, "", 212) && (text(@output, operation(selected % 5), 212) && text(@output, condition(selected / 5), 212))
+      else:
+        let selected: I64 = (group - trials) - 14
+        text(@output, "", 212) && (text(@output, phase(selected % 6), 212) && text(@output, condition(selected / 6), 212))
+
+fn count(groups: operation_cost_model.Groups, group: I64, column: I64) -> I64 effects[partial]:
+  vec.get(groups.counts, (group * 32) + column)
+
+fn counters(output: @Vec[U8], groups: operation_cost_model.Groups, group: I64, cursor: I64, end: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if cursor == end:
+    true
+  else:
+    if integer(@output, count(groups, group, cursor), maximum):
+      recur(@output, groups, group, cursor + 1, end, maximum)
+    else:
+      false
+
+fn command_coverage(output: @Vec[U8], groups: operation_cost_model.Groups, group: I64, phase_group: Bool) -> Bool effects[alloc, partial]:
+  if phase_group:
+    integer(@output, count(groups, group, 4), 85) && counters(@output, groups, group, 6, 9, 85)
+  else:
+    let prefix: Bool = counters(@output, groups, group, 0, 5, 85)
+    let complete: Bool = if (count(groups, group, 1) > 0) || (count(groups, group, 3) > 0):
+      text(@output, "", 85)
+    else:
+      integer(@output, count(groups, group, 4), 85)
+    prefix && (complete && counters(@output, groups, group, 6, 9, 85))
+
+fn metric_name(request: Bool, column: I64) -> Bytes:
+  if request:
+    if column == 0:
+      "capture-ns"
+    else:
+      if column == 1:
+        "queue-ns"
+      else:
+        if column == 2:
+          "wrapper-ns"
+        else:
+          "feedback-bytes"
+  else:
+    if column == 0:
+      "command-ns"
+    else:
+      if column == 1:
+        "executable-ns"
+      else:
+        if column == 2:
+          "stdout-bytes"
+        else:
+          if column == 3:
+            "stderr-bytes"
+          else:
+            "generated-c-bytes"
+
+fn provenance(output: @Vec[U8], view: operation_cost_model.View, value: operation_cost_model.Metric) -> Bool effects[alloc, partial]:
+  if value.sum.count == 0:
+    text(@output, "", 184) && (text(@output, "", 184) && (text(@output, "", 184) && text(@output, "", 184)))
+  else:
+    if (value.trial < 0) || ((value.trial >= vec.len(view.trials)) || ((value.request < 0) || ((value.request >= vec.len(view.requests)) || ((value.sequence < 0) || ((value.sequence > 4095) || ((value.ordinal < 0) || (value.ordinal > 3))))))):
+      false
+    else:
+      let trial: operation_cost_model.Trial = vec.get(view.trials, value.trial)
+      let request: operation_cost_model.Request = vec.get(view.requests, value.request)
+      span(@output, view.source, trial.identifier, 184) && (integer(@output, value.sequence, 184) && (span(@output, view.source, request.identifier, 184) && integer(@output, value.ordinal, 184)))
+
+fn metric(output: @Vec[U8], view: operation_cost_model.View, value: operation_cost_model.Metric, request: Bool, column: I64) -> Bool effects[alloc, partial]:
+  let prefix: Bool = text(@output, metric_name(request, column), 319) && (integer(@output, value.eligible, 319) && (integer(@output, value.sum.count, 319) && integer(@output, value.missing, 319)))
+  let sum: Bool = if value.sum.count == 0:
+    text(@output, "", 319) && text(@output, "empty", 319)
+  else:
+    if value.sum.valid:
+      integer(@output, value.sum.total, 319) && text(@output, "exact", 319)
+    else:
+      text(@output, "", 319) && text(@output, "overflow", 319)
+  let maximum: Bool = if value.sum.count == 0:
+    text(@output, "", 319) && text(@output, "empty", 319)
+  else:
+    integer(@output, value.maximum, 319) && text(@output, "exact", 319)
+  let origin: Vec[U8] = vec.new()
+  let known: Bool = provenance(@origin, view, value)
+  prefix && (sum && (maximum && (known && nested(@output, ^origin, 319))))
+
+fn metrics(output: @Vec[U8], view: operation_cost_model.View, groups: operation_cost_model.Groups, group: I64, request: Bool, cursor: I64) -> Bool effects[alloc, partial]:
+  let end: I64 = if request:
+    4
+  else:
+    5
+  if cursor == end:
+    true
+  else:
+    let payload: Vec[U8] = vec.new()
+    let value: operation_cost_model.Metric = vec.get(groups.metrics, (group * 5) + cursor)
+    if metric(@payload, view, value, request, cursor) && nested(@output, ^payload, 1620):
+      recur(@output, view, groups, group, request, cursor + 1)
+    else:
+      false
+
+fn controls(output: @Vec[U8], view: operation_cost_model.View, group: I64) -> Bool effects[alloc, partial]:
+  if group < (vec.len(view.trials) * 2):
+    let trial: operation_cost_model.Trial = vec.get(view.trials, group / 2)
+    span(@output, view.source, trial.outcome, 1910) && span(@output, view.source, trial.lifecycle, 1910)
+  else:
+    text(@output, "", 1910) && text(@output, "", 1910)
+
+fn data(output: @Vec[U8], view: operation_cost_model.View, groups: operation_cost_model.Groups, group: I64) -> Bool effects[alloc, partial]:
+  let request: Bool = request_group(view, group)
+  let coverage: Vec[U8] = vec.new()
+  let covered: Bool = if request:
+    counters(@coverage, groups, group, 0, 9, 85)
+  else:
+    command_coverage(@coverage, groups, group, group >= ((vec.len(view.trials) * 2) + 14))
+  let statuses: Vec[U8] = vec.new()
+  let status_end: I64 = if request:
+    19
+  else:
+    15
+  let classified: Bool = counters(@statuses, groups, group, 9, status_end, 95)
+  let measured: Vec[U8] = vec.new()
+  let observed: Bool = metrics(@measured, view, groups, group, request, 0)
+  covered && (classified && (observed && (controls(@output, view, group) && (nested(@output, ^coverage, 1910) && (nested(@output, ^statuses, 1910) && nested(@output, ^measured, 1910))))))
+
+fn group(output: @Vec[U8], view: operation_cost_model.View, values: operation_cost_model.Groups, which: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  let identity_payload: Vec[U8] = vec.new()
+  let identified: Bool = identity(@identity_payload, view, which)
+  let data_payload: Vec[U8] = vec.new()
+  let described: Bool = data(@data_payload, view, values, which)
+  let record: Vec[U8] = vec.new()
+  identified && (described && (text(@record, kind(view, which), 2304) && (nested(@record, ^identity_payload, 2304) && (nested(@record, ^data_payload, 2304) && raw(@output, ^record, maximum)))))
+
+fn groups(output: @Vec[U8], view: operation_cost_model.View, values: operation_cost_model.Groups, cursor: I64, maximum: I64) -> Bool effects[alloc, partial]:
+  if cursor == operation_cost_stats.group_count(view):
+    true
+  else:
+    if group(@output, view, values, cursor, maximum):
+      recur(@output, view, values, cursor + 1, maximum)
+    else:
+      false
+
+fn header(output: @Vec[U8], view: operation_cost_model.View) -> Bool effects[alloc, partial]:
+  let identities: Vec[U8] = vec.new()
+  let valid: Bool = span(@identities, view.source, view.header.compiler, 2048) && (span(@identities, view.source, view.header.evaluator, 2048) && span(@identities, view.source, view.header.manifest, 2048))
+  valid && (text(@output, "slim-development-operation-cost-report-1", 2048) && (span(@output, view.source, view.header.freeze, 2048) && nested(@output, ^identities, 2048)))
+
+fn work_fields(output: @Vec[U8], work: Vec[I64], cursor: I64) -> Bool effects[alloc, partial]:
+  if cursor == 5:
+    true
+  else:
+    if integer(@output, vec.get(work, cursor), 2048):
+      recur(@output, work, cursor + 1)
+    else:
+      false
+
+fn unknowns(output: @Vec[U8], cursor: I64) -> Bool effects[alloc, partial]:
+  if cursor == 6:
+    true
+  else:
+    if text(@output, "unknown", 2048):
+      recur(@output, cursor + 1)
+    else:
+      false
+
+fn footer(output: @Vec[U8], work: Vec[I64]) -> Bool effects[alloc, partial]:
+  let counters: Vec[U8] = vec.new()
+  let counted: Bool = work_fields(@counters, work, 0)
+  let missing: Vec[U8] = vec.new()
+  let unavailable: Bool = unknowns(@missing, 0)
+  counted && (unavailable && (text(@output, "work", 2048) && (nested(@output, ^counters, 2048) && nested(@output, ^missing, 2048))))
+
+fn report(view: operation_cost_model.View, values: operation_cost_model.Groups, work: Vec[I64], maximum: I64) -> Bool effects[alloc, io, partial]:
+  if (maximum < 0) || ((maximum > 524288) || ((vec.len(view.trials) > 64) || (!(vec.len(work) == 6)))):
+    false
+  else:
+    let count: I64 = operation_cost_stats.group_count(view)
+    if (!(vec.len(values.counts) == (count * 32))) || (!(vec.len(values.metrics) == (count * 5))):
+      false
+    else:
+      let beginning: Vec[U8] = vec.new()
+      let opened: Bool = header(@beginning, view)
+      let ending: Vec[U8] = vec.new()
+      let closed: Bool = footer(@ending, work)
+      if (!opened) || ((!closed) || (vec.len(beginning) > (2048 - vec.len(ending)))):
+        false
+      else:
+        let output: Vec[U8] = vec.new()
+        let complete: Bool = raw(@output, ^beginning, maximum) && (groups(@output, view, values, 0, maximum) && raw(@output, ^ending, maximum))
+        if complete:
+          io.print_bytes(bytes.freeze(^output))
+          true
+        else:
+          false

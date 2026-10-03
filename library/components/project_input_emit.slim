@@ -1,0 +1,102 @@
+module project_input_emit
+
+fn error(code: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at 0\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn frame(source: Bytes, start: I64, end: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  std_netstring.append(source, start, end, project_input_limits.maximum(project_input_limits.Resource::Payload()), @output)
+
+fn number(value: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if value < 0:
+    false
+  else:
+    let digits: Vec[U8] = vec.new()
+    std_text.append_i64(@digits, value)
+    let source: Bytes = bytes.freeze(^digits)
+    frame(source, 0, bytes.len(source), @output)
+
+fn dependencies(input: project.ProjectInput, cursor: I64, first: Bool, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if (cursor < 0) || (cursor >= vec.len(input.manifest_tokens)):
+    false
+  else:
+    if syntax.ast_list_done(input.manifest_tokens, cursor):
+      true
+    else:
+      if first:
+        void
+      else:
+        std_text.append_bytes(@output, ",")
+      let appended: Bool = std_bytes.append_range(input.manifest_source, syntax.ast_node_start(input.manifest_tokens, cursor), syntax.ast_node_end(input.manifest_tokens, cursor), @output)
+      let next: I64 = syntax.ast_node_after(cursor)
+      if (!appended) || ((next <= cursor) || (next >= vec.len(input.manifest_tokens))):
+        false
+      else:
+        recur(input, next, false, @output)
+
+fn graph_record(input: project.ProjectInput, module: project_input_model.Module, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let source: project.ModuleInput = vec.get(input.modules, module.ordinal)
+  let imports: Vec[U8] = vec.new()
+  let collected: Bool = dependencies(input, module.imports, true, @imports)
+  if (!collected) || (!(vec.len(imports) == module.dependency_bytes)):
+    false
+  else:
+    let names: Bytes = bytes.freeze(^imports)
+    let name: Bool = frame(input.manifest_source, module.name_start, module.name_end, @output)
+    let weight: Bool = number(bytes.len(source.source), @output)
+    let edges: Bool = frame(names, 0, bytes.len(names), @output)
+    name && (weight && edges)
+
+fn graph_records(input: project.ProjectInput, view: project_input_model.View, ordinal: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if ordinal == vec.len(view.modules):
+    true
+  else:
+    let module: project_input_model.Module = vec.get(view.modules, ordinal)
+    if graph_record(input, module, @output):
+      recur(input, view, ordinal + 1, @output)
+    else:
+      false
+
+fn source_records(input: project.ProjectInput, view: project_input_model.View, ordinal: I64, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  if ordinal == vec.len(view.modules):
+    true
+  else:
+    let module: project_input_model.Module = vec.get(view.modules, ordinal)
+    let source: project.ModuleInput = vec.get(input.modules, module.ordinal)
+    let name: Bool = frame(input.manifest_source, module.name_start, module.name_end, @output)
+    let path: Bool = frame(input.manifest_source, module.path_start, module.path_end, @output)
+    let body: Bool = frame(source.source, 0, bytes.len(source.source), @output)
+    if name && (path && body):
+      recur(input, view, ordinal + 1, @output)
+    else:
+      false
+
+fn transport(input: project.ProjectInput, view: project_input_model.View, graph: Bytes, output: @Vec[U8]) -> Bool effects[alloc, partial]:
+  let identity: Bool = frame("slim-project-input-1", 0, bytes.len("slim-project-input-1"), @output)
+  let modules: Bool = number(vec.len(view.modules), @output)
+  let edges: Bool = number(view.counts.edges, @output)
+  let manifest: Bool = frame(input.manifest_source, 0, bytes.len(input.manifest_source), @output)
+  let plan: Bool = frame(graph, 0, bytes.len(graph), @output)
+  let sources: Bool = source_records(input, view, 0, @output)
+  identity && (modules && (edges && (manifest && (plan && sources))))
+
+fn report(input: project.ProjectInput, view: project_input_model.View) -> Bool effects[alloc, io, partial]:
+  if (view.counts.code > 0) || (!(vec.len(view.modules) == vec.len(input.modules))):
+    false
+  else:
+    let graph: Vec[U8] = vec.new()
+    let collected: Bool = graph_records(input, view, 0, @graph)
+    if (!collected) || (!(vec.len(graph) == view.counts.graph_bytes)):
+      false
+    else:
+      let graph_source: Bytes = bytes.freeze(^graph)
+      let output: Vec[U8] = vec.new()
+      let appended: Bool = transport(input, view, graph_source, @output)
+      if (!appended) || ((!(vec.len(output) == view.transport_bytes)) || (!project_input_limits.admitted(vec.len(output), project_input_limits.Resource::Transport()))):
+        false
+      else:
+        io.print_bytes(bytes.freeze(^output))
+        true

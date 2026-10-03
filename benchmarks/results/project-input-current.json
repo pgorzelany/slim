@@ -1,0 +1,130 @@
+{
+  "schema": 1,
+  "contract": "RFC-0165",
+  "status": "Independent finite ordinary/sanitized checker, producer and real consumer acceptance passed; permanent gate wired; whole current-source repository/release/website verification pending.",
+  "observed_date": "2026-10-02",
+  "compiler_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+  "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
+  "producer_sources": {
+    "project-input.project": "b31b63bab95ddac1d49e719e3537c0f202031347e794c58f7b07b7196e1a9f3f",
+    "library/applications/project_input/main.slim": "6a56e5f2d11efa9f234ef42a9244f839ca33b365682167fbfbe5efe81a92b18e",
+    "library/components/project_input_data.slim": "4d0e3f4db3e8bd142d8bc1a10f2f27fe9593ee8ecbdc8e28fa809feb25a25ff6",
+    "library/components/project_input_emit.slim": "4146cac1c8b16dca06eb0ca699a3df9db473daf6cdfed270566f729fe94b8098",
+    "library/components/project_input_limits.slim": "4202a719846b1e0a57aebc7c68ddab31775f731f1760e050baaa4ff7033815bb",
+    "library/components/project_input_model.slim": "101fd0e7cfb321e1b1c6364fcef3aa5961e266daf41ade2c2c36a9dc4565a7e0"
+  },
+  "adapter_sha256": "004b176cdd01aba975e53f3292cd13a759bba645831279c42fa0dabcb8003c00",
+  "verifier_sha256": "c241c0941b08fdc2f4c3b058c45456a6933cacd3a4e4a5ee6e56fae75220c641",
+  "receipt": "build/overnight/project-input-verifier/native-attempt2/receipt.json",
+  "receipt_sha256": "d2b8d3e0c5739f1d89e6e7ba67299f497523aff893f404648fc0c51d7cdbaf06",
+  "scope": "Stopped-writer captured inputs; ordinary SLIM producer reuses production project capture/checking. Fixed Python adapter hashes serialized bytes, supplies no SLIM or manifest semantics. Matching successful trusted producer invocation remains required.",
+  "finite_domains": {
+    "projects": 39,
+    "producer_variant_observations": 78,
+    "readable_manifest_negative_cases": 17,
+    "logical_admission_declines": 6,
+    "transport_cases": 63,
+    "publication_controls": 13,
+    "hash_work_rows": 4,
+    "edit_consumer_observations": 48,
+    "compiler_consumer_observations": 8,
+    "variants": [
+      "ordinary",
+      "address+undefined sanitized; leak detection unavailable"
+    ]
+  },
+  "compiler_project": {
+    "modules": 35,
+    "edges": 153,
+    "catalog_records": 36,
+    "source_bytes": 1176394,
+    "cost_unit": "exact source bytes; not compiler, native or model time",
+    "variants_identical": true,
+    "capture_sha256": "b3294d68c8e6fb797671bcd4ab92da78bd17eb9ec6f49db7d4b9c24380c4884a",
+    "catalog_sha256": "6bb8577765353ebf03f77596ffd15d64e87a3d1d71ebfb3dcc3ce86cea3ad025",
+    "graph_sha256": "2cbc5ab85db5b064ae542856da84fd281b3383846d799c8e4e31cb16e258f6ff",
+    "plan_sha256": "3694783fe844fc1efe9a8d0b1e2ef6f1f878a5016d49b4cf18f3d4fec3a126fc"
+  },
+  "allocation": {
+    "observed_ordinals": [
+      1,
+      2,
+      3,
+      4,
+      8,
+      16,
+      32,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      2048,
+      4096,
+      8192
+    ],
+    "observations": 30,
+    "exhausted_empty_success_prefix": 18,
+    "not_exhausted_exact_success": 12,
+    "scope": "sparse finite injections; skipped allocation ordinals unknown"
+  },
+  "source_pins": {
+    "observed_files": 80,
+    "before_after": "Unchanged in current verifier; contract and metadata updates are outside production source pins."
+  },
+  "diagnostics": "The 39-project receipt verifies complete checker code/module/span parity for readable in-admission manifest failures. An exact 1 MiB type-error input reaches preparation and preserves E0344; its 1 MiB+1 variant is declined by logical source admission before preparation. Capture failures precede admission. Missing manifest retains explicit-capture E0409@-@0:0, distinct from normal CLI single-source sniff E0409@0:0. No production semantic fallback.",
+  "timing": {
+    "operator_native_validation_ns": null,
+    "scope": "Current focused correctness campaign passed. Exact top-level elapsed was not instrumented for this attempt; no comparative performance claim."
+  },
+  "unknown": [
+    "preread physical bounds",
+    "RSS and end-to-end CPU bounds",
+    "live filesystem atomicity/ABA",
+    "skipped allocation ordinals",
+    "flattened canonical parsed node entries1000000 boundary; full4095/65536 on subsequently adopted production source",
+    "successful complete transport at 8 MiB and receipt at 4 MiB (unreachable with other admissions)",
+    "SDK/transitive native toolchain identities",
+    "model calls/tokens or development success"
+  ],
+  "full_project_boundary": {
+    "classification": "exact within fixed three-fixture domain",
+    "status": "passed with adopted path-only production source and matching successful producer/control compiler; full current-source integration pending",
+    "receipt": "build/overnight-project-input-boundaries/native-002/receipt.json",
+    "receipt_sha256": "5eeaa0a6bcfc950c8d76bd3247e870a0cd471a3e15f4d31f949da52e462d9878",
+    "tested_verifier_sha256": "12a91ec103c48a0858711af2ceb026e40b8f0b20e8e2cc9edfe297c8f5706ddd",
+    "current_verifier_sha256": "12a91ec103c48a0858711af2ceb026e40b8f0b20e8e2cc9edfe297c8f5706ddd",
+    "verifier_followup": "current metadata repair now executed; original experimental-source native001 receipt remains retained",
+    "control_compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+    "producer_project_source_sha256": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f",
+    "producer_source_scope": "adopted path-only RFC0167 SLIM source; producer compiled by updated bootstrap fixed-point compiler",
+    "positive": {
+      "modules": 4095,
+      "edges": 65536,
+      "variants": [
+        "ordinary",
+        "address+undefined sanitized"
+      ],
+      "capture_bytes": 1310691,
+      "capture_sha256": "2f312991362edae9dfd8cede0e2b5a28f80c7f682da11ded6485b35eaaafc4a1",
+      "adapter_catalog_graph_receipt": "exact independent bytes and hashes"
+    },
+    "one_excess_cases": [
+      {
+        "modules": 4096,
+        "edges": 65536
+      },
+      {
+        "modules": 4095,
+        "edges": 65537
+      }
+    ],
+    "one_excess_results": "both variants: exit65, exact error10 at0 newline, empty stderr, zero successful transport prefix",
+    "control_checker_acceptance": "all three exact fixtures accepted; producer logical limits are separate from compiler acceptance",
+    "pins_unchanged": true,
+    "wrapper_elapsed_ns": 23495951667,
+    "canonical_parsed_node_count": null,
+    "node_boundary": "unknown",
+    "consumer_acceptance": "unknown for this large fixture"
+  }
+}

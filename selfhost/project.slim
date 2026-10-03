@@ -54,8 +54,6 @@ fn project_module_path(manifest_path: Bytes, manifest_source: Bytes, manifest_to
   text.append_span(manifest_source, content_start, content_end, @output)
   bytes.freeze(^output)
 
-# RFC-0162: source underscores/dots have distinct escapes and escaped segments
-# never contain the double-underscore pair separator. No source prefix is reserved.
 fn append_namespace_segment(source: Bytes, index: I64, end: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
   if index >= end:
     void
@@ -88,15 +86,12 @@ fn initialize_namespace_roles(count: I64, roles: @Vec[I64]) -> Void effects[allo
     vec.push(@roles, 0)
     recur(count, @roles)
 
-# 0 preserves lexical/literal/marker roles; 1 is a user callee, 2 a current
-# declaration, 3 an annotation type, 4 a nominal constructor. Syntax metadata only.
 fn mark_namespace_type(source: Bytes, tokens: Vec[syntax.Token], node: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
   if syntax.ast_node_is_list(tokens, node):
     let composite: Bool = syntax.ast_type_is_vec(source, tokens, node) || (syntax.ast_type_is_arena(source, tokens, node) || syntax.ast_type_is_id(source, tokens, node))
     if composite:
       recur(source, tokens, syntax.ast_type_argument(node), root, @roles)
     else:
-      # The normal checker alone decides unsupported type forms.
       void
   else:
     if syntax.ast_node_is_name(tokens, node) && (syntax.scalar_type_kind(source, tokens, node) < 0):
@@ -169,8 +164,6 @@ fn mark_namespace_form(source: Bytes, tokens: Vec[syntax.Token], node: I64, root
               if syntax.ast_expression_is_case(source, tokens, node):
                 mark_namespace_nominal(tokens, syntax.ast_case_type(node), root, @roles)
               else:
-                # Other supported expression shapes carry no declaration names;
-                # their nested expressions are visited by the same flat walk.
                 void
 
 fn mark_namespace_roles(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, end: I64, root: I64, roles: @Vec[I64]) -> Void effects[partial]:
@@ -180,8 +173,6 @@ fn mark_namespace_roles(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, e
     let form: Bool = syntax.ast_node_is_list(tokens, cursor)
     let tagged: Bool = syntax.ast_node_tag(tokens, cursor) > 0
     if form && tagged:
-      # Real tags exclude plain parameter/arm containers. Their arbitrary user
-      # names must not activate legacy textual fallbacks in canonical helpers.
       mark_namespace_form(source, tokens, cursor, root, @roles)
     else:
       void
@@ -234,9 +225,6 @@ fn append_project_atom(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token
           else:
             namespace_lookup(module_source, start, end, declarations, namespace)
           if declaration < 0:
-            # Exact absence in the complete canonical declaration index. No
-            # rendered declaration has this initial byte; the normal checker
-            # must reject the unresolved callee/type without owner expansion.
             append_absent_namespace(module_source, start, end, @output)
           else:
             let module_start: I64 = syntax.ast_node_start(manifest_tokens, module_name)
@@ -467,6 +455,167 @@ fn find_manifest_module(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, n
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, next, name_start, name_end)
 
+fn manifest_span_admitted(source: Bytes, start: I64, end: I64) -> Bool:
+  if start < 0:
+    false
+  else:
+    if end < start:
+      false
+    else:
+      end <= bytes.len(source)
+
+fn manifest_preflight_imports(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, close: I64, visits: I64) -> I64 effects[partial]:
+  let length: I64 = vec.len(tokens)
+  if visits >= length:
+    -1
+  else:
+    let next_visits: I64 = visits + 1
+    if cursor < 0:
+      -1
+    else:
+      if cursor > close:
+        -1
+      else:
+        if cursor >= length:
+          -1
+        else:
+          let token: syntax.Token = vec.get(tokens, cursor)
+          if token.kind == 1:
+            if cursor == close:
+              next_visits
+            else:
+              -1
+          else:
+            if token.kind == 2:
+              if manifest_span_admitted(source, token.start, token.end):
+                if cursor < close:
+                  recur(source, tokens, cursor + 1, close, next_visits)
+                else:
+                  -1
+              else:
+                -1
+            else:
+              -1
+
+fn manifest_preflight_modules(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, outer_close: I64, visits: I64) -> I64 effects[partial]:
+  let length: I64 = vec.len(tokens)
+  if visits >= length:
+    -1
+  else:
+    let next_visits: I64 = visits + 1
+    if cursor < 0:
+      -1
+    else:
+      if cursor >= length:
+        -1
+      else:
+        let module: syntax.Token = vec.get(tokens, cursor)
+        if module.kind == 1:
+          if cursor == outer_close:
+            next_visits
+          else:
+            -1
+        else:
+          if !(module.kind == 0):
+            -1
+          else:
+            if (module.next <= cursor) || (module.next > length):
+              -1
+            else:
+              let distance: I64 = module.next - cursor
+              if distance < 11:
+                -1
+              else:
+                let module_close: I64 = module.next - 1
+                let head: syntax.Token = vec.get(tokens, cursor + 1)
+                let name: syntax.Token = vec.get(tokens, cursor + 2)
+                let path: syntax.Token = vec.get(tokens, cursor + 3)
+                if ((!(head.kind == 2)) || (!(name.kind == 2))) || (!(path.kind == 3)):
+                  -1
+                else:
+                  let name_valid: Bool = manifest_span_admitted(source, name.start, name.end)
+                  let path_valid: Bool = manifest_span_admitted(source, path.start, path.end)
+                  if name_valid && path_valid:
+                    let imports_cursor: I64 = cursor + 4
+                    let imports: syntax.Token = vec.get(tokens, imports_cursor)
+                    if !(imports.kind == 0):
+                      -1
+                    else:
+                      if (imports.next <= imports_cursor) || (imports.next >= module_close):
+                        -1
+                      else:
+                        let imports_distance: I64 = imports.next - imports_cursor
+                        if imports_distance < 3:
+                          -1
+                        else:
+                          let imports_head: syntax.Token = vec.get(tokens, imports_cursor + 1)
+                          let imports_close: I64 = imports.next - 1
+                          let imports_end: syntax.Token = vec.get(tokens, imports_close)
+                          if (!(imports_head.kind == 2)) || (!(imports_end.kind == 1)):
+                            -1
+                          else:
+                            let exports_cursor: I64 = imports.next
+                            let exports: syntax.Token = vec.get(tokens, exports_cursor)
+                            if !(exports.kind == 0):
+                              -1
+                            else:
+                              if (exports.next <= exports_cursor) || (!(exports.next == module_close)):
+                                -1
+                              else:
+                                let exports_distance: I64 = exports.next - exports_cursor
+                                if exports_distance < 3:
+                                  -1
+                                else:
+                                  let exports_head: syntax.Token = vec.get(tokens, exports_cursor + 1)
+                                  let exports_end: syntax.Token = vec.get(tokens, exports.next - 1)
+                                  let module_end: syntax.Token = vec.get(tokens, module_close)
+                                  if ((!(exports_head.kind == 2)) || (!(exports_end.kind == 1))) || (!(module_end.kind == 1)):
+                                    -1
+                                  else:
+                                    let after_imports: I64 = manifest_preflight_imports(source, tokens, imports_cursor + 2, imports_close, next_visits)
+                                    if after_imports < 0:
+                                      -1
+                                    else:
+                                      recur(source, tokens, module.next, outer_close, after_imports)
+                  else:
+                    -1
+
+fn manifest_index_eligible(source: Bytes, tokens: Vec[syntax.Token], modules: I64) -> Bool effects[partial]:
+  let length: I64 = vec.len(tokens)
+  if length < 8:
+    false
+  else:
+    if !(modules == 7):
+      false
+    else:
+      let root: syntax.Token = vec.get(tokens, 0)
+      let outer_close: I64 = length - 1
+      let root_end: syntax.Token = vec.get(tokens, outer_close)
+      let entry: syntax.Token = vec.get(tokens, 3)
+      let entry_end: syntax.Token = vec.get(tokens, 6)
+      if (((((root.kind == 0) && (root.next == length)) && (root_end.kind == 1)) && (entry.kind == 0)) && (entry.next == 7)) && (entry_end.kind == 1):
+        manifest_preflight_modules(source, tokens, modules, outer_close, 0) >= 0
+      else:
+        false
+
+fn index_manifest_paths(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, names: @Vec[syntax.NameNode], edges: @Vec[syntax.NameEdge]) -> I64 effects[alloc, partial]:
+  let kind: I64 = syntax.ast_node_kind(tokens, cursor)
+  if kind == 1:
+    -1
+  else:
+    let path: I64 = cursor + 3
+    let previous: I64 = syntax.insert_name_chars(source, syntax.ast_node_start(tokens, path), syntax.ast_node_end(tokens, path), path, 0, @names, @edges)
+    if previous >= 0:
+      path
+    else:
+      recur(source, tokens, syntax.ast_next(tokens, cursor), @names, @edges)
+
+fn indexed_duplicate_path(source: Bytes, tokens: Vec[syntax.Token], modules: I64) -> I64 effects[alloc, partial]:
+  let names: Vec[syntax.NameNode] = vec.new()
+  let edges: Vec[syntax.NameEdge] = vec.new()
+  let root: I64 = syntax.append_name_node(-1, @names)
+  index_manifest_paths(source, tokens, modules, @names, @edges)
+
 fn module_imports_name(source: Bytes, tokens: Vec[syntax.Token], modules: I64, module_name: I64, import_start: I64, import_end: I64) -> Bool effects[partial]:
   let name_start: I64 = syntax.ast_node_start(tokens, module_name)
   let name_end: I64 = syntax.ast_node_end(tokens, module_name)
@@ -520,7 +669,6 @@ fn find_reciprocal_cycle(source: Bytes, tokens: Vec[syntax.Token], modules: I64,
       let next: I64 = syntax.ast_next(tokens, cursor)
       recur(source, tokens, modules, next)
 
-# Declared names contain no dot; the last separator preserves dotted modules.
 fn find_span_dot(source: Bytes, index: I64, end: I64) -> I64 effects[partial]:
   if index >= end:
     -1
@@ -1393,7 +1541,10 @@ fn report_manifest_rules(source: Bytes, tokens: Vec[syntax.Token], entry_form: I
       else:
         order_report
     else:
-      let duplicate_path: I64 = find_duplicate_path(source, tokens, modules, modules)
+      let duplicate_path: I64 = if manifest_index_eligible(source, tokens, modules):
+        indexed_duplicate_path(source, tokens, modules)
+      else:
+        find_duplicate_path(source, tokens, modules, modules)
       let has_duplicate_path: Bool = duplicate_path >= 0
       if has_duplicate_path:
         let start: I64 = syntax.ast_node_start(tokens, duplicate_path)
@@ -1866,7 +2017,6 @@ fn report_interface_bindings(manifest_source: Bytes, manifest_tokens: Vec[syntax
     let next: I64 = syntax.ast_next(module_tokens, cursor)
     let total: I64 = count + reported
     recur(manifest_source, manifest_tokens, first_export, module_name, module_source, module_tokens, module_items, next, diagnostic_start, diagnostic_end, total)
-
 
 fn report_interface_fields(manifest_source: Bytes, manifest_tokens: Vec[syntax.Token], first_export: I64, module_name: Bytes, module_source: Bytes, module_tokens: Vec[syntax.Token], module_items: I64, cursor: I64, diagnostic_start: I64, diagnostic_end: I64, count: I64) -> I64 effects[alloc, io, partial]:
   let kind: I64 = syntax.ast_node_kind(module_tokens, cursor)

@@ -1,0 +1,49 @@
+module operation_cost_test
+
+fn argument(value: Bytes) -> I64 effects[partial]:
+  let parsed: std_decimal.Parsed = std_decimal.parse_i64(value, 0, bytes.len(value))
+  match parsed:
+    Invalid(position):
+      -1
+    Overflow(position):
+      -1
+    Value(number, next):
+      if next == bytes.len(value):
+        number
+      else:
+        -1
+
+fn report(path: Bytes, maximum: I64, work_maximum: I64) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: operation_cost_model.Loaded = operation_cost_data.load(bytes.freeze(^input), work_maximum)
+    match loaded:
+      Invalid(code, position):
+        operation_cost_emit.error(code, position)
+        65
+      Ready(view, work):
+        let counted: operation_cost_model.Counted = operation_cost_stats.summarize(view, @work)
+        match counted:
+          Invalid(code, position):
+            operation_cost_emit.error(code, position)
+            65
+          Ready(groups):
+            if operation_cost_emit.report(view, groups, work, maximum):
+              0
+            else:
+              operation_cost_emit.error(23, 0)
+              65
+  else:
+    operation_cost_emit.error(1, 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 5:
+    if std_bytes.equal(vec.get(args, 1), "report"):
+      report(vec.get(args, 2), argument(vec.get(args, 3)), argument(vec.get(args, 4)))
+    else:
+      operation_cost_emit.error(2, 0)
+      64
+  else:
+    operation_cost_emit.error(2, 0)
+    64

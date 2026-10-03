@@ -1,18 +1,29 @@
 {
   "actual_cohort_observation": {
+    "accepted": 8,
+    "actual_participants": 8,
     "adapter_sha256": "87e0a749a607ff324b1e96dd36416c3a722fb0cbe8282bacd9142235fd59c86d",
-    "dispatches": 0,
+    "compiler_sha256": "48000c6a28bb09d36cc756568064ab29cc29316efb6aa243bc1b886a376b8bf3",
+    "completed_strict_pairs": 4,
+    "dispatches": 9,
     "evaluator_sha256": "0d7f318270c1d6270cf7eb5266c834783799c383ead9b145f386c337199de5f7",
     "freeze_sha256": "a3af569e5003c411e9cea35ec98f5c246d1d59645ef0e6542599ad5d1a4fbd2f",
-    "input_sha256": "b934801eb8d8b5ddda6779c0bcf2ebc94022623cc3f8adb430e123fd8be5dd18",
-    "native_receipt": "build/development-summary-validation/actual-freeze5-native/receipt.json",
-    "not_run": 24,
-    "oracle_known": 0,
-    "source": "read-only frozen5/runs5 at 2026-10-02T20:48:51Z; native report at 20:50:45Z exactly matches independent finite byte oracle in ordinary and address+undefined sanitized variants",
+    "infrastructure_interruptions": 1,
+    "input_bytes": 3851,
+    "input_sha256": "c4bc391d2bc126498f566dca1830093e0e39a7cb5c5ed6b31bc21e508065351d",
+    "manifest_sha256": "fa0018eb8f35a45dbc02682050731fc5f73d51ebec3a97a5e670d471d999435a",
+    "native_receipt": "build/overnight/report-nine-native-attempt3/receipt.json",
+    "native_receipt_sha256": "49eb2da7d368bccf0269e55dfb5af4a01ba4456a5f3c1b244e82c8cc2d306519",
+    "native_report_variants": 2,
+    "not_run": 15,
+    "report_bytes": 3060,
+    "report_sha256": "c2aee32d3da8088af83013994aebf27f7c815a31a4110e7456ecb64cb0c38d7c",
+    "source": "Stopped frozen5/runs5 after authoritative ninth dispatch was interrupted before participant creation; every original24planned trial retained. Both native variants match independent finite transport/report oracle; no acceptance rerun.",
     "tasks": 12,
+    "time_comparison_limit": "Netstring baseline contains recorded coordinator dispatch-to-spawn delay; decimal context used zero context requests. Four selected strict pairs do not establish context effectiveness.",
     "trials": 24
   },
-  "date": "2026-10-02",
+  "date": "2026-10-03",
   "finite_native_controls": {
     "adapter_scope": "synthetic terminal facts and real ledger lifecycle controls only; no model or source correctness claim",
     "adapter_self_identity_barrier": "copied adapter mutation rejected; observed source bytes only, no interpreter bytecode/ABA claim",
@@ -88,12 +99,25 @@
     "scripts/development-summary-input.py": "87e0a749a607ff324b1e96dd36416c3a722fb0cbe8282bacd9142235fd59c86d",
     "scripts/verify-development-summary.py": "f1c9ebe05cf7f0dde3f3752ab2d1ebeebaaefa452dda318e910968eb1b41ca02"
   },
-  "status": "scoped formatted ordinary consumer and native/adapter acceptance passed; full repository gates pending",
+  "status": "Scoped native/adapter acceptance and source2 repository/release/website verification passed; participant effectiveness and later integration retain separate evidence.",
   "timing": "17.530s local formatted-source verification attempt4; uncoordinated correctness only, not native/model performance",
   "unknown": [
     "general development effectiveness",
     "model tokens/calls/active time",
     "native comparative application performance",
     "kernel boot continuity"
-  ]
+  ],
+  "verified_checkpoint": {
+    "commit": "90de8e9059e95f23bb9be66f55f5311eb8faba4d",
+    "finished_utc": "2026-10-02T21:49:51.172856+00:00",
+    "log": "build/overnight/integrated-verify-0.9-attempt2.log",
+    "log_sha256": "677a4a2c69692e2d8d5b2de154906cc32b95aa1c81e2d3bce57be135cf43dfd9",
+    "operator_elapsed_ns": 2342329313375,
+    "pushed_branch": "codex/slim-next",
+    "scope": "Complete source-bound repository, reproducible release and website verification; later RFC0165 work excluded. Operator elapsed, not model active time.",
+    "source_files": 1864,
+    "source_snapshot_commit": "6643d1ecb94b930f51a006a82eeda8a54880d53e",
+    "started_utc": "2026-10-02T21:10:48.831864+00:00",
+    "tree": "3ec37262c81a26ad9c91833f69fd06946bcd538e"
+  }
 }

@@ -1,0 +1,128 @@
+module project_input_data
+
+fn source_modules(input: project.ProjectInput, ordinal: I64, total: I64) -> I64 effects[partial]:
+  if ordinal == vec.len(input.modules):
+    0
+  else:
+    let module: project.ModuleInput = vec.get(input.modules, ordinal)
+    let length: I64 = bytes.len(module.source)
+    if !project_input_limits.admitted(length, project_input_limits.Resource::Payload()):
+      10
+    else:
+      let next: I64 = project_input_limits.add(total, length, project_input_limits.Resource::Source())
+      if next < 0:
+        10
+      else:
+        recur(input, ordinal + 1, next)
+
+fn source_admission(input: project.ProjectInput) -> I64 effects[partial]:
+  let manifest_bytes: I64 = bytes.len(input.manifest_source)
+  if (!project_input_limits.admitted(vec.len(input.modules), project_input_limits.Resource::Modules())) || (!project_input_limits.admitted(manifest_bytes, project_input_limits.Resource::Payload())):
+    10
+  else:
+    source_modules(input, 0, manifest_bytes)
+
+fn span_valid(start: I64, end: I64, size: I64) -> Bool:
+  (start >= 0) && ((start <= end) && (end <= size))
+
+fn imports(source: Bytes, tokens: Vec[syntax.Token], cursor: I64, count: I64, size: I64) -> project_input_model.Imports effects[partial]:
+  if (cursor < 0) || (cursor >= vec.len(tokens)):
+    project_input_model.Imports(code: 11, count: 0, bytes: 0)
+  else:
+    if syntax.ast_list_done(tokens, cursor):
+      project_input_model.Imports(code: 0, count: count, bytes: size)
+    else:
+      let start: I64 = syntax.ast_node_start(tokens, cursor)
+      let end: I64 = syntax.ast_node_end(tokens, cursor)
+      if !span_valid(start, end, bytes.len(source)):
+        project_input_model.Imports(code: 11, count: 0, bytes: 0)
+      else:
+        let length: I64 = end - start
+        let comma: I64 = if count == 0:
+          0
+        else:
+          1
+        let amount: I64 = project_input_limits.add(length, comma, project_input_limits.Resource::Payload())
+        let next_size: I64 = project_input_limits.add(size, amount, project_input_limits.Resource::Payload())
+        let next_count: I64 = project_input_limits.add(count, 1, project_input_limits.Resource::Edges())
+        if (!project_input_limits.admitted(length, project_input_limits.Resource::Name())) || ((next_size < 0) || (next_count < 0)):
+          project_input_model.Imports(code: 10, count: 0, bytes: 0)
+        else:
+          let next: I64 = syntax.ast_node_after(cursor)
+          if (next <= cursor) || (next >= vec.len(tokens)):
+            project_input_model.Imports(code: 11, count: 0, bytes: 0)
+          else:
+            recur(source, tokens, next, next_count, next_size)
+
+fn failed(code: I64) -> project_input_model.Counts:
+  project_input_model.Counts(code: code, edges: 0, graph_bytes: 0, catalog_bytes: 0, triples_bytes: 0)
+
+fn collect(input: project.ProjectInput, cursor: I64, ordinal: I64, counts: project_input_model.Counts, output: @Vec[project_input_model.Module]) -> project_input_model.Counts effects[alloc, partial]:
+  if (cursor < 0) || (cursor >= vec.len(input.manifest_tokens)):
+    failed(11)
+  else:
+    if syntax.ast_list_done(input.manifest_tokens, cursor):
+      if ordinal == vec.len(input.modules):
+        counts
+      else:
+        failed(11)
+    else:
+      if (ordinal >= vec.len(input.modules)) || (cursor > (vec.len(input.manifest_tokens) - 7)):
+        failed(11)
+      else:
+        let source: project.ModuleInput = vec.get(input.modules, ordinal)
+        let name_start: I64 = syntax.ast_node_start(input.manifest_tokens, cursor + 2)
+        let name_end: I64 = syntax.ast_node_end(input.manifest_tokens, cursor + 2)
+        let path_start: I64 = syntax.ast_node_start(input.manifest_tokens, cursor + 3) + 1
+        let path_end: I64 = syntax.ast_node_end(input.manifest_tokens, cursor + 3) - 1
+        if (!source.read) || ((!span_valid(name_start, name_end, bytes.len(input.manifest_source))) || (!span_valid(path_start, path_end, bytes.len(input.manifest_source)))):
+          failed(11)
+        else:
+          let name_length: I64 = name_end - name_start
+          let path_length: I64 = path_end - path_start
+          if (!project_input_limits.admitted(name_length, project_input_limits.Resource::Name())) || (!project_input_limits.admitted(path_length, project_input_limits.Resource::Path())):
+            failed(10)
+          else:
+            let dependencies: project_input_model.Imports = imports(input.manifest_source, input.manifest_tokens, cursor + 6, 0, 0)
+            if dependencies.code > 0:
+              failed(dependencies.code)
+            else:
+              let source_length: I64 = bytes.len(source.source)
+              let graph_record: I64 = project_input_limits.record_size(name_length, project_input_limits.decimal_width(source_length), dependencies.bytes, project_input_limits.Resource::Workplan())
+              let catalog_record: I64 = project_input_limits.catalog_record_size(name_length, source_length, path_length)
+              let triple: I64 = project_input_limits.record_size(name_length, path_length, source_length, project_input_limits.Resource::Transport())
+              let edges: I64 = project_input_limits.add(counts.edges, dependencies.count, project_input_limits.Resource::Edges())
+              let graph_bytes: I64 = project_input_limits.add(counts.graph_bytes, graph_record, project_input_limits.Resource::Workplan())
+              let catalog_bytes: I64 = project_input_limits.add(counts.catalog_bytes, catalog_record, project_input_limits.Resource::Catalog())
+              let triples_bytes: I64 = project_input_limits.add(counts.triples_bytes, triple, project_input_limits.Resource::Transport())
+              if (edges < 0) || ((graph_bytes < 0) || ((catalog_bytes < 0) || (triples_bytes < 0))):
+                failed(10)
+              else:
+                vec.push(@output, project_input_model.Module(name_start: name_start, name_end: name_end, path_start: path_start, path_end: path_end, imports: cursor + 6, dependency_bytes: dependencies.bytes, ordinal: ordinal))
+                let next: I64 = syntax.ast_next(input.manifest_tokens, cursor)
+                if (next <= cursor) || (next >= vec.len(input.manifest_tokens)):
+                  failed(11)
+                else:
+                  let updated: project_input_model.Counts = project_input_model.Counts(code: 0, edges: edges, graph_bytes: graph_bytes, catalog_bytes: catalog_bytes, triples_bytes: triples_bytes)
+                  recur(input, next, ordinal + 1, updated, @output)
+
+fn view(input: project.ProjectInput) -> project_input_model.View effects[alloc, partial]:
+  let modules: Vec[project_input_model.Module] = vec.new()
+  let catalog_header: I64 = project_input_limits.catalog_record_size(bytes.len("@project"), bytes.len(input.manifest_source), bytes.len("slim.project"))
+  let initial: project_input_model.Counts = project_input_model.Counts(code: 0, edges: 0, graph_bytes: 0, catalog_bytes: catalog_header, triples_bytes: 0)
+  let counts: project_input_model.Counts = if (vec.len(input.manifest_tokens) < 6) || (catalog_header < 0):
+    failed(11)
+  else:
+    collect(input, syntax.ast_next(input.manifest_tokens, 3), 0, initial, @modules)
+  let header: I64 = project_input_limits.record_size(bytes.len("slim-project-input-1"), project_input_limits.decimal_width(vec.len(modules)), project_input_limits.decimal_width(counts.edges), project_input_limits.Resource::Transport())
+  let manifest: I64 = project_input_limits.add(header, project_input_limits.frame_size(bytes.len(input.manifest_source)), project_input_limits.Resource::Transport())
+  let graph: I64 = project_input_limits.add(manifest, project_input_limits.frame_size(counts.graph_bytes), project_input_limits.Resource::Transport())
+  let transport: I64 = project_input_limits.add(graph, counts.triples_bytes, project_input_limits.Resource::Transport())
+  let checked: project_input_model.Counts = if counts.code > 0:
+    counts
+  else:
+    if transport < 0:
+      failed(10)
+    else:
+      counts
+  project_input_model.View(modules: modules, counts: checked, transport_bytes: transport)

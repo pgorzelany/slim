@@ -1,7 +1,7 @@
 # RFC-0160: Bounded source data components
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: both
 Author: Codex, at the project maintainer's delegated overnight direction
@@ -152,7 +152,13 @@ corpus budgets; it supplies no source/ABI change or performance-gate waiver.
 
 ## Implementation
 
-Pending focused independent verification and coordinator release checks.
+Implemented as ordinary SLIM framing, byte indexing, catalog and dependency
+planning. Independent finite ordinary/sanitized behavior, diagnostics, allocation
+failure and direct-work gates pass. The heap optimization preserves all prior
+budgets and adds the stricter whole-pipeline bound above. Source tree
+`3ec37262c81a26ad9c91833f69fd06946bcd538e` passed repository, reproducible release
+and website verification and is pushed as `90de8e9`. Evidence remains bounded
+to its named domains; general model effectiveness and physical bounds are unknown.
 
 ## Removal and supersession
 

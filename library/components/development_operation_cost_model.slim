@@ -1,0 +1,85 @@
+module operation_cost_model
+
+struct Trial:
+  task: std_netstring.Frame
+  identifier: std_netstring.Frame
+  condition: I64
+  outcome: std_netstring.Frame
+  lifecycle: std_netstring.Frame
+  requests: development_model.Number
+  request_start: I64
+  request_end: I64
+
+struct Request:
+  identifier: std_netstring.Frame
+  trial: I64
+  sequence: I64
+  operation: I64
+  started: Bool
+  status: I64
+  capture: development_model.Number
+  queue: development_model.Number
+  elapsed: development_model.Number
+  feedback: development_model.Number
+  receipt: Bool
+  command_start: I64
+  command_end: I64
+
+struct Command:
+  position: I64
+  request: I64
+  ordinal: I64
+  phase: I64
+  status: I64
+  elapsed: development_model.Number
+  executable: development_model.Number
+  stdout: development_model.Number
+  stderr: development_model.Number
+  role: Bool
+
+struct View:
+  source: Bytes
+  header: development_model.Header
+  trials: Vec[Trial]
+  requests: Vec[Request]
+  commands: Vec[Command]
+
+enum Loaded:
+  Invalid(I64, I64)
+  Ready(View, Vec[I64])
+
+enum Fields:
+  Invalid(I64, I64)
+  Ready(Vec[std_netstring.Frame], I64)
+
+enum Triple:
+  End
+  Invalid(I64, I64)
+  Ready(framed_records.Triple)
+
+enum Frame:
+  End
+  Invalid(I64, I64)
+  Ready(std_netstring.Frame)
+
+enum Row:
+  Invalid(I64, I64)
+  Ready(Request, I64)
+
+struct Metric:
+  eligible: I64
+  missing: I64
+  sum: development_model.Aggregate
+  maximum: I64
+  trial: I64
+  request: I64
+  sequence: I64
+  ordinal: I64
+
+struct Groups:
+  counts: Vec[I64]
+  metrics: Vec[Metric]
+
+enum Counted:
+  Invalid(I64, I64)
+  Ready(Groups)

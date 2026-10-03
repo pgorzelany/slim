@@ -108,6 +108,9 @@ lowest   ||                 left associative
 There is no `!=` and no general unary negation; a negative integer is a literal.
 Operators map directly to the existing checked operations. Grouping uses
 parentheses and does not change left-to-right operand evaluation.
+Boolean operators evaluate both operands. Use `if` when evaluating the second
+operand requires a fact from the first. Comparison operands are `I64`;
+compare `Bool` values through ordinary branching.
 
 `if`/`else` is the sole Boolean branch form:
 

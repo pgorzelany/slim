@@ -1,0 +1,593 @@
+module operation_cost_data
+
+fn empty(frame: std_netstring.Frame) -> Bool:
+  frame.start == frame.end
+
+fn status(valid: Bool, code: I64, position: I64) -> development_model.Status:
+  development_model.Status(valid: valid, code: code, position: position)
+
+fn frame(source: Bytes, start: I64, end: I64, maximum: I64, work: @Vec[I64]) -> operation_cost_model.Frame effects[partial]:
+  if start == end:
+    operation_cost_model.Frame::End()
+  else:
+    if !operation_cost_work.step(@work, 0):
+      operation_cost_model.Frame::Invalid(24, start)
+    else:
+      let parsed: std_netstring.Parsed = std_netstring.parse(source, start, end, maximum)
+      match parsed:
+        End:
+          operation_cost_model.Frame::End()
+        Invalid(code, position):
+          operation_cost_model.Frame::Invalid(100 + code, position)
+        Value(value):
+          operation_cost_model.Frame::Ready(value)
+
+fn triple_tail(source: Bytes, one: std_netstring.Frame, two: std_netstring.Frame, end: I64, maximum: I64, work: @Vec[I64]) -> operation_cost_model.Triple effects[partial]:
+  let parsed: operation_cost_model.Frame = frame(source, two.next, end, maximum, @work)
+  match parsed:
+    End:
+      operation_cost_model.Triple::Invalid(108, two.next)
+    Invalid(code, position):
+      operation_cost_model.Triple::Invalid(code, position)
+    Ready(value):
+      operation_cost_model.Triple::Ready(framed_records.Triple(first: one, second: two, third: value, next: value.next))
+
+fn triple(source: Bytes, start: I64, end: I64, first: I64, second: I64, third: I64, work: @Vec[I64]) -> operation_cost_model.Triple effects[partial]:
+  let parsed: operation_cost_model.Frame = frame(source, start, end, first, @work)
+  match parsed:
+    End:
+      operation_cost_model.Triple::End()
+    Invalid(code, position):
+      operation_cost_model.Triple::Invalid(code, position)
+    Ready(one):
+      let following: operation_cost_model.Frame = frame(source, one.next, end, second, @work)
+      match following:
+        End:
+          operation_cost_model.Triple::Invalid(108, one.next)
+        Invalid(code, position):
+          operation_cost_model.Triple::Invalid(code, position)
+        Ready(two):
+          triple_tail(source, one, two, end, third, @work)
+
+fn fields(source: Bytes, start: I64, end: I64, count: I64, output: ^Vec[std_netstring.Frame], work: @Vec[I64]) -> operation_cost_model.Fields effects[alloc, partial]:
+  if vec.len(output) == count:
+    operation_cost_model.Fields::Ready(output, start)
+  else:
+    let parsed: operation_cost_model.Frame = frame(source, start, end, 128, @work)
+    match parsed:
+      End:
+        operation_cost_model.Fields::Invalid(19, start)
+      Invalid(code, position):
+        operation_cost_model.Fields::Invalid(code, position)
+      Ready(value):
+        vec.push(@output, value)
+        recur(source, value.next, end, count, ^output, @work)
+
+fn word(source: Bytes, value: std_netstring.Frame, kind: I64) -> I64 effects[partial]:
+  if kind == 0:
+    if development_data.matches(source, value, "baseline"):
+      0
+    else:
+      if development_data.matches(source, value, "context"):
+        1
+      else:
+        -1
+  else:
+    if kind == 1:
+      if development_data.matches(source, value, "true"):
+        1
+      else:
+        if development_data.matches(source, value, "false"):
+          0
+        else:
+          -1
+    else:
+      if development_data.matches(source, value, "check"):
+        0
+      else:
+        if development_data.matches(source, value, "interfaces"):
+          1
+        else:
+          if development_data.matches(source, value, "context"):
+            2
+          else:
+            if kind == 2:
+              if development_data.matches(source, value, "build"):
+                3
+              else:
+                if development_data.matches(source, value, "run"):
+                  4
+                else:
+                  -1
+            else:
+              if development_data.matches(source, value, "emit-c"):
+                3
+              else:
+                if development_data.matches(source, value, "native-compile"):
+                  4
+                else:
+                  if development_data.matches(source, value, "execute"):
+                    5
+                  else:
+                    -1
+
+fn terminal(source: Bytes, value: std_netstring.Frame, request: Bool) -> I64 effects[partial]:
+  if development_data.matches(source, value, "ok"):
+    0
+  else:
+    if development_data.matches(source, value, "compiler-error"):
+      1
+    else:
+      if development_data.matches(source, value, "timeout"):
+        2
+      else:
+        if development_data.matches(source, value, "output-limit"):
+          3
+        else:
+          if development_data.matches(source, value, "resource-limit"):
+            4
+          else:
+            if development_data.matches(source, value, "infrastructure-error"):
+              5
+            else:
+              if request && development_data.matches(source, value, "constraint-error"):
+                6
+              else:
+                if request && development_data.matches(source, value, "denied"):
+                  7
+                else:
+                  if request && development_data.matches(source, value, "interrupted"):
+                    8
+                  else:
+                    if request && development_data.matches(source, value, "unfinished"):
+                      9
+                    else:
+                      -1
+
+fn uuid_bytes(source: Bytes, cursor: I64, finish: I64, ordinal: I64) -> Bool effects[partial]:
+  if cursor == finish:
+    true
+  else:
+    let value: I64 = u8.to_i64(bytes.get(source, cursor))
+    let separator: Bool = (ordinal == 8) || ((ordinal == 13) || ((ordinal == 18) || (ordinal == 23)))
+    let valid: Bool = if separator:
+      value == 45
+    else:
+      ((value >= 48) && (value <= 57)) || ((value >= 97) && (value <= 102))
+    if valid:
+      recur(source, cursor + 1, finish, ordinal + 1)
+    else:
+      false
+
+fn uuid(source: Bytes, value: std_netstring.Frame) -> Bool effects[partial]:
+  ((value.end - value.start) == 36) && uuid_bytes(source, value.start, value.end, 0)
+
+fn compare(source: Bytes, left: std_netstring.Frame, right: std_netstring.Frame) -> I64 effects[partial]:
+  std_byte_index.compare(source, left.start, left.end, source, right.start, right.end)
+
+fn optional_hash(source: Bytes, value: std_netstring.Frame) -> Bool effects[partial]:
+  empty(value) || development_data.hash_valid(source, value)
+
+fn position(values: Vec[std_netstring.Frame], ordinal: I64) -> I64 effects[partial]:
+  let value: std_netstring.Frame = vec.get(values, ordinal)
+  value.start
+
+fn numbers(source: Bytes, values: Vec[std_netstring.Frame], cursor: I64, end: I64) -> development_model.Status effects[partial]:
+  if cursor == end:
+    status(true, 0, 0)
+  else:
+    let number: development_model.Number = development_data.number(source, vec.get(values, cursor), 9223372036854775807)
+    if number.valid:
+      recur(source, values, cursor + 1, end)
+    else:
+      status(false, number.code, number.position)
+
+fn trial_valid(source: Bytes, values: Vec[std_netstring.Frame]) -> development_model.Status effects[partial]:
+  let identifier: std_netstring.Frame = vec.get(values, 0)
+  let outcome: std_netstring.Frame = vec.get(values, 1)
+  let lifecycle: std_netstring.Frame = vec.get(values, 2)
+  let ledger: std_netstring.Frame = vec.get(values, 3)
+  let result: std_netstring.Frame = vec.get(values, 4)
+  let prepared: std_netstring.Frame = vec.get(values, 5)
+  let count: development_model.Number = development_data.number(source, vec.get(values, 6), 4096)
+  let outcome_kind: I64 = development_data.outcome(source, outcome)
+  let lifecycle_kind: I64 = development_data.lifecycle(source, lifecycle)
+  if empty(identifier):
+    status(false, 13, identifier.start)
+  else:
+    if outcome_kind < 0:
+      status(false, 14, outcome.start)
+    else:
+      if lifecycle_kind < -1:
+        status(false, 14, lifecycle.start)
+      else:
+        let shape: Bool = if outcome_kind < 6:
+          lifecycle_kind == -1
+        else:
+          if outcome_kind == 6:
+            lifecycle_kind >= 2
+          else:
+            (lifecycle_kind == 0) || (lifecycle_kind == 1)
+        if !shape:
+          status(false, 18, lifecycle.start)
+        else:
+          if !optional_hash(source, ledger):
+            status(false, 12, ledger.start)
+          else:
+            if (((lifecycle_kind == 0) && (!empty(ledger))) || ((lifecycle_kind > 0) && empty(ledger))) || ((lifecycle_kind == -1) && empty(ledger)):
+              status(false, 18, ledger.start)
+            else:
+              if !optional_hash(source, result):
+                status(false, 12, result.start)
+              else:
+                if ((outcome_kind < 6) && empty(result)) || ((outcome_kind >= 6) && (!empty(result))):
+                  status(false, 18, result.start)
+                else:
+                  if !optional_hash(source, prepared):
+                    status(false, 12, prepared.start)
+                  else:
+                    if (((lifecycle_kind == 0) && (!empty(prepared))) || ((lifecycle_kind > 0) && empty(prepared))) || ((lifecycle_kind == -1) && empty(prepared)):
+                      status(false, 18, prepared.start)
+                    else:
+                      if !count.valid:
+                        status(false, count.code, count.position)
+                      else:
+                        let known: Bool = if lifecycle_kind == 0:
+                          !count.known
+                        else:
+                          count.known
+                        status(known, 18, count.position)
+
+fn request_valid(source: Bytes, values: Vec[std_netstring.Frame]) -> development_model.Status effects[partial]:
+  let sequence: development_model.Number = development_data.number(source, vec.get(values, 0), 4095)
+  let operation: I64 = word(source, vec.get(values, 1), 2)
+  let started: I64 = word(source, vec.get(values, 2), 1)
+  let state: I64 = terminal(source, vec.get(values, 3), true)
+  if !sequence.valid:
+    status(false, sequence.code, sequence.position)
+  else:
+    if !sequence.known:
+      status(false, 18, sequence.position)
+    else:
+      if operation < 0:
+        status(false, 14, position(values, 1))
+      else:
+        if started < 0:
+          status(false, 14, position(values, 2))
+        else:
+          if state < 0:
+            status(false, 14, position(values, 3))
+          else:
+            let numeric: development_model.Status = numbers(source, values, 4, 8)
+            if !numeric.valid:
+              numeric
+            else:
+              request_shape(source, values, started == 1, operation, state)
+
+fn request_shape(source: Bytes, values: Vec[std_netstring.Frame], started: Bool, operation: I64, state: I64) -> development_model.Status effects[partial]:
+  let source_hash: std_netstring.Frame = vec.get(values, 8)
+  let expected: std_netstring.Frame = vec.get(values, 9)
+  let receipt: std_netstring.Frame = vec.get(values, 10)
+  if (!started) && ((!empty(vec.get(values, 4))) || (!empty(vec.get(values, 5)))):
+    let offset: I64 = if !empty(vec.get(values, 4)):
+      position(values, 4)
+    else:
+      position(values, 5)
+    status(false, 18, offset)
+  else:
+    if (state == 9) && ((!empty(vec.get(values, 6))) || (!empty(vec.get(values, 7)))):
+      let offset: I64 = if !empty(vec.get(values, 6)):
+        position(values, 6)
+      else:
+        position(values, 7)
+      status(false, 18, offset)
+    else:
+      if !optional_hash(source, source_hash):
+        status(false, 12, source_hash.start)
+      else:
+        if (started && empty(source_hash)) || ((!started) && (!empty(source_hash))):
+          status(false, 18, source_hash.start)
+        else:
+          if !optional_hash(source, expected):
+            status(false, 12, expected.start)
+          else:
+            let requires_expected: Bool = started && (operation == 2)
+            if (requires_expected && empty(expected)) || ((!requires_expected) && (!empty(expected))):
+              status(false, 18, expected.start)
+            else:
+              if !optional_hash(source, receipt):
+                status(false, 12, receipt.start)
+              else:
+                status(empty(receipt) || (started && (state < 9)), 18, receipt.start)
+
+fn command_valid(source: Bytes, values: Vec[std_netstring.Frame], operation: I64, ordinal: I64, preceding: I64) -> development_model.Status effects[partial]:
+  let phase: I64 = word(source, vec.get(values, 0), 3)
+  let state: I64 = terminal(source, vec.get(values, 1), false)
+  if phase < 0:
+    status(false, 14, position(values, 0))
+  else:
+    if state < 0:
+      status(false, 14, position(values, 1))
+    else:
+      let numeric: development_model.Status = numbers(source, values, 2, 6)
+      if !numeric.valid:
+        numeric
+      else:
+        let role: std_netstring.Frame = vec.get(values, 6)
+        let executable: std_netstring.Frame = vec.get(values, 7)
+        let basis: std_netstring.Frame = vec.get(values, 8)
+        if (!empty(role)) && (!development_data.matches(source, role, "generated-c")):
+          status(false, 14, role.start)
+        else:
+          if (!empty(role)) && ((phase < 3) || ((phase > 3) || (state > 0))):
+            status(false, 18, role.start)
+          else:
+            if !optional_hash(source, executable):
+              status(false, 12, executable.start)
+            else:
+              if (!development_data.matches(source, basis, "unknown")) && (!development_data.matches(source, basis, "monotonic-launcher-to-direct-reap")):
+                status(false, 14, basis.start)
+              else:
+                if (!empty(vec.get(values, 2))) && (!development_data.matches(source, basis, "monotonic-launcher-to-direct-reap")):
+                  status(false, 18, basis.start)
+                else:
+                  let expected: I64 = if operation < 3:
+                    operation
+                  else:
+                    ordinal + 2
+                  let maximum: I64 = if operation < 3:
+                    1
+                  else:
+                    if operation == 3:
+                      2
+                    else:
+                      3
+                  status((phase == expected) && ((ordinal <= maximum) && (preceding == 0)), 18, position(values, 0))
+
+fn commands(source: Bytes, payload: std_netstring.Frame, cursor: I64, ordinal: I64, operation: I64, request: I64, preceding: I64, output: @Vec[operation_cost_model.Command], work: @Vec[I64]) -> development_model.Status effects[alloc, partial]:
+  if cursor == payload.end:
+    let maximum: I64 = if operation < 3:
+      1
+    else:
+      if operation == 3:
+        2
+      else:
+        3
+    status((ordinal > 1) && ((preceding > 0) || ((ordinal - 1) == maximum)), 18, cursor)
+  else:
+    if (ordinal > 3) || (vec.len(output) >= 24576):
+      status(false, 10, cursor)
+    else:
+      if !operation_cost_work.step(@work, 2):
+        status(false, 24, cursor)
+      else:
+        let storage: Vec[std_netstring.Frame] = vec.new()
+        let parsed: operation_cost_model.Fields = fields(source, cursor, payload.end, 9, ^storage, @work)
+        match parsed:
+          Invalid(code, position):
+            status(false, code, position)
+          Ready(values, next):
+            let valid: development_model.Status = command_valid(source, values, operation, ordinal, preceding)
+            if !valid.valid:
+              valid
+            else:
+              let command_state: I64 = terminal(source, vec.get(values, 1), false)
+              let command: operation_cost_model.Command = operation_cost_model.Command(position: position(values, 0), request: request, ordinal: ordinal, phase: word(source, vec.get(values, 0), 3), status: command_state, elapsed: development_data.number(source, vec.get(values, 2), 9223372036854775807), executable: development_data.number(source, vec.get(values, 3), 9223372036854775807), stdout: development_data.number(source, vec.get(values, 4), 9223372036854775807), stderr: development_data.number(source, vec.get(values, 5), 9223372036854775807), role: !empty(vec.get(values, 6)))
+              vec.push(@output, command)
+              recur(source, payload, next, ordinal + 1, operation, request, command_state, @output, @work)
+
+fn request_row(source: Bytes, row: framed_records.Triple, trial: I64, started_count: I64, request: I64, output: @Vec[operation_cost_model.Command], work: @Vec[I64]) -> operation_cost_model.Row effects[alloc, partial]:
+  let storage: Vec[std_netstring.Frame] = vec.new()
+  let parsed: operation_cost_model.Fields = fields(source, row.second.start, row.second.end, 11, ^storage, @work)
+  match parsed:
+    Invalid(code, position):
+      operation_cost_model.Row::Invalid(code, position)
+    Ready(values, next):
+      if next < row.second.end:
+        operation_cost_model.Row::Invalid(19, next)
+      else:
+        let valid: development_model.Status = request_valid(source, values)
+        if !valid.valid:
+          operation_cost_model.Row::Invalid(valid.code, valid.position)
+        else:
+          let started: Bool = word(source, vec.get(values, 2), 1) == 1
+          let receipt: Bool = !empty(vec.get(values, 10))
+          let operation: I64 = word(source, vec.get(values, 1), 2)
+          let command_start: I64 = vec.len(output)
+          if started && (started_count >= 128):
+            operation_cost_model.Row::Invalid(10, row.first.start)
+          else:
+            let command_status: development_model.Status = if receipt:
+              commands(source, row.third, row.third.start, 1, operation, request, 0, @output, @work)
+            else:
+              status(empty(row.third), 18, row.third.start)
+            if !command_status.valid:
+              operation_cost_model.Row::Invalid(command_status.code, command_status.position)
+            else:
+              let sequence: development_model.Number = development_data.number(source, vec.get(values, 0), 4095)
+              let item: operation_cost_model.Request = operation_cost_model.Request(identifier: row.first, trial: trial, sequence: sequence.value, operation: operation, started: started, status: terminal(source, vec.get(values, 3), true), capture: development_data.number(source, vec.get(values, 4), 9223372036854775807), queue: development_data.number(source, vec.get(values, 5), 9223372036854775807), elapsed: development_data.number(source, vec.get(values, 6), 9223372036854775807), feedback: development_data.number(source, vec.get(values, 7), 9223372036854775807), receipt: receipt, command_start: command_start, command_end: vec.len(output))
+              operation_cost_model.Row::Ready(item, row.next)
+
+fn requests(source: Bytes, cursor: I64, remaining: I64, trial: I64, started: I64, previous: std_netstring.Frame, first: Bool, output: @Vec[operation_cost_model.Request], command_output: @Vec[operation_cost_model.Command], work: @Vec[I64]) -> development_model.Status effects[alloc, partial]:
+  if remaining == 0:
+    status(true, 0, cursor)
+  else:
+    if vec.len(output) >= 8192:
+      status(false, 10, cursor)
+    else:
+      if !operation_cost_work.step(@work, 1):
+        status(false, 24, cursor)
+      else:
+        let parsed: operation_cost_model.Triple = triple(source, cursor, bytes.len(source), 128, 1024, 2048, @work)
+        match parsed:
+          End:
+            status(false, 19, cursor)
+          Invalid(code, position):
+            status(false, code, position)
+          Ready(row):
+            if !uuid(source, row.first):
+              status(false, 13, row.first.start)
+            else:
+              let ordered: Bool = if first:
+                true
+              else:
+                compare(source, previous, row.first) < 0
+              if !ordered:
+                status(false, 22, row.first.start)
+              else:
+                let result: operation_cost_model.Row = request_row(source, row, trial, started, vec.len(output), @command_output, @work)
+                match result:
+                  Invalid(code, position):
+                    status(false, code, position)
+                  Ready(item, next):
+                    let increment: I64 = if item.started:
+                      1
+                    else:
+                      0
+                    vec.push(@output, item)
+                    recur(source, next, remaining - 1, trial, started + increment, row.first, false, @output, @command_output, @work)
+
+fn order(source: Bytes, row: framed_records.Triple, trials: Vec[operation_cost_model.Trial]) -> development_model.Status effects[partial]:
+  if empty(row.first):
+    status(false, 13, row.first.start)
+  else:
+    let condition: I64 = word(source, row.second, 0)
+    if condition < 0:
+      status(false, 14, row.second.start)
+    else:
+      if condition == (vec.len(trials) % 2):
+        if vec.len(trials) == 0:
+          status(true, 0, 0)
+        else:
+          let previous: operation_cost_model.Trial = vec.get(trials, vec.len(trials) - 1)
+          let comparison: I64 = compare(source, previous.task, row.first)
+          let valid: Bool = if condition == 1:
+            comparison == 0
+          else:
+            comparison < 0
+          status(valid, 20, row.first.start)
+      else:
+        status(false, 20, row.second.start)
+
+fn trials(source: Bytes, cursor: I64, output: @Vec[operation_cost_model.Trial], request_output: @Vec[operation_cost_model.Request], command_output: @Vec[operation_cost_model.Command], work: @Vec[I64]) -> development_model.Status effects[alloc, partial]:
+  if cursor == bytes.len(source):
+    status((vec.len(output) % 2) == 0, 20, cursor)
+  else:
+    if vec.len(output) >= 64:
+      status(false, 10, cursor)
+    else:
+      let parsed: operation_cost_model.Triple = triple(source, cursor, bytes.len(source), 64, 128, 1024, @work)
+      match parsed:
+        End:
+          status(false, 19, cursor)
+        Invalid(code, position):
+          status(false, code, position)
+        Ready(row):
+          let ordered: development_model.Status = order(source, row, output)
+          if !ordered.valid:
+            ordered
+          else:
+            let storage: Vec[std_netstring.Frame] = vec.new()
+            let parsed_fields: operation_cost_model.Fields = fields(source, row.third.start, row.third.end, 7, ^storage, @work)
+            match parsed_fields:
+              Invalid(code, position):
+                status(false, code, position)
+              Ready(values, next):
+                if next < row.third.end:
+                  status(false, 19, next)
+                else:
+                  let valid: development_model.Status = trial_valid(source, values)
+                  if !valid.valid:
+                    valid
+                  else:
+                    let amount: development_model.Number = development_data.number(source, vec.get(values, 6), 4096)
+                    let request_start: I64 = vec.len(request_output)
+                    let count: I64 = if amount.known:
+                      amount.value
+                    else:
+                      0
+                    let request_status: development_model.Status = requests(source, row.next, count, vec.len(output), 0, row.first, true, @request_output, @command_output, @work)
+                    if !request_status.valid:
+                      request_status
+                    else:
+                      let item: operation_cost_model.Trial = operation_cost_model.Trial(task: row.first, identifier: vec.get(values, 0), condition: word(source, row.second, 0), outcome: vec.get(values, 1), lifecycle: vec.get(values, 2), requests: amount, request_start: request_start, request_end: vec.len(request_output))
+                      vec.push(@output, item)
+                      recur(source, request_status.position, @output, @request_output, @command_output, @work)
+
+fn keys(trials: Vec[operation_cost_model.Trial], cursor: I64, output: @Vec[std_byte_index.Entry]) -> Void effects[alloc, partial]:
+  if cursor == vec.len(trials):
+    void
+  else:
+    let trial: operation_cost_model.Trial = vec.get(trials, cursor)
+    vec.push(@output, std_byte_index.Entry(start: trial.identifier.start, end: trial.identifier.end, ordinal: cursor))
+    recur(trials, cursor + 1, @output)
+
+fn load_body(source: Bytes, header: development_model.Header, start: I64, work: ^Vec[I64]) -> operation_cost_model.Loaded effects[alloc, partial]:
+  let trial_values: Vec[operation_cost_model.Trial] = vec.new()
+  let request_values: Vec[operation_cost_model.Request] = vec.new()
+  let command_values: Vec[operation_cost_model.Command] = vec.new()
+  let collected: development_model.Status = trials(source, start, @trial_values, @request_values, @command_values, @work)
+  if !collected.valid:
+    operation_cost_model.Loaded::Invalid(collected.code, collected.position)
+  else:
+    let trial_keys: Vec[std_byte_index.Entry] = vec.new()
+    keys(trial_values, 0, @trial_keys)
+    let indexed: std_byte_index.Built = std_byte_index.build(source, ^trial_keys, 64)
+    match indexed:
+      Invalid(code, position):
+        let diagnostic: I64 = if code == 3:
+          21
+        else:
+          10
+        operation_cost_model.Loaded::Invalid(diagnostic, position)
+      Ready(index):
+        operation_cost_model.Loaded::Ready(operation_cost_model.View(source: source, header: header, trials: trial_values, requests: request_values, commands: command_values), work)
+
+fn load_header(source: Bytes, header: framed_records.Triple, work: ^Vec[I64]) -> operation_cost_model.Loaded effects[alloc, partial]:
+  let parsed: operation_cost_model.Triple = triple(source, header.third.start, header.third.end, 64, 64, 64, @work)
+  match parsed:
+    End:
+      operation_cost_model.Loaded::Invalid(108, header.third.start)
+    Invalid(code, position):
+      operation_cost_model.Loaded::Invalid(code, position)
+    Ready(values):
+      if values.next < header.third.end:
+        operation_cost_model.Loaded::Invalid(19, values.next)
+      else:
+        let bad: I64 = if !development_data.hash_valid(source, values.first):
+          values.first.start
+        else:
+          if !development_data.hash_valid(source, values.second):
+            values.second.start
+          else:
+            if !development_data.hash_valid(source, values.third):
+              values.third.start
+            else:
+              -1
+        if bad >= 0:
+          operation_cost_model.Loaded::Invalid(12, bad)
+        else:
+          load_body(source, development_model.Header(freeze: header.second, compiler: values.first, evaluator: values.second, manifest: values.third), header.next, ^work)
+
+fn load(source: Bytes, maximum_work: I64) -> operation_cost_model.Loaded effects[alloc, partial]:
+  if (maximum_work < 0) || (maximum_work > 1000000):
+    operation_cost_model.Loaded::Invalid(10, 0)
+  else:
+    if bytes.len(source) > 8388608:
+      operation_cost_model.Loaded::Invalid(10, 0)
+    else:
+      let work: Vec[I64] = operation_cost_work.create(maximum_work)
+      let parsed: operation_cost_model.Triple = triple(source, 0, bytes.len(source), 64, 64, 256, @work)
+      match parsed:
+        End:
+          operation_cost_model.Loaded::Invalid(108, 0)
+        Invalid(code, position):
+          operation_cost_model.Loaded::Invalid(code, position)
+        Ready(header):
+          if !development_data.matches(source, header.first, "slim-development-operation-cost-1"):
+            operation_cost_model.Loaded::Invalid(11, header.first.start)
+          else:
+            if !development_data.hash_valid(source, header.second):
+              operation_cost_model.Loaded::Invalid(12, header.second.start)
+            else:
+              load_header(source, header, ^work)

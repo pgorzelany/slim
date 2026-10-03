@@ -1,0 +1,32 @@
+module operation_cost_app
+
+fn run(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: Vec[U8] = vec.new()
+  if io.read_file(path, @input):
+    let loaded: operation_cost_model.Loaded = operation_cost_data.load(bytes.freeze(^input), 1000000)
+    match loaded:
+      Invalid(code, position):
+        operation_cost_emit.error(code, position)
+        65
+      Ready(view, work):
+        let counted: operation_cost_model.Counted = operation_cost_stats.summarize(view, @work)
+        match counted:
+          Invalid(code, position):
+            operation_cost_emit.error(code, position)
+            65
+          Ready(groups):
+            if operation_cost_emit.report(view, groups, work, 524288):
+              0
+            else:
+              operation_cost_emit.error(23, 0)
+              65
+  else:
+    operation_cost_emit.error(1, 0)
+    66
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    run(vec.get(args, 1))
+  else:
+    operation_cost_emit.error(2, 0)
+    64

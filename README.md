@@ -36,7 +36,12 @@ their acceptance gates are in [ROADMAP.md](ROADMAP.md).
 In a repository checkout, the [experimental source library](library/README.md)
 contains reusable modules,
 substantial application workloads, canonical API/reference tools, and a seeded
-typed source generator. It is outside the 0.9 source-release manifest while RFC-0111 remains proposed.
+typed source generator. The [component guide](library/COMPONENTS.md) covers
+catalog reconciliation, dependency plans, development summaries, observed operation
+costs and checked project inputs. Their focused native checks pass; current-source
+integration remains pending.
+The library and checkout tools stay outside the frozen 0.9 source-release
+manifest while RFC-0111 remains proposed.
 Its deterministic corpus gate is:
 
     ./scripts/check-library-corpus.sh

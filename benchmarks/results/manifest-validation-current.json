@@ -1,0 +1,202 @@
+{
+  "schema": 1,
+  "contract": "RFC-0167",
+  "observed_date": "2026-10-03",
+  "status": "Focused path-only work/parity/resource/retained/same-host checks and adopted seed bootstrap fixed point passed; full current-source repository integration pending.",
+  "scope": "Original duplicate-path scan only. A temporary trie over original raw quoted path spans is owned by a private scalar-return helper and physically destroyed before remaining validators. Original name/membership lookups, malformed/unsorted legacy routes and cycle placement remain unchanged. No whole-manifest linearity or general timing speedup claim.",
+  "sources": {
+    "selfhost/project.slim": "e40b86bf9c8c120416d01d007b40c58871d8ae1c67e24a4f953b0bac96af498f",
+    "scripts/verify-manifest-validation.py": "72af1f53ca95e118b0ff6e12decac0f572e23336d9fb966161ced2630d534ad8",
+    "scripts/manifest-validation-oracle.py": "492508410de8ed99455f2ab44066449556664e2f6aa316333482a5722a768cf7",
+    "scripts/manifest-path-oracle.py": "10bb9416d3589cd823302c9245fe68e66059d1076da704282a8cc7ac127baa5a"
+  },
+  "preimplementation_contract_sha256": "a2e8beed0f157a95d31ef1afb9ab821768af2d807089670ddf0b0600e5ea527e",
+  "fixed_fixture_oracle_sha256": "8589f7476ab274ceac3273db35d0cb6fa5cd1f27405ca9a612994e8c671fa82f",
+  "held_path_model_sha256": "1f4c8bf85ea5c457451c0184c7710a5912c385c11a9e488f285c52757ed40726",
+  "fixture_files": 3456,
+  "comparison_receipt": "build/overnight-manifest/path-compare-attempt1/receipt.json",
+  "comparison_receipt_sha256": "05b06660b2c60ea5bcbd7a915e6210201ce252f927544802ea511596f0c57a87",
+  "finite_domains": {
+    "fixed_cases": 66,
+    "malformed_cases": 25,
+    "exact_work_and_legacy_trace_rows": 41,
+    "ordinary_sanitized_status_output_parity": 528,
+    "sparse_allocation_failure_probes": 56,
+    "arithmetic_controls": 12,
+    "counter_cap_crossings": 4,
+    "held_selfhost_output_parity": 8,
+    "resource_observations": 12,
+    "resource_report_cap_crossings": 3,
+    "old_current_retained_observations": 12,
+    "retained_ratio_rows": 6,
+    "fresh_ratio_rows": 31
+  },
+  "variants": [
+    "ordinary",
+    "address+undefined sanitized; macOS ASAN leak detection unavailable"
+  ],
+  "local_work": {
+    "domain": "Eligible path trie plus guarded preflight only; original membership and cycle target-degree scans excluded.",
+    "counter_cap": 1000000000,
+    "index_bound": "260*path_bytes + 4*modules + 2",
+    "combined_bound": "260*path_bytes + 20*modules + 3*edges + 8 <= 800*(B+N+E+1)",
+    "geometric_budget": 1.15,
+    "exponents": {
+      "back": 0.994496653501301,
+      "bytes": 0.9288787184545385,
+      "duplicate": 1.0012688623824588,
+      "edges": 0.17233551233708513,
+      "front": 0.994496653501301,
+      "paths": 0.9981050371809514
+    },
+    "old_distinct_path_pairs_at_256_modules": 32640,
+    "new_eligible_legacy_path_pairs_at_256_modules": 0
+  },
+  "same_host": {
+    "budget": 1.1,
+    "warmups_per_row": 2,
+    "balanced_pairs_per_row": 11,
+    "baseline_noise_pairs_per_row": 11,
+    "noise_rows_admitted": 37,
+    "fresh_max_ratio": 1.0561288667904298,
+    "retained_max_ratio": 1.0424256854256855,
+    "retained_ratios": {
+      "warm": 0.9852206920124358,
+      "edit": 0.9716187253716586,
+      "reject": 0.9732274965861926,
+      "recover": 1.0424256854256855,
+      "stale": 1.008385755267842,
+      "capacity": 0.9431314133953905
+    },
+    "timed_scope": "Wrapper dispatch through process-group cleanup; includes fresh process and parent drain/cleanup; filesystem cache uncontrolled. Retained rows also include cold initial load and cold comparison; isolated retained-update CPU unknown."
+  },
+  "resource_scope": "Three fixed inputs, each baseline/candidate and ordinary/sanitized. Existing runtime observer reports requested payload, allocation attempts, realloc copying and simultaneous owner peaks; does not observe RSS or libc costs.",
+  "resources": [
+    {
+      "id": "prefix",
+      "baseline": {
+        "runtime_attempts": 111,
+        "requested_payload": 45835,
+        "runtime_realloc_copies": 16224,
+        "peak_payload": 27530,
+        "peak_with_headers": 29650
+      },
+      "candidate": {
+        "runtime_attempts": 117,
+        "requested_payload": 48075,
+        "runtime_realloc_copies": 17184,
+        "peak_payload": 27530,
+        "peak_with_headers": 29650
+      },
+      "deltas": {
+        "requested_payload": 2240,
+        "runtime_attempts": 6,
+        "runtime_realloc_copies": 960
+      },
+      "final_live_payload_headers_and_host_owners": 0,
+      "ordinary_sanitized_fields_identical": true
+    },
+    {
+      "id": "paths-256",
+      "baseline": {
+        "runtime_attempts": 5566,
+        "requested_payload": 4488781,
+        "runtime_realloc_copies": 1845872,
+        "peak_payload": 2418668,
+        "peak_with_headers": 2552868
+      },
+      "candidate": {
+        "runtime_attempts": 5584,
+        "requested_payload": 4652301,
+        "runtime_realloc_copies": 1927472,
+        "peak_payload": 2418668,
+        "peak_with_headers": 2552868
+      },
+      "deltas": {
+        "requested_payload": 163520,
+        "runtime_attempts": 18,
+        "runtime_realloc_copies": 81600
+      },
+      "final_live_payload_headers_and_host_owners": 0,
+      "ordinary_sanitized_fields_identical": true
+    },
+    {
+      "id": "held-selfhost",
+      "baseline": {
+        "runtime_attempts": 126941,
+        "requested_payload": 414505783,
+        "runtime_realloc_copies": 193445840,
+        "peak_payload": 223095114,
+        "peak_with_headers": 226460754
+      },
+      "candidate": {
+        "runtime_attempts": 126955,
+        "requested_payload": 414546423,
+        "runtime_realloc_copies": 193466000,
+        "peak_payload": 223095114,
+        "peak_with_headers": 226460754
+      },
+      "deltas": {
+        "requested_payload": 40640,
+        "runtime_attempts": 14,
+        "runtime_realloc_copies": 20160
+      },
+      "final_live_payload_headers_and_host_owners": 0,
+      "ordinary_sanitized_fields_identical": true
+    }
+  ],
+  "allocation_probe_ordinals": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128,
+    256,
+    512,
+    1024,
+    2048,
+    4096,
+    8192
+  ],
+  "source_custody": {
+    "comparison_source_tool_pins": 89,
+    "before_after": "All unchanged during the focused comparison; subsequent seed adoption and RFC implementation prose are separately recorded.",
+    "owner_cleanup": "One child region, no adoption, one destroy before the shared scalar return on both duplicate and success.",
+    "native_cleanup": "Unconditional process-group SIGKILL then direct wait on every path, including normal leader exit; fixed closed-stream descendant control passed."
+  },
+  "adoption": {
+    "seed_sha256": "ddc09934921cd7a08a05a0dc17fc45070cbe959eb96c689830d23a2e776c1fb9",
+    "seed_digest_file_sha256": "265081a299ae1e3c4d738df2f1531c62db22390af7f9f468adf40a7263e39815",
+    "emission_producer_compiler_sha256": "ee6264e4482e45256064079759b110b6eba99dc73bb06657cdc204b6457c97d6",
+    "toolchain_compiler_sha256": "cd0997b0223fb2dec62a65e39840086f7a771ba2e5851c98af3a3bd42ee5c48a",
+    "toolchain_c_sha256": "ddc09934921cd7a08a05a0dc17fc45070cbe959eb96c689830d23a2e776c1fb9",
+    "session_host_sha256": "c94519131ae4b16c1b4f5bc03d08d1060a24060d9240134e79cf96681001f8ae",
+    "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
+    "bootstrap_receipt": "build/overnight-manifest/path-adoption-attempt1/bootstrap-receipt.json",
+    "bootstrap_receipt_sha256": "b7187a0ce4ed7bf4bec6706ab8cd18eeb4e0e2da98fe59d8661bbc70d3ca6ba6",
+    "bootstrap_elapsed_ns": 25059390167,
+    "bootstrap_c_bytes": 5294244,
+    "fixed_point_and_hello_native_smoke": true
+  },
+  "focused_campaign_elapsed_ns": 106616595459,
+  "unknown": [
+    "loaded-code/ABA/host-boot custody",
+    "cold filesystem cache",
+    "isolated frontend CPU",
+    "external backend comparisons",
+    "generated application runtime",
+    "peak RSS",
+    "RSS/libc allocation cost and copying outside runtime realloc",
+    "allocation ordinals outside fixed 1,2,4,...8192 probes",
+    "isolated retained-update CPU",
+    "cumulative requested header bytes",
+    "peak header-only storage",
+    "copying outside runtime realloc",
+    "full current-source integration and final RFC implementation completion"
+  ],
+  "preserved_failures": "The original membership-scope exponent failure and retained-fixture precheck failure remain retained; neither invocation was relabeled or used to weaken a gate.",
+  "permanent_gate": "scripts/verify.sh invokes the portable --current work/parity/resource-control campaign from fresh generated fixtures. Explicit source-pinned --compare keeps the same-host 1.10 guard."
+}

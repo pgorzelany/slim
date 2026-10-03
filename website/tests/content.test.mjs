@@ -88,6 +88,9 @@ test("every Markdown source is published once or explicitly excluded", async () 
     sourcePath: "AGENTS.md",
     reason: "Internal operational policy for repository agents.",
   }, {
+    sourcePath: "library/applications/development_operation_cost/fixtures/README.md",
+    reason: "Synthetic test-fixture provenance; the ordinary component contract is published in library/COMPONENTS.md.",
+  }, {
     sourcePath: "benchmarks/agent-development/PROTOCOL.md",
     reason: "Internal preregistered pilot protocol; participant and oracle material are kept separate.",
   }, ...["buffer-drain", "effects-report", "range-api"].map((task) => ({

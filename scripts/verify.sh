@@ -9,6 +9,11 @@ python3 -B scripts/verify-project-lists.py --compiler build/toolchain/slimc \
   --generated-c build/toolchain/slimc.c --receipt build/project-list-work.json
 python3 -B scripts/verify-project-namespace.py --compiler build/toolchain/slimc \
   --generated-c build/toolchain/slimc.c --receipt build/project-namespace-work.json
+manifest_dir=$(mktemp -d "$PWD/build/manifest-validation.XXXXXX")
+python3 -B scripts/verify-manifest-validation.py --current \
+  --compiler build/toolchain/slimc --generated-c build/toolchain/slimc.c \
+  --output "$manifest_dir/current"
+rm -rf "$manifest_dir"
 cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
@@ -34,8 +39,14 @@ cargo run --release --quiet --bin slim-bench -- agent
 verify_dir=$(mktemp -d /tmp/slim-verify.XXXXXX)
 trap 'rm -rf "$verify_dir"' EXIT HUP INT TERM
 
+python3 -B scripts/verify-development-operation-cost.py --compiler build/toolchain/slimc \
+  --output "$verify_dir/development-operation-cost"
+
 python3 -B scripts/verify-development-summary.py --compiler build/toolchain/slimc \
   --output "$verify_dir/development-summary"
+
+python3 -B scripts/verify-project-input.py --compiler build/toolchain/slimc \
+  --output "$verify_dir/project-input"
 
 clang -std=c11 -O1 -g -fsanitize=address,undefined -fno-omit-frame-pointer \
   -Wall -Wextra -Werror -I runtime \

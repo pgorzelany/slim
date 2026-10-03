@@ -3,7 +3,7 @@
 Status: SLIM 0.9 — experimental, pre-1.0
 Current milestone: Pre-1.0 evidence-driven development
 Current goal: Measured compiler and library development in SLIM
-Last updated: 2026-10-02
+Last updated: 2026-10-03
 
 SLIM helps humans and agents build safe native software through precise compiler
 feedback, explicit resource behavior and reproducible failures. The
@@ -60,8 +60,8 @@ integration; measured trials and native benchmarks run without competing work.
 | Workstream | Concrete result | Acceptance |
 | --- | --- | --- |
 | Project contracts | Canonical import/export lists and distinct module declaration identities, with checked visibility and original source diagnostics. | Collision, lexical/type-role, nested-expression and visibility fixtures; clean/retained parity; unchanged safety gates and measured checking work. |
-| Ordinary SLIM components | Bounded framing and byte indexing, used by catalog queries/snapshot reconciliation, dependency planning and development-result summaries. | Independent behavior/failure matrices, explicit admission bounds, native/resource tests, deterministic results and preserved work budgets. |
-| Compiler dogfooding | Apply the components and focused tools to actual compiler/project data and repairs. | Complete production checking, reproducible outputs and named correctness/resource contracts. |
+| Ordinary SLIM components | Bounded framing and byte indexing, used by catalog queries/snapshot reconciliation, dependency planning and development-result and operation-cost summaries. | Independent behavior/failure matrices, explicit admission bounds, native/resource tests, deterministic results and preserved work budgets. |
+| Compiler dogfooding | Capture checked compiler/project bytes with ordinary project-input; reconcile catalog snapshots and plan direct imports. | Matching trusted producer/adapter identities, complete production checking, reproducible outputs and named correctness/resource contracts. |
 | Development evaluator | Immutable operation/submission snapshots, queued concurrent requests and separately observed task/tool timing. | Permanent transport, identity, timeout and acceptance tests; no second semantic checker. |
 | Held-out evaluation | Larger paired compiler/library tasks with ordinary tools versus optional context, using fresh Sol 6.1 extra-high agents. | Freeze tasks, independent tests, order and budgets before dispatch; retain every outcome and report unknown observations explicitly. |
 | Closure | Reviewed, verified commits pushed to `codex/slim-next`; concise current status and results. | Required compiler/runtime/benchmark checks and source-bound repository, release and website acceptance. |
@@ -72,8 +72,27 @@ and compare ordinary feedback with optional semantic context. Name measured
 benefits and costs per domain; retain unknown results and infrastructure failures.
 Reliable native session execution is part of acceptance, not an optional cleanup.
 
-Only reviewed bounded ordinary-source and evaluator contracts are accepted
-within this window. New language syntax, runtime integration, dependencies and
+Checkpoint `90de8e9`, pushed to `codex/slim-next`, passes repository, release and
+website gates for the implemented project/component/evaluator slices. Later
+[project-input composition and operation-cost reporting](library/COMPONENTS.md)
+under accepted RFC-0165/0166 pass focused ordinary/sanitized checks; current-source
+integration remains pending. The
+[protocol-2 cohort](benchmarks/development/current.json) has 24 configured fresh
+serial Sol 6.1 extra-high trials; eight participants passed their independent
+oracles. Dispatch nine was interrupted before a participant started because
+fresh-agent capacity was exhausted; fifteen trials remain undispatched. General effectiveness,
+model calls and tokens remain unknown; successor milestones retain their gates.
+
+The accepted [duplicate-path optimization](design/rfcs/0167-linear-manifest-validation.md)
+reuses the existing byte trie only for repeated raw path identity. The broader
+membership experiment failed its unchanged scaling gate and was narrowed.
+Original name searches, diagnostics and cycle order remain. Exact work, cleanup,
+parity, resource and same-host comparisons pass for the named focused domains;
+full current-source integration remains pending. Whole-manifest checking remains
+outside its local linear-work claim.
+
+Only reviewed bounded ordinary-source, evaluator and behavior-preserving compiler
+contracts are accepted within this window. New language syntax, runtime integration, dependencies and
 performance-budget relaxation remain outside its scope. The first pilot stays
 frozen. A result may support retaining, narrowing or rejecting context use; a
 larger task corpus still does not establish universal agent effectiveness.

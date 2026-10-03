@@ -1,6 +1,7 @@
 # name	project
 api-diff	library/api-diff.project
 catalog	library/catalog.project
+development-operation-cost	library/development-operation-cost.project
 development-summary	library/development-summary.project
 http	library/http.project
 ledger	library/ledger.project

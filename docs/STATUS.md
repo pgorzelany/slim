@@ -31,11 +31,18 @@ condition and general context benefit remains unknown. The
 retains original outcomes and costs.
 
 The [current roadmap](../ROADMAP.md) authorizes continuous work until 2026-10-03
-10:00 Europe/Warsaw: project-list validation, bounded ordinary-source data
-components and a stronger development evaluator. Implemented slices remain
-pending coordinated acceptance. M2/full M3 are not closed by this work.
+10:00 Europe/Warsaw. Checkpoint `90de8e9`, pushed to `codex/slim-next`, passed
+repository, release and website gates for project contracts, native repairs, ordinary components and
+the development evaluator. Later
+[Project-input and operation-cost tools](../library/COMPONENTS.md), plus
+[duplicate-path validation](../benchmarks/results/manifest-validation-current.json),
+pass focused checks; current-source integration remains pending. The frozen evaluator has eight accepted participants, one infrastructure
+interruption and fifteen undispatched trials; fresh-agent capacity is exhausted.
+Model calls/tokens and general effectiveness remain unknown.
+Current [source-bound records](../benchmarks/results/README.md) retain scope and
+identities. M2/full M3 remain pending.
 
 M3-M7 and general agent effectiveness remain pending. A bounded pilot cannot
 establish a general effectiveness claim. The
-[current roadmap](../ROADMAP.md) records deliverables, dependencies and exit
-evidence. The 0.9 language version is unchanged.
+[roadmap](../ROADMAP.md) records remaining exit evidence. The 0.9 language version
+is unchanged.

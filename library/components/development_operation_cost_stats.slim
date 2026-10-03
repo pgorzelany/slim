@@ -1,0 +1,316 @@
+module operation_cost_stats
+
+fn group_count(view: operation_cost_model.View) -> I64 effects[partial]:
+  (vec.len(view.trials) * 2) + 26
+
+fn condition(view: operation_cost_model.View, value: I64, command: Bool) -> I64 effects[partial]:
+  let shift: I64 = if command:
+    1
+  else:
+    0
+  ((vec.len(view.trials) * 2) + (value * 2)) + shift
+
+fn operation(view: operation_cost_model.View, value: I64, kind: I64) -> I64 effects[partial]:
+  (((vec.len(view.trials) * 2) + 4) + (value * 5)) + kind
+
+fn phase(view: operation_cost_model.View, value: I64, kind: I64) -> I64 effects[partial]:
+  (((vec.len(view.trials) * 2) + 14) + (value * 6)) + kind
+
+fn empty_metric() -> operation_cost_model.Metric:
+  operation_cost_model.Metric(eligible: 0, missing: 0, sum: development_model.Aggregate(count: 0, valid: true, total: 0), maximum: 0, trial: -1, request: -1, sequence: 0, ordinal: 0)
+
+fn zeros(count: I64, output: @Vec[I64]) -> Void effects[alloc, partial]:
+  if vec.len(output) == count:
+    void
+  else:
+    vec.push(@output, 0)
+    recur(count, @output)
+
+fn metrics(count: I64, output: @Vec[operation_cost_model.Metric]) -> Void effects[alloc, partial]:
+  if vec.len(output) == count:
+    void
+  else:
+    vec.push(@output, empty_metric())
+    recur(count, @output)
+
+fn increment(counts: @Vec[I64], group: I64, column: I64) -> Bool effects[partial]:
+  if (group < 0) || ((group >= 154) || ((column < 0) || (column >= 32))):
+    false
+  else:
+    let index: I64 = (group * 32) + column
+    if index >= vec.len(counts):
+      false
+    else:
+      let previous: I64 = vec.get(counts, index)
+      if (previous < 0) || (previous >= 24576):
+        false
+      else:
+        vec.set(@counts, index, previous + 1)
+        true
+
+fn observe_trial(counts: @Vec[I64], group: I64, unknown: Bool) -> Bool effects[partial]:
+  if !increment(@counts, group, 0):
+    false
+  else:
+    if unknown:
+      increment(@counts, group, 1)
+    else:
+      true
+
+fn trial_operations(view: operation_cost_model.View, value: I64, cursor: I64, unknown: Bool, counts: @Vec[I64]) -> Bool effects[partial]:
+  if cursor == 5:
+    true
+  else:
+    if observe_trial(@counts, operation(view, value, cursor), unknown):
+      recur(view, value, cursor + 1, unknown, @counts)
+    else:
+      false
+
+fn trial_counts(view: operation_cost_model.View, cursor: I64, counts: @Vec[I64]) -> Bool effects[partial]:
+  if cursor == vec.len(view.trials):
+    true
+  else:
+    let trial: operation_cost_model.Trial = vec.get(view.trials, cursor)
+    if (trial.condition < 0) || (trial.condition > 1):
+      false
+    else:
+      let unknown: Bool = !trial.requests.known
+      let ready: Bool = observe_trial(@counts, cursor * 2, unknown) && (observe_trial(@counts, (cursor * 2) + 1, unknown) && (observe_trial(@counts, condition(view, trial.condition, false), unknown) && (observe_trial(@counts, condition(view, trial.condition, true), unknown) && trial_operations(view, trial.condition, 0, unknown, @counts))))
+      if ready:
+        recur(view, cursor + 1, @counts)
+      else:
+        false
+
+fn before(view: operation_cost_model.View, request: I64, ordinal: I64, previous: operation_cost_model.Metric) -> Bool effects[partial]:
+  let current: operation_cost_model.Request = vec.get(view.requests, request)
+  if current.sequence < previous.sequence:
+    true
+  else:
+    if current.sequence > previous.sequence:
+      false
+    else:
+      let prior: operation_cost_model.Request = vec.get(view.requests, previous.request)
+      let compared: I64 = std_byte_index.compare(view.source, current.identifier.start, current.identifier.end, view.source, prior.identifier.start, prior.identifier.end)
+      if compared < 0:
+        true
+      else:
+        if compared > 0:
+          false
+        else:
+          if ordinal < previous.ordinal:
+            true
+          else:
+            if ordinal > previous.ordinal:
+              false
+            else:
+              let trial: operation_cost_model.Trial = vec.get(view.trials, current.trial)
+              let prior_trial: operation_cost_model.Trial = vec.get(view.trials, previous.trial)
+              std_byte_index.compare(view.source, trial.identifier.start, trial.identifier.end, view.source, prior_trial.identifier.start, prior_trial.identifier.end) < 0
+
+fn update(view: operation_cost_model.View, values: @Vec[operation_cost_model.Metric], group: I64, column: I64, observation: development_model.Number, eligible: Bool, request: I64, ordinal: I64) -> Bool effects[partial]:
+  if !eligible:
+    true
+  else:
+    if (group < 0) || ((group >= 154) || ((column < 0) || (column >= 5))):
+      false
+    else:
+      let index: I64 = (group * 5) + column
+      if index >= vec.len(values):
+        false
+      else:
+        let previous: operation_cost_model.Metric = vec.get(values, index)
+        if (previous.eligible < 0) || ((previous.eligible >= 24576) || ((!observation.valid) || (observation.known && (observation.value < 0)))):
+          false
+        else:
+          if observation.known:
+            if (previous.sum.count < 0) || (previous.sum.count >= 24576):
+              false
+            else:
+              let fits: Bool = previous.sum.valid && framed_records.addition_fits(previous.sum.total, observation.value)
+              let total: I64 = if fits:
+                previous.sum.total + observation.value
+              else:
+                previous.sum.total
+              let selected: Bool = if previous.sum.count == 0:
+                true
+              else:
+                if observation.value > previous.maximum:
+                  true
+                else:
+                  if observation.value < previous.maximum:
+                    false
+                  else:
+                    before(view, request, ordinal, previous)
+              let current: operation_cost_model.Request = vec.get(view.requests, request)
+              let result: operation_cost_model.Metric = if selected:
+                operation_cost_model.Metric(eligible: previous.eligible + 1, missing: previous.missing, sum: development_model.Aggregate(count: previous.sum.count + 1, valid: fits, total: total), maximum: observation.value, trial: current.trial, request: request, sequence: current.sequence, ordinal: ordinal)
+              else:
+                operation_cost_model.Metric(eligible: previous.eligible + 1, missing: previous.missing, sum: development_model.Aggregate(count: previous.sum.count + 1, valid: fits, total: total), maximum: previous.maximum, trial: previous.trial, request: previous.request, sequence: previous.sequence, ordinal: previous.ordinal)
+              vec.set(@values, index, result)
+              true
+          else:
+            if (previous.missing < 0) || (previous.missing >= 24576):
+              false
+            else:
+              vec.set(@values, index, operation_cost_model.Metric(eligible: previous.eligible + 1, missing: previous.missing + 1, sum: previous.sum, maximum: previous.maximum, trial: previous.trial, request: previous.request, sequence: previous.sequence, ordinal: previous.ordinal))
+              true
+
+fn request_number(value: operation_cost_model.Request, column: I64) -> development_model.Number:
+  if column == 0:
+    value.capture
+  else:
+    if column == 1:
+      value.queue
+    else:
+      if column == 2:
+        value.elapsed
+      else:
+        value.feedback
+
+fn request_metrics(view: operation_cost_model.View, request: I64, group: I64, column: I64, values: @Vec[operation_cost_model.Metric], work: @Vec[I64]) -> Bool effects[partial]:
+  if column == 4:
+    true
+  else:
+    if !operation_cost_work.step(@work, 3):
+      false
+    else:
+      let value: operation_cost_model.Request = vec.get(view.requests, request)
+      if update(view, @values, group, column, request_number(value, column), true, request, 0):
+        recur(view, request, group, column + 1, @values, @work)
+      else:
+        false
+
+fn request_counts(value: operation_cost_model.Request, group: I64, counts: @Vec[I64]) -> Bool effects[partial]:
+  let observed: Bool = increment(@counts, group, 2) && increment(@counts, group, 9 + value.status)
+  let started: Bool = if value.started:
+    increment(@counts, group, 3)
+  else:
+    true
+  let finished: Bool = if value.status < 9:
+    increment(@counts, group, 4)
+  else:
+    increment(@counts, group, 6)
+  let unstarted: Bool = if (!value.started) && (value.status < 9):
+    increment(@counts, group, 5)
+  else:
+    true
+  let receipt: Bool = if value.receipt:
+    increment(@counts, group, 7)
+  else:
+    if value.started:
+      increment(@counts, group, 8)
+    else:
+      true
+  observed && (started && (finished && (unstarted && receipt)))
+
+fn request_command_counts(value: operation_cost_model.Request, group: I64, counts: @Vec[I64]) -> Bool effects[partial]:
+  if value.receipt:
+    increment(@counts, group, 2)
+  else:
+    if value.started:
+      increment(@counts, group, 3)
+    else:
+      true
+
+fn requests(view: operation_cost_model.View, cursor: I64, counts: @Vec[I64], values: @Vec[operation_cost_model.Metric], work: @Vec[I64]) -> development_model.Status effects[partial]:
+  if cursor == vec.len(view.requests):
+    development_model.Status(valid: true, code: 0, position: 0)
+  else:
+    let request: operation_cost_model.Request = vec.get(view.requests, cursor)
+    if (request.trial < 0) || ((request.trial >= vec.len(view.trials)) || ((request.operation < 0) || ((request.operation >= 5) || ((request.status < 0) || (request.status >= 10))))):
+      development_model.Status(valid: false, code: 18, position: request.identifier.start)
+    else:
+      let trial: operation_cost_model.Trial = vec.get(view.trials, request.trial)
+      let local: I64 = request.trial * 2
+      let common: I64 = condition(view, trial.condition, false)
+      let selected: I64 = operation(view, trial.condition, request.operation)
+      let ready: Bool = request_counts(request, local, @counts) && (request_counts(request, common, @counts) && (request_counts(request, selected, @counts) && (request_command_counts(request, local + 1, @counts) && (request_command_counts(request, common + 1, @counts) && (request_metrics(view, cursor, local, 0, @values, @work) && (request_metrics(view, cursor, common, 0, @values, @work) && request_metrics(view, cursor, selected, 0, @values, @work)))))))
+      if ready:
+        recur(view, cursor + 1, @counts, @values, @work)
+      else:
+        development_model.Status(valid: false, code: 24, position: request.identifier.start)
+
+fn command_number(value: operation_cost_model.Command, column: I64) -> development_model.Number:
+  if column == 0:
+    value.elapsed
+  else:
+    if column == 1:
+      value.executable
+    else:
+      if column == 2:
+        value.stdout
+      else:
+        if column == 3:
+          value.stderr
+        else:
+          if value.role:
+            value.stdout
+          else:
+            development_model.Number(valid: true, known: false, value: 0, code: 0, position: value.position)
+
+fn command_metrics(view: operation_cost_model.View, command: operation_cost_model.Command, group: I64, column: I64, values: @Vec[operation_cost_model.Metric], work: @Vec[I64]) -> Bool effects[partial]:
+  if column == 5:
+    true
+  else:
+    if !operation_cost_work.step(@work, 3):
+      false
+    else:
+      let eligible: Bool = (column < 4) || (command.phase == 3)
+      if update(view, @values, group, column, command_number(command, column), eligible, command.request, command.ordinal):
+        recur(view, command, group, column + 1, @values, @work)
+      else:
+        false
+
+fn command_counts(command: operation_cost_model.Command, group: I64, counts: @Vec[I64]) -> Bool effects[partial]:
+  let observed: Bool = increment(@counts, group, 4) && increment(@counts, group, 9 + command.status)
+  let classified: Bool = if command.phase == 3:
+    let emitting: Bool = increment(@counts, group, 6)
+    let unknown: Bool = if command.role:
+      true
+    else:
+      increment(@counts, group, 8)
+    emitting && unknown
+  else:
+    increment(@counts, group, 7)
+  observed && classified
+
+fn commands(view: operation_cost_model.View, cursor: I64, counts: @Vec[I64], values: @Vec[operation_cost_model.Metric], work: @Vec[I64]) -> development_model.Status effects[partial]:
+  if cursor == vec.len(view.commands):
+    development_model.Status(valid: true, code: 0, position: 0)
+  else:
+    let command: operation_cost_model.Command = vec.get(view.commands, cursor)
+    if (command.request < 0) || ((command.request >= vec.len(view.requests)) || ((command.phase < 0) || ((command.phase >= 6) || ((command.status < 0) || (command.status >= 6))))):
+      development_model.Status(valid: false, code: 18, position: command.position)
+    else:
+      let request: operation_cost_model.Request = vec.get(view.requests, command.request)
+      let trial: operation_cost_model.Trial = vec.get(view.trials, request.trial)
+      let local: I64 = (request.trial * 2) + 1
+      let common: I64 = condition(view, trial.condition, true)
+      let selected: I64 = phase(view, trial.condition, command.phase)
+      let ready: Bool = command_counts(command, local, @counts) && (command_counts(command, common, @counts) && (command_counts(command, selected, @counts) && (command_metrics(view, command, local, 0, @values, @work) && (command_metrics(view, command, common, 0, @values, @work) && command_metrics(view, command, selected, 0, @values, @work)))))
+      if ready:
+        recur(view, cursor + 1, @counts, @values, @work)
+      else:
+        development_model.Status(valid: false, code: 24, position: command.position)
+
+fn summarize(view: operation_cost_model.View, work: @Vec[I64]) -> operation_cost_model.Counted effects[alloc, partial]:
+  if (vec.len(view.trials) > 64) || ((vec.len(view.requests) > 8192) || (vec.len(view.commands) > 24576)):
+    operation_cost_model.Counted::Invalid(10, 0)
+  else:
+    let count: I64 = group_count(view)
+    let counters: Vec[I64] = vec.new()
+    let values: Vec[operation_cost_model.Metric] = vec.new()
+    zeros(count * 32, @counters)
+    metrics(count * 5, @values)
+    if !trial_counts(view, 0, @counters):
+      operation_cost_model.Counted::Invalid(10, 0)
+    else:
+      let request_status: development_model.Status = requests(view, 0, @counters, @values, @work)
+      if !request_status.valid:
+        operation_cost_model.Counted::Invalid(request_status.code, request_status.position)
+      else:
+        let command_status: development_model.Status = commands(view, 0, @counters, @values, @work)
+        if !command_status.valid:
+          operation_cost_model.Counted::Invalid(command_status.code, command_status.position)
+        else:
+          operation_cost_model.Counted::Ready(operation_cost_model.Groups(counts: counters, metrics: values))

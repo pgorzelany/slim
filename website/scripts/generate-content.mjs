@@ -517,6 +517,7 @@ for (const algorithm of challengeRows) {
 
 const excludedMarkdown = new Map([
   ["AGENTS.md", "Internal operational policy for repository agents."],
+  ["library/applications/development_operation_cost/fixtures/README.md", "Synthetic test-fixture provenance; the ordinary component contract is published in library/COMPONENTS.md."],
   ["benchmarks/agent-development/PROTOCOL.md", "Internal preregistered pilot protocol; participant and oracle material are kept separate."],
   ["benchmarks/agent-development/tasks/buffer-drain/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],
   ["benchmarks/agent-development/tasks/effects-report/TASK.md", "Internal frozen pilot participant task; excluded from public task discovery."],

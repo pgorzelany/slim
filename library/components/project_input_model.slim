@@ -1,0 +1,27 @@
+module project_input_model
+
+struct Module:
+  name_start: I64
+  name_end: I64
+  path_start: I64
+  path_end: I64
+  imports: I64
+  dependency_bytes: I64
+  ordinal: I64
+
+struct Imports:
+  code: I64
+  count: I64
+  bytes: I64
+
+struct Counts:
+  code: I64
+  edges: I64
+  graph_bytes: I64
+  catalog_bytes: I64
+  triples_bytes: I64
+
+struct View:
+  modules: Vec[Module]
+  counts: Counts
+  transport_bytes: I64

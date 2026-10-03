@@ -26,6 +26,12 @@ done < "$slim_corpus_root/library/corpus.tsv"
 "$slim_corpus_work/standard-library" > "$slim_corpus_work/standard-library.second"
 cmp "$slim_corpus_work/standard-library.first" "$slim_corpus_work/standard-library.second"
 
+"$slim_corpus_work/development-operation-cost" \
+    "$slim_corpus_root/library/applications/development_operation_cost/fixtures/observations.ns" \
+    > "$slim_corpus_work/development-operation-cost.out"
+cmp "$slim_corpus_work/development-operation-cost.out" \
+    "$slim_corpus_root/library/applications/development_operation_cost/fixtures/observations.expected"
+
 "$slim_corpus_work/development-summary" \
     "$slim_corpus_root/library/applications/development_summary/fixtures/observations.ns" \
     > "$slim_corpus_work/development-summary.out"

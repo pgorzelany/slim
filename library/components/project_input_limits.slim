@@ -1,0 +1,78 @@
+module project_input_limits
+
+enum Resource:
+  Modules
+  Edges
+  Name
+  Path
+  Payload
+  Source
+  Nodes
+  Workplan
+  Catalog
+  Transport
+
+fn maximum(resource: Resource) -> I64:
+  match resource:
+    Modules:
+      4095
+    Edges:
+      65536
+    Name:
+      64
+    Path:
+      256
+    Payload:
+      1048576
+    Source:
+      4194304
+    Nodes:
+      1000000
+    Workplan:
+      1048576
+    Catalog:
+      1048576
+    Transport:
+      8388608
+
+fn admitted(value: I64, resource: Resource) -> Bool:
+  (value >= 0) && (value <= maximum(resource))
+
+fn add(current: I64, amount: I64, resource: Resource) -> I64 effects[partial]:
+  let limit: I64 = maximum(resource)
+  if (current < 0) || ((amount < 0) || (current > limit)):
+    -1
+  else:
+    if amount > (limit - current):
+      -1
+    else:
+      current + amount
+
+fn width(value: I64, count: I64) -> I64 effects[partial]:
+  if value < 10:
+    count
+  else:
+    recur(value / 10, count + 1)
+
+fn decimal_width(value: I64) -> I64 effects[partial]:
+  if value < 0:
+    -1
+  else:
+    width(value, 1)
+
+fn frame_size(payload: I64) -> I64 effects[partial]:
+  if !admitted(payload, Resource::Payload()):
+    -1
+  else:
+    add(payload, decimal_width(payload) + 2, Resource::Transport())
+
+fn record_size(first: I64, second: I64, third: I64, resource: Resource) -> I64 effects[partial]:
+  let prefix: I64 = add(frame_size(first), frame_size(second), resource)
+  add(prefix, frame_size(third), resource)
+
+fn catalog_record_size(name_length: I64, source_length: I64, path_length: I64) -> I64 effects[partial]:
+  if (!admitted(name_length, Resource::Name())) || ((!admitted(source_length, Resource::Payload())) || (!admitted(path_length, Resource::Path()))):
+    -1
+  else:
+    let value_length: I64 = add(path_length, 65, Resource::Payload())
+    record_size(name_length, decimal_width(source_length), value_length, Resource::Catalog())

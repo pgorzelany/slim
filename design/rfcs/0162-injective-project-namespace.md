@@ -1,7 +1,7 @@
 # RFC-0162: Injective project namespace encoding
 
 Status: accepted
-Implementation: pending
+Implementation: complete
 Process: 1
 Audience: developer
 Author: Codex, under delegated overnight SLIM Next implementation direction
@@ -318,13 +318,16 @@ failed invocation remain retained locally; no old conformance row changed.
 Implemented in production `selfhost/project.slim`; refreshed portable seed
 generation two equals generation three exactly. The 87 new namespace rows and
 48 preexisting diagnostic rows pass without changing any old expectation.
-Full production conformance passes 445 fixtures and 2,000 deterministic malformed
-inputs. The permanent namespace observer passes 16 geometric inputs and eight
+The scoped campaign passes 445 fixtures and 2,000 deterministic malformed
+inputs; the integrated checkpoint adds three nested-expression fixtures. The permanent namespace observer passes 16 geometric inputs and eight
 counter boundary controls; input and checking observers pass on actual generated
 C. Current identities, finite domains and unfinished acceptance are recorded in
-`benchmarks/results/project-namespace-current.json`. Remaining native and
-coordinated cost gates are pending; these finite checks establish no universal
-safety or performance claim.
+`benchmarks/results/project-namespace-current.json`; its complete original rows
+remain in the linked compressed archive. Source tree
+`3ec37262c81a26ad9c91833f69fd06946bcd538e` passes complete repository, reproducible
+release and website verification and is pushed as `90de8e9`. Separate quiet
+frontend/backend/native observations retain mixed ratios and named inputs;
+these finite checks establish no universal safety, speed or model-benefit claim.
 
 ## Removal and supersession
 

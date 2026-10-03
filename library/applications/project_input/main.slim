@@ -1,0 +1,44 @@
+module project_input_app
+
+fn prepared(input: project.ProjectInput) -> I64 effects[alloc, io, partial]:
+  let previous: retained.Cache = retained.empty_cache()
+  let parsing: syntax.ParseCache = syntax.empty_parse_cache()
+  let modules: project.ModuleParses = project.empty_module_parses()
+  let revision: identity.Revision = identity.Revision(epoch: 1, serial: 1)
+  let checked: project.ParsedProject = project.prepare_project_input(input, previous, parsing, modules, revision, project_input_limits.maximum(project_input_limits.Resource::Nodes()), "project-input-v1")
+  if checked.attempt.work.capacity || (checked.attempt.canonical_nodes > project_input_limits.maximum(project_input_limits.Resource::Nodes())):
+    project_input_emit.error(10)
+    65
+  else:
+    if checked.attempt.prepared.status > 0:
+      65
+    else:
+      let view: project_input_model.View = project_input_data.view(input)
+      if view.counts.code > 0:
+        project_input_emit.error(view.counts.code)
+        65
+      else:
+        if project_input_emit.report(input, view):
+          0
+        else:
+          project_input_emit.error(11)
+          65
+
+fn run(path: Bytes) -> I64 effects[alloc, io, partial]:
+  let input: project.ProjectInput = project.capture_project_input(path)
+  if input.status > 0:
+    65
+  else:
+    let admission: I64 = project_input_data.source_admission(input)
+    if admission > 0:
+      project_input_emit.error(admission)
+      65
+    else:
+      prepared(input)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  if vec.len(args) == 2:
+    run(vec.get(args, 1))
+  else:
+    project_input_emit.error(2)
+    64

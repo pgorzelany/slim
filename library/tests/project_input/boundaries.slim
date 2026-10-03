@@ -1,0 +1,71 @@
+module project_input_probe
+
+fn number(value: I64) -> Void effects[io]:
+  io.print_i64(value)
+  io.print_bytes(" ")
+
+fn boolean(value: Bool) -> Void effects[io]:
+  let encoded: I64 = if value:
+    1
+  else:
+    0
+  number(encoded)
+
+fn resource(value: project_input_limits.Resource, expected: I64) -> Void effects[io, partial]:
+  number(project_input_limits.maximum(value))
+  boolean(project_input_limits.maximum(value) == expected)
+  boolean(project_input_limits.admitted(expected - 1, value))
+  boolean(project_input_limits.admitted(expected, value))
+  boolean(project_input_limits.admitted(expected + 1, value))
+  boolean(project_input_limits.admitted(-1, value))
+  boolean(project_input_limits.admitted(9223372036854775807, value))
+  number(project_input_limits.add(expected - 1, 1, value))
+  number(project_input_limits.add(expected, 0, value))
+  number(project_input_limits.add(expected, 1, value))
+  number(project_input_limits.add(0, expected, value))
+  number(project_input_limits.add(9223372036854775807, 1, value))
+  number(project_input_limits.add(-1, 1, value))
+  number(project_input_limits.add(0, -1, value))
+  number(project_input_limits.add(0, 9223372036854775807, value))
+  io.println("")
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  resource(project_input_limits.Resource::Modules(), 4095)
+  resource(project_input_limits.Resource::Edges(), 65536)
+  resource(project_input_limits.Resource::Name(), 64)
+  resource(project_input_limits.Resource::Path(), 256)
+  resource(project_input_limits.Resource::Payload(), 1048576)
+  resource(project_input_limits.Resource::Source(), 4194304)
+  resource(project_input_limits.Resource::Nodes(), 1000000)
+  resource(project_input_limits.Resource::Workplan(), 1048576)
+  resource(project_input_limits.Resource::Catalog(), 1048576)
+  resource(project_input_limits.Resource::Transport(), 8388608)
+  number(project_input_limits.decimal_width(-1))
+  number(project_input_limits.decimal_width(0))
+  number(project_input_limits.decimal_width(9))
+  number(project_input_limits.decimal_width(10))
+  number(project_input_limits.decimal_width(9223372036854775807))
+  io.println("")
+  number(project_input_limits.frame_size(-1))
+  number(project_input_limits.frame_size(0))
+  number(project_input_limits.frame_size(1))
+  number(project_input_limits.frame_size(9))
+  number(project_input_limits.frame_size(10))
+  number(project_input_limits.frame_size(1048576))
+  number(project_input_limits.frame_size(1048577))
+  number(project_input_limits.frame_size(9223372036854775807))
+  io.println("")
+  number(project_input_limits.catalog_record_size(0, 0, 0))
+  number(project_input_limits.catalog_record_size(64, 1048576, 256))
+  number(project_input_limits.catalog_record_size(65, 0, 0))
+  number(project_input_limits.catalog_record_size(0, 1048577, 0))
+  number(project_input_limits.catalog_record_size(0, 0, 257))
+  number(project_input_limits.catalog_record_size(0, -1, 0))
+  io.println("")
+  number(project_input_limits.record_size(1048560, 0, 0, project_input_limits.Resource::Catalog()))
+  number(project_input_limits.record_size(1048561, 0, 0, project_input_limits.Resource::Catalog()))
+  number(project_input_limits.record_size(1048562, 0, 0, project_input_limits.Resource::Catalog()))
+  number(project_input_limits.record_size(-1, 0, 0, project_input_limits.Resource::Catalog()))
+  number(project_input_limits.record_size(9223372036854775807, 0, 0, project_input_limits.Resource::Transport()))
+  io.println("")
+  0

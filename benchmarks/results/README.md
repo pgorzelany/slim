@@ -6,8 +6,21 @@ its dated observations. Dated results apply only to their named
 compiler, configuration and test domain. A passing historical checkpoint does
 not certify the current working tree.
 
+Checkpoint [90de8e9](https://github.com/pgorzelany/slim/commit/90de8e9059e95f23bb9be66f55f5311eb8faba4d), source tree
+`3ec37262c81a26ad9c91833f69fd06946bcd538e`, passed repository, release and
+website gates and is pushed to `codex/slim-next`. It covers project contracts,
+native repairs, catalog heap/diff, development summary and 47-test evaluator infrastructure. The frozen 24-trial
+cohort is in progress. Later RFC-0165 producer/adapter acceptance passes focused
+ordinary/sanitized checks; current-source integration remains pending; this checkpoint makes no general model-benefit claim.
+
 | Checkpoint | Record |
 | --- | --- |
+| Current project contracts | [Concise source-bound namespace evidence](project-namespace-current.json); [complete original record](archive/2026-10-02-project-namespace-scoped-evidence.json.gz) |
+| Current duplicate-path validation | [Work, behavior, resources and same-host comparisons](manifest-validation-current.json) |
+| Current checked project inputs | [Finite producer/consumer domains and compiler inventory](project-input-current.json) |
+| Current operation costs | [Separate observed tool phases, coverage and missing evidence](development-operation-cost-current.json) |
+| Current ordinary development summary | [Finite native/adapter domains, identities and incomplete cohort](development-summary-current.json) |
+| Current development evaluator | [Protocol and budgets](../development/PROTOCOL.md); [configured versus completed trials](../development/current.json) |
 | Bounded early agent loop, 2026-10-02 | [Self-hosted context, native costs, six frozen trials and release closure](2026-10-02-agent-development-loop.md) |
 | M0 repairs and M1 development through 2026-09-07 | [Complete development history](archive/2026-09-07-slim-next-development-history.md.gz) |
 | Validated literal-storage checkpoint `0f19fbc` | [Scope, costs and verification](2026-09-07-m1-literal-storage.md) |
@@ -79,12 +92,12 @@ their existing source locations. Verification generates fresh results; it does
 not consume these historical September TSVs. Older reports used by governance
 remain at their original paths.
 
-For each meaningful checkpoint, commit a concise dated report with source and
-compiler identities, commands, exact or bounded test domains, gate outcomes,
-before/after costs and remaining limitations. Link its supporting raw evidence.
-Update the current status file instead of appending another chronological report
-to it. Keep interrupted and failed outcomes explicit; a partial run is never a
-complete pass.
+Maintain concise current status and result records with source/compiler
+identities, commands, exact or bounded domains, gate outcomes, costs and limits.
+Link supporting raw evidence; preserve significant decisions and permanent
+benchmarks. Routine attempts and coordination stay in ignored build storage,
+without another dated prose journal. Keep interrupted and failed outcomes
+explicit; a partial run is never a complete pass.
 
 Use ignored `build/` or `benchmarks/results/raw/` for routine successful reruns.
 Preserve raw timings used for decisions, baseline controls, important failures,

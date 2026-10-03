@@ -25,6 +25,7 @@ project-emit-exponent	wide	1.25	exponent	RFC-0030
 project-emit-exponent	deep	1.25	exponent	RFC-0030
 application-emit-check-ratio	api-diff	2.00	ratio	RFC-0030
 application-emit-check-ratio	catalog	2.00	ratio	RFC-0030
+application-emit-check-ratio	development-operation-cost	2.00	ratio	RFC-0030
 application-emit-check-ratio	development-summary	2.00	ratio	RFC-0030
 application-emit-check-ratio	http	2.00	ratio	RFC-0030
 application-emit-check-ratio	ledger	2.00	ratio	RFC-0030
