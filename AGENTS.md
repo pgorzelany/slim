@@ -29,6 +29,11 @@ These rules apply to every change in this repository.
 - Run inexpensive applicable checks before long validation. Reuse a completed
   check only when its source and artifact identities remain unchanged, and
   disclose that scope; never turn a failed invocation into a successful one.
+- During diagnostic edits, use `sh scripts/verify-fast.sh`. Before long
+  validation, run `sh scripts/verify-fast.sh fixtures`, finish review of the
+  integrated change and every affected fixture/observer, then stabilize source.
+  Focused checks are not full acceptance. Run required full gates before commit;
+  run release packaging after committing its exact source to a clean checkout.
 
 ## Language constraints
 

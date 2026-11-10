@@ -4,7 +4,11 @@ set -eu
 repo_dir=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
 cd "$repo_dir"
 
+python3 -B scripts/test-validation-workflow.py
 ./bootstrap.sh
+python3 -B scripts/verify-fixtures.py
+cargo fmt --check
+cargo run --quiet --bin slim-govern -- check
 python3 -B scripts/verify-repair-diagnostics.py --compiler build/toolchain/slimc
 python3 -B scripts/verify-project-lists.py --compiler build/toolchain/slimc \
   --generated-c build/toolchain/slimc.c --receipt build/project-list-work.json
@@ -33,10 +37,8 @@ source_context_dir=$(mktemp -d "$PWD/build/source-context.XXXXXX")
 python3 -B scripts/verify-source-context.py --current \
   --output "$source_context_dir/current"
 rm -rf "$source_context_dir"
-cargo fmt --check
 cargo clippy --all-targets -- -D warnings
 cargo test
-cargo run --quiet --bin slim-govern -- check
 python3 scripts/test-task-time.py
 SLIM_DEVELOPMENT_COMPILER="$PWD/build/toolchain/slimc" python3 benchmarks/development/test_evaluate.py
 development_corpus_dir=$(mktemp -d "$PWD/build/development-corpus.XXXXXX")

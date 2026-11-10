@@ -55,6 +55,12 @@ published nor explicitly excluded.
 
 ## Verify everything
 
+While editing diagnostics, run `sh scripts/verify-fast.sh`: a fresh bootstrap
+and focused diagnostics tests. Before full validation, run
+`sh scripts/verify-fast.sh fixtures` for fixture pins, frozen development
+reference checking, work-observer tests and governance. Finish integrated review
+and all affected fixture updates first. These commands do not replace full gates.
+
     ./scripts/verify.sh
 
 This runs formatting, Clippy, unit and integration tests, feature-governance
@@ -66,7 +72,8 @@ estimates and observed compiler work. Public retained checking and native builds
 and M1 release verification are complete. See
 [the measured status](docs/INCREMENTAL.md).
 
-The full release and website gate is `./scripts/verify-0.9.sh`.
+The full release and website gate is `./scripts/verify-0.9.sh`; release packaging
+requires its included source to be committed and clean.
 
 For the bootstrap proof alone:
 
