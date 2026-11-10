@@ -1,0 +1,69 @@
+module lz4_app
+
+fn check(actual: I64, expected: I64) -> I64:
+  if actual == expected:
+    0
+  else:
+    1
+
+fn equal(left: Bytes, right: Bytes, at: I64) -> Bool effects[partial]:
+  if !(bytes.len(left) == bytes.len(right)):
+    false
+  else:
+    if at >= bytes.len(left):
+      true
+    else:
+      if u8.to_i64(bytes.get(left, at)) == u8.to_i64(bytes.get(right, at)):
+        recur(left, right, at + 1)
+      else:
+        false
+
+fn roundtrip(source: Bytes) -> I64 effects[alloc, partial]:
+  let packed: Vec[U8] = vec.new()
+  lz4_codec.compress(source, @packed)
+  let encoded: Bytes = bytes.freeze(^packed)
+  let output: Vec[U8] = vec.new()
+  let result: lz4_model.Result = lz4_codec.decompress(encoded, bytes.len(source), @output)
+  let decoded: Bytes = bytes.freeze(^output)
+  if result.valid && equal(source, decoded, 0):
+    0
+  else:
+    1
+
+fn decode(source: Bytes, maximum: I64, expected: Bytes, valid: Bool, code: I64, position: I64) -> I64 effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  let result: lz4_model.Result = lz4_codec.decompress(source, maximum, @output)
+  let actual: Bytes = bytes.freeze(^output)
+  let flag: I64 = if result.valid:
+    1
+  else:
+    0
+  let wanted: I64 = if valid:
+    1
+  else:
+    0
+  let same: I64 = if equal(actual, expected, 0):
+    0
+  else:
+    1
+  check(flag, wanted) + check(result.code, code) + check(result.position, position) + same
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  var failures: I64 = 0
+  failures = failures + decode("", 10, "", true, 0, 0)
+  failures = failures + decode("\x10A", 10, "A", true, 0, 2)
+  failures = failures + decode("\x00", 10, "", true, 0, 1)
+  failures = failures + decode("\xf0", 10, "", false, 2, 1)
+  failures = failures + decode(" A", 10, "", false, 3, 1)
+  failures = failures + decode("\x10A\x01", 10, "A", false, 4, 2)
+  failures = failures + decode("\x00\x00\x00", 10, "", false, 5, 1)
+  failures = failures + decode("\x10A\x01\x00", 10, "AAAAA", true, 0, 4)
+  failures = failures + decode("\x10A\x01\x00", 3, "AAA", false, 6, 4)
+  failures = failures + decode(" AB", 1, "A", false, 6, 2)
+  failures = failures + decode("\x1fA\x01\x00", 50, "A", false, 2, 4)
+  if failures == 0:
+    io.print_bytes("held-ok\n")
+    0
+  else:
+    io.print_i64(failures)
+    1

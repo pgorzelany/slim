@@ -1,0 +1,32 @@
+module sat_model
+
+struct Token:
+  eof: Bool
+  start: I64
+  end: I64
+
+struct Number:
+  valid: Bool
+  overflow: Bool
+  value: I64
+  position: I64
+
+struct Header:
+  valid: Bool
+  code: I64
+  position: I64
+  variables: I64
+  clauses: I64
+  next: I64
+
+struct Parse:
+  valid: Bool
+  code: I64
+  position: I64
+  variables: I64
+  clauses: I64
+
+enum Solution:
+  Sat(I64)
+  Unsat(I64)
+  Bounded(I64)

@@ -1,0 +1,18 @@
+module workplan_app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let source: Bytes = vec.get(args, 1)
+  let loaded: workplan_model.Loaded = workplan_load.load(source, 4096, 65536)
+  match loaded:
+    Invalid(code, position):
+      workplan_emit.error(code, position)
+      65
+    Ready(graph):
+      let scheduled: workplan_model.Scheduled = workplan_schedule.plan(graph)
+      match scheduled:
+        Invalid(code, position):
+          workplan_emit.error(code, position)
+          65
+        Ready(plan):
+          workplan_emit.report(graph, plan)
+          0

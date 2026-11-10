@@ -1,0 +1,35 @@
+module raster_model
+
+struct Triangle:
+  x0: I64
+  y0: I64
+  x1: I64
+  y1: I64
+  x2: I64
+  y2: I64
+  shade: U8
+
+struct Word:
+  valid: Bool
+  start: I64
+  end: I64
+  next: I64
+
+struct Numbers:
+  valid: Bool
+  code: I64
+  position: I64
+
+enum Line:
+  Invalid(I64, I64)
+  Size(I64, I64)
+  Clear(U8)
+  TriangleValue(Triangle)
+
+struct Parse:
+  valid: Bool
+  code: I64
+  position: I64
+  width: I64
+  height: I64
+  clear: U8

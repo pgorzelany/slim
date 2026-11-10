@@ -1,0 +1,45 @@
+{
+  "schema": 1,
+  "source_kind": "existing-production-slim",
+  "source_pins": [
+    {
+      "source": "selfhost/identity.slim",
+      "snapshot": "identity.slim",
+      "sha256": "b10a11fd875151e6e20ddd6b2dc2ea35da1fc917913138e53095503704b7f500",
+      "initial_sha256": "f9954b4f6ae6a4a48774c88b1d17ef21733b6390cb4f467e5ff638d330028b48",
+      "reference_sha256": "b10a11fd875151e6e20ddd6b2dc2ea35da1fc917913138e53095503704b7f500",
+      "snapshot_relation": "listed fault edits"
+    }
+  ],
+  "faults": [
+    {
+      "file": "identity.slim",
+      "before": "let serial: I64 = revision.serial + 1",
+      "after": "let serial: Bool = revision.serial + 1",
+      "category": "type"
+    },
+    {
+      "file": "identity.slim",
+      "before": "same_declaration(view.declaration, node.declaration)",
+      "after": "same_declaration(view.declaration, node.owner)",
+      "category": "member"
+    },
+    {
+      "file": "identity.slim",
+      "before": "span.end <= length",
+      "after": "span.end < length",
+      "category": "behavior"
+    }
+  ],
+  "reference_files": [
+    "identity.slim"
+  ],
+  "oracle": "Frozen independent application cases; expected bytes are specified separately from compiler diagnostics. Domain is exactly acceptance.cases; passing does not establish arbitrary-input correctness.",
+  "immutable_harness_replacements": [
+    {
+      "snapshot": "app.slim",
+      "frozen_client": "oracle/client.slim",
+      "reason": "Read test bytes directly from argv and exercise existing checked library functions without network or external fixture dependencies."
+    }
+  ]
+}

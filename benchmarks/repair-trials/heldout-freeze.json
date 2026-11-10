@@ -1,0 +1,77 @@
+{
+  "compiler_sha256": "8ca620b876ec6b6acbb4a2dd758dfb9183c7417738a66ec71ad3f97e3a79d723",
+  "hash_format": "sha256 of UTF-8 JSON array sorted by path; objects path and sha256, sort_keys=True,separators=(comma,colon)",
+  "measured_legacy": {
+    "authority": "Completed measured trials retain their legacy input hashes in results and sealed ignored input archives; the corrected current template was not measured.",
+    "h1_prompt_sha256": "4b7470240d33f0ffaa4d975cafba7ac8575c42bd1085901b32406696db7005a6",
+    "status": "frozen-before-participant-dispatch",
+    "tasks": [
+      {
+        "files": 8,
+        "id": "h1",
+        "independent_probes": 58,
+        "tree_sha256": "ce335b4f1d99ee653899b576c30d7e192ed914c57884c0d50e83aefadf415bdd"
+      },
+      {
+        "files": 12,
+        "id": "h2",
+        "independent_probes": 50,
+        "tree_sha256": "5942d98abe45b33c67264ae53fba1da9d67b752ede9b9534b52973c59fa6cbac"
+      },
+      {
+        "files": 16,
+        "id": "h3",
+        "independent_probes": 178,
+        "tree_sha256": "cc170409a0fbc5fc21d6f73df302e0f4693c8124e8b447723b68b3f2d2df9224"
+      },
+      {
+        "files": 16,
+        "id": "h4",
+        "independent_probes": 108,
+        "tree_sha256": "573b5252088586783365f8ee350ab9b360885d3b3b1919ff15cc6052c56266e9"
+      }
+    ]
+  },
+  "schema": 1,
+  "status": "current-template-corrected-after-collection",
+  "tasks": [
+    {
+      "files": 8,
+      "id": "h1",
+      "independent_probes": 58,
+      "tree_sha256": "e5bea24e6911b039422ff49c097480d380ff3fa9a0aa60f8230b4f54386be240"
+    },
+    {
+      "files": 12,
+      "id": "h2",
+      "independent_probes": 50,
+      "tree_sha256": "5942d98abe45b33c67264ae53fba1da9d67b752ede9b9534b52973c59fa6cbac"
+    },
+    {
+      "files": 16,
+      "id": "h3",
+      "independent_probes": 178,
+      "tree_sha256": "cc170409a0fbc5fc21d6f73df302e0f4693c8124e8b447723b68b3f2d2df9224"
+    },
+    {
+      "files": 16,
+      "id": "h4",
+      "independent_probes": 108,
+      "tree_sha256": "573b5252088586783365f8ee350ab9b360885d3b3b1919ff15cc6052c56266e9"
+    }
+  ],
+  "template_correction": {
+    "changed_task_files": [
+      "h1/TASK.txt"
+    ],
+    "path": "tasks/h1/TASK.txt",
+    "prompt_sha256": "cbd1d0f5dcc8ad537646ba539a030ca8b9fd9c7f8071a435f468110ae24d3164",
+    "reason": "Distinguish direct setter overwrite semantics from conservative availability joins; remove the first-active-origin promise contradicted by the frozen direct-setter client.",
+    "scope": "future comparisons only; no repeated trials or changes to measured source, clients, task descriptors, or results"
+  },
+  "total_clients": 8,
+  "total_compiling_trivial_controls_rejected": 4,
+  "total_independent_probes": 394,
+  "total_independently_rejected_sites": 12,
+  "total_tasks": 4
+}

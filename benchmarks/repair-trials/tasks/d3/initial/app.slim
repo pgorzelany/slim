@@ -1,0 +1,51 @@
+module app
+
+fn number(value: I64) -> Void effects[io]:
+  io.print_i64(value)
+  io.println("")
+
+fn flag(value: Bool) -> Void effects[io]:
+  if value:
+    number(1)
+  else:
+    number(0)
+
+fn index(value: identity.Index) -> Void effects[io]:
+  match value:
+    Invalid:
+      number(-1)
+    Found(offset):
+      number(offset)
+
+fn revision(value: identity.NextRevision) -> Void effects[io]:
+  match value:
+    None:
+      number(-1)
+    Some(next):
+      number(next.epoch)
+      number(next.serial)
+
+fn main(args: Vec[Bytes]) -> I64 effects[io, partial]:
+  let rev: identity.Revision = identity.Revision(epoch: 2, serial: 7)
+  let file: identity.FileId = identity.FileId(revision: rev, slot: 3)
+  let decl: identity.DeclarationId = identity.DeclarationId(file: file, slot: 4)
+  let other: identity.DeclarationId = identity.DeclarationId(file: file, slot: 5)
+  let view: identity.View = identity.View(declaration: decl, first: 10, count: 3)
+  flag(identity.valid_revision(rev))
+  flag(identity.valid_revision(identity.Revision(epoch: 0, serial: 7)))
+  revision(identity.successor(rev))
+  revision(identity.reset(rev))
+  revision(identity.successor(identity.Revision(epoch: 2, serial: 9223372036854775807)))
+  revision(identity.reset(identity.Revision(epoch: 9223372036854775807, serial: 1)))
+  flag(identity.same_declaration(decl, other))
+  flag(identity.valid_view(view, 13))
+  flag(identity.valid_view(view, 12))
+  index(identity.resolve_node(view, identity.NodeId(declaration: decl, ordinal: 0), 13))
+  index(identity.resolve_node(view, identity.NodeId(declaration: decl, ordinal: 2), 13))
+  index(identity.resolve_node(view, identity.NodeId(declaration: decl, ordinal: 3), 13))
+  index(identity.resolve_node(view, identity.NodeId(declaration: other, ordinal: 1), 13))
+  index(identity.resolve_span(file, "abcd", identity.Span(file: file, start: 1, end: 4)))
+  index(identity.resolve_span(file, "abcd", identity.Span(file: file, start: 1, end: 5)))
+  index(identity.resolve_span(file, "abcd", identity.Span(file: file, start: 3, end: 2)))
+  flag(identity.same_file(file, identity.FileId(revision: identity.Revision(epoch: 2, serial: 8), slot: 3)))
+  0

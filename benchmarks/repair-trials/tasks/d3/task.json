@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "id": "d3",
+  "split": "development",
+  "name": "Compiler stable identity and source bounds",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "identity.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "identity-boundaries",
+        "replace": {
+          "app.slim": "oracle/client.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "1\n0\n2\n8\n3\n1\n-1\n-1\n0\n1\n0\n10\n12\n-1\n-1\n1\n-1\n-1\n0\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

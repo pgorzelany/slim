@@ -1,0 +1,10 @@
+module lz4_emit
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))

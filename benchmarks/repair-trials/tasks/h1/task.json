@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "h1",
+  "split": "heldout",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "ownership.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "scope-joins",
+        "replace": {
+          "app.slim": "oracle/scope-joins.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      },
+      {
+        "name": "move-anchors",
+        "replace": {
+          "app.slim": "oracle/move-anchors.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

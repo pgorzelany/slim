@@ -1,0 +1,124 @@
+{
+  "schema": 1,
+  "source_kind": "existing-production-slim",
+  "source_pins": [
+    {
+      "source": "library/components/records.slim",
+      "snapshot": "components/records.slim",
+      "sha256": "4222ced6f4a4d26ee306544b2feba22464c965a649538b88c564d7a176325c08",
+      "initial_sha256": "4222ced6f4a4d26ee306544b2feba22464c965a649538b88c564d7a176325c08",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/ascii.slim",
+      "snapshot": "experimental/ascii.slim",
+      "sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5",
+      "initial_sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/byte_index.slim",
+      "snapshot": "experimental/byte_index.slim",
+      "sha256": "fcf814eda17d2bb5b4e0475f1f99ab8a9e4b63937655694d8d55958457651e80",
+      "initial_sha256": "fcf814eda17d2bb5b4e0475f1f99ab8a9e4b63937655694d8d55958457651e80",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/bytes.slim",
+      "snapshot": "experimental/bytes.slim",
+      "sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb",
+      "initial_sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/decimal.slim",
+      "snapshot": "experimental/decimal.slim",
+      "sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5",
+      "initial_sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/netstring.slim",
+      "snapshot": "experimental/netstring.slim",
+      "sha256": "acb1d1134577d1e8091a90330e33c3099ffa9d2f894d3aade4dbff83cf9db6b8",
+      "initial_sha256": "acb1d1134577d1e8091a90330e33c3099ffa9d2f894d3aade4dbff83cf9db6b8",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/text.slim",
+      "snapshot": "experimental/text.slim",
+      "sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f",
+      "initial_sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/applications/workplan/main.slim",
+      "snapshot": "applications/workplan/main.slim",
+      "sha256": "2d136e773274c811cb4e22cf1cbad9d3720360fabc4f21d846fcfe67dbef05d3",
+      "initial_sha256": "18b2efd0f5e5828d4db3ae172b507aa46ffd1b9a5caa13b42dd1d0441db48875",
+      "snapshot_relation": "test-harness replacement"
+    },
+    {
+      "source": "library/applications/workplan/emit.slim",
+      "snapshot": "applications/workplan/emit.slim",
+      "sha256": "ce20e9600744898dbdbcd741c18bb1206bfb59547eace6bc8b88b6fbf402710e",
+      "initial_sha256": "ce20e9600744898dbdbcd741c18bb1206bfb59547eace6bc8b88b6fbf402710e",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/applications/workplan/load.slim",
+      "snapshot": "applications/workplan/load.slim",
+      "sha256": "7890ba3865d7ba86122e1e2c4b05eedb8812d402cb088ee8f2b7bc931ff92697",
+      "initial_sha256": "696a945fd01952febe1e0f7d5180254866f5f5274a82b09815fbf0eba3056972",
+      "reference_sha256": "7890ba3865d7ba86122e1e2c4b05eedb8812d402cb088ee8f2b7bc931ff92697",
+      "snapshot_relation": "listed fault edits"
+    },
+    {
+      "source": "library/applications/workplan/model.slim",
+      "snapshot": "applications/workplan/model.slim",
+      "sha256": "5e9b0cd5ede7098818fa90ea10886e20193ddd35862dcc12713985078137ab45",
+      "initial_sha256": "5e9b0cd5ede7098818fa90ea10886e20193ddd35862dcc12713985078137ab45",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/applications/workplan/schedule.slim",
+      "snapshot": "applications/workplan/schedule.slim",
+      "sha256": "e41d965762256f626f9a47195c62a729e45f1f13ae66306352b5e35844306c52",
+      "initial_sha256": "be913ebc016aeb0fd679a56dc07fcf10554822403e8a3e6c928e965fce8d39fe",
+      "reference_sha256": "e41d965762256f626f9a47195c62a729e45f1f13ae66306352b5e35844306c52",
+      "snapshot_relation": "listed fault edits"
+    }
+  ],
+  "faults": [
+    {
+      "file": "applications/workplan/load.slim",
+      "before": "let built: std_byte_index.Built = std_byte_index.build(source, ^entries, task_limit)",
+      "after": "let built: std_byte_index.Built = std_byte_index.build(source, entries, task_limit)",
+      "category": "ownership"
+    },
+    {
+      "file": "applications/workplan/schedule.slim",
+      "before": "let degree: I64 = vec.get(degrees, edge.dependent)",
+      "after": "let degree: I64 = vec.get(degrees, edge.target)",
+      "category": "member"
+    },
+    {
+      "file": "applications/workplan/schedule.slim",
+      "before": "vec.get(ranks, task) < vec.get(ranks, parent)",
+      "after": "vec.get(ranks, task) > vec.get(ranks, parent)",
+      "category": "behavior"
+    }
+  ],
+  "reference_files": [
+    "applications/workplan/load.slim",
+    "applications/workplan/schedule.slim"
+  ],
+  "oracle": "Frozen independent application cases; expected bytes are specified separately from compiler diagnostics. Domain is exactly acceptance.cases; passing does not establish arbitrary-input correctness.",
+  "immutable_harness_replacements": [
+    {
+      "snapshot": "applications/workplan/main.slim",
+      "frozen_client": "oracle/client.slim",
+      "reason": "Read test bytes directly from argv and exercise existing checked library functions without network or external fixture dependencies."
+    }
+  ]
+}

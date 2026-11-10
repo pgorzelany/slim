@@ -1144,7 +1144,7 @@ fn check_path(input: Bytes, tokens: Vec[syntax.Token], declarations: Vec[ir.Decl
         diagnostics.source("module", report.path, report.path, input, true)
       let label: Bytes = report.path
       let repair: typing.Repair = if token_count > 1000000:
-        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: token_count, effect: -1)
+        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: token_count, effect: -1, required_mode: -1, supplied_mode: -1)
       else:
         typing.empty_repair()
       diagnostics.emit_source(@report, "E0102", label, file, 0, input_length, repair)
@@ -1369,6 +1369,6 @@ fn check_path_json(path: Bytes) -> I64 effects[alloc, io, partial]:
 
 fn append_repair_form_issue(code: Bytes, form: I64, tokens: Vec[syntax.Token], requirement: I64, effect: I64, rule: Bytes, issues: @Vec[typing.Issue]) -> I64 effects[alloc, partial]:
   let closing: I64 = syntax.ast_next(tokens, form) - 1
-  let repair: typing.Repair = typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: effect)
+  let repair: typing.Repair = typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: effect, required_mode: -1, supplied_mode: -1)
   vec.push(@issues, typing.Issue(code: code, start: form, end: closing, blocks_inference: true, repair: repair))
   1

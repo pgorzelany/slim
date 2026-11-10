@@ -1,0 +1,7 @@
+# HTTP response framing and reporting
+
+Repair the existing SLIM implementation in this checkout. It currently fails normal checking at multiple source locations and also contains a behavior regression.
+
+Keep HTTP/1.1 status validation, case-insensitive field names, trimmed content length, exact body boundaries and duplicate/transfer-encoding rejection. Valid output includes original status, computed body length and exact body bytes; invalid output preserves error codes and byte positions.
+
+Only edit `applications/http/parser.slim`, `applications/http/emit.slim`. Preserve their public functions, types and signatures. Immutable clients, dependencies and project contracts must remain unchanged. Acceptance compiles independent clients against your implementation and checks exact native outputs on multiple positive, negative and boundary inputs. Merely making `check` succeed or returning a constant is insufficient.

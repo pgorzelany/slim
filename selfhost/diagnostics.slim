@@ -43,6 +43,8 @@ struct Detail:
   expected_count: I64
   actual_count: I64
   effect: I64
+  required_mode: I64
+  supplied_mode: I64
 
 struct Rule:
   category: Bytes
@@ -84,7 +86,7 @@ fn unknown_type(reason: Bytes) -> TypeInfo:
   TypeInfo(kind: "unknown", text: "", evidence: "unknown", reason: reason)
 
 fn empty_detail() -> Detail:
-  Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: "", expected_count: -1, actual_count: -1, effect: -1)
+  Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: "", expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
 
 fn writer() -> Writer effects[alloc]:
   let state: Vec[I64] = vec.new()
@@ -260,6 +262,18 @@ fn location_json(output: @Writer, location: Location) -> Void effects[alloc, par
   else:
     put(@output, "null")
 
+fn mode_json(output: @Writer, mode: I64) -> Void effects[alloc, partial]:
+  if mode == 0:
+    json(@output, "plain")
+  else:
+    if mode == 1:
+      json(@output, "exclusive")
+    else:
+      if mode == 2:
+        json(@output, "transfer")
+      else:
+        put(@output, "null")
+
 fn type_json(output: @Writer, value: TypeInfo) -> Void effects[alloc, partial]:
   put(@output, "{\"evidence\":")
   json(@output, value.evidence)
@@ -364,7 +378,7 @@ fn checked_type(report: Reporter, input: Bytes, tokens: Vec[syntax.Token], value
             TypeInfo(kind: "source-form", text: bytes.freeze(^data), evidence: "exact", reason: "")
 
 fn detail(report: Reporter, input: Bytes, tokens: Vec[syntax.Token], value: typing.Repair) -> Detail effects[alloc, partial]:
-  Detail(expected: checked_type(report, input, tokens, value.expected), actual: checked_type(report, input, tokens, value.actual), requirement: node_location(report, input, tokens, value.requirement, true), related: node_location(report, input, tokens, value.related, false), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect)
+  Detail(expected: checked_type(report, input, tokens, value.expected), actual: checked_type(report, input, tokens, value.actual), requirement: node_location(report, input, tokens, value.requirement, true), related: node_location(report, input, tokens, value.related, false), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect, required_mode: value.required_mode, supplied_mode: value.supplied_mode)
 
 fn rule(code: Bytes) -> Rule effects[partial]:
   if syntax.span_equal(code, 0, bytes.len(code), "E0102"):
@@ -526,7 +540,13 @@ fn render(output: @Writer, code: Bytes, label: Bytes, primary: Location, value: 
           if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "duplicate-declaration"):
             Rule(category: "name", cause: "A declaration name is duplicated in the module namespace.", guidance: "Rename or remove one declaration; inspect the earlier declaration at the related location.")
           else:
-            rule(code)
+            if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "unknown-record-field"):
+              Rule(category: "name", cause: "The projected field is not declared by the receiver struct.", guidance: "Compare the projected field name with the owner struct at the related location.")
+            else:
+              if syntax.span_equal(value.rule, 0, bytes.len(value.rule), "argument-mode"):
+                Rule(category: "ownership", cause: "The explicit call argument mode does not match the declared parameter mode.", guidance: "Compare the captured required and supplied modes with the parameter at the requirement location.")
+              else:
+                rule(code)
   let at: Position = if detailed:
     position(@output, primary)
   else:
@@ -582,6 +602,16 @@ fn render(output: @Writer, code: Bytes, label: Bytes, primary: Location, value: 
   optional_number(@output, value.expected_count)
   put(@output, ",\"actual_count\":")
   optional_number(@output, value.actual_count)
+  if value.required_mode >= 0:
+    put(@output, ",\"required_mode\":")
+    mode_json(@output, value.required_mode)
+  else:
+    void
+  if value.supplied_mode >= 0:
+    put(@output, ",\"supplied_mode\":")
+    mode_json(@output, value.supplied_mode)
+  else:
+    void
   put(@output, ",\"required_effect\":")
   if value.effect < 0:
     put(@output, "null")
@@ -666,7 +696,7 @@ fn emit(report: @Reporter, code: Bytes, label: Bytes, primary: Location, value: 
 
 fn emit_source(report: @Reporter, code: Bytes, label: Bytes, file: Source, start: I64, end: I64, value: typing.Repair) -> I64 effects[alloc, io, partial]:
   let valid: Bool = file.available && ((start >= 0) && ((end >= start) && (end <= bytes.len(file.content))))
-  let captured: Detail = Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect)
+  let captured: Detail = Detail(expected: unknown_type("not-recorded-at-rejection"), actual: unknown_type("not-recorded-at-rejection"), requirement: unavailable(), related: unavailable(), rule: value.rule, expected_count: value.expected_count, actual_count: value.actual_count, effect: value.effect, required_mode: value.required_mode, supplied_mode: value.supplied_mode)
   emit(@report, code, label, Location(source: file, start: start, end: end, known: valid), captured)
 
 fn emit_node(report: @Reporter, code: Bytes, input: Bytes, tokens: Vec[syntax.Token], first: I64, last: I64, value: typing.Repair) -> I64 effects[alloc, io, partial]:

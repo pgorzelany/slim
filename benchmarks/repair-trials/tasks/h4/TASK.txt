@@ -1,0 +1,3 @@
+Repair the bounded SAT solver. For a sufficient budget it must classify formulas and return satisfying assignments; unsatisfiable formulas must remain unsatisfiable. A zero search budget must report Bounded rather than silently classifying. Preserve trail mutation and rollback, negative literals, unit propagation, decision phases, and the existing capability ceilings.
+
+Repair the supplied real SLIM implementation. Preserve its exported signatures, ownership modes, declared effects, and documented behavior. Keep all source files and the fixed project manifest. Do not replace the implementation with a stub or alter the entry to evade checking. Run the normal compiler after edits. Hidden independent clients exercise the same submitted module.

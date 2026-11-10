@@ -1,0 +1,208 @@
+module sat
+
+fn check(actual: I64, expected: I64) -> I64:
+  if actual == expected:
+    0
+  else:
+    1
+
+fn run(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], variables: I64, expected: I64, budget: I64) -> I64 effects[alloc, partial]:
+  let assignments: Vec[I64] = vec.new()
+  let solution: sat_model.Solution = sat_solver.solve(literals, starts, ends, variables, budget, @assignments)
+  let classification: I64 = match solution:
+    Sat(steps):
+      1
+    Unsat(steps):
+      0
+    Bounded(steps):
+      2
+  let valid: I64 = if classification == 1:
+    certificate(literals, starts, ends, assignments, 0)
+  else:
+    0
+  check(classification, expected) + valid
+
+fn clause(literals: Vec[I64], assignments: Vec[I64], index: I64, end: I64) -> Bool effects[partial]:
+  if index >= end:
+    false
+  else:
+    let literal: I64 = vec.get(literals, index)
+    let variable: I64 = if literal < 0:
+      0 - literal
+    else:
+      literal
+    let wanted: I64 = if literal < 0:
+      0
+    else:
+      1
+    if vec.get(assignments, variable) == wanted:
+      true
+    else:
+      recur(literals, assignments, index + 1, end)
+
+fn certificate(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], assignments: Vec[I64], at: I64) -> I64 effects[partial]:
+  if at >= vec.len(starts):
+    0
+  else:
+    if clause(literals, assignments, vec.get(starts, at), vec.get(ends, at)):
+      recur(literals, starts, ends, assignments, at + 1)
+    else:
+      1
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  var failures: I64 = 0
+  let literals_0: Vec[I64] = vec.new()
+  let starts_0: Vec[I64] = vec.new()
+  let ends_0: Vec[I64] = vec.new()
+  failures = failures + run(literals_0, starts_0, ends_0, 2, 2, 0)
+  let literals_1: Vec[I64] = vec.new()
+  let starts_1: Vec[I64] = vec.new()
+  let ends_1: Vec[I64] = vec.new()
+  vec.push(@starts_1, 0)
+  vec.push(@literals_1, 1)
+  vec.push(@literals_1, -2)
+  vec.push(@ends_1, 2)
+  failures = failures + run(literals_1, starts_1, ends_1, 2, 2, 0)
+  let literals_2: Vec[I64] = vec.new()
+  let starts_2: Vec[I64] = vec.new()
+  let ends_2: Vec[I64] = vec.new()
+  vec.push(@starts_2, 0)
+  vec.push(@ends_2, 0)
+  vec.push(@starts_2, 0)
+  vec.push(@literals_2, -2)
+  vec.push(@ends_2, 1)
+  failures = failures + run(literals_2, starts_2, ends_2, 2, 2, 0)
+  let literals_3: Vec[I64] = vec.new()
+  let starts_3: Vec[I64] = vec.new()
+  let ends_3: Vec[I64] = vec.new()
+  vec.push(@starts_3, 0)
+  vec.push(@literals_3, 1)
+  vec.push(@ends_3, 1)
+  vec.push(@starts_3, 1)
+  vec.push(@literals_3, -1)
+  vec.push(@ends_3, 2)
+  failures = failures + run(literals_3, starts_3, ends_3, 2, 2, 0)
+  let literals_4: Vec[I64] = vec.new()
+  let starts_4: Vec[I64] = vec.new()
+  let ends_4: Vec[I64] = vec.new()
+  vec.push(@starts_4, 0)
+  vec.push(@literals_4, -1)
+  vec.push(@ends_4, 1)
+  vec.push(@starts_4, 1)
+  vec.push(@ends_4, 1)
+  failures = failures + run(literals_4, starts_4, ends_4, 2, 2, 0)
+  let literals_5: Vec[I64] = vec.new()
+  let starts_5: Vec[I64] = vec.new()
+  let ends_5: Vec[I64] = vec.new()
+  vec.push(@starts_5, 0)
+  vec.push(@literals_5, -1)
+  vec.push(@ends_5, 1)
+  vec.push(@starts_5, 1)
+  vec.push(@literals_5, -1)
+  vec.push(@literals_5, 2)
+  vec.push(@ends_5, 3)
+  failures = failures + run(literals_5, starts_5, ends_5, 2, 2, 0)
+  let literals_6: Vec[I64] = vec.new()
+  let starts_6: Vec[I64] = vec.new()
+  let ends_6: Vec[I64] = vec.new()
+  vec.push(@starts_6, 0)
+  vec.push(@literals_6, 2)
+  vec.push(@ends_6, 1)
+  vec.push(@starts_6, 1)
+  vec.push(@literals_6, 1)
+  vec.push(@literals_6, 2)
+  vec.push(@ends_6, 3)
+  failures = failures + run(literals_6, starts_6, ends_6, 2, 2, 0)
+  let literals_7: Vec[I64] = vec.new()
+  let starts_7: Vec[I64] = vec.new()
+  let ends_7: Vec[I64] = vec.new()
+  vec.push(@starts_7, 0)
+  vec.push(@literals_7, -2)
+  vec.push(@ends_7, 1)
+  vec.push(@starts_7, 1)
+  vec.push(@literals_7, 2)
+  vec.push(@ends_7, 2)
+  failures = failures + run(literals_7, starts_7, ends_7, 2, 2, 0)
+  let literals_8: Vec[I64] = vec.new()
+  let starts_8: Vec[I64] = vec.new()
+  let ends_8: Vec[I64] = vec.new()
+  vec.push(@starts_8, 0)
+  vec.push(@literals_8, 1)
+  vec.push(@literals_8, 2)
+  vec.push(@ends_8, 2)
+  vec.push(@starts_8, 2)
+  vec.push(@literals_8, 1)
+  vec.push(@ends_8, 3)
+  failures = failures + run(literals_8, starts_8, ends_8, 2, 2, 0)
+  let literals_9: Vec[I64] = vec.new()
+  let starts_9: Vec[I64] = vec.new()
+  let ends_9: Vec[I64] = vec.new()
+  vec.push(@starts_9, 0)
+  vec.push(@literals_9, 1)
+  vec.push(@literals_9, 2)
+  vec.push(@ends_9, 2)
+  vec.push(@starts_9, 2)
+  vec.push(@literals_9, -1)
+  vec.push(@literals_9, -2)
+  vec.push(@ends_9, 4)
+  failures = failures + run(literals_9, starts_9, ends_9, 2, 2, 0)
+  let literals_10: Vec[I64] = vec.new()
+  let starts_10: Vec[I64] = vec.new()
+  let ends_10: Vec[I64] = vec.new()
+  vec.push(@starts_10, 0)
+  vec.push(@literals_10, 1)
+  vec.push(@literals_10, -2)
+  vec.push(@ends_10, 2)
+  vec.push(@starts_10, 2)
+  vec.push(@literals_10, 1)
+  vec.push(@literals_10, -2)
+  vec.push(@ends_10, 4)
+  failures = failures + run(literals_10, starts_10, ends_10, 2, 2, 0)
+  let literals_11: Vec[I64] = vec.new()
+  let starts_11: Vec[I64] = vec.new()
+  let ends_11: Vec[I64] = vec.new()
+  vec.push(@starts_11, 0)
+  vec.push(@literals_11, -1)
+  vec.push(@literals_11, 2)
+  vec.push(@ends_11, 2)
+  vec.push(@starts_11, 2)
+  vec.push(@literals_11, -2)
+  vec.push(@ends_11, 3)
+  failures = failures + run(literals_11, starts_11, ends_11, 2, 2, 0)
+  let literals_12: Vec[I64] = vec.new()
+  let starts_12: Vec[I64] = vec.new()
+  let ends_12: Vec[I64] = vec.new()
+  vec.push(@starts_12, 0)
+  vec.push(@literals_12, -1)
+  vec.push(@literals_12, -2)
+  vec.push(@ends_12, 2)
+  vec.push(@starts_12, 2)
+  vec.push(@literals_12, -1)
+  vec.push(@ends_12, 3)
+  failures = failures + run(literals_12, starts_12, ends_12, 2, 2, 0)
+  let literals_13: Vec[I64] = vec.new()
+  let starts_13: Vec[I64] = vec.new()
+  let ends_13: Vec[I64] = vec.new()
+  vec.push(@starts_13, 0)
+  vec.push(@literals_13, 1)
+  vec.push(@literals_13, 2)
+  vec.push(@ends_13, 2)
+  vec.push(@starts_13, 2)
+  vec.push(@literals_13, -1)
+  vec.push(@literals_13, 2)
+  vec.push(@ends_13, 4)
+  vec.push(@starts_13, 4)
+  vec.push(@literals_13, 1)
+  vec.push(@literals_13, -2)
+  vec.push(@ends_13, 6)
+  vec.push(@starts_13, 6)
+  vec.push(@literals_13, -1)
+  vec.push(@literals_13, -2)
+  vec.push(@ends_13, 8)
+  failures = failures + run(literals_13, starts_13, ends_13, 2, 2, 0)
+  if failures == 0:
+    io.print_bytes("held-ok\n")
+    0
+  else:
+    io.print_i64(failures)
+    1

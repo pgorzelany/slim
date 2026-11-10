@@ -1,0 +1,61 @@
+{
+  "authority": "independent literal domains and ordinary SLIM checker; no expected result is inferred from candidate reports",
+  "changed_sites": 3,
+  "evidence": "bounded",
+  "expected_stdout": "literal held-ok newline emitted only after independent client assertions succeed",
+  "independent_probes": 178,
+  "initial_diagnostic_count": 1,
+  "initial_project_rejected": true,
+  "isolated_bad_site_rejections": 3,
+  "reference_acceptance": "passed",
+  "reference_clients": 2,
+  "schema": 1,
+  "sources": [
+    {
+      "mutable": false,
+      "path": "applications/raster/emit.slim",
+      "repository_original_sha256": "15e53a8459a4ba2d4b9ccfe665cc5333ad040a45097fd890be9561973299b626"
+    },
+    {
+      "mutable": false,
+      "path": "applications/raster/model.slim",
+      "repository_original_sha256": "46d9030497bd76bda99647efec28d1607531e7b373f991efd570d37b3b956660"
+    },
+    {
+      "mutable": false,
+      "path": "applications/raster/parser.slim",
+      "repository_original_sha256": "74952cdb2e4d10523647f82df89accb76e38adeb165220ea9592177702812320"
+    },
+    {
+      "mutable": true,
+      "path": "applications/raster/raster.slim",
+      "repository_original_sha256": "3e8a23303125498a1ce0a6166b2bb5febf6bb8fa66230617161142a56a99c567"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/ascii.slim",
+      "repository_original_sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/bytes.slim",
+      "repository_original_sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/decimal.slim",
+      "repository_original_sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/text.slim",
+      "repository_original_sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/u8_vec.slim",
+      "repository_original_sha256": "7618eacc6aa1c00e84820c5e0356015b1756df7bfdd2a5f0d4ec579fe14e487e"
+    }
+  ],
+  "trivial_compiling_control": "rejected"
+}

@@ -1,0 +1,97 @@
+module lz4_app
+
+fn check(actual: I64, expected: I64) -> I64:
+  if actual == expected:
+    0
+  else:
+    1
+
+fn equal(left: Bytes, right: Bytes, at: I64) -> Bool effects[partial]:
+  if !(bytes.len(left) == bytes.len(right)):
+    false
+  else:
+    if at >= bytes.len(left):
+      true
+    else:
+      if u8.to_i64(bytes.get(left, at)) == u8.to_i64(bytes.get(right, at)):
+        recur(left, right, at + 1)
+      else:
+        false
+
+fn roundtrip(source: Bytes) -> I64 effects[alloc, partial]:
+  let packed: Vec[U8] = vec.new()
+  lz4_codec.compress(source, @packed)
+  let encoded: Bytes = bytes.freeze(^packed)
+  let output: Vec[U8] = vec.new()
+  let result: lz4_model.Result = lz4_codec.decompress(encoded, bytes.len(source), @output)
+  let decoded: Bytes = bytes.freeze(^output)
+  if result.valid && equal(source, decoded, 0):
+    0
+  else:
+    1
+
+fn decode(source: Bytes, maximum: I64, expected: Bytes, valid: Bool, code: I64, position: I64) -> I64 effects[alloc, partial]:
+  let output: Vec[U8] = vec.new()
+  let result: lz4_model.Result = lz4_codec.decompress(source, maximum, @output)
+  let actual: Bytes = bytes.freeze(^output)
+  let flag: I64 = if result.valid:
+    1
+  else:
+    0
+  let wanted: I64 = if valid:
+    1
+  else:
+    0
+  let same: I64 = if equal(actual, expected, 0):
+    0
+  else:
+    1
+  check(flag, wanted) + check(result.code, code) + check(result.position, position) + same
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  var failures: I64 = 0
+  failures = failures + roundtrip("")
+  failures = failures + roundtrip("a")
+  failures = failures + roundtrip("abcd")
+  failures = failures + roundtrip("aaaa")
+  failures = failures + roundtrip("aaaaaaaaaaaaaaa")
+  failures = failures + roundtrip("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+  failures = failures + roundtrip("abcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcdabcd")
+  failures = failures + roundtrip("\x00\x01\x02\x03\x04\x05\x06\x07\x08\x09\x0a\x0b\x0c\x0d\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x1c\x1d\x1e\x1f !\x22#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\x5c]^_`abcdefghijklmnopqrstuvwxyz{|}~\x7f\x80\x81\x82\x83\x84\x85\x86\x87\x88\x89\x8a\x8b\x8c\x8d\x8e\x8f\x90\x91\x92\x93\x94\x95\x96\x97\x98\x99\x9a\x9b\x9c\x9d\x9e\x9f\xa0\xa1\xa2\xa3\xa4\xa5\xa6\xa7\xa8\xa9\xaa\xab\xac\xad\xae\xaf\xb0\xb1\xb2\xb3\xb4\xb5\xb6\xb7\xb8\xb9\xba\xbb\xbc\xbd\xbe\xbf\xc0\xc1\xc2\xc3\xc4\xc5\xc6\xc7\xc8\xc9\xca\xcb\xcc\xcd\xce\xcf\xd0\xd1\xd2\xd3\xd4\xd5\xd6\xd7\xd8\xd9\xda\xdb\xdc\xdd\xde\xdf\xe0\xe1\xe2\xe3\xe4\xe5\xe6\xe7\xe8\xe9\xea\xeb\xec\xed\xee\xef\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff")
+  failures = failures + roundtrip("\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff\x00\xff")
+  failures = failures + roundtrip("\x00")
+  failures = failures + roundtrip("\xff")
+  failures = failures + roundtrip("\x00\x00")
+  failures = failures + roundtrip("\x00\xff")
+  failures = failures + roundtrip("\xff\x00")
+  failures = failures + roundtrip("\xff\xff")
+  failures = failures + roundtrip("\x00\x00\x00")
+  failures = failures + roundtrip("\x00\x00\xff")
+  failures = failures + roundtrip("\x00\xff\x00")
+  failures = failures + roundtrip("\x00\xff\xff")
+  failures = failures + roundtrip("\xff\x00\x00")
+  failures = failures + roundtrip("\xff\x00\xff")
+  failures = failures + roundtrip("\xff\xff\x00")
+  failures = failures + roundtrip("\xff\xff\xff")
+  failures = failures + roundtrip("\x00\x00\x00\x00")
+  failures = failures + roundtrip("\x00\x00\x00\xff")
+  failures = failures + roundtrip("\x00\x00\xff\x00")
+  failures = failures + roundtrip("\x00\x00\xff\xff")
+  failures = failures + roundtrip("\x00\xff\x00\x00")
+  failures = failures + roundtrip("\x00\xff\x00\xff")
+  failures = failures + roundtrip("\x00\xff\xff\x00")
+  failures = failures + roundtrip("\x00\xff\xff\xff")
+  failures = failures + roundtrip("\xff\x00\x00\x00")
+  failures = failures + roundtrip("\xff\x00\x00\xff")
+  failures = failures + roundtrip("\xff\x00\xff\x00")
+  failures = failures + roundtrip("\xff\x00\xff\xff")
+  failures = failures + roundtrip("\xff\xff\x00\x00")
+  failures = failures + roundtrip("\xff\xff\x00\xff")
+  failures = failures + roundtrip("\xff\xff\xff\x00")
+  failures = failures + roundtrip("\xff\xff\xff\xff")
+  if failures == 0:
+    io.print_bytes("held-ok\n")
+    0
+  else:
+    io.print_i64(failures)
+    1

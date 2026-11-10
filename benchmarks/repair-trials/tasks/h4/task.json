@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "h4",
+  "split": "heldout",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/sat/solver.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "truth-table",
+        "replace": {
+          "app.slim": "oracle/truth-table.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      },
+      {
+        "name": "budget",
+        "replace": {
+          "app.slim": "oracle/budget.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

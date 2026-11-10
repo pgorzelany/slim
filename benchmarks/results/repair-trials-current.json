@@ -1,0 +1,589 @@
+{
+  "changes_selected_from_development": [
+    "unknown-record-field",
+    "argument-mode"
+  ],
+  "corpus_sha256": "71c137afa7c8fc96deeed43dab07a3550cd2b65203217f12201699cf1cadc1e9",
+  "heldout": {
+    "complete": false,
+    "effectiveness": "unknown-gate-not-established",
+    "gate_passed": false,
+    "jointly_accepted_pairs": [
+      {
+        "check_json_seconds": 16.179344875039533,
+        "raw_seconds": 17.19638945895713,
+        "task": "h2",
+        "time_reduction": 0.05914291406024452
+      },
+      {
+        "check_json_seconds": 21.024447500007227,
+        "raw_seconds": 23.309863207978196,
+        "task": "h3",
+        "time_reduction": 0.09804500728209964
+      },
+      {
+        "check_json_seconds": 21.63438699999824,
+        "raw_seconds": 28.854402500088327,
+        "task": "h4",
+        "time_reduction": 0.2502223187628988
+      }
+    ],
+    "median_paired_time_reduction": 0.09804500728209964,
+    "predeclared_pairs": 4,
+    "successes": {
+      "check-json": 3,
+      "raw": 3
+    }
+  },
+  "incidents": [
+    {
+      "arms": [
+        "raw",
+        "check-json"
+      ],
+      "issue": "The operating system rejected hidden-client replacement on read-only staged files. The operator restored owner-write permission without changing source bytes or restarting participants. Elapsed times include the interruption. Subsequent held-out initial templates had mutable and hidden-overlay targets made owner-writable before dispatch. Both h1 sessions were stopped when review found the prompt required retaining the first active move while a hidden client explicitly required replacing it on successive direct calls. No replacement sessions were run. The new task prompt corrects this conflict for future campaigns.",
+      "task": "h1"
+    }
+  ],
+  "interpretation": "Each result measures one fresh session on the named task. Dispatch and host conditions can vary. Finite independent clients establish behavior on their test inputs. Raw receipts stay local; patches are relative to each task's initial snapshot.",
+  "limitations": "Advisory blindness and fresh-chat operator attestation; model actions outside wrapper and token counts unknown. Times are operator wall elapsed, not native performance.",
+  "missing": [],
+  "model": "gpt-6.1-sol",
+  "native_cost": {
+    "metric": "same-host wall milliseconds from CLI launch through exit, alternating old/new order",
+    "rows": [
+      {
+        "after_bytes": 24,
+        "before_bytes": 24,
+        "new_median_ms": 7.181792,
+        "old_median_ms": 6.98125,
+        "operation": "check",
+        "task": "d1"
+      },
+      {
+        "after_bytes": 2036,
+        "before_bytes": 1682,
+        "new_median_ms": 7.149395999999999,
+        "old_median_ms": 7.075771,
+        "operation": "check-json",
+        "task": "d1"
+      },
+      {
+        "after_bytes": 78,
+        "before_bytes": 78,
+        "new_median_ms": 9.773854,
+        "old_median_ms": 9.911833,
+        "operation": "check",
+        "task": "d2"
+      },
+      {
+        "after_bytes": 5338,
+        "before_bytes": 4656,
+        "new_median_ms": 10.3880835,
+        "old_median_ms": 9.9810625,
+        "operation": "check-json",
+        "task": "d2"
+      },
+      {
+        "after_bytes": 23,
+        "before_bytes": 23,
+        "new_median_ms": 5.590021,
+        "old_median_ms": 5.5267495,
+        "operation": "check",
+        "task": "d3"
+      },
+      {
+        "after_bytes": 2078,
+        "before_bytes": 2078,
+        "new_median_ms": 5.635854,
+        "old_median_ms": 5.3724375,
+        "operation": "check-json",
+        "task": "d3"
+      },
+      {
+        "after_bytes": 64,
+        "before_bytes": 64,
+        "new_median_ms": 10.955937500000001,
+        "old_median_ms": 11.027562499999998,
+        "operation": "check",
+        "task": "d4"
+      },
+      {
+        "after_bytes": 4423,
+        "before_bytes": 3263,
+        "new_median_ms": 11.208958500000001,
+        "old_median_ms": 11.134374999999999,
+        "operation": "check-json",
+        "task": "d4"
+      }
+    ],
+    "samples_per_compiler_task_command": 10
+  },
+  "original_h1_task_sha256": "4b7470240d33f0ffaa4d975cafba7ac8575c42bd1085901b32406696db7005a6",
+  "original_tooling": {
+    "run.py": "60ac5be1186ab75367268ab4d50449e7e2138854c7b4a0b4debdab9b7d654acf",
+    "test_runner.py": "4b29a54cef7505c484e7d0d8fdc209b3cee8952c9b0b373965da0ff2dc9432ee"
+  },
+  "patches": {
+    "36fad50e79b50c49a618ca165452f418f9bbebacfd75d25637db7ceb31a7ebb6": "--- a/applications/ndjson/parser.slim\n+++ b/applications/ndjson/parser.slim\n@@ -161,5 +161,5 @@\n   json_model.Parsed::Invalid(code, index)\n \n-fn add_node(node: json_model.Node, next: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed:\n+fn add_node(node: json_model.Node, next: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed effects[alloc]:\n   let id: Id[json_model.Node] = arena.add(@nodes, node)\n   json_model.Parsed::Valid(next, id)\n--- a/applications/ndjson/telemetry.slim\n+++ b/applications/ndjson/telemetry.slim\n@@ -201,5 +201,5 @@\n       recur(source, devices, start, end, index + 1)\n \n-fn update_device(source: Bytes, record: Record, devices: Vec[Device]) -> Void effects[alloc, partial]:\n+fn update_device(source: Bytes, record: Record, devices: @Vec[Device]) -> Void effects[alloc, partial]:\n   let found: I64 = find_device(source, devices, record.device_start, record.device_end, 0)\n   let ok_increment: I64 = if record.ok:\n@@ -212,5 +212,5 @@\n   else:\n     let prior: Device = vec.get(devices, found)\n-    let next: Device = Device(name_start: prior.name_start, name_end: prior.name_end, count: prior.count + 2, ok_count: prior.ok_count + ok_increment, sum: prior.sum + record.value)\n+    let next: Device = Device(name_start: prior.name_start, name_end: prior.name_end, count: prior.count + 1, ok_count: prior.ok_count + ok_increment, sum: prior.sum + record.value)\n     vec.set(@devices, found, next)\n \n",
+    "467cc19d69aa9ef2ebd406882cfde8fe2b199fa23a16d836650c6cc6952e0797": "--- a/applications/lz4/codec.slim\n+++ b/applications/lz4/codec.slim\n@@ -68,5 +68,5 @@\n   else:\n     void\n-  append_literals(input, anchor, literal_end, output)\n+  append_literals(input, anchor, literal_end, @output)\n   if match_position >= 0:\n     let offset: I64 = literal_end - match_position\n@@ -93,5 +93,5 @@\n \n fn compress(input: Bytes, output: @Vec[U8]) -> Void effects[alloc, partial]:\n-  compress_from(input, 0, 0, bytes.len(output), @output)\n+  compress_from(input, 0, 0, bytes.len(input), @output)\n \n fn invalid_length(position: I64) -> lz4_model.Length:\n@@ -170,5 +170,5 @@\n                   lz4_model.Result(valid: false, code: 2, position: match_length.position)\n                 else:\n-                  let copied_match: lz4_model.Result = copy_match(offset, match_length.value + true, maximum, match_length.next, @output)\n+                  let copied_match: lz4_model.Result = copy_match(offset, match_length.value + 4, maximum, match_length.next, @output)\n                   if copied_match.valid:\n                     recur(input, match_length.next, maximum, @output)\n",
+    "502f797758bfa226fffdd6e746ff66db3de76b5a32f5e24a9f63961d119ce09b": "--- a/applications/workplan/load.slim\n+++ b/applications/workplan/load.slim\n@@ -116,5 +116,5 @@\n       workplan_model.Loaded::Invalid(parsed.code, parsed.position)\n     else:\n-      let built: std_byte_index.Built = std_byte_index.build(source, entries, task_limit)\n+      let built: std_byte_index.Built = std_byte_index.build(source, ^entries, task_limit)\n       match built:\n         Invalid(code, position):\n--- a/applications/workplan/schedule.slim\n+++ b/applications/workplan/schedule.slim\n@@ -85,5 +85,5 @@\n   else:\n     let edge: workplan_model.Edge = vec.get(graph.edges, cursor)\n-    let degree: I64 = vec.get(degrees, edge.target)\n+    let degree: I64 = vec.get(degrees, edge.dependent)\n     let prior: I64 = vec.get(earliest, edge.dependent)\n     let parent: I64 = vec.get(parents, edge.dependent)\n@@ -95,5 +95,5 @@\n           true\n         else:\n-          vec.get(ranks, task) > vec.get(ranks, parent)\n+          vec.get(ranks, task) < vec.get(ranks, parent)\n       else:\n         false\n",
+    "5a2d4d3210aa964ab66d2ad48822d0dcd7987b77d176cb91ff7781f42aa4d3c8": "--- a/applications/http/parser.slim\n+++ b/applications/http/parser.slim\n@@ -24,5 +24,5 @@\n fn lower(code: I64) -> I64:\n   if (code >= 65) && (code <= 90):\n-    code + 31\n+    code + 32\n   else:\n     code\n@@ -121,5 +121,5 @@\n       invalid_response(10, 0)\n     else:\n-      let parsed_status: I64 = std_decimal.parse_i64(source, 9, 12)\n+      let parsed_status: std_decimal.Parsed = std_decimal.parse_i64(source, 9, 12)\n       match parsed_status:\n         Invalid(position):\n--- a/applications/http/emit.slim\n+++ b/applications/http/emit.slim\n@@ -15,5 +15,5 @@\n   std_text.append_i64(@output, response.status)\n   std_text.append_bytes(@output, \"\\nlength \")\n-  std_text.append_i64(@output, response.body_limit - response.body_start)\n+  std_text.append_i64(@output, response.body_end - response.body_start)\n   std_text.append_bytes(@output, \"\\n\")\n   let appended: Bool = std_text.append_span(@output, source, response.body_start, response.body_end)\n",
+    "88805bf73b70570dc9f3352d0f2f85b20eb5b9d01a72b10d87af05ce80bb1cbc": "--- a/applications/raster/raster.slim\n+++ b/applications/raster/raster.slim\n@@ -19,5 +19,5 @@\n     if inside(triangle, x, y):\n       let index: I64 = y * width + x\n-      vec.set(@pixels, index, index)\n+      vec.set(@pixels, index, triangle.shade)\n     else:\n       void\n@@ -28,5 +28,5 @@\n     void\n   else:\n-    render_row(triangle, width, y, 0, pixels)\n+    render_row(triangle, width, y, 0, @pixels)\n     recur(triangle, width, height, y + 1, @pixels)\n \n@@ -35,4 +35,4 @@\n     void\n   else:\n-    render_triangle(triangles, width, height, 0, @pixels)\n+    render_triangle(vec.get(triangles, index), width, height, 0, @pixels)\n     recur(triangles, width, height, index + 1, @pixels)\n",
+    "8cbd76bb6c9b23e5fb471b6923b57bed3563f6e2b4bc0d3c65c66d69b1d73d8c": "--- a/applications/sat/solver.slim\n+++ b/applications/sat/solver.slim\n@@ -28,5 +28,5 @@\n fn desired(literal: I64) -> I64:\n   if literal < 0:\n-    false\n+    0\n   else:\n     1\n@@ -73,5 +73,5 @@\n   if current < 0:\n     vec.set(@assignments, variable, value)\n-    let next: I64 = std_i64_vec.push_at(trail, trail_length, variable)\n+    let next: I64 = std_i64_vec.push_at(@trail, trail_length, variable)\n     Assigned(valid: true, trail_length: next)\n   else:\n@@ -163,5 +163,5 @@\n \n fn solve(literals: Vec[I64], starts: Vec[I64], ends: Vec[I64], variables: I64, budget: I64, assignments: @Vec[I64]) -> sat_model.Solution effects[alloc, partial]:\n-  std_i64_vec.filled(variables + 1, -1, true, @assignments)\n+  std_i64_vec.filled(variables + 1, -1, 0, @assignments)\n   let trail: Vec[I64] = vec.new()\n   let decision_variables: Vec[I64] = vec.new()\n",
+    "e75143ace69c6d5d5b1c037db97e816dce299b405ff4575d05b5a11f24e3d1bb": "--- a/identity.slim\n+++ b/identity.slim\n@@ -40,5 +40,5 @@\n fn successor(revision: Revision) -> NextRevision effects[partial]:\n   if valid_revision(revision) && revision.serial < 9223372036854775807:\n-    let serial: Bool = revision.serial + 1\n+    let serial: I64 = revision.serial + 1\n     let next: Revision = Revision(epoch: revision.epoch, serial: serial)\n     NextRevision::Some(next)\n@@ -72,5 +72,5 @@\n \n fn resolve_node(view: View, node: NodeId, total: I64) -> Index effects[partial]:\n-  let identity: Bool = same_declaration(view.declaration, node.owner)\n+  let identity: Bool = same_declaration(view.declaration, node.declaration)\n   if identity && valid_view(view, total) && node.ordinal >= 0 && node.ordinal < view.count:\n     let absolute: I64 = view.first + node.ordinal\n@@ -82,5 +82,5 @@\n   let identity: Bool = same_file(file, span.file)\n   let length: I64 = bytes.len(source)\n-  if identity && span.start >= 0 && span.end >= span.start && span.end < length:\n+  if identity && span.start >= 0 && span.end >= span.start && span.end <= length:\n     Index::Found(span.start)\n   else:\n"
+  },
+  "phases": {
+    "development": {
+      "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
+      "compiler_sha256": "8ca620b876ec6b6acbb4a2dd758dfb9183c7417738a66ec71ad3f97e3a79d723",
+      "prepared": "2026-11-10T20:05:45.639920+00:00",
+      "seed_sha256": "db3250b737068d2d832d757d7c40f433581f8a91b70489d3daf834348a22b4fa"
+    },
+    "heldout": {
+      "cc_sha256": "34129c71a01a74f7f3b2443521519b2e5447553fa187f5fcafaaf8c42cc192e2",
+      "compiler_sha256": "35e09dca6a8d83a6a8ddd3dca9ffabecf5519360e854db3e99952c07a3edf10e",
+      "prepared": "2026-11-10T20:13:22.291277+00:00",
+      "seed_sha256": "c11b467d316a158d08981624c4e17bfe22d51844580dea75477d974930a68ecb"
+    }
+  },
+  "reader": {
+    "archived_runner_sha256": "60ac5be1186ab75367268ab4d50449e7e2138854c7b4a0b4debdab9b7d654acf",
+    "archived_tests_sha256": "4b29a54cef7505c484e7d0d8fdc209b3cee8952c9b0b373965da0ff2dc9432ee",
+    "changed_entries": [
+      "heldout-freeze.json",
+      "run.py",
+      "tasks/h1/TASK.txt",
+      "test_runner.py"
+    ],
+    "legacy_evidence": true,
+    "reader_sha256": "90c8f2aa7bc7228f66f3d921c6167f479e42a67b55eb97c6f61584181355f195",
+    "reader_tests_sha256": "18e3533cd0a6629fe8b2f0a8013c4b21daa6bd1da65020381e167db9ae0e452f",
+    "seal_sha256": "b4309c2cb6589fcc8a466cd253dd2c9ddd913ad57ace742934877d66e34bccf0"
+  },
+  "reasoning_effort": "high",
+  "registered_gate": {
+    "median_paired_time_reduction": 0.25,
+    "minimum_jointly_accepted_pairs": 3,
+    "no_fewer_successes": true
+  },
+  "reported": "2026-11-10T20:22:33.544667+00:00",
+  "rows": {
+    "d1-check-json": {
+      "accepted": true,
+      "compiler_invocations": 10,
+      "elapsed_seconds": 18.374772416893393,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "cb206e3a95547dbfdffbfdc7ae0a4f8b0eed5970d671481ed2c7341c476ea25e",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 7,
+      "independent_compiler_invocations": 8,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d1_b",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "5a2d4d3210aa964ab66d2ad48822d0dcd7987b77d176cb91ff7781f42aa4d3c8",
+      "replay_passed": true,
+      "started": "2026-11-10T20:06:03.272043+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d1-raw": {
+      "accepted": true,
+      "compiler_invocations": 10,
+      "elapsed_seconds": 21.028124709031545,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "16825ca0d4714f5a071dcfb3157988aad176c7ad0c05bb98bbe0d0454cec2c10",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 7,
+      "independent_compiler_invocations": 8,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d1_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "5a2d4d3210aa964ab66d2ad48822d0dcd7987b77d176cb91ff7781f42aa4d3c8",
+      "replay_passed": true,
+      "started": "2026-11-10T20:05:56.746223+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d2-check-json": {
+      "accepted": true,
+      "compiler_invocations": 10,
+      "elapsed_seconds": 23.971216875012033,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "8b70804d2986a83d133a7110f8f360a803971d5696d29d646bf7e1c41383198a",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 6,
+      "independent_compiler_invocations": 7,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d2_b",
+      "participant_checks_including_initial": 3,
+      "patch_sha256": "36fad50e79b50c49a618ca165452f418f9bbebacfd75d25637db7ceb31a7ebb6",
+      "replay_passed": true,
+      "started": "2026-11-10T20:06:34.168477+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d2-raw": {
+      "accepted": true,
+      "compiler_invocations": 9,
+      "elapsed_seconds": 20.70756108290516,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "7a73895097cb755339651263014a0a955d304b9dbc0f537a758e00a2ef4a8c84",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 6,
+      "independent_compiler_invocations": 7,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d2_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "36fad50e79b50c49a618ca165452f418f9bbebacfd75d25637db7ceb31a7ebb6",
+      "replay_passed": true,
+      "started": "2026-11-10T20:06:39.575182+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d3-check-json": {
+      "accepted": true,
+      "compiler_invocations": 4,
+      "elapsed_seconds": 16.99690908403136,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "808089368cb6f652c72ac5d0cae8cf5e02f019bb5060b459cc3403221402898b",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 1,
+      "independent_compiler_invocations": 2,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d3_b",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "e75143ace69c6d5d5b1c037db97e816dce299b405ff4575d05b5a11f24e3d1bb",
+      "replay_passed": true,
+      "started": "2026-11-10T20:07:27.305939+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d3-raw": {
+      "accepted": true,
+      "compiler_invocations": 4,
+      "elapsed_seconds": 16.44041808298789,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "2557751207421cd222e4c689fde64cce837ff656b0ca1fe636090ad89c4163d8",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 1,
+      "independent_compiler_invocations": 2,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d3_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "e75143ace69c6d5d5b1c037db97e816dce299b405ff4575d05b5a11f24e3d1bb",
+      "replay_passed": true,
+      "started": "2026-11-10T20:07:21.016895+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d4-check-json": {
+      "accepted": true,
+      "compiler_invocations": 9,
+      "elapsed_seconds": 19.73354816599749,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "54d87470bdd3bf1b0af2ea3625b976af6dc0d8eb7360d83e0e5d8712dcb58c00",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 6,
+      "independent_compiler_invocations": 7,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d4_b",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "502f797758bfa226fffdd6e746ff66db3de76b5a32f5e24a9f63961d119ce09b",
+      "replay_passed": true,
+      "started": "2026-11-10T20:07:53.502347+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "d4-raw": {
+      "accepted": true,
+      "compiler_invocations": 9,
+      "elapsed_seconds": 19.615096334018745,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "56ec8127a7fcb2df5b172b523315ddb5d2f38bd3c8ee82fa40de33caff8984f8",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 6,
+      "independent_compiler_invocations": 7,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_d4_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "502f797758bfa226fffdd6e746ff66db3de76b5a32f5e24a9f63961d119ce09b",
+      "replay_passed": true,
+      "started": "2026-11-10T20:07:59.621636+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h1-check-json": {
+      "accepted": false,
+      "closed_reason": "Operator stopped. Public first-active anchor requirement conflicted with client expectations for successive writes; prior EACCES also contaminated elapsed time.",
+      "compiler_invocations": 18,
+      "elapsed_at_close_seconds": 231.10993258398958,
+      "elapsed_seconds": null,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "9c6ed5c9f94386dc2c6f6fd5d9833b3cfb433ccd61e190da2057e658a20b560f",
+      "incomplete_commands": 0,
+      "independent_compiler_invocations": 13,
+      "initial_observation_preserved": true,
+      "outcome": "incomplete",
+      "participant": "trial_h1_b",
+      "participant_checks_including_initial": 5,
+      "started": "2026-11-10T20:13:44.414501+00:00",
+      "submission_accounting_failures": [
+        "001:unknown-infrastructure"
+      ],
+      "submission_count": 5,
+      "submission_outcomes": [
+        "unknown-infrastructure",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected"
+      ],
+      "timing_interpretable": false,
+      "valid_accounting": false
+    },
+    "h1-raw": {
+      "accepted": false,
+      "closed_reason": "Operator stopped. Public first-active anchor requirement conflicted with client expectations for successive writes; prior EACCES also contaminated elapsed time.",
+      "compiler_invocations": 26,
+      "elapsed_at_close_seconds": 237.89268920803443,
+      "elapsed_seconds": null,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "df1984ffd631816fbd5ca23108de7e034571f94564f7c8a14d0f2f811a70df39",
+      "incomplete_commands": 0,
+      "independent_compiler_invocations": 18,
+      "initial_observation_preserved": true,
+      "outcome": "incomplete",
+      "participant": "trial_h1_a",
+      "participant_checks_including_initial": 8,
+      "started": "2026-11-10T20:13:37.562823+00:00",
+      "submission_accounting_failures": [
+        "001:unknown-infrastructure",
+        "002:unknown-infrastructure"
+      ],
+      "submission_count": 8,
+      "submission_outcomes": [
+        "unknown-infrastructure",
+        "unknown-infrastructure",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected",
+        "rejected"
+      ],
+      "timing_interpretable": false,
+      "valid_accounting": false
+    },
+    "h2-check-json": {
+      "accepted": true,
+      "compiler_invocations": 5,
+      "elapsed_seconds": 16.179344875039533,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "6f89745fbd82c7648d98a289ecea7e3d71880f836f63b3b271f64c64685d8b68",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h2_b",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "467cc19d69aa9ef2ebd406882cfde8fe2b199fa23a16d836650c6cc6952e0797",
+      "replay_passed": true,
+      "started": "2026-11-10T20:16:48.510714+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h2-raw": {
+      "accepted": true,
+      "compiler_invocations": 5,
+      "elapsed_seconds": 17.19638945895713,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "bdc2ef10f7c749783a483aa4ce01cc8514d381319cb8b53fea3dc032701268dd",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h2_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "467cc19d69aa9ef2ebd406882cfde8fe2b199fa23a16d836650c6cc6952e0797",
+      "replay_passed": true,
+      "started": "2026-11-10T20:17:19.098255+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h3-check-json": {
+      "accepted": true,
+      "compiler_invocations": 5,
+      "elapsed_seconds": 21.024447500007227,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "66cd3bcc1384b31799b33308c3679b7f9a3f41659468c6558ee28de5b2c65732",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h3_b",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "88805bf73b70570dc9f3352d0f2f85b20eb5b9d01a72b10d87af05ce80bb1cbc",
+      "replay_passed": true,
+      "started": "2026-11-10T20:17:54.510540+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h3-raw": {
+      "accepted": true,
+      "compiler_invocations": 5,
+      "elapsed_seconds": 23.309863207978196,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "46933ee07b6bdb45ef95662f2143b2c5b8b7bd5ec21f4aa2990e4a705e67150b",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h3_a",
+      "participant_checks_including_initial": 2,
+      "patch_sha256": "88805bf73b70570dc9f3352d0f2f85b20eb5b9d01a72b10d87af05ce80bb1cbc",
+      "replay_passed": true,
+      "started": "2026-11-10T20:17:46.800866+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h4-check-json": {
+      "accepted": true,
+      "compiler_invocations": 6,
+      "elapsed_seconds": 21.63438699999824,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "fc9f46f441ffa317bef9bcc0222e88eec06d0c9b7ba14333d07c16e5caf97464",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h4_b",
+      "participant_checks_including_initial": 3,
+      "patch_sha256": "8cbd76bb6c9b23e5fb471b6923b57bed3563f6e2b4bc0d3c65c66d69b1d73d8c",
+      "replay_passed": true,
+      "started": "2026-11-10T20:18:34.336451+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    },
+    "h4-raw": {
+      "accepted": true,
+      "compiler_invocations": 6,
+      "elapsed_seconds": 28.854402500088327,
+      "finished": true,
+      "first_response_preserved": true,
+      "first_response_sha256": "c5c6b78e892fac82f6f636fe20aec81658c084cdc87d5e595839ac60b7bb74fa",
+      "incomplete_commands": 0,
+      "independent_clients_passed": 2,
+      "independent_compiler_invocations": 3,
+      "initial_observation_preserved": true,
+      "outcome": "accepted",
+      "participant": "trial_h4_a",
+      "participant_checks_including_initial": 3,
+      "patch_sha256": "8cbd76bb6c9b23e5fb471b6923b57bed3563f6e2b4bc0d3c65c66d69b1d73d8c",
+      "replay_passed": true,
+      "started": "2026-11-10T20:18:40.804741+00:00",
+      "submission_accounting_failures": [],
+      "submission_count": 1,
+      "submission_outcomes": [
+        "accepted"
+      ],
+      "timing_interpretable": true,
+      "valid_accounting": true
+    }
+  },
+  "schema": 1,
+  "timebox_seconds": 900
+}

@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "id": "d4",
+  "split": "development",
+  "name": "Workplan deterministic critical path",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/workplan/load.slim",
+    "applications/workplan/schedule.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "diamond-tie",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "6:finish,1:1,3:b,a,1:b,1:4,4:root,4:root,1:2,0:,1:a,1:4,4:root,"
+        ],
+        "exit_code": 0,
+        "stdout": "tasks 4 edges 4 span 7\ntask root start 0 finish 2\ntask a start 2 finish 6\ntask b start 2 finish 6\ntask finish start 6 finish 7\ncritical root,a,finish\n",
+        "stderr": ""
+      },
+      {
+        "name": "independent-order",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "1:z,1:1,0:,1:a,1:2,0:,1:m,1:0,0:,"
+        ],
+        "exit_code": 0,
+        "stdout": "tasks 3 edges 0 span 2\ntask a start 0 finish 2\ntask m start 0 finish 0\ntask z start 0 finish 1\ncritical a\n",
+        "stderr": ""
+      },
+      {
+        "name": "empty",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          ""
+        ],
+        "exit_code": 0,
+        "stdout": "tasks 0 edges 0 span 0\ncritical \n",
+        "stderr": ""
+      },
+      {
+        "name": "cycle",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "1:a,1:1,1:b,1:b,1:1,1:a,"
+        ],
+        "exit_code": 65,
+        "stdout": "error 21 at 2\n",
+        "stderr": ""
+      },
+      {
+        "name": "unknown-dependency",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "7:compile,1:3,7:missing,"
+        ],
+        "exit_code": 65,
+        "stdout": "error 17 at 16\n",
+        "stderr": ""
+      },
+      {
+        "name": "finish-overflow",
+        "replace": {
+          "applications/workplan/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "1:a,19:9223372036854775807,0:,1:b,1:1,1:a,"
+        ],
+        "exit_code": 65,
+        "stdout": "error 22 at 32\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

@@ -1,0 +1,7 @@
+# Workplan deterministic critical path
+
+Repair the existing SLIM implementation in this checkout. It currently fails normal checking at multiple source locations and also contains a behavior regression.
+
+Preserve netstring triple loading, ownership transfer of the task index, deterministic lexical topological selection and earliest-start scheduling. The critical chain chooses the lexically first equal-finish parent, independent of input/dependency order. Empty input succeeds; unknown dependencies, cycles and signed-I64 finish overflow preserve error codes and positions.
+
+Only edit `applications/workplan/load.slim`, `applications/workplan/schedule.slim`. Preserve their public functions, types and signatures. Immutable clients, dependencies and project contracts must remain unchanged. Acceptance compiles independent clients against your implementation and checks exact native outputs on multiple positive, negative and boundary inputs. Merely making `check` succeed or returning a constant is insufficient.

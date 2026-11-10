@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "h3",
+  "split": "heldout",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/raster/raster.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "geometry",
+        "replace": {
+          "app.slim": "oracle/geometry.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      },
+      {
+        "name": "composition",
+        "replace": {
+          "app.slim": "oracle/composition.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

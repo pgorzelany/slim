@@ -1,0 +1,45 @@
+module std_ascii
+
+fn is_digit(value: U8) -> Bool:
+  let code: I64 = u8.to_i64(value)
+  (code >= 48) && (code <= 57)
+
+fn is_lower(value: U8) -> Bool:
+  let code: I64 = u8.to_i64(value)
+  (code >= 97) && (code <= 122)
+
+fn is_upper(value: U8) -> Bool:
+  let code: I64 = u8.to_i64(value)
+  (code >= 65) && (code <= 90)
+
+fn is_alpha(value: U8) -> Bool:
+  is_lower(value) || is_upper(value)
+
+fn is_alphanumeric(value: U8) -> Bool:
+  is_alpha(value) || is_digit(value)
+
+fn is_hex_digit(value: U8) -> Bool:
+  let code: I64 = u8.to_i64(value)
+  let decimal: Bool = (code >= 48) && (code <= 57)
+  let upper: Bool = (code >= 65) && (code <= 70)
+  let lower: Bool = (code >= 97) && (code <= 102)
+  decimal || upper || lower
+
+fn is_space(value: U8) -> Bool:
+  let code: I64 = u8.to_i64(value)
+  let horizontal: Bool = (code == 9) || (code == 32)
+  let vertical: Bool = ((code == 10) || (code == 13)) || (code == 12)
+  horizontal || vertical
+
+fn digit_value(value: U8) -> I64:
+  u8.to_i64(value) - 48
+
+fn hex_value(value: U8) -> I64:
+  let code: I64 = u8.to_i64(value)
+  if code <= 57:
+    code - 48
+  else:
+    if code <= 70:
+      code - 55
+    else:
+      code - 87

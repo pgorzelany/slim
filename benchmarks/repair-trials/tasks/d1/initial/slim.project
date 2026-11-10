@@ -1,0 +1,10 @@
+(project 1
+  (entry http_app)
+  (module http_app "applications/http/main.slim" (imports http_emit http_model http_parser std_decimal std_text) (exports))
+  (module http_emit "applications/http/emit.slim" (imports http_model std_text) (exports print_error print_response))
+  (module http_model "applications/http/model.slim" (imports) (exports Headers Response))
+  (module http_parser "applications/http/parser.slim" (imports http_model std_bytes std_decimal) (exports parse))
+  (module std_ascii "experimental/ascii.slim" (imports) (exports digit_value hex_value is_alpha is_alphanumeric is_digit is_hex_digit is_lower is_space is_upper))
+  (module std_bytes "experimental/bytes.slim" (imports) (exports append append_range count_byte ends_with equal find_byte range_equal starts_with))
+  (module std_decimal "experimental/decimal.slim" (imports std_ascii) (exports Parsed parse_i64 parse_u8))
+  (module std_text "experimental/text.slim" (imports std_bytes) (exports append_byte append_bytes append_i64 append_span)))

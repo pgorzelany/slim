@@ -1,0 +1,7 @@
+# NDJSON telemetry checked aggregation
+
+Repair the existing SLIM implementation in this checkout. It currently fails normal checking at multiple source locations and also contains a behavior regression.
+
+Parse newline-separated telemetry objects with exactly device/string, ok/boolean and value/integer fields. Preserve first-seen device order, record counts, true counts and signed sums. Reject duplicate fields and adjacent records without a newline; preserve error codes and byte positions. Keep allocation and mutation capabilities explicit.
+
+Only edit `applications/ndjson/parser.slim`, `applications/ndjson/telemetry.slim`. Preserve their public functions, types and signatures. Immutable clients, dependencies and project contracts must remain unchanged. Acceptance compiles independent clients against your implementation and checks exact native outputs on multiple positive, negative and boundary inputs. Merely making `check` succeed or returning a constant is insufficient.

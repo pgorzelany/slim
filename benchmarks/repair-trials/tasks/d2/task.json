@@ -1,0 +1,89 @@
+{
+  "schema": 1,
+  "id": "d2",
+  "split": "development",
+  "name": "NDJSON telemetry checked aggregation",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/ndjson/parser.slim",
+    "applications/ndjson/telemetry.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "one-device",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "{\"device\":\"a\",\"ok\":true,\"value\":7}\n"
+        ],
+        "exit_code": 0,
+        "stdout": "device a count 1 ok 1 sum 7\n",
+        "stderr": ""
+      },
+      {
+        "name": "aggregation",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "{\"device\":\"b\",\"ok\":false,\"value\":-3}\n{\"device\":\"a\",\"ok\":true,\"value\":12}\n{\"device\":\"b\",\"ok\":true,\"value\":8}\n"
+        ],
+        "exit_code": 0,
+        "stdout": "device b count 2 ok 1 sum 5\ndevice a count 1 ok 1 sum 12\n",
+        "stderr": ""
+      },
+      {
+        "name": "zero-false",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "{\"device\":\"zero\",\"ok\":false,\"value\":0}\n{\"device\":\"zero\",\"ok\":false,\"value\":-1}\n"
+        ],
+        "exit_code": 0,
+        "stdout": "device zero count 2 ok 0 sum -1\n",
+        "stderr": ""
+      },
+      {
+        "name": "empty-stream",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          " \n\t"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": ""
+      },
+      {
+        "name": "duplicate-field",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "{\"device\":\"a\",\"device\":\"b\",\"ok\":true,\"value\":1}\n"
+        ],
+        "exit_code": 1,
+        "stdout": "error 11 at 2\n",
+        "stderr": ""
+      },
+      {
+        "name": "missing-record-separator",
+        "replace": {
+          "applications/ndjson/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "{\"device\":\"a\",\"ok\":true,\"value\":1}{\"device\":\"b\",\"ok\":false,\"value\":2}"
+        ],
+        "exit_code": 1,
+        "stdout": "error 6 at 34\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

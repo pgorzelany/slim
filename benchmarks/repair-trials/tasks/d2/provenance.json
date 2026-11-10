@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "source_kind": "existing-production-slim",
+  "source_pins": [
+    {
+      "source": "library/applications/ndjson/model.slim",
+      "snapshot": "applications/ndjson/model.slim",
+      "sha256": "e5f26c763821ff569d539b246653b48b0557d90b855810c7b61ec437cf632a2a",
+      "initial_sha256": "e5f26c763821ff569d539b246653b48b0557d90b855810c7b61ec437cf632a2a",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/applications/ndjson/parser.slim",
+      "snapshot": "applications/ndjson/parser.slim",
+      "sha256": "af80f42575147e38a5cf19c4000b63b93c5b8b9a97a986d4496b5a7b68fb0655",
+      "initial_sha256": "b6548d2373879d4d8ec719b4154d75cfc015f0753f120125ec7ac5ea2f6b8da1",
+      "reference_sha256": "af80f42575147e38a5cf19c4000b63b93c5b8b9a97a986d4496b5a7b68fb0655",
+      "snapshot_relation": "listed fault edits"
+    },
+    {
+      "source": "library/applications/ndjson/main.slim",
+      "snapshot": "applications/ndjson/main.slim",
+      "sha256": "28130bcd6abc2858d68d88ea923c2b1a5c3f861d1a9b321785f6968e44f77b8b",
+      "initial_sha256": "57e9a56fd84a1262bd0dfbbec7e6fe27ecca08e50b00afbd26d33f307b3476b9",
+      "snapshot_relation": "test-harness replacement"
+    },
+    {
+      "source": "library/experimental/ascii.slim",
+      "snapshot": "experimental/ascii.slim",
+      "sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5",
+      "initial_sha256": "dcefcded719c36aac22c610ffa8469e5042047aebbf917d0cb6162540a7270f5",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/bytes.slim",
+      "snapshot": "experimental/bytes.slim",
+      "sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb",
+      "initial_sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/decimal.slim",
+      "snapshot": "experimental/decimal.slim",
+      "sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5",
+      "initial_sha256": "18022b5901c91c2bba62bb0d6e7aeb7590e333f8b4ea3f35e205e0977c19f2a5",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/experimental/text.slim",
+      "snapshot": "experimental/text.slim",
+      "sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f",
+      "initial_sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f",
+      "snapshot_relation": "exact byte copy"
+    },
+    {
+      "source": "library/applications/ndjson/telemetry.slim",
+      "snapshot": "applications/ndjson/telemetry.slim",
+      "sha256": "129970d9aa20e5e8b7a06327a8b680deb1ca03bd3b6f0ebba260c797965145a6",
+      "initial_sha256": "921e3f2cb01b11f95f43e46eb4d0525a2e36be36df4d6aa8bcde24d78f679a97",
+      "reference_sha256": "129970d9aa20e5e8b7a06327a8b680deb1ca03bd3b6f0ebba260c797965145a6",
+      "snapshot_relation": "listed fault edits"
+    },
+    {
+      "source": "library/applications/ndjson/emit.slim",
+      "snapshot": "applications/ndjson/emit.slim",
+      "sha256": "3ed002f70554b33589dd0a8197e290844853737f2ef028652b1595a31b440018",
+      "initial_sha256": "3ed002f70554b33589dd0a8197e290844853737f2ef028652b1595a31b440018",
+      "snapshot_relation": "exact byte copy"
+    }
+  ],
+  "faults": [
+    {
+      "file": "applications/ndjson/parser.slim",
+      "before": "fn add_node(node: json_model.Node, next: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed effects[alloc]:",
+      "after": "fn add_node(node: json_model.Node, next: I64, nodes: @Arena[json_model.Node]) -> json_model.Parsed:",
+      "category": "effect"
+    },
+    {
+      "file": "applications/ndjson/telemetry.slim",
+      "before": "fn update_device(source: Bytes, record: Record, devices: @Vec[Device])",
+      "after": "fn update_device(source: Bytes, record: Record, devices: Vec[Device])",
+      "category": "ownership"
+    },
+    {
+      "file": "applications/ndjson/telemetry.slim",
+      "before": "count: prior.count + 1,",
+      "after": "count: prior.count + 2,",
+      "category": "behavior"
+    }
+  ],
+  "reference_files": [
+    "applications/ndjson/parser.slim",
+    "applications/ndjson/telemetry.slim"
+  ],
+  "oracle": "Frozen independent application cases; expected bytes are specified separately from compiler diagnostics. Domain is exactly acceptance.cases; passing does not establish arbitrary-input correctness.",
+  "expected_position_contract": "The retained parser object-edge list traverses fields in reverse source order. The duplicate-field case therefore rejects the earlier device key at byte 2, not the later key. This is part of the fixed behavior-preservation contract.",
+  "immutable_harness_replacements": [
+    {
+      "snapshot": "applications/ndjson/main.slim",
+      "frozen_client": "oracle/client.slim",
+      "reason": "Read test bytes directly from argv and exercise existing checked library functions without network or external fixture dependencies."
+    }
+  ]
+}

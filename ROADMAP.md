@@ -3,7 +3,7 @@
 Status: SLIM 0.9 — experimental, pre-1.0
 Current milestone: Pre-1.0 evidence-driven development
 Current goal: Measured compiler and library development in SLIM
-Last updated: 2026-10-03
+Last updated: 2026-11-10
 
 SLIM helps humans and agents build safe native software through precise compiler
 feedback, explicit resource behavior and reproducible failures. The
@@ -12,7 +12,7 @@ is complete for its bounded scope: production semantic context, independent
 conformance/cost evidence and six frozen repair trials. Strict acceptance is 2/3
 per condition; general effectiveness remains unknown. Retain opt-in schema 1 and
 freeze its breadth. General repair diagnostics now retain rejection causes and
-source context. Next, measure their benefit on real compiler/library repairs.
+source context. The latest paired repair measurement is recorded below.
 
 [RFC-0112](design/rfcs/0112-agent-development-and-os-foundation.md) remains the
 accepted successor direction. [RFC-0158](design/rfcs/0158-early-agent-development-loop.md)
@@ -45,18 +45,13 @@ simulation and replay. Each needs its own accepted contract and evidence.
 
 ## Current substantial outcome
 
-Implement [general repair diagnostics](design/rfcs/0173-repair-oriented-diagnostics.md)
-in the production SLIM compiler. Every rejection must explain the violated rule.
-Retain original source context and the rejecting decision's type, capability or
-ownership facts where applicable. Never infer the intended repair from acceptance.
-
-Acceptance requires independent syntax, name, type, effect, ownership and project
-cases; correct manifest/module provenance; fixed reporting limits; unchanged raw
-diagnostics and generated programs; same-host cost measurements; and all compiler
-and release gates. Complete: 65 independent cases, 12 actual development tasks,
-source-bound compiler gates, reproducible release, clean install and website
-checks pass. Next, measure paired real repair iterations and time before
-claiming an agent effectiveness benefit.
+Sixteen fresh sessions produced fourteen independently replayed repairs.
+Development exposed missing record and call-mode facts, now covered by 85
+diagnostic cases. Three held-out pairs had a median 9.8% time reduction with
+JSON. An inconsistent task stopped the fourth pair after a staging failure.
+The registered 25% target remains unconfirmed. Next, independently review task
+instructions against behavior before measuring longer multi-module repairs.
+[Paired results and accepted patches](benchmarks/results/repair-trials-current.json).
 
 ## Completed overnight scope
 

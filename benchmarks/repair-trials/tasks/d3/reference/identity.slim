@@ -1,0 +1,87 @@
+module identity
+
+struct Revision:
+  epoch: I64
+  serial: I64
+
+enum NextRevision:
+  None
+  Some(Revision)
+
+struct FileId:
+  revision: Revision
+  slot: I64
+
+struct DeclarationId:
+  file: FileId
+  slot: I64
+
+struct NodeId:
+  declaration: DeclarationId
+  ordinal: I64
+
+struct Span:
+  file: FileId
+  start: I64
+  end: I64
+
+struct View:
+  declaration: DeclarationId
+  first: I64
+  count: I64
+
+enum Index:
+  Invalid
+  Found(I64)
+
+fn valid_revision(revision: Revision) -> Bool:
+  revision.epoch > 0 && revision.serial > 0
+
+fn successor(revision: Revision) -> NextRevision effects[partial]:
+  if valid_revision(revision) && revision.serial < 9223372036854775807:
+    let serial: I64 = revision.serial + 1
+    let next: Revision = Revision(epoch: revision.epoch, serial: serial)
+    NextRevision::Some(next)
+  else:
+    NextRevision::None()
+
+fn reset(revision: Revision) -> NextRevision effects[partial]:
+  if valid_revision(revision) && revision.epoch < 9223372036854775807:
+    let epoch: I64 = revision.epoch + 1
+    let next: Revision = Revision(epoch: epoch, serial: 1)
+    NextRevision::Some(next)
+  else:
+    NextRevision::None()
+
+fn same_revision(left: Revision, right: Revision) -> Bool:
+  valid_revision(left) && valid_revision(right) && left.epoch == right.epoch && left.serial == right.serial
+
+fn same_file(left: FileId, right: FileId) -> Bool:
+  same_revision(left.revision, right.revision) && left.slot >= 0 && right.slot >= 0 && left.slot == right.slot
+
+fn same_declaration(left: DeclarationId, right: DeclarationId) -> Bool:
+  same_file(left.file, right.file) && left.slot >= 0 && right.slot >= 0 && left.slot == right.slot
+
+fn valid_view(view: View, total: I64) -> Bool effects[partial]:
+  let identity: Bool = same_declaration(view.declaration, view.declaration)
+  if identity && total >= 0 && view.first >= 0 && view.first <= total && view.count >= 0:
+    let remaining: I64 = total - view.first
+    view.count <= remaining
+  else:
+    false
+
+fn resolve_node(view: View, node: NodeId, total: I64) -> Index effects[partial]:
+  let identity: Bool = same_declaration(view.declaration, node.declaration)
+  if identity && valid_view(view, total) && node.ordinal >= 0 && node.ordinal < view.count:
+    let absolute: I64 = view.first + node.ordinal
+    Index::Found(absolute)
+  else:
+    Index::Invalid()
+
+fn resolve_span(file: FileId, source: Bytes, span: Span) -> Index:
+  let identity: Bool = same_file(file, span.file)
+  let length: I64 = bytes.len(source)
+  if identity && span.start >= 0 && span.end >= span.start && span.end <= length:
+    Index::Found(span.start)
+  else:
+    Index::Invalid()

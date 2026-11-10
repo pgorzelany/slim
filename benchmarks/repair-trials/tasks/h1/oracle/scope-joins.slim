@@ -1,0 +1,79 @@
+module app
+
+fn check(actual: I64, expected: I64) -> I64:
+  if actual == expected:
+    0
+  else:
+    1
+
+fn bit(value: Bool) -> I64:
+  if value:
+    1
+  else:
+    0
+
+fn branch(initial: Bool, visited: I64, first: Bool, second: Bool) -> I64 effects[alloc, partial]:
+  let scopes: Vec[ownership.Scope] = vec.new()
+  let root: ownership.Scope = ownership.Scope(parent: 1, rank: 0, ancestor: 1, depth: 0, alternatives: 0, arms: 0)
+  vec.push(@scopes, root)
+  vec.push(@scopes, root)
+  let frames: Vec[ownership.Frame] = vec.new()
+  var frame: I64 = ownership.advance(@scopes, @frames, -1)
+  ownership.set_moved_at(@frames, frame, initial, 31)
+  let fork: I64 = ownership.begin(@scopes, 2)
+  frame = ownership.advance(@scopes, @frames, frame)
+  if visited > 0:
+    let arm: I64 = ownership.begin(@scopes, 0)
+    frame = ownership.advance(@scopes, @frames, frame)
+    ownership.set_moved_at(@frames, frame, first, 47)
+    ownership.end(@scopes, arm, fork)
+    frame = ownership.advance(@scopes, @frames, frame)
+    void
+  else:
+    void
+  if visited > 1:
+    let arm: I64 = ownership.begin(@scopes, 0)
+    frame = ownership.advance(@scopes, @frames, frame)
+    ownership.set_moved_at(@frames, frame, second, 59)
+    ownership.end(@scopes, arm, fork)
+    frame = ownership.advance(@scopes, @frames, frame)
+    void
+  else:
+    void
+  ownership.end(@scopes, fork, 1)
+  frame = ownership.advance(@scopes, @frames, frame)
+  let final: ownership.Frame = vec.get(frames, frame)
+  bit(final.moved)
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  var failures: I64 = 0
+  failures = failures + check(branch(false, 0, false, false), 0)
+  failures = failures + check(branch(false, 0, false, true), 0)
+  failures = failures + check(branch(false, 0, true, false), 0)
+  failures = failures + check(branch(false, 0, true, true), 0)
+  failures = failures + check(branch(false, 1, false, false), 0)
+  failures = failures + check(branch(false, 1, false, true), 0)
+  failures = failures + check(branch(false, 1, true, false), 1)
+  failures = failures + check(branch(false, 1, true, true), 1)
+  failures = failures + check(branch(false, 2, false, false), 0)
+  failures = failures + check(branch(false, 2, false, true), 1)
+  failures = failures + check(branch(false, 2, true, false), 1)
+  failures = failures + check(branch(false, 2, true, true), 1)
+  failures = failures + check(branch(true, 0, false, false), 1)
+  failures = failures + check(branch(true, 0, false, true), 1)
+  failures = failures + check(branch(true, 0, true, false), 1)
+  failures = failures + check(branch(true, 0, true, true), 1)
+  failures = failures + check(branch(true, 1, false, false), 1)
+  failures = failures + check(branch(true, 1, false, true), 1)
+  failures = failures + check(branch(true, 1, true, false), 1)
+  failures = failures + check(branch(true, 1, true, true), 1)
+  failures = failures + check(branch(true, 2, false, false), 0)
+  failures = failures + check(branch(true, 2, false, true), 1)
+  failures = failures + check(branch(true, 2, true, false), 1)
+  failures = failures + check(branch(true, 2, true, true), 1)
+  if failures == 0:
+    io.print_bytes("held-ok\n")
+    0
+  else:
+    io.print_i64(failures)
+    1

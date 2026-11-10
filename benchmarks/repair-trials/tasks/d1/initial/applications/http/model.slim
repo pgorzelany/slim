@@ -1,0 +1,17 @@
+module http_model
+
+struct Headers:
+  valid: Bool
+  code: I64
+  position: I64
+  body_start: I64
+  has_length: Bool
+  length: I64
+
+struct Response:
+  valid: Bool
+  code: I64
+  position: I64
+  status: I64
+  body_start: I64
+  body_end: I64

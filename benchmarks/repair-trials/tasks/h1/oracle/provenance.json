@@ -1,0 +1,21 @@
+{
+  "authority": "independent literal domains and ordinary SLIM checker; no expected result is inferred from candidate reports",
+  "changed_sites": 3,
+  "evidence": "bounded",
+  "expected_stdout": "literal held-ok newline emitted only after independent client assertions succeed",
+  "independent_probes": 58,
+  "initial_diagnostic_count": 2,
+  "initial_project_rejected": true,
+  "isolated_bad_site_rejections": 3,
+  "reference_acceptance": "passed",
+  "reference_clients": 2,
+  "schema": 1,
+  "sources": [
+    {
+      "mutable": true,
+      "path": "ownership.slim",
+      "repository_original_sha256": "c9bad4a523cfe36192d129a54638c2c745583be83fbd4ed83def11e517f2189f"
+    }
+  ],
+  "trivial_compiling_control": "rejected"
+}

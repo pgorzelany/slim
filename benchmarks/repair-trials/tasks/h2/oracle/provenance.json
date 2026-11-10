@@ -1,0 +1,41 @@
+{
+  "authority": "independent literal domains and ordinary SLIM checker; no expected result is inferred from candidate reports",
+  "changed_sites": 3,
+  "evidence": "bounded",
+  "expected_stdout": "literal held-ok newline emitted only after independent client assertions succeed",
+  "independent_probes": 50,
+  "initial_diagnostic_count": 2,
+  "initial_project_rejected": true,
+  "isolated_bad_site_rejections": 3,
+  "reference_acceptance": "passed",
+  "reference_clients": 2,
+  "schema": 1,
+  "sources": [
+    {
+      "mutable": true,
+      "path": "applications/lz4/codec.slim",
+      "repository_original_sha256": "8002bbce5c90bb71b28eb581f33ae552af35c54e44068456d1169e9485c9c8d6"
+    },
+    {
+      "mutable": false,
+      "path": "applications/lz4/emit.slim",
+      "repository_original_sha256": "1ded98cf2e59fbf434ac4fb2e345fb0ff3f4dbd2ab9be32d647ed4c621ce8158"
+    },
+    {
+      "mutable": false,
+      "path": "applications/lz4/model.slim",
+      "repository_original_sha256": "143b92843370cc2c3da8e4e50ae1fa335f195bf25db9a021562189f0e54b82bd"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/bytes.slim",
+      "repository_original_sha256": "c82801d2eed11421ff4a6a37b262e1fb704f315a9d7aba77937ab093d67c66bb"
+    },
+    {
+      "mutable": false,
+      "path": "experimental/text.slim",
+      "repository_original_sha256": "f935dd717b0852794f4138d6dfd5033513659e133328e542c66efd522598282f"
+    }
+  ],
+  "trivial_compiling_control": "rejected"
+}

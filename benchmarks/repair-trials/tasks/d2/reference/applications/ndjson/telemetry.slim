@@ -1,0 +1,243 @@
+module telemetry
+
+struct Record:
+  device_start: I64
+  device_end: I64
+  ok: Bool
+  value: I64
+
+enum Checked:
+  Invalid(I64, I64)
+  Valid(Record)
+
+struct Device:
+  name_start: I64
+  name_end: I64
+  count: I64
+  ok_count: I64
+  sum: I64
+
+struct Stream:
+  valid: Bool
+  code: I64
+  position: I64
+
+struct Fields:
+  valid: Bool
+  code: I64
+  position: I64
+  device: I64
+  ok: I64
+  value: I64
+
+fn key_is(source: Bytes, edge: json_model.Edge, expected: Bytes) -> Bool effects[partial]:
+  let length: I64 = edge.key_end - edge.key_start
+  if length == bytes.len(expected):
+    std_bytes.range_equal(source, edge.key_start, expected, 0, length)
+  else:
+    false
+
+fn collect_fields(source: Bytes, edges: Vec[json_model.Edge], index: I64, remaining: I64, fields: Fields) -> Fields effects[partial]:
+  if remaining == 0:
+    fields
+  else:
+    let edge: json_model.Edge = vec.get(edges, index)
+    if key_is(source, edge, "device"):
+      if fields.device >= 0:
+        Fields(valid: false, code: 11, position: edge.key_start, device: fields.device, ok: fields.ok, value: fields.value)
+      else:
+        let next: Fields = Fields(valid: fields.valid, code: fields.code, position: fields.position, device: index, ok: fields.ok, value: fields.value)
+        recur(source, edges, edge.next, remaining - 1, next)
+    else:
+      if key_is(source, edge, "ok"):
+        if fields.ok >= 0:
+          Fields(valid: false, code: 11, position: edge.key_start, device: fields.device, ok: fields.ok, value: fields.value)
+        else:
+          let next: Fields = Fields(valid: fields.valid, code: fields.code, position: fields.position, device: fields.device, ok: index, value: fields.value)
+          recur(source, edges, edge.next, remaining - 1, next)
+      else:
+        if key_is(source, edge, "value"):
+          if fields.value >= 0:
+            Fields(valid: false, code: 11, position: edge.key_start, device: fields.device, ok: fields.ok, value: fields.value)
+          else:
+            let next: Fields = Fields(valid: fields.valid, code: fields.code, position: fields.position, device: fields.device, ok: fields.ok, value: index)
+            recur(source, edges, edge.next, remaining - 1, next)
+        else:
+          Fields(valid: false, code: 12, position: edge.key_start, device: fields.device, ok: fields.ok, value: fields.value)
+
+fn checked_invalid(code: I64, position: I64) -> Checked:
+  Checked::Invalid(code, position)
+
+fn checked_device(node: json_model.Node, position: I64) -> Checked:
+  match node:
+    Null:
+      checked_invalid(14, position)
+    Boolean(value):
+      if value:
+        checked_invalid(14, position)
+      else:
+        checked_invalid(14, position)
+    Number(start, end):
+      checked_invalid(14, start + (end - start))
+    String(start, end):
+      Checked::Valid(Record(device_start: start, device_end: end, ok: false, value: 0))
+    Array(first, count):
+      checked_invalid(14, first + count)
+    Object(first, count):
+      checked_invalid(14, first + count)
+
+fn device_span(node: json_model.Node, position: I64) -> Checked:
+  checked_device(node, position)
+
+fn boolean_value(node: json_model.Node, position: I64) -> Checked:
+  match node:
+    Null:
+      checked_invalid(15, position)
+    Boolean(value):
+      Checked::Valid(Record(device_start: 0, device_end: 0, ok: value, value: 0))
+    Number(start, end):
+      checked_invalid(15, start + (end - start))
+    String(start, end):
+      checked_invalid(15, start + (end - start))
+    Array(first, count):
+      checked_invalid(15, first + count)
+    Object(first, count):
+      checked_invalid(15, first + count)
+
+fn number_value(source: Bytes, node: json_model.Node, position: I64) -> Checked effects[partial]:
+  match node:
+    Null:
+      checked_invalid(16, position)
+    Boolean(value):
+      if value:
+        checked_invalid(16, position)
+      else:
+        checked_invalid(16, position)
+    Number(start, end):
+      let parsed: std_decimal.Parsed = std_decimal.parse_i64(source, start, end)
+      match parsed:
+        Invalid(index):
+          checked_invalid(17, index)
+        Overflow(index):
+          checked_invalid(18, index)
+        Value(value, next):
+          if next == end:
+            Checked::Valid(Record(device_start: 0, device_end: 0, ok: false, value: value))
+          else:
+            checked_invalid(17, next)
+    String(start, end):
+      checked_invalid(16, start + (end - start))
+    Array(first, count):
+      checked_invalid(16, first + count)
+    Object(first, count):
+      checked_invalid(16, first + count)
+
+fn validate_object(source: Bytes, nodes: Arena[json_model.Node], edges: Vec[json_model.Edge], first: I64, count: I64) -> Checked effects[partial]:
+  let initial: Fields = Fields(valid: true, code: 0, position: 0, device: -1, ok: -1, value: -1)
+  let fields: Fields = collect_fields(source, edges, first, count, initial)
+  if !fields.valid:
+    checked_invalid(fields.code, fields.position)
+  else:
+    let complete: Bool = (fields.device >= 0) && ((fields.ok >= 0) && (fields.value >= 0))
+    if !complete:
+      checked_invalid(13, first)
+    else:
+      let device_edge: json_model.Edge = vec.get(edges, fields.device)
+      let ok_edge: json_model.Edge = vec.get(edges, fields.ok)
+      let value_edge: json_model.Edge = vec.get(edges, fields.value)
+      let device_node: json_model.Node = arena.get(nodes, device_edge.value)
+      let ok_node: json_model.Node = arena.get(nodes, ok_edge.value)
+      let value_node: json_model.Node = arena.get(nodes, value_edge.value)
+      let device: Checked = device_span(device_node, device_edge.key_start)
+      match device:
+        Invalid(code, position):
+          checked_invalid(code, position)
+        Valid(device_record):
+          let ok: Checked = boolean_value(ok_node, ok_edge.key_start)
+          match ok:
+            Invalid(code, position):
+              checked_invalid(code, position)
+            Valid(ok_record):
+              let value: Checked = number_value(source, value_node, value_edge.key_start)
+              match value:
+                Invalid(code, position):
+                  checked_invalid(code, position)
+                Valid(value_record):
+                  Checked::Valid(Record(device_start: device_record.device_start, device_end: device_record.device_end, ok: ok_record.ok, value: value_record.value))
+
+fn validate(source: Bytes, nodes: Arena[json_model.Node], edges: Vec[json_model.Edge], id: Id[json_model.Node]) -> Checked effects[partial]:
+  let root: json_model.Node = arena.get(nodes, id)
+  match root:
+    Null:
+      checked_invalid(10, 0)
+    Boolean(value):
+      if value:
+        checked_invalid(10, 0)
+      else:
+        checked_invalid(10, 0)
+    Number(start, end):
+      checked_invalid(10, start + (end - start))
+    String(start, end):
+      checked_invalid(10, start + (end - start))
+    Array(first, count):
+      checked_invalid(10, first + count)
+    Object(first, count):
+      validate_object(source, nodes, edges, first, count)
+
+fn find_device(source: Bytes, devices: Vec[Device], start: I64, end: I64, index: I64) -> I64 effects[partial]:
+  if index == vec.len(devices):
+    -1
+  else:
+    let device: Device = vec.get(devices, index)
+    let left_length: I64 = device.name_end - device.name_start
+    let right_length: I64 = end - start
+    let same: Bool = if left_length == right_length:
+      std_bytes.range_equal(source, device.name_start, source, start, left_length)
+    else:
+      false
+    if same:
+      index
+    else:
+      recur(source, devices, start, end, index + 1)
+
+fn update_device(source: Bytes, record: Record, devices: @Vec[Device]) -> Void effects[alloc, partial]:
+  let found: I64 = find_device(source, devices, record.device_start, record.device_end, 0)
+  let ok_increment: I64 = if record.ok:
+    1
+  else:
+    0
+  if found < 0:
+    let device: Device = Device(name_start: record.device_start, name_end: record.device_end, count: 1, ok_count: ok_increment, sum: record.value)
+    vec.push(@devices, device)
+  else:
+    let prior: Device = vec.get(devices, found)
+    let next: Device = Device(name_start: prior.name_start, name_end: prior.name_end, count: prior.count + 1, ok_count: prior.ok_count + ok_increment, sum: prior.sum + record.value)
+    vec.set(@devices, found, next)
+
+fn process(source: Bytes, index: I64, nodes: @Arena[json_model.Node], edges: @Vec[json_model.Edge], devices: @Vec[Device]) -> Stream effects[alloc, partial]:
+  let end: I64 = bytes.len(source)
+  let cursor: I64 = json_parser.skip_space(source, index, end)
+  if cursor == end:
+    Stream(valid: true, code: 0, position: cursor)
+  else:
+    let parsed: json_model.Parsed = json_parser.parse_value(source, cursor, end, @nodes, @edges)
+    match parsed:
+      Invalid(code, position):
+        Stream(valid: false, code: code, position: position)
+      Valid(next, id):
+        let checked: Checked = validate(source, nodes, edges, id)
+        match checked:
+          Invalid(code, position):
+            Stream(valid: false, code: code, position: position)
+          Valid(record):
+            update_device(source, record, @devices)
+            let following: I64 = json_parser.skip_space(source, next, end)
+            if following == end:
+              recur(source, following, @nodes, @edges, @devices)
+            else:
+              let newline: U8 = bytes.get("\n", 0)
+              let separator: I64 = std_bytes.find_byte(source, newline, next, following)
+              if separator >= 0:
+                recur(source, following, @nodes, @edges, @devices)
+              else:
+                Stream(valid: false, code: 6, position: next)

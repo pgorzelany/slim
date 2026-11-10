@@ -1,0 +1,101 @@
+{
+  "schema": 1,
+  "id": "d1",
+  "split": "development",
+  "name": "HTTP response framing and reporting",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/http/parser.slim",
+    "applications/http/emit.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "empty-body",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 204 Empty\r\n\r\n"
+        ],
+        "exit_code": 0,
+        "stdout": "status 204\nlength 0\n",
+        "stderr": ""
+      },
+      {
+        "name": "mixed-case-length",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 201 Created\r\ncOnTeNt-LeNgTh:\t3 \r\n\r\nabc"
+        ],
+        "exit_code": 0,
+        "stdout": "status 201\nlength 3\nabc",
+        "stderr": ""
+      },
+      {
+        "name": "implicit-length",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 404 Missing\r\nX-Trace: ok\r\n\r\nbody!"
+        ],
+        "exit_code": 0,
+        "stdout": "status 404\nlength 5\nbody!",
+        "stderr": ""
+      },
+      {
+        "name": "short-body",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 200 OK\r\nContent-Length: 4\r\n\r\nabc"
+        ],
+        "exit_code": 65,
+        "stdout": "error 17 at 38\n",
+        "stderr": ""
+      },
+      {
+        "name": "transfer-encoding",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 200 OK\r\nTransfer-Encoding: chunked\r\n\r\n"
+        ],
+        "exit_code": 65,
+        "stdout": "error 15 at 17\n",
+        "stderr": ""
+      },
+      {
+        "name": "invalid-status",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 099 Bad\r\n\r\n"
+        ],
+        "exit_code": 65,
+        "stdout": "error 10 at 9\n",
+        "stderr": ""
+      },
+      {
+        "name": "duplicate-length",
+        "replace": {
+          "applications/http/main.slim": "oracle/client.slim"
+        },
+        "args": [
+          "HTTP/1.1 200 OK\r\nContent-Length: 0\r\nContent-Length: 0\r\n\r\n"
+        ],
+        "exit_code": 65,
+        "stdout": "error 16 at 36\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

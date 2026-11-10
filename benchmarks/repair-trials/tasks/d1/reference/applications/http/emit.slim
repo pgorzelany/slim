@@ -1,0 +1,23 @@
+module http_emit
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  io.print_bytes(bytes.freeze(^output))
+
+fn print_response(source: Bytes, response: http_model.Response) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "status ")
+  std_text.append_i64(@output, response.status)
+  std_text.append_bytes(@output, "\nlength ")
+  std_text.append_i64(@output, response.body_end - response.body_start)
+  std_text.append_bytes(@output, "\n")
+  let appended: Bool = std_text.append_span(@output, source, response.body_start, response.body_end)
+  if appended:
+    io.print_bytes(bytes.freeze(^output))
+  else:
+    io.print_bytes("error 18 at 0\n")

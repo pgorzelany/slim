@@ -1,0 +1,1 @@
+(project 1 (entry app) (module app "app.slim" (imports identity) (exports)) (module identity "identity.slim" (imports) (exports DeclarationId FileId Index NextRevision NodeId Revision Span View reset resolve_node resolve_span same_declaration same_file same_revision successor valid_revision valid_view)))

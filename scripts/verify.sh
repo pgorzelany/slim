@@ -40,6 +40,7 @@ rm -rf "$source_context_dir"
 cargo clippy --all-targets -- -D warnings
 cargo test
 python3 scripts/test-task-time.py
+python3 -B benchmarks/repair-trials/test_runner.py
 SLIM_DEVELOPMENT_COMPILER="$PWD/build/toolchain/slimc" python3 benchmarks/development/test_evaluate.py
 development_corpus_dir=$(mktemp -d "$PWD/build/development-corpus.XXXXXX")
 python3 -B benchmarks/development/evaluate.py freeze --compiler build/toolchain/slimc \

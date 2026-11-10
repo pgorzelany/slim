@@ -1,0 +1,11 @@
+module http_app
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  let source: Bytes = vec.get(args, 1)
+  let response: http_model.Response = http_parser.parse(source)
+  if response.valid:
+    http_emit.print_response(source, response)
+    0
+  else:
+    http_emit.print_error(response.code, response.position)
+    65

@@ -1633,7 +1633,7 @@ fn finish_module_parse_report(manifest_source: Bytes, manifest_tokens: Vec[synta
     if parsed.valid:
       let count: I64 = end - root
       let repair: typing.Repair = if count > 1000000:
-        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: count, effect: -1)
+        typing.Repair(expected: typing.TypeRef(kind: -2, form: -1), actual: typing.TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "canonical-node-limit", expected_count: 1000000, actual_count: count, effect: -1, required_mode: -1, supplied_mode: -1)
       else:
         typing.empty_repair()
       emit_parsed_module(@report, manifest_source, manifest_tokens, path, source, "E0102", module_name, 0, bytes.len(source), repair)

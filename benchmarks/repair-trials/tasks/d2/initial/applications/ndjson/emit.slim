@@ -1,0 +1,38 @@
+module telemetry_emit
+
+fn append_device(source: Bytes, device: telemetry.Device, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  std_text.append_bytes(@output, "device ")
+  let name: Bool = std_text.append_span(@output, source, device.name_start, device.name_end)
+  if name:
+    std_text.append_bytes(@output, " count ")
+  else:
+    std_text.append_bytes(@output, "<invalid> count ")
+  std_text.append_i64(@output, device.count)
+  std_text.append_bytes(@output, " ok ")
+  std_text.append_i64(@output, device.ok_count)
+  std_text.append_bytes(@output, " sum ")
+  std_text.append_i64(@output, device.sum)
+  std_text.append_bytes(@output, "\n")
+
+fn append_devices(source: Bytes, devices: Vec[telemetry.Device], index: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if index == vec.len(devices):
+    void
+  else:
+    append_device(source, vec.get(devices, index), @output)
+    recur(source, devices, index + 1, @output)
+
+fn print_devices(source: Bytes, devices: Vec[telemetry.Device]) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  append_devices(source, devices, 0, @output)
+  let rendered: Bytes = bytes.freeze(^output)
+  io.print_bytes(rendered)
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_bytes(@output, "\n")
+  let rendered: Bytes = bytes.freeze(^output)
+  io.print_bytes(rendered)

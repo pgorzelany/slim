@@ -39,6 +39,7 @@ CAUSES = {
     'E0351': ('shape', 'The supplied argument, field, payload or alternative count does not match the required shape.'),
     'E0352': ('name', 'A declaration name is duplicated, or a type, member, field or alternative name violates its required declaration kind, membership or canonical order.'),
     'E0359': ('ownership', 'Assignment targets an immutable binding.'),
+    'E0360': ('ownership', 'The explicit argument or parameter mode does not match its declared transfer capability.'),
     'E0402': ('project', 'The project manifest version is unsupported.'),
     'E0409': ('input', 'The required source file could not be read.'),
     'E0411': ('project', 'An import names a module absent from the manifest.'),
@@ -112,13 +113,142 @@ def declaration_name_cases():
                 repaired=duplicate.read_bytes().replace(b'fn Item()',b'fn make_item()')),
         fixture('unknown-member-name', str(unknown), b'E0352@145:152\n',
                 facts={'primary_literal':'missing','origin_bytes':153,'origin_location':[9,8],
-                       'producer_rule':'','related_unavailable':True,'requirement_unavailable':True},
+                       'producer_rule':'unknown-record-field','related':(unknown,29,33),
+                       'related_literal':'Pair','requirement_unavailable':True,
+                       'cause_contract':('name','The projected field is not declared by the receiver struct.')},
                 repaired=unknown.read_bytes().replace(b'pair.missing',b'pair.left')),
         fixture('record-field-order', str(order), b'E0352@117:122\n',
                 facts={'primary_literal':'right','origin_bytes':148,'origin_location':[8,25],
                        'producer_rule':'','related_unavailable':True,'requirement_unavailable':True},
                 repaired=order.read_bytes().replace(b'Pair(right: 2, left: 1)',b'Pair(left: 1, right: 2)')),
     ]
+
+
+def projection_and_mode_cases(directory):
+    # Every interval comes from literal construction, before compiler execution.
+    # A decoy field spelling must never replace the linked receiver declaration.
+    result = []
+    field_cause = ('name','The projected field is not declared by the receiver struct.')
+    mode_cause = ('ownership','The explicit call argument mode does not match the declared parameter mode.')
+    for imported in (False, True):
+        name = 'imported-nested-record-field' if imported else 'nested-record-field-decoy'
+        root = directory/name
+        root.mkdir()
+        declarations = (b'struct Decoy:\n  missing: I64\n\nstruct Actual:\n  present: I64\n\n'
+                        b'struct Outer:\n  inner: Actual\n\n')
+        body = (b'fn main(args: Vec[Bytes]) -> I64:\n'
+                b'  let value: Outer = Outer(inner: Actual(present: 7))\n'
+                b'  value.inner.missing\n')
+        if imported:
+            provider = root/'types.slim'
+            provider.write_bytes(b'module types\n\n'+declarations)
+            data = b'module app\n\n'+body.replace(b'Outer',b'types.Outer').replace(b'Actual',b'types.Actual')
+            source = root/'app.slim'
+            path = root/'slim.project'
+            path.write_bytes(b'(project 1 (entry app) (module app "app.slim" (imports types) (exports)) (module types "types.slim" (imports) (exports Actual Outer)))\n')
+            label = b'app@'
+        else:
+            source = path = provider = root/'program.slim'
+            data = b'module projection\n\n'+declarations+body
+            label = b''
+        source.write_bytes(data)
+        start = data.rindex(b'missing')
+        owner_start = provider.read_bytes().index(b'Actual:')
+        result.append(Case(name,path,b'E0352@'+label+f'{start}:{start+7}\n'.encode(),[source],
+            facts={'producer_rule':'unknown-record-field','cause_contract':field_cause,
+                   'related':(provider,owner_start,owner_start+6),'related_literal':'Actual',
+                   'related_label':'types' if imported else str(provider),
+                   'requirement_unavailable':True,'unrecorded_types':True},
+            repaired=None if imported else data.replace(b'value.inner.missing',b'value.inner.present'),
+            repaired_project={'app.slim':data.replace(b'value.inner.missing',b'value.inner.present')} if imported else None))
+
+    modes = (('plain',b''),('exclusive',b'@'),('transfer',b'^'))
+    for required,required_marker in modes:
+        for supplied,supplied_marker in modes:
+            if required == supplied:
+                continue
+            name = f'argument-mode-{required}-{supplied}'
+            path = directory/name/'program.slim'
+            path.parent.mkdir()
+            parameter = b'items: '+required_marker+b'Vec[I64]'
+            data = (b'module argument_modes\n\nfn observe('+parameter+b') -> I64:\n  0\n\n'
+                    b'fn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n'
+                    b'  let values: Vec[I64] = vec.new()\n  observe('+supplied_marker+b'values)\n')
+            path.write_bytes(data)
+            start = data.rindex(b'values')
+            parameter_start = data.index(parameter)
+            result.append(Case(name,path,f'E0360@{start}:{start+6}\n'.encode(),[path],
+                facts={'producer_rule':'argument-mode','cause_contract':mode_cause,
+                       'required_mode':required,'supplied_mode':supplied,
+                       'requirement':(path,parameter_start,parameter_start+len(parameter)),
+                       'requirement_literal':parameter.decode(),'related_unavailable':True,'unrecorded_types':True},
+                repaired=data.replace(b'observe('+supplied_marker+b'values)',b'observe('+required_marker+b'values)')))
+
+    path = directory/'argument-mode-second-parameter'/'program.slim'
+    path.parent.mkdir()
+    data = (b'module linked_parameter\n\nfn decoy(items: ^Vec[I64]) -> I64:\n  0\n\n'
+            b'fn observe(flag: I64, items: @Vec[I64]) -> I64:\n  flag\n\n'
+            b'fn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n'
+            b'  let values: Vec[I64] = vec.new()\n  observe(0, values)\n')
+    path.write_bytes(data)
+    start = data.rindex(b'values')
+    parameter_start = data.index(b'items: @')
+    result.append(Case('argument-mode-second-parameter',path,f'E0360@{start}:{start+6}\n'.encode(),[path],
+        facts={'producer_rule':'argument-mode','cause_contract':mode_cause,
+               'required_mode':'exclusive','supplied_mode':'plain',
+               'requirement':(path,parameter_start,parameter_start+16),
+               'requirement_literal':'items: @Vec[I64]','related_unavailable':True,'unrecorded_types':True},
+        repaired=data.replace(b'observe(0, values)',b'observe(0, @values)')))
+
+    root = directory/'imported-argument-mode'
+    root.mkdir()
+    provider = root/'api.slim'
+    api = b'module api\n\nfn observe(items: @Vec[I64]) -> I64:\n  0\n'
+    provider.write_bytes(api)
+    source = root/'app.slim'
+    app = (b'module app\n\nfn main(args: Vec[Bytes]) -> I64 effects[alloc]:\n'
+           b'  let values: Vec[I64] = vec.new()\n  api.observe(values)\n')
+    source.write_bytes(app)
+    path = root/'slim.project'
+    path.write_bytes(b'(project 1 (entry app) (module api "api.slim" (imports) (exports observe)) (module app "app.slim" (imports api) (exports)))\n')
+    start = app.rindex(b'values')
+    parameter_start = api.index(b'items:')
+    result.append(Case('imported-argument-mode',path,f'E0360@app@{start}:{start+6}\n'.encode(),[source],
+        facts={'producer_rule':'argument-mode','cause_contract':mode_cause,
+               'required_mode':'exclusive','supplied_mode':'plain',
+               'requirement':(provider,parameter_start,parameter_start+16),
+               'requirement_literal':'items: @Vec[I64]','requirement_label':'api',
+               'related_unavailable':True,'unrecorded_types':True},
+        repaired_project={'app.slim':app.replace(b'api.observe(values)',b'api.observe(@values)')}))
+    for name,path,raw in (
+        ('builtin-mode-unretained','missing_builtin_exclusive_mode.slim',b'E0360@134:140\n'),
+        ('builtin-transfer-unretained','missing_builtin_owned_mode.slim',b'E0360@153:159\n'),
+        ('builtin-unexpected-mode-unretained','unexpected_builtin_mode.slim',b'E0360@127:133\n'),
+        ('parameter-mode-unretained','copyable_parameter_mode.slim',b'E0360@43:48\n'),
+        ('replacement-place-mode-unretained','replacement_missing_mode.slim',b'E0360@128:135\n'),
+        ('replacement-value-mode-unretained','replacement_value_mode.slim',b'E0360@143:149\n'),
+        ('constructor-order-unretained','field_order.slim',b'E0352@117:122\n'),
+        ('constructor-duplicate-field-unretained','duplicate_field.slim',b'E0352@130:134\n'),
+        ('variant-member-unretained','unknown_variant_case.slim',b'E0352@123:130\n'),
+    ):
+        result.append(fixture(name,'conformance/fail/'+path,raw,
+            facts={'producer_rule':'','modes_unavailable':True,'requirement_unavailable':True,'related_unavailable':True}))
+    # Recur shares check_argument_mode and links to its enclosing parameter;
+    # the rejection site, rather than surface call spelling, owns these facts.
+    path = directory/'recurrence-argument-mode'/'program.slim'
+    path.parent.mkdir()
+    data = (b'module recurrence_modes\n\nfn again(items: @Vec[I64]) -> I64 effects[partial]:\n'
+            b'  recur(items)\n\nfn main(args: Vec[Bytes]) -> I64:\n  0\n')
+    path.write_bytes(data)
+    start = data.rindex(b'items')
+    parameter_start = data.index(b'items:')
+    result.append(Case('recurrence-argument-mode',path,f'E0360@{start}:{start+5}\n'.encode(),[path],
+        facts={'producer_rule':'argument-mode','cause_contract':mode_cause,
+               'required_mode':'exclusive','supplied_mode':'plain',
+               'requirement':(path,parameter_start,parameter_start+16),
+               'requirement_literal':'items: @Vec[I64]','related_unavailable':True,'unrecorded_types':True},
+        repaired=data.replace(b'recur(items)',b'recur(@items)')))
+    return result
 
 
 def public_reference_cases(directory):
@@ -269,6 +399,7 @@ def cases(directory):
     fixed.extend(declaration_name_cases())
     fixed.extend(public_reference_cases(directory))
     fixed.extend(closing_delimiter_cases(directory))
+    fixed.extend(projection_and_mode_cases(directory))
 
     def source_case(name, data, raw, facts=None, repaired=None, path=None):
         path = path or directory/name/'program.slim'
@@ -438,6 +569,11 @@ def validate_declared_requirement_spans(corpus):
     # Validate their byte agreement before any native command, so an oracle
     # offset error cannot be mistaken for a candidate compiler regression.
     for case in corpus:
+        for key in ('requirement','related'):
+            if key+'_literal' in case.facts:
+                path,start,end=case.facts[key]
+                require(path.read_bytes()[start:end]==case.facts[key+'_literal'].encode('ascii'),
+                        case.name,'literal causal source oracle',key)
         if 'requirement' not in case.facts or case.facts.get('expected') is None:
             continue
         path,start,end=case.facts['requirement']
@@ -571,11 +707,20 @@ def verify_json(compiler,case):
                 require(isinstance(value,dict),case.name,'checked origin',key,value)
                 source_bytes(value['source'],path,case)
                 require((value['span']['start'],value['span']['end'])==(start,end),case.name,'causal source origin',key,value)
+                data_at_origin=path.read_bytes()
+                require((value['span']['line'],value['span']['column'])==
+                        (data_at_origin[:start].count(b'\n')+1,start-data_at_origin.rfind(b'\n',0,start)),
+                        case.name,'causal source byte location',key,value)
+                if key+'_label' in case.facts:
+                    require(value['source']['label']==case.facts[key+'_label'],case.name,'causal original module identity',key,value)
             if case.facts.get(key+'_unavailable'):
                 require(repair[key] is None,case.name,'unretained optional location',key,repair[key])
-        for key in ('required_effect','expected_count','actual_count','producer_rule'):
+        for key in ('required_effect','expected_count','actual_count','producer_rule','required_mode','supplied_mode'):
             if key in case.facts:
                 require(repair[key]==case.facts[key],case.name,'producer fact',key,repair)
+        if case.facts.get('modes_unavailable'):
+            require('required_mode' not in repair and 'supplied_mode' not in repair,
+                    case.name,'unretained mode facts must stay unavailable',repair)
         if case.facts.get('unrecorded_types'):
             for key in ('expected','actual'):
                 require(repair[key]['evidence']=='unknown' and repair[key]['text'] is None and repair[key]['reason']=='not-recorded-at-rejection',case.name,'unsupported specialized detail',key,repair)
@@ -749,6 +894,7 @@ def specification(cases):
         entries=[]
         unrelated=case.facts.get('unrelated_source')
         extra=[] if unrelated is None else [Path(unrelated['path'])]
+        extra.extend(case.facts[key][0] for key in ('requirement','related') if key in case.facts)
         for path in dict.fromkeys([case.path,*case.origins,*extra]):
             if path is not None:
                 data=path.read_bytes() if path.is_file() else None
@@ -769,7 +915,7 @@ def main():
     parser.add_argument('--compiler',type=Path,default=ROOT/'build/toolchain/slimc')
     parser.add_argument('--freeze-baseline',action='store_true')
     parser.add_argument('--baseline-compiler',type=Path,help='pre-protocol compiler for the real unknown-command decoy regression')
-    parser.add_argument('--section',choices=('small','node-admission','private-type-source','declaration-name','public-reference','closing-delimiter','all'),default='all')
+    parser.add_argument('--section',choices=('small','node-admission','private-type-source','declaration-name','projection-mode','public-reference','closing-delimiter','all'),default='all')
     parser.add_argument('--output',type=Path)
     args=parser.parse_args()
     compiler=args.compiler.resolve()
@@ -789,6 +935,8 @@ def main():
             corpus.extend(private_type_source_cases())
         if args.section=='declaration-name':
             corpus.extend(declaration_name_cases())
+        if args.section=='projection-mode':
+            corpus.extend(projection_and_mode_cases(directory))
         if args.section=='public-reference':
             corpus.extend(public_reference_cases(directory))
         if args.section=='closing-delimiter':

@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "id": "h2",
+  "split": "heldout",
+  "initial": "initial",
+  "entry": "slim.project",
+  "mutable_files": [
+    "applications/lz4/codec.slim"
+  ],
+  "prompt": "TASK.txt",
+  "acceptance": {
+    "cases": [
+      {
+        "name": "roundtrips",
+        "replace": {
+          "app.slim": "oracle/roundtrips.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      },
+      {
+        "name": "wire-errors",
+        "replace": {
+          "app.slim": "oracle/wire-errors.slim"
+        },
+        "args": [],
+        "exit_code": 0,
+        "stdout": "held-ok\n",
+        "stderr": ""
+      }
+    ]
+  }
+}

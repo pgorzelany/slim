@@ -1,0 +1,42 @@
+module sat_emit
+
+fn append_model(assignments: Vec[I64], variable: I64, variables: I64, output: @Vec[U8]) -> Void effects[alloc, partial]:
+  if variable > variables:
+    std_text.append_bytes(@output, "0\n")
+  else:
+    let value: I64 = vec.get(assignments, variable)
+    if value == 0:
+      std_text.append_i64(@output, 0 - variable)
+    else:
+      std_text.append_i64(@output, variable)
+    std_text.append_byte(@output, bytes.get(" ", 0))
+    recur(assignments, variable + 1, variables, @output)
+
+fn print_error(code: I64, position: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  std_text.append_bytes(@output, "error ")
+  std_text.append_i64(@output, code)
+  std_text.append_bytes(@output, " at ")
+  std_text.append_i64(@output, position)
+  std_text.append_byte(@output, bytes.get("\n", 0))
+  io.print_bytes(bytes.freeze(^output))
+
+fn print_solution(solution: sat_model.Solution, assignments: Vec[I64], variables: I64) -> Void effects[alloc, io, partial]:
+  let output: Vec[U8] = vec.new()
+  match solution:
+    Sat(steps):
+      if steps >= 0:
+        std_text.append_bytes(@output, "s SATISFIABLE\nv ")
+        append_model(assignments, 1, variables, @output)
+      else:
+        void
+    Unsat(steps):
+      if steps >= 0:
+        std_text.append_bytes(@output, "s UNSATISFIABLE\n")
+      else:
+        void
+    Bounded(steps):
+      std_text.append_bytes(@output, "s UNKNOWN steps ")
+      std_text.append_i64(@output, steps)
+      std_text.append_byte(@output, bytes.get("\n", 0))
+  io.print_bytes(bytes.freeze(^output))

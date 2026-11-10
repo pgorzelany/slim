@@ -27,6 +27,9 @@ struct Repair:
   expected_count: I64
   actual_count: I64
   effect: I64
+  # Source argument/parameter modes: -1 unavailable, 0 plain, 1 @, 2 ^.
+  required_mode: I64
+  supplied_mode: I64
 
 struct View:
   facts: Vec[Fact]
@@ -499,7 +502,7 @@ fn record_issue(code: Bytes, token: I64, issues: @Vec[Issue]) -> Void effects[al
     append_issue(code, token, token, @issues)
 
 fn empty_repair() -> Repair:
-  Repair(expected: TypeRef(kind: -2, form: -1), actual: TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "", expected_count: -1, actual_count: -1, effect: -1)
+  Repair(expected: TypeRef(kind: -2, form: -1), actual: TypeRef(kind: -2, form: -1), requirement: -1, related: -1, rule: "", expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
 
 fn record_repair_issue(code: Bytes, token: I64, repair: Repair, issues: @Vec[Issue]) -> Void effects[alloc, partial]:
   if issues_block_inference(issues):
@@ -508,7 +511,7 @@ fn record_repair_issue(code: Bytes, token: I64, repair: Repair, issues: @Vec[Iss
     vec.push(@issues, Issue(code: code, start: token, end: token, blocks_inference: true, repair: repair))
 
 fn record_type_issue(token: I64, expected: TypeRef, actual: TypeRef, requirement: I64, rule: Bytes, issues: @Vec[Issue]) -> Void effects[alloc, partial]:
-  let repair: Repair = Repair(expected: expected, actual: actual, requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: -1)
+  let repair: Repair = Repair(expected: expected, actual: actual, requirement: requirement, related: -1, rule: rule, expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
   record_repair_issue("E0344", token, repair, @issues)
 
 fn type_forms_equal(source: Bytes, tokens: Vec[syntax.Token], left: I64, right: I64) -> Bool effects[partial]:
@@ -1050,7 +1053,7 @@ fn expect_arity(tokens: Vec[syntax.Token], cursor: I64, expected: I64, token: I6
   if same:
     true
   else:
-    let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: -1, related: -1, rule: "arity", expected_count: expected, actual_count: actual, effect: -1)
+    let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: -1, related: -1, rule: "arity", expected_count: expected, actual_count: actual, effect: -1, required_mode: -1, supplied_mode: -1)
     record_repair_issue("E0351", token, repair, @issues)
     false
 
@@ -1277,7 +1280,7 @@ fn infer_atom(source: Bytes, tokens: Vec[syntax.Token], expr: I64, parent: I64, 
             if moved:
               let binding: Binding = vec.get(bindings, binding_index)
               let state: ownership.Frame = vec.get(frames, binding.move_scope)
-              let repair: Repair = Repair(expected: invalid_type(-1), actual: source_type(source, tokens, type), requirement: binding.name, related: state.move_origin, rule: "prior-possible-move", expected_count: -1, actual_count: -1, effect: -1)
+              let repair: Repair = Repair(expected: invalid_type(-1), actual: source_type(source, tokens, type), requirement: binding.name, related: state.move_origin, rule: "prior-possible-move", expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
               vec.push(@issues, Issue(code: "E0315", start: expr, end: expr, blocks_inference: false, repair: repair))
               source_type(source, tokens, type)
             else:
@@ -1366,7 +1369,8 @@ fn check_argument_mode(tokens: Vec[syntax.Token], argument: I64, parameter: I64,
   if same:
     true
   else:
-    append_ownership_issue("E0360", argument, @issues)
+    let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: parameter, related: -1, rule: "argument-mode", expected_count: -1, actual_count: -1, effect: -1, required_mode: expected, supplied_mode: actual)
+    vec.push(@issues, Issue(code: "E0360", start: argument, end: argument, blocks_inference: false, repair: repair))
     false
 
 # The argument record captures pre-child owner identity and registration gates.
@@ -1429,7 +1433,7 @@ fn next_argument(source: Bytes, tokens: Vec[syntax.Token], expr: I64, recursive:
             let parameters: I64 = syntax.ast_function_parameters(linked_item(tokens, structure.callee))
             let expected_count: I64 = form_count(tokens, syntax.ast_parameters_first(parameters), 0)
             let actual_count: I64 = form_count(tokens, structure.arguments, 0)
-            let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: parameters, related: -1, rule: "arity", expected_count: expected_count, actual_count: actual_count, effect: -1)
+            let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: parameters, related: -1, rule: "arity", expected_count: expected_count, actual_count: actual_count, effect: -1, required_mode: -1, supplied_mode: -1)
             record_repair_issue("E0351", structure.callee, repair, @issues)
         ArgumentNext(state: state, done: true, expected: -1, result: invalid_type(expr))
     else:
@@ -1944,7 +1948,9 @@ fn project_value(source: Bytes, tokens: Vec[syntax.Token], expr: I64, owner: Typ
       if known:
         source_type(source, tokens, syntax.ast_member_value(definition))
       else:
-        record_issue("E0352", field, @issues)
+        let declaration: I64 = syntax.ast_item_name(item)
+        let repair: Repair = Repair(expected: invalid_type(-1), actual: invalid_type(-1), requirement: -1, related: declaration, rule: "unknown-record-field", expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
+        record_repair_issue("E0352", field, repair, @issues)
         invalid_type(expr)
     else:
       record_issue("E0344", value, @issues)
@@ -2810,7 +2816,7 @@ fn check_declaration_types(source: Bytes, tokens: Vec[syntax.Token], declaration
     if duplicate:
       let absent: TypeRef = TypeRef(kind: -2, form: -1)
       let earlier_name: I64 = syntax.ast_item_name(first_declaration)
-      let repair: Repair = Repair(expected: absent, actual: absent, requirement: -1, related: earlier_name, rule: "duplicate-declaration", expected_count: -1, actual_count: -1, effect: -1)
+      let repair: Repair = Repair(expected: absent, actual: absent, requirement: -1, related: earlier_name, rule: "duplicate-declaration", expected_count: -1, actual_count: -1, effect: -1, required_mode: -1, supplied_mode: -1)
       record_repair_issue("E0352", name, repair, @issues)
     else:
       void

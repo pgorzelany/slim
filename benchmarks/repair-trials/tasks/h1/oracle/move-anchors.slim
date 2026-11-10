@@ -1,0 +1,72 @@
+module app
+
+fn check(actual: I64, expected: I64) -> I64:
+  if actual == expected:
+    0
+  else:
+    1
+
+fn main(args: Vec[Bytes]) -> I64 effects[alloc, io, partial]:
+  var failures: I64 = 0
+  let frames: Vec[ownership.Frame] = vec.new()
+  vec.push(@frames, ownership.Frame(scope: 7, parent: 3, entry: true, moved: false, visited: 2, move_origin: -1))
+  ownership.set_moved_at(@frames, 0, false, -1)
+  let observed_4: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_4.move_origin, -1)
+  failures = failures + check(observed_4.scope, 7)
+  failures = failures + check(observed_4.parent, 3)
+  failures = failures + check(observed_4.visited, 2)
+  ownership.set_moved_at(@frames, 0, false, 0)
+  let observed_10: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_10.move_origin, -1)
+  failures = failures + check(observed_10.scope, 7)
+  failures = failures + check(observed_10.parent, 3)
+  failures = failures + check(observed_10.visited, 2)
+  ownership.set_moved_at(@frames, 0, false, 17)
+  let observed_16: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_16.move_origin, -1)
+  failures = failures + check(observed_16.scope, 7)
+  failures = failures + check(observed_16.parent, 3)
+  failures = failures + check(observed_16.visited, 2)
+  ownership.set_moved_at(@frames, 0, false, 9223372036854775807)
+  let observed_22: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_22.move_origin, -1)
+  failures = failures + check(observed_22.scope, 7)
+  failures = failures + check(observed_22.parent, 3)
+  failures = failures + check(observed_22.visited, 2)
+  ownership.set_moved_at(@frames, 0, true, -1)
+  let observed_28: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_28.move_origin, -1)
+  failures = failures + check(observed_28.scope, 7)
+  failures = failures + check(observed_28.parent, 3)
+  failures = failures + check(observed_28.visited, 2)
+  ownership.set_moved_at(@frames, 0, true, 0)
+  let observed_34: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_34.move_origin, 0)
+  failures = failures + check(observed_34.scope, 7)
+  failures = failures + check(observed_34.parent, 3)
+  failures = failures + check(observed_34.visited, 2)
+  ownership.set_moved_at(@frames, 0, true, 17)
+  let observed_40: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_40.move_origin, 17)
+  failures = failures + check(observed_40.scope, 7)
+  failures = failures + check(observed_40.parent, 3)
+  failures = failures + check(observed_40.visited, 2)
+  ownership.set_moved_at(@frames, 0, true, 9223372036854775807)
+  let observed_46: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(observed_46.move_origin, 9223372036854775807)
+  failures = failures + check(observed_46.scope, 7)
+  failures = failures + check(observed_46.parent, 3)
+  failures = failures + check(observed_46.visited, 2)
+  ownership.set_moved(@frames, 0, true)
+  let moved: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(moved.move_origin, -1)
+  ownership.set_moved(@frames, 0, false)
+  let restored: ownership.Frame = vec.get(frames, 0)
+  failures = failures + check(restored.move_origin, -1)
+  if failures == 0:
+    io.print_bytes("held-ok\n")
+    0
+  else:
+    io.print_i64(failures)
+    1

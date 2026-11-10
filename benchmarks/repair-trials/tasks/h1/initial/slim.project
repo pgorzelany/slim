@@ -1,0 +1,3 @@
+(project 1 (entry app)
+  (module app "app.slim" (imports ownership) (exports))
+  (module ownership "ownership.slim" (imports) (exports Frame Scope advance begin current end set_moved set_moved_at)))

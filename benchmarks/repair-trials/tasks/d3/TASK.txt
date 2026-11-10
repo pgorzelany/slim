@@ -1,0 +1,7 @@
+# Compiler stable identity and source bounds
+
+Repair the existing SLIM implementation in this checkout. It currently fails normal checking at multiple source locations and also contains a behavior regression.
+
+Restore the production compiler identity module. Revision counters are positive, successor/reset reject signed-I64 overflow, file/declaration matching includes the complete revision and slots, views fit within total nodes, node ordinals are half-open, and spans permit end equal to source length while rejecting reversed or out-of-range bounds. No source span may resolve against another revision.
+
+Only edit `identity.slim`. Preserve their public functions, types and signatures. Immutable clients, dependencies and project contracts must remain unchanged. Acceptance compiles independent clients against your implementation and checks exact native outputs on multiple positive, negative and boundary inputs. Merely making `check` succeed or returning a constant is insufficient.
